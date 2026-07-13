@@ -31,6 +31,7 @@ import Unauthorized   from '@pages/error/Unauthorized';
 // UserLayout (로그인 필요)
 // ──────────────────────────────────────────
 import MyPage from '@pages/user/MyPage';
+import PointWalletPage from '@pages/user/point/PointWalletPage';
 
 // ──────────────────────────────────────────
 // Admin 페이지
@@ -67,6 +68,8 @@ const AppRoutes = () => {
       <Route element={<UserLayout />}>
         {/* 마이페이지 */}
         <Route path="/user/mypage" element={<MyPage />} />
+        {/* 포인트 지갑 (BJN) */}
+        <Route path="/user/point" element={<PointWalletPage />} />
       </Route>
 
       <Route path="/admin" element={<AdminLayout />}>
