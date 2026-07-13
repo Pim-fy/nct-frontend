@@ -17,11 +17,19 @@
 .header nav a:hover { color: var(--color-primary, #0064ff); }
 
 .header .container {
+  /* width는 App.css .container 반응형(모바일 100% / PC 85%)에 위임 */
+}
+
+/* 헤더 내부 3단 그리드 */
+.header-inner {
   display: grid;
   grid-template-columns: minmax(0,1fr) auto minmax(0,1fr);
   align-items: center;
-  width: 100%;
 }
+
+.header-inner > a:first-child { justify-self: start; }
+.header-inner > nav            { justify-self: center; }
+.header-inner > div:last-child { justify-self: end; }
 
 .header .container > a   { justify-self: start; }
 .header .container > nav { justify-self: center; }

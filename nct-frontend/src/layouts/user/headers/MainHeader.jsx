@@ -21,7 +21,7 @@ const MainHeader = () => {
 
   return (
     <header className="header">
-      <div className="container" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto minmax(0,1fr)', alignItems: 'center', width: '100%' }}>
+      <div className="container header-inner">
         {/* 로고 */}
         <Link to="/" style={{ fontSize: '22px', fontWeight: '700', color: 'var(--color-primary, #0064ff)', textDecoration: 'none' }}>
           Ksteam

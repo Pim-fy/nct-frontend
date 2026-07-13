@@ -4,10 +4,17 @@
    공통 레이아웃
 =========================== */
 .container {
-  width: 90%;
+  width: 100%;
   max-width: 1800px;
   margin: 0 auto;
-  padding: 0;
+  padding: 0 16px;
+}
+
+@media (min-width: 768px) {
+  .container {
+    width: 82%;
+    padding: 0;
+  }
 }
 
 .container-fluid {
