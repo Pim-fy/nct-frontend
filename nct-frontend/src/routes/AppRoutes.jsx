@@ -32,6 +32,7 @@ import Unauthorized   from '@pages/error/Unauthorized';
 // ──────────────────────────────────────────
 import MyPage from '@pages/user/MyPage';
 import PointWalletPage from '@pages/user/point/PointWalletPage';
+import NotificationPage from '@pages/user/notification/NotificationPage';
 
 // ──────────────────────────────────────────
 // Admin 페이지
@@ -70,6 +71,8 @@ const AppRoutes = () => {
         <Route path="/user/mypage" element={<MyPage />} />
         {/* 포인트 지갑 (BJN) */}
         <Route path="/user/point" element={<PointWalletPage />} />
+        {/* 알림함 (BJN) */}
+        <Route path="/user/notification" element={<NotificationPage />} />
       </Route>
 
       <Route path="/admin" element={<AdminLayout />}>
