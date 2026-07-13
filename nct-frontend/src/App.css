@@ -1,184 +1,130 @@
-.counter {
-  font-size: 16px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border: 2px solid transparent;
-  transition: border-color 0.3s;
-  margin-bottom: 24px;
+/* src/App.css */
 
-  &:hover {
-    border-color: var(--accent-border);
-  }
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-}
-
-.hero {
-  position: relative;
-
-  .base,
-  .framework,
-  .vite {
-    inset-inline: 0;
-    margin: 0 auto;
-  }
-
-  .base {
-    width: 170px;
-    position: relative;
-    z-index: 0;
-  }
-
-  .framework,
-  .vite {
-    position: absolute;
-  }
-
-  .framework {
-    z-index: 1;
-    top: 34px;
-    height: 28px;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
-      scale(1.4);
-  }
-
-  .vite {
-    z-index: 0;
-    top: 107px;
-    height: 26px;
-    width: auto;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
-      scale(0.8);
-  }
-}
-
-#center {
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
-  place-content: center;
-  place-items: center;
-  flex-grow: 1;
-
-  @media (max-width: 1024px) {
-    padding: 32px 20px 24px;
-    gap: 18px;
-  }
-}
-
-#next-steps {
-  display: flex;
-  border-top: 1px solid var(--border);
-  text-align: left;
-
-  & > div {
-    flex: 1 1 0;
-    padding: 32px;
-    @media (max-width: 1024px) {
-      padding: 24px 20px;
-    }
-  }
-
-  .icon {
-    margin-bottom: 16px;
-    width: 22px;
-    height: 22px;
-  }
-
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    text-align: center;
-  }
-}
-
-#docs {
-  border-right: 1px solid var(--border);
-
-  @media (max-width: 1024px) {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
-}
-
-#next-steps ul {
-  list-style: none;
+/* ===========================
+   공통 레이아웃
+=========================== */
+.container {
+  width: 90%;
+  max-width: 1800px;
+  margin: 0 auto;
   padding: 0;
-  display: flex;
-  gap: 8px;
-  margin: 32px 0 0;
-
-  .logo {
-    height: 18px;
-  }
-
-  a {
-    color: var(--text-h);
-    font-size: 16px;
-    border-radius: 6px;
-    background: var(--social-bg);
-    display: flex;
-    padding: 6px 12px;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    transition: box-shadow 0.3s;
-
-    &:hover {
-      box-shadow: var(--shadow);
-    }
-    .button-icon {
-      height: 18px;
-      width: 18px;
-    }
-  }
-
-  @media (max-width: 1024px) {
-    margin-top: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
-
-    li {
-      flex: 1 1 calc(50% - 8px);
-    }
-
-    a {
-      width: 100%;
-      justify-content: center;
-      box-sizing: border-box;
-    }
-  }
 }
 
-#spacer {
-  height: 88px;
-  border-top: 1px solid var(--border);
-  @media (max-width: 1024px) {
-    height: 48px;
-  }
-}
-
-.ticks {
-  position: relative;
+.container-fluid {
   width: 100%;
+  padding: 0 16px;
+}
 
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    top: -4.5px;
-    border: 5px solid transparent;
-  }
+/* ===========================
+   공통 버튼
+=========================== */
+.btn {
+  border-radius: 8px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, color 0.15s ease;
+}
 
-  &::before {
-    left: 0;
-    border-left-color: var(--border);
-  }
-  &::after {
-    right: 0;
-    border-right-color: var(--border);
+.btn-primary {
+  background: var(--color-primary, #0064ff);
+  color: #fff;
+  border: none;
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-dark, #0048bf);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--color-primary, #0064ff);
+  border: 1px solid var(--color-primary, #0064ff);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: #5f5e5a;
+  border: 1px solid #e2e1dc;
+}
+
+.btn-danger {
+  background: #a32d2d;
+  color: #fff;
+  border: none;
+}
+
+/* ===========================
+   공통 배지
+=========================== */
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.badge-success { background: #e5efff; color: #0048bf; }
+.badge-warning { background: #faeeda; color: #ba7517; }
+.badge-danger  { background: #fcebeb; color: #a32d2d; }
+.badge-gray    { background: #f0f0ee; color: #5f5e5a; }
+.badge-blue    { background: #e8f0fe; color: #1a56a4; }
+
+/* ===========================
+   카드
+=========================== */
+.card {
+  background: #ffffff;
+  border: 1px solid #f0efec;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* ===========================
+   입력 폼
+=========================== */
+.input {
+  border: 1px solid #e2e1dc;
+  border-radius: 8px;
+  min-height: 40px;
+  padding: 0 12px;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  background: #fff;
+}
+
+.input:focus {
+  border-color: var(--color-primary, #0064ff);
+  outline: none;
+}
+
+/* ===========================
+   페이지네이션
+=========================== */
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 24px 0;
+}
+
+/* ===========================
+   반응형
+=========================== */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 16px;
   }
 }

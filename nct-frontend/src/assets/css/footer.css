@@ -1,0 +1,25 @@
+/* src/assets/css/footer.css */
+
+.site-footer {
+  background: #1a1a18;
+  color: #d3d1c7;
+  padding: 28px 0;
+  margin-top: auto;
+  border-top: 40px solid #fff;
+}
+
+.site-footer a { color: #d3d1c7; text-decoration: none; }
+.site-footer a:hover { color: #fff; }
+
+.site-footer .row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.site-footer .small { font-size: 13px; }
+
+@media (max-width: 768px) {
+  .site-footer { padding: 20px 0; }
+}

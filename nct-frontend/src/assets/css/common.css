@@ -1,0 +1,112 @@
+/* src/assets/css/common.css */
+
+/* ===========================
+   공통 유틸리티
+=========================== */
+.muted { color: #5f5e5a; }
+.small { font-size: 13px; }
+.mono { font-family: 'Noto Sans Mono', monospace; }
+
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.list { display: grid; gap: 12px; }
+
+.list-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  border: 1px solid #f0efec;
+  border-radius: 16px;
+  background: #fff;
+  padding: 16px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.06);
+}
+
+a.list-row {
+  transition: box-shadow .15s ease, transform .15s ease;
+  text-decoration: none;
+  color: inherit;
+}
+
+a.list-row:hover {
+  box-shadow: 0 6px 18px rgba(0,0,0,.10);
+  transform: translateY(-2px);
+}
+
+/* 이미지 플레이스홀더 */
+.img-placeholder {
+  background: #e5e4df;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2em;
+  border-radius: 8px;
+  min-height: 130px;
+  color: #5f5e5a;
+  overflow: hidden;
+}
+
+.img-placeholder img {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  display: block;
+  object-fit: cover;
+}
+
+/* 탭 */
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 16px; }
+.tab {
+  border: 1px solid #e2e1dc;
+  background: #fff;
+  color: #5f5e5a;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.tab.active { background: var(--color-primary, #0064ff); color: #fff; border-color: var(--color-primary, #0064ff); }
+
+/* 칩 */
+.chip {
+  border: 1px solid #e2e1dc;
+  background: #fff;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.chip.active {
+  background: var(--color-primary-light, #e5efff);
+  color: var(--color-primary-dark, #0048bf);
+  border-color: var(--color-primary, #0064ff);
+}
+
+/* 토스트 */
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  background: #1a1a18;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 8px;
+  display: none;
+  z-index: 300;
+  font-size: 14px;
+}
+
+/* 스크롤 숨김 */
+.scrollbar-hide {
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
