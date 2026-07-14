@@ -5,30 +5,23 @@ import Swal from 'sweetalert2';
 import PointSummaryCards from './components/PointSummaryCards';
 import PointLedgerTable from './components/PointLedgerTable';
 import PointAmountModal from './components/PointAmountModal';
+import { usePointBalance, usePointLedger } from '../../../hooks/usePoint';
 
-// 임시 더미 데이터 - 실제 API 연동 시 교체 (GET /api/point/balance, /api/point/ledger)
-const DUMMY_BALANCE = {
-  available: 300000,
-  hold: 200000,
-  settleable: 100000,
-};
-
-const DUMMY_LEDGER = [
-  { id: 7, date: '2026-07-12 14:00', type: '충전',       category: '사용가능', amount: 100000,  balanceAfter: 300000, ref: null,      reason: '포인트 충전' },
-  { id: 6, date: '2026-07-11 10:21', type: '홀딩',       category: '사용가능', amount: -100000, balanceAfter: 200000, ref: '입찰-1024', reason: '입찰 홀딩' },
-  { id: 5, date: '2026-07-11 10:21', type: '홀딩',       category: '홀딩',     amount: 100000,  balanceAfter: 200000, ref: '입찰-1024', reason: '입찰 홀딩' },
-  { id: 4, date: '2026-07-10 18:44', type: '반환',       category: '사용가능', amount: 100000,  balanceAfter: 300000, ref: '입찰-1019', reason: '상위 입찰 발생 반환' },
-  { id: 3, date: '2026-07-09 09:12', type: '보관금전환', category: '홀딩',     amount: -200000, balanceAfter: 100000, ref: '거래-88',   reason: '낙찰 확정 거래대금 전환' },
-  { id: 2, date: '2026-07-08 16:30', type: '정산',       category: '정산가능', amount: 100000,  balanceAfter: 100000, ref: '거래-72',   reason: '정산 완료' },
-  { id: 1, date: '2026-07-07 11:05', type: '보정',       category: '사용가능', amount: 50000,   balanceAfter: 200000, ref: '관리-3',    reason: '관리자 보정' },
-];
+// 데이터 도착 전(로딩 중) 카드가 깨지지 않도록 쓰는 0값 기본 잔액
+const EMPTY_BALANCE = { available: 0, hold: 0, settleable: 0 };
 
 /**
  * 포인트 지갑 (목업 17_point_wallet.html, F-PAY-038/039)
- * 충전(F-PAY-100)·환전(F-PAY-101) 실처리는 DEC-117/118 확정 전 미구현
+ * - GET /api/point/balance, /api/point/ledger 연동 (usePoint 훅)
+ * - 응답 필드명이 화면 컴포넌트와 동일해서 변환 없이 그대로 넘긴다
+ * - 충전(F-PAY-100)·환전(F-PAY-101) 실처리는 DEC-117/118 확정 전 미구현 ("준비 중" 안내만)
  */
 const PointWalletPage = () => {
   const [openModal, setOpenModal] = useState(null); // null | 'charge' | 'exchange'
+
+  // 서버 조회 — 로그인(쿠키) 필요. 미로그인 401이면 axios 인터셉터가 /login으로 보낸다
+  const { data: balance = EMPTY_BALANCE, isLoading: balanceLoading } = usePointBalance();
+  const { data: ledger = [], isLoading: ledgerLoading } = usePointLedger();
 
   const notReady = (decision) => {
     setOpenModal(null);
@@ -63,8 +56,12 @@ const PointWalletPage = () => {
         </div>
       </div>
 
-      <PointSummaryCards balance={DUMMY_BALANCE} />
-      <PointLedgerTable rows={DUMMY_LEDGER} />
+      <PointSummaryCards balance={balance} />
+      {ledgerLoading || balanceLoading ? (
+        <p className="text-sm text-gray-400 text-center py-10">포인트 내역을 불러오는 중...</p>
+      ) : (
+        <PointLedgerTable rows={ledger} />
+      )}
 
       {openModal === 'charge' && (
         <PointAmountModal
@@ -78,7 +75,7 @@ const PointWalletPage = () => {
         <PointAmountModal
           title="환전 신청"
           submitLabel="환전"
-          infoRow={{ label: '환전 가능 포인트', value: `${DUMMY_BALANCE.settleable.toLocaleString()} P` }}
+          infoRow={{ label: '환전 가능 포인트', value: `${balance.settleable.toLocaleString()} P` }}
           onSubmit={() => notReady('DEC-118')}
           onClose={() => setOpenModal(null)}
         />
