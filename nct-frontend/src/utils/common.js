@@ -1,4 +1,155 @@
 // src/utils/common.js
+import Swal from 'sweetalert2';
+
+// ──────────────────────────────────────────
+// SweetAlert2 Toast / Confirm 헬퍼
+// ──────────────────────────────────────────
+
+const ToastBase = Swal.mixin({
+  toast: true,
+  showConfirmButton: false,
+  timerProgressBar: true,
+  didOpen: (t) => {
+    t.onmouseenter = Swal.stopTimer;
+    t.onmouseleave = Swal.resumeTimer;
+  },
+});
+
+/**
+ * 토스트 알림
+ * @example toast({ icon: 'success', title: '저장되었습니다!' })
+ * @example toast({ icon: 'error', html: '실패<br/>관리자 문의', position: 'top-center', timer: 3000 })
+ */
+export const toast = ({ icon, title, html, position = 'bottom-end', timer = 1500 }) =>
+  ToastBase.fire({ icon, title, html, position, timer });
+
+/**
+ * 확인 다이얼로그
+ * @returns {Promise<boolean>} 확인 → true, 취소 → false
+ * @example const ok = await confirm({ title: '삭제하시겠습니까?', text: '복구 불가' })
+ */
+export const confirm = async ({
+  title,
+  text,
+  icon = 'warning',
+  confirmButtonText = '확인',
+  cancelButtonText  = '취소',
+}) => {
+  const result = await Swal.fire({
+    title,
+    text,
+    icon,
+    showCancelButton     : true,
+    confirmButtonColor   : '#d33',
+    cancelButtonColor    : '#0F9B73',
+    confirmButtonText,
+    cancelButtonText,
+    reverseButtons       : true,
+  });
+  return result.isConfirmed;
+};
+
+// ──────────────────────────────────────────
+// 서버 필드명 ↔ 프론트 필드명 매핑 정의
+//
+// [매핑 규칙]
+// key   : 서버 응답(response.data)의 실제 필드명
+// value : 프론트 상태에서 사용할 필드명
+//
+// [예시 - 구 필드명 참고용]
+// 구 서버 필드 mbrId → 프론트 id 로 쓰던 방식:
+// mbrId: 'id'
+// ──────────────────────────────────────────
+
+const fieldMap = {
+
+  // /api/auth/me 응답 기준
+  // { id, email, name, nickname, role, provider }
+  user: {
+    id       : 'id',
+    email    : 'email',
+    name     : 'name',
+    nickname : 'nickname',
+    role     : 'role',
+    provider : 'provider',
+  },
+
+  // /api/member/me 응답 기준
+  // { id, email, name, nickname, role, provider, phone, zipcode, address, detailAddress, profileIcon, profileBg }
+  profile: {
+    id            : 'id',
+    email         : 'email',
+    name          : 'name',
+    nickname      : 'nickname',
+    role          : 'role',
+    provider      : 'provider',
+    phone         : 'phone',
+    zipcode       : 'zipcode',
+    address       : 'address',
+    detailAddress : 'detailAddress',
+    profileIcon   : 'profileIcon',
+    profileBg     : 'profileBg',
+  },
+
+};
+
+/**
+ * 서버 응답 데이터를 프론트 상태 필드명으로 변환
+ * @param {string} type          - fieldMap 키 ('user' | 'profile')
+ * @param {Object} updatedData   - 서버 응답 데이터
+ * @param {Object} profileState  - 기존 상태 (기본값 merge용)
+ */
+export const mapDataToState = (type, updatedData, profileState = {}) => {
+  if (!updatedData) return profileState;
+
+  const mapping = fieldMap[type];
+  if (!mapping) {
+    console.warn(`fieldMap에 '${type}' 정의가 없습니다.`);
+    return { ...profileState, ...updatedData };
+  }
+
+  const result = { ...profileState };
+
+  Object.keys(updatedData).forEach((serverKey) => {
+    const frontKey = mapping[serverKey];
+    let value = updatedData[serverKey];
+
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      value = { ...value };
+    }
+
+    if (frontKey) {
+      result[frontKey] = value;
+    } else if (Object.prototype.hasOwnProperty.call(result, serverKey)) {
+      result[serverKey] = value;
+    }
+  });
+
+  // 날짜 처리 - 서버가 joinDate 필드를 내려줄 경우
+  if (updatedData.joinDate) {
+    result.joinDate = updatedData.joinDate.split('T')[0];
+  }
+
+  // 이미지 캐시 방지 (절대경로 변환 + 타임스탬프)
+  const addCacheBust = (fileObj) => {
+    if (!fileObj?.filePath) return fileObj;
+    let filePath = fileObj.filePath;
+    if (filePath.startsWith('/attachment')) {
+      filePath = `${import.meta.env.VITE_API_URL}${filePath}`;
+    }
+    const sep = filePath.includes('?') ? '&' : '?';
+    return { ...fileObj, filePath: `${filePath}${sep}t=${Date.now()}` };
+  };
+
+  if (result.profileIcon) result.profileIcon = addCacheBust(result.profileIcon);
+  if (result.profileBg)   result.profileBg   = addCacheBust(result.profileBg);
+
+  return result;
+};
+
+// ──────────────────────────────────────────
+// 일반 유틸리티
+// ──────────────────────────────────────────
 
 /**
  * 숫자를 한국 화폐 형식으로 포맷
