@@ -49,7 +49,7 @@
 
   a {
     color: inherit;
-    text-decoration: none;
+    text-decoration: none; /* Tailwind의 underline 클래스로 개별 오버라이드 가능 */
   }
 
   * {

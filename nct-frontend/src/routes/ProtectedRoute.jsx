@@ -24,9 +24,9 @@ const ProtectedRoute = ({ allowedRoles = [] }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // 역할 검사
+  // 역할 검사 - 백엔드 응답 필드: role (단수)
   if (allowedRoles.length > 0) {
-    const hasRole = allowedRoles.some(role => user?.roles?.includes(role));
+    const hasRole = allowedRoles.some(role => user?.role === role);
     if (!hasRole) {
       return <Navigate to="/unauthorized" replace />;
     }
