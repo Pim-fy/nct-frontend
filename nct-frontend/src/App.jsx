@@ -1,9 +1,11 @@
 // src/App.jsx
 import { BrowserRouter } from 'react-router-dom';
 import { HelmetProvider, Helmet } from 'react-helmet-async';
-import { ConfigProvider } from '@context/ConfigContext';
 import AppRoutes from '@routes/AppRoutes';
 import './App.css';
+
+// ※ 전역 상태(user, config)는 ConfigContext 대신
+//    useConfig / useAuth (TanStack Query 기반)로 관리합니다.
 
 function App() {
   return (
@@ -11,11 +13,9 @@ function App() {
       <Helmet>
         <title>Ksteam</title>
       </Helmet>
-      <ConfigProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </ConfigProvider>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
     </HelmetProvider>
   );
 }

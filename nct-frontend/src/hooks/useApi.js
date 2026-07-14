@@ -1,35 +1,46 @@
 // src/hooks/useApi.js
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
+import api from '@api/axios';
 
-/**
- * API 호출 상태(loading / error / data)를 관리하는 범용 훅
- * @param {Function} apiFunc - axios 기반 API 함수
- */
-export const useApi = (apiFunc) => {
-  const [data, setData]     = useState(null);
+export const useApi = () => {
   const [loading, setLoading] = useState(false);
-  const [error, setError]   = useState(null);
+  const [error, setError]     = useState(null);
 
-  const execute = useCallback(async (...args) => {
+  const execute = useCallback(async (apiCall, fullResponse = false) => {
     setLoading(true);
     setError(null);
     try {
-      const result = await apiFunc(...args);
-      setData(result);
-      return result;
+      const res = await apiCall();
+      return fullResponse ? res : res.data;
     } catch (err) {
       setError(err);
       throw err;
     } finally {
       setLoading(false);
     }
-  }, [apiFunc]);
-
-  const reset = useCallback(() => {
-    setData(null);
-    setError(null);
-    setLoading(false);
   }, []);
 
-  return { data, loading, error, execute, reset };
+  // useMemo로 참조값 고정 → useAuth의 useQuery dependency 안정화
+  const services = useMemo(() => ({
+
+    // ──────────────────────────────────────────
+    // 인증
+    // ──────────────────────────────────────────
+    fetchMe : ()      => execute(() => api.get('/auth/me')),
+    login   : (creds) => execute(() => api.post('/auth/login', creds), false),
+    logout  : ()      => execute(() => api.post('/auth/logout'), false),
+
+    // ──────────────────────────────────────────
+    // 프로필
+    // ──────────────────────────────────────────
+    getProfile    : ()         => execute(() => api.get('/auth/me')),
+    checkNickname : (nickname) => execute(() => api.get('/auth/check-nickname', { params: { nickname } })),
+    updateProfile : (formData) => execute(() => api.post('/member/me', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }), true),
+    withdrawMember: (payload)  => execute(() => api.delete('/member/me', { data: payload })),
+
+  }), [execute]);
+
+  return { loading, error, ...services };
 };
