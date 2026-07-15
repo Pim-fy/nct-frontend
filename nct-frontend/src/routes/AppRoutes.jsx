@@ -11,6 +11,7 @@ import AdminLayout   from '@layouts/AdminLayout';
 // 공개 페이지
 // ──────────────────────────────────────────
 import LandingPage        from '@pages/landing/LandingPage';
+import AuctionListPage    from '@pages/auction/AuctionListPage';
 import LoginPage          from '@pages/auth/LoginPage';
 import SignupPage         from '@pages/auth/SignupPage';
 import FindEmailPage      from '@pages/auth/FindEmailPage';
@@ -66,6 +67,9 @@ const AppRoutes = () => {
           공개 조회 영역 (UserLayout)
       ──────────────────────────────── */}
       <Route element={<UserLayout />}>
+        {/* 경매 */}
+        <Route path="/auction" element={<AuctionListPage />} />
+
         {/* 마이페이지 */}
         <Route path="/user/mypage" element={<MyPage />} />
       </Route>
