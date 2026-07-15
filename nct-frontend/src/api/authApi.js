@@ -1,4 +1,7 @@
 // src/api/authApi.js
+// 인증, 회원 관련 백엔드 API 요청 관리 파일.
+// API 호출 함수를 만들어 타 파일에서도 사용할 수 있게 내보냄.
+// `api`(Axios 인스턴스)를 사용해 인증 API 호출.
 import api from './axios';
 
 /** 로그인 */

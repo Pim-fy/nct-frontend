@@ -1,4 +1,6 @@
 // src/api/reviewApi.js
+// 리뷰 관련 백엔드 API 요청 관리 파일.
+// API 호출 함수를 만들어 타 파일에서도 사용할 수 있게 내보냄.
 import api from './axios';
 
 /** 리뷰 목록 조회 */
