@@ -1,4 +1,4 @@
-// src/pages/landing/components/HeroSearchBand.jsx
+// src/components/landing/HeroSearchBand.jsx
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '@assets/css/landing.css';

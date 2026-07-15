@@ -1,4 +1,4 @@
-// src/pages/landing/components/PopularAuctionSidebar.jsx
+// src/components/landing/PopularAuctionSidebar.jsx
 import { Link } from 'react-router-dom';
 
 // 임시 더미 데이터 - 실제 API 연동 시 교체
