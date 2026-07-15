@@ -33,6 +33,12 @@ import Unauthorized   from '@pages/error/Unauthorized';
 import MyPage from '@pages/user/MyPage';
 
 // ──────────────────────────────────────────
+// 상품 페이지
+// ──────────────────────────────────────────
+import ProductRegisterPage from '@pages/product/ProductRegisterPage';
+import MyProductListPage   from '@pages/product/MyProductListPage';
+
+// ──────────────────────────────────────────
 // Admin 페이지
 // ──────────────────────────────────────────
 import Dashboard        from '@pages/admin/Dashboard';
@@ -68,6 +74,10 @@ const AppRoutes = () => {
       <Route element={<UserLayout />}>
         {/* 마이페이지 */}
         <Route path="/user/mypage" element={<MyPage />} />
+
+        {/* 상품 */}
+        <Route path="/product/register" element={<ProductRegisterPage />} />
+        <Route path="/product/me"       element={<MyProductListPage />} />
       </Route>
 
       <Route path="/admin" element={<AdminLayout />}>
