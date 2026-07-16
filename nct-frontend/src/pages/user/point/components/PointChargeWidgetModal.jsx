@@ -60,7 +60,8 @@ const PointChargeWidgetModal = ({ onClose }) => {
     setLoading(true);
     try {
       // 서버가 먼저 신뢰 기준 금액을 기록 (결제창 방식과 동일한 원칙)
-      const res = await requestPointCharge(amt);
+      // 이 모달은 위젯 방식이므로 WIDGET — 서버가 위젯 전용(gck) 클라이언트 키를 내려준다
+      const res = await requestPointCharge(amt, 'WIDGET');
       orderRef.current = res.data;
 
       const tossPayments = await loadTossPayments(res.data.clientKey);

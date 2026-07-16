@@ -108,7 +108,8 @@ const PointWalletPage = () => {
 
     try {
       // 1) 서버가 신뢰 기준 금액을 먼저 기록하고 주문번호를 발급 (QSC-PG-01)
-      const res = await requestPointCharge(amount);
+      // 이 버튼은 결제창 방식이므로 WINDOW — 서버가 결제창용(ck) 클라이언트 키를 내려준다
+      const res = await requestPointCharge(amount, 'WINDOW');
       const { orderId, amount: orderAmount, orderName, clientKey } = res.data;
 
       // 2) 발급받은 주문 정보로 토스 결제창 호출 — 성공/실패 모두 이 페이지로 리다이렉트
