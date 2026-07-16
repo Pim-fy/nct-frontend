@@ -67,7 +67,8 @@ api.interceptors.response.use(
      * 401 이면서, 재시도않은 요청인지 확인.
      * access token 만료로 판단 후 refresh 시도(1회).
      */
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // @ai_generated: 공개 인증 API의 업무 401은 refresh/로그인 이동 대신 호출 화면으로 전달한다.
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.skipAuthRefresh) {
       if (isRefreshing) {
         // 다른 요청이 토큰 재발급 중인 경우, 대기열에 넣음.
         return new Promise((resolve, reject) => {
@@ -106,8 +107,9 @@ api.interceptors.response.use(
       }
     }
 
+    // @ai_generated: 가입 인증 메일처럼 화면 안에서 재시도할 수 있는 5xx는 요청별로 공통 이동을 생략한다.
     // 5xx 서버 오류 → 공통 에러 페이지
-    if (error.response?.status >= 500) {
+    if (error.response?.status >= 500 && !originalRequest.skipServerErrorRedirect) {
       redirectToServerError();
     }
 
