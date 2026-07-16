@@ -1,0 +1,56 @@
+.mockup-admin-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 30;
+  width: 220px;
+  overflow-y: auto;
+  padding: 18px 10px 24px;
+  background: #1f274c;
+  color: #dbe1f7;
+}
+
+.mockup-admin-sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 8px 16px;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.mockup-admin-nav__item > svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+}
+
+.mockup-admin-nav__section {
+  display: grid;
+  gap: 3px;
+  padding: 8px 0;
+  border-top: 1px solid rgb(255 255 255 / 13%);
+}
+
+.mockup-admin-nav__section:first-child { border-top: 0; }
+.mockup-admin-nav__section.is-preview { margin-top: 4px; border-top-style: dashed; }
+
+.mockup-admin-nav__item {
+  display: flex;
+  min-height: 45px;
+  align-items: center;
+  gap: 10px;
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: #dbe1f7;
+  text-decoration: none;
+}
+
+.mockup-admin-nav__item:hover { background: rgb(255 255 255 / 9%); color: #fff; }
+.mockup-admin-nav__item.is-active { background: #2563eb; color: #fff; }
+.mockup-admin-nav__item.is-pending { cursor: not-allowed; opacity: 0.68; }
+.mockup-admin-nav__item.is-pending:hover { background: transparent; color: #dbe1f7; }
+
+.mockup-admin-nav__item span { display: grid; min-width: 0; gap: 2px; }
+.mockup-admin-nav__item strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.mockup-admin-nav__item small { overflow: hidden; color: #aeb9dc; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }

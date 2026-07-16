@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, Bell, LogIn, LogOut, User } from 'lucide-react';
 import { useAuth } from '@hooks/useAuth';
+import BrandLogo from '@components/common/BrandLogo';
 import '@assets/css/header.css';
 
 const MainHeader = () => {
@@ -23,8 +24,8 @@ const MainHeader = () => {
     <header className="header">
       <div className="container header-inner">
         {/* 로고 */}
-        <Link to="/" style={{ fontSize: '22px', fontWeight: '700', color: 'var(--color-primary, #0064ff)', textDecoration: 'none' }}>
-          Ksteam
+        <Link aria-label="에누리컷 홈" className="site-brand-link" to="/">
+          <BrandLogo />
         </Link>
 
         {/* 네비게이션 */}

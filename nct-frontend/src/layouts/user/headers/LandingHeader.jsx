@@ -2,6 +2,7 @@
 import { Link } from 'react-router-dom';
 import { LogIn, LogOut } from 'lucide-react';
 import { useAuth } from '@hooks/useAuth';
+import BrandLogo from '@components/common/BrandLogo';
 import '@assets/css/header.css';
 
 const authBtnClass = [
@@ -21,8 +22,8 @@ const LandingHeader = () => {
     <header className="header" style={{ position: 'static' }}>
       <div className="container header-inner">
         {/* 로고 */}
-        <Link to="/" style={{ fontSize: '22px', fontWeight: '700', color: 'var(--color-primary, #0064ff)', textDecoration: 'none' }}>
-          Ksteam
+        <Link aria-label="에누리컷 홈" className="site-brand-link" to="/">
+          <BrandLogo />
         </Link>
 
         {/* 중앙 네비게이션 */}

@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Toast from '@components/common/Toast';
+import BrandLogo from '@components/common/BrandLogo';
 
 const CARD_SHADOW = 'shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)]';
 const STEP_LABELS = ['기본정보', '약관동의', '이메일 인증', '완료'];
@@ -128,8 +129,8 @@ const SignupPage = () => {
     <div className="flex min-h-screen flex-col bg-white text-[#1a1a18]">
       {/* 상단 바 */}
       <header className="flex h-15 items-center border-b border-[#f0efec] bg-white px-6">
-        <Link to="/" className="text-xl font-bold text-primary no-underline">
-          Ksteam
+        <Link aria-label="에누리컷 홈" className="no-underline" to="/">
+          <BrandLogo />
         </Link>
         <span className="ml-4 text-sm text-[#5f5e5a]">회원가입</span>
       </header>
@@ -319,14 +320,16 @@ const SignupPage = () => {
       {/* 푸터 */}
       <footer className="mt-auto border-t-40 border-white bg-[#1a1a18] px-4 py-7 text-[#d3d1c7]">
         <div className="mx-auto flex w-[90%] max-w-[1800px] flex-wrap items-center justify-between gap-3">
-          <strong className="text-white">Ksteam</strong>
+          <Link aria-label="에누리컷 홈" className="inline-flex" to="/">
+            <BrandLogo className="brand-logo--footer" />
+          </Link>
           <div className="flex flex-wrap items-center gap-3 text-[13px]">
             <a href="#" className="hover:text-white">서비스 소개</a>
             <a href="#" className="hover:text-white">이용약관</a>
             <a href="#" className="hover:text-white">개인정보처리방침</a>
             <a href="#" className="hover:text-white">문의</a>
           </div>
-          <span className="text-[13px]">© 2026 Ksteam UI Mockup</span>
+          <span className="text-[13px]">© 2026 에누리컷</span>
         </div>
       </footer>
 

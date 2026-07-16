@@ -11,6 +11,10 @@
 .site-footer a { color: #d3d1c7; text-decoration: none; }
 .site-footer a:hover { color: #fff; }
 
+.site-footer .site-footer__brand {
+  display: inline-flex;
+}
+
 .site-footer .row {
   display: flex;
   gap: 12px;

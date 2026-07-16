@@ -31,6 +31,10 @@ import Unauthorized   from '@pages/error/Unauthorized';
 // UserLayout (로그인 필요)
 // ──────────────────────────────────────────
 import MyPage from '@pages/user/MyPage';
+// 담당자 7 공개 콘텐츠 route. 공통 route 소유자(담당자 1)에게 동일 manifest로 전달합니다.
+import GuidePage from '@pages/content/GuidePage';
+import NoticeListPage from '@pages/content/NoticeListPage';
+import NoticeDetailPage from '@pages/content/NoticeDetailPage';
 
 // ──────────────────────────────────────────
 // Admin 페이지
@@ -67,6 +71,9 @@ const AppRoutes = () => {
           공개 조회 영역 (UserLayout)
       ──────────────────────────────── */}
       <Route element={<UserLayout />}>
+        <Route path="/guide" element={<GuidePage />} />
+        <Route path="/customersupport/notice" element={<NoticeListPage />} />
+        <Route path="/customersupport/notice/:noticeId" element={<NoticeDetailPage />} />
         {/* 마이페이지 */}
         <Route path="/user/mypage" element={<MyPage />} />
       </Route>

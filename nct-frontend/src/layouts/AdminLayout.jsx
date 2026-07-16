@@ -1,35 +1,17 @@
 // src/layouts/AdminLayout.jsx
-import { NavLink, Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
+import MockupAdminSidebar from '@components/admin/mockup/MockupAdminSidebar';
 
 const AdminLayout = () => {
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
-      {/* 어드민 사이드바 - 추후 구현 */}
-      <aside style={{
-        width: '220px',
-        minHeight: '100vh',
-        background: '#1a1a18',
-        color: '#d3d1c7',
-        position: 'fixed',
-        left: 0,
-        top: 0,
-        paddingTop: '18px',
-      }}>
-        <h1 style={{ color: '#fff', fontSize: '18px', margin: '0 18px 18px' }}>Ksteam Admin</h1>
-        {/* 메뉴 공통 컴포넌트가 만들어지면 이 NavLink 묶음만 옮기면 됩니다. */}
-        <nav style={{ display: 'grid', gap: '6px', padding: '0 10px' }}>
-          <NavLink to="/admin" end style={({ isActive }) => ({
-            padding: '10px 12px', borderRadius: '8px',
-            background: isActive ? '#2d4f46' : 'transparent', color: '#fff',
-          })}>대시보드</NavLink>
-          <NavLink to="/admin/operations-preview" style={({ isActive }) => ({
-            padding: '10px 12px', borderRadius: '8px',
-            background: isActive ? '#2d4f46' : 'transparent', color: '#fff',
-          })}>신고·위험 이벤트</NavLink>
-        </nav>
-      </aside>
+      {/*
+        develop이 마련한 AdminSidebar 교체 자리를 그대로 사용합니다.
+        팀 공통 AdminSidebar가 완성되면 아래 임시 컴포넌트 import와 태그만 교체합니다.
+      */}
+      <MockupAdminSidebar />
 
-      {/* 어드민 콘텐츠 */}
+      {/* 어드민 콘텐츠: 각 담당자의 상세 화면은 Outlet 자리에 표시됩니다. */}
       <main style={{ marginLeft: '220px', padding: '24px', flex: 1 }}>
         <Outlet />
       </main>
