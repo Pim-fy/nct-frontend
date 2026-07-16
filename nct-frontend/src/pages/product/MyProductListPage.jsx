@@ -1,29 +1,58 @@
 // src/pages/product/MyProductListPage.jsx
+// ─────────────────────────────────────────────────────────────────────────────
+// 경매 활동 내역 페이지 — 로그인한 판매자가 등록한 상품 목록을 확인하는 화면
+// 목업: 19_mypage.html 경매 활동 내역 섹션 기반
+// 라우트: /product/me
+// ─────────────────────────────────────────────────────────────────────────────
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { deleteProduct, getMyProducts } from '@api/productApi';
 import Pagination from '@components/common/Pagination';
 import { usePagination } from '@hooks/usePagination';
 
+// ─── 상수 정의 ───────────────────────────────────────────────────────────────
+// 상태 코드(PRDC)별 한글 라벨 · 배지 클래스 · 필터 옵션
+// 거래방식 코드(TRDC)별 한글 라벨
 const STATUS_LABEL = {
   PRDC0001: '임시저장',
-  PRDC0002: '공개',
+  PRDC0002: '경매 진행중',
   PRDC0003: '종료',
+  PRDC0004: '삭제',
+};
+
+const STATUS_BADGE = {
+  PRDC0001: 'badge-gray',
+  PRDC0002: 'badge-success',
+  PRDC0003: 'badge-gray',
+  PRDC0004: 'badge-danger',
 };
 
 const TRADE_LABEL = {
-  TRDC0009: '배송',
-  TRDC0010: '직거래',
+  TRDC0009: '배송만',
+  TRDC0010: '직거래만',
+  TRDC0011: '둘 다 가능',
 };
+
+const FILTERS = [
+  { value: 'all',      label: '전체' },
+  { value: 'PRDC0001', label: '임시저장' },
+  { value: 'PRDC0002', label: '진행중' },
+  { value: 'PRDC0003', label: '종료' },
+];
 
 export default function MyProductListPage() {
   const navigate = useNavigate();
+
+  // ─── 페이지네이션 상태 ───────────────────────────────────────────────────
   const { page, size, totalPages, setTotalPages, goToPage } = usePagination(1, 10);
 
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState('');
+  // ─── 로컬 상태 ──────────────────────────────────────────────────────────
+  const [products, setProducts]   = useState([]);
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState('');
+  const [filter, setFilter]       = useState('all'); // 상태별 필터 ('all' | 'PRDC0001' | ...)
 
+  // ─── 목록 조회 ──────────────────────────────────────────────────────────
   const fetchProducts = useCallback(() => {
     setLoading(true);
     setError('');
@@ -41,6 +70,8 @@ export default function MyProductListPage() {
     fetchProducts();
   }, [fetchProducts]);
 
+  // ─── 삭제 처리 ──────────────────────────────────────────────────────────
+  // 임시저장(PRDC0001) · 종료(PRDC0003) 상태 상품만 삭제 버튼 노출
   const handleDelete = async (prdSn, prdNm) => {
     if (!window.confirm(`"${prdNm}" 상품을 삭제하시겠습니까?`)) return;
     try {
@@ -52,97 +83,131 @@ export default function MyProductListPage() {
     }
   };
 
+  // ─── 필터링 ─────────────────────────────────────────────────────────────
+  // 전체 선택 시 서버에서 받은 전체 목록, 그 외는 상태 코드로 클라이언트 필터
+  const filtered = filter === 'all'
+    ? products
+    : products.filter(p => p.prdStatusCd === filter);
+
+  // ─── 렌더링 ─────────────────────────────────────────────────────────────
+  // loading → 전체 빈 목록 → 목록+필터 3-way 분기
+  // 필터 칩은 클라이언트 상태(filter)로 products 배열을 재필터링해 표시
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">내 판매 목록</h1>
-        <button
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      {/* 페이지 타이틀 + 경매 등록 버튼 */}
+      <div className="page-title">
+        <div>
+          <h1>경매 활동 내역</h1>
+        </div>
+        <a
           onClick={() => navigate('/product/register')}
-          className="bg-blue-600 text-white px-4 py-2 rounded font-medium hover:bg-blue-700"
+          className="btn btn-outline"
+          style={{ cursor: 'pointer' }}
         >
-          + 상품 등록
-        </button>
+          경매 등록
+        </a>
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded">
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
           {error}
         </div>
       )}
 
       {loading ? (
-        <p className="text-center text-gray-500 py-10">불러오는 중...</p>
+        <p className="muted" style={{ textAlign: 'center', padding: '40px 0' }}>불러오는 중...</p>
       ) : products.length === 0 ? (
-        <div className="text-center text-gray-500 py-16">
-          <p className="mb-4">등록한 상품이 없습니다.</p>
-          <button
-            onClick={() => navigate('/product/register')}
-            className="text-blue-600 underline"
-          >
-            첫 상품을 등록해보세요
+        <div style={{ textAlign: 'center', padding: '64px 0' }}>
+          <p className="muted" style={{ marginBottom: 16 }}>등록한 상품이 없습니다.</p>
+          <button onClick={() => navigate('/product/register')} className="btn btn-primary">
+            첫 상품 등록하기
           </button>
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left px-4 py-3 font-medium">상품명</th>
-                  <th className="text-left px-4 py-3 font-medium">카테고리</th>
-                  <th className="text-left px-4 py-3 font-medium">시작가</th>
-                  <th className="text-left px-4 py-3 font-medium">즉시구매가</th>
-                  <th className="text-left px-4 py-3 font-medium">거래방식</th>
-                  <th className="text-left px-4 py-3 font-medium">상태</th>
-                  <th className="text-left px-4 py-3 font-medium">등록일</th>
-                  <th className="px-4 py-3" />
-                </tr>
-              </thead>
-              <tbody>
-                {products.map(p => (
-                  <tr key={p.prdSn} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => navigate(`/product/${p.prdSn}`)}
-                        className="text-blue-600 hover:underline text-left"
-                      >
-                        {p.prdNm}
-                      </button>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">{p.catNm}</td>
-                    <td className="px-4 py-3 font-mono">
-                      {p.prdStartAmt?.toLocaleString()}원
-                    </td>
-                    <td className="px-4 py-3 font-mono text-gray-500">
-                      {p.prdIbyAmt != null ? `${p.prdIbyAmt.toLocaleString()}원` : '-'}
-                    </td>
-                    <td className="px-4 py-3">
-                      {TRADE_LABEL[p.prdTrdMethodCd] ?? p.prdTrdMethodCd}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium
-                        ${p.prdStatusCd === 'PRDC0002' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                        {STATUS_LABEL[p.prdStatusCd] ?? p.prdStatusCd}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">
-                      {p.prdRegDt ? new Date(p.prdRegDt).toLocaleDateString('ko-KR') : '-'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => handleDelete(p.prdSn, p.prdNm)}
-                        className="text-red-500 hover:text-red-700 text-sm"
-                      >
-                        삭제
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="history-toolbar">
+            <h3 className="card-title" style={{ margin: 0 }}>내 판매 목록</h3>
+            <div className="row" style={{ gap: 8 }}>
+              {FILTERS.map(f => (
+                <button
+                  key={f.value}
+                  type="button"
+                  onClick={() => setFilter(f.value)}
+                  className={`chip ${filter === f.value ? 'active' : ''}`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="mt-6 flex justify-center">
+          <div className="history-list">
+            {filtered.length === 0 ? (
+              <p className="muted small" style={{ padding: '24px 0' }}>해당 상태의 상품이 없습니다.</p>
+            ) : filtered.map(p => (
+              <div key={p.prdSn} className="list-row">
+                <div className="history-entry-main">
+                  {/* 이미지 — FILES 연계(담당자6 백종남) 후 교체 */}
+                  <div className="history-thumb" />
+
+                  <div className="history-row-title">
+                    <div className="row" style={{ gap: 6 }}>
+                      <span className="badge badge-goods">판매</span>
+                      <span className={`badge ${STATUS_BADGE[p.prdStatusCd] ?? 'badge-gray'}`}>
+                        {STATUS_LABEL[p.prdStatusCd] ?? p.prdStatusCd}
+                      </span>
+                    </div>
+                    <h4>{p.prdNm}</h4>
+                    <p className="muted">
+                      시작가 {p.prdStartAmt?.toLocaleString()}원
+                      {p.prdIbyAmt != null && ` · 즉시구매 ${p.prdIbyAmt.toLocaleString()}원`}
+                      {' · '}{TRADE_LABEL[p.prdTrdMethodCd] ?? p.prdTrdMethodCd}
+                      {p.prdRegDt && ` · ${new Date(p.prdRegDt).toLocaleDateString('ko-KR')}`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="row" style={{ gap: 8, flexShrink: 0 }}>
+                  {p.prdStatusCd === 'PRDC0002' && (
+                    <>
+                      <button
+                        onClick={() => navigate(`/product/${p.prdSn}/seller`)}
+                        className="btn btn-sm btn-outline"
+                      >
+                        판매 관리
+                      </button>
+                    </>
+                  )}
+                  {p.prdStatusCd === 'PRDC0001' && (
+                    <button
+                      onClick={() => navigate(`/product/${p.prdSn}/seller`)}
+                      className="btn btn-sm btn-outline"
+                    >
+                      경매 설정
+                    </button>
+                  )}
+                  {p.prdStatusCd === 'PRDC0003' && (
+                    <button
+                      onClick={() => navigate(`/product/${p.prdSn}/seller`)}
+                      className="btn btn-sm btn-ghost"
+                    >
+                      판매 기록
+                    </button>
+                  )}
+                  {(p.prdStatusCd === 'PRDC0001' || p.prdStatusCd === 'PRDC0003') && (
+                    <button
+                      onClick={() => handleDelete(p.prdSn, p.prdNm)}
+                      className="btn btn-sm btn-danger"
+                    >
+                      삭제
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="pagination">
             <Pagination page={page} totalPages={totalPages} onPageChange={goToPage} />
           </div>
         </>
