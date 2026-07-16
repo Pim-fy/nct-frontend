@@ -1,5 +1,5 @@
 // src/pages/user/point/components/PointAmountModal.jsx
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const QUICK_AMOUNTS = [100000, 300000, 500000];
 
@@ -11,13 +11,20 @@ const QUICK_AMOUNTS = [100000, 300000, 500000];
 const PointAmountModal = ({ title, submitLabel, infoRow, onSubmit, onClose }) => {
   const [amount, setAmount] = useState('');
 
+  // 모달이 떠 있는 동안 뒤 페이지 스크롤을 잠근다 (위젯 모달과 동일한 처리)
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prevOverflow; };
+  }, []);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[560px] bg-white rounded-2xl p-6 shadow-[0_20px_80px_rgba(0,0,0,0.25)]"
+        className="w-full max-w-[560px] max-h-[85vh] overflow-y-auto overscroll-contain bg-white rounded-2xl p-6 shadow-[0_20px_80px_rgba(0,0,0,0.25)]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">

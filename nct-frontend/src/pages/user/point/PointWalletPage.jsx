@@ -9,6 +9,7 @@ import PointSummaryCards from './components/PointSummaryCards';
 import PointLedgerTable from './components/PointLedgerTable';
 import PointChargeOrderTable from './components/PointChargeOrderTable';
 import PointAmountModal from './components/PointAmountModal';
+import PointChargeWidgetModal from './components/PointChargeWidgetModal';
 import { usePointBalance, usePointLedger, usePointChargeOrders } from '../../../hooks/usePoint';
 import { requestPointCharge, confirmPointCharge } from '../../../api/pointApi';
 
@@ -22,9 +23,10 @@ const errorMessage = (err) =>
 /**
  * 포인트 지갑 (목업 17_point_wallet.html, F-PAY-006/007/011)
  * - GET /api/point/balance, /api/point/ledger, /api/point/charge/orders 연동 (usePoint 훅)
- * - 충전(F-PAY-011): 토스페이먼츠 결제창 — POL-PAY-006(CHG-003) 확정 방식
- *   서버 주문 생성 → 결제창 → 성공 리다이렉트 → 서버 승인(confirm) 순서로,
- *   금액은 항상 서버 기록만 신뢰한다 (프론트는 금액을 승인 요청에 싣지 않는다)
+ * - 충전(F-PAY-011): 토스페이먼츠 두 방식을 나란히 제공 (사용자 결정, 2026-07-16)
+ *   ① 충전       — 결제창 방식(POL-PAY-006): 서버 주문 생성 → 별창 결제창 → 리다이렉트 → 승인
+ *   ② 충전(위젯) — 결제위젯 방식: 서버 주문 생성 → 모달 안에 결제수단 UI 렌더링 → 승인
+ *   두 방식 모두 금액은 항상 서버 기록만 신뢰한다 (프론트는 금액을 승인 요청에 싣지 않는다)
  * - 결제창 리다이렉트는 별도 라우트 없이 이 페이지의 쿼리 파라미터(?charge=...)로 받는다
  *   (공용 AppRoutes.jsx는 담당자1 소유라 라우트 추가 없이 처리)
  * - 환전(F-PAY-012)은 지급·승인 방식 미결정(2단계 결정 항목)이라 "준비 중" 안내 유지
@@ -173,6 +175,13 @@ const PointWalletPage = () => {
           </button>
           <button
             type="button"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg px-5 py-2.5 transition-colors"
+            onClick={() => setOpenModal('chargeWidget')}
+          >
+            충전(위젯)
+          </button>
+          <button
+            type="button"
             className="border border-blue-600 text-blue-600 hover:bg-blue-50 text-sm font-medium rounded-lg px-5 py-2.5 transition-colors"
             onClick={() => setOpenModal('exchange')}
           >
@@ -200,6 +209,9 @@ const PointWalletPage = () => {
           onSubmit={handleCharge}
           onClose={() => setOpenModal(null)}
         />
+      )}
+      {openModal === 'chargeWidget' && (
+        <PointChargeWidgetModal onClose={() => setOpenModal(null)} />
       )}
       {openModal === 'exchange' && (
         <PointAmountModal
