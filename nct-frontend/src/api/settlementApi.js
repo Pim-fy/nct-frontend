@@ -5,4 +5,4 @@ import api from './axios';
 
 /** 내 정산 목록 조회 (최신순 100건) */
 export const getSettlementList = () =>
-  api.get('/api/settlement').then(res => res.data);
+  api.get('/settlement').then(res => res.data);
