@@ -39,9 +39,9 @@ const SUMMARY_ITEMS = [
   },
   {
     label: '공지·이용가이드',
-    description: '공개 조회 화면과 공지 관리 계약을 이번 작업에서 준비합니다.',
+    description: '공지 관리 화면과 경매·서비스 순서형 이용가이드가 연결돼 있습니다.',
     owner: 'F-COM-013·014 / F-OPS-023',
-    status: '작업 중',
+    status: '관리 연결',
     tone: 'primary',
     icon: Megaphone,
   },
@@ -144,13 +144,13 @@ const Dashboard = () => (
         <div className="admin-content-readiness">
           <div>
             <Megaphone aria-hidden="true" />
-            <span><strong>공지사항</strong><small>목록·상세 공개 조회 → 관리자 등록·수정·숨김</small></span>
-            <b>구현 대상</b>
+            <span><strong>공지사항</strong><small>목록·상세 공개 조회 → 관리자 등록·수정·숨김·삭제</small></span>
+            <b>관리 연결</b>
           </div>
           <div>
             <BookOpenCheck aria-hidden="true" />
-            <span><strong>이용가이드</strong><small>등록·요청·입찰·완료·환전 정적 콘텐츠</small></span>
-            <b>정적 조회</b>
+            <span><strong>이용가이드</strong><small>경매·서비스 이용 순서와 담당 화면 연결 상태</small></span>
+            <b>미리보기 연결</b>
           </div>
         </div>
         <p className="admin-dashboard-card__note">가이드 작성·저장 CMS는 POL-COM-004에 따라 현재 범위에서 제외합니다.</p>

@@ -39,12 +39,15 @@
   gap: 10px;
 }
 
-.content-flow-strip span {
+.content-flow-strip__step {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   font-size: 13px;
   font-weight: 750;
 }
 
-.content-flow-strip i {
+.content-flow-strip__step i {
   width: 32px;
   height: 1px;
   background: #a9c4ff;
@@ -319,7 +322,12 @@
     flex-direction: column;
   }
 
-  .content-flow-strip i {
+  .content-flow-strip__step {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .content-flow-strip__step i {
     width: 1px;
     height: 16px;
     margin-left: 6px;

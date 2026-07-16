@@ -35,12 +35,17 @@ import MyPage from '@pages/user/MyPage';
 import GuidePage from '@pages/content/GuidePage';
 import NoticeListPage from '@pages/content/NoticeListPage';
 import NoticeDetailPage from '@pages/content/NoticeDetailPage';
+import ServiceListPage from '@pages/service/ServiceListPage';
+import PublicProviderProfilePage from '@pages/provider/PublicProviderProfilePage';
 
 // ──────────────────────────────────────────
 // Admin 페이지
 // ──────────────────────────────────────────
 import Dashboard        from '@pages/admin/Dashboard';
 import OperationsIntegrationPreview from '@pages/admin/OperationsIntegrationPreview';
+import AdminNoticeListPage from '@pages/admin/notice/AdminNoticeListPage';
+import AdminNoticeFormPage from '@pages/admin/notice/AdminNoticeFormPage';
+import AdminGuidePage from '@pages/admin/guide/AdminGuidePage';
 
 
 const AppRoutes = () => {
@@ -71,6 +76,9 @@ const AppRoutes = () => {
           공개 조회 영역 (UserLayout)
       ──────────────────────────────── */}
       <Route element={<UserLayout />}>
+        {/* 담당자 7의 F-COM-002/015 화면. 공통 route 소유자(담당자 1)에게 동일 manifest로 전달합니다. */}
+        <Route path="/services" element={<ServiceListPage />} />
+        <Route path="/providers/:providerId" element={<PublicProviderProfilePage />} />
         <Route path="/guide" element={<GuidePage />} />
         <Route path="/customersupport/notice" element={<NoticeListPage />} />
         <Route path="/customersupport/notice/:noticeId" element={<NoticeDetailPage />} />
@@ -83,6 +91,10 @@ const AppRoutes = () => {
         <Route path="/admin" element={<AdminLayout />}>
           {/* 대시보드 */}
           <Route index element={<Dashboard />} />
+          <Route path="notices" element={<AdminNoticeListPage />} />
+          <Route path="notices/new" element={<AdminNoticeFormPage />} />
+          <Route path="notices/:noticeId" element={<AdminNoticeFormPage />} />
+          <Route path="guides" element={<AdminGuidePage />} />
           {/* F-OPS-012/013 임시 연동 및 신고 목업 확인용 읽기 전용 화면 */}
           <Route path="operations-preview" element={<OperationsIntegrationPreview />} />
         </Route>

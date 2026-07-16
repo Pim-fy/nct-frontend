@@ -15,7 +15,6 @@ import {
   Users,
   WalletCards,
 } from 'lucide-react';
-import BrandLogo from '@components/common/BrandLogo';
 import './MockupAdminSidebar.css';
 
 // 관리자 목업 v2와 업무분장 v7을 화면으로 확인하기 위한 임시 메뉴입니다.
@@ -36,8 +35,8 @@ const MENU_SECTIONS = [
   ],
   [{ label: '환전 관리', icon: WalletCards, owner: '담당자 5' }],
   [
-    { label: '공지 관리', icon: Megaphone, owner: '담당자 7' },
-    { label: '이용가이드 미리보기', icon: BookOpenCheck, owner: '담당자 7', note: '정적 콘텐츠' },
+    { label: '공지 관리', icon: Megaphone, to: '/admin/notices', owner: '담당자 7' },
+    { label: '이용가이드 관리', icon: BookOpenCheck, to: '/admin/guides', owner: '담당자 7', note: '정적 콘텐츠' },
   ],
   [{ label: '신고·거래 문제 처리', icon: Siren, owner: '담당자 4' }],
   [
@@ -46,12 +45,12 @@ const MENU_SECTIONS = [
   ],
 ];
 
-const MockupAdminSidebar = () => (
-  <aside className="mockup-admin-sidebar" aria-label="관리자 메뉴 미리보기">
-    <div className="mockup-admin-sidebar__brand">
-      <BrandLogo admin />
-    </div>
-
+const MockupAdminSidebar = ({ collapsed = false, id, onNavigate }) => (
+  <aside
+    aria-label="관리자 메뉴 미리보기"
+    className={`mockup-admin-sidebar${collapsed ? ' is-collapsed' : ''}`}
+    id={id}
+  >
     <nav className="mockup-admin-nav" aria-label="관리자 화면 목록">
       {MENU_SECTIONS.map((section, sectionIndex) => (
         <div className="mockup-admin-nav__section" key={`admin-menu-${sectionIndex}`}>
@@ -61,13 +60,20 @@ const MockupAdminSidebar = () => (
                 className={({ isActive }) => `mockup-admin-nav__item${isActive ? ' is-active' : ''}`}
                 end={to === '/admin'}
                 key={label}
+                onClick={onNavigate}
+                title={collapsed ? label : undefined}
                 to={to}
               >
                 {createElement(Icon, { 'aria-hidden': true })}
                 <span><strong>{label}</strong><small>{owner}</small></span>
               </NavLink>
             ) : (
-              <div aria-disabled="true" className="mockup-admin-nav__item is-pending" key={label}>
+              <div
+                aria-disabled="true"
+                className="mockup-admin-nav__item is-pending"
+                key={label}
+                title={collapsed ? label : undefined}
+              >
                 {createElement(Icon, { 'aria-hidden': true })}
                 <span><strong>{label}</strong><small>{note ?? `${owner} 연결 대기`}</small></span>
               </div>
@@ -77,7 +83,12 @@ const MockupAdminSidebar = () => (
       ))}
 
       <div className="mockup-admin-nav__section is-preview">
-        <NavLink className={({ isActive }) => `mockup-admin-nav__item${isActive ? ' is-active' : ''}`} to="/admin/operations-preview">
+        <NavLink
+          className={({ isActive }) => `mockup-admin-nav__item${isActive ? ' is-active' : ''}`}
+          onClick={onNavigate}
+          title={collapsed ? '운영 연동 미리보기' : undefined}
+          to="/admin/operations-preview"
+        >
           <Siren aria-hidden="true" />
           <span><strong>운영 연동 미리보기</strong><small>담당자 7 · 개발 확인</small></span>
         </NavLink>
