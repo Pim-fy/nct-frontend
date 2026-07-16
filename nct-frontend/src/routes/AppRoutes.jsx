@@ -12,6 +12,7 @@ import AdminLayout   from '@layouts/AdminLayout';
 // ──────────────────────────────────────────
 import LandingPage        from '@pages/landing/LandingPage';
 import AuctionListPage    from '@pages/auction/AuctionListPage';
+import AuctionDetailPage  from '@pages/auction/AuctionDetailPage';
 import LoginPage          from '@pages/auth/LoginPage';
 import SignupPage         from '@pages/auth/SignupPage';
 import FindEmailPage      from '@pages/auth/FindEmailPage';
@@ -32,6 +33,7 @@ import Unauthorized   from '@pages/error/Unauthorized';
 // UserLayout (로그인 필요)
 // ──────────────────────────────────────────
 import MyPage from '@pages/user/MyPage';
+import SettlementListPage from '@pages/user/settlement/SettlementListPage';
 
 // ──────────────────────────────────────────
 // Admin 페이지
@@ -69,9 +71,11 @@ const AppRoutes = () => {
       <Route element={<UserLayout />}>
         {/* 경매 */}
         <Route path="/auction" element={<AuctionListPage />} />
+        <Route path="/auction/:auctionId" element={<AuctionDetailPage />} />
 
         {/* 마이페이지 */}
         <Route path="/user/mypage" element={<MyPage />} />
+        <Route path="/user/settlement" element={<SettlementListPage />} />
       </Route>
 
       <Route path="/admin" element={<AdminLayout />}>

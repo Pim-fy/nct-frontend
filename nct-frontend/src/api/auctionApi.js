@@ -16,3 +16,18 @@ export const fetchAuctions = async (params = {}) => {
   const response = await api.get(`/auctions${queryString ? `?${queryString}` : ''}`);
   return response.data.data;
 };
+
+export const fetchAuctionDetail = async (auctionId) => {
+  const response = await api.get(`/auction/${auctionId}`);
+  return response.data.data;
+};
+
+export const placeAuctionBid = async (auctionId, payload) => {
+  const response = await api.post(`/auction/${auctionId}/bids`, payload);
+  return response.data.data;
+};
+
+export const buyNowAuction = async (auctionId, payload) => {
+  const response = await api.post(`/auction/${auctionId}/buy-now`, payload);
+  return response.data.data;
+};
