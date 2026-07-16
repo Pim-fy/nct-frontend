@@ -12,9 +12,9 @@ export const AUCTION_CATEGORIES = [
 ];
 
 export const AUCTION_STATUSES = [
+  { value: 'ready', label: '준비' },
   { value: 'active', label: '진행중' },
   { value: 'endingSoon', label: '종료임박' },
-  { value: 'new', label: '방금시작됨' },
 ];
 
 export const TRADE_METHODS = [
