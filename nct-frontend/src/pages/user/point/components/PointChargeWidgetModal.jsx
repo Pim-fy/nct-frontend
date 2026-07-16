@@ -130,11 +130,14 @@ const PointChargeWidgetModal = ({ onClose }) => {
             <input
               type="number"
               min="0"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none mb-4"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none mb-1"
               placeholder="충전할 포인트 입력"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
+            {/* 실제 한도는 서버 SYSTEM_SETTING 값이 기준(초과 시 서버가 에러로 막는다) —
+                이 문구는 그 기본값(1만~100만P)을 미리 보여주는 안내일 뿐 */}
+            <p className="text-xs text-gray-400 mb-4">1만P ~ 100만P 사이로 입력해 주세요.</p>
             <div className="flex justify-end">
               <button
                 type="button"
