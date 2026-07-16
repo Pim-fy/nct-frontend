@@ -49,6 +49,7 @@ const AppRoutes = () => {
       ──────────────────────────────── */}
       <Route element={<LandingLayout />}>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/landing" element={<LandingPage />} />
       </Route>
 
       {/* ────────────────────────────────
