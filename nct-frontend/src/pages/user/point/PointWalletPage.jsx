@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { loadTossPayments, ANONYMOUS } from '@tosspayments/tosspayments-sdk';
 import Swal from 'sweetalert2';
 
 import PointSummaryCards from './components/PointSummaryCards';
@@ -11,7 +10,7 @@ import PointChargeOrderTable from './components/PointChargeOrderTable';
 import PointAmountModal from './components/PointAmountModal';
 import PointChargeWidgetModal from './components/PointChargeWidgetModal';
 import { usePointBalance, usePointLedger, usePointChargeOrders } from '../../../hooks/usePoint';
-import { requestPointCharge, confirmPointCharge } from '../../../api/pointApi';
+import { confirmPointCharge } from '../../../api/pointApi';
 
 // 데이터 도착 전(로딩 중) 카드가 깨지지 않도록 쓰는 0값 기본 잔액
 const EMPTY_BALANCE = { available: 0, hold: 0, settleable: 0 };
@@ -23,17 +22,15 @@ const errorMessage = (err) =>
 /**
  * 포인트 지갑 (목업 17_point_wallet.html, F-PAY-006/007/011)
  * - GET /api/point/balance, /api/point/ledger, /api/point/charge/orders 연동 (usePoint 훅)
- * - 충전(F-PAY-011): 토스페이먼츠 두 방식을 나란히 제공 (사용자 결정, 2026-07-16)
- *   ① 충전       — 결제창 방식(POL-PAY-006): 서버 주문 생성 → 별창 결제창 → 리다이렉트 → 승인
- *   ② 충전(위젯) — 결제위젯 방식: 서버 주문 생성 → 모달 안에 결제수단 UI 렌더링 → 승인
- *   두 방식 모두 금액은 항상 서버 기록만 신뢰한다 (프론트는 금액을 승인 요청에 싣지 않는다)
- * - 결제창 리다이렉트는 별도 라우트 없이 이 페이지의 쿼리 파라미터(?charge=...)로 받는다
+ * - 충전(F-PAY-011): 토스페이먼츠 결제위젯 방식 단일 (사용자 결정, 2026-07-16 — 결제창 방식 제거)
+ *   서버 주문 생성 → 모달 안에 결제수단 UI 렌더링 → 리다이렉트 → 서버 승인(confirm) 순서로,
+ *   금액은 항상 서버 기록만 신뢰한다 (프론트는 금액을 승인 요청에 싣지 않는다)
+ * - 결제 리다이렉트는 별도 라우트 없이 이 페이지의 쿼리 파라미터(?charge=...)로 받는다
  *   (공용 AppRoutes.jsx는 담당자1 소유라 라우트 추가 없이 처리)
  * - 환전(F-PAY-012)은 지급·승인 방식 미결정(2단계 결정 항목)이라 "준비 중" 안내 유지
  */
 const PointWalletPage = () => {
   const [openModal, setOpenModal] = useState(null); // null | 'charge' | 'exchange'
-  const [charging, setCharging] = useState(false); // 주문 생성~결제창 이동 사이 중복 클릭 방지
 
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -45,7 +42,7 @@ const PointWalletPage = () => {
   const { data: ledger = [], isLoading: ledgerLoading } = usePointLedger();
   const { data: chargeOrders = [], isLoading: ordersLoading } = usePointChargeOrders();
 
-  // 결제창 리다이렉트 처리 — 성공이면 서버 승인 호출, 실패면 사유 안내
+  // 결제 리다이렉트 처리 — 성공이면 서버 승인 호출, 실패면 사유 안내
   useEffect(() => {
     const chargeResult = searchParams.get('charge');
     if (!chargeResult || confirmHandled.current) return;
@@ -92,63 +89,6 @@ const PointWalletPage = () => {
     }
   }, [searchParams, setSearchParams, queryClient]);
 
-  /** 충전 제출 — 서버 주문 생성 후 토스 결제창 호출 */
-  const handleCharge = async (amount) => {
-    if (!Number.isInteger(amount) || amount <= 0) {
-      Swal.fire({
-        icon: 'warning',
-        title: '금액을 확인해 주세요',
-        text: '충전 금액은 1P 이상의 정수만 가능합니다.',
-        confirmButtonColor: '#0064ff',
-      });
-      return;
-    }
-    if (charging) return;
-    setCharging(true);
-
-    try {
-      // 1) 서버가 신뢰 기준 금액을 먼저 기록하고 주문번호를 발급 (QSC-PG-01)
-      // 이 버튼은 결제창 방식이므로 WINDOW — 서버가 결제창용(ck) 클라이언트 키를 내려준다
-      const res = await requestPointCharge(amount, 'WINDOW');
-      const { orderId, amount: orderAmount, orderName, clientKey } = res.data;
-
-      // 2) 발급받은 주문 정보로 토스 결제창 호출 — 성공/실패 모두 이 페이지로 리다이렉트
-      const tossPayments = await loadTossPayments(clientKey);
-      const payment = tossPayments.payment({ customerKey: ANONYMOUS });
-      await payment.requestPayment({
-        method: 'CARD',
-        amount: { currency: 'KRW', value: orderAmount },
-        orderId,
-        orderName,
-        successUrl: `${window.location.origin}/user/point?charge=success`,
-        failUrl: `${window.location.origin}/user/point?charge=fail`,
-      });
-      // requestPayment는 리다이렉트되므로 정상 흐름에서는 이 아래로 내려오지 않는다
-    } catch (err) {
-      if (err?.code === 'USER_CANCEL') {
-        // 사용자가 결제창을 닫은 경우 — 오류가 아니므로 조용히 안내만
-        Swal.fire({
-          icon: 'info',
-          title: '결제 취소',
-          text: '결제를 취소했습니다.',
-          confirmButtonColor: '#0064ff',
-        });
-      } else {
-        Swal.fire({
-          icon: 'error',
-          title: '충전 요청 실패',
-          text: err?.message && !err?.response ? err.message : errorMessage(err),
-          confirmButtonColor: '#0064ff',
-        });
-      }
-      // 결제창까지 갔다가 취소·실패한 주문은 대기 상태로 남고 충전 내역에서 확인 가능
-      queryClient.invalidateQueries({ queryKey: ['point', 'chargeOrders'] });
-    } finally {
-      setCharging(false);
-      setOpenModal(null);
-    }
-  };
-
   /** 환전 — 지급·승인 방식 미결정(2단계 착수 전 결정 항목)이라 실처리 미구현 */
   const notReady = () => {
     setOpenModal(null);
@@ -168,18 +108,10 @@ const PointWalletPage = () => {
         <div className="flex gap-2">
           <button
             type="button"
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg px-5 py-2.5 transition-colors disabled:opacity-50"
-            disabled={charging}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg px-5 py-2.5 transition-colors"
             onClick={() => setOpenModal('charge')}
           >
             충전
-          </button>
-          <button
-            type="button"
-            className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg px-5 py-2.5 transition-colors"
-            onClick={() => setOpenModal('chargeWidget')}
-          >
-            충전(위젯)
           </button>
           <button
             type="button"
@@ -204,14 +136,6 @@ const PointWalletPage = () => {
       )}
 
       {openModal === 'charge' && (
-        <PointAmountModal
-          title="포인트 충전"
-          submitLabel="충전"
-          onSubmit={handleCharge}
-          onClose={() => setOpenModal(null)}
-        />
-      )}
-      {openModal === 'chargeWidget' && (
         <PointChargeWidgetModal onClose={() => setOpenModal(null)} />
       )}
       {openModal === 'exchange' && (

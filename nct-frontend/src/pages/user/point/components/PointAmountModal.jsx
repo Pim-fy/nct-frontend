@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 const QUICK_AMOUNTS = [100000, 300000, 500000];
 
 /**
- * 포인트 충전/환전 공용 모달
- * - 충전: onSubmit에서 토스 결제창 호출 (F-PAY-011, POL-PAY-006)
+ * 포인트 금액 입력 공용 모달 — 현재는 환전 신청에서만 사용
+ * (충전은 결제위젯 모달 PointChargeWidgetModal로 단일화 — 사용자 결정, 2026-07-16)
  * - 환전: 지급·승인 방식 미결정(F-PAY-012)이라 onSubmit에서 "준비 중" 안내만
  */
 const PointAmountModal = ({ title, submitLabel, infoRow, onSubmit, onClose }) => {

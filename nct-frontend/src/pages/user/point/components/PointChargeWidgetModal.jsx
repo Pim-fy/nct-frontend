@@ -1,7 +1,7 @@
 // src/pages/user/point/components/PointChargeWidgetModal.jsx
 // Claude Code 작성 (BJN, 2026-07-16)
 // 포인트 충전 - 결제위젯(widgets()) 방식 모달 (F-PAY-011)
-// 결제창 방식(PointAmountModal→payment())과 별도로 나란히 제공한다 (사용자 결정)
+// 충전 방식은 결제위젯 단일 (사용자 결정, 2026-07-16 — 결제창 방식 제거)
 // 금액 선택 후 "다음"을 누르면 토스 결제수단 위젯이 모달 안에 그대로 렌더링된다
 // 주의: 결제위젯 전용 클라이언트 키(test_gck_...)가 필요하다 — 결제창용 키(test_ck_...)로는 동작하지 않음
 import { useEffect, useRef, useState } from 'react';
@@ -59,9 +59,8 @@ const PointChargeWidgetModal = ({ onClose }) => {
     setError(null);
     setLoading(true);
     try {
-      // 서버가 먼저 신뢰 기준 금액을 기록 (결제창 방식과 동일한 원칙)
-      // 이 모달은 위젯 방식이므로 WIDGET — 서버가 위젯 전용(gck) 클라이언트 키를 내려준다
-      const res = await requestPointCharge(amt, 'WIDGET');
+      // 서버가 먼저 신뢰 기준 금액을 기록하고 위젯용(gck) 클라이언트 키를 내려준다 (QSC-PG-01)
+      const res = await requestPointCharge(amt);
       orderRef.current = res.data;
 
       const tossPayments = await loadTossPayments(res.data.clientKey);
@@ -100,7 +99,7 @@ const PointChargeWidgetModal = ({ onClose }) => {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-gray-900 m-0">포인트 충전 (위젯)</h3>
+          <h3 className="text-lg font-bold text-gray-900 m-0">포인트 충전</h3>
           <button
             type="button"
             className="text-sm text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg px-3 py-1.5"

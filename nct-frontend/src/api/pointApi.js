@@ -13,11 +13,10 @@ export const getPointBalance = () =>
 export const getPointLedger = () =>
   api.get('/point/ledger').then(res => res.data);
 
-/** 충전 주문 생성 — 결제창/위젯을 띄우기 전에 서버가 신뢰 기준 금액을 먼저 기록한다 (F-PAY-011)
- *  method: 'WINDOW'(결제창) | 'WIDGET'(결제위젯) — 방식별로 토스 클라이언트 키가 달라 서버가 맞는 키를 내려준다
- *  응답 data: { orderId, amount, orderName, clientKey } — 이 값 그대로 토스 SDK를 호출한다 */
-export const requestPointCharge = (amount, method = 'WINDOW') =>
-  api.post('/point/charge/request', { amount, method }).then(res => res.data);
+/** 충전 주문 생성 — 결제위젯을 띄우기 전에 서버가 신뢰 기준 금액을 먼저 기록한다 (F-PAY-011)
+ *  응답 data: { orderId, amount, orderName, clientKey(위젯 전용 gck) } — 이 값 그대로 토스 위젯 SDK를 호출한다 */
+export const requestPointCharge = (amount) =>
+  api.post('/point/charge/request', { amount }).then(res => res.data);
 
 /** 결제 승인 확정 — 결제창 성공 리다이렉트 후 호출. 최종 지급 판단은 서버가 한다 */
 export const confirmPointCharge = ({ orderId, paymentKey }) =>
