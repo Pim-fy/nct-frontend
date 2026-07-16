@@ -1,5 +1,6 @@
 // src/pages/user/notification/NotificationPage.jsx
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import NotificationItem from './components/NotificationItem';
 import { useMarkAllRead, useMarkRead, useNotifications } from '../../../hooks/useNotification';
@@ -84,13 +85,22 @@ const NotificationPage = () => {
             </button>
           ))}
         </div>
-        <button
-          type="button"
-          onClick={markAllRead}
-          className="border border-blue-600 text-blue-600 hover:bg-blue-50 text-sm font-medium rounded-lg px-4 py-2 transition-colors"
-        >
-          전체 읽음
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={markAllRead}
+            className="border border-blue-600 text-blue-600 hover:bg-blue-50 text-sm font-medium rounded-lg px-4 py-2 transition-colors"
+          >
+            전체 읽음
+          </button>
+          {/* 알림 수신 설정 화면(F-COM-012) 진입점 */}
+          <Link
+            to="/user/notification/settings"
+            className="border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-medium rounded-lg px-4 py-2 transition-colors"
+          >
+            알림 설정
+          </Link>
+        </div>
       </div>
 
       {/* 도메인별 그룹 카드 */}

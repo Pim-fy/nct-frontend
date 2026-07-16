@@ -33,6 +33,7 @@ import Unauthorized   from '@pages/error/Unauthorized';
 import MyPage from '@pages/user/MyPage';
 import PointWalletPage from '@pages/user/point/PointWalletPage';
 import NotificationPage from '@pages/user/notification/NotificationPage';
+import NotificationSettingsPage from '@pages/user/notification/NotificationSettingsPage';
 import SettlementListPage from '@pages/user/settlement/SettlementListPage';
 
 // ──────────────────────────────────────────
@@ -75,6 +76,8 @@ const AppRoutes = () => {
         <Route path="/user/point" element={<PointWalletPage />} />
         {/* 알림함 (BJN) */}
         <Route path="/user/notification" element={<NotificationPage />} />
+        {/* 알림 설정 (BJN) */}
+        <Route path="/user/notification/settings" element={<NotificationSettingsPage />} />
         {/* 정산 관리 - 제공자용 (BJN) */}
         <Route path="/user/settlement" element={<SettlementListPage />} />
       </Route>

@@ -6,8 +6,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
   getNotifications,
+  getNotificationSettings,
   markAllNotificationsRead,
   markNotificationRead,
+  saveNotificationSettings,
 } from '../api/notificationApi';
 
 /** 내 알림 목록 — data: [{ id, typeCd, type, domainCd, domain, title, content, read, regDt, ... }] */
@@ -34,5 +36,24 @@ export function useMarkAllRead() {
   return useMutation({
     mutationFn: markAllNotificationsRead,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notification'] }),
+  });
+}
+
+/** 알림 수신 설정 조회 (F-COM-012) — data: { aucInapp, ..., svcEmail } (전부 boolean) */
+export function useNotificationSettings() {
+  return useQuery({
+    queryKey: ['notification', 'settings'],
+    queryFn: getNotificationSettings,
+    select: (res) => res.data,
+  });
+}
+
+/** 알림 수신 설정 저장 — mutate({ aucInapp, ..., svcEmail }) */
+export function useSaveNotificationSettings() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: saveNotificationSettings,
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['notification', 'settings'] }),
   });
 }
