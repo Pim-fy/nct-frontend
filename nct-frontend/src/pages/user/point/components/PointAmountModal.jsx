@@ -5,7 +5,8 @@ const QUICK_AMOUNTS = [100000, 300000, 500000];
 
 /**
  * 포인트 충전/환전 공용 모달
- * 실제 결제·지급 처리는 정책 확정(DEC-117/118) 전 미구현 — onSubmit에서 안내만 노출
+ * - 충전: onSubmit에서 토스 결제창 호출 (F-PAY-011, POL-PAY-006)
+ * - 환전: 지급·승인 방식 미결정(F-PAY-012)이라 onSubmit에서 "준비 중" 안내만
  */
 const PointAmountModal = ({ title, submitLabel, infoRow, onSubmit, onClose }) => {
   const [amount, setAmount] = useState('');

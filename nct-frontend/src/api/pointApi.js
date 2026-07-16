@@ -12,3 +12,16 @@ export const getPointBalance = () =>
 /** 내 포인트 원장 목록 조회 (최신순 100건) */
 export const getPointLedger = () =>
   api.get('/api/point/ledger').then(res => res.data);
+
+/** 충전 주문 생성 — 결제창을 띄우기 전에 서버가 신뢰 기준 금액을 먼저 기록한다 (F-PAY-011)
+ *  응답 data: { orderId, amount, orderName, clientKey } — 이 값 그대로 토스 결제창을 호출한다 */
+export const requestPointCharge = (amount) =>
+  api.post('/api/point/charge/request', { amount }).then(res => res.data);
+
+/** 결제 승인 확정 — 결제창 성공 리다이렉트 후 호출. 최종 지급 판단은 서버가 한다 */
+export const confirmPointCharge = ({ orderId, paymentKey }) =>
+  api.post('/api/point/charge/confirm', { orderId, paymentKey }).then(res => res.data);
+
+/** 내 충전 주문 이력 조회 (실패·취소·대기 포함, 최신순 100건) */
+export const getPointChargeOrders = () =>
+  api.get('/api/point/charge/orders').then(res => res.data);
