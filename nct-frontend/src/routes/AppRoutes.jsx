@@ -36,6 +36,7 @@ import MyPage from '@pages/user/MyPage';
 // Admin 페이지
 // ──────────────────────────────────────────
 import Dashboard        from '@pages/admin/Dashboard';
+import OperationsIntegrationPreview from '@pages/admin/OperationsIntegrationPreview';
 
 
 const AppRoutes = () => {
@@ -69,9 +70,14 @@ const AppRoutes = () => {
         <Route path="/user/mypage" element={<MyPage />} />
       </Route>
 
-      <Route path="/admin" element={<AdminLayout />}>
-        {/* 대시보드 */}
-        <Route index element={<Dashboard />} />
+      {/* 임시 화면도 관리자 정보 구조를 보여 주므로 ROLE_ADMIN만 접근할 수 있습니다. */}
+      <Route element={<ProtectedRoute allowedRoles={['ROLE_ADMIN']} />}>
+        <Route path="/admin" element={<AdminLayout />}>
+          {/* 대시보드 */}
+          <Route index element={<Dashboard />} />
+          {/* F-OPS-012/013 임시 연동 및 신고 목업 확인용 읽기 전용 화면 */}
+          <Route path="operations-preview" element={<OperationsIntegrationPreview />} />
+        </Route>
       </Route>
 
       {/* ────────────────────────────────

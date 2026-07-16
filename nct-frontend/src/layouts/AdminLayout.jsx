@@ -1,5 +1,5 @@
 // src/layouts/AdminLayout.jsx
-import { Outlet } from 'react-router-dom';
+import { NavLink, Outlet } from 'react-router-dom';
 
 const AdminLayout = () => {
   return (
@@ -16,7 +16,17 @@ const AdminLayout = () => {
         paddingTop: '18px',
       }}>
         <h1 style={{ color: '#fff', fontSize: '18px', margin: '0 18px 18px' }}>Ksteam Admin</h1>
-        {/* TODO: AdminSidebar 컴포넌트로 교체 */}
+        {/* 메뉴 공통 컴포넌트가 만들어지면 이 NavLink 묶음만 옮기면 됩니다. */}
+        <nav style={{ display: 'grid', gap: '6px', padding: '0 10px' }}>
+          <NavLink to="/admin" end style={({ isActive }) => ({
+            padding: '10px 12px', borderRadius: '8px',
+            background: isActive ? '#2d4f46' : 'transparent', color: '#fff',
+          })}>대시보드</NavLink>
+          <NavLink to="/admin/operations-preview" style={({ isActive }) => ({
+            padding: '10px 12px', borderRadius: '8px',
+            background: isActive ? '#2d4f46' : 'transparent', color: '#fff',
+          })}>신고·위험 이벤트</NavLink>
+        </nav>
       </aside>
 
       {/* 어드민 콘텐츠 */}
