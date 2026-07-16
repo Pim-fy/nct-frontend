@@ -103,7 +103,7 @@ export default function LoginPage() {
 
   // ── 소셜 로그인 ───────────────────────────────────────
   const handleSocialLogin = (provider) => {
-    window.location.href = provider.href();
+    window.location.assign(provider.href());
   };
 
   // ── 렌더 ─────────────────────────────────────────────
