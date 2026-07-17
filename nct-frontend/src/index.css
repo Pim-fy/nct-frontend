@@ -1,5 +1,8 @@
 /* src/index.css */
 
+/* 0. Pretendard 웹폰트 */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+
 /* 1. Tailwind v4 불러오기 */
 @import "tailwindcss";
 
@@ -22,6 +25,7 @@
 
   /* 커스텀 폰트 */
   --font-griun: 'GriunFont', sans-serif;
+  --font-sans: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
 
   /* 슬라이드다운 애니메이션 */
   --animate-slidedown: slideDown 0.3s ease-out forwards;
@@ -55,4 +59,12 @@
   * {
     box-sizing: border-box;
   }
+}
+
+/* 6. 폰트 통일 — Figma 이식 컴포넌트들의 font-['Noto_Sans_KR:...'] / font-['Inter:...'] 같은
+   Tailwind arbitrary 유틸리티(클래스 특정도 0,1,0)가 universal 규칙(0,0,0)을 이기므로,
+   !important 로 전체를 Pretendard 로 강제 통일한다.
+   (프로젝트에서 GriunFont/font-griun 은 실제 사용처가 없어 이 규칙으로 깨질 대상이 없다.) */
+* {
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif !important;
 }

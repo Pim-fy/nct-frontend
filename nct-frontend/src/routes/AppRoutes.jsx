@@ -1,4 +1,13 @@
 // src/routes/AppRoutes.jsx
+// ─────────────────────────────────────────────────────────────────────────────
+// 전체 라우트 정의 — 랜딩 / 공개 독립 페이지 / 일반 회원 / 관리자 영역으로 구분
+// 로그인이 필요한 경로는 ProtectedRoute 로 감싸 인증 여부를 검사합니다.
+//
+// ※ 파일 소유: 황희준(담당자1)
+//    라우트 추가·수정은 황희준에게 전달 후 반영. 임시로 추가된 상품 라우트
+//    (/product/register, /product/me, /product/:prdSn/seller) 도 최종 통합 시
+//    황희준에게 전달해 ProtectedRoute 구조에 맞게 정리 필요.
+// ─────────────────────────────────────────────────────────────────────────────
 import { Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 
@@ -31,11 +40,33 @@ import Unauthorized   from '@pages/error/Unauthorized';
 // UserLayout (로그인 필요)
 // ──────────────────────────────────────────
 import MyPage from '@pages/user/MyPage';
+// 담당자 7 공개 콘텐츠 route. 공통 route 소유자(담당자 1)에게 동일 manifest로 전달합니다.
+import GuidePage from '@pages/content/GuidePage';
+import NoticeListPage from '@pages/content/NoticeListPage';
+import NoticeDetailPage from '@pages/content/NoticeDetailPage';
+import ServiceListPage from '@pages/service/ServiceListPage';
+import PublicProviderProfilePage from '@pages/provider/PublicProviderProfilePage';
+import PointWalletPage from '@pages/user/point/PointWalletPage';
+import NotificationPage from '@pages/user/notification/NotificationPage';
+import NotificationSettingsPage from '@pages/user/notification/NotificationSettingsPage';
+import SettlementListPage from '@pages/user/settlement/SettlementListPage';
+import ReviewListPage from '@pages/user/ReviewListPage';
+import ReviewWritePage from '@pages/user/ReviewWritePage';
+
+// 담당자 7 병합 검증: develop의 상품 route가 참조하는 페이지 import가 누락되어 런타임 빈 화면이 발생해 복구했습니다.
+// 임시 코드는 아니며 상품 기능의 구현·소유권은 기존 상품 담당자에게 그대로 있습니다.
+import ProductRegisterPage from '@pages/product/ProductRegisterPage';
+import MyProductListPage from '@pages/product/MyProductListPage';
+import ProductDetailSellerPage from '@pages/product/ProductDetailSellerPage';
 
 // ──────────────────────────────────────────
 // Admin 페이지
 // ──────────────────────────────────────────
 import Dashboard        from '@pages/admin/Dashboard';
+import OperationsIntegrationPreview from '@pages/admin/OperationsIntegrationPreview';
+import AdminNoticeListPage from '@pages/admin/notice/AdminNoticeListPage';
+import AdminNoticeFormPage from '@pages/admin/notice/AdminNoticeFormPage';
+import AdminGuidePage from '@pages/admin/guide/AdminGuidePage';
 
 
 const AppRoutes = () => {
@@ -66,13 +97,47 @@ const AppRoutes = () => {
           공개 조회 영역 (UserLayout)
       ──────────────────────────────── */}
       <Route element={<UserLayout />}>
+        {/* 담당자 7의 F-COM-002/015 화면. 공통 route 소유자(담당자 1)에게 동일 manifest로 전달합니다. */}
+        <Route path="/services" element={<ServiceListPage />} />
+        <Route path="/providers/:providerId" element={<PublicProviderProfilePage />} />
+        <Route path="/guide" element={<GuidePage />} />
+        <Route path="/customersupport/notice" element={<NoticeListPage />} />
+        <Route path="/customersupport/notice/:noticeId" element={<NoticeDetailPage />} />
         {/* 마이페이지 */}
         <Route path="/user/mypage" element={<MyPage />} />
+        {/* 포인트 지갑 (BJN) */}
+        <Route path="/user/point" element={<PointWalletPage />} />
+        {/* 알림함 (BJN) */}
+        <Route path="/user/notification" element={<NotificationPage />} />
+        {/* 알림 설정 (BJN) */}
+        <Route path="/user/notification/settings" element={<NotificationSettingsPage />} />
+        {/* 정산 관리 - 제공자용 (BJN) */}
+        <Route path="/user/settlement" element={<SettlementListPage />} />
+        {/* 리뷰작성 목록 */}
+        <Route path="/user/reviews" element={<ReviewListPage />} />
+        {/* 리뷰 작성 폼 */}
+        <Route path="/user/reviews/write/:id" element={<ReviewWritePage />} />
+
+        {/* 상품 — 로그인 필요 */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/product/register"        element={<ProductRegisterPage />} />
+          <Route path="/product/me"              element={<MyProductListPage />} />
+          <Route path="/product/:prdSn/seller"   element={<ProductDetailSellerPage />} />
+        </Route>
       </Route>
 
-      <Route path="/admin" element={<AdminLayout />}>
-        {/* 대시보드 */}
-        <Route index element={<Dashboard />} />
+      {/* 임시 화면도 관리자 정보 구조를 보여 주므로 ROLE_ADMIN만 접근할 수 있습니다. */}
+      <Route element={<ProtectedRoute allowedRoles={['ROLE_ADMIN']} />}>
+        <Route path="/admin" element={<AdminLayout />}>
+          {/* 대시보드 */}
+          <Route index element={<Dashboard />} />
+          <Route path="notices" element={<AdminNoticeListPage />} />
+          <Route path="notices/new" element={<AdminNoticeFormPage />} />
+          <Route path="notices/:noticeId" element={<AdminNoticeFormPage />} />
+          <Route path="guides" element={<AdminGuidePage />} />
+          {/* F-OPS-012/013 임시 연동 및 신고 목업 확인용 읽기 전용 화면 */}
+          <Route path="operations-preview" element={<OperationsIntegrationPreview />} />
+        </Route>
       </Route>
 
       {/* ────────────────────────────────
