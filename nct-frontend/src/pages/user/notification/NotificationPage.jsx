@@ -7,8 +7,8 @@ import { useMarkAllRead, useMarkRead, useNotifications } from '../../../hooks/us
 import relativeTime from '../../../utils/relativeTime';
 
 // 도메인 그룹 (목업 20_notification.html 기준)
-// TODO(팀 결정): DB 알림도메인(NTFG03)에는 '채팅' 코드가 없어 채팅 카드는 항상 비어 있음
-//               — NTFG03에 채팅 도메인을 추가할지, 채팅 탭을 제거할지 팀 협의 필요
+// 채팅 도메인 코드(NTFC0014)는 팀 결정(2026-07-17)으로 NTFG03에 추가 확정 — 코드 추가 SQL은
+// 팀전달_NTFG03_채팅코드추가_260717.md 참조. 채팅 알림 발행은 채팅 기능 담당자 구현 후 표시됨
 const DOMAINS = ['경매·입찰', '거래·배송', '채팅', '서비스', '운영·환전'];
 const FILTERS = ['전체', '경매', '거래', '채팅', '서비스', '운영'];
 const FILTER_TO_DOMAIN = {
@@ -26,6 +26,7 @@ const DOMAIN_CODE_TO_LABEL = {
   NTFC0011: '거래·배송',
   NTFC0012: '서비스',
   NTFC0013: '운영·환전',
+  NTFC0014: '채팅', // 팀 결정(2026-07-17)으로 추가된 채팅 도메인
 };
 
 /** 서버 응답 알림 → 화면 표시용 형태로 변환 */
