@@ -62,11 +62,11 @@ function StatCard({ color, icon, label, value, unit, meta, onMore }) {
       className="relative h-[161px] w-[316px] rounded-[15px] text-white shrink-0"
       style={{ backgroundColor: color }}
     >
-      <p className="absolute left-[24px] top-[21px] font-['Noto_Sans_KR:Bold'] font-bold text-[16px] tracking-[-0.8px]">
+      <p className="absolute left-[96px] top-[21px] font-['Noto_Sans_KR:Bold'] font-bold text-[16px] tracking-[-0.8px]">
         {label}
       </p>
-      <img src={icon} alt="" className="absolute left-[24px] top-[37px] h-[44px] w-auto object-contain" />
-      <p className="absolute left-[24px] top-[58px] font-['Noto_Sans_KR:Bold'] font-bold text-[30px] tracking-[-1.5px]">
+      <img src={icon} alt="" className="absolute left-[24px] top-[37px] size-[44px] object-contain" />
+      <p className="absolute left-[96px] top-[58px] font-['Noto_Sans_KR:Bold'] font-bold text-[30px] tracking-[-1.5px]">
         {value}
         {unit}
       </p>
@@ -160,7 +160,7 @@ function ListPanel({ title, items }) {
   );
 }
 
-export default function MyPageDashboard({ user }) {
+export default function MyPageDashboard({ user, onRequestProviderSwitch }) {
   const navigate = useNavigate();
   const nickname = user?.nickname || "고객";
   const email = user?.email || "";
@@ -236,7 +236,7 @@ export default function MyPageDashboard({ user }) {
         </button>
         <button
           type="button"
-          onClick={() => toast({ icon: "info", title: "제공자 전환 기능은 준비 중입니다." })}
+          onClick={onRequestProviderSwitch}
           className="h-[38px] w-[113px] rounded-[19px] border border-[#d9d9d9] bg-white text-[#4e4e4e] text-[14px] font-['Noto_Sans_KR:Regular'] cursor-pointer hover:bg-[#f5f5f5] transition-colors flex items-center justify-center gap-1.5"
         >
           <img src={assets.iconSwitch1} alt="" className="size-[11px]" />
