@@ -1,14 +1,13 @@
-// src/pages/user/ReviewWritePage.jsx
+// src/pages/user/ReviewEditPage.jsx
 //
-// Figma: 에누리컷_디자인시안 / 21_review_write (node-id 42:21)
-// - "리뷰작성" 목록(ReviewListPage)에서 "리뷰 등록" 클릭 시 진입하는 폼 화면.
-// - 별점/텍스트/사진 첨부처럼 실제 입력·상태가 있는 "폼" 화면이라, 마케팅성 정적 페이지들이 쓰는
-//   절대좌표 포팅(ScaledStage) 대신 SignupPage.jsx 와 같은 방식(시맨틱 Tailwind + 실제 상태관리)을 따랐다.
+// "내가 작성한 리뷰" 목록의 "수정" 버튼에서 진입하는 리뷰 수정 폼.
+// ReviewWritePage.jsx(리뷰 등록 폼)를 그대로 참고해서 만들었다 - 구조/스타일은 동일하고
+// 차이는 (1) 기존 별점·내용·사진으로 미리 채워진다는 것, (2) createReview 대신 updateReview를 호출한다는 것뿐이다.
 import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Camera, X } from "lucide-react";
 import StarRating from "@components/review/StarRating";
-import { createReview } from "@api/reviewApi";
+import { updateReview } from "@api/reviewApi";
 import { toast } from "@utils/common";
 
 const MAX_PHOTOS = 5;
@@ -19,17 +18,17 @@ const DEAL_TYPE_STYLE = {
   service: { label: "서비스",   color: "#00ccd0" },
 };
 
-export default function ReviewWritePage() {
+export default function ReviewEditPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  // 목록 페이지에서 navigate(..., { state: { item } }) 로 넘겨준 리뷰 대상 정보.
+  // 목록 페이지에서 navigate(..., { state: { item } }) 로 넘겨준, 수정 대상 리뷰(기존 rating/content 포함).
   // 새로고침 등으로 state 가 없으면(직접 URL 접근) 대상 정보를 알 수 없으므로 안내만 보여준다.
   const item = location.state?.item;
 
-  const [rating, setRating] = useState(0);
-  const [content, setContent] = useState("");
-  const [photos, setPhotos] = useState([]); // [{ file, previewUrl }]
+  const [rating, setRating] = useState(item?.rating ?? 0);
+  const [content, setContent] = useState(item?.content ?? "");
+  const [photos, setPhotos] = useState([]); // [{ file, previewUrl }] - 새로 첨부한 사진만 들어간다.
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -44,8 +43,8 @@ export default function ReviewWritePage() {
   if (!item) {
     return (
       <div className="mx-auto max-w-[720px] px-4 py-16 text-center">
-        <p className="text-[#4e4e4e]">리뷰 작성 대상 정보를 찾을 수 없습니다.</p>
-        <p className="mt-1 text-sm text-[#969696]">목록에서 다시 "리뷰 등록"을 눌러주세요.</p>
+        <p className="text-[#4e4e4e]">수정할 리뷰 정보를 찾을 수 없습니다.</p>
+        <p className="mt-1 text-sm text-[#969696]">목록에서 다시 "수정"을 눌러주세요.</p>
         <button
           type="button"
           onClick={() => navigate("/user/reviews")}
@@ -91,32 +90,22 @@ export default function ReviewWritePage() {
     }
 
     const formData = new FormData();
-    formData.append("targetId", id ?? item.id);
     formData.append("rating", rating);
     formData.append("content", content);
     photos.forEach((p) => formData.append("photos", p.file));
 
     setSubmitting(true);
     try {
-      await createReview(formData);
-      toast({ icon: "success", title: "리뷰가 등록되었습니다." });
-      // TODO: 리뷰 목록 GET API가 아직 없어(reviewApi.getReviews 미연동), 방금 등록한 리뷰를
+      await updateReview(id ?? item.id, formData);
+      toast({ icon: "success", title: "리뷰가 수정되었습니다." });
+      // TODO: 리뷰 목록 GET API가 아직 없어(reviewApi.getReviews 미연동), 수정한 내용을
       // location.state로 들려 보내서 목록 화면이 새로고침 없이 바로 반영하게 한다.
       navigate("/user/reviews", {
-        state: {
-          newReview: {
-            id: item.id,
-            thumbnail: item.thumbnail,
-            title: item.title,
-            dealType: item.dealType,
-            rating,
-            content,
-          },
-        },
+        state: { updatedReview: { id: item.id, rating, content } },
       });
     } catch (err) {
-      console.error("리뷰 등록 실패:", err);
-      toast({ icon: "error", title: "리뷰 등록에 실패했습니다. 잠시 후 다시 시도해주세요." });
+      console.error("리뷰 수정 실패:", err);
+      toast({ icon: "error", title: "리뷰 수정에 실패했습니다. 잠시 후 다시 시도해주세요." });
     } finally {
       setSubmitting(false);
     }
@@ -124,7 +113,7 @@ export default function ReviewWritePage() {
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-10">
-      <h1 className="mb-5 text-2xl font-bold text-black">리뷰작성</h1>
+      <h1 className="mb-5 text-2xl font-bold text-black">리뷰수정</h1>
 
       <div className="rounded-2xl border border-[#e5e5e5] bg-white p-8">
         {/* 리뷰 대상 정보 */}
@@ -142,18 +131,8 @@ export default function ReviewWritePage() {
               {dealTypeStyle.label}
             </span>
             <h2 className="truncate text-xl font-bold text-black">{item.title}</h2>
-            <p className="mt-1 text-[15px] text-[#4e4e4e]">
-              <span className="font-bold">{item.partyLabel}</span>{"  "}{item.partyName}
-            </p>
-            <p className="text-[15px] text-[#4e4e4e]">
-              <span className="font-bold">완료일</span>{"  "}{item.completedDate}
-            </p>
           </div>
         </div>
-
-        <p className="mt-6 text-[15px] text-[#4e4e4e]">
-          리뷰는 1거래 1회만 작성 가능하며 경매/서비스 거래 유형은 자동으로 구분됩니다.
-        </p>
 
         {/* 별점 */}
         <div className="mt-8">
@@ -216,7 +195,7 @@ export default function ReviewWritePage() {
           </div>
         </div>
 
-        {/* 등록 버튼 */}
+        {/* 수정 완료 버튼 */}
         <div className="mt-10 flex justify-center">
           <button
             type="button"
@@ -224,7 +203,7 @@ export default function ReviewWritePage() {
             disabled={submitting}
             className="w-[200px] rounded bg-primary py-3 text-base font-bold text-white hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {submitting ? "등록 중..." : "리뷰 등록"}
+            {submitting ? "수정 중..." : "수정 완료"}
           </button>
         </div>
       </div>

@@ -21,6 +21,7 @@ export default function WrittenReviewItemCard({
   content,
   onEdit,
   onDelete,
+  onViewTarget,
 }) {
   const typeStyle = DEAL_TYPE_STYLE[dealType];
 
@@ -31,17 +32,20 @@ export default function WrittenReviewItemCard({
         style={{ top }}
       />
 
-      {/* 썸네일 */}
-      <div
-        className="absolute border border-[#d9d9d9] border-solid left-[210px] rounded-[10px] size-[129px]"
+      {/* 썸네일 - 클릭 시 거래 대상(경매/서비스) 페이지로 이동 */}
+      <button
+        type="button"
+        onClick={onViewTarget}
+        aria-label={`${title} 상세보기`}
+        className="absolute border border-[#d9d9d9] border-solid left-[210px] rounded-[10px] size-[129px] cursor-pointer overflow-hidden p-0"
         style={{ top: top + 42 }}
       >
         <img
           alt={title}
-          className="absolute inset-0 max-w-none object-cover pointer-events-none rounded-[10px] size-full"
+          className="pointer-events-none size-full object-cover"
           src={thumbnail}
         />
-      </div>
+      </button>
 
       {/* 거래유형 배지 */}
       <div
@@ -55,13 +59,15 @@ export default function WrittenReviewItemCard({
         {typeStyle.label}
       </p>
 
-      {/* 제목 */}
-      <p
-        className="[word-break:break-word] absolute font-['Noto_Sans_KR:Bold'] font-bold leading-[30px] left-[364px] text-[20px] text-black tracking-[-1px] whitespace-nowrap max-w-[1180px] truncate"
+      {/* 제목 - 클릭 시 거래 대상(경매/서비스) 페이지로 이동 */}
+      <button
+        type="button"
+        onClick={onViewTarget}
+        className="[word-break:break-word] absolute bg-transparent border-none p-0 text-left font-['Noto_Sans_KR:Bold'] font-bold leading-[30px] left-[364px] text-[20px] text-black tracking-[-1px] whitespace-nowrap max-w-[1180px] truncate cursor-pointer hover:underline"
         style={{ top: top + 81 }}
       >
         {title}
-      </p>
+      </button>
 
       {/* 내 별점 + 리뷰 내용 */}
       <div className="absolute left-[364px] flex items-center gap-4" style={{ top: top + 117 }}>
@@ -71,11 +77,11 @@ export default function WrittenReviewItemCard({
         </p>
       </div>
 
-      {/* 수정 / 삭제 버튼 */}
+      {/* 수정 / 삭제 버튼 - 카드 우측 끝에 맞춰 배치(ReviewableItemCard의 액션 버튼과 같은 우측 여백) */}
       <button
         type="button"
         onClick={onEdit}
-        className="absolute bg-white border border-[#d9d9d9] h-[45px] left-[1437px] rounded-[5px] w-[54px] cursor-pointer text-[#4e4e4e] text-[16px] font-bold hover:bg-[#f5f5f5] transition-colors"
+        className="absolute bg-white border border-[#d9d9d9] h-[45px] left-[1606px] rounded-[5px] w-[54px] cursor-pointer text-[#4e4e4e] text-[16px] font-bold hover:bg-[#f5f5f5] transition-colors"
         style={{ top: top + 82 }}
       >
         수정
@@ -83,7 +89,7 @@ export default function WrittenReviewItemCard({
       <button
         type="button"
         onClick={onDelete}
-        className="absolute bg-[#e63946] h-[45px] left-[1501px] rounded-[5px] w-[54px] cursor-pointer border-none text-white text-[16px] font-bold hover:bg-[#c22f3b] transition-colors"
+        className="absolute bg-[#e63946] h-[45px] left-[1672px] rounded-[5px] w-[54px] cursor-pointer border-none text-white text-[16px] font-bold hover:bg-[#c22f3b] transition-colors"
         style={{ top: top + 82 }}
       >
         삭제
