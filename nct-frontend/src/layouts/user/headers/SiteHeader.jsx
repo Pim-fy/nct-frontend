@@ -75,7 +75,7 @@ const SiteHeader = () => {
       <div className="container flex h-full items-center justify-between gap-8">
         {/* 로고 */}
         <Link to="/" className="flex shrink-0 items-center">
-          <img src={logoImg} alt="에누리컷" className="h-[68px] w-auto" />
+          <img src={logoImg} alt="에누리컷" className="h-[58px] w-auto" />
         </Link>
 
         {/* 메뉴 */}
