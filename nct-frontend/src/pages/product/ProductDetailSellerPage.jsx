@@ -6,7 +6,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getProduct } from '@api/productApi';
+//import { getProduct } from '@api/productApi';
 import { toImageUrl } from '@api/fileApi';
 import { getProduct, requestAuctionCancel } from '@api/productApi';
 
