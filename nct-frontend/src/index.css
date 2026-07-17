@@ -1,5 +1,8 @@
 /* src/index.css */
 
+/* 0. Pretendard 웹폰트 */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+
 /* 1. Tailwind v4 불러오기 */
 @import "tailwindcss";
 
@@ -22,6 +25,7 @@
 
   /* 커스텀 폰트 */
   --font-griun: 'GriunFont', sans-serif;
+  --font-sans: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
 
   /* 슬라이드다운 애니메이션 */
   --animate-slidedown: slideDown 0.3s ease-out forwards;
@@ -55,4 +59,10 @@
   * {
     box-sizing: border-box;
   }
+}
+
+/* 6. 폰트 통일 — Figma 이식 컴포넌트들의 font-['Noto_Sans_KR:...'] 같은
+   개별 지정을 포함해 전체를 Pretendard로 강제 통일 (레이어 밖 = 유틸리티보다 우선) */
+* {
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
 }
