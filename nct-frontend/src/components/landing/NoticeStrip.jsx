@@ -1,7 +1,7 @@
 // src/components/landing/NoticeStrip.jsx
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bell } from 'lucide-react';
+import micIcon from '@assets/img/micIcon.png';
 import '@assets/css/landing.css';
 
 /**
@@ -30,7 +30,7 @@ const NoticeStrip = ({
       <div className="container">
         <div className="home-notice-strip-inner">
           <Link to={link}>
-            <Bell size={16} />
+            <img src={micIcon} alt="" width={16} height={16} />
             [{badge}] {text}
           </Link>
           <button
