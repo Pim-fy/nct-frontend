@@ -760,14 +760,15 @@ const SignupPage = () => {
 
       <footer className="mt-auto border-t-[40px] border-white bg-[#1a1a18] px-4 py-7 text-[#d3d1c7]">
         <div className="mx-auto flex w-[90%] max-w-[1800px] flex-wrap items-center justify-between gap-3">
-          <strong className="text-white">Ksteam</strong>
+          <Link aria-label="에누리컷 홈" className="inline-flex" to="/">
+          </Link>
           <div className="flex flex-wrap items-center gap-3 text-[13px]">
             <a className="hover:text-white" href="#소개">서비스 소개</a>
             <a className="hover:text-white" href="#약관">이용약관</a>
             <a className="hover:text-white" href="#개인정보">개인정보처리방침</a>
             <a className="hover:text-white" href="#문의">문의</a>
           </div>
-          <span className="text-[13px]">© 2026 Ksteam UI Mockup</span>
+          <span className="text-[13px]">© 2026 에누리컷</span>
         </div>
       </footer>
     </div>
