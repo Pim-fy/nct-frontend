@@ -31,6 +31,7 @@ import Unauthorized   from '@pages/error/Unauthorized';
 // UserLayout (로그인 필요)
 // ──────────────────────────────────────────
 import MyPage from '@pages/user/MyPage';
+import ReviewListPage from '@pages/user/ReviewListPage';
 
 // ──────────────────────────────────────────
 // Admin 페이지
@@ -68,6 +69,8 @@ const AppRoutes = () => {
       <Route element={<UserLayout />}>
         {/* 마이페이지 */}
         <Route path="/user/mypage" element={<MyPage />} />
+        {/* 리뷰작성 목록 */}
+        <Route path="/user/reviews" element={<ReviewListPage />} />
       </Route>
 
       <Route path="/admin" element={<AdminLayout />}>
