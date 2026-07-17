@@ -110,7 +110,7 @@ export default function LoginPage() {
   // ── 렌더 ─────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-[440px] bg-white rounded-2xl shadow-lg px-8 py-10">
+      <div className="w-full max-w-110 bg-white rounded-2xl shadow-lg px-8 py-10">
 
         {/* 로고 */}
         <div className="text-center mb-8">
