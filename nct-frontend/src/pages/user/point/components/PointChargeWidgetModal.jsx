@@ -19,6 +19,9 @@ const PointChargeWidgetModal = ({ onClose }) => {
 
   const orderRef = useRef(null); // { orderId, amount, orderName, clientKey }
   const widgetsRef = useRef(null);
+  // 화면 표시 전용 주문 금액 — ref는 렌더링 중에 읽으면 안 된다는 React 19 규칙
+  // (react-hooks/refs, 2026-07-17 수정) 때문에 표시용 값만 상태로 따로 둔다
+  const [orderAmount, setOrderAmount] = useState(null);
 
   // 위젯 스크립트가 언마운트 후에도 DOM을 계속 참조하지 않도록 정리
   useEffect(() => () => { widgetsRef.current = null; }, []);
@@ -62,6 +65,7 @@ const PointChargeWidgetModal = ({ onClose }) => {
       // 서버가 먼저 신뢰 기준 금액을 기록하고 위젯용(gck) 클라이언트 키를 내려준다 (QSC-PG-01)
       const res = await requestPointCharge(amt);
       orderRef.current = res.data;
+      setOrderAmount(res.data.amount); // 위젯 화면의 "N P 충전" 표시용
 
       const tossPayments = await loadTossPayments(res.data.clientKey);
       widgetsRef.current = tossPayments.widgets({ customerKey: ANONYMOUS });
@@ -154,7 +158,7 @@ const PointChargeWidgetModal = ({ onClose }) => {
         {step === 'widget' && (
           <>
             <p className="text-sm text-gray-500 mb-3">
-              {orderRef.current?.amount.toLocaleString()}P 충전 · 결제수단을 선택해 주세요
+              {orderAmount?.toLocaleString()}P 충전 · 결제수단을 선택해 주세요
             </p>
             <div id="toss-payment-methods" className="mb-3" />
             <div id="toss-agreement" className="mb-4" />
