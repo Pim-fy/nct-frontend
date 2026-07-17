@@ -14,6 +14,11 @@ const formatDate = (value) => {
   }).format(date);
 };
 
+const formatPeriod = (start, end) => {
+  if (!start && !end) return '상시 공개';
+  return `${formatDate(start)}${end ? ` ~ ${formatDate(end)}` : '부터'}`;
+};
+
 // UI목업_v3를 React로 옮긴 임시 공통 부품입니다.
 // 페이지는 ContentUi facade만 사용하므로 피그마 확정 컴포넌트가 오면 이 구현만 교체합니다.
 export const MockupContentPageShell = ({ children, className = '' }) => (
@@ -92,24 +97,35 @@ export const MockupNoticeFilterBar = ({
   </>
 );
 
-export const MockupNoticeCard = ({ notice }) => (
-  <Link className="card mockup-notice-card" to={`/customersupport/notice/${notice.id}`}>
-    <div className="mockup-notice-card__top">
-      <span className="badge badge-blue">{notice.typeName}</span>
-      {notice.pinned && <span className="badge badge-warning"><Pin aria-hidden="true" />상단 고정</span>}
-    </div>
-    <h2>{notice.title}</h2>
-    <p>{notice.summary || '공지 상세에서 내용을 확인할 수 있습니다.'}</p>
-    <div className="mockup-notice-card__meta">
-      <span>{formatDate(notice.publishedAt)}</span>
-      <span><Eye aria-hidden="true" />{Number(notice.viewCount || 0).toLocaleString('ko-KR')}</span>
-    </div>
+/**
+ * 담당자 7 | F-COM-013 공개 공지 목록 행
+ *
+ * 공지사항 목록 화면에서만 사용하는 임시 공통 UI입니다. 큰 카드 대신 한 줄씩
+ * 읽을 수 있도록 중요 고정 여부·분류·제목·등록일·조회수를 보여주며, 행을 누르면
+ * 기존과 같은 공지 상세 화면으로 이동합니다.
+ */
+export const MockupNoticeRow = ({ notice }) => (
+  <Link
+    aria-label={`${notice.pinned ? '상단 고정, ' : ''}${notice.typeName} 공지: ${notice.title}`}
+    className={`mockup-notice-row${notice.pinned ? ' is-important' : ''}`}
+    to={`/customersupport/notice/${notice.id}`}
+  >
+    <span className="mockup-notice-row__number">
+      {notice.pinned ? <><Pin aria-hidden="true" />중요</> : notice.id}
+    </span>
+    <span className="mockup-notice-row__type">{notice.typeName}</span>
+    <strong className="mockup-notice-row__title">{notice.title}</strong>
+    <span className="mockup-notice-row__date">{formatDate(notice.publishedAt)}</span>
+    <span className="mockup-notice-row__views"><Eye aria-hidden="true" />{Number(notice.viewCount || 0).toLocaleString('ko-KR')}</span>
   </Link>
 );
 
 export const MockupNoticeList = ({ notices = [] }) => (
-  <div className="notice-list">
-    {notices.map((notice) => <MockupNoticeCard key={notice.id} notice={notice} />)}
+  <div className="notice-list" aria-label="공지사항 목록">
+    <div aria-hidden="true" className="mockup-notice-row mockup-notice-row--head">
+      <span>번호</span><span>분류</span><span>제목</span><span>등록일</span><span>조회</span>
+    </div>
+    {notices.map((notice) => <MockupNoticeRow key={notice.id} notice={notice} />)}
   </div>
 );
 
@@ -131,13 +147,10 @@ export const MockupNoticeDetail = ({ notice }) => (
       <ArrowLeft aria-hidden="true" />공지 목록
     </Link>
     <header className="notice-detail__header">
-      <div className="notice-detail__badges">
-        <span>{notice.typeName}</span>
-        {notice.pinned && <span className="is-pinned"><Pin aria-hidden="true" />상단 고정</span>}
-      </div>
       <h1>{notice.title}</h1>
       <div className="notice-detail__meta">
         <span>{formatDate(notice.publishedAt)}</span>
+        <span>노출 기간 {formatPeriod(notice.publishedAt, notice.postingEndAt)}</span>
         <span><Eye aria-hidden="true" />{Number(notice.viewCount || 0).toLocaleString('ko-KR')}</span>
       </div>
     </header>

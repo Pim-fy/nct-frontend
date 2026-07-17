@@ -32,6 +32,7 @@ const AdminNoticeListPage = () => {
   const optionsQuery = useAdminNoticeOptions();
   const noticesQuery = useAdminNoticeList(filters);
   const noticePage = noticesQuery.data;
+  const hasActiveFilters = Boolean(typeCode || statusCode || keyword);
 
   const changeFilters = (changes) => {
     const next = { typeCode, statusCode, keyword, ...changes };
@@ -99,6 +100,7 @@ const AdminNoticeListPage = () => {
             <button className="btn btn-outline" type="submit"><Search aria-hidden="true" /> 검색</button>
           </div>
         </label>
+        {hasActiveFilters && <button className="btn btn-outline admin-notice-filters__reset" onClick={() => { setKeywordInput(''); changeFilters({ typeCode: '', statusCode: '', keyword: '', page: 1 }); }} type="button">필터 초기화</button>}
       </form>
 
       {noticesQuery.isLoading && <div className="card admin-content-state">공지 목록을 불러오는 중입니다.</div>}

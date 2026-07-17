@@ -5,10 +5,11 @@ import api from './axios';
 export const fetchPublicNoticeTypes = () =>
   api.get('/notices/types').then((response) => response.data.data);
 
-export const fetchPublicNotices = ({ typeCode, page, size = 10 }) =>
+export const fetchPublicNotices = ({ typeCode, keyword, page, size = 10 }) =>
   api.get('/notices', {
     params: {
       ...(typeCode ? { typeCode } : {}),
+      ...(keyword ? { keyword } : {}),
       page,
       size,
     },

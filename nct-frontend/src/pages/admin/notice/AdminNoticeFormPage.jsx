@@ -21,6 +21,11 @@ const EMPTY_FORM = {
 };
 
 const toDateTimeInput = (value) => value ? value.slice(0, 16) : '';
+// 담당자 7 | F-OPS-023: 신규 공지의 게시 시작일시는 작성자가 보는 현재 날짜·시각으로 시작합니다.
+const nowDateTimeInput = () => {
+  const now = new Date();
+  return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+};
 const getErrorMessage = (error) => error?.response?.status === 409
   ? '다른 관리자가 먼저 변경했습니다. 목록에서 공지를 다시 열어 확인해 주세요.'
   : error?.response?.data?.message || '처리 중 오류가 발생했습니다.';
@@ -57,7 +62,7 @@ const AdminNoticeFormPage = () => {
     || hideMutation.isPending || deleteMutation.isPending;
 
   const initialForm = isNew
-    ? { ...EMPTY_FORM, typeCode: optionsQuery.data?.types?.[0]?.code ?? '' }
+    ? { ...EMPTY_FORM, postingStartAt: nowDateTimeInput(), typeCode: optionsQuery.data?.types?.[0]?.code ?? '' }
     : noticeQuery.data ? formFromNotice(noticeQuery.data) : EMPTY_FORM;
   const form = draft ?? initialForm;
 
@@ -73,14 +78,15 @@ const AdminNoticeFormPage = () => {
     postingEndAt: form.postingEndAt || null,
   });
 
+  /** 담당자 7 | F-OPS-023: 저장 성공 시 신규 공지는 관리 목록으로, 실패 시 현재 입력 화면에 남깁니다. */
   const submit = async (event) => {
     event.preventDefault();
     setFeedback('');
     try {
       if (isNew) {
-        const created = await createMutation.mutateAsync(payload());
+        await createMutation.mutateAsync(payload());
         setDraft(null);
-        navigate(`/admin/notices/${created.noticeId}`, { replace: true });
+        navigate('/admin/notices', { replace: true });
       } else {
         await updateMutation.mutateAsync({ noticeId, payload: payload() });
         setIsEditing(false);
@@ -131,6 +137,7 @@ const AdminNoticeFormPage = () => {
 
   const notice = noticeQuery.data;
   const fieldsDisabled = !isEditing || isPending;
+  const previewTitle = form.title.trim() || '공지 제목을 입력해 주세요';
   return (
     <div className="admin-content-page">
       <PageMeta title={isNew ? '공지 작성' : '공지 상세'} />
@@ -161,17 +168,22 @@ const AdminNoticeFormPage = () => {
           <label><span>게시 상태</span><select disabled={fieldsDisabled} name="statusCode" onChange={changeField} required value={form.statusCode}>
             {(optionsQuery.data?.statuses ?? []).map((option) => <option key={option.code} value={option.code}>{option.name}</option>)}
           </select></label>
-          <label><span>노출 시작일시</span><input disabled={fieldsDisabled} name="postingStartAt" onChange={changeField} type="datetime-local" value={form.postingStartAt} /></label>
-          <label><span>노출 종료일시</span><input disabled={fieldsDisabled} name="postingEndAt" onChange={changeField} type="datetime-local" value={form.postingEndAt} /></label>
+          <label><span>게시 시작일시</span><input disabled={fieldsDisabled} name="postingStartAt" onChange={changeField} type="datetime-local" value={form.postingStartAt} /></label>
+          <label><span>게시 종료일시</span><input disabled={fieldsDisabled} name="postingEndAt" onChange={changeField} type="datetime-local" value={form.postingEndAt} /></label>
         </div>
 
-        <label className="admin-notice-form__full"><span>제목</span><input disabled={fieldsDisabled} maxLength={200} name="title" onChange={changeField} required value={form.title} /></label>
-        <label className="admin-notice-form__full"><span>내용</span><textarea disabled={fieldsDisabled} maxLength={4000} name="content" onChange={changeField} required rows="12" value={form.content} /></label>
+        <label className="admin-notice-form__full"><span>제목 <em>{form.title.length}/200</em></span><input disabled={fieldsDisabled} maxLength={200} name="title" onChange={changeField} required value={form.title} /></label>
+        <label className="admin-notice-form__full"><span>내용 <em>{form.content.length}/4000</em></span><textarea disabled={fieldsDisabled} maxLength={4000} name="content" onChange={changeField} required rows="12" value={form.content} /></label>
         <label className="admin-notice-form__check"><input checked={form.pinned} disabled={fieldsDisabled} name="pinned" onChange={changeField} type="checkbox" /> 목록 상단에 고정</label>
 
         <section className="admin-notice-form__audit">
           <div><strong>관리자 처리 사유</strong><p>현재 보안 로그에 남으며, 공용 감사 DB 연결은 준비 중입니다. 개인정보는 입력하지 마세요.</p></div>
           <textarea disabled={isPending} maxLength={500} name="changeReason" onChange={changeField} placeholder="예: 7월 정기점검 일정 공지" required={isEditing} rows="3" value={form.changeReason} />
+        </section>
+
+        <section className="admin-notice-preview" aria-label="사용자 공지 미리보기">
+          <div><small>사용자 화면 미리보기</small><strong>{previewTitle}</strong><p>{form.content.trim() || '공지 내용이 이곳에 표시됩니다.'}</p></div>
+          <div><MockupAdminStatusBadge tone="info">{optionsQuery.data?.types?.find((item) => item.code === form.typeCode)?.name ?? '유형 선택'}</MockupAdminStatusBadge>{form.pinned && <MockupAdminStatusBadge tone="warning">상단 고정</MockupAdminStatusBadge>}</div>
         </section>
 
         {feedback && <p className={`admin-notice-form__feedback${feedback.includes('되었습니다') ? ' is-success' : ''}`}>{feedback}</p>}

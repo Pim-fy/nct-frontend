@@ -46,6 +46,7 @@ import NoticeListPage from '@pages/content/NoticeListPage';
 import NoticeDetailPage from '@pages/content/NoticeDetailPage';
 import ServiceListPage from '@pages/service/ServiceListPage';
 import PublicProviderProfilePage from '@pages/provider/PublicProviderProfilePage';
+import ProviderApplyPage from '@pages/provider/ProviderApplyPage';
 import PointWalletPage from '@pages/user/point/PointWalletPage';
 import NotificationPage from '@pages/user/notification/NotificationPage';
 import NotificationSettingsPage from '@pages/user/notification/NotificationSettingsPage';
@@ -66,6 +67,9 @@ import OperationsIntegrationPreview from '@pages/admin/OperationsIntegrationPrev
 import AdminNoticeListPage from '@pages/admin/notice/AdminNoticeListPage';
 import AdminNoticeFormPage from '@pages/admin/notice/AdminNoticeFormPage';
 import AdminGuidePage from '@pages/admin/guide/AdminGuidePage';
+import AdminCategoryPage from '@pages/admin/category/AdminCategoryPage';
+import AdminServiceRequestPage from '@pages/admin/service/AdminServiceRequestPage';
+import AdminProviderApprovalPage from '@pages/admin/provider/AdminProviderApprovalPage';
 
 
 const AppRoutes = () => {
@@ -117,6 +121,8 @@ const AppRoutes = () => {
 
         {/* 상품 — 로그인 필요 */}
         <Route element={<ProtectedRoute />}>
+          {/* 담당자 7 · F-PROV-001/006: 마이페이지의 제공자 권한 신청 메뉴 목적지 */}
+          <Route path="/provider/apply"              element={<ProviderApplyPage />} />
           <Route path="/product/register"        element={<ProductRegisterPage />} />
           <Route path="/product/me"              element={<MyProductListPage />} />
           <Route path="/product/:prdSn/seller"   element={<ProductDetailSellerPage />} />
@@ -132,6 +138,9 @@ const AppRoutes = () => {
           <Route path="notices/new" element={<AdminNoticeFormPage />} />
           <Route path="notices/:noticeId" element={<AdminNoticeFormPage />} />
           <Route path="guides" element={<AdminGuidePage />} />
+          <Route path="categories" element={<AdminCategoryPage />} />
+          <Route path="services" element={<AdminServiceRequestPage />} />
+          <Route path="provider-applications" element={<AdminProviderApprovalPage />} />
           {/* F-OPS-012/013 임시 연동 및 신고 목업 확인용 읽기 전용 화면 */}
           <Route path="operations-preview" element={<OperationsIntegrationPreview />} />
         </Route>
