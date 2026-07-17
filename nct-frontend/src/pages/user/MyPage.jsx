@@ -18,9 +18,8 @@ import MyPageSidebar from "@components/mypage/MyPageSidebar";
 import MyPageDashboard from "@components/mypage/MyPageDashboard";
 import MyPageProfileEdit from "@components/mypage/MyPageProfileEdit";
 import MyPageProviderDashboard from "@components/mypage/MyPageProviderDashboard";
-import { assets } from "@components/mypage/assets";
 import { useAuth } from "@hooks/useAuth";
-import { toast, confirm } from "@utils/common";
+import { confirm } from "@utils/common";
 import { isProviderAccount, MYPAGE_MODE_EVENT } from "@utils/providerMode";
 
 const TOP_CROP = 82;
@@ -91,26 +90,9 @@ export default function MyPage() {
         <MyPageProviderDashboard user={user} onSwitchToGeneral={() => switchMode("general")} />
       )}
       {activeSection === "profile" && <MyPageProfileEdit user={user} />}
-
-      {/* 플로팅 퀵메뉴 (Figma node 18:395 - 경매등록/서비스요청) */}
-      <div className="absolute left-[1805px] top-[901px] flex flex-col gap-4" data-name="quickmenu">
-        <button
-          type="button"
-          onClick={() => toast({ icon: "info", title: "경매등록 기능은 준비 중입니다." })}
-          className="size-[85px] rounded-full bg-[#0064ff] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.2)] border-none cursor-pointer text-white flex flex-col items-center justify-center gap-1 font-['Noto_Sans_KR:Bold'] font-bold text-[14px] tracking-[-1.12px] hover:brightness-110 transition"
-        >
-          <img src={assets.cursorIcon} alt="" className="size-[17px] brightness-0 invert" />
-          <span className="leading-tight text-center">경매<br />등록</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => toast({ icon: "info", title: "서비스요청 기능은 준비 중입니다." })}
-          className="size-[85px] rounded-full bg-[#776bf8] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.2)] border-none cursor-pointer text-white flex flex-col items-center justify-center gap-1 font-['Noto_Sans_KR:Bold'] font-bold text-[14px] tracking-[-1.12px] hover:brightness-110 transition"
-        >
-          <img src={assets.commentIcon} alt="" className="size-[17px] brightness-0 invert" />
-          <span className="leading-tight text-center">서비스<br />요청</span>
-        </button>
-      </div>
+      {/* 우측 플로팅 퀵메뉴는 SiteHeader(<QuickActions />)가 모든 페이지 공용으로 렌더링한다.
+          예전엔 이 페이지 안에 ScaledStage 절대좌표로 직접 그렸는데, 탭/모드에 따라 캔버스 높이가
+          바뀌다 보니 스케일이 달라져 위치가 어긋나 보였다(메인페이지는 고정 캔버스라 문제가 없었음). */}
     </ScaledStage>
   );
 }

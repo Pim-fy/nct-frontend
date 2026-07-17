@@ -2,7 +2,7 @@ import React from "react";
 import { assets } from "./assets";
 import MoreButton from "./MoreButton";
 
-const SERVICE_MENU_ITEMS = [
+export const SERVICE_MENU_ITEMS = [
   { label: "청소", left: 322, image: assets.image10, imgLeft: 373, imgTop: 1128, imgW: 53, imgH: 47 },
   { label: "이사", left: 482, image: assets.image11, imgLeft: 535, imgTop: 1130, imgW: 52, imgH: 42 },
   { label: "설치/수리", left: 642, image: assets.image8, imgLeft: 696, imgTop: 1129, imgW: 48, imgH: 45 },
@@ -10,7 +10,7 @@ const SERVICE_MENU_ITEMS = [
   { label: "레슨", left: 962, image: assets.image7, imgLeft: 1007, imgTop: 1127, imgW: 57, imgH: 49 },
 ];
 
-const HOT_ITEMS = [
+export const HOT_ITEMS = [
   { rank: 1, name: "메타 퀘스트 3S VR", price: "420,000원" },
   { rank: 2, name: "인바디 체성분 분석기", price: "980,000원" },
   { rank: 3, name: "GIANT 카본 로드바이크", price: "1,250,000원" },
@@ -55,7 +55,8 @@ export default function ServiceMenuSection() {
         <p className="absolute font-['Noto_Sans_KR:Black'] font-black leading-[normal] left-[1363px] text-[25px] text-white top-[964px] tracking-[5px] whitespace-nowrap">
           HOT ITEM
         </p>
-        <MoreButton left={1694} top={972} variant="dark" />
+        {/* 이전엔 left=1694라 박스(1340~1766) 밖으로 61px 튀어나가 있었다. 박스 안 오른쪽에 맞춰 수정. */}
+        <MoreButton left={1614} top={972} variant="dark" />
 
         <div className="absolute contents left-[1360px] top-[1032px]" data-name="num">
           {HOT_ITEMS.map((item, i) => (

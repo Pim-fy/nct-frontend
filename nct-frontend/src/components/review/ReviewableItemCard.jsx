@@ -28,6 +28,7 @@ export default function ReviewableItemCard({
   completedDate,
   actionLabel = "리뷰 등록",
   onAction,
+  onViewTarget,
 }) {
   const typeStyle = DEAL_TYPE_STYLE[dealType];
 
@@ -38,17 +39,20 @@ export default function ReviewableItemCard({
         style={{ top }}
       />
 
-      {/* 썸네일 */}
-      <div
-        className="absolute border border-[#d9d9d9] border-solid left-[210px] rounded-[10px] size-[129px]"
+      {/* 썸네일 - 클릭 시 거래 대상(경매/서비스) 페이지로 이동 */}
+      <button
+        type="button"
+        onClick={onViewTarget}
+        aria-label={`${title} 상세보기`}
+        className="absolute border border-[#d9d9d9] border-solid left-[210px] rounded-[10px] size-[129px] cursor-pointer overflow-hidden p-0"
         style={{ top: top + 42 }}
       >
         <img
           alt={title}
-          className="absolute inset-0 max-w-none object-cover pointer-events-none rounded-[10px] size-full"
+          className="pointer-events-none size-full object-cover"
           src={thumbnail}
         />
-      </div>
+      </button>
 
       {/* 거래유형 배지 */}
       <div
@@ -62,13 +66,15 @@ export default function ReviewableItemCard({
         {typeStyle.label}
       </p>
 
-      {/* 제목 */}
-      <p
-        className="[word-break:break-word] absolute font-['Noto_Sans_KR:Bold'] font-bold leading-[30px] left-[364px] text-[20px] text-black tracking-[-1px] whitespace-nowrap max-w-[1180px] truncate"
+      {/* 제목 - 클릭 시 거래 대상(경매/서비스) 페이지로 이동 */}
+      <button
+        type="button"
+        onClick={onViewTarget}
+        className="[word-break:break-word] absolute bg-transparent border-none p-0 text-left font-['Noto_Sans_KR:Bold'] font-bold leading-[30px] left-[364px] text-[20px] text-black tracking-[-1px] whitespace-nowrap max-w-[1180px] truncate cursor-pointer hover:underline"
         style={{ top: top + 81 }}
       >
         {title}
-      </p>
+      </button>
 
       {/* 거래자 / 완료일 */}
       <p
