@@ -5,10 +5,11 @@
 // 라우트: /product/register
 // 단계: 0(상품정보) → 1(경매설정) → 2(등록확인)
 // ─────────────────────────────────────────────────────────────────────────────
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCategories } from '@api/categoryApi';
 import { registerProduct } from '@api/productApi';
+import { toImageUrl, uploadImage } from '@api/fileApi';
 
 // ─── 거래방식 아이콘 SVG 컴포넌트 ───────────────────────────────────────────
 // deal-options(.line-option) 버튼 안에 표시되는 아이콘
@@ -41,6 +42,7 @@ const DURATION_DAYS = [1, 3, 5, 7];
 const BID_UNITS = [500, 1000, 5000, 10000];
 const PRODUCT_DOMAIN_CD = 'CATC0001';
 const STEP_LABELS = ['상품정보', '경매설정', '등록확인'];
+const MAX_IMAGES = 5; // F-AUC-002 — 대표이미지 포함 최대 5장
 
 export default function ProductRegisterPage() {
   const navigate = useNavigate();
@@ -56,6 +58,9 @@ export default function ProductRegisterPage() {
   const [calendarOpen, setCalendarOpen] = useState(false); // 캘린더 모달 열림 여부
   const [modalStart, setModalStart] = useState('');        // 캘린더 모달 임시 시작일시
   const [modalEnd, setModalEnd] = useState('');            // 캘린더 모달 임시 종료일시
+  const [images, setImages] = useState([]);                // 업로드 완료된 이미지 [{ flSn, url }] — 첫 번째가 대표
+  const [imageUploading, setImageUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   // ─── 폼 입력값 ───────────────────────────────────────────────────────────
   const [form, setForm] = useState({
@@ -84,6 +89,31 @@ export default function ProductRegisterPage() {
 
   // ─── 폼 필드 단일 업데이트 헬퍼 ─────────────────────────────────────────
   const set = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
+
+  // ─── 상품 이미지 업로드 (F-AUC-002) ─────────────────────────────────────
+  // 선택 즉시 한 장씩 업로드해서 flSn을 모아둔다 — 첫 번째 항목이 대표이미지.
+  // 최대 5장 제한은 남은 자리만큼만 잘라서 지킨다.
+  const handleFilesSelected = async (fileList) => {
+    const files = Array.from(fileList).slice(0, MAX_IMAGES - images.length);
+    if (files.length === 0) return;
+
+    setImageUploading(true);
+    setError('');
+    try {
+      for (const file of files) {
+        const res = await uploadImage(file);
+        setImages(prev => [...prev, { flSn: res.data.flSn, url: res.data.url }]);
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message;
+      setError(msg || '이미지 업로드에 실패했습니다.');
+    } finally {
+      setImageUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const removeImage = (flSn) => setImages(prev => prev.filter(img => img.flSn !== flSn));
 
   // ─── 날짜 유틸 ───────────────────────────────────────────────────────────
   // Date → 'YYYY-MM-DDTHH:mm' 형식 변환 (datetime-local input 값으로 사용)
@@ -150,6 +180,8 @@ export default function ProductRegisterPage() {
         prdIbyAmt:      form.prdIbyAmt ? Number(form.prdIbyAmt) : null,
         prdTrdMethodCd: form.prdTrdMethodCd,
         prdStatusCd:    statusCd,
+        aucEndDt:       statusCd === 'PRDC0002' && endDt ? endDt.toISOString() : null,
+        flSnList:       images.map(img => img.flSn),
         aucStartDt:     isDraft ? null : startDt.toISOString(),
         aucEndDt:       isDraft || !endDt ? null : endDt.toISOString(),
       };
@@ -281,20 +313,62 @@ export default function ProductRegisterPage() {
               />
             </div>
 
-            {/* 이미지 업로드 — FILES API(담당자6 백종남) 연계 전 placeholder */}
-            <div className="card" style={{ borderStyle: 'dashed' }}>
+            {/* 이미지 업로드 (F-AUC-002) — 선택 즉시 업로드, 첫 장이 대표이미지 */}
+            <div
+              className="card"
+              style={{ borderStyle: 'dashed' }}
+              onDragOver={e => e.preventDefault()}
+              onDrop={e => { e.preventDefault(); handleFilesSelected(e.dataTransfer.files); }}
+            >
               <div className="row" style={{ justifyContent: 'space-between' }}>
                 <div>
                   <strong>상품 사진</strong>
-                  <p className="muted small" style={{ margin: '4px 0 0' }}>드래그앤드롭 또는 파일 선택 · 최대 5장</p>
+                  <p className="muted small" style={{ margin: '4px 0 0' }}>
+                    드래그앤드롭 또는 파일 선택 · 최대 {MAX_IMAGES}장 ({images.length}/{MAX_IMAGES})
+                  </p>
                 </div>
-                <button type="button" disabled className="btn btn-ghost" style={{ cursor: 'not-allowed', opacity: 0.45 }}>
-                  파일 선택
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={imageUploading || images.length >= MAX_IMAGES}
+                  className="btn btn-ghost"
+                >
+                  {imageUploading ? '업로드 중...' : '파일 선택'}
                 </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  multiple
+                  hidden
+                  onChange={e => handleFilesSelected(e.target.files)}
+                />
               </div>
-              <p className="muted small" style={{ textAlign: 'center', padding: '12px 0 4px' }}>
-                이미지 업로드는 FILES 연계(담당자6 백종남) 후 활성화됩니다.
-              </p>
+
+              {images.length > 0 && (
+                <div className="row" style={{ gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                  {images.map((img, i) => (
+                    <div key={img.flSn} style={{ position: 'relative' }}>
+                      <img
+                        src={toImageUrl(img.url)}
+                        alt={`상품 사진 ${i + 1}`}
+                        style={{ width: 88, height: 88, objectFit: 'cover', borderRadius: 8, border: i === 0 ? '2px solid #0064ff' : '1px solid #eee' }}
+                      />
+                      {i === 0 && (
+                        <span className="badge badge-blue" style={{ position: 'absolute', top: 4, left: 4, fontSize: 11 }}>대표</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeImage(img.flSn)}
+                        title="삭제"
+                        style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', border: 'none', background: '#111', color: '#fff', cursor: 'pointer', fontSize: 12, lineHeight: '20px', padding: 0 }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -457,7 +531,7 @@ export default function ProductRegisterPage() {
                       ['상품명', form.prdNm],
                       ['카테고리', selectedCat?.catNm || '—'],
                       ['거래 방식', selectedTrade?.label || '—'],
-                      ['이미지', '0장 등록됨'],
+                      ['이미지', `${images.length}장 등록됨`],
                     ].map(([k, v]) => (
                       <tr key={k}>
                         <th>{k}</th>
