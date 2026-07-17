@@ -140,6 +140,8 @@ export default function ProductRegisterPage() {
     setLoading(true);
     try {
       const endDt = calcEndDt();
+      const startDt = form.startNow ? new Date() : (form.reserveDt ? new Date(form.reserveDt) : new Date());
+      const isDraft = statusCd === 'PRDC0001';
       const payload = {
         catSn:          Number(form.catSn),
         prdNm:          form.prdNm.trim(),
@@ -148,7 +150,8 @@ export default function ProductRegisterPage() {
         prdIbyAmt:      form.prdIbyAmt ? Number(form.prdIbyAmt) : null,
         prdTrdMethodCd: form.prdTrdMethodCd,
         prdStatusCd:    statusCd,
-        aucEndDt:       statusCd === 'PRDC0002' && endDt ? endDt.toISOString() : null,
+        aucStartDt:     isDraft ? null : startDt.toISOString(),
+        aucEndDt:       isDraft || !endDt ? null : endDt.toISOString(),
       };
       await registerProduct(payload);
       navigate('/product/me');
