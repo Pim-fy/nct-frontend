@@ -1,4 +1,13 @@
 // src/routes/AppRoutes.jsx
+// ─────────────────────────────────────────────────────────────────────────────
+// 전체 라우트 정의 — 랜딩 / 공개 독립 페이지 / 일반 회원 / 관리자 영역으로 구분
+// 로그인이 필요한 경로는 ProtectedRoute 로 감싸 인증 여부를 검사합니다.
+//
+// ※ 파일 소유: 황희준(담당자1)
+//    라우트 추가·수정은 황희준에게 전달 후 반영. 임시로 추가된 상품 라우트
+//    (/product/register, /product/me, /product/:prdSn/seller) 도 최종 통합 시
+//    황희준에게 전달해 ProtectedRoute 구조에 맞게 정리 필요.
+// ─────────────────────────────────────────────────────────────────────────────
 import { Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 
@@ -31,14 +40,18 @@ import Unauthorized   from '@pages/error/Unauthorized';
 // UserLayout (로그인 필요)
 // ──────────────────────────────────────────
 import MyPage from '@pages/user/MyPage';
-<<<<<<< HEAD
 import PointWalletPage from '@pages/user/point/PointWalletPage';
 import NotificationPage from '@pages/user/notification/NotificationPage';
 import NotificationSettingsPage from '@pages/user/notification/NotificationSettingsPage';
 import SettlementListPage from '@pages/user/settlement/SettlementListPage';
-=======
 import ReviewListPage from '@pages/user/ReviewListPage';
->>>>>>> origin/develop
+
+// ──────────────────────────────────────────
+// 상품 페이지
+// ──────────────────────────────────────────
+import ProductRegisterPage      from '@pages/product/ProductRegisterPage';
+import MyProductListPage         from '@pages/product/MyProductListPage';
+import ProductDetailSellerPage   from '@pages/product/ProductDetailSellerPage';
 
 // ──────────────────────────────────────────
 // Admin 페이지
@@ -76,7 +89,6 @@ const AppRoutes = () => {
       <Route element={<UserLayout />}>
         {/* 마이페이지 */}
         <Route path="/user/mypage" element={<MyPage />} />
-<<<<<<< HEAD
         {/* 포인트 지갑 (BJN) */}
         <Route path="/user/point" element={<PointWalletPage />} />
         {/* 알림함 (BJN) */}
@@ -85,10 +97,15 @@ const AppRoutes = () => {
         <Route path="/user/notification/settings" element={<NotificationSettingsPage />} />
         {/* 정산 관리 - 제공자용 (BJN) */}
         <Route path="/user/settlement" element={<SettlementListPage />} />
-=======
         {/* 리뷰작성 목록 */}
         <Route path="/user/reviews" element={<ReviewListPage />} />
->>>>>>> origin/develop
+
+        {/* 상품 — 로그인 필요 */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/product/register"        element={<ProductRegisterPage />} />
+          <Route path="/product/me"              element={<MyProductListPage />} />
+          <Route path="/product/:prdSn/seller"   element={<ProductDetailSellerPage />} />
+        </Route>
       </Route>
 
       <Route path="/admin" element={<AdminLayout />}>
