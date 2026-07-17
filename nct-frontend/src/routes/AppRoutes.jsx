@@ -31,7 +31,14 @@ import Unauthorized   from '@pages/error/Unauthorized';
 // UserLayout (로그인 필요)
 // ──────────────────────────────────────────
 import MyPage from '@pages/user/MyPage';
+<<<<<<< HEAD
+import PointWalletPage from '@pages/user/point/PointWalletPage';
+import NotificationPage from '@pages/user/notification/NotificationPage';
+import NotificationSettingsPage from '@pages/user/notification/NotificationSettingsPage';
+import SettlementListPage from '@pages/user/settlement/SettlementListPage';
+=======
 import ReviewListPage from '@pages/user/ReviewListPage';
+>>>>>>> origin/develop
 
 // ──────────────────────────────────────────
 // Admin 페이지
@@ -69,8 +76,19 @@ const AppRoutes = () => {
       <Route element={<UserLayout />}>
         {/* 마이페이지 */}
         <Route path="/user/mypage" element={<MyPage />} />
+<<<<<<< HEAD
+        {/* 포인트 지갑 (BJN) */}
+        <Route path="/user/point" element={<PointWalletPage />} />
+        {/* 알림함 (BJN) */}
+        <Route path="/user/notification" element={<NotificationPage />} />
+        {/* 알림 설정 (BJN) */}
+        <Route path="/user/notification/settings" element={<NotificationSettingsPage />} />
+        {/* 정산 관리 - 제공자용 (BJN) */}
+        <Route path="/user/settlement" element={<SettlementListPage />} />
+=======
         {/* 리뷰작성 목록 */}
         <Route path="/user/reviews" element={<ReviewListPage />} />
+>>>>>>> origin/develop
       </Route>
 
       <Route path="/admin" element={<AdminLayout />}>
