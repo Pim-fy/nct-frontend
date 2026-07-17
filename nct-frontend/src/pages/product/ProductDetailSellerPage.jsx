@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getProduct } from '@api/productApi';
 import { toImageUrl } from '@api/fileApi';
+import { getProduct, requestAuctionCancel } from '@api/productApi';
 
 // ─── 상수 정의 ───────────────────────────────────────────────────────────────
 // 상태 코드(PRDC)별 한글 라벨 · 배지 클래스
@@ -59,8 +60,7 @@ export default function ProductDetailSellerPage() {
       .finally(() => setLoading(false));
   }, [prdSn]);
 
-  // ─── 취소 요청 제출 ──────────────────────────────────────────────────────
-  // TODO(F-AUC-008): API 연계 후 실제 취소 요청 호출로 교체 (담당자3 조우진)
+  // ─── 취소 요청 제출 (F-AUC-008) ────────────────────────────────────────
   const handleCancelSubmit = async () => {
     if (!cancelReason) {
       alert('취소 사유를 선택해 주세요.');
@@ -68,8 +68,7 @@ export default function ProductDetailSellerPage() {
     }
     setCancelSubmitting(true);
     try {
-      // TODO(F-AUC-008): AUCTION 연계 후 실제 취소 요청 API 호출 (담당자3 조우진)
-      // await requestAuctionCancel(auctionSn, { reason: cancelReason, detail: cancelDetail });
+      await requestAuctionCancel(product.prdSn, { reason: cancelReason, detail: cancelDetail });
       alert('취소 요청이 접수되었습니다.');
       setCancelOpen(false);
       setCancelReason('');
