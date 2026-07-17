@@ -32,6 +32,7 @@ import Unauthorized   from '@pages/error/Unauthorized';
 // ──────────────────────────────────────────
 import MyPage from '@pages/user/MyPage';
 import ReviewListPage from '@pages/user/ReviewListPage';
+import ReviewWritePage from '@pages/user/ReviewWritePage';
 
 // ──────────────────────────────────────────
 // Admin 페이지
@@ -71,6 +72,8 @@ const AppRoutes = () => {
         <Route path="/user/mypage" element={<MyPage />} />
         {/* 리뷰작성 목록 */}
         <Route path="/user/reviews" element={<ReviewListPage />} />
+        {/* 리뷰 작성 폼 */}
+        <Route path="/user/reviews/write/:id" element={<ReviewWritePage />} />
       </Route>
 
       <Route path="/admin" element={<AdminLayout />}>
