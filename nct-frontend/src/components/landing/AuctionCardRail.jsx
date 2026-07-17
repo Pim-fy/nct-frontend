@@ -1,4 +1,4 @@
-// src/pages/landing/components/AuctionCardRail.jsx
+// src/components/landing/AuctionCardRail.jsx
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import '@assets/css/landing.css';

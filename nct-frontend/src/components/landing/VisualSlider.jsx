@@ -1,4 +1,4 @@
-// src/pages/landing/components/VisualSlider.jsx
+// src/components/landing/VisualSlider.jsx
 import { useState, useEffect, useCallback } from 'react';
 import '@assets/css/landing.css';
 

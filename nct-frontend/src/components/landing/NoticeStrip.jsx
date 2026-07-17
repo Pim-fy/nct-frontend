@@ -1,6 +1,7 @@
-// src/pages/landing/components/NoticeStrip.jsx
+// src/components/landing/NoticeStrip.jsx
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Bell } from 'lucide-react';
 import '@assets/css/landing.css';
 
 /**
@@ -29,8 +30,8 @@ const NoticeStrip = ({
       <div className="container">
         <div className="home-notice-strip-inner">
           <Link to={link}>
-            <span className="badge badge-danger" style={{ marginRight: '8px' }}>{badge}</span>
-            {text}
+            <Bell size={16} />
+            [{badge}] {text}
           </Link>
           <button
             className="home-notice-close"
