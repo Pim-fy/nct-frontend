@@ -1,6 +1,6 @@
 // src/pages/user/notification/NotificationSettingsPage.jsx
 // Claude Code 작성 (BJN, 2026-07-16)
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
@@ -33,25 +33,30 @@ const NotificationSettingsPage = () => {
   const { data: serverSettings, isLoading } = useNotificationSettings();
   const saveMutation = useSaveNotificationSettings();
 
-  // 편집 중 상태 — 서버 값이 도착하면 그걸로 초기화하고, 이후엔 사용자가 만진 값을 유지
-  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
-  useEffect(() => {
-    if (serverSettings) setSettings(serverSettings);
-  }, [serverSettings]);
+  // 편집 중 상태 (수정 2026-07-17, 담당자6 백종남 — F-COM-012 알림 수신 설정)
+  // [무엇을 하는 부분] 화면 체크박스에 보여줄 값을 정한다.
+  // [왜 바꿨나] 원래는 "서버 값이 도착하면 useEffect 안에서 setSettings로 복사"하는 방식이었는데,
+  //   화면을 그린 직후 상태를 또 바꾸면 같은 화면을 연달아 두 번 그리게 되어
+  //   React 19의 ESLint 규칙(react-hooks/set-state-in-effect)이 금지한다.
+  // [어떻게 바꿨나] 서버 값을 상태로 복사하지 않고, "사용자가 직접 만진 값"만 상태(edits)로 둔다.
+  //   화면에 보여줄 값 = 사용자가 만진 값이 있으면 그 값 → 없으면 서버 값 → 그것도 없으면 기본값.
+  //   이러면 useEffect 없이도 기존 동작(서버 값으로 시작, 이후 편집값 유지)이 그대로 유지된다.
+  const [edits, setEdits] = useState(null); // 사용자가 화면에서 바꾼 값 (아직 안 만졌으면 null)
+  const settings = edits ?? serverSettings ?? DEFAULT_SETTINGS;
 
-  const toggle = (field) => setSettings((prev) => ({ ...prev, [field]: !prev[field] }));
+  const toggle = (field) => setEdits({ ...settings, [field]: !settings[field] });
 
   /** 열 전체 토글 — 목업의 "인앱/이메일 전체 선택" 체크박스와 동일한 동작 */
   const toggleColumn = (channel, checked) =>
-    setSettings((prev) => ({
-      ...prev,
-      aucInapp: channel === 'Inapp' ? checked : prev.aucInapp,
-      trdInapp: channel === 'Inapp' ? checked : prev.trdInapp,
-      svcInapp: channel === 'Inapp' ? checked : prev.svcInapp,
-      aucEmail: channel === 'Email' ? checked : prev.aucEmail,
-      trdEmail: channel === 'Email' ? checked : prev.trdEmail,
-      svcEmail: channel === 'Email' ? checked : prev.svcEmail,
-    }));
+    setEdits({
+      ...settings,
+      aucInapp: channel === 'Inapp' ? checked : settings.aucInapp,
+      trdInapp: channel === 'Inapp' ? checked : settings.trdInapp,
+      svcInapp: channel === 'Inapp' ? checked : settings.svcInapp,
+      aucEmail: channel === 'Email' ? checked : settings.aucEmail,
+      trdEmail: channel === 'Email' ? checked : settings.trdEmail,
+      svcEmail: channel === 'Email' ? checked : settings.svcEmail,
+    });
 
   const allChecked = (channel) => DOMAIN_ROWS.every((row) => settings[`${row.key}${channel}`]);
 
