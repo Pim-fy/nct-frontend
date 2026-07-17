@@ -84,57 +84,52 @@
    랜딩 - 공지 띠
 =========================== */
 .home-notice-strip {
-  position: fixed;
-  top: 60px;
-  left: 0;
-  right: 0;
-  z-index: 95;
-  pointer-events: none;
+  width: 100%;
+  background: var(--color-primary, #0064ff);
 }
 
 .home-notice-strip-inner {
-  min-height: 28px;
+  min-height: 40px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 12px;
-  padding: 3px 12px 3px 16px;
-  background: rgba(255,255,255,.96);
-  border-bottom: 1px solid #f0efec;
-  box-shadow: 0 8px 18px rgba(0,0,0,.10);
-  pointer-events: auto;
+  padding: 8px 16px;
 }
 
 .home-notice-strip a {
   min-width: 0;
-  color: #1a1a18;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
   text-decoration: none;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .home-notice-close {
-  width: 24px;
-  height: 24px;
-  flex: 0 0 24px;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
   border: 0;
   border-radius: 50%;
   background: transparent;
-  color: #5f5e5a;
+  color: #fff;
   cursor: pointer;
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  opacity: 0.85;
 }
 
 .home-notice-close:hover {
-  background: var(--color-primary-light, #e5efff);
-  color: var(--color-primary-dark, #0048bf);
+  opacity: 1;
 }
 
 .home-notice-strip.is-hidden { display: none; }
@@ -428,8 +423,8 @@
 .quick-item:hover { color: var(--color-primary, #0064ff); background: var(--color-primary-light, #e5efff); }
 .quick-blue       { background: var(--color-primary, #0064ff); color: #fff; }
 .quick-blue:hover { background: var(--color-primary-dark, #0048bf); color: #fff; }
-.quick-cyan       { background: #00ccff; color: #fff; }
-.quick-cyan:hover { background: #00b8e6; color: #fff; }
+.quick-purple       { background: #8b5cf6; color: #fff; }
+.quick-purple:hover { background: #7c4ef0; color: #fff; }
 .quick-top        { position: fixed; right: 24px; bottom: 24px; z-index: 150; }
 .qi-label         { font-size: 11px; text-align: center; line-height: 1.2; font-weight: 700; }
 

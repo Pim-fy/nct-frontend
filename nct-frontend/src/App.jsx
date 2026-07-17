@@ -15,7 +15,7 @@ function App() {
   return (
     <HelmetProvider>
       <Helmet>
-        <title>Ksteam</title>
+        <title>에누리컷</title>
       </Helmet>
       <BrowserRouter>
         <AppRoutes />
