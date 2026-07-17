@@ -7,6 +7,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getProduct } from '@api/productApi';
+import { toImageUrl } from '@api/fileApi';
 
 // ─── 상수 정의 ───────────────────────────────────────────────────────────────
 // 상태 코드(PRDC)별 한글 라벨 · 배지 클래스
@@ -150,8 +151,16 @@ export default function ProductDetailSellerPage() {
         {/* 왼쪽: 상품 정보 */}
         <section className="card">
           <div className="seller-product">
-            {/* 이미지 플레이스홀더 — TODO(F-AUC-002): FILES 연계 후 실제 이미지로 교체 (담당자6 백종남) */}
-            <div className="seller-product-img" />
+            {/* 대표이미지 (F-AUC-002) — 없으면 빈 placeholder 유지 */}
+            <div className="seller-product-img">
+              {product.prdImgUrl && (
+                <img
+                  src={toImageUrl(product.prdImgUrl)}
+                  alt={product.prdNm}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }}
+                />
+              )}
+            </div>
 
             <div>
               <div className="seller-status-row">
