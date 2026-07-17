@@ -29,7 +29,7 @@ const STATUS_BADGE = {
 const TRADE_LABEL = {
   TRDC0009: '배송만',
   TRDC0010: '직거래만',
-  TRDC0011: '둘 다 가능', // TODO: 팀 확인 필요 (공통코드 TRDC0011)
+  TRDC0020: '둘 다 가능',
 };
 
 const CANCEL_REASONS = ['상품 상태 변경', '상품 정보 오류', '판매 진행 불가', '기타'];

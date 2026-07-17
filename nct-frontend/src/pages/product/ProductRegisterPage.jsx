@@ -33,8 +33,7 @@ const BothIcon = () => (
 const TRADE_METHODS = [
   { value: 'TRDC0009', label: '배송만',    Icon: TruckIcon },
   { value: 'TRDC0010', label: '직거래만',  Icon: PinIcon },
-  // TODO: 공통코드 확인 후 실제 코드값으로 교체
-  { value: 'TRDC0011', label: '둘 다 가능', Icon: BothIcon },
+  { value: 'TRDC0020', label: '둘 다 가능', Icon: BothIcon },
 ];
 
 const DURATION_DAYS = [1, 3, 5, 7];

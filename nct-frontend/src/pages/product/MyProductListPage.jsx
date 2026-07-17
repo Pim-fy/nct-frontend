@@ -30,7 +30,7 @@ const STATUS_BADGE = {
 const TRADE_LABEL = {
   TRDC0009: '배송만',
   TRDC0010: '직거래만',
-  TRDC0011: '둘 다 가능',
+  TRDC0020: '둘 다 가능',
 };
 
 const FILTERS = [
