@@ -45,13 +45,7 @@ import NotificationPage from '@pages/user/notification/NotificationPage';
 import NotificationSettingsPage from '@pages/user/notification/NotificationSettingsPage';
 import SettlementListPage from '@pages/user/settlement/SettlementListPage';
 import ReviewListPage from '@pages/user/ReviewListPage';
-
-// ──────────────────────────────────────────
-// 상품 페이지
-// ──────────────────────────────────────────
-import ProductRegisterPage      from '@pages/product/ProductRegisterPage';
-import MyProductListPage         from '@pages/product/MyProductListPage';
-import ProductDetailSellerPage   from '@pages/product/ProductDetailSellerPage';
+>>>>>>> origin/develop
 
 // ──────────────────────────────────────────
 // Admin 페이지
