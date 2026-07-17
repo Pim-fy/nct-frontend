@@ -761,7 +761,6 @@ const SignupPage = () => {
       <footer className="mt-auto border-t-[40px] border-white bg-[#1a1a18] px-4 py-7 text-[#d3d1c7]">
         <div className="mx-auto flex w-[90%] max-w-[1800px] flex-wrap items-center justify-between gap-3">
           <Link aria-label="에누리컷 홈" className="inline-flex" to="/">
-            <BrandLogo className="brand-logo--footer" />
           </Link>
           <div className="flex flex-wrap items-center gap-3 text-[13px]">
             <a className="hover:text-white" href="#소개">서비스 소개</a>

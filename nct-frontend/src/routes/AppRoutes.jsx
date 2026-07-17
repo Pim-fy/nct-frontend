@@ -51,7 +51,12 @@ import NotificationPage from '@pages/user/notification/NotificationPage';
 import NotificationSettingsPage from '@pages/user/notification/NotificationSettingsPage';
 import SettlementListPage from '@pages/user/settlement/SettlementListPage';
 import ReviewListPage from '@pages/user/ReviewListPage';
->>>>>>> origin/develop
+
+// 담당자 7 병합 검증: develop의 상품 route가 참조하는 페이지 import가 누락되어 런타임 빈 화면이 발생해 복구했습니다.
+// 임시 코드는 아니며 상품 기능의 구현·소유권은 기존 상품 담당자에게 그대로 있습니다.
+import ProductRegisterPage from '@pages/product/ProductRegisterPage';
+import MyProductListPage from '@pages/product/MyProductListPage';
+import ProductDetailSellerPage from '@pages/product/ProductDetailSellerPage';
 
 // ──────────────────────────────────────────
 // Admin 페이지
