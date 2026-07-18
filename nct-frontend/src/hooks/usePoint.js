@@ -5,7 +5,7 @@
 //   컴포넌트는 백엔드 래핑 구조를 몰라도 되게 한다
 import { useQuery } from '@tanstack/react-query';
 
-import { getPointBalance, getPointLedger, getPointChargeOrders } from '../api/pointApi';
+import { getPointBalance, getPointLedger, getPointChargeOrders, getPointExchangeOrders } from '../api/pointApi';
 
 /** 내 포인트 잔액 — data: { available, hold, settleable, total } */
 export function usePointBalance() {
@@ -31,6 +31,15 @@ export function usePointChargeOrders() {
   return useQuery({
     queryKey: ['point', 'chargeOrders'],
     queryFn: getPointChargeOrders,
+    select: (res) => res.data,
+  });
+}
+
+/** 내 환전 신청 이력 (F-PAY-012) — data: [{ id, date, amount, status, statusCd, bankName, accountNo, rejectReason, processedDate }] */
+export function usePointExchangeOrders() {
+  return useQuery({
+    queryKey: ['point', 'exchangeOrders'],
+    queryFn: getPointExchangeOrders,
     select: (res) => res.data,
   });
 }
