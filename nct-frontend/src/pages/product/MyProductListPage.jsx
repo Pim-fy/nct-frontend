@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { deleteProduct, getMyProducts } from '@api/productApi';
+import { toImageUrl } from '@api/fileApi';
 import Pagination from '@components/common/Pagination';
 import { usePagination } from '@hooks/usePagination';
 
@@ -147,8 +148,10 @@ export default function MyProductListPage() {
             ) : filtered.map(p => (
               <div key={p.prdSn} className="list-row">
                 <div className="history-entry-main">
-                  {/* 이미지 — FILES 연계(담당자6 백종남) 후 교체 */}
-                  <div className="history-thumb" />
+                  {/* 이미지 (F-AUC-002) — 대표이미지 없으면 빈 placeholder 유지 */}
+                  <div className="history-thumb">
+                    {p.prdImgUrl && <img src={toImageUrl(p.prdImgUrl)} alt={p.prdNm} />}
+                  </div>
 
                   <div className="history-row-title">
                     <div className="row" style={{ gap: 6 }}>

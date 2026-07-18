@@ -12,8 +12,10 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
  * @param {'left'|'right'} direction
  * @param {string} className     위치 지정용 (예: "left-[111px] top-[1616px]")
  * @param {string} [barClassName] 아이콘 색상 지정용 (예: "bg-[#434343]" -> 텍스트 색으로 매핑해 사용)
+ * @param {() => void} [onClick]
+ * @param {boolean} [disabled]
  */
-export default function ArrowIcon({ direction = "left", className = "", barClassName = "" }) {
+export default function ArrowIcon({ direction = "left", className = "", barClassName = "", onClick, disabled = false }) {
   const Icon = direction === "left" ? ChevronLeft : ChevronRight;
   // 기존 barClassName 이 배경색 유틸(bg-*)로 전달되던 관례를 그대로 살리되,
   // 아이콘 색상에는 text-* 로 바꿔 적용할 수 있도록 매핑한다.
@@ -23,7 +25,9 @@ export default function ArrowIcon({ direction = "left", className = "", barClass
     <button
       type="button"
       aria-label={direction === "left" ? "이전" : "다음"}
-      className={`absolute flex items-center justify-center size-[45px] rounded-full border border-solid border-[#ebebeb] bg-white/80 cursor-pointer ${className}`}
+      onClick={onClick}
+      disabled={disabled}
+      className={`absolute flex items-center justify-center size-[45px] rounded-full border border-solid border-[#ebebeb] bg-white/80 cursor-pointer hover:bg-white transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${className}`}
     >
       <Icon size={22} className={colorClass || "text-[#434343]"} />
     </button>
