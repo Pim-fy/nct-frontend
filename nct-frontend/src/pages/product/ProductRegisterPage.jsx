@@ -66,7 +66,7 @@ export default function ProductRegisterPage() {
     catSn: '',
     prdNm: '',
     prdCn: '',
-    prdTrdMethodCd: 'TRDC0011',
+    prdTrdMethodCd: 'TRDC0009',
     prdStartAmt: '',
     prdIbyAmt: '',
     durationDays: 3,
