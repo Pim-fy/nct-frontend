@@ -1,16 +1,33 @@
-import React from "react";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { assets } from "./assets";
 import ArrowIcon from "./ArrowIcon";
 
 const SEARCH_TAGS = [
   { label: "#마감임박경매", left: 723, width: 112 },
-  { label: "#청소견적", left: 843, width: 88, active: true },
+  { label: "#청소견적", left: 843, width: 88 },
   { label: "#전자기기", left: 939, width: 86 },
   { label: "#이사도움", left: 1033, width: 86 },
   { label: "#직거래", left: 1127, width: 86 },
 ];
 
 export default function HeroSection() {
+  const navigate = useNavigate();
+  const [keyword, setKeyword] = useState("");
+
+  const runSearch = (value) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    navigate(`/search/${encodeURIComponent(trimmed)}`);
+  };
+
+  // 태그를 클릭하면 검색창에 그 키워드가 채워지고 바로 검색까지 실행된다.
+  const handleTagClick = (label) => {
+    const word = label.replace(/^#/, "");
+    setKeyword(word);
+    runSearch(word);
+  };
+
   return (
     // ⚠️ Figma 원본의 공지 배너(notice)는 이 프로젝트에 이미 있는
     // <NoticeStrip /> (닫기 버튼 + 세션 저장 기능 포함)으로 대체되었습니다.
@@ -51,31 +68,39 @@ export default function HeroSection() {
         <p className="absolute font-['Noto_Sans_KR:Medium'] font-medium leading-[normal] left-[693px] text-[9px] text-black top-[449px] whitespace-nowrap">▼</p>
         <input
           type="text"
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") runSearch(keyword); }}
           placeholder="검색어를 입력하세요."
           className="absolute left-[729px] top-[440px] w-[560px] bg-transparent font-['Noto_Sans_KR:Regular'] font-normal text-[18px] text-black placeholder:text-[#b1b1b1] outline-none"
         />
-        <button type="button" className="absolute left-[1317px] size-[27px] top-[442px]">
+        <button type="button" onClick={() => runSearch(keyword)} className="absolute left-[1317px] size-[27px] top-[442px]">
           <img alt="검색" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={assets.searchIcon} />
         </button>
 
         <div className="absolute contents left-[723px] top-[368px]">
-          {SEARCH_TAGS.map((tag) => (
-            <div key={tag.label} className="absolute contents top-[368px]" style={{ left: tag.left }}>
-              <button
-                type="button"
-                className={`absolute h-[31px] rounded-[30px] ${tag.active ? "bg-[#e9fbff]" : "bg-[#f5f5f4]"}`}
-                style={{ left: tag.left, width: tag.width, top: 368 }}
-              />
-              <p
-                className={`-translate-x-1/2 absolute font-['Noto_Sans_KR:Medium'] font-medium leading-[normal] text-[14px] text-center top-[375px] tracking-[-0.7px] whitespace-nowrap ${
-                  tag.active ? "text-[#0064ff]" : "text-[#4e4e4e]"
-                }`}
-                style={{ left: tag.left + tag.width / 2 }}
-              >
-                {tag.label}
-              </p>
-            </div>
-          ))}
+          {SEARCH_TAGS.map((tag) => {
+            const word = tag.label.replace(/^#/, "");
+            const active = keyword === word;
+            return (
+              <div key={tag.label} className="absolute contents top-[368px]" style={{ left: tag.left }}>
+                <button
+                  type="button"
+                  onClick={() => handleTagClick(tag.label)}
+                  className={`absolute h-[31px] rounded-[30px] cursor-pointer transition-colors ${active ? "bg-[#e9fbff]" : "bg-[#f5f5f4] hover:bg-[#ececec]"}`}
+                  style={{ left: tag.left, width: tag.width, top: 368 }}
+                />
+                <p
+                  className={`-translate-x-1/2 absolute font-['Noto_Sans_KR:Medium'] font-medium leading-[normal] text-[14px] text-center top-[375px] tracking-[-0.7px] whitespace-nowrap pointer-events-none ${
+                    active ? "text-[#0064ff]" : "text-[#4e4e4e]"
+                  }`}
+                  style={{ left: tag.left + tag.width / 2 }}
+                >
+                  {tag.label}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </div>
 
