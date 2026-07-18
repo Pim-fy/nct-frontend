@@ -11,6 +11,9 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, ChevronRight } from 'lucide-react';
 import { useAuth } from '@hooks/useAuth';
+import { useNotifications } from '@hooks/useNotification';
+import { usePointBalance } from '@hooks/usePoint';
+import relativeTime from '@utils/relativeTime';
 import { isProviderAccount, requestMypageMode } from '@utils/providerMode';
 import QuickActions from '@components/landing/QuickActions';
 import logoImg from '@assets/img/logo.png';
@@ -42,24 +45,24 @@ const SERVICE_CATEGORIES = ['이사', '설치', '수리', '청소', '인테리�
 // 헤더 메뉴 기본 텍스트 색상(#333333) - 마우스오버 시에만 primary 파랑으로 바뀐다.
 const NAV_LINK_CLASS = "text-[20px] font-bold text-[#333333] tracking-[-0.02em] hover:text-primary transition-colors";
 
-// ⚠️ POINT/알림 수치는 연동 API가 없어 더미 데이터입니다.
-// TODO: 담당자BJN의 포인트(usePointBalance)/알림(useNotifications) API로 교체.
-//       단, 이 헤더는 비로그인 공개 페이지에서도 렌더링되므로, 인증 필요 API를
-//       무조건 호출하면 401→로그인 강제이동이 발생한다. 로그인 상태일 때만 호출하도록 처리 필요.
-const DUMMY_POINT = { total: 1420700, available: 300500 };
-
-// ⚠️ 알림 목록도 연동 전 더미 데이터입니다 (mypage 디자인 시안의 "안읽은 알림" 문구 기준).
-// TODO: 담당자BJN의 useNotifications() 로 교체 (로그인 상태에서만 호출).
-const NOTI_ITEMS = [
-  { text: '입찰가가 갱신되었습니다.', time: '방금 전' },
-  { text: '관심 상품 마감 10분 전입니다', time: '10분 전' },
-  { text: '새 견적이 도착했습니다', time: '1시간 전' },
-];
-const NOTI_COUNT = NOTI_ITEMS.length;
+// POINT/알림 수치 실연동 (담당자6 BJN, 2026-07-18) — 종전 더미 상수(DUMMY_POINT/NOTI_ITEMS) 제거.
+// 이 헤더는 비로그인 공개 페이지에서도 렌더링되므로, 두 훅 모두 { enabled: 로그인여부 }로
+// 로그인 상태일 때만 API를 호출한다 (무조건 호출하면 401→로그인 강제이동이 발생하기 때문).
+// 헤더 드롭다운에 보여줄 최근 안읽은 알림 최대 개수
+const NOTI_PREVIEW_MAX = 5;
 
 const SiteHeader = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  // 알림·포인트 실데이터 — 로그인 상태일 때만 호출 (비로그인 401 방지)
+  const notiQuery = useNotifications({ enabled: !!user });
+  const balanceQuery = usePointBalance({ enabled: !!user });
+  // 안읽은 알림: 배지 숫자와 드롭다운 목록의 공통 원천
+  const unreadNotis = (notiQuery.data ?? []).filter((n) => !n.read);
+  const notiCount = user ? unreadNotis.length : 0;
+  // 잔액은 조회 전(로딩·비로그인)에는 0으로 표시 — 임의 기본값이 아니라 "아직 모름"의 화면 표기
+  const pointBalance = balanceQuery.data ?? { total: 0, available: 0 };
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [serviceMenuOpen, setServiceMenuOpen] = useState(false);
   const [notiOpen, setNotiOpen] = useState(false);
@@ -228,9 +231,9 @@ const SiteHeader = () => {
               onClick={() => openOnly('noti')}
             >
               <img src={bellIcon} alt="" className="size-[18px]" />
-              {NOTI_COUNT > 0 && (
+              {notiCount > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex size-[17px] items-center justify-center rounded-full bg-[#e63946] text-[10px] font-medium text-white">
-                  {NOTI_COUNT}
+                  {notiCount}
                 </span>
               )}
             </button>
@@ -240,7 +243,7 @@ const SiteHeader = () => {
                 <div className="flex items-center justify-between">
                   <span className="flex items-baseline gap-1.5">
                     <span className="text-[15px] font-bold text-black tracking-[-0.5px]">알림</span>
-                    <span className="text-[12px] text-[#0064ff]">{NOTI_COUNT}</span>
+                    <span className="text-[12px] text-[#0064ff]">{notiCount}</span>
                   </span>
                   <button
                     type="button"
@@ -252,18 +255,22 @@ const SiteHeader = () => {
                   </button>
                 </div>
                 <div className="my-3 h-px bg-[#e5e5e5]" />
-                {/* 알림 목록 */}
-                <ul className="flex flex-col gap-3">
-                  {NOTI_ITEMS.map((item) => (
-                    <li key={item.text} className="flex items-start gap-2">
-                      <span className="mt-[6px] size-[6px] shrink-0 rounded-full bg-primary" />
-                      <div className="min-w-0">
-                        <p className="truncate text-[13px] text-[#333]">{item.text}</p>
-                        <p className="text-[11px] text-[#969696]">{item.time}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                {/* 알림 목록 — 안읽은 알림 최근 N건, 없으면 안내 문구 */}
+                {unreadNotis.length === 0 ? (
+                  <p className="py-2 text-center text-[13px] text-[#969696]">새 알림이 없습니다.</p>
+                ) : (
+                  <ul className="flex flex-col gap-3">
+                    {unreadNotis.slice(0, NOTI_PREVIEW_MAX).map((item) => (
+                      <li key={item.id} className="flex items-start gap-2">
+                        <span className="mt-[6px] size-[6px] shrink-0 rounded-full bg-primary" />
+                        <div className="min-w-0">
+                          <p className="truncate text-[13px] text-[#333]">{item.title}</p>
+                          <p className="text-[11px] text-[#969696]">{relativeTime(item.regDt)}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 {/* 전체보기 */}
                 <button
                   type="button"
@@ -304,11 +311,11 @@ const SiteHeader = () => {
                 {/* 잔액 */}
                 <div className="flex items-center justify-between text-[13px]">
                   <span className="text-[#4e4e4e]">총 보유포인트</span>
-                  <span className="text-[14px] font-bold text-black">{DUMMY_POINT.total.toLocaleString()}</span>
+                  <span className="text-[14px] font-bold text-black">{(pointBalance.total ?? 0).toLocaleString()}</span>
                 </div>
                 <div className="mt-2 flex items-center justify-between text-[13px]">
                   <span className="text-[#4e4e4e]">사용 가능 포인트</span>
-                  <span className="text-[14px] font-bold text-black">{DUMMY_POINT.available.toLocaleString()}</span>
+                  <span className="text-[14px] font-bold text-black">{(pointBalance.available ?? 0).toLocaleString()}</span>
                 </div>
                 {/* 액션 */}
                 <div className="mt-4 flex gap-2">

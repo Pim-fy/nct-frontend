@@ -40,8 +40,8 @@ const MENU_SECTIONS = [
   ],
   [{ label: '신고·거래 문제 처리', icon: Siren, owner: '담당자 4' }],
   [
-    { label: '감사 로그', icon: ScrollText, owner: '담당자 6' },
-    { label: '시스템 설정', icon: Settings, owner: '담당자 6' },
+    { label: '감사 로그', icon: ScrollText, to: '/admin/audit-logs', owner: '담당자 6' },
+    { label: '시스템 설정', icon: Settings, to: '/admin/system-settings', owner: '담당자 6' },
   ],
 ];
 
