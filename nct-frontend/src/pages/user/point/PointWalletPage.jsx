@@ -11,7 +11,7 @@ import PointExchangeOrderTable from './components/PointExchangeOrderTable';
 import PointAmountModal from './components/PointAmountModal';
 import PointChargeWidgetModal from './components/PointChargeWidgetModal';
 import { usePointBalance, usePointLedger, usePointChargeOrders, usePointExchangeOrders } from '../../../hooks/usePoint';
-import { confirmPointCharge, requestPointExchange } from '../../../api/pointApi';
+import { confirmPointCharge, requestPointExchange, convertPoint } from '../../../api/pointApi';
 
 // 데이터 도착 전(로딩 중) 카드가 깨지지 않도록 쓰는 0값 기본 잔액
 const EMPTY_BALANCE = { available: 0, hold: 0, settleable: 0 };
@@ -33,7 +33,7 @@ const errorMessage = (err) =>
  *   회원의 등록 계좌를 직접 읽는다 (프론트는 금액만 보냄)
  */
 const PointWalletPage = () => {
-  const [openModal, setOpenModal] = useState(null); // null | 'charge' | 'exchange'
+  const [openModal, setOpenModal] = useState(null); // null | 'charge' | 'exchange' | 'convert'
 
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -130,6 +130,43 @@ const PointWalletPage = () => {
       });
   };
 
+  /**
+   * 포인트 전환 (F-PAY-010, 조건 확정 2026-07-18: 분쟁 없음 확인 후 전환)
+   * - 정산가능 포인트를 사용가능으로 옮긴다 — 환전(현금화)과 달리 플랫폼 안에서 다시 쓰는 용도
+   * - 진행 중 거래 문제가 있으면 서버가 거절하고, 그 사유를 그대로 안내한다
+   */
+  const submitConvert = (amount) => {
+    if (!Number.isInteger(amount) || amount <= 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: '금액을 확인해 주세요',
+        text: '전환 금액은 1P 이상의 정수만 가능합니다.',
+        confirmButtonColor: '#0064ff',
+      });
+      return;
+    }
+    setOpenModal(null);
+    convertPoint(amount)
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ['point'] });
+        Swal.fire({
+          icon: 'success',
+          title: '전환 완료',
+          text: '정산 가능 포인트가 사용 가능 포인트로 전환되었습니다.',
+          confirmButtonColor: '#0064ff',
+        });
+      })
+      .catch((err) => {
+        // 분쟁 진행 중·잔액 부족 등 서버가 알려준 사유를 그대로 안내
+        Swal.fire({
+          icon: 'error',
+          title: '전환 실패',
+          text: errorMessage(err),
+          confirmButtonColor: '#0064ff',
+        });
+      });
+  };
+
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-10">
       {/* 페이지 타이틀 + 액션 */}
@@ -142,6 +179,13 @@ const PointWalletPage = () => {
             onClick={() => setOpenModal('charge')}
           >
             충전
+          </button>
+          <button
+            type="button"
+            className="border border-blue-600 text-blue-600 hover:bg-blue-50 text-sm font-medium rounded-lg px-5 py-2.5 transition-colors"
+            onClick={() => setOpenModal('convert')}
+          >
+            전환
           </button>
           <button
             type="button"
@@ -179,6 +223,15 @@ const PointWalletPage = () => {
           submitLabel="환전"
           infoRow={{ label: '환전 가능 포인트', value: `${balance.settleable.toLocaleString()} P` }}
           onSubmit={submitExchange}
+          onClose={() => setOpenModal(null)}
+        />
+      )}
+      {openModal === 'convert' && (
+        <PointAmountModal
+          title="포인트 전환"
+          submitLabel="전환"
+          infoRow={{ label: '전환 가능 포인트', value: `${balance.settleable.toLocaleString()} P` }}
+          onSubmit={submitConvert}
           onClose={() => setOpenModal(null)}
         />
       )}

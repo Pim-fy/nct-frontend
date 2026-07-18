@@ -31,6 +31,10 @@ export const getPointChargeOrders = () =>
 export const requestPointExchange = (amount) =>
   api.post('/point/exchange', { amount }).then(res => res.data);
 
+/** 정산가능→사용가능 전환 (F-PAY-010) — 진행 중 거래 문제가 있으면 서버가 409로 거절한다 */
+export const convertPoint = (amount) =>
+  api.post('/point/convert', { amount }).then(res => res.data);
+
 /** 내 환전 신청 이력 조회 (신청·완료·반려, 최신순 100건) */
 export const getPointExchangeOrders = () =>
   api.get('/point/exchange/orders').then(res => res.data);

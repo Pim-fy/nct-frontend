@@ -12,12 +12,15 @@ import {
   saveNotificationSettings,
 } from '../api/notificationApi';
 
-/** 내 알림 목록 — data: [{ id, typeCd, type, domainCd, domain, title, content, read, regDt, ... }] */
-export function useNotifications() {
+/** 내 알림 목록 — data: [{ id, typeCd, type, domainCd, domain, title, content, read, regDt, ... }]
+ *  options로 useQuery 옵션을 덧붙일 수 있다 — 헤더처럼 비로그인 화면에서도 렌더링되는 곳은
+ *  { enabled: 로그인여부 }를 넘겨 401 요청 자체를 막는다 */
+export function useNotifications(options = {}) {
   return useQuery({
     queryKey: ['notification', 'list'],
     queryFn: getNotifications,
     select: (res) => res.data,
+    ...options,
   });
 }
 
