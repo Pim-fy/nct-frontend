@@ -16,7 +16,7 @@ const GENERAL_MENU_ITEMS = [
   { key: "wishlist", label: "관심 상품", type: "todo" },
   { key: "chat", label: "채팅", type: "todo" },
   { key: "wallet", label: "포인트 지갑", type: "route", to: "/user/point" },
-  { key: "provider", label: "제공자 전환", type: "provider-switch" },
+  // { key: "provider", label: "제공자 전환", type: "provider-switch" },
 ];
 
 // 제공자모드는 mypage_02제공자모드(57:495)에만 존재하고, "프로필"/"견적"/"서비스 채팅"/"승인 카테고리" 등
