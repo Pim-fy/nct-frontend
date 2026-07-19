@@ -74,6 +74,7 @@ import AdminServiceRequestPage from '@pages/admin/service/AdminServiceRequestPag
 import AdminProviderApprovalPage from '@pages/admin/provider/AdminProviderApprovalPage';
 import AdminAuditLogPage from '@pages/admin/audit/AdminAuditLogPage';
 import AdminSystemSettingPage from '@pages/admin/setting/AdminSystemSettingPage';
+import AdminAuctionManagementPage from '@pages/admin/auction/AdminAuctionManagementPage';
 
 
 const AppRoutes = () => {
@@ -149,6 +150,7 @@ const AppRoutes = () => {
           <Route path="categories" element={<AdminCategoryPage />} />
           <Route path="services" element={<AdminServiceRequestPage />} />
           <Route path="provider-applications" element={<AdminProviderApprovalPage />} />
+          <Route path="auctions" element={<AdminAuctionManagementPage />} />
           {/* 보안/감사·시스템 설정 (담당자6, F-OPS-014/016/024) */}
           <Route path="audit-logs" element={<AdminAuditLogPage />} />
           <Route path="system-settings" element={<AdminSystemSettingPage />} />

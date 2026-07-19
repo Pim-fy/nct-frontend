@@ -28,7 +28,7 @@ const MENU_SECTIONS = [
     { label: '회원 관리', icon: Users, owner: '담당자 1' },
     { label: '제공자 심사', icon: ClipboardCheck, to: '/admin/provider-applications', owner: '담당자 7', note: '임시 목록' },
   ],
-  [{ label: '경매 관리', icon: Gavel, owner: '담당자 3' }],
+  [{ label: '경매 관리', icon: Gavel, to: '/admin/auctions', owner: '담당자 7', note: '임시 조회 목록' }],
   [
     { label: '서비스 요청 관리', icon: BriefcaseBusiness, to: '/admin/services', owner: '담당자 7', note: '임시 목록' },
     { label: '카테고리 관리', icon: Grid2X2, to: '/admin/categories', owner: '담당자 7' },

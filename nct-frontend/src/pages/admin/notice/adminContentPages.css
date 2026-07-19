@@ -32,10 +32,10 @@
 .admin-notice-list__summary small { color: #5f5e5a; }
 .admin-table-scroll { overflow-x: auto; }
 .admin-notice-list table { width: 100%; min-width: 1100px; border-collapse: collapse; }
-.admin-notice-list th { padding: 12px 14px; background: #fafaf8; color: #5f5e5a; font-size: 12px; text-align: left; white-space: nowrap; }
-.admin-notice-list td { padding: 14px; border-top: 1px solid #f0efec; color: #1a1a18; font-size: 13px; vertical-align: middle; white-space: nowrap; }
+.admin-notice-list th { padding: 12px 14px; background: #fafaf8; color: #5f5e5a; font-size: 12px; text-align: center; white-space: nowrap; }
+.admin-notice-list td { padding: 14px; border-top: 1px solid #f0efec; color: #1a1a18; font-size: 13px; text-align: center; vertical-align: middle; white-space: nowrap; }
 .admin-notice-list tbody tr:hover { background: #fafaf8; }
-.admin-notice-list__title { min-width: 280px; white-space: normal !important; }
+.admin-notice-list__title { min-width: 180px; text-align: center !important; white-space: normal !important; }
 .admin-notice-list__title a { color: #1a1a18; font-weight: 700; text-decoration: none; }
 .admin-notice-list__title a:hover { color: var(--color-primary-dark, #0048bf); text-decoration: underline; }
 .admin-notice-list__empty { padding: 48px !important; text-align: center; }

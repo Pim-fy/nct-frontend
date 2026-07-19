@@ -96,9 +96,9 @@ const AdminCategoryPage = () => {
       {categoriesQuery.data && (
         <section className="card admin-category-list">
           <div className="admin-notice-list__summary"><p>총 <strong>{categoriesQuery.data.length}</strong>개</p><small>표시 순서가 작은 항목부터 노출됩니다.</small></div>
-          <div className="admin-table-scroll"><table><thead><tr><th>순서</th><th>이름</th><th>전문 서비스</th><th>상태</th><th>관리</th></tr></thead>
-            <tbody>{categoriesQuery.data.map((category) => (
-              <tr key={category.categorySn}><td>{category.sortNo}</td><td><strong>{category.name}</strong></td>
+          <div className="admin-table-scroll"><table><thead><tr><th>번호</th><th>이름</th><th>전문 서비스</th><th>상태</th><th>관리</th></tr></thead>
+            <tbody>{categoriesQuery.data.map((category, index) => (
+              <tr key={category.categorySn}><td>{index + 1}</td><td><strong>{category.name}</strong></td>
                 <td>{category.professional ? '예' : '아니오'}</td>
                 <td><MockupAdminStatusBadge tone={category.active ? 'success' : 'neutral'}>{category.active ? '사용 중' : '사용 중지'}</MockupAdminStatusBadge></td>
                 <td><button className="btn btn-outline" onClick={() => edit(category)} type="button"><PencilLine /> 수정</button></td></tr>
