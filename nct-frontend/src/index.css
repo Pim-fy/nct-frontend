@@ -56,13 +56,23 @@
     text-decoration: none; /* Tailwind의 underline 클래스로 개별 오버라이드 가능 */
   }
 
+  /* 브라우저 기본 <p> 마진(1em)을 제거한다 - 이게 없으면 Figma 이식 컴포넌트에서
+     여러 줄을 <p><p>로 쌓은 곳(제목 카피, 뱃지 2줄 텍스트 등)마다 줄 사이에
+     의도치 않은 큰 간격이 생긴다(각 줄 텍스트가 명시적으로 leading/margin을
+     Tailwind 유틸로 지정하고 있어 이 리셋으로 깨질 곳은 없다). */
+  p {
+    margin: 0;
+  }
+
   * {
     box-sizing: border-box;
   }
 }
 
-/* 6. 폰트 통일 — Figma 이식 컴포넌트들의 font-['Noto_Sans_KR:...'] 같은
-   개별 지정을 포함해 전체를 Pretendard로 강제 통일 (레이어 밖 = 유틸리티보다 우선) */
+/* 6. 폰트 통일 — Figma 이식 컴포넌트들의 font-['Noto_Sans_KR:...'] / font-['Inter:...'] 같은
+   Tailwind arbitrary 유틸리티(클래스 특정도 0,1,0)가 universal 규칙(0,0,0)을 이기므로,
+   !important 로 전체를 Pretendard 로 강제 통일한다.
+   (프로젝트에서 GriunFont/font-griun 은 실제 사용처가 없어 이 규칙으로 깨질 대상이 없다.) */
 * {
-  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif !important;
 }

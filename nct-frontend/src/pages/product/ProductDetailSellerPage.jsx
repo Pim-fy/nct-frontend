@@ -6,7 +6,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getProduct } from '@api/productApi';
+// import { getProduct } from '@api/productApi';
+import { toImageUrl } from '@api/fileApi';
+import { getProduct, requestAuctionCancel } from '@api/productApi';
 
 // ─── 상수 정의 ───────────────────────────────────────────────────────────────
 // 상태 코드(PRDC)별 한글 라벨 · 배지 클래스
@@ -58,8 +60,7 @@ export default function ProductDetailSellerPage() {
       .finally(() => setLoading(false));
   }, [prdSn]);
 
-  // ─── 취소 요청 제출 ──────────────────────────────────────────────────────
-  // TODO(F-AUC-008): API 연계 후 실제 취소 요청 호출로 교체 (담당자3 조우진)
+  // ─── 취소 요청 제출 (F-AUC-008) ────────────────────────────────────────
   const handleCancelSubmit = async () => {
     if (!cancelReason) {
       alert('취소 사유를 선택해 주세요.');
@@ -67,8 +68,7 @@ export default function ProductDetailSellerPage() {
     }
     setCancelSubmitting(true);
     try {
-      // TODO(F-AUC-008): AUCTION 연계 후 실제 취소 요청 API 호출 (담당자3 조우진)
-      // await requestAuctionCancel(auctionSn, { reason: cancelReason, detail: cancelDetail });
+      await requestAuctionCancel(product.prdSn, { reason: cancelReason, detail: cancelDetail });
       alert('취소 요청이 접수되었습니다.');
       setCancelOpen(false);
       setCancelReason('');
@@ -150,8 +150,16 @@ export default function ProductDetailSellerPage() {
         {/* 왼쪽: 상품 정보 */}
         <section className="card">
           <div className="seller-product">
-            {/* 이미지 플레이스홀더 — TODO(F-AUC-002): FILES 연계 후 실제 이미지로 교체 (담당자6 백종남) */}
-            <div className="seller-product-img" />
+            {/* 대표이미지 (F-AUC-002) — 없으면 빈 placeholder 유지 */}
+            <div className="seller-product-img">
+              {product.prdImgUrl && (
+                <img
+                  src={toImageUrl(product.prdImgUrl)}
+                  alt={product.prdNm}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }}
+                />
+              )}
+            </div>
 
             <div>
               <div className="seller-status-row">

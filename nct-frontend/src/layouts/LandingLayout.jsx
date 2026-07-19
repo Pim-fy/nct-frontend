@@ -1,7 +1,7 @@
 // src/layouts/LandingLayout.jsx
 import { Outlet } from 'react-router-dom';
 import { ThemeProvider } from '@context/ThemeContext';
-import LandingHeader from '@layouts/user/headers/LandingHeader';
+import SiteHeader from '@layouts/user/headers/SiteHeader';
 import MainFooter from '@layouts/user/footers/MainFooter';
 
 const LandingLayout = () => {
@@ -9,7 +9,7 @@ const LandingLayout = () => {
     <ThemeProvider>
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#fff' }}>
         {/* 헤더 */}
-        <LandingHeader />
+        <SiteHeader />
 
         {/* 콘텐츠 */}
         <main style={{ flex: 1 }}>

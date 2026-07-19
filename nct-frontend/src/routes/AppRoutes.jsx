@@ -52,6 +52,8 @@ import NotificationPage from '@pages/user/notification/NotificationPage';
 import NotificationSettingsPage from '@pages/user/notification/NotificationSettingsPage';
 import SettlementListPage from '@pages/user/settlement/SettlementListPage';
 import ReviewListPage from '@pages/user/ReviewListPage';
+import ReviewWritePage from '@pages/user/ReviewWritePage';
+import ReviewEditPage from '@pages/user/ReviewEditPage';
 
 // 담당자 7 병합 검증: develop의 상품 route가 참조하는 페이지 import가 누락되어 런타임 빈 화면이 발생해 복구했습니다.
 // 임시 코드는 아니며 상품 기능의 구현·소유권은 기존 상품 담당자에게 그대로 있습니다.
@@ -70,6 +72,8 @@ import AdminGuidePage from '@pages/admin/guide/AdminGuidePage';
 import AdminCategoryPage from '@pages/admin/category/AdminCategoryPage';
 import AdminServiceRequestPage from '@pages/admin/service/AdminServiceRequestPage';
 import AdminProviderApprovalPage from '@pages/admin/provider/AdminProviderApprovalPage';
+import AdminAuditLogPage from '@pages/admin/audit/AdminAuditLogPage';
+import AdminSystemSettingPage from '@pages/admin/setting/AdminSystemSettingPage';
 
 
 const AppRoutes = () => {
@@ -118,6 +122,10 @@ const AppRoutes = () => {
         <Route path="/user/settlement" element={<SettlementListPage />} />
         {/* 리뷰작성 목록 */}
         <Route path="/user/reviews" element={<ReviewListPage />} />
+        {/* 리뷰 작성 폼 */}
+        <Route path="/user/reviews/write/:id" element={<ReviewWritePage />} />
+        {/* 리뷰 수정 폼 */}
+        <Route path="/user/reviews/edit/:id" element={<ReviewEditPage />} />
 
         {/* 상품 — 로그인 필요 */}
         <Route element={<ProtectedRoute />}>
@@ -141,6 +149,9 @@ const AppRoutes = () => {
           <Route path="categories" element={<AdminCategoryPage />} />
           <Route path="services" element={<AdminServiceRequestPage />} />
           <Route path="provider-applications" element={<AdminProviderApprovalPage />} />
+          {/* 보안/감사·시스템 설정 (담당자6, F-OPS-014/016/024) */}
+          <Route path="audit-logs" element={<AdminAuditLogPage />} />
+          <Route path="system-settings" element={<AdminSystemSettingPage />} />
           {/* F-OPS-012/013 임시 연동 및 신고 목업 확인용 읽기 전용 화면 */}
           <Route path="operations-preview" element={<OperationsIntegrationPreview />} />
         </Route>
