@@ -7,15 +7,23 @@
 import { useEffect, useRef, useState } from 'react';
 import { loadTossPayments, ANONYMOUS } from '@tosspayments/tosspayments-sdk';
 
-import { requestPointCharge } from '../../../../api/pointApi';
-
-const QUICK_AMOUNTS = [100000, 300000, 500000];
+import { requestPointCharge, getChargeLimits } from '../../../../api/pointApi';
+import { QUICK_AMOUNTS } from './quickAmounts';
 
 const PointChargeWidgetModal = ({ onClose }) => {
   const [amount, setAmount] = useState('');
   const [step, setStep] = useState('amount'); // 'amount' | 'widget'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  // 충전 한도 안내 — 검증에 실제 쓰이는 서버 설정값을 받아 표시 (하드코딩 안내문은 관리자가
+  // 한도를 바꾸면 거짓말이 되므로 제거, 2026-07-20). 도착 전에는 안내문을 비워둔다
+  const [limits, setLimits] = useState(null); // null | { min, max }
+
+  useEffect(() => {
+    getChargeLimits()
+      .then((res) => setLimits(res.data))
+      .catch(() => setLimits(null)); // 조회 실패 시 안내문 생략 — 검증은 어차피 서버가 한다
+  }, []);
 
   const orderRef = useRef(null); // { orderId, amount, orderName, clientKey }
   const widgetsRef = useRef(null);
@@ -139,9 +147,14 @@ const PointChargeWidgetModal = ({ onClose }) => {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
-            {/* 실제 한도는 서버 SYSTEM_SETTING 값이 기준(초과 시 서버가 에러로 막는다) —
-                이 문구는 그 기본값(1만~100만P)을 미리 보여주는 안내일 뿐 */}
-            <p className="text-xs text-gray-400 mb-4">1만P ~ 100만P 사이로 입력해 주세요.</p>
+            {/* 서버가 검증에 실제로 쓰는 한도(SYSTEM_SETTING)를 그대로 안내 — 조회 전/실패 시엔 생략 */}
+            {limits ? (
+              <p className="text-xs text-gray-400 mb-4">
+                {limits.min.toLocaleString()}P ~ {limits.max.toLocaleString()}P 사이로 입력해 주세요.
+              </p>
+            ) : (
+              <p className="text-xs text-gray-400 mb-4">&nbsp;</p>
+            )}
             <div className="flex justify-end">
               <button
                 type="button"

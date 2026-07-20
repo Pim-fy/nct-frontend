@@ -13,6 +13,10 @@ export const getPointBalance = () =>
 export const getPointLedger = () =>
   api.get('/point/ledger').then(res => res.data);
 
+/** 현재 충전 한도 조회 — data: { min, max }. 검증에 실제 쓰이는 서버 설정값이라 안내문이 스테일해질 수 없다 */
+export const getChargeLimits = () =>
+  api.get('/point/charge/limits').then(res => res.data);
+
 /** 충전 주문 생성 — 결제위젯을 띄우기 전에 서버가 신뢰 기준 금액을 먼저 기록한다 (F-PAY-011)
  *  응답 data: { orderId, amount, orderName, clientKey(위젯 전용 gck) } — 이 값 그대로 토스 위젯 SDK를 호출한다 */
 export const requestPointCharge = (amount) =>
