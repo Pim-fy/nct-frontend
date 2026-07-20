@@ -20,10 +20,13 @@ import AdminLayout   from '@layouts/AdminLayout';
 // 공개 페이지
 // ──────────────────────────────────────────
 import LandingPage        from '@pages/landing/LandingPage';
+import AuctionListPage    from '@pages/auction/AuctionListPage';
+import AuctionDetailPage  from '@pages/auction/AuctionDetailPage';
 import LoginPage          from '@pages/auth/LoginPage';
 import SignupPage         from '@pages/auth/SignupPage';
 import FindEmailPage      from '@pages/auth/FindEmailPage';
 import ResetPasswordPage  from '@pages/auth/ResetPasswordPage';
+import WithdrawalRequestPage from '@pages/auth/WithdrawalRequestPage';
 import OAuthRedirectHandler from '@pages/auth/OAuthRedirectHandler';
 
 // 에러 페이지
@@ -46,6 +49,8 @@ import NoticeListPage from '@pages/content/NoticeListPage';
 import NoticeDetailPage from '@pages/content/NoticeDetailPage';
 import ServiceListPage from '@pages/service/ServiceListPage';
 import PublicProviderProfilePage from '@pages/provider/PublicProviderProfilePage';
+import ProviderApplyPage from '@pages/provider/ProviderApplyPage';
+import ProviderApplicationStatusPage from '@pages/provider/ProviderApplicationStatusPage';
 import PointWalletPage from '@pages/user/point/PointWalletPage';
 import NotificationPage from '@pages/user/notification/NotificationPage';
 import NotificationSettingsPage from '@pages/user/notification/NotificationSettingsPage';
@@ -68,8 +73,13 @@ import OperationsIntegrationPreview from '@pages/admin/OperationsIntegrationPrev
 import AdminNoticeListPage from '@pages/admin/notice/AdminNoticeListPage';
 import AdminNoticeFormPage from '@pages/admin/notice/AdminNoticeFormPage';
 import AdminGuidePage from '@pages/admin/guide/AdminGuidePage';
+import AdminCategoryPage from '@pages/admin/category/AdminCategoryPage';
+import AdminServiceRequestPage from '@pages/admin/service/AdminServiceRequestPage';
+import AdminProviderApprovalPage from '@pages/admin/provider/AdminProviderApprovalPage';
 import AdminAuditLogPage from '@pages/admin/audit/AdminAuditLogPage';
 import AdminSystemSettingPage from '@pages/admin/setting/AdminSystemSettingPage';
+import AdminAuctionManagementPage from '@pages/admin/auction/AdminAuctionManagementPage';
+import AdminNotificationPage from '@pages/admin/notification/AdminNotificationPage';
 
 
 const AppRoutes = () => {
@@ -90,6 +100,7 @@ const AppRoutes = () => {
       <Route path="/login/signup"    element={<SignupPage />} />
       <Route path="/find-email"      element={<FindEmailPage />} />
       <Route path="/reset-password"  element={<ResetPasswordPage />} />
+      <Route path="/withdrawal"      element={<WithdrawalRequestPage />} />
       <Route path="/oauth/redirect"  element={<OAuthRedirectHandler />} />
       <Route path="/unauthorized"    element={<Unauthorized />} />
       <Route path="/403"             element={<Unauthorized />} />
@@ -100,6 +111,10 @@ const AppRoutes = () => {
           공개 조회 영역 (UserLayout)
       ──────────────────────────────── */}
       <Route element={<UserLayout />}>
+        {/* 경매 */}
+        <Route path="/auction" element={<AuctionListPage />} />
+        <Route path="/auction/:auctionId" element={<AuctionDetailPage />} />
+
         {/* 담당자 7의 F-COM-002/015 화면. 공통 route 소유자(담당자 1)에게 동일 manifest로 전달합니다. */}
         <Route path="/services" element={<ServiceListPage />} />
         <Route path="/providers/:providerId" element={<PublicProviderProfilePage />} />
@@ -125,6 +140,10 @@ const AppRoutes = () => {
 
         {/* 상품 — 로그인 필요 */}
         <Route element={<ProtectedRoute />}>
+          {/* 담당자 7 · F-PROV-001/006: 마이페이지의 제공자 권한 신청 메뉴 목적지 */}
+          <Route path="/provider/apply"              element={<ProviderApplyPage />} />
+          {/* 담당자 7 · F-PROV-012/014: 신청 완료 후 내 심사 상태 확인 화면. 라우트 소유자에게 전달 필요. */}
+          <Route path="/provider/applications/status" element={<ProviderApplicationStatusPage />} />
           <Route path="/product/register"        element={<ProductRegisterPage />} />
           <Route path="/product/me"              element={<MyProductListPage />} />
           <Route path="/product/:prdSn/seller"   element={<ProductDetailSellerPage />} />
@@ -140,9 +159,15 @@ const AppRoutes = () => {
           <Route path="notices/new" element={<AdminNoticeFormPage />} />
           <Route path="notices/:noticeId" element={<AdminNoticeFormPage />} />
           <Route path="guides" element={<AdminGuidePage />} />
+          <Route path="categories" element={<AdminCategoryPage />} />
+          <Route path="services" element={<AdminServiceRequestPage />} />
+          <Route path="provider-applications" element={<AdminProviderApprovalPage />} />
+          <Route path="auctions" element={<AdminAuctionManagementPage />} />
           {/* 보안/감사·시스템 설정 (담당자6, F-OPS-014/016/024) */}
           <Route path="audit-logs" element={<AdminAuditLogPage />} />
           <Route path="system-settings" element={<AdminSystemSettingPage />} />
+          {/* 관리자 알림 (담당자6, F-COM-004/005) */}
+          <Route path="notifications" element={<AdminNotificationPage />} />
           {/* F-OPS-012/013 임시 연동 및 신고 목업 확인용 읽기 전용 화면 */}
           <Route path="operations-preview" element={<OperationsIntegrationPreview />} />
         </Route>

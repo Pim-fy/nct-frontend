@@ -9,10 +9,11 @@ import {
 export const noticeQueryKeys = {
   all: ['public-notices'],
   types: () => [...noticeQueryKeys.all, 'types'],
-  list: ({ typeCode, page, size }) => [
+  list: ({ typeCode, keyword, page, size }) => [
     ...noticeQueryKeys.all,
     'list',
     typeCode || 'all',
+    keyword || 'all',
     page,
     size,
   ],
@@ -24,9 +25,9 @@ export const usePublicNoticeTypes = () => useQuery({
   queryFn: fetchPublicNoticeTypes,
 });
 
-export const usePublicNoticeList = ({ typeCode, page, size = 10 }) => useQuery({
-  queryKey: noticeQueryKeys.list({ typeCode, page, size }),
-  queryFn: () => fetchPublicNotices({ typeCode, page, size }),
+export const usePublicNoticeList = ({ typeCode, keyword, page, size = 10 }) => useQuery({
+  queryKey: noticeQueryKeys.list({ typeCode, keyword, page, size }),
+  queryFn: () => fetchPublicNotices({ typeCode, keyword, page, size }),
 });
 
 export const usePublicNoticeDetail = (noticeId) => useQuery({
