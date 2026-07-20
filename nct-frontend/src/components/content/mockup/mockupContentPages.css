@@ -120,6 +120,28 @@
   line-height: 1.65;
 }
 
+/* 담당자 7 · F-COM-014: 실제 route가 준비된 이용가이드 단계의 이동 버튼이다. */
+.content-modal__target-link,
+.content-modal__target-pending {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 14px;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.content-modal__target-link {
+  background: var(--color-primary, #0064ff);
+  color: #fff;
+}
+
+.content-modal__target-pending {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
 .notice-filters {
   display: flex;
   flex-wrap: wrap;

@@ -218,6 +218,14 @@ export const MockupGuideModal = ({ guide, imageAlt, imageSrc, closeButtonRef, on
       </div>
       <img alt={imageAlt} src={imageSrc} />
       <p id="guide-modal-description">{guide.flowCopy}</p>
+      {/* 담당자 7 · F-COM-014: 준비된 route만 실제 화면으로 이동한다. */}
+      {guide.targetRoute ? (
+        <Link className="content-modal__target-link" onClick={onClose} to={guide.targetRoute}>
+          {guide.targetLabel}으로 이동
+        </Link>
+      ) : (
+        <span className="content-modal__target-pending">{guide.targetLabel} · {guide.targetOwner}</span>
+      )}
     </section>
   </div>
 );
