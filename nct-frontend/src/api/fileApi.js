@@ -1,23 +1,28 @@
 // src/api/fileApi.js
 // Claude Code 작성 (BJN, 2026-07-17)
 // ─────────────────────────────────────────────────────────────────────────────
-// 파일 업로드 API — 이미지 1장을 업로드하고 {flSn, url}을 받는다 (F-AUC-002 이미지 연계)
-// ProductRegisterPage에서 사용. 응답 url은 백엔드 정적 리소스 경로(/uploads/...)라
-// axios 인스턴스의 baseURL(.../api)과 축이 달라서, 화면에 그릴 땐 toImageUrl로
-// 백엔드 origin을 직접 붙여줘야 한다.
+// 파일 관리 API — 이미지 업로드/삭제 (F-AUC-002 이미지 연계)
+// ProductRegisterPage에서 사용. 업로드 응답 url은 백엔드 서빙 경로
+// (/api/attachment/{서비스}/{yyyyMMdd}/파일명)라 axios 인스턴스의 baseURL(.../api)과
+// 축이 달라서, 화면에 그릴 땐 toImageUrl로 백엔드 origin을 직접 붙여줘야 한다.
+// service 구분은 저장 폴더 분류용 — 상품 이미지는 'product' (백엔드 화이트리스트와 일치해야 함).
 // ─────────────────────────────────────────────────────────────────────────────
 import api from './axios';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
-/** 이미지 1장 업로드 → { flSn, url } */
-export const uploadImage = (file) => {
+/** 이미지 1장 업로드 → { flSn, url }. service: 어느 도메인의 첨부인지 (예: 'product') */
+export const uploadImage = (file, service) => {
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('service', service);
   return api
-    .post('/files', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+    .post('/attachment', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
     .then(res => res.data);
 };
 
-/** 서버가 내려준 상대 경로(/uploads/...)를 화면에 그릴 수 있는 절대 URL로 변환 */
+/** 본인이 올린 파일 삭제 — 등록 전 화면에서 이미지를 뺄 때 고아 파일 정리용 */
+export const deleteImage = (flSn) => api.delete(`/attachment/${flSn}`);
+
+/** 서버가 내려준 상대 경로(/api/attachment/...)를 화면에 그릴 수 있는 절대 URL로 변환 */
 export const toImageUrl = (path) => (path ? `${BACKEND_URL}${path}` : null);

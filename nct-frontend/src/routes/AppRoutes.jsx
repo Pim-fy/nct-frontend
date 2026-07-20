@@ -71,6 +71,7 @@ import AdminNoticeFormPage from '@pages/admin/notice/AdminNoticeFormPage';
 import AdminGuidePage from '@pages/admin/guide/AdminGuidePage';
 import AdminAuditLogPage from '@pages/admin/audit/AdminAuditLogPage';
 import AdminSystemSettingPage from '@pages/admin/setting/AdminSystemSettingPage';
+import AdminNotificationPage from '@pages/admin/notification/AdminNotificationPage';
 
 
 const AppRoutes = () => {
@@ -145,6 +146,8 @@ const AppRoutes = () => {
           {/* 보안/감사·시스템 설정 (담당자6, F-OPS-014/016/024) */}
           <Route path="audit-logs" element={<AdminAuditLogPage />} />
           <Route path="system-settings" element={<AdminSystemSettingPage />} />
+          {/* 관리자 알림 (담당자6, F-COM-004/005) */}
+          <Route path="notifications" element={<AdminNotificationPage />} />
           {/* F-OPS-012/013 임시 연동 및 신고 목업 확인용 읽기 전용 화면 */}
           <Route path="operations-preview" element={<OperationsIntegrationPreview />} />
         </Route>
