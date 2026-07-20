@@ -302,7 +302,7 @@ const AuctionListPage = () => {
         </div>
       </main>
 
-      <Link className="auction-register-fab" to="/auction/create" aria-label="경매 등록">
+      <Link className="auction-register-fab" to="/product/register" aria-label="경매 등록">
         <Plus size={20} />
         <span>경매 등록</span>
       </Link>
