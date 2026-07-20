@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCategories } from '@api/categoryApi';
 import { registerProduct } from '@api/productApi';
-import { toImageUrl, uploadImage } from '@api/fileApi';
+import { deleteImage, toImageUrl, uploadImage } from '@api/fileApi';
 
 // ─── 거래방식 아이콘 SVG 컴포넌트 ───────────────────────────────────────────
 // deal-options(.line-option) 버튼 안에 표시되는 아이콘
@@ -100,7 +100,8 @@ export default function ProductRegisterPage() {
     setError('');
     try {
       for (const file of files) {
-        const res = await uploadImage(file);
+        // service='product': 백엔드가 /home/nct/attachment/product/{날짜}/ 폴더로 분류 저장
+        const res = await uploadImage(file, 'product');
         setImages(prev => [...prev, { flSn: res.data.flSn, url: res.data.url }]);
       }
     } catch (err) {
@@ -112,7 +113,15 @@ export default function ProductRegisterPage() {
     }
   };
 
-  const removeImage = (flSn) => setImages(prev => prev.filter(img => img.flSn !== flSn));
+  // 이미지 제거: 화면에서 빼고, 서버의 고아 파일(FILES 행 + 디스크)도 정리한다.
+  // 삭제 API가 실패해도 사용자 작업(등록 진행)을 막을 이유는 없으므로 화면 제거는 그대로 진행하고
+  // 흔적만 콘솔에 남긴다 (조용히 삼키지 않기).
+  const removeImage = (flSn) => {
+    setImages(prev => prev.filter(img => img.flSn !== flSn));
+    deleteImage(flSn).catch(err => {
+      console.warn('첨부 파일 서버 삭제 실패 (화면 제거는 진행됨) - flSn:', flSn, err.response?.data?.message || err.message);
+    });
+  };
 
   // ─── 날짜 유틸 ───────────────────────────────────────────────────────────
   // Date → 'YYYY-MM-DDTHH:mm' 형식 변환 (datetime-local input 값으로 사용)
@@ -179,8 +188,8 @@ export default function ProductRegisterPage() {
         prdIbyAmt:      form.prdIbyAmt ? Number(form.prdIbyAmt) : null,
         prdTrdMethodCd: form.prdTrdMethodCd,
         prdStatusCd:    statusCd,
-        aucEndDt:       statusCd === 'PRDC0002' && endDt ? endDt.toISOString() : null,
         flSnList:       images.map(img => img.flSn),
+        // 임시저장(PRDC0001)이면 경매 일정 없음 → 둘 다 null, 경매 등록(PRDC0002)이면 시작·종료일시 전송
         aucStartDt:     isDraft ? null : startDt.toISOString(),
         aucEndDt:       isDraft || !endDt ? null : endDt.toISOString(),
       };

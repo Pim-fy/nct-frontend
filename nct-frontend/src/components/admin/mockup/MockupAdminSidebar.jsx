@@ -22,7 +22,7 @@ import './MockupAdminSidebar.css';
 const MENU_SECTIONS = [
   [
     { label: '대시보드', icon: LayoutDashboard, to: '/admin', owner: '담당자 7' },
-    { label: '알림', icon: Bell, owner: '담당자 6' },
+    { label: '알림', icon: Bell, to: '/admin/notifications', owner: '담당자 6' },
   ],
   [
     { label: '회원 관리', icon: Users, owner: '담당자 1' },
