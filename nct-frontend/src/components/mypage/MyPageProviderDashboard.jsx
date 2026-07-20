@@ -132,19 +132,34 @@ function StatCard({ color, icon, label, value, unit, meta }) {
   );
 }
 
+// 오늘 확인할 일 섹션 높이 동적 계산 (태스크 수에 따라 자동 조정)
+function computeTodayTasksHeight(taskCount) {
+  if (taskCount === 0) return 150; // header(70) + empty message(80)
+  const rows = Math.ceil(taskCount / 3);
+  const gridH = rows * 109 + (rows - 1) * 21;
+  return 70 + 21 + gridH + 21; // header + padding-top + grid + padding-bottom
+}
+
+// 섹션 top 위치 계산 (동적 높이 기반)
+const TODAY_TASKS_TOP = 530;
+const TODAY_TASKS_H = computeTodayTasksHeight(TODAY_TASKS.length);
+const SETTLEMENT_TOP = TODAY_TASKS_TOP + TODAY_TASKS_H + 20;
+const SETTLEMENT_H = 192;
+const PANELS_TOP = SETTLEMENT_TOP + SETTLEMENT_H + 20;
+
 function TaskCard({ title, desc, action }) {
   return (
-    <div className="relative h-[109px] w-[409px] shrink-0 rounded-[5px] border border-[#eaeaea] bg-[#f7f7f7]">
-      <p className="absolute left-[20px] top-[24px] font-['Noto_Sans_KR:Bold'] font-bold text-[18px] text-[#3a3a3a] tracking-[-0.9px]">
+    <div className="relative h-[109px] w-full rounded-[5px] border border-[#eaeaea] bg-[#f7f7f7]">
+      <p className="absolute left-[20px] top-[24px] right-[100px] font-['Noto_Sans_KR:Bold'] font-bold text-[18px] text-[#3a3a3a] tracking-[-0.9px] truncate">
         {title}
       </p>
-      <p className="absolute left-[20px] top-[50px] w-[300px] font-['Noto_Sans_KR:Medium'] text-[16px] leading-[20px] text-[#555] tracking-[-0.8px]">
+      <p className="absolute left-[20px] top-[50px] right-[100px] font-['Noto_Sans_KR:Medium'] text-[14px] leading-[20px] text-[#555] tracking-[-0.7px] line-clamp-2">
         {desc}
       </p>
       <button
         type="button"
         onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
-        className="absolute right-[20px] top-[39px] flex h-[30px] items-center gap-1.5 rounded-[5px] border border-[#4e4e4e] bg-white px-3 text-[15px] font-['Noto_Sans_KR:Medium'] text-[#4e4e4e] cursor-pointer hover:bg-[#f5f5f5] transition-colors"
+        className="absolute right-[20px] top-[39px] flex h-[30px] items-center gap-1.5 rounded-[5px] border border-[#4e4e4e] bg-white px-3 text-[15px] font-['Noto_Sans_KR:Medium'] text-[#4e4e4e] cursor-pointer hover:bg-[#f5f5f5] transition-colors whitespace-nowrap"
       >
         <img src={action === "chat" ? assets.iconChat : assets.iconReport} alt="" className="size-[13px]" />
         {action === "chat" ? "채팅" : "견적"}
@@ -287,8 +302,36 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral }) {
         ))}
       </div>
 
-      {/* 정산현황 */}
-      <div className="absolute left-[448px] top-[530px] h-[192px] w-[1318px] overflow-hidden rounded-[15px] border border-[rgba(0,0,0,0.11)] bg-white">
+      {/* 오늘 확인할 일 (전체폭, 동적 높이 - 디자인상 정산현황 위) */}
+      <div
+        className="absolute left-[448px] w-[1318px] rounded-[15px] border border-[rgba(0,0,0,0.11)] bg-white"
+        style={{ top: TODAY_TASKS_TOP }}
+      >
+        <div className="h-[70px] rounded-t-[15px] bg-[rgba(0,100,255,0.05)] flex items-center px-[30px]">
+          <p className="font-['Noto_Sans_KR:Bold'] font-bold text-[18px] text-[#3a3a3a] tracking-[-0.9px]">
+            오늘 확인할 일
+          </p>
+        </div>
+        {TODAY_TASKS.length === 0 ? (
+          <div className="flex items-center justify-center py-[40px]">
+            <p className="font-['Noto_Sans_KR:Medium'] text-[16px] text-[#969696]">
+              오늘 확인할 일이 없습니다.
+            </p>
+          </div>
+        ) : (
+          <div className="p-[21px] grid grid-cols-3 gap-x-[25px] gap-y-[21px]">
+            {TODAY_TASKS.map((task, i) => (
+              <TaskCard key={`${task.title}-${i}`} {...task} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 정산현황 (디자인상 오늘 확인할 일 아래) */}
+      <div
+        className="absolute left-[448px] h-[192px] w-[1318px] overflow-hidden rounded-[15px] border border-[rgba(0,0,0,0.11)] bg-white"
+        style={{ top: SETTLEMENT_TOP }}
+      >
         <div className="absolute left-0 top-0 h-[70px] w-full rounded-t-[15px] bg-[rgba(0,100,255,0.05)]" />
         <p className="absolute left-[30px] top-[26px] font-['Noto_Sans_KR:Bold'] font-bold text-[18px] text-[#3a3a3a] tracking-[-0.9px]">
           정산현황
@@ -296,14 +339,14 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral }) {
         <button
           type="button"
           onClick={() => navigate("/user/settlement")}
-          className="absolute right-[168px] top-[13px] flex h-[45px] w-[95px] items-center justify-center rounded-[5px] bg-primary text-[16px] font-['Inter:Medium'] text-white cursor-pointer hover:bg-[#0048bf] transition-colors"
+          className="absolute right-[168px] top-[13px] flex h-[45px] w-[95px] items-center justify-center rounded-[5px] bg-primary text-[16px] font-['Noto_Sans_KR:Medium'] text-white cursor-pointer hover:bg-[#0048bf] transition-colors"
         >
           정산관리
         </button>
         <button
           type="button"
           onClick={() => navigate("/user/settlement")}
-          className="absolute right-[19px] top-[13px] flex h-[45px] w-[125px] items-center justify-center rounded-[5px] border border-primary bg-white text-[16px] font-['Inter:Medium'] text-primary cursor-pointer hover:bg-[#f0f6ff] transition-colors"
+          className="absolute right-[19px] top-[13px] flex h-[45px] w-[125px] items-center justify-center rounded-[5px] border border-primary bg-white text-[16px] font-['Noto_Sans_KR:Medium'] text-primary cursor-pointer hover:bg-[#f0f6ff] transition-colors"
         >
           정산 계좌 확인
         </button>
@@ -325,21 +368,11 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral }) {
         ))}
       </div>
 
-      {/* 오늘 확인할 일 (전체폭) */}
-      <div className="absolute left-[448px] top-[742px] h-[483px] w-[1318px] overflow-hidden rounded-[15px] border border-[rgba(0,0,0,0.11)] bg-white">
-        <div className="absolute left-0 top-0 h-[70px] w-full rounded-t-[15px] bg-[rgba(0,100,255,0.05)]" />
-        <p className="absolute left-[30px] top-[26px] font-['Noto_Sans_KR:Bold'] font-bold text-[18px] text-[#3a3a3a] tracking-[-0.9px]">
-          오늘 확인할 일
-        </p>
-        <div className="absolute left-[21px] top-[91px] grid grid-cols-3 gap-x-[25px] gap-y-[21px]">
-          {TODAY_TASKS.map((task, i) => (
-            <TaskCard key={`${task.title}-${i}`} {...task} />
-          ))}
-        </div>
-      </div>
-
       {/* 진행 중 서비스 / 최근 수주·견적 */}
-      <div className="absolute left-[448px] top-[1294px] flex gap-[18px]">
+      <div
+        className="absolute left-[448px] flex gap-[18px]"
+        style={{ top: PANELS_TOP }}
+      >
         <CompactListPanel title="진행 중 서비스" items={IN_PROGRESS_ITEMS} />
         <CompactListPanel title="최근 수주·견적" items={RECENT_QUOTE_ITEMS} itemLabelSize="small" />
       </div>

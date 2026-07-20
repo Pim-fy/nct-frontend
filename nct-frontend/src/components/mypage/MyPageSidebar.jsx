@@ -14,7 +14,7 @@ import { toast } from "@utils/common";
 const GENERAL_MENU_ITEMS = [
   { key: "home", label: "MY 홈", type: "section" },
   { key: "profile", label: "프로필수정", type: "section" },
-  { key: "auction-history", label: "경매 거래내역", type: "route", to: "/my-bids" },
+  { key: "auction-history", label: "경매 거래내역", type: "section" },
   { key: "service-history", label: "서비스 거래내역", type: "todo" },
   { key: "wishlist", label: "관심 상품", type: "todo" },
   { key: "chat", label: "채팅", type: "todo" },
@@ -69,24 +69,30 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
         const top = FIRST_ITEM_TOP + index * ITEM_HEIGHT;
         const isActive = item.type === "section" && item.key === activeSection;
         return (
-          <button
-            key={item.key}
-            type="button"
-            onClick={() => handleClick(item)}
-            className={`absolute left-[167px] w-[200px] h-[50px] flex items-center justify-between px-[25px] rounded-[10px] cursor-pointer border-none text-left transition-colors ${
-              isActive ? "bg-[#0064ff]" : "bg-transparent hover:bg-[#f3f5fa]"
-            }`}
-            style={{ top }}
-          >
-            <span
-              className={`font-['Noto_Sans_KR:Medium'] text-[16px] ${
-                isActive ? "font-bold text-white" : "text-[#333]"
+          <React.Fragment key={item.key}>
+            <button
+              type="button"
+              onClick={() => handleClick(item)}
+              className={`absolute left-[167px] w-[200px] h-[50px] flex items-center justify-between px-[25px] rounded-[10px] cursor-pointer border-none text-left transition-colors ${
+                isActive ? "bg-[#0064ff]" : "bg-transparent hover:bg-[#f3f5fa]"
               }`}
+              style={{ top }}
             >
-              {item.label}
-            </span>
-            {isActive && <ChevronRight size={14} className="text-white" />}
-          </button>
+              <span
+                className={`font-['Noto_Sans_KR:Medium'] text-[16px] ${
+                  isActive ? "font-bold text-white" : "text-[#333]"
+                }`}
+              >
+                {item.label}
+              </span>
+              {isActive && <ChevronRight size={14} className="text-white" />}
+            </button>
+            {/* 메뉴 항목 사이 구분선 */}
+            <div
+              className="absolute left-[167px] w-[200px] h-px bg-[#e5e5e5]"
+              style={{ top: top + ITEM_HEIGHT }}
+            />
+          </React.Fragment>
         );
       })}
     </div>

@@ -93,8 +93,8 @@ a.list-row:hover {
   cursor: pointer;
 }
 .chip.active {
-  background: var(--color-primary-light, #e5efff);
-  color: var(--color-primary-dark, #0048bf);
+  background: var(--color-primary, #0064ff);
+  color: #fff;
   border-color: var(--color-primary, #0064ff);
 }
 

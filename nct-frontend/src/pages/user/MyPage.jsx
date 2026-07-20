@@ -18,6 +18,7 @@ import MyPageSidebar from "@components/mypage/MyPageSidebar";
 import MyPageDashboard from "@components/mypage/MyPageDashboard";
 import MyPageProfileEdit from "@components/mypage/MyPageProfileEdit";
 import MyPageProviderDashboard from "@components/mypage/MyPageProviderDashboard";
+import MyBidHistoryPage from "@pages/user/MyBidHistoryPage";
 import { useAuth } from "@hooks/useAuth";
 import { confirm } from "@utils/common";
 import { isProviderAccount, MYPAGE_MODE_EVENT } from "@utils/providerMode";
@@ -26,6 +27,7 @@ const TOP_CROP = 82;
 const HOME_CANVAS_HEIGHT = 1312;          // node 18:2 FOOTER top(1121) + height(191)
 const PROFILE_CANVAS_HEIGHT = 1092;       // node 28:12 FOOTER top(901) + height(191)
 const PROVIDER_HOME_CANVAS_HEIGHT = 2056; // node 57:495 FOOTER top(1865) + height(191)
+const AUCTION_CANVAS_HEIGHT = 1600;       // 경매 거래내역 — 페이지네이션 목록 기준 넉넉하게
 
 export default function MyPage() {
   const { user } = useAuth();
@@ -70,9 +72,11 @@ export default function MyPage() {
   const canvasHeight =
     activeSection === "profile"
       ? PROFILE_CANVAS_HEIGHT
-      : mode === "provider"
-        ? PROVIDER_HOME_CANVAS_HEIGHT
-        : HOME_CANVAS_HEIGHT;
+      : activeSection === "auction-history"
+        ? AUCTION_CANVAS_HEIGHT
+        : mode === "provider"
+          ? PROVIDER_HOME_CANVAS_HEIGHT
+          : HOME_CANVAS_HEIGHT;
 
   return (
     <ScaledStage canvasHeight={canvasHeight} topCrop={TOP_CROP}>
@@ -90,6 +94,11 @@ export default function MyPage() {
         <MyPageProviderDashboard user={user} onSwitchToGeneral={() => switchMode("general")} />
       )}
       {activeSection === "profile" && <MyPageProfileEdit user={user} />}
+      {activeSection === "auction-history" && (
+        <div style={{ position: "absolute", left: 430, top: 137, width: 1440 }}>
+          <MyBidHistoryPage />
+        </div>
+      )}
       {/* 우측 플로팅 퀵메뉴는 SiteHeader(<QuickActions />)가 모든 페이지 공용으로 렌더링한다.
           예전엔 이 페이지 안에 ScaledStage 절대좌표로 직접 그렸는데, 탭/모드에 따라 캔버스 높이가
           바뀌다 보니 스케일이 달라져 위치가 어긋나 보였다(메인페이지는 고정 캔버스라 문제가 없었음). */}

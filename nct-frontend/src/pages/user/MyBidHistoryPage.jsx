@@ -19,11 +19,11 @@ import { useMyBidHistory } from '@hooks/useBid';
 import { useMyProducts } from '@hooks/useProduct';
 
 const BID_STATUS_META = {
-  HIGHEST: { label: '최고입찰', badge: 'badge-warning' },
-  WON: { label: '낙찰', badge: 'badge-success' },
-  OUTBID: { label: '반환', badge: 'badge-gray' },
-  CANCELED: { label: '취소', badge: 'badge-gray' },
-  UNKNOWN: { label: '확인 필요', badge: 'badge-gray' },
+  HIGHEST: { label: '최고입찰', badge: 'badge-primary' },
+  WON:     { label: '낙찰',    badge: 'badge-orange' },
+  OUTBID:  { label: '반환',    badge: 'badge-outline-orange' },
+  CANCELED:{ label: '취소',    badge: 'badge-outline-gray' },
+  UNKNOWN: { label: '확인 필요', badge: 'badge-outline-gray' },
 };
 
 const BID_STATUS_FILTERS = [
@@ -36,10 +36,10 @@ const BID_STATUS_FILTERS = [
 
 // PRDC0001=임시저장, PRDC0002=경매 진행중, PRDC0003=종료, PRDC0004=삭제 (MyProductListPage.jsx와 동일 코드)
 const PRODUCT_STATUS_META = {
-  PRDC0001: { label: '임시저장', badge: 'badge-gray' },
-  PRDC0002: { label: '진행중', badge: 'badge-warning' },
-  PRDC0003: { label: '완료', badge: 'badge-success' },
-  PRDC0004: { label: '삭제', badge: 'badge-gray' },
+  PRDC0001: { label: '임시저장', badge: 'badge-outline-gray' },
+  PRDC0002: { label: '진행중',   badge: 'badge-outline-orange' },
+  PRDC0003: { label: '완료',     badge: 'badge-outline-gray' },
+  PRDC0004: { label: '삭제',     badge: 'badge-danger' },
 };
 
 const BID_PAGE_SIZE = 10;
@@ -118,7 +118,7 @@ function BidHistoryTab() {
                     </div>
                   </div>
                   <div className="row" style={{ gap: 8, flexShrink: 0 }}>
-                    <button type="button" onClick={() => handleGoToAuction(item.aucSn)} className="btn btn-sm btn-outline">경매 상세보기</button>
+                    <button type="button" onClick={() => handleGoToAuction(item.aucSn)} className="btn btn-sm btn-ghost">경매 상세</button>
                   </div>
                 </div>
               );
@@ -190,8 +190,8 @@ function SalesHistoryTab() {
               <div className="row" style={{ gap: 8, flexShrink: 0 }}>
                 {p.prdStatusCd === 'PRDC0002' && (
                   <>
-                    <button type="button" onClick={() => handleManage(p.prdSn)} className="btn btn-sm btn-outline">판매관리</button>
-                    <button type="button" onClick={() => handleManage(p.prdSn)} className="btn btn-sm btn-danger">취소요청</button>
+                    <button type="button" onClick={() => handleManage(p.prdSn)} className="btn btn-sm btn-primary">판매관리</button>
+                    <button type="button" onClick={() => handleManage(p.prdSn)} className="btn btn-sm btn-danger">취소 요청</button>
                   </>
                 )}
                 {(p.prdStatusCd === 'PRDC0003' || p.prdStatusCd === 'PRDC0001') && (
@@ -222,7 +222,7 @@ export default function MyBidHistoryPage() {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="absolute contents left-[448px] top-[167px]">
       <div className="page-title">
         <div>
           <h1>경매 거래내역</h1>
