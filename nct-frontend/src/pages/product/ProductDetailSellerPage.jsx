@@ -7,7 +7,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toImageUrl } from '@api/fileApi';
-import { getProduct, requestAuctionCancel, getAuctionStatus } from '@api/productApi';
+import { getProduct } from '@api/productApi';
+import { getAuctionStatus, requestAuctionCancel } from '@api/auctionApi';
 import Breadcrumb from '@components/common/Breadcrumb';
 import ErrorMessage from '@components/common/ErrorMessage';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
@@ -65,7 +66,7 @@ export default function ProductDetailSellerPage() {
         setProduct(p);
         if (p.prdStatusCd === 'PRDC0002') {
           return getAuctionStatus(prdSn)
-            .then(auc => setAuctionStatus(auc.data))
+            .then(auc => setAuctionStatus(auc))
             .catch(() => {});
         }
       })

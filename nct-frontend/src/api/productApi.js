@@ -20,11 +20,3 @@ export const getProduct = (prdSn) =>
 /** 상품 삭제 */
 export const deleteProduct = (prdSn) =>
   api.delete(`/products/${prdSn}`).then(res => res.data);
-
-/** 경매 취소 요청 (F-AUC-008) */
-export const requestAuctionCancel = (prdSn, data) =>
-  api.post(`/products/${prdSn}/cancel-request`, data).then(res => res.data);
-
-/** 상품별 경매 현황 조회 (F-AUC-006) */
-export const getAuctionStatus = (prdSn) =>
-  api.get(`/auctions/product/${prdSn}`).then(res => res.data);
