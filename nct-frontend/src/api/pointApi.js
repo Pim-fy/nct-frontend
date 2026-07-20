@@ -25,3 +25,16 @@ export const confirmPointCharge = ({ orderId, paymentKey }) =>
 /** 내 충전 주문 이력 조회 (실패·취소·대기 포함, 최신순 100건) */
 export const getPointChargeOrders = () =>
   api.get('/point/charge/orders').then(res => res.data);
+
+/** 환전 신청 (F-PAY-012) — 서버가 즉시 차감 + 등록 계좌 스냅샷 기록.
+ *  계좌는 보내지 않는다 — 서버가 회원의 등록 계좌를 직접 읽는다 (계좌 조작 차단) */
+export const requestPointExchange = (amount) =>
+  api.post('/point/exchange', { amount }).then(res => res.data);
+
+/** 정산가능→사용가능 전환 (F-PAY-010) — 진행 중 거래 문제가 있으면 서버가 409로 거절한다 */
+export const convertPoint = (amount) =>
+  api.post('/point/convert', { amount }).then(res => res.data);
+
+/** 내 환전 신청 이력 조회 (신청·완료·반려, 최신순 100건) */
+export const getPointExchangeOrders = () =>
+  api.get('/point/exchange/orders').then(res => res.data);

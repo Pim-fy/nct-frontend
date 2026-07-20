@@ -67,6 +67,16 @@ api.interceptors.response.use(
      * 401 이면서, 재시도않은 요청인지 확인.
      * access token 만료로 판단 후 refresh 시도(1회).
      */
+    // @ai_generated: F-AUTH-009 - 세션 도중 계정이 정지/탈퇴되면 매 요청마다 403/410으로 차단된다.
+    // 토큰 재발급으로 해결되는 문제가 아니므로 401 refresh 흐름을 타지 않고 즉시 로그아웃 처리한다.
+    const errorCode = error.response?.data?.code;
+    if (errorCode === 'ACCOUNT_SUSPENDED' || errorCode === 'WITHDRAWN_USER') {
+      alert(error.response.data.message);
+      localStorage.removeItem('isLogin');
+      window.location.href = '/login';
+      return Promise.reject(error);
+    }
+
     // @ai_generated: 공개 인증 API의 업무 401은 refresh/로그인 이동 대신 호출 화면으로 전달한다.
     if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.skipAuthRefresh) {
       if (isRefreshing) {

@@ -29,11 +29,18 @@ const DOMAIN_CODE_TO_LABEL = {
   NTFC0014: '채팅', // 팀 결정(2026-07-17)으로 추가된 채팅 도메인
 };
 
+// 일반/제공자 구분 필터 (F-COM-011, 팀 결정 2026-07-17)
+// "내가 소비자로서 받은 알림(일반)"과 "내가 서비스 제공자로서 받은 업무 알림(제공자)"을 나눈다
+// 코드값(NTFG04) 기준: NTFC0015=일반, NTFC0016=제공자
+const AUDIENCE_FILTERS = ['전체', '일반', '제공자'];
+const AUDIENCE_TO_CODE = { 일반: 'NTFC0015', 제공자: 'NTFC0016' };
+
 /** 서버 응답 알림 → 화면 표시용 형태로 변환 */
 const toViewItem = (n) => ({
   id: n.id,
   domain: DOMAIN_CODE_TO_LABEL[n.domainCd] ?? n.domain, // 미지정 코드는 서버 한글명 그대로
   type: n.type,                                          // 유형 한글명 (배지 표시)
+  audienceCd: n.audienceCd,                              // 일반/제공자 필터 기준 (F-COM-011)
   title: n.title,
   time: relativeTime(n.regDt),                           // "방금 전 / N분 전" 상대 표기
   ref: n.refSn != null ? '관련 링크' : null,             // 참조 대상 페이지 라우팅은 해당 화면 구현 후
@@ -47,12 +54,17 @@ const toViewItem = (n) => ({
  */
 const NotificationPage = () => {
   const [filter, setFilter] = useState('전체');
+  // 일반/제공자 구분 필터 (F-COM-011) — 도메인 필터와 독립적으로 겹쳐 적용된다
+  const [audienceFilter, setAudienceFilter] = useState('전체');
 
   const { data: notifications = [], isLoading } = useNotifications();
   const markReadMutation = useMarkRead();
   const markAllReadMutation = useMarkAllRead();
 
-  const items = notifications.map(toViewItem);
+  // 대상 구분 필터를 먼저 적용 — 이후 도메인 그룹핑은 걸러진 목록 기준
+  const items = notifications
+    .map(toViewItem)
+    .filter((n) => audienceFilter === '전체' || n.audienceCd === AUDIENCE_TO_CODE[audienceFilter]);
   const unreadCount = items.filter((n) => !n.read).length;
 
   const markRead = (id) => markReadMutation.mutate(id);
@@ -67,6 +79,23 @@ const NotificationPage = () => {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 m-0">알림</h1>
         <p className="text-gray-500 mt-1.5 mb-0">읽지 않은 알림 {unreadCount}개</p>
+      </div>
+
+      {/* 일반/제공자 구분 필터 (F-COM-011) — 도메인 탭과 겹쳐서 적용된다 */}
+      <div className="flex gap-2 mb-3">
+        {AUDIENCE_FILTERS.map((f) => (
+          <button
+            key={f}
+            type="button"
+            onClick={() => setAudienceFilter(f)}
+            className={`rounded-full px-4 py-1.5 text-sm border transition-colors
+              ${audienceFilter === f
+                ? 'bg-gray-900 border-gray-900 text-white'
+                : 'bg-white border-gray-200 text-gray-600 hover:border-gray-400'}`}
+          >
+            {f}
+          </button>
+        ))}
       </div>
 
       {/* 필터 탭 + 전체 읽음 */}

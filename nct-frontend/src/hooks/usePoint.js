@@ -5,14 +5,17 @@
 //   컴포넌트는 백엔드 래핑 구조를 몰라도 되게 한다
 import { useQuery } from '@tanstack/react-query';
 
-import { getPointBalance, getPointLedger, getPointChargeOrders } from '../api/pointApi';
+import { getPointBalance, getPointLedger, getPointChargeOrders, getPointExchangeOrders } from '../api/pointApi';
 
-/** 내 포인트 잔액 — data: { available, hold, settleable, total } */
-export function usePointBalance() {
+/** 내 포인트 잔액 — data: { available, hold, settleable, total }
+ *  options로 useQuery 옵션을 덧붙일 수 있다 — 헤더처럼 비로그인 화면에서도 렌더링되는 곳은
+ *  { enabled: 로그인여부 }를 넘겨 401 요청 자체를 막는다 */
+export function usePointBalance(options = {}) {
   return useQuery({
     queryKey: ['point', 'balance'],
     queryFn: getPointBalance,
     select: (res) => res.data,
+    ...options,
   });
 }
 
@@ -31,6 +34,15 @@ export function usePointChargeOrders() {
   return useQuery({
     queryKey: ['point', 'chargeOrders'],
     queryFn: getPointChargeOrders,
+    select: (res) => res.data,
+  });
+}
+
+/** 내 환전 신청 이력 (F-PAY-012) — data: [{ id, date, amount, status, statusCd, bankName, accountNo, rejectReason, processedDate }] */
+export function usePointExchangeOrders() {
+  return useQuery({
+    queryKey: ['point', 'exchangeOrders'],
+    queryFn: getPointExchangeOrders,
     select: (res) => res.data,
   });
 }

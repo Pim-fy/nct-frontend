@@ -20,13 +20,19 @@ export const signup = (userData) =>
 export const getMyInfo = () =>
   api.get('/auth/me').then(res => res.data);
 
-/** 이메일 찾기 */
+/** 아이디 찾기 (F-AUTH-014) */
 export const findEmail = (params) =>
   api.post('/auth/find-email', params).then(res => res.data);
 
-/** 비밀번호 재설정 */
-export const resetPassword = (params) =>
-  api.post('/auth/reset-password', params).then(res => res.data);
+// @ai_generated: F-AUTH-007 - 계정 상태와 무관하게 항상 동일한 성공 응답을 주는 API라
+// skipServerErrorRedirect 등은 불필요하다(429 재발송 제한만 화면에서 그대로 노출).
+/** 비밀번호 재설정 링크 발송 */
+export const requestPasswordReset = (params) =>
+  api.post('/auth/password-reset-links', params).then(res => res.data);
+
+/** 비밀번호 재설정 확정 (이메일 링크의 토큰 + 새 비밀번호) */
+export const confirmPasswordReset = (params) =>
+  api.post('/auth/password-reset-links/confirm', params).then(res => res.data);
 
 /** 이메일 중복 확인 */
 export const checkEmail = (email) =>
