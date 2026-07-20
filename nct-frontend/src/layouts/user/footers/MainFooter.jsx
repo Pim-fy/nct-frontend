@@ -16,11 +16,10 @@ const MainFooter = () => {
   return (
     <footer className="bg-[#293341] text-[rgba(255,255,255,0.8)] mt-auto">
       <div className="container py-9">
-        <div className="flex flex-wrap items-start justify-between gap-8">
+        <div className="flex flex-wrap items-start justify-between gap-8 pt-7 pb-7">
           {/* 좌측: 로고 + 링크 */}
-          <div className="flex flex-col gap-9">
+          <div className="flex flex-col gap-4">
             <span className="text-[20px] font-black tracking-[-2px] text-white">에누리컷</span>
-
             <nav className="flex flex-wrap gap-x-6 gap-y-2 text-[15px] tracking-[-0.75px]">
               {FOOTER_LINKS.map((link) => (
                 <Link key={link.label} to={link.href} className="text-white/80 hover:text-white transition-colors">

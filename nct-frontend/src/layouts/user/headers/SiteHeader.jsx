@@ -215,10 +215,10 @@ const SiteHeader = () => {
         <div ref={utilRef} className="flex items-center gap-3">
           {!user && (
             <Link
-              to="/login/signup"
+              to="/login"
               className="hidden md:flex h-[33px] items-center justify-center rounded-[30px] border border-primary bg-primary px-4 text-[14px] font-medium text-white hover:bg-[#0048bf] transition-colors"
             >
-              회원가입
+              로그인
             </Link>
           )}
 
