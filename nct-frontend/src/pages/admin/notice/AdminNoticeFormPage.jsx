@@ -174,7 +174,7 @@ const AdminNoticeFormPage = () => {
 
         <label className="admin-notice-form__full"><span>제목 <em>{form.title.length}/200</em></span><input disabled={fieldsDisabled} maxLength={200} name="title" onChange={changeField} required value={form.title} /></label>
         <label className="admin-notice-form__full"><span>내용 <em>{form.content.length}/4000</em></span><textarea disabled={fieldsDisabled} maxLength={4000} name="content" onChange={changeField} required rows="12" value={form.content} /></label>
-        <label className="admin-notice-form__check"><input checked={form.pinned} disabled={fieldsDisabled} name="pinned" onChange={changeField} type="checkbox" /> 목록 상단에 고정</label>
+        <label className="admin-notice-form__check"><input checked={form.pinned} disabled={fieldsDisabled} name="pinned" onChange={changeField} type="checkbox" /> 중요 공지로 등록</label>
 
         <section className="admin-notice-form__audit">
           <div><strong>관리자 처리 사유</strong><p>현재 보안 로그에 남으며, 공용 감사 DB 연결은 준비 중입니다. 개인정보는 입력하지 마세요.</p></div>
@@ -183,7 +183,7 @@ const AdminNoticeFormPage = () => {
 
         <section className="admin-notice-preview" aria-label="사용자 공지 미리보기">
           <div><small>사용자 화면 미리보기</small><strong>{previewTitle}</strong><p>{form.content.trim() || '공지 내용이 이곳에 표시됩니다.'}</p></div>
-          <div><MockupAdminStatusBadge tone="info">{optionsQuery.data?.types?.find((item) => item.code === form.typeCode)?.name ?? '유형 선택'}</MockupAdminStatusBadge>{form.pinned && <MockupAdminStatusBadge tone="warning">상단 고정</MockupAdminStatusBadge>}</div>
+          <div><MockupAdminStatusBadge tone="info">{optionsQuery.data?.types?.find((item) => item.code === form.typeCode)?.name ?? '유형 선택'}</MockupAdminStatusBadge>{form.pinned && <MockupAdminStatusBadge tone="warning">중요 공지</MockupAdminStatusBadge>}</div>
         </section>
 
         {feedback && <p className={`admin-notice-form__feedback${feedback.includes('되었습니다') ? ' is-success' : ''}`}>{feedback}</p>}

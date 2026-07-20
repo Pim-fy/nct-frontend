@@ -47,6 +47,7 @@ import NoticeDetailPage from '@pages/content/NoticeDetailPage';
 import ServiceListPage from '@pages/service/ServiceListPage';
 import PublicProviderProfilePage from '@pages/provider/PublicProviderProfilePage';
 import ProviderApplyPage from '@pages/provider/ProviderApplyPage';
+import ProviderApplicationStatusPage from '@pages/provider/ProviderApplicationStatusPage';
 import PointWalletPage from '@pages/user/point/PointWalletPage';
 import NotificationPage from '@pages/user/notification/NotificationPage';
 import NotificationSettingsPage from '@pages/user/notification/NotificationSettingsPage';
@@ -133,6 +134,8 @@ const AppRoutes = () => {
         <Route element={<ProtectedRoute />}>
           {/* 담당자 7 · F-PROV-001/006: 마이페이지의 제공자 권한 신청 메뉴 목적지 */}
           <Route path="/provider/apply"              element={<ProviderApplyPage />} />
+          {/* 담당자 7 · F-PROV-012/014: 신청 완료 후 내 심사 상태 확인 화면. 라우트 소유자에게 전달 필요. */}
+          <Route path="/provider/applications/status" element={<ProviderApplicationStatusPage />} />
           <Route path="/product/register"        element={<ProductRegisterPage />} />
           <Route path="/product/me"              element={<MyProductListPage />} />
           <Route path="/product/:prdSn/seller"   element={<ProductDetailSellerPage />} />

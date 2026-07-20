@@ -8,4 +8,7 @@
 .provider-apply-file-group + .provider-apply-file-group { margin-top: 8px; }
 .provider-apply-file-group strong { color: #1a1a18; font-size: 14px; }
 .provider-apply-file-group p { background: #fafaf8; }
+.provider-apply-upload { display: grid; gap: 6px; padding: 12px; border: 1px solid #e2e1dc; border-radius: 8px; background: #fafaf8; color: #5f5e5a; font-size: 13px; font-weight: 700; }
+.provider-apply-upload span { color: #1a1a18; font-weight: 500; word-break: break-all; }
+.provider-apply-upload input { padding: 0; border: 0; font-size: 12px; }
 @media (max-width: 650px) { .provider-status-preview dl > div { display: block; }.provider-status-preview dl > div + div { border-top: 1px solid #f0efec; }.provider-status-preview dl dt, .provider-status-preview dl dd { border-bottom: 0; } }

@@ -132,7 +132,7 @@ const AdminNoticeListPage = () => {
                     <td>{notice.typeName}</td>
                     <td className="admin-notice-list__title">
                       <Link to={`/admin/notices/${notice.noticeId}`}>
-                        {notice.pinned && <span aria-label="상단 고정">[고정] </span>}{notice.title}
+                        {notice.pinned && <span aria-label="중요 공지">[중요] </span>}{notice.title}
                       </Link>
                     </td>
                     <td><MockupAdminStatusBadge tone={statusTone(notice.statusCode)}>{notice.statusName}</MockupAdminStatusBadge></td>
