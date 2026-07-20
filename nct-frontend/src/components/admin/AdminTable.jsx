@@ -1,6 +1,6 @@
 // src/components/admin/AdminTable.jsx
 const AdminTable = ({ columns = [], data = [], onRowClick }) => (
-  <table>
+  <table className="admin-table">
     <thead>
       <tr>{columns.map(col => <th key={col.key}>{col.label}</th>)}</tr>
     </thead>

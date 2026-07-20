@@ -14,6 +14,8 @@ import { toast } from "@utils/common";
 const GENERAL_MENU_ITEMS = [
   { key: "home", label: "MY 홈", type: "section" },
   { key: "profile", label: "프로필수정", type: "section" },
+  // 디자인시안 mypage_mybid_내입찰내역.png 기준 — MyBidHistoryPage(내입찰/내판매 2탭)을 MyPage 내에 표시
+  // develop은 /trades(담당자4 거래 모듈)로 변경했으나 디자인 확정 기준 section 유지
   { key: "auction-history", label: "경매 거래내역", type: "section" },
   { key: "service-history", label: "서비스 거래내역", type: "todo" },
   { key: "wishlist", label: "관심 상품", type: "todo" },

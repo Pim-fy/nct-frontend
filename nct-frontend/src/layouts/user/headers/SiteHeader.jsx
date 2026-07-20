@@ -38,9 +38,9 @@ const AUCTION_CATEGORIES = [
   '스포츠·레저', '유아·아동', '뷰티·미용', '식품', '기타',
 ];
 
-// 랜딩 메인 SERVICE MENU 아이콘 5개(청소/이사/설치·수리/인테리어/레슨)와 별개로,
-// 헤더 "서비스" 드롭다운은 요청받은 6개 카테고리로 구성한다.
-const SERVICE_CATEGORIES = ['이사', '설치', '수리', '청소', '인테리어', '레슨'];
+// 담당자 7 · CATEGORY(CATC0002)와 같은 서비스 5개를 표시한다.
+// 설치와 수리는 하나의 카테고리(설치·수리)이므로 헤더에서도 분리하지 않는다.
+const SERVICE_CATEGORIES = ['이사', '청소', '레슨', '설치·수리', '인테리어'];
 
 // 헤더 메뉴 기본 텍스트 색상(#333333) - 마우스오버 시에만 primary 파랑으로 바뀐다.
 const NAV_LINK_CLASS = "text-[20px] font-bold text-[#333333] tracking-[-0.02em] hover:text-primary transition-colors";

@@ -9,13 +9,14 @@
 .mockup-admin-page-header__eyebrow {
   display: block;
   margin-bottom: 6px;
-  color: #2563eb;
+  color: var(--color-primary, #0064ff);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.04em;
 }
 
-.mockup-admin-page-header h1 { margin: 0; color: #101828; font-size: clamp(27px, 3vw, 36px); }
+/* 담당자 7: 담당자 3 경매 화면이 따르는 공통 page-title(28px) 기준에 맞춥니다. */
+.mockup-admin-page-header h1 { margin: 0; color: #101828; font-size: 28px; }
 .mockup-admin-page-header p { margin: 7px 0 0; color: #667085; font-size: 14px; }
 .mockup-admin-page-header__action { flex: 0 0 auto; }
 
