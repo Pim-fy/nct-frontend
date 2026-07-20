@@ -51,3 +51,13 @@ export const fetchMyFavoriteAuctions = async (params) => {
   const response = await api.get('/auctions/favorites/me', { params });
   return response.data.data;
 };
+
+export const getAuctionStatus = async (productId) => {
+  const response = await api.get(`/auctions/product/${productId}`);
+  return response.data.data;
+};
+
+export const requestAuctionCancel = async (auctionId, payload) => {
+  const response = await api.post(`/auctions/${auctionId}/cancel-request`, payload);
+  return response.data.data;
+};
