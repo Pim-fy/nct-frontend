@@ -19,7 +19,7 @@ const QuickActions = () => {
 
   const handleAuctionCreate = () => {
     if (isAuthenticated) {
-      navigate('/auction/create');
+      navigate('/product/register');
     } else {
       navigate('/login');
     }

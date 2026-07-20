@@ -20,6 +20,8 @@ import AdminLayout   from '@layouts/AdminLayout';
 // 공개 페이지
 // ──────────────────────────────────────────
 import LandingPage        from '@pages/landing/LandingPage';
+import AuctionListPage    from '@pages/auction/AuctionListPage';
+import AuctionDetailPage  from '@pages/auction/AuctionDetailPage';
 import LoginPage          from '@pages/auth/LoginPage';
 import SignupPage         from '@pages/auth/SignupPage';
 import FindEmailPage      from '@pages/auth/FindEmailPage';
@@ -103,6 +105,10 @@ const AppRoutes = () => {
           공개 조회 영역 (UserLayout)
       ──────────────────────────────── */}
       <Route element={<UserLayout />}>
+        {/* 경매 */}
+        <Route path="/auction" element={<AuctionListPage />} />
+        <Route path="/auction/:auctionId" element={<AuctionDetailPage />} />
+
         {/* 담당자 7의 F-COM-002/015 화면. 공통 route 소유자(담당자 1)에게 동일 manifest로 전달합니다. */}
         <Route path="/services" element={<ServiceListPage />} />
         <Route path="/providers/:providerId" element={<PublicProviderProfilePage />} />
