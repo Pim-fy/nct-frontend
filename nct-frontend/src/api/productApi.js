@@ -20,3 +20,7 @@ export const getProduct = (prdSn) =>
 /** 상품 삭제 */
 export const deleteProduct = (prdSn) =>
   api.delete(`/products/${prdSn}`).then(res => res.data);
+
+/** 금지 키워드 목록 조회 (F-AUC-004) */
+export const fetchBannedKeywords = () =>
+  api.get('/products/banned-keywords').then(res => res.data.data);
