@@ -6,7 +6,7 @@ const QUICK_AMOUNTS = [100000, 300000, 500000];
 /**
  * 포인트 금액 입력 공용 모달 — 현재는 환전 신청에서만 사용
  * (충전은 결제위젯 모달 PointChargeWidgetModal로 단일화 — 사용자 결정, 2026-07-16)
- * - 환전: 지급·승인 방식 미결정(F-PAY-012)이라 onSubmit에서 "준비 중" 안내만
+ * - 환전: 방식 확정(D-026, 2026-07-17)으로 실연동 — onSubmit이 실제 신청 API를 호출한다
  */
 const PointAmountModal = ({ title, submitLabel, infoRow, onSubmit, onClose }) => {
   const [amount, setAmount] = useState('');
