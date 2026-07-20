@@ -109,6 +109,8 @@ body {
 .badge-orange         { background: #f5a524; color: #fff; }
 .badge-outline-orange { background: transparent; border: 1px solid #f5a524; color: #f5a524; }
 .badge-outline-gray   { background: transparent; border: 1px solid #969696; color: #969696; }
+.badge-teal           { background: #d1fae5; color: #065f46; }
+.badge-urgent         { background: #e63946; color: #fff; }
 
 /* ===========================
    카드 — 흰 배경 + 둥근 테두리 + 그림자
