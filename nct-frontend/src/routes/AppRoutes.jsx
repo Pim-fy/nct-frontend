@@ -31,12 +31,18 @@ import Unauthorized   from '@pages/error/Unauthorized';
 // UserLayout (로그인 필요)
 // ──────────────────────────────────────────
 import MyPage from '@pages/user/MyPage';
+import TradeHistory from '@pages/trade/TradeHistory';
+import TradeDetailBuyer from '@pages/trade/TradeDetailBuyer';
+import TradeDetailSeller from '@pages/trade/TradeDetailSeller';
+import TradeChat from '@pages/trade/TradeChat';
 
 // ──────────────────────────────────────────
 // Admin 페이지
 // ──────────────────────────────────────────
 import Dashboard        from '@pages/admin/Dashboard';
 
+// 개발 플래그가 켜진 로컬 환경에서만 로그인 없는 거래 화면 검토 경로를 제공한다.
+const isTradePreviewEnabled = import.meta.env.VITE_USE_TRADE_PREVIEW === 'true';
 
 const AppRoutes = () => {
   return (
@@ -62,12 +68,37 @@ const AppRoutes = () => {
       <Route path="/404"             element={<NotFoundPage />} />
       <Route path="/500"             element={<ServerErrorPage />} />
 
-      {/* ────────────────────────────────
-          공개 조회 영역 (UserLayout)
-      ──────────────────────────────── */}
-      <Route element={<UserLayout />}>
-        {/* 마이페이지 */}
+      {/* 실제 거래 경로의 인증 정책과 분리된 개발용 화면 확인 경로 */}
+      {isTradePreviewEnabled && (
+        <>
+          <Route path="/trades/preview" element={<TradeHistory />} />
+          <Route path="/trades/preview/chat" element={<TradeChat />} />
+          <Route
+            path="/trades/preview/:tradeId"
+            element={<TradeDetailBuyer />}
+          />
+          <Route
+            path="/trades/preview/:tradeId/seller"
+            element={<TradeDetailSeller />}
+          />
+        </>
+      )}
+
+      {/* 거래와 마이페이지는 로그인한 사용자만 접근한다. */}
+      <Route
+        element={(
+          <ProtectedRoute
+            allowedRoles={['ROLE_USER', 'ROLE_SERVICE', 'ROLE_ADMIN']}
+          />
+        )}
+      >
+        <Route element={<UserLayout />}>
         <Route path="/user/mypage" element={<MyPage />} />
+        <Route path="/trades" element={<TradeHistory />} />
+        {/* 물건 거래 상세: 인증·거래 API 연결 후 당사자 역할에 따라 단일 경로로 통합 */}
+        <Route path="/trades/:tradeId" element={<TradeDetailBuyer />} />
+        <Route path="/trades/:tradeId/seller" element={<TradeDetailSeller />} />
+        </Route>
       </Route>
 
       <Route path="/admin" element={<AdminLayout />}>
