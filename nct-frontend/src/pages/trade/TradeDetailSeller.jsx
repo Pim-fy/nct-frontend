@@ -7,7 +7,7 @@ import { useParams } from 'react-router-dom';
 import Toast from '@components/common/Toast';
 import {
   getTradeDetail,
-  isTradePreviewEnabled,
+  proposeTradeOfflineSchedule,
   registerTradeShipping,
 } from '@api/tradeApi';
 import { toTradeDetail } from '@api/tradeAdapter';
@@ -35,7 +35,7 @@ const TradeDetailSeller = () => {
   const [meetingDate, setMeetingDate] = useState('');
   const [meetingTime, setMeetingTime] = useState('');
   const [meetingPlace, setMeetingPlace] = useState('');
-  const [meetingMemo, setMeetingMemo] = useState('');
+  const [meetingAddress, setMeetingAddress] = useState('');
   const [meetingProposed, setMeetingProposed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -58,7 +58,7 @@ const TradeDetailSeller = () => {
       setMeetingDate(detail.meetingDate === '-' ? '' : detail.meetingDate);
       setMeetingTime(detail.meetingTime === '-' ? '' : detail.meetingTime);
       setMeetingPlace(detail.meetingPlace === '-' ? '' : detail.meetingPlace);
-      setMeetingMemo(detail.meetingMemo === '-' ? '' : detail.meetingMemo);
+      setMeetingAddress(detail.meetingAddress === '-' ? '' : detail.meetingAddress);
       setMeetingProposed(Boolean(detail.meetingDate !== '-'));
     } catch {
       setLoadError('거래 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
@@ -106,8 +106,8 @@ const TradeDetailSeller = () => {
     }
   };
 
-  // 개발 미리보기에서는 입력값을 검증한 뒤 일정 제안 완료 상태만 화면에 반영한다.
-  const proposeMeetingSchedule = (event) => {
+  // 서버에 저장한 뒤 응답 상세로 폼을 다시 채워, 새로고침해도 같은 일정이 보이게 한다.
+  const proposeMeetingSchedule = async (event) => {
     event.preventDefault();
 
     if (!meetingDate || !meetingTime || !meetingPlace.trim()) {
@@ -122,8 +122,31 @@ const TradeDetailSeller = () => {
     }
 
     setError('');
-    setMeetingProposed(true);
-    setNotice('직거래 일정과 장소를 제안했습니다.');
+    setIsSubmitting(true);
+
+    try {
+      const response = await proposeTradeOfflineSchedule(tradeId, {
+        meetingDate,
+        meetingTime,
+        meetingPlace: meetingPlace.trim(),
+        meetingAddress: meetingAddress.trim(),
+      });
+      const updatedTrade = toTradeDetail(response);
+
+      setTrade(updatedTrade);
+      setMeetingDate(updatedTrade.meetingDate === '-' ? '' : updatedTrade.meetingDate);
+      setMeetingTime(updatedTrade.meetingTime === '-' ? '' : updatedTrade.meetingTime);
+      setMeetingPlace(updatedTrade.meetingPlace === '-' ? '' : updatedTrade.meetingPlace);
+      setMeetingAddress(
+        updatedTrade.meetingAddress === '-' ? '' : updatedTrade.meetingAddress,
+      );
+      setMeetingProposed(true);
+      setNotice('직거래 일정과 장소를 저장했습니다.');
+    } catch {
+      setError('직거래 일정 저장에 실패했습니다. 다시 시도해 주세요.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isLoading || loadError || !trade) {
@@ -137,29 +160,6 @@ const TradeDetailSeller = () => {
                 다시 시도
               </button>
             )}
-          </section>
-        </main>
-      </div>
-    );
-  }
-
-  // 직거래 일정 DTO는 아직 확정되지 않아 실제 서비스 화면에서는 안내만 표시한다.
-  if (trade.method === 'OFFLINE' && !isTradePreviewEnabled) {
-    return (
-      <div className="trade-detail-page trade-detail-page--seller">
-        <main className="container trade-detail-page__state">
-          <section className="trade-detail-card">
-            <h1>직거래 일정 확인</h1>
-            <p>
-              직거래 일정 제안 기능은 거래방식·일정 DTO와 API 계약이 확정된 뒤 연결합니다.
-            </p>
-            <button
-              className="btn btn-ghost"
-              type="button"
-              onClick={() => window.history.back()}
-            >
-              ← 목록으로
-            </button>
           </section>
         </main>
       </div>
@@ -188,7 +188,7 @@ const TradeDetailSeller = () => {
             <li className="trade-progress__item trade-progress__item--active">
               일정 제안
             </li>
-            <li className="trade-progress__item">구매자 확인</li>
+            <li className="trade-progress__item">직거래 진행</li>
             <li className="trade-progress__item">거래 완료</li>
           </ol>
 
@@ -210,7 +210,7 @@ const TradeDetailSeller = () => {
               <h2>구매자 정보</h2>
               <p>닉네임 {trade.counterpart} · 별점 ★{trade.rating}</p>
               <p className="trade-detail-card__muted">
-                구매자가 확인하면 확정된 일정과 장소가 거래 상세에 표시됩니다.
+                저장한 일정과 장소는 구매자 거래 상세에도 바로 표시됩니다.
               </p>
             </section>
           </div>
@@ -232,7 +232,7 @@ const TradeDetailSeller = () => {
                   value={meetingDate}
                   min={todayDate}
                   onChange={(event) => setMeetingDate(event.target.value)}
-                  disabled={meetingProposed}
+                  disabled={isSubmitting}
                 />
               </label>
               <label className="trade-form-field">
@@ -242,7 +242,7 @@ const TradeDetailSeller = () => {
                   type="time"
                   value={meetingTime}
                   onChange={(event) => setMeetingTime(event.target.value)}
-                  disabled={meetingProposed}
+                  disabled={isSubmitting}
                 />
               </label>
             </div>
@@ -253,18 +253,18 @@ const TradeDetailSeller = () => {
                 value={meetingPlace}
                 onChange={(event) => setMeetingPlace(event.target.value)}
                 placeholder="예: 합정역 8번 출구 앞"
-                disabled={meetingProposed}
+                disabled={isSubmitting}
               />
             </label>
             <label className="trade-form-field">
-              전달 메모
+              상세 주소
               <span className="trade-detail-card__muted">(선택)</span>
               <input
                 className="input"
-                value={meetingMemo}
-                onChange={(event) => setMeetingMemo(event.target.value)}
-                placeholder="예: 도착하면 알려 주세요."
-                disabled={meetingProposed}
+                value={meetingAddress}
+                onChange={(event) => setMeetingAddress(event.target.value)}
+                placeholder="예: 서울 마포구 양화로 45"
+                disabled={isSubmitting}
               />
             </label>
             {error && (
@@ -280,9 +280,13 @@ const TradeDetailSeller = () => {
             <button
               className="btn btn-primary"
               type="submit"
-              disabled={meetingProposed}
+              disabled={isSubmitting}
             >
-              {meetingProposed ? '일정 제안 완료' : '일정 제안하기'}
+              {isSubmitting
+                ? '저장 중...'
+                : meetingProposed
+                  ? '일정 수정하기'
+                  : '일정 제안하기'}
             </button>
           </form>
         </div>

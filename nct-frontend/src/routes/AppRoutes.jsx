@@ -68,6 +68,12 @@ import ProductDetailSellerPage from '@pages/product/ProductDetailSellerPage';
 // Admin 페이지
 // ──────────────────────────────────────────
 import Dashboard        from '@pages/admin/Dashboard';
+import OperationsIntegrationPreview from '@pages/admin/OperationsIntegrationPreview';
+import AdminNoticeListPage from '@pages/admin/notice/AdminNoticeListPage';
+import AdminNoticeFormPage from '@pages/admin/notice/AdminNoticeFormPage';
+import AdminGuidePage from '@pages/admin/guide/AdminGuidePage';
+import AdminAuditLogPage from '@pages/admin/audit/AdminAuditLogPage';
+import AdminSystemSettingPage from '@pages/admin/setting/AdminSystemSettingPage';
 
 // 개발 플래그가 켜진 로컬 환경에서만 로그인 없는 거래 화면 검토 경로를 제공한다.
 const isTradePreviewEnabled = import.meta.env.VITE_USE_TRADE_PREVIEW === 'true';
@@ -106,7 +112,8 @@ const AppRoutes = () => {
         <Route path="/guide" element={<GuidePage />} />
         <Route path="/customersupport/notice" element={<NoticeListPage />} />
         <Route path="/customersupport/notice/:noticeId" element={<NoticeDetailPage />} />
-        {/* 마이페이지 */}
+      </Route>
+
       {/* 실제 거래 경로의 인증 정책과 분리된 개발용 화면 확인 경로 */}
       {isTradePreviewEnabled && (
         <>
@@ -132,27 +139,34 @@ const AppRoutes = () => {
         )}
       >
         <Route element={<UserLayout />}>
-        <Route path="/user/mypage" element={<MyPage />} />
-        {/* 포인트 지갑 (BJN) */}
-        <Route path="/user/point" element={<PointWalletPage />} />
-        {/* 알림함 (BJN) */}
-        <Route path="/user/notification" element={<NotificationPage />} />
-        {/* 알림 설정 (BJN) */}
-        <Route path="/user/notification/settings" element={<NotificationSettingsPage />} />
-        {/* 정산 관리 - 제공자용 (BJN) */}
-        <Route path="/user/settlement" element={<SettlementListPage />} />
-        {/* 리뷰작성 목록 */}
-        <Route path="/user/reviews" element={<ReviewListPage />} />
-        {/* 리뷰 작성 폼 */}
-        <Route path="/user/reviews/write/:id" element={<ReviewWritePage />} />
-        {/* 리뷰 수정 폼 */}
-        <Route path="/user/reviews/edit/:id" element={<ReviewEditPage />} />
+          <Route path="/user/mypage" element={<MyPage />} />
+          <Route path="/user/point" element={<PointWalletPage />} />
+          <Route path="/user/notification" element={<NotificationPage />} />
+          <Route
+            path="/user/notification/settings"
+            element={<NotificationSettingsPage />}
+          />
+          <Route path="/user/settlement" element={<SettlementListPage />} />
+          <Route path="/user/reviews" element={<ReviewListPage />} />
+          <Route path="/user/reviews/write/:id" element={<ReviewWritePage />} />
+          <Route path="/user/reviews/edit/:id" element={<ReviewEditPage />} />
 
-        {/* 상품 — 로그인 필요 */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/product/register"        element={<ProductRegisterPage />} />
-          <Route path="/product/me"              element={<MyProductListPage />} />
-          <Route path="/product/:prdSn/seller"   element={<ProductDetailSellerPage />} />
+          <Route path="/trades" element={<TradeHistory />} />
+          <Route path="/trades/:tradeId" element={<TradeDetailBuyer />} />
+          <Route
+            path="/trades/:tradeId/seller"
+            element={<TradeDetailSeller />}
+          />
+
+          {/* 상품 — 로그인 필요 */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/product/register" element={<ProductRegisterPage />} />
+            <Route path="/product/me" element={<MyProductListPage />} />
+            <Route
+              path="/product/:prdSn/seller"
+              element={<ProductDetailSellerPage />}
+            />
+          </Route>
         </Route>
       </Route>
 

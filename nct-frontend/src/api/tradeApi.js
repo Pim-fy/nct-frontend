@@ -41,6 +41,27 @@ export const getTradeDetail = async (tradeId) => {
 };
 
 /**
+ * 판매자가 본인 직거래의 일시·장소·상세 주소를 저장하거나 수정한다.
+ * 서버는 판매자 여부와 직거래 방식 여부를 함께 검증한다.
+ */
+export const proposeTradeOfflineSchedule = async (tradeId, payload) => {
+  // 개발용 화면에서는 저장 형식만 반환해 폼 동작을 확인한다.
+  if (isTradePreviewEnabled) {
+    return {
+      tradeId,
+      ...payload,
+    };
+  }
+
+  const response = await api.put(
+    `${TRADE_ENDPOINT}/${tradeId}/offline-schedule`,
+    payload,
+  );
+
+  return response.data;
+};
+
+/**
  * 판매자가 택배사·운송장 번호·발송 메모를 등록한다.
  * payload는 carrier, trackingNumber, shippingMemo를 사용하도록 백엔드와 합의가 필요하다.
  */

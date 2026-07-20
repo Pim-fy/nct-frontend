@@ -270,9 +270,30 @@
   font-weight: 800;
 }
 
-.trade-status--progress { background: #e8f0fe; color: #1a56a4; }
-.trade-status--pending { background: #faeeda; color: #ba7517; }
-.trade-status--problem { background: #fcebeb; color: #a32d2d; }
+.trade-status--progress {
+  background: #e8f0fe;
+  color: #1a56a4;
+}
+
+.trade-status--pending {
+  background: #faeeda;
+  color: #ba7517;
+}
+
+.trade-status--complete {
+  background: #e7f8f0;
+  color: #137c4b;
+}
+
+.trade-status--problem {
+  background: #fcebeb;
+  color: #a32d2d;
+}
+
+.trade-status--canceled {
+  background: #f2f4f7;
+  color: #667085;
+}
 
 .trade-modal {
   position: fixed;

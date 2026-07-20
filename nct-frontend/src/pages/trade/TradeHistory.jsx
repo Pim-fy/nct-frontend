@@ -13,9 +13,26 @@ import {
 import '@assets/css/trade-history.css';
 
 const statusInfo = {
-  DELIVERING: { label: '배송중', className: 'trade-history-status--progress' },
-  WAITING_CONFIRMATION: { label: '구매자 확인 대기', className: 'trade-history-status--pending' },
-  COMPLETED: { label: '거래 완료', className: 'trade-history-status--complete' },
+  DELIVERING: {
+    label: '배송·직거래중',
+    className: 'trade-history-status--progress',
+  },
+  WAITING_CONFIRMATION: {
+    label: '상대 확인 대기',
+    className: 'trade-history-status--pending',
+  },
+  COMPLETED: {
+    label: '거래 완료',
+    className: 'trade-history-status--complete',
+  },
+  ON_HOLD: {
+    label: '거래 보류',
+    className: 'trade-history-status--problem',
+  },
+  CANCELED: {
+    label: '거래 취소',
+    className: 'trade-history-status--canceled',
+  },
 };
 
 const statusPriority = {
@@ -24,7 +41,16 @@ const statusPriority = {
   WAITING_CONFIRMATION: 2,
   CONFIRM_PENDING: 2,
   COMPLETED: 3,
+  ON_HOLD: 4,
+  CANCELED: 5,
 };
+
+const activeTradeStatuses = new Set([
+  'IN_PROGRESS',
+  'DELIVERING',
+  'WAITING_CONFIRMATION',
+  'CONFIRM_PENDING',
+]);
 
 const tabs = [
   { value: 'ALL', label: '전체' },
@@ -62,7 +88,8 @@ const getStatusInfo = (trade) => {
 
 const TradeHistory = () => {
   const { pathname } = useLocation();
-  const [tradeItems, setTradeItems] = useState([]);
+  const [allTradeItems, setAllTradeItems] = useState([]);
+  const [filteredTradeItems, setFilteredTradeItems] = useState([]);
   const [activeTab, setActiveTab] = useState('ALL');
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -73,9 +100,9 @@ const TradeHistory = () => {
   const isPreview = pathname.startsWith('/trades/preview');
   const tradeBasePath = isPreview ? '/trades/preview' : '/trades';
 
-  // 탭별 건수와 진행 중 건수를 실제 목록 데이터에서 계산해 요약 영역에 사용한다.
+  // 탭별 건수와 진행 중 건수는 필터와 무관한 전체 목록으로 계산한다.
   const tradeCounts = useMemo(() => {
-    return tradeItems.reduce((counts, trade) => {
+    return allTradeItems.reduce((counts, trade) => {
       counts.ALL += 1;
 
       if (trade.type === 'BUYER') {
@@ -86,7 +113,7 @@ const TradeHistory = () => {
         counts.SELLER += 1;
       }
 
-      if (trade.status !== 'COMPLETED') {
+      if (activeTradeStatuses.has(trade.status)) {
         counts.ACTIVE += 1;
       }
 
@@ -97,61 +124,74 @@ const TradeHistory = () => {
       SELLER: 0,
       ACTIVE: 0,
     });
-  }, [tradeItems]);
+  }, [allTradeItems]);
 
-  // 거래 목록 API 응답을 화면 표시 데이터로 변환해 보관한다.
-  const loadTrades = useCallback(async () => {
-    setIsLoading(true);
-    setLoadError('');
-
+  // 요약 영역은 조건과 관계없이 로그인한 사용자의 전체 거래를 기준으로 표시한다.
+  const loadAllTradeItems = useCallback(async () => {
     try {
       const response = await getTradeHistory();
       const items = getTradeListItems(response).map(toTradeHistoryItem);
 
-      setTradeItems(items);
+      setAllTradeItems(items);
+    } catch {
+      setLoadError('거래 내역을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+    }
+  }, []);
+
+  // 탭·상태·검색어가 바뀌면 서버에 조건을 전달해 필요한 거래만 다시 조회한다.
+  const loadFilteredTradeItems = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError('');
+
+    try {
+      const params = {};
+
+      if (activeTab !== 'ALL') {
+        params.role = activeTab;
+      }
+
+      if (statusFilter !== 'ALL') {
+        params.status = statusFilter;
+      }
+
+      if (keyword.trim()) {
+        params.keyword = keyword.trim();
+      }
+
+      const response = await getTradeHistory(params);
+      const items = getTradeListItems(response).map(toTradeHistoryItem);
+
+      setFilteredTradeItems(items);
     } catch {
       setLoadError('거래 내역을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [activeTab, keyword, statusFilter]);
 
-  // 진입 직후 요청을 예약해 렌더링 완료 후 서버 통신과 상태 변경을 시작한다.
+  // 첫 진입에는 탭별 건수용 전체 목록을 별도로 조회한다.
   useEffect(() => {
-    const requestTimer = window.setTimeout(loadTrades, 0);
+    const requestTimer = window.setTimeout(loadAllTradeItems, 0);
 
     return () => window.clearTimeout(requestTimer);
-  }, [loadTrades]);
+  }, [loadAllTradeItems]);
 
-  // 탭·검색어·상태 필터가 모두 반영된 거래 목록만 화면에 표시한다.
-  const filteredTrades = useMemo(() => {
-    const normalizedKeyword = keyword.trim().toLowerCase();
+  // 검색어 입력은 짧게 지연해, 매 글자마다 서버 요청이 쌓이지 않게 한다.
+  useEffect(() => {
+    const requestTimer = window.setTimeout(loadFilteredTradeItems, 250);
 
-    return tradeItems.filter((trade) => {
-      if (activeTab !== 'ALL' && trade.type !== activeTab) {
-        return false;
-      }
+    return () => window.clearTimeout(requestTimer);
+  }, [loadFilteredTradeItems]);
 
-      if (statusFilter !== 'ALL' && trade.status !== statusFilter) {
-        return false;
-      }
-
-      if (!normalizedKeyword) {
-        return true;
-      }
-
-      return (
-        trade.productName.toLowerCase().includes(normalizedKeyword)
-        || trade.counterpart.toLowerCase().includes(normalizedKeyword)
-        || String(trade.id).includes(normalizedKeyword)
-      );
-    }).sort((firstTrade, secondTrade) => {
+  // 서버가 골라 준 목록은 현재 필요한 행동이 먼저 보이도록 화면에서만 정렬한다.
+  const visibleTrades = useMemo(() => {
+    return [...filteredTradeItems].sort((firstTrade, secondTrade) => {
       const firstPriority = statusPriority[firstTrade.status] ?? 4;
       const secondPriority = statusPriority[secondTrade.status] ?? 4;
 
       return firstPriority - secondPriority;
     });
-  }, [activeTab, keyword, statusFilter, tradeItems]);
+  }, [filteredTradeItems]);
 
   return (
     <div className="trade-history-page">
@@ -213,6 +253,8 @@ const TradeHistory = () => {
                 <option value="DELIVERING">배송중</option>
                 <option value="WAITING_CONFIRMATION">상대 확인 대기</option>
                 <option value="COMPLETED">거래 완료</option>
+                <option value="ON_HOLD">거래 보류</option>
+                <option value="CANCELED">거래 취소</option>
               </select>
             </label>
           </div>
@@ -231,21 +273,21 @@ const TradeHistory = () => {
               <button
                 className="btn btn-outline trade-history-empty__button"
                 type="button"
-                onClick={loadTrades}
+                onClick={loadFilteredTradeItems}
               >
                 다시 시도
               </button>
             </div>
           )}
 
-          {!isLoading && !loadError && filteredTrades.length === 0 && (
+          {!isLoading && !loadError && visibleTrades.length === 0 && (
             <div className="trade-history-empty">
               <strong>조건에 맞는 거래가 없습니다.</strong>
               <p>검색어나 필터를 변경해 다시 확인해 주세요.</p>
             </div>
           )}
 
-          {!isLoading && !loadError && filteredTrades.map((trade) => {
+          {!isLoading && !loadError && visibleTrades.map((trade) => {
             const status = getStatusInfo(trade);
             const detailPath = trade.type === 'SELLER'
               ? `${tradeBasePath}/${trade.id}/seller`

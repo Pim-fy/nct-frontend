@@ -220,10 +220,35 @@
   font-weight: 800;
 }
 
-.trade-history-status--progress { background: #e8f0fe; color: #1a56a4; }
-.trade-history-status--pending { background: #faeeda; color: #ba7517; }
-.trade-history-status--complete { background: #e7f8f0; color: #137c4b; }
-.trade-history-status--action { background: #fff0d9; color: #b54708; }
+.trade-history-status--progress {
+  background: #e8f0fe;
+  color: #1a56a4;
+}
+
+.trade-history-status--pending {
+  background: #faeeda;
+  color: #ba7517;
+}
+
+.trade-history-status--complete {
+  background: #e7f8f0;
+  color: #137c4b;
+}
+
+.trade-history-status--action {
+  background: #fff0d9;
+  color: #b54708;
+}
+
+.trade-history-status--problem {
+  background: #fcebeb;
+  color: #a32d2d;
+}
+
+.trade-history-status--canceled {
+  background: #f2f4f7;
+  color: #667085;
+}
 
 .trade-history-item__arrow {
   color: #7d8aa2;

@@ -7,7 +7,6 @@ import { useParams } from 'react-router-dom';
 import Toast from '@components/common/Toast';
 import {
   getTradeDetail,
-  isTradePreviewEnabled,
   requestTradeCompletion,
 } from '@api/tradeApi';
 import { toTradeDetail } from '@api/tradeAdapter';
@@ -45,6 +44,18 @@ const statusInfo = {
     step: 2,
     className: 'trade-status--complete',
   },
+  ON_HOLD: {
+    label: '거래 보류',
+    description: '거래 문제를 확인하는 동안 거래와 정산이 보류됩니다.',
+    step: -1,
+    className: 'trade-status--problem',
+  },
+  CANCELED: {
+    label: '거래 취소',
+    description: '취소된 거래입니다. 거래 내역에서 취소 사유를 확인해 주세요.',
+    step: -1,
+    className: 'trade-status--canceled',
+  },
 };
 
 const unknownStatus = {
@@ -62,7 +73,6 @@ const TradeDetailBuyer = () => {
   const [completionAgreed, setCompletionAgreed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notice, setNotice] = useState('');
-  const [meetingConfirmed, setMeetingConfirmed] = useState(false);
 
   // URL의 거래 번호로 서버 상세를 조회해 직접 URL 접근에도 같은 데이터를 표시한다.
   const loadTrade = useCallback(async () => {
@@ -75,7 +85,6 @@ const TradeDetailBuyer = () => {
       const detail = toTradeDetail(response);
 
       setTrade(detail);
-      setMeetingConfirmed(detail.meetingConfirmed);
     } catch {
       setLoadError('거래 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
@@ -128,16 +137,6 @@ const TradeDetailBuyer = () => {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  // API 계약 전에는 개발 미리보기에서만 구매자의 직거래 일정 확인 상태를 바꾼다.
-  const handleMeetingConfirmation = () => {
-    if (!isTradePreviewEnabled || !hasMeetingSchedule) {
-      return;
-    }
-
-    setMeetingConfirmed(true);
-    setNotice('직거래 일정과 장소를 확인했습니다.');
   };
 
   if (isLoading || loadError || !trade) {
@@ -242,10 +241,10 @@ const TradeDetailBuyer = () => {
                     <dt>거래 장소</dt>
                     <dd>{trade.meetingPlace}</dd>
                   </div>
-                  {trade.meetingMemo !== '-' && (
+                  {trade.meetingAddress !== '-' && (
                     <div className="trade-meeting-summary__memo">
-                      <dt>판매자 메모</dt>
-                      <dd>{trade.meetingMemo}</dd>
+                      <dt>상세 주소</dt>
+                      <dd>{trade.meetingAddress}</dd>
                     </div>
                   )}
                 </dl>
@@ -270,25 +269,13 @@ const TradeDetailBuyer = () => {
           <section className="trade-detail-card trade-complete-card">
             <h2>직거래 일정 확인</h2>
             <div className="trade-auto-complete">
-              <strong>{meetingConfirmed ? '일정 확인 완료' : '판매자 제안 대기'}</strong>
+              <strong>{hasMeetingSchedule ? '일정 제안 완료' : '판매자 제안 대기'}</strong>
               <p>
                 {hasMeetingSchedule
-                  ? '일정과 장소를 확인한 뒤 거래를 진행해 주세요.'
-                  : '판매자가 거래 일시와 장소를 제안하면 이곳에서 확인할 수 있습니다.'}
+                  ? '판매자가 저장한 일정과 장소입니다. 거래를 진행해 주세요.'
+                  : '판매자가 거래 일시와 장소를 저장하면 이곳에 표시됩니다.'}
               </p>
             </div>
-            {hasMeetingSchedule && isTradePreviewEnabled && (
-              <div className="trade-detail-actions">
-                <button
-                  className="btn btn-primary"
-                  type="button"
-                  disabled={meetingConfirmed}
-                  onClick={handleMeetingConfirmation}
-                >
-                  {meetingConfirmed ? '일정 확인 완료' : '일정 확인하기'}
-                </button>
-              </div>
-            )}
           </section>
         ) : (
           <section className="trade-detail-card trade-complete-card">
