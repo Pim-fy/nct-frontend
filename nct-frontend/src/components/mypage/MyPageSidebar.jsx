@@ -8,13 +8,13 @@ import { toast } from "@utils/common";
 
 // 담당자3(나)가 구현한 항목(MY 홈/프로필수정) 외에, 팀원이 이미 구현해 둔 실제 라우트가 있는 항목은
 // 그리로 이동시키고, 아직 화면이 없는 나머지 항목은 클릭 시 "준비 중" 안내만 띄운다.
-// 주의: "내 입찰 내역"(F-AUC-022, /my-bids)은 디자인시안(mypage_01일반.png 등) 사이드바에는
-// 없는 항목이다 - MY 홈의 "경매 거래" 통계 카드 더보기(+)에서 드릴다운으로 들어가는 화면이라
-// 여기 목록에 넣지 않는다 (MyPageDashboard.jsx의 auction 카드 onMore 참고).
+// "경매 거래내역"은 디자인시안 mypage_mybid_내입찰내역.png/내판매내역.png 기준 /my-bids로 연결
+// (내 입찰 내역 + 내 판매 내역 2탭 - MyBidHistoryPage.jsx). MY 홈의 "경매 거래" 카드 더보기(+)와
+// 같은 화면으로 연결된다 (MyPageDashboard.jsx의 auction 카드 onMore 참고).
 const GENERAL_MENU_ITEMS = [
   { key: "home", label: "MY 홈", type: "section" },
   { key: "profile", label: "프로필수정", type: "section" },
-  { key: "auction-history", label: "경매 거래내역", type: "todo" },
+  { key: "auction-history", label: "경매 거래내역", type: "route", to: "/my-bids" },
   { key: "service-history", label: "서비스 거래내역", type: "todo" },
   { key: "wishlist", label: "관심 상품", type: "todo" },
   { key: "chat", label: "채팅", type: "todo" },
