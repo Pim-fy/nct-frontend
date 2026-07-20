@@ -1,4 +1,5 @@
 // src/pages/user/point/components/PointLedgerTable.jsx
+import PointTable from './PointTable';
 
 // 원장유형(PTLG02)별 배지 색 — 목업 badge-success/warning/blue/gray 매핑
 const TYPE_BADGE = {
@@ -10,58 +11,40 @@ const TYPE_BADGE = {
   보정:       'bg-gray-100 text-gray-600',
 };
 
-/**
- * 포인트 원장 내역 테이블 (F-PAY-039)
- */
-const PointLedgerTable = ({ rows }) => {
-  return (
-    <section className="mt-6">
-      <h3 className="text-lg font-bold text-gray-900 mb-3">포인트 내역</h3>
+const badge = (label) => (
+  <span className={`inline-block px-2.5 py-0.5 rounded-lg text-xs font-medium ${TYPE_BADGE[label] ?? 'bg-gray-100 text-gray-600'}`}>
+    {label}
+  </span>
+);
 
-      <div className="overflow-x-auto bg-white border border-gray-100 rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)]">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 text-gray-500">
-              <th className="text-left font-bold px-4 py-3">일시</th>
-              <th className="text-left font-bold px-4 py-3">유형</th>
-              <th className="text-right font-bold px-4 py-3">변동금액</th>
-              <th className="text-right font-bold px-4 py-3">잔액</th>
-              <th className="text-left font-bold px-4 py-3">관련</th>
-              <th className="text-left font-bold px-4 py-3">사유</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan={6} className="text-center text-gray-400 py-10">
-                  포인트 내역이 없습니다.
-                </td>
-              </tr>
-            )}
-            {rows.map((row) => (
-              <tr key={row.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 whitespace-nowrap text-gray-700">{row.date}</td>
-                <td className="px-4 py-3 whitespace-nowrap">
-                  <span className={`inline-block px-2.5 py-0.5 rounded-lg text-xs font-medium ${TYPE_BADGE[row.type] ?? 'bg-gray-100 text-gray-600'}`}>
-                    {row.type}
-                  </span>
-                  <span className="ml-1.5 text-xs text-gray-400">({row.category})</span>
-                </td>
-                <td className={`px-4 py-3 text-right whitespace-nowrap font-medium ${row.amount > 0 ? 'text-blue-700' : 'text-red-700'}`}>
-                  {row.amount > 0 ? '+' : ''}{row.amount.toLocaleString()}P
-                </td>
-                <td className="px-4 py-3 text-right whitespace-nowrap text-gray-700">
-                  {row.balanceAfter.toLocaleString()}P
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-gray-500">{row.ref ?? '-'}</td>
-                <td className="px-4 py-3 text-gray-500">{row.reason}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
-  );
-};
+// 표 배치는 공용 셸(PointTable)이 담당 — 여기는 컬럼 구성과 셀 내용만 정의한다 (2026-07-20 통합)
+const COLUMNS = [
+  { key: 'date', header: '일시', cellClass: 'whitespace-nowrap text-gray-700', render: (r) => r.date },
+  {
+    key: 'type', header: '유형', cellClass: 'whitespace-nowrap',
+    render: (r) => (
+      <>
+        {badge(r.type)}
+        <span className="ml-1.5 text-xs text-gray-400">({r.category})</span>
+      </>
+    ),
+  },
+  {
+    key: 'amount', header: '변동금액', align: 'right',
+    cellClass: (r) => `whitespace-nowrap font-medium ${r.amount > 0 ? 'text-blue-700' : 'text-red-700'}`,
+    render: (r) => `${r.amount > 0 ? '+' : ''}${r.amount.toLocaleString()}P`,
+  },
+  {
+    key: 'balanceAfter', header: '잔액', align: 'right', cellClass: 'whitespace-nowrap text-gray-700',
+    render: (r) => `${r.balanceAfter.toLocaleString()}P`,
+  },
+  { key: 'ref', header: '관련', cellClass: 'whitespace-nowrap text-gray-500', render: (r) => r.ref ?? '-' },
+  { key: 'reason', header: '사유', cellClass: 'text-gray-500', render: (r) => r.reason },
+];
+
+/** 포인트 원장 내역 테이블 (F-PAY-039) */
+const PointLedgerTable = ({ rows }) => (
+  <PointTable title="포인트 내역" columns={COLUMNS} rows={rows} emptyText="포인트 내역이 없습니다." />
+);
 
 export default PointLedgerTable;
