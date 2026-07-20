@@ -10,8 +10,8 @@ export const GUIDE_FLOWS = [
     flowTitle: '상품 등록 흐름',
     flowCopy: '상품 사진과 설명, 거래 방식, 경매 기간을 입력한 뒤 최종 확인을 거쳐 등록합니다.',
     targetLabel: '상품 등록 화면',
-    targetRoute: null,
-    targetOwner: '담당자 2 연결 대기',
+    targetRoute: '/product/register',
+    targetOwner: '담당자 2 상품 등록 화면 연결',
   },
   {
     id: 'service-request',
@@ -58,8 +58,8 @@ export const GUIDE_FLOWS = [
     flowTitle: '포인트·환전 흐름',
     flowCopy: '충전과 홀딩·반환 내역을 지갑에서 확인하고, 정산 가능한 포인트만 환전을 요청합니다.',
     targetLabel: '포인트 지갑 화면',
-    targetRoute: null,
-    targetOwner: '담당자 6 연결 대기',
+    targetRoute: '/user/point',
+    targetOwner: '담당자 6 포인트 지갑 화면 연결',
   },
 ];
 

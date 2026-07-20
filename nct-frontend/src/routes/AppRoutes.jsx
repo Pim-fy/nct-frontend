@@ -53,6 +53,8 @@ import NoticeListPage from '@pages/content/NoticeListPage';
 import NoticeDetailPage from '@pages/content/NoticeDetailPage';
 import ServiceListPage from '@pages/service/ServiceListPage';
 import PublicProviderProfilePage from '@pages/provider/PublicProviderProfilePage';
+import ProviderApplyPage from '@pages/provider/ProviderApplyPage';
+import ProviderApplicationStatusPage from '@pages/provider/ProviderApplicationStatusPage';
 import PointWalletPage from '@pages/user/point/PointWalletPage';
 import NotificationPage from '@pages/user/notification/NotificationPage';
 import NotificationSettingsPage from '@pages/user/notification/NotificationSettingsPage';
@@ -75,8 +77,12 @@ import OperationsIntegrationPreview from '@pages/admin/OperationsIntegrationPrev
 import AdminNoticeListPage from '@pages/admin/notice/AdminNoticeListPage';
 import AdminNoticeFormPage from '@pages/admin/notice/AdminNoticeFormPage';
 import AdminGuidePage from '@pages/admin/guide/AdminGuidePage';
+import AdminCategoryPage from '@pages/admin/category/AdminCategoryPage';
+import AdminServiceRequestPage from '@pages/admin/service/AdminServiceRequestPage';
+import AdminProviderApprovalPage from '@pages/admin/provider/AdminProviderApprovalPage';
 import AdminAuditLogPage from '@pages/admin/audit/AdminAuditLogPage';
 import AdminSystemSettingPage from '@pages/admin/setting/AdminSystemSettingPage';
+import AdminAuctionManagementPage from '@pages/admin/auction/AdminAuctionManagementPage';
 import AdminNotificationPage from '@pages/admin/notification/AdminNotificationPage';
 
 // 개발 플래그가 켜진 로컬 환경에서만 로그인 없는 거래 화면 검토 경로를 제공한다.
@@ -142,9 +148,7 @@ const AppRoutes = () => {
       {/* 거래와 마이페이지는 로그인한 사용자만 접근한다. */}
       <Route
         element={(
-          <ProtectedRoute
-            allowedRoles={['ROLE_USER', 'ROLE_SERVICE', 'ROLE_ADMIN']}
-          />
+          <ProtectedRoute allowedRoles={['ROLE_USER', 'ROLE_SERVICE', 'ROLE_ADMIN']} />
         )}
       >
         <Route element={<UserLayout />}>
@@ -169,14 +173,13 @@ const AppRoutes = () => {
           />
 
           {/* 상품 — 로그인 필요 */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/product/register" element={<ProductRegisterPage />} />
-            <Route path="/product/me" element={<MyProductListPage />} />
-            <Route
-              path="/product/:prdSn/seller"
-              element={<ProductDetailSellerPage />}
-            />
-          </Route>
+          {/* 담당자 7 · F-PROV-001/006: 마이페이지의 제공자 권한 신청 메뉴 목적지 */}
+          <Route path="/provider/apply"              element={<ProviderApplyPage />} />
+          {/* 담당자 7 · F-PROV-012/014: 신청 완료 후 내 심사 상태 확인 화면. 라우트 소유자에게 전달 필요. */}
+          <Route path="/provider/applications/status" element={<ProviderApplicationStatusPage />} />
+          <Route path="/product/register"        element={<ProductRegisterPage />} />
+          <Route path="/product/me"              element={<MyProductListPage />} />
+          <Route path="/product/:prdSn/seller"   element={<ProductDetailSellerPage />} />
         </Route>
       </Route>
 
@@ -189,6 +192,10 @@ const AppRoutes = () => {
           <Route path="notices/new" element={<AdminNoticeFormPage />} />
           <Route path="notices/:noticeId" element={<AdminNoticeFormPage />} />
           <Route path="guides" element={<AdminGuidePage />} />
+          <Route path="categories" element={<AdminCategoryPage />} />
+          <Route path="services" element={<AdminServiceRequestPage />} />
+          <Route path="provider-applications" element={<AdminProviderApprovalPage />} />
+          <Route path="auctions" element={<AdminAuctionManagementPage />} />
           {/* 보안/감사·시스템 설정 (담당자6, F-OPS-014/016/024) */}
           <Route path="audit-logs" element={<AdminAuditLogPage />} />
           <Route path="system-settings" element={<AdminSystemSettingPage />} />
