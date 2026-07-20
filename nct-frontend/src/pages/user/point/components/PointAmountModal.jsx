@@ -1,7 +1,7 @@
 // src/pages/user/point/components/PointAmountModal.jsx
 import { useEffect, useState } from 'react';
 
-const QUICK_AMOUNTS = [100000, 300000, 500000];
+import { QUICK_AMOUNTS } from './quickAmounts';
 
 /**
  * 포인트 금액 입력 공용 모달 — 현재는 환전 신청에서만 사용
