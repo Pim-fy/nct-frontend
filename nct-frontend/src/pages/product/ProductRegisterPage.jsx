@@ -194,6 +194,7 @@ export default function ProductRegisterPage() {
         // 임시저장(PRDC0001)이면 경매 일정 없음 → 둘 다 null, 경매 등록(PRDC0002)이면 시작·종료일시 전송
         aucStartDt:     isDraft ? null : startDt.toISOString(),
         aucEndDt:       isDraft || !endDt ? null : endDt.toISOString(),
+        bidUnit:        isDraft ? null : form.bidUnit,
       };
       await registerProduct(payload);
       navigate('/product/me');
