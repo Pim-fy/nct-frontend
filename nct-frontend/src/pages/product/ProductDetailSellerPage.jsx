@@ -79,9 +79,13 @@ export default function ProductDetailSellerPage() {
       alert('취소 사유를 선택해 주세요.');
       return;
     }
+    if (!auctionStatus?.aucSn) {
+      setToast('경매 정보를 불러오지 못했습니다.');
+      return;
+    }
     setCancelSubmitting(true);
     try {
-      await requestAuctionCancel(product.prdSn, { reason: cancelReason, detail: cancelDetail });
+      await requestAuctionCancel(auctionStatus.aucSn, { reason: cancelReason, detail: cancelDetail });
       setToast('취소 요청이 접수되었습니다.');
       setCancelOpen(false);
       setCancelReason('');
