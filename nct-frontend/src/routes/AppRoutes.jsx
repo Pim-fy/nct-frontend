@@ -153,6 +153,7 @@ const AppRoutes = () => {
           <Route path="/user/reviews/edit/:id" element={<ReviewEditPage />} />
 
           <Route path="/trades" element={<TradeHistory />} />
+          <Route path="/trades/:tradeId/chat" element={<TradeChat />} />
           <Route path="/trades/:tradeId" element={<TradeDetailBuyer />} />
           <Route
             path="/trades/:tradeId/seller"

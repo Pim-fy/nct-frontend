@@ -6,10 +6,15 @@ import {
 } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  getTradePreviewChatMessages,
-  getTradePreviewChatRooms,
-} from '@/mocks/tradePreviewData';
-import { isTradePreviewEnabled } from '@api/tradeApi';
+  getTradeChatMessages,
+  getTradeChatRooms,
+  sendTradeChatMessage,
+} from '@api/tradeChatApi';
+import {
+  toTradeChatMessage,
+  toTradeChatMessages,
+  toTradeChatRooms,
+} from '@api/tradeChatAdapter';
 import '@assets/css/trade-chat.css';
 
 const MAX_MESSAGE_LENGTH = 500;
@@ -21,6 +26,7 @@ const TradeChat = () => {
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   const activeRoom = useMemo(
@@ -28,19 +34,16 @@ const TradeChat = () => {
     [activeRoomId, rooms],
   );
 
-  // 개발 미리보기에서만 거래 채팅방 목록을 불러온다.
-  // 목록과 방 선택, 메시지 전송 흐름을 점검하는 용도다.
+  // 거래 번호에 연결된 실제 채팅방과 메시지를 함께 조회해 첫 화면을 초기화한다.
   const loadChatRooms = useCallback(async () => {
     setIsLoading(true);
     setError('');
 
-    if (!isTradePreviewEnabled) {
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      const loadedRooms = getTradePreviewChatRooms();
+      const roomResponse = await getTradeChatRooms({
+        tradeId,
+      });
+      const loadedRooms = toTradeChatRooms(roomResponse);
       const selectedRoom = loadedRooms.find(
         (room) => String(room.tradeId) === String(tradeId),
       );
@@ -53,7 +56,8 @@ const TradeChat = () => {
         return;
       }
 
-      const initialMessages = getTradePreviewChatMessages(initialRoom.roomId);
+      const messageResponse = await getTradeChatMessages(initialRoom.roomId);
+      const initialMessages = toTradeChatMessages(messageResponse);
 
       setRooms(loadedRooms.map((room) => {
         if (room.roomId !== initialRoom.roomId) {
@@ -66,7 +70,7 @@ const TradeChat = () => {
         };
       }));
       setActiveRoomId(initialRoom.roomId);
-      setMessages(initialMessages.messages);
+      setMessages(initialMessages);
     } catch {
       setError(
         '채팅방 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.',
@@ -76,14 +80,14 @@ const TradeChat = () => {
     }
   }, [tradeId]);
 
-  // 선택한 채팅방의 메시지를 조회한다.
-  // 확인하지 않은 메시지는 읽음으로 표시한다.
-  const selectChatRoom = useCallback((roomId) => {
+  // 방을 선택하면 서버가 상대방 메시지를 읽음 처리한 최신 목록을 다시 받아 온다.
+  const selectChatRoom = useCallback(async (roomId) => {
     try {
-      const room = getTradePreviewChatMessages(roomId);
+      const messageResponse = await getTradeChatMessages(roomId);
+      const loadedMessages = toTradeChatMessages(messageResponse);
 
       setActiveRoomId(roomId);
-      setMessages(room.messages);
+      setMessages(loadedMessages);
       setRooms((currentRooms) => currentRooms.map((currentRoom) => {
         if (currentRoom.roomId !== roomId) {
           return currentRoom;
@@ -107,8 +111,8 @@ const TradeChat = () => {
     return () => window.clearTimeout(requestTimer);
   }, [loadChatRooms]);
 
-  // 개발 미리보기에서는 전송한 메시지를 현재 채팅방에 즉시 추가한다.
-  const sendMessage = (event) => {
+  // 전송 성공 응답만 메시지 목록에 반영해 화면과 저장된 메시지가 어긋나지 않게 한다.
+  const sendMessage = async (event) => {
     event.preventDefault();
 
     const content = messageInput.trim();
@@ -122,49 +126,40 @@ const TradeChat = () => {
       return;
     }
 
-    const newMessage = {
-      messageId: `local-message-${Date.now()}`,
-      senderType: 'ME',
-      content,
-      sentAt: new Intl.DateTimeFormat('ko-KR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      }).format(new Date()),
-      isRead: false,
-    };
+    if (!window.crypto?.randomUUID) {
+      setError('메시지 요청을 준비하지 못했습니다. 다시 시도해 주세요.');
+      return;
+    }
 
-    setMessages((currentMessages) => [...currentMessages, newMessage]);
-    setRooms((currentRooms) => currentRooms.map((room) => {
-      if (room.roomId !== activeRoom.roomId) {
-        return room;
-      }
-
-      return {
-        ...room,
-        lastMessage: content,
-        latestMessageAt: newMessage.sentAt,
-      };
-    }));
-    setMessageInput('');
+    setIsSubmitting(true);
     setError('');
-  };
 
-  if (!isTradePreviewEnabled) {
-    return (
-      <div className="trade-chat-page">
-        <main className="container trade-chat-page__state">
-          <section className="trade-chat-card">
-            <h1>거래 채팅</h1>
-            <p>
-              채팅방·메시지 API 계약이 확정된 뒤
-              실제 거래 채팅을 연결합니다.
-            </p>
-          </section>
-        </main>
-      </div>
-    );
-  }
+    try {
+      const response = await sendTradeChatMessage(activeRoom.roomId, {
+        content,
+        detectionKey: window.crypto.randomUUID(),
+      });
+      const newMessage = toTradeChatMessage(response);
+
+      setMessages((currentMessages) => [...currentMessages, newMessage]);
+      setRooms((currentRooms) => currentRooms.map((room) => {
+        if (room.roomId !== activeRoom.roomId) {
+          return room;
+        }
+
+        return {
+          ...room,
+          lastMessage: newMessage.content,
+          latestMessageAt: newMessage.sentAt,
+        };
+      }));
+      setMessageInput('');
+    } catch {
+      setError('메시지 전송에 실패했습니다. 다시 시도해 주세요.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="trade-chat-page">
@@ -285,16 +280,16 @@ const TradeChat = () => {
                       value={messageInput}
                       onChange={(event) => setMessageInput(event.target.value)}
                       placeholder="메시지를 입력하세요."
-                      disabled={activeRoom.roomStatus === 'CLOSED'}
+                      disabled={isSubmitting || activeRoom.roomStatus === 'CLOSED'}
                     />
                     <div className="trade-chat-composer__footer">
                       <span>{messageInput.length}/{MAX_MESSAGE_LENGTH}</span>
                       <button
                         className="btn btn-primary"
                         type="submit"
-                        disabled={activeRoom.roomStatus === 'CLOSED'}
+                        disabled={isSubmitting || activeRoom.roomStatus === 'CLOSED'}
                       >
-                        전송
+                        {isSubmitting ? '전송 중...' : '전송'}
                       </button>
                     </div>
                   </form>
