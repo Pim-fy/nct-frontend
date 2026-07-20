@@ -5,16 +5,13 @@ const AuctionBidPanel = ({
   currentPrice,
   bidUnitPrice,
   remainingTime,
-  selectedTradeValue,
+  selectedTradeName,
   displayedBidAmount,
   holdAgreed,
-  isFavorite,
   isBidPending,
   isBuyNowPending,
-  onFavoriteToggle,
   onBidInputChange,
   onQuickAdd,
-  onTradeSelect,
   onHoldAgreedChange,
   onBidSubmit,
   onBuyNowOpen,
@@ -24,19 +21,11 @@ const AuctionBidPanel = ({
       <div>
         <div className="status-row">
           <span className="badge">{auction.auctionStatusName || '진행중'}</span>
-          <span className="deal-badge shipping">택배거래</span>
-          <span className="deal-badge pickup">직거래</span>
+          {auction.tradeMethodName && (
+            <span className="deal-badge">{auction.tradeMethodName}</span>
+          )}
         </div>
 
-        <button
-          className={`favorite-toggle ${isFavorite ? 'active' : ''}`}
-          id="favoriteBtn"
-          type="button"
-          aria-pressed={isFavorite}
-          onClick={onFavoriteToggle}
-        >
-          {isFavorite ? '♥ 관심 등록됨' : '♡ 관심 등록'}
-        </button>
         <p className="label">현재 최고가</p>
         <p className="price" id="currentPrice">{formatPrice(currentPrice)}</p>
         <p className="subcopy">
@@ -69,7 +58,7 @@ const AuctionBidPanel = ({
           <button className="chip quick" type="button" data-add="50000" onClick={() => onQuickAdd(50000)}>+5만</button>
         </div>
 
-        <p className="hint">현재가+{bidUnitPrice.toLocaleString('ko-KR')}원 이상 입력 · 사용가능 포인트 350,000P</p>
+        <p className="hint">현재가+{bidUnitPrice.toLocaleString('ko-KR')}원 이상 입력</p>
       </div>
 
       <div className="meta-stats">
@@ -78,26 +67,9 @@ const AuctionBidPanel = ({
         <div className="metric-box"><span>조회수</span><strong>{formatNumber(auction.viewCount)}회</strong></div>
       </div>
 
-      <div className="trade-choice" data-chip-radio>
-        <span className="trade-choice-label">거래 방식 선택</span>
-        <div className="trade-choice-row">
-          <button
-            className={`chip trade-option ${selectedTradeValue === 'shipping' ? 'active' : ''}`}
-            type="button"
-            aria-pressed={selectedTradeValue === 'shipping'}
-            onClick={() => onTradeSelect('shipping')}
-          >
-            택배거래
-          </button>
-          <button
-            className={`chip trade-option ${selectedTradeValue === 'pickup' ? 'active' : ''}`}
-            type="button"
-            aria-pressed={selectedTradeValue === 'pickup'}
-            onClick={() => onTradeSelect('pickup')}
-          >
-            직거래
-          </button>
-        </div>
+      <div className="trade-choice">
+        <span className="trade-choice-label">거래 방식</span>
+        <strong>{selectedTradeName}</strong>
       </div>
 
       <label className="agree hold-agree">

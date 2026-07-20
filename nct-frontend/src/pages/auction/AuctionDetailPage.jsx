@@ -22,9 +22,7 @@ const AuctionDetailPage = () => {
   const { auctionId } = useParams();
   const queryClient = useQueryClient();
   const [bidAmount, setBidAmount] = useState('');
-  const [selectedTrade, setSelectedTrade] = useState('');
   const [holdAgreed, setHoldAgreed] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [detailModalKey, setDetailModalKey] = useState(null);
   const [isBuyNowOpen, setIsBuyNowOpen] = useState(false);
@@ -118,19 +116,16 @@ const AuctionDetailPage = () => {
     auction.auctionStatusName,
     now,
   );
-  const defaultTrade = auction.tradeMethodCode === 'TRDC0010' ? 'pickup' : 'shipping';
-  const selectedTradeValue = selectedTrade || defaultTrade;
-  const selectedTradeName = selectedTradeValue === 'pickup' ? '직거래' : '택배거래';
+  const selectedTradeValue = auction.tradeMethodCode || '';
+  const selectedTradeName = auction.tradeMethodName || '거래 방식 미정';
   const displayedBidAmount = bidAmount || formatNumber(minimumBidPrice);
-  const sellerSummary = `${auction.sellerName || '판매자'} · 별점 4.2 · 거래 15회 · ${auction.tradeMethodName || '거래 방식 선택 가능'}`;
+  const sellerSummary = `${auction.sellerName || '판매자'} · ${selectedTradeName}`;
   const detailModalContent = detailModalKey === 'seller'
     ? {
       title: '판매자 정보',
       rows: [
         ['판매자', auction.sellerName || '판매자'],
-        ['평점', '4.2'],
-        ['거래 횟수', '15회'],
-        ['거래 방식', auction.tradeMethodName || selectedTradeName],
+        ['거래 방식', selectedTradeName],
       ],
     }
     : {
@@ -145,11 +140,6 @@ const AuctionDetailPage = () => {
 
   const handleBidInputChange = (event) => setBidAmount(formatNumber(parseAmount(event.target.value)));
   const handleQuickAdd = (amount) => setBidAmount((value) => formatNumber(parseAmount(value || displayedBidAmount) + amount));
-  const handleTradeSelect = (trade) => setSelectedTrade(trade);
-  const handleFavoriteToggle = () => {
-    setIsFavorite((value) => !value);
-    showToast(isFavorite ? '관심 등록을 해제했습니다' : '관심 상품으로 등록했습니다');
-  };
   const handleBidSubmit = () => {
     const amount = parseAmount(displayedBidAmount);
     if (!holdAgreed) {
@@ -209,16 +199,13 @@ const AuctionDetailPage = () => {
               currentPrice={currentPrice}
               bidUnitPrice={bidUnitPrice}
               remainingTime={remainingTime}
-              selectedTradeValue={selectedTradeValue}
+              selectedTradeName={selectedTradeName}
               displayedBidAmount={displayedBidAmount}
               holdAgreed={holdAgreed}
-              isFavorite={isFavorite}
               isBidPending={bidMutation.isPending}
               isBuyNowPending={buyNowMutation.isPending}
-              onFavoriteToggle={handleFavoriteToggle}
               onBidInputChange={handleBidInputChange}
               onQuickAdd={handleQuickAdd}
-              onTradeSelect={handleTradeSelect}
               onHoldAgreedChange={setHoldAgreed}
               onBidSubmit={handleBidSubmit}
               onBuyNowOpen={handleBuyNowOpen}

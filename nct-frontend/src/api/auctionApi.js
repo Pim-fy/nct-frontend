@@ -18,16 +18,16 @@ export const fetchAuctions = async (params = {}) => {
 };
 
 export const fetchAuctionDetail = async (auctionId) => {
-  const response = await api.get(`/auction/${auctionId}`);
+  const response = await api.get(`/auctions/${auctionId}`);
   return response.data.data;
 };
 
 export const placeAuctionBid = async (auctionId, payload) => {
-  const response = await api.post(`/auction/${auctionId}/bids`, payload);
+  const response = await api.post(`/auctions/${auctionId}/bids`, payload);
   return response.data.data;
 };
 
 export const buyNowAuction = async (auctionId, payload) => {
-  const response = await api.post(`/auction/${auctionId}/buy-now`, payload);
+  const response = await api.post(`/auctions/${auctionId}/buy-now`, payload);
   return response.data.data;
 };
