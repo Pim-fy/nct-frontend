@@ -1,7 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { buyNowAuction, fetchAuctionDetail, placeAuctionBid } from '@api/auctionApi';
+import {
+  addAuctionFavorite,
+  buyNowAuction,
+  fetchAuctionDetail,
+  fetchAuctionFavoriteStatus,
+  placeAuctionBid,
+  removeAuctionFavorite,
+} from '@api/auctionApi';
+import { useAuth } from '@hooks/useAuth';
 import AuctionBidPanel from './components/AuctionBidPanel';
 import AuctionBuyNowModal from './components/AuctionBuyNowModal';
 import AuctionDetailModal from './components/AuctionDetailModal';
@@ -21,6 +29,7 @@ import '@assets/css/auction.css';
 const AuctionDetailPage = () => {
   const { auctionId } = useParams();
   const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
   const [bidAmount, setBidAmount] = useState('');
   const [holdAgreed, setHoldAgreed] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -29,7 +38,7 @@ const AuctionDetailPage = () => {
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
   const [failedImageUrls, setFailedImageUrls] = useState(() => new Set());
 
-  const detailQueryKey = ['auctionDetail', auctionId];
+  const detailQueryKey = useMemo(() => ['auctionDetail', auctionId], [auctionId]);
   const {
     data: auction,
     isLoading,
@@ -38,6 +47,16 @@ const AuctionDetailPage = () => {
     queryKey: detailQueryKey,
     queryFn: () => fetchAuctionDetail(auctionId),
     enabled: Boolean(auctionId),
+  });
+  const favoriteStatusQuery = useQuery({
+    queryKey: ['auctionFavoriteStatus', auctionId],
+    queryFn: () => fetchAuctionFavoriteStatus(auctionId),
+    enabled: Boolean(
+      auctionId
+      && auction
+      && isAuthenticated
+      && typeof auction.favorite !== 'boolean'
+    ),
   });
   const now = useCountdown(Boolean(auction?.endDateTime && auction?.auctionStatusCode === 'AUCC0002'));
 
@@ -48,6 +67,16 @@ const AuctionDetailPage = () => {
     setBidAmount('');
     setHoldAgreed(false);
   };
+  const applyFavoriteStatus = useCallback((status) => {
+    queryClient.setQueryData(detailQueryKey, (prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        favorite: status.favorite,
+        favoriteCount: status.favoriteCount,
+      };
+    });
+  }, [detailQueryKey, queryClient]);
 
   const bidMutation = useMutation({
     mutationFn: (payload) => placeAuctionBid(auctionId, payload),
@@ -66,6 +95,22 @@ const AuctionDetailPage = () => {
     },
     onError: (error) => showToast(getErrorMessage(error)),
   });
+  const favoriteMutation = useMutation({
+    mutationFn: () => (auction?.favorite
+      ? removeAuctionFavorite(auctionId)
+      : addAuctionFavorite(auctionId)),
+    onSuccess: (status) => {
+      applyFavoriteStatus(status);
+      showToast(status.favorite ? '관심 상품에 추가되었습니다' : '관심 상품에서 해제되었습니다');
+    },
+    onError: (error) => showToast(getErrorMessage(error)),
+  });
+
+  useEffect(() => {
+    if (favoriteStatusQuery.data) {
+      applyFavoriteStatus(favoriteStatusQuery.data);
+    }
+  }, [applyFavoriteStatus, favoriteStatusQuery.data]);
 
   useEffect(() => {
     if (!toastMessage) return undefined;
@@ -167,6 +212,13 @@ const AuctionDetailPage = () => {
       tradeMethod: selectedTradeValue,
     });
   };
+  const handleFavoriteToggle = () => {
+    if (!isAuthenticated) {
+      showToast('로그인 후 관심 상품을 등록할 수 있습니다');
+      return;
+    }
+    favoriteMutation.mutate();
+  };
   const moveImage = (direction) => {
     if (imageItems.length === 0) return;
     setSelectedImageIndex((index) => {
@@ -204,11 +256,13 @@ const AuctionDetailPage = () => {
               holdAgreed={holdAgreed}
               isBidPending={bidMutation.isPending}
               isBuyNowPending={buyNowMutation.isPending}
+              isFavoritePending={favoriteMutation.isPending || favoriteStatusQuery.isFetching}
               onBidInputChange={handleBidInputChange}
               onQuickAdd={handleQuickAdd}
               onHoldAgreedChange={setHoldAgreed}
               onBidSubmit={handleBidSubmit}
               onBuyNowOpen={handleBuyNowOpen}
+              onFavoriteToggle={handleFavoriteToggle}
             />
           </section>
 

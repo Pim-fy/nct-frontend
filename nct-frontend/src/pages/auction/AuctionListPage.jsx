@@ -31,6 +31,9 @@ const AuctionListPage = () => {
   const [sortDraft, setSortDraft] = useState(searchParams.get('sort') || 'deadline');
   const [minPriceDraft, setMinPriceDraft] = useState(searchParams.get('minPrice') || '');
   const [maxPriceDraft, setMaxPriceDraft] = useState(searchParams.get('maxPrice') || '');
+  const [instantBuyOnlyDraft, setInstantBuyOnlyDraft] = useState(
+    searchParams.get('instantBuyOnly') === 'true',
+  );
 
   const selectedCategories = getSelectedValues(searchParams, 'category');
   const selectedStatuses = getSelectedValues(searchParams, 'status');
@@ -38,6 +41,7 @@ const AuctionListPage = () => {
   const sort = searchParams.get('sort') || 'deadline';
   const minPrice = searchParams.get('minPrice') || '';
   const maxPrice = searchParams.get('maxPrice') || '';
+  const instantBuyOnly = searchParams.get('instantBuyOnly') === 'true';
   const page = Number(searchParams.get('page') || 1);
 
   const queryParams = {
@@ -48,6 +52,7 @@ const AuctionListPage = () => {
     sort,
     minPrice,
     maxPrice,
+    instantBuyOnly: instantBuyOnly || undefined,
     page,
     size: DEFAULT_PAGE_SIZE,
   };
@@ -85,6 +90,7 @@ const AuctionListPage = () => {
     statusDraft.forEach((status) => next.append('status', status));
     if (minPriceDraft) next.set('minPrice', minPriceDraft);
     if (maxPriceDraft) next.set('maxPrice', maxPriceDraft);
+    if (instantBuyOnlyDraft) next.set('instantBuyOnly', 'true');
     if (tradeMethodDraft && tradeMethodDraft !== 'all') next.set('tradeMethod', tradeMethodDraft);
     if (sortDraft && sortDraft !== 'deadline') next.set('sort', sortDraft);
 
@@ -103,6 +109,7 @@ const AuctionListPage = () => {
     setSortDraft('deadline');
     setMinPriceDraft('');
     setMaxPriceDraft('');
+    setInstantBuyOnlyDraft(false);
     setSearchParams(new URLSearchParams());
   };
 
@@ -211,6 +218,18 @@ const AuctionListPage = () => {
                   {method.label}
                 </label>
               ))}
+            </fieldset>
+
+            <fieldset className="auction-filter-group">
+              <legend>구매 방식</legend>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={instantBuyOnlyDraft}
+                  onChange={(event) => setInstantBuyOnlyDraft(event.target.checked)}
+                />
+                즉시구매 가능한 상품만
+              </label>
             </fieldset>
 
             <label className="auction-sort-field">

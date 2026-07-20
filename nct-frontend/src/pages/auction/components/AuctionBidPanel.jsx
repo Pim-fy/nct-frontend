@@ -10,13 +10,24 @@ const AuctionBidPanel = ({
   holdAgreed,
   isBidPending,
   isBuyNowPending,
+  isFavoritePending,
   onBidInputChange,
   onQuickAdd,
   onHoldAgreedChange,
   onBidSubmit,
   onBuyNowOpen,
+  onFavoriteToggle,
 }) => (
   <aside className="bid-card">
+    <button
+      className={`favorite-toggle${auction.favorite ? ' active' : ''}`}
+      type="button"
+      aria-pressed={Boolean(auction.favorite)}
+      disabled={isFavoritePending}
+      onClick={onFavoriteToggle}
+    >
+      {auction.favorite ? '♥ 관심' : '♡ 관심'}
+    </button>
     <div className="bid-layout">
       <div>
         <div className="status-row">

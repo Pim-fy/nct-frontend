@@ -31,3 +31,23 @@ export const buyNowAuction = async (auctionId, payload) => {
   const response = await api.post(`/auctions/${auctionId}/buy-now`, payload);
   return response.data.data;
 };
+
+export const addAuctionFavorite = async (auctionId) => {
+  const response = await api.put(`/auctions/${auctionId}/favorite`);
+  return response.data.data;
+};
+
+export const removeAuctionFavorite = async (auctionId) => {
+  const response = await api.delete(`/auctions/${auctionId}/favorite`);
+  return response.data.data;
+};
+
+export const fetchAuctionFavoriteStatus = async (auctionId) => {
+  const response = await api.get(`/auctions/${auctionId}/favorite`);
+  return response.data.data;
+};
+
+export const fetchMyFavoriteAuctions = async (params) => {
+  const response = await api.get('/auctions/favorites/me', { params });
+  return response.data.data;
+};
