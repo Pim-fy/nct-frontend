@@ -2,7 +2,8 @@
  * F-COM-002 화면을 실제 API 연결 전에 확인하기 위한 가명 자료입니다.
  * 다른 담당자의 DB 식별자나 개인정보를 복사하지 않았으며, API가 오면 이 파일은 제거할 수 있습니다.
  */
-export const SERVICE_CATEGORIES = ['청소', '이사·운반', '수리·설치', '레슨·상담'];
+// 담당자 7: CATEGORY의 현재 서비스 분류(이사·청소·레슨·설치·수리·인테리어)와 같은 이름을 사용합니다.
+export const SERVICE_CATEGORIES = ['이사', '청소', '레슨', '설치·수리', '인테리어'];
 
 export const SERVICE_REGIONS = ['서울', '경기·인천', '부산·경남', '비대면'];
 
@@ -25,7 +26,7 @@ export const SERVICE_REQUEST_PREVIEW = [
   {
     id: 102,
     title: '소형 이사와 가구 재배치가 필요해요',
-    category: '이사·운반',
+    category: '이사',
     region: '경기·인천',
     budgetMin: 150000,
     budgetMax: 150000,
@@ -39,8 +40,8 @@ export const SERVICE_REQUEST_PREVIEW = [
   },
   {
     id: 103,
-    title: '거실 커튼레일 설치 가능하신 분',
-    category: '수리·설치',
+    title: '거실 부분 인테리어 상담',
+    category: '인테리어',
     region: '서울',
     budgetMin: 70000,
     budgetMax: 70000,
@@ -50,12 +51,12 @@ export const SERVICE_REQUEST_PREVIEW = [
     quoteCount: 0,
     createdOrder: 7,
     remote: false,
-    summary: '기존 레일 철거 없이 새 레일 2개 설치를 요청합니다.',
+    summary: '거실 벽면과 조명 교체 범위를 먼저 상담받고 싶습니다.',
   },
   {
     id: 104,
     title: '주 2회 온라인 영어 회화 레슨',
-    category: '레슨·상담',
+    category: '레슨',
     region: '비대면',
     budgetMin: 350000,
     budgetMax: 400000,
@@ -70,7 +71,7 @@ export const SERVICE_REQUEST_PREVIEW = [
   {
     id: 105,
     title: '세탁기 배수 호스 점검 요청',
-    category: '수리·설치',
+    category: '설치·수리',
     region: '부산·경남',
     budgetMin: 45000,
     budgetMax: 80000,
@@ -85,7 +86,7 @@ export const SERVICE_REQUEST_PREVIEW = [
   {
     id: 106,
     title: '이력서와 포트폴리오 피드백',
-    category: '레슨·상담',
+    category: '레슨',
     region: '비대면',
     budgetMin: 50000,
     budgetMax: 100000,
@@ -109,7 +110,7 @@ export const PROVIDER_PREVIEW = [
     reviewCount: 23,
     completedCount: 18,
     responseRate: 94,
-    categories: ['청소', '이사·운반'],
+    categories: ['청소', '이사'],
     regions: ['서울', '경기·인천'],
     minBudget: 90000,
     intro: '소형 이사와 입주 청소를 함께 진행합니다. 사전 체크리스트로 추가 비용을 투명하게 안내합니다.',
@@ -119,9 +120,9 @@ export const PROVIDER_PREVIEW = [
       { id: 3, score: 5, author: '박**', date: '2026-06-03', content: '청소까지 마무리해 주셔서 만족했습니다.' },
     ],
     portfolios: [
-      { id: 1, title: '소형 이사·입주 청소', category: '이사·운반', description: '원룸 이사 후 바로 입주할 수 있도록 운반과 기본 청소를 같은 일정에 진행했습니다.' },
-      { id: 2, title: '원룸 포장 이사', category: '이사·운반', description: '가전과 생활용품을 구역별로 분류해 포장하고 파손 없이 운반한 사례입니다.' },
-      { id: 3, title: '가구 재배치', category: '수리·설치', description: '대형 가구 이동 동선을 확보하고 벽면 손상 없이 재배치했습니다.' },
+      { id: 1, title: '소형 이사·입주 청소', category: '이사', description: '원룸 이사 후 바로 입주할 수 있도록 운반과 기본 청소를 같은 일정에 진행했습니다.' },
+      { id: 2, title: '원룸 포장 이사', category: '이사', description: '가전과 생활용품을 구역별로 분류해 포장하고 파손 없이 운반한 사례입니다.' },
+      { id: 3, title: '가구 재배치', category: '설치·수리', description: '대형 가구 이동 동선을 확보하고 벽면 손상 없이 재배치했습니다.' },
       { id: 4, title: '퇴실 청소', category: '청소', description: '욕실, 주방, 창틀 등 오염 구역 중심으로 마감한 청소 사례입니다.' },
     ],
   },
@@ -134,7 +135,7 @@ export const PROVIDER_PREVIEW = [
     reviewCount: 41,
     completedCount: 37,
     responseRate: 97,
-    categories: ['청소', '수리·설치'],
+    categories: ['청소', '설치·수리'],
     regions: ['서울', '경기·인천'],
     minBudget: 60000,
     intro: '생활 공간 청소와 간단한 설치 작업을 한 번에 상담합니다.',
@@ -150,7 +151,7 @@ export const PROVIDER_PREVIEW = [
     reviewCount: 16,
     completedCount: 14,
     responseRate: 91,
-    categories: ['레슨·상담'],
+    categories: ['레슨'],
     regions: ['비대면'],
     minBudget: 50000,
     intro: '취업 문서와 면접을 비대면으로 함께 점검합니다.',
@@ -166,7 +167,7 @@ export const PROVIDER_PREVIEW = [
     reviewCount: 12,
     completedCount: 21,
     responseRate: 89,
-    categories: ['수리·설치'],
+    categories: ['설치·수리'],
     regions: ['부산·경남'],
     minBudget: 40000,
     intro: '수전, 배수, 선반 등 일상에서 자주 필요한 소형 수리를 진행합니다.',

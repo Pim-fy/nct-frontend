@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useSearchParams } from 'react-router-dom';
 import {
@@ -11,6 +12,7 @@ import {
 } from '@components/content/ContentUi';
 import ListSkeleton from '@components/skeleton/ListSkeleton';
 import { usePublicNoticeList, usePublicNoticeTypes } from '@hooks/usePublicNotices';
+import './noticePage.css';
 
 const PAGE_SIZE = 10;
 
@@ -18,24 +20,32 @@ const PAGE_SIZE = 10;
 const NoticeListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const typeCode = searchParams.get('type') || '';
+  const keyword = searchParams.get('keyword') || '';
+  const [keywordInput, setKeywordInput] = useState(keyword);
   const requestedPage = Number(searchParams.get('page') || 1);
   const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
 
   const typesQuery = usePublicNoticeTypes();
-  const noticesQuery = usePublicNoticeList({ typeCode, page, size: PAGE_SIZE });
+  const noticesQuery = usePublicNoticeList({ typeCode, keyword, page, size: PAGE_SIZE });
   const noticePage = noticesQuery.data;
 
-  const changeFilter = (nextTypeCode) => {
+  const setParams = ({ nextTypeCode = typeCode, nextKeyword = keyword, nextPage = 1 }) => {
     const next = {};
     if (nextTypeCode) next.type = nextTypeCode;
+    if (nextKeyword) next.keyword = nextKeyword;
+    if (nextPage > 1) next.page = String(nextPage);
     setSearchParams(next);
   };
 
+  const changeFilter = (nextTypeCode) => setParams({ nextTypeCode });
+
+  const submitSearch = (event) => {
+    event.preventDefault();
+    setParams({ nextKeyword: keywordInput.trim() });
+  };
+
   const changePage = (nextPage) => {
-    const next = {};
-    if (typeCode) next.type = typeCode;
-    if (nextPage > 1) next.page = String(nextPage);
-    setSearchParams(next);
+    setParams({ nextPage });
   };
 
   return (
@@ -54,7 +64,6 @@ const NoticeListPage = () => {
         selectedTypeCode={typeCode}
         types={typesQuery.data ?? []}
       />
-
       {noticesQuery.isLoading && <ListSkeleton />}
 
       {noticesQuery.isError && (
@@ -67,6 +76,16 @@ const NoticeListPage = () => {
         />
       )}
 
+      {!noticesQuery.isLoading && !noticesQuery.isError && (
+        <div className="public-notice-list-toolbar">
+          {noticePage?.items?.length > 0 && <NoticeListSummary total={noticePage.totalItems} />}
+          <form className="public-notice-search" onSubmit={submitSearch}>
+            <input aria-label="공지 제목 또는 내용 검색" maxLength={100} onChange={(event) => setKeywordInput(event.target.value)} placeholder="제목 또는 내용 검색" value={keywordInput} />
+            <button className="btn btn-primary" type="submit">검색</button>
+          </form>
+        </div>
+      )}
+
       {!noticesQuery.isLoading && !noticesQuery.isError && noticePage?.items?.length === 0 && (
         <ContentState
           description="새로운 안내가 등록되면 이곳에 표시됩니다."
@@ -76,7 +95,7 @@ const NoticeListPage = () => {
 
       {noticePage?.items?.length > 0 && (
         <>
-          <NoticeListSummary total={noticePage.totalItems} />
+          {keyword && <p className="public-notice-search__result" aria-live="polite"><strong>“{keyword}”</strong> 검색 결과입니다.</p>}
           <NoticeList notices={noticePage.items} />
 
           {noticePage.totalPages > 1 && (

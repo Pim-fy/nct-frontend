@@ -1,0 +1,15 @@
+/* 담당자 7 | F-COM-013: 목록 건수와 검색을 한 줄에 두어 목록 바로 위에서 찾습니다. */
+.public-notice-list-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 0 10px; }
+.public-notice-list-toolbar .notice-total { margin: 0; }
+.public-notice-search { display: flex; width: clamp(300px, 30%, 360px); gap: 8px; margin-left: auto; }
+.public-notice-search input { width: 100%; height: 20px; min-height: 20px; box-sizing: border-box; padding: 0 6px; border: 1px solid #e2e1dc; border-radius: 6px; color: #1a1a18; font: inherit; line-height: 14px; }
+.public-notice-search input:focus { border-color: var(--color-primary, #0064ff); outline: 3px solid rgb(0 100 255 / 14%); }
+.public-notice-search .btn { display: inline-flex; min-width: 48px; height: 20px; min-height: 20px; box-sizing: border-box; padding: 0 10px; border-radius: 6px; align-items: center; justify-content: center; line-height: 14px; }
+.public-notice-search__result { margin: 0 0 12px; color: #5f5e5a; font-size: 13px; }
+.public-notice-search__result strong { color: var(--color-primary-dark, #0048bf); }
+
+@media (max-width: 620px) {
+  .public-notice-list-toolbar { align-items: stretch; flex-direction: column; gap: 8px; }
+  .public-notice-search { width: 100%; flex-wrap: wrap; }
+  .public-notice-search .btn { flex: 1; }
+}

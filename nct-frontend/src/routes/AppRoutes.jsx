@@ -43,12 +43,18 @@ import Unauthorized   from '@pages/error/Unauthorized';
 // UserLayout (로그인 필요)
 // ──────────────────────────────────────────
 import MyPage from '@pages/user/MyPage';
+import TradeHistory from '@pages/trade/TradeHistory';
+import TradeDetailBuyer from '@pages/trade/TradeDetailBuyer';
+import TradeDetailSeller from '@pages/trade/TradeDetailSeller';
+import TradeChat from '@pages/trade/TradeChat';
 // 담당자 7 공개 콘텐츠 route. 공통 route 소유자(담당자 1)에게 동일 manifest로 전달합니다.
 import GuidePage from '@pages/content/GuidePage';
 import NoticeListPage from '@pages/content/NoticeListPage';
 import NoticeDetailPage from '@pages/content/NoticeDetailPage';
 import ServiceListPage from '@pages/service/ServiceListPage';
 import PublicProviderProfilePage from '@pages/provider/PublicProviderProfilePage';
+import ProviderApplyPage from '@pages/provider/ProviderApplyPage';
+import ProviderApplicationStatusPage from '@pages/provider/ProviderApplicationStatusPage';
 import PointWalletPage from '@pages/user/point/PointWalletPage';
 import NotificationPage from '@pages/user/notification/NotificationPage';
 import NotificationSettingsPage from '@pages/user/notification/NotificationSettingsPage';
@@ -71,10 +77,16 @@ import OperationsIntegrationPreview from '@pages/admin/OperationsIntegrationPrev
 import AdminNoticeListPage from '@pages/admin/notice/AdminNoticeListPage';
 import AdminNoticeFormPage from '@pages/admin/notice/AdminNoticeFormPage';
 import AdminGuidePage from '@pages/admin/guide/AdminGuidePage';
+import AdminCategoryPage from '@pages/admin/category/AdminCategoryPage';
+import AdminServiceRequestPage from '@pages/admin/service/AdminServiceRequestPage';
+import AdminProviderApprovalPage from '@pages/admin/provider/AdminProviderApprovalPage';
 import AdminAuditLogPage from '@pages/admin/audit/AdminAuditLogPage';
 import AdminSystemSettingPage from '@pages/admin/setting/AdminSystemSettingPage';
+import AdminAuctionManagementPage from '@pages/admin/auction/AdminAuctionManagementPage';
 import AdminNotificationPage from '@pages/admin/notification/AdminNotificationPage';
 
+// 개발 플래그가 켜진 로컬 환경에서만 로그인 없는 거래 화면 검토 경로를 제공한다.
+const isTradePreviewEnabled = import.meta.env.VITE_USE_TRADE_PREVIEW === 'true';
 
 const AppRoutes = () => {
   return (
@@ -115,25 +127,56 @@ const AppRoutes = () => {
         <Route path="/guide" element={<GuidePage />} />
         <Route path="/customersupport/notice" element={<NoticeListPage />} />
         <Route path="/customersupport/notice/:noticeId" element={<NoticeDetailPage />} />
-        {/* 마이페이지 */}
-        <Route path="/user/mypage" element={<MyPage />} />
-        {/* 포인트 지갑 (BJN) */}
-        <Route path="/user/point" element={<PointWalletPage />} />
-        {/* 알림함 (BJN) */}
-        <Route path="/user/notification" element={<NotificationPage />} />
-        {/* 알림 설정 (BJN) */}
-        <Route path="/user/notification/settings" element={<NotificationSettingsPage />} />
-        {/* 정산 관리 - 제공자용 (BJN) */}
-        <Route path="/user/settlement" element={<SettlementListPage />} />
-        {/* 리뷰작성 목록 */}
-        <Route path="/user/reviews" element={<ReviewListPage />} />
-        {/* 리뷰 작성 폼 */}
-        <Route path="/user/reviews/write/:id" element={<ReviewWritePage />} />
-        {/* 리뷰 수정 폼 */}
-        <Route path="/user/reviews/edit/:id" element={<ReviewEditPage />} />
+      </Route>
 
-        {/* 상품 — 로그인 필요 */}
-        <Route element={<ProtectedRoute />}>
+      {/* 실제 거래 경로의 인증 정책과 분리된 개발용 화면 확인 경로 */}
+      {isTradePreviewEnabled && (
+        <>
+          <Route path="/trades/preview" element={<TradeHistory />} />
+          <Route path="/trades/preview/chat" element={<TradeChat />} />
+          <Route
+            path="/trades/preview/:tradeId"
+            element={<TradeDetailBuyer />}
+          />
+          <Route
+            path="/trades/preview/:tradeId/seller"
+            element={<TradeDetailSeller />}
+          />
+        </>
+      )}
+
+      {/* 거래와 마이페이지는 로그인한 사용자만 접근한다. */}
+      <Route
+        element={(
+          <ProtectedRoute allowedRoles={['ROLE_USER', 'ROLE_SERVICE', 'ROLE_ADMIN']} />
+        )}
+      >
+        <Route element={<UserLayout />}>
+          <Route path="/user/mypage" element={<MyPage />} />
+          <Route path="/user/point" element={<PointWalletPage />} />
+          <Route path="/user/notification" element={<NotificationPage />} />
+          <Route
+            path="/user/notification/settings"
+            element={<NotificationSettingsPage />}
+          />
+          <Route path="/user/settlement" element={<SettlementListPage />} />
+          <Route path="/user/reviews" element={<ReviewListPage />} />
+          <Route path="/user/reviews/write/:id" element={<ReviewWritePage />} />
+          <Route path="/user/reviews/edit/:id" element={<ReviewEditPage />} />
+
+          <Route path="/trades" element={<TradeHistory />} />
+          <Route path="/trades/:tradeId/chat" element={<TradeChat />} />
+          <Route path="/trades/:tradeId" element={<TradeDetailBuyer />} />
+          <Route
+            path="/trades/:tradeId/seller"
+            element={<TradeDetailSeller />}
+          />
+
+          {/* 상품 — 로그인 필요 */}
+          {/* 담당자 7 · F-PROV-001/006: 마이페이지의 제공자 권한 신청 메뉴 목적지 */}
+          <Route path="/provider/apply"              element={<ProviderApplyPage />} />
+          {/* 담당자 7 · F-PROV-012/014: 신청 완료 후 내 심사 상태 확인 화면. 라우트 소유자에게 전달 필요. */}
+          <Route path="/provider/applications/status" element={<ProviderApplicationStatusPage />} />
           <Route path="/product/register"        element={<ProductRegisterPage />} />
           <Route path="/product/me"              element={<MyProductListPage />} />
           <Route path="/product/:prdSn/seller"   element={<ProductDetailSellerPage />} />
@@ -149,6 +192,10 @@ const AppRoutes = () => {
           <Route path="notices/new" element={<AdminNoticeFormPage />} />
           <Route path="notices/:noticeId" element={<AdminNoticeFormPage />} />
           <Route path="guides" element={<AdminGuidePage />} />
+          <Route path="categories" element={<AdminCategoryPage />} />
+          <Route path="services" element={<AdminServiceRequestPage />} />
+          <Route path="provider-applications" element={<AdminProviderApprovalPage />} />
+          <Route path="auctions" element={<AdminAuctionManagementPage />} />
           {/* 보안/감사·시스템 설정 (담당자6, F-OPS-014/016/024) */}
           <Route path="audit-logs" element={<AdminAuditLogPage />} />
           <Route path="system-settings" element={<AdminSystemSettingPage />} />
