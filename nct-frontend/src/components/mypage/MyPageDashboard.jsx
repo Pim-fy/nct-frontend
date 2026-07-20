@@ -184,7 +184,8 @@ export default function MyPageDashboard({ user, onRequestProviderSwitch }) {
       value: "21",
       unit: "건",
       meta: "입찰중 10건   ㅣ   진행중 9건   ㅣ   완료 2건",
-      onMore: () => toast({ icon: "info", title: "준비 중인 기능입니다." }),
+      // mypage_mybid.png 디자인상 이 카드의 더보기가 "내 입찰 내역"(F-AUC-022) 드릴다운 진입점이다.
+      onMore: () => navigate("/my-bids"),
     },
     {
       key: "service",
