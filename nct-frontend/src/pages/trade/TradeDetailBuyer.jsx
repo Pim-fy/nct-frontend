@@ -3,7 +3,7 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import Toast from '@components/common/Toast';
 import {
   getTradeDetail,
@@ -125,11 +125,10 @@ const TradeDetailBuyer = () => {
     setIsSubmitting(true);
 
     try {
-      await requestTradeCompletion(tradeId);
-      setTrade((currentTrade) => ({
-        ...currentTrade,
-        status: 'CONFIRM_PENDING',
-      }));
+      const response = await requestTradeCompletion(tradeId);
+
+      // 서버가 계산한 자동완료 시각까지 다시 반영해 브라우저 시간과 어긋나지 않게 한다.
+      setTrade(toTradeDetail(response));
       setCompletionAgreed(false);
       setNotice('거래 완료 확인 요청을 보냈습니다.');
     } catch {
@@ -265,7 +264,7 @@ const TradeDetailBuyer = () => {
           </section>
         </div>
 
-        {trade.method === 'OFFLINE' ? (
+        {trade.method === 'OFFLINE' && (
           <section className="trade-detail-card trade-complete-card">
             <h2>직거래 일정 확인</h2>
             <div className="trade-auto-complete">
@@ -276,48 +275,57 @@ const TradeDetailBuyer = () => {
                   : '판매자가 거래 일시와 장소를 저장하면 이곳에 표시됩니다.'}
               </p>
             </div>
-          </section>
-        ) : (
-          <section className="trade-detail-card trade-complete-card">
-            <h2>거래 완료 확인</h2>
-            <div className="trade-auto-complete">
-              <strong>자동 완료 예정</strong>
-              <p>
-                {trade.autoCompleteAt} 이후 상대 확인이나 거래 문제 접수가 없으면 자동 완료됩니다.
-              </p>
-            </div>
-
-            {/* 완료 요청 전 단계에서만 구매자의 완료 동의를 받는다. */}
-            {isInProgress && (
-              <>
-                <label className="trade-complete-card__check">
-                  <input
-                    type="checkbox"
-                    checked={completionAgreed}
-                    onChange={(event) => setCompletionAgreed(event.target.checked)}
-                  />
-                  거래가 완료되었음을 확인합니다
-                </label>
-                <p className="trade-detail-card__muted">
-                  확인 요청 이후에는 상대방의 확인 또는 무이의 기간 경과가 필요합니다.
-                </p>
-              </>
-            )}
-
             <div className="trade-detail-actions">
-              {isInProgress && (
-                <button
-                  className="btn btn-primary"
-                  type="button"
-                  disabled={!canRequestCompletion() || isSubmitting}
-                  onClick={handleCompletionRequest}
-                >
-                  {isSubmitting ? '요청 중...' : '거래 완료 확인'}
-                </button>
-              )}
+              <Link className="btn btn-outline" to={`/trades/${trade.id}/chat`}>
+                거래 채팅
+              </Link>
             </div>
           </section>
         )}
+
+        <section className="trade-detail-card trade-complete-card">
+          <h2>거래 완료 확인</h2>
+          <div className="trade-auto-complete">
+            <strong>
+              {isInProgress ? '완료 확인 요청 전' : currentStatus.label}
+            </strong>
+            <p>
+              {trade.autoCompleteAt !== '-'
+                ? `${trade.autoCompleteAt} 이후 상대 확인이나 거래 문제 접수가 없으면 자동 완료됩니다.`
+                : '거래가 완료되었다면 상대방에게 완료 확인을 요청할 수 있습니다.'}
+            </p>
+          </div>
+
+          {/* 완료 요청 전 단계에서만 구매자의 완료 동의를 받는다. */}
+          {isInProgress && (
+            <>
+              <label className="trade-complete-card__check">
+                <input
+                  type="checkbox"
+                  checked={completionAgreed}
+                  onChange={(event) => setCompletionAgreed(event.target.checked)}
+                />
+                거래가 완료되었음을 확인합니다
+              </label>
+              <p className="trade-detail-card__muted">
+                확인 요청 이후에는 상대방의 확인 또는 무이의 기간 경과가 필요합니다.
+              </p>
+            </>
+          )}
+
+          <div className="trade-detail-actions">
+            {isInProgress && (
+              <button
+                className="btn btn-primary"
+                type="button"
+                disabled={!canRequestCompletion() || isSubmitting}
+                onClick={handleCompletionRequest}
+              >
+                {isSubmitting ? '요청 중...' : '거래 완료 확인'}
+              </button>
+            )}
+          </div>
+        </section>
       </div>
 
       {notice && <Toast message={notice} onClose={() => setNotice('')} />}

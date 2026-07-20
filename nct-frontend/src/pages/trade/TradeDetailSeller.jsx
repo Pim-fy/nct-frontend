@@ -3,12 +3,11 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import Toast from '@components/common/Toast';
 import {
   getTradeDetail,
   proposeTradeOfflineSchedule,
-  registerTradeShipping,
 } from '@api/tradeApi';
 import { toTradeDetail } from '@api/tradeAdapter';
 import '@assets/css/trade-detail.css';
@@ -23,15 +22,22 @@ const getTodayDate = () => {
   return `${year}-${month}-${day}`;
 };
 
+const MAX_SHIPPING_PROOF_FILE_SIZE = 10 * 1024 * 1024;
+const SHIPPING_PROOF_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+];
+
 const TradeDetailSeller = () => {
   const { tradeId } = useParams();
   const [trade, setTrade] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
-  const [carrier, setCarrier] = useState('');
-  const [trackingNumber, setTrackingNumber] = useState('');
   const [shippingMemo, setShippingMemo] = useState('');
-  const [shippingRegistered, setShippingRegistered] = useState(false);
+  const [shippingProofFile, setShippingProofFile] = useState(null);
+  const [shippingProofPreview, setShippingProofPreview] = useState('');
+  const [shippingProofError, setShippingProofError] = useState('');
   const [meetingDate, setMeetingDate] = useState('');
   const [meetingTime, setMeetingTime] = useState('');
   const [meetingPlace, setMeetingPlace] = useState('');
@@ -52,9 +58,6 @@ const TradeDetailSeller = () => {
       const detail = toTradeDetail(response);
 
       setTrade(detail);
-      setCarrier(detail.carrier === '-' ? '' : detail.carrier);
-      setTrackingNumber(detail.trackingNumber === '-' ? '' : detail.trackingNumber);
-      setShippingRegistered(Boolean(detail.trackingNumber !== '-'));
       setMeetingDate(detail.meetingDate === '-' ? '' : detail.meetingDate);
       setMeetingTime(detail.meetingTime === '-' ? '' : detail.meetingTime);
       setMeetingPlace(detail.meetingPlace === '-' ? '' : detail.meetingPlace);
@@ -74,36 +77,42 @@ const TradeDetailSeller = () => {
     return () => window.clearTimeout(requestTimer);
   }, [loadTrade]);
 
-  // 택배사와 운송장 번호를 검증한 뒤 서버에 배송 정보를 등록한다.
-  const registerShipping = async (event) => {
-    event.preventDefault();
+  // 선택한 인증 사진을 브라우저에서만 미리 보기로 만들고, 교체·이탈 시 URL을 해제한다.
+  useEffect(() => {
+    if (!shippingProofFile) {
+      setShippingProofPreview('');
+      return undefined;
+    }
 
-    if (!carrier || !trackingNumber.trim()) {
-      setError('택배사와 운송장 번호를 입력해 주세요.');
+    const previewUrl = URL.createObjectURL(shippingProofFile);
+
+    setShippingProofPreview(previewUrl);
+
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [shippingProofFile]);
+
+  // 업로드 계약 전에도 허용 파일과 용량을 먼저 검증해 잘못된 인증 사진 선택을 막는다.
+  const handleShippingProofChange = (event) => {
+    const selectedFile = event.target.files?.[0];
+
+    if (!selectedFile) {
       return;
     }
 
-    setError('');
-    setIsSubmitting(true);
-
-    try {
-      await registerTradeShipping(tradeId, {
-        carrier,
-        trackingNumber: trackingNumber.trim(),
-        shippingMemo: shippingMemo.trim(),
-      });
-      setTrade((currentTrade) => ({
-        ...currentTrade,
-        carrier,
-        trackingNumber: trackingNumber.trim(),
-      }));
-      setShippingRegistered(true);
-      setNotice('운송장이 등록되었습니다.');
-    } catch {
-      setError('운송장 등록에 실패했습니다. 다시 시도해 주세요.');
-    } finally {
-      setIsSubmitting(false);
+    if (!SHIPPING_PROOF_IMAGE_TYPES.includes(selectedFile.type)) {
+      setShippingProofError('JPG, PNG, WEBP 이미지 파일만 선택할 수 있습니다.');
+      event.target.value = '';
+      return;
     }
+
+    if (selectedFile.size > MAX_SHIPPING_PROOF_FILE_SIZE) {
+      setShippingProofError('인증 사진은 10MB 이하 파일만 등록할 수 있습니다.');
+      event.target.value = '';
+      return;
+    }
+
+    setShippingProofError('');
+    setShippingProofFile(selectedFile);
   };
 
   // 서버에 저장한 뒤 응답 상세로 폼을 다시 채워, 새로고침해도 같은 일정이 보이게 한다.
@@ -288,6 +297,11 @@ const TradeDetailSeller = () => {
                   ? '일정 수정하기'
                   : '일정 제안하기'}
             </button>
+            <div className="trade-detail-actions">
+              <Link className="btn btn-outline" to={`/trades/${trade.id}/chat`}>
+                거래 채팅
+              </Link>
+            </div>
           </form>
         </div>
         {notice && <Toast message={notice} onClose={() => setNotice('')} />}
@@ -397,72 +411,76 @@ const TradeDetailSeller = () => {
           </p>
         </section>
 
-        {/* 폼 제출로만 배송 등록을 실행해 Enter 입력과 버튼 동작을 동일하게 처리한다. */}
-        <form className="trade-detail-card trade-seller-section" onSubmit={registerShipping}>
-          <h2>배송 정보 등록</h2>
+        {/* 파일 저장 계약 전에는 선택·검증만 제공하고, 등록 완료 상태를 가짜로 만들지 않는다. */}
+        <section className="trade-detail-card trade-seller-section">
+          <h2>발송 인증 등록</h2>
           <p className="trade-notice">
-            택배사와 운송장 번호, 발송 메모를 입력해 주세요.
+            발송한 상품과 포장 상태가 보이도록 사진을 등록하고, 배송 메모를 작성해 주세요.
           </p>
-          <div className="trade-address-grid">
-            <label className="trade-form-field">
-              택배사 선택
-              <select
-                className="input"
-                value={carrier}
-                onChange={(event) => setCarrier(event.target.value)}
-                disabled={shippingRegistered}
-              >
-                <option value="">택배사를 선택하세요</option>
-                <option value="CJ대한통운">CJ대한통운</option>
-                <option value="롯데택배">롯데택배</option>
-                <option value="한진택배">한진택배</option>
-                <option value="로젠택배">로젠택배</option>
-              </select>
-            </label>
-            <label className="trade-form-field">
-              운송장 번호
+
+          <div className="trade-proof-upload-area">
+            <label className="trade-proof-upload" htmlFor={`shipping-proof-${trade.id}`}>
               <input
-                className="input"
-                value={trackingNumber}
-                onChange={(event) => setTrackingNumber(event.target.value)}
-                placeholder="운송장 번호 입력"
-                disabled={shippingRegistered}
+                id={`shipping-proof-${trade.id}`}
+                className="trade-proof-upload__input"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleShippingProofChange}
               />
+              <span className="trade-proof-upload__icon" aria-hidden="true">
+                ↑
+              </span>
+              <strong>발송 인증 사진 선택</strong>
+              <span>JPG, PNG, WEBP · 최대 10MB</span>
             </label>
+
+            {shippingProofFile && (
+              <p className="trade-proof-upload__filename">
+                선택한 파일: {shippingProofFile.name}
+              </p>
+            )}
+
+            {shippingProofPreview && (
+              <img
+                className="trade-proof-preview"
+                src={shippingProofPreview}
+                alt="선택한 발송 인증 사진 미리 보기"
+              />
+            )}
           </div>
+
           <label className="trade-form-field">
-            발송 메모
-            <span className="trade-detail-card__muted">(선택)</span>
-            <input
-              className="input"
+            배송 메모
+            <textarea
+              className="input trade-form-field__textarea"
               value={shippingMemo}
               onChange={(event) => setShippingMemo(event.target.value)}
-              placeholder="예: 오전에 발송했습니다."
-              disabled={shippingRegistered}
+              placeholder="예: 7월 20일 오후에 발송했습니다. 포장 상태는 사진으로 확인해 주세요."
+              maxLength={4000}
             />
+            <span className="trade-form-field__count">
+              {shippingMemo.length.toLocaleString()} / 4,000
+            </span>
           </label>
-          {error && (
+
+          {shippingProofError && (
             <p className="trade-form-error" role="alert">
-              {error}
+              {shippingProofError}
             </p>
           )}
-          {shippingRegistered && (
-            <p className="trade-success">
-              {carrier} · {trackingNumber} 운송장이 등록되었습니다.
-            </p>
-          )}
+
+          <p className="trade-warning">
+            인증 사진의 실제 저장과 연결은 첨부파일 API 계약이 확정된 뒤 활성화됩니다.
+            현재 선택한 사진과 메모는 이 화면을 벗어나면 저장되지 않습니다.
+          </p>
           <button
             className="btn btn-primary"
-            type="submit"
-            disabled={shippingRegistered || isSubmitting}
+            type="button"
+            disabled
           >
-            {shippingRegistered
-              ? '운송장 등록 완료'
-              : isSubmitting
-                ? '등록 중...'
-                : '운송장 등록하기'}
+            발송 인증 등록 준비 중
           </button>
-        </form>
+        </section>
       </div>
       {notice && <Toast message={notice} onClose={() => setNotice('')} />}
     </div>

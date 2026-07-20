@@ -40,6 +40,18 @@ const formatDate = (date) => {
   return String(date).replaceAll('-', '.').slice(0, 10);
 };
 
+// 자동완료 기준 시각은 서버 시간을 그대로 받아 화면 표기 형식만 통일한다.
+const formatDateTime = (dateTime) => {
+  if (!dateTime) {
+    return '-';
+  }
+
+  return String(dateTime)
+    .replace('T', ' ')
+    .replaceAll('-', '.')
+    .slice(0, 16);
+};
+
 // 서버의 LocalDateTime을 기존 상세 화면에서 쓰는 날짜·시간 필드로 분리한다.
 const splitMeetingDateTime = (meetingDateTime) => {
   const normalizedDateTime = String(meetingDateTime ?? '')
@@ -107,7 +119,7 @@ export const toTradeDetail = (response) => {
     deliveryMessage: trade.deliveryMessage ?? trade.shippingMemo ?? '-',
     carrier: trade.carrier ?? trade.deliveryCarrier ?? '-',
     trackingNumber: trade.trackingNumber ?? trade.invoiceNumber ?? '-',
-    autoCompleteAt: trade.autoCompleteAt ?? '-',
+    autoCompleteAt: formatDateTime(trade.autoCompleteAt),
     recipientName: trade.recipientName ?? '-',
     recipientPhone: trade.recipientPhone ?? '-',
     addressDetail: trade.addressDetail ?? '-',
