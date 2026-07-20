@@ -39,7 +39,7 @@ export default function MobileLandingSections() {
           <span className="text-[#00ccd0]">생활 서비스</span>를 한 화면에서
         </h1>
 
-        <div className="mt-5 flex items-center gap-2 rounded-full border border-[#e5e5e5] bg-white px-4 py-3 shadow-sm">
+        <div className="mt-5 flex items-center gap-2 rounded-full border border-[#0064ff] bg-white px-4 py-3 shadow-sm">
           <input
             type="text"
             value={keyword}

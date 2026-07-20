@@ -357,8 +357,8 @@
 .auction-card-body { padding: 10px 11px 12px; }
 .auction-card-title { margin: 0 0 5px; font-size: 13px; line-height: 1.35; }
 .auction-card-price { color: var(--color-primary-dark, #0048bf); font-size: 16px; font-weight: 800; line-height: 1.2; }
-.auction-card-meta  { margin-top: 6px; display: flex; gap: 8px; align-items: center; color: #5f5e5a; font-size: 12px; }
-.auction-card .badge { padding: 3px 7px; font-size: 11px; }
+.auction-card-meta  { margin-top: 6px; display: flex; gap: 8px; align-items: center; color: #5f5e5a; font-size: 16px; }
+.auction-card .badge { padding: 3px 7px; font-size: 15px; }
 
 /* 서비스 요청 카드 */
 .request-card { min-height: 190px; }
@@ -400,12 +400,11 @@
 }
 
 .quick-item {
-  width: 68px;
-  height: 68px;
-  min-height: 68px;
+  width: 85px;
+  height: 85px;
+  min-height: 85px;
   border: none;
   border-radius: 50%;
-  background: #fff;
   box-shadow: 0 8px 20px rgba(0,0,0,.12);
   display: flex;
   flex-direction: column;
@@ -419,13 +418,14 @@
   padding: 8px 6px;
 }
 
-.quick-item:hover { color: var(--color-primary, #0064ff); background: var(--color-primary-light, #e5efff); }
+.quick-item {background: #fff}
+.quick-item:hover { color: #333; font-weight:700; }
 .quick-blue       { background: var(--color-primary, #0064ff); color: #fff; }
 .quick-blue:hover { background: var(--color-primary-dark, #0048bf); color: #fff; }
 .quick-purple       { background: #8b5cf6; color: #fff; }
 .quick-purple:hover { background: #7c4ef0; color: #fff; }
 .quick-top        { position: fixed; right: 24px; bottom: 24px; z-index: 150; }
-.qi-label         { font-size: 11px; text-align: center; line-height: 1.2; font-weight: 700; }
+.qi-label         { font-size: 14px; text-align: center; line-height: 1.2; font-weight: 700; }
 
 /* ===========================
    반응형
@@ -439,9 +439,9 @@
 
 @media (max-width: 768px) {
   .home-notice-strip { top: 108px; }
-  .quick-rail { right: 0; left: 0; top: auto; bottom: 0; transform: none; flex-direction: row; justify-content: center; background: #fff; padding: 6px; }
-  .quick-item { width: 64px; height: 64px; min-height: 64px; }
-  .quick-top  { right: 12px; bottom: 76px; }
+  .quick-rail { right: 0; top: auto; bottom: 150px; transform: none; justify-content: center; padding-right:10px; }
+  .quick-item { width: 75px; height: 75px; min-height: 75px; font-size: 13px; }
+  .quick-top  { right: 10px; bottom: 76px; }
 }
 
 @media (max-width: 560px) {

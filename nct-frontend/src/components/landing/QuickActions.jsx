@@ -59,13 +59,13 @@ const QuickActions = () => {
         {/* 경매 등록 */}
         <button className="quick-item quick-blue" type="button" onClick={handleAuctionCreate} title="경매 등록">
           <img src={cursorIcon} alt="" width="22" height="22" />
-          <span className="qi-label">경매 등록</span>
+          <span className="qi-label">경매<br/>등록</span>
         </button>
 
         {/* 서비스 요청 */}
         <button className="quick-item quick-purple" type="button" onClick={handleServiceCreate} title="서비스 요청">
           <img src={commentIcon} alt="" width="22" height="22" />
-          <span className="qi-label">서비스요청</span>
+          <span className="qi-label">서비스<br/>요청</span>
         </button>
       </div>
 
