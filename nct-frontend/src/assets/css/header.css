@@ -16,6 +16,11 @@
 .header nav a.active,
 .header nav a:hover { color: var(--color-primary, #0064ff); }
 
+.site-brand-link {
+  display: inline-flex;
+  align-items: center;
+}
+
 .header .container {
   /* width는 App.css .container 반응형(모바일 100% / PC 85%)에 위임 */
 }

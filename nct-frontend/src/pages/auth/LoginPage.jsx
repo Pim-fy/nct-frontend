@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@hooks/useAuth';
+import BrandLogo from '@components/common/BrandLogo';
 
 // ── 소셜 로그인 버튼 데이터 ──────────────────────────────
 const SOCIAL_PROVIDERS = [
@@ -103,20 +104,18 @@ export default function LoginPage() {
 
   // ── 소셜 로그인 ───────────────────────────────────────
   const handleSocialLogin = (provider) => {
-    window.location.href = provider.href();
+    window.location.assign(provider.href());
   };
 
   // ── 렌더 ─────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-[440px] bg-white rounded-2xl shadow-lg px-8 py-10">
+      <div className="w-full max-w-110 bg-white rounded-2xl shadow-lg px-8 py-10">
 
         {/* 로고 */}
         <div className="text-center mb-8">
-          <Link to="/">
-            <h1 className="text-4xl font-extrabold text-blue-600 tracking-tight">
-              Ksteam
-            </h1>
+          <Link aria-label="에누리컷 홈" className="inline-flex" to="/">
+            <BrandLogo className="brand-logo--auth" />
           </Link>
         </div>
 
