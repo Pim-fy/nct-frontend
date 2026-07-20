@@ -26,6 +26,7 @@ import LoginPage          from '@pages/auth/LoginPage';
 import SignupPage         from '@pages/auth/SignupPage';
 import FindEmailPage      from '@pages/auth/FindEmailPage';
 import ResetPasswordPage  from '@pages/auth/ResetPasswordPage';
+import WithdrawalRequestPage from '@pages/auth/WithdrawalRequestPage';
 import OAuthRedirectHandler from '@pages/auth/OAuthRedirectHandler';
 
 // 에러 페이지
@@ -93,6 +94,7 @@ const AppRoutes = () => {
       <Route path="/login/signup"    element={<SignupPage />} />
       <Route path="/find-email"      element={<FindEmailPage />} />
       <Route path="/reset-password"  element={<ResetPasswordPage />} />
+      <Route path="/withdrawal"      element={<WithdrawalRequestPage />} />
       <Route path="/oauth/redirect"  element={<OAuthRedirectHandler />} />
       <Route path="/unauthorized"    element={<Unauthorized />} />
       <Route path="/403"             element={<Unauthorized />} />
