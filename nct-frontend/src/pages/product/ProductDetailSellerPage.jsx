@@ -6,9 +6,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-// import { getProduct } from '@api/productApi';
 import { toImageUrl } from '@api/fileApi';
-import { getProduct, requestAuctionCancel } from '@api/productApi';
+import { getProduct, requestAuctionCancel, getAuctionStatus } from '@api/productApi';
+import Breadcrumb from '@components/common/Breadcrumb';
+import ErrorMessage from '@components/common/ErrorMessage';
+import ViewSkeleton from '@components/skeleton/ViewSkeleton';
+import Toast from '@components/common/Toast';
 
 // ─── 상수 정의 ───────────────────────────────────────────────────────────────
 // 상태 코드(PRDC)별 한글 라벨 · 배지 클래스
@@ -42,6 +45,7 @@ export default function ProductDetailSellerPage() {
 
   // ─── 상품 데이터 상태 ────────────────────────────────────────────────────
   const [product, setProduct] = useState(null);
+  const [auctionStatus, setAuctionStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -50,12 +54,21 @@ export default function ProductDetailSellerPage() {
   const [cancelReason, setCancelReason] = useState('');
   const [cancelDetail, setCancelDetail] = useState('');
   const [cancelSubmitting, setCancelSubmitting] = useState(false);
+  const [toast, setToast] = useState('');
 
-  // ─── 상품 정보 조회 ──────────────────────────────────────────────────────
+  // ─── 상품 정보 + 경매 현황 조회 (F-AUC-006) ────────────────────────────
   useEffect(() => {
     setLoading(true);
     getProduct(prdSn)
-      .then(res => setProduct(res.data))
+      .then(res => {
+        const p = res.data;
+        setProduct(p);
+        if (p.prdStatusCd === 'PRDC0002') {
+          return getAuctionStatus(prdSn)
+            .then(auc => setAuctionStatus(auc.data))
+            .catch(() => {});
+        }
+      })
       .catch(() => setError('상품 정보를 불러오지 못했습니다.'))
       .finally(() => setLoading(false));
   }, [prdSn]);
@@ -69,12 +82,12 @@ export default function ProductDetailSellerPage() {
     setCancelSubmitting(true);
     try {
       await requestAuctionCancel(product.prdSn, { reason: cancelReason, detail: cancelDetail });
-      alert('취소 요청이 접수되었습니다.');
+      setToast('취소 요청이 접수되었습니다.');
       setCancelOpen(false);
       setCancelReason('');
       setCancelDetail('');
     } catch {
-      alert('취소 요청에 실패했습니다.');
+      setToast('취소 요청에 실패했습니다.');
     } finally {
       setCancelSubmitting(false);
     }
@@ -87,18 +100,12 @@ export default function ProductDetailSellerPage() {
     setCancelDetail('');
   };
 
-  if (loading) {
-    return (
-      <main className="container seller-page">
-        <p className="muted" style={{ textAlign: 'center', padding: '40px 0' }}>불러오는 중...</p>
-      </main>
-    );
-  }
+  if (loading) return <ViewSkeleton />;
 
   if (error || !product) {
     return (
       <main className="container seller-page">
-        <div className="notice danger-note">{error || '상품 정보를 불러오지 못했습니다.'}</div>
+        <ErrorMessage message={error || '상품 정보를 불러오지 못했습니다.'} />
       </main>
     );
   }
@@ -110,13 +117,14 @@ export default function ProductDetailSellerPage() {
   const isDraft  = product.prdStatusCd === 'PRDC0001';
 
   const priceLabel = isActive ? '현재가' : '시작가';
-  // TODO(F-AUC-006): AUCTION 연계 후 현재가(최고입찰가)로 교체 (담당자5 옥동민)
-  const priceAmt = product.prdStartAmt;
+  const priceAmt = isActive && auctionStatus?.aucCurAmt != null
+    ? auctionStatus.aucCurAmt
+    : product.prdStartAmt;
 
   const resultText = isActive
     ? '내가 등록한 경매가 진행 중입니다.'
     : isEnded
-    ? '유효 입찰 없이 경매가 종료되었습니다.' // TODO(F-AUC-006): 낙찰 여부 확인 후 분기
+    ? '유효 입찰 없이 경매가 종료되었습니다.'
     : '임시저장 상태입니다. 경매 설정을 완료해 공개할 수 있습니다.';
 
   // TODO(F-AUC-008/F-AUC-006): 판매자 귀책 취소 확정 시 'danger-note'로 교체
@@ -129,13 +137,13 @@ export default function ProductDetailSellerPage() {
 
   return (
     <main className="container seller-page">
+      <Breadcrumb items={[{ label: '홈', href: '/' }, { label: '경매 활동 내역', href: '/product/me' }, { label: '상품 상세' }]} />
       {/* 페이지 헤더 */}
       <div className="seller-auction-head">
         <div>
           <h1>내 경매 상품 상세</h1>
           <p className="muted small">
-            {/* TODO(F-AUC-006): AUCTION 연계 후 실제 경매 번호(AUC-XXXX)로 교체 */}
-            PRD-{product.prdSn}
+            {auctionStatus ? `AUC-${auctionStatus.aucSn}` : `PRD-${product.prdSn}`}
             {product.prdRegDt && ` · ${new Date(product.prdRegDt).toLocaleDateString('ko-KR')} 등록`}
           </p>
         </div>
@@ -184,11 +192,11 @@ export default function ProductDetailSellerPage() {
             </div>
           </div>
 
-          {/* 경매 메트릭 — TODO(F-AUC-006): AUCTION 연계 후 실제 데이터로 교체 (담당자5 옥동민) */}
+          {/* 경매 메트릭 (F-AUC-006) */}
           <div className="seller-metrics">
             <div className="seller-metric">
               <span>입찰 현황</span>
-              <strong>—</strong>
+              <strong>{auctionStatus ? `${auctionStatus.bidCount}건` : '—'}</strong>
             </div>
             <div className="seller-metric">
               <span>관심 인원</span>
@@ -196,11 +204,14 @@ export default function ProductDetailSellerPage() {
             </div>
             <div className="seller-metric">
               <span>종료 정보</span>
-              <strong>—</strong>
+              <strong>
+                {auctionStatus?.aucEndDt
+                  ? new Date(auctionStatus.aucEndDt).toLocaleDateString('ko-KR')
+                  : '—'}
+              </strong>
             </div>
           </div>
 
-          {/* 경매 활동 이력 — TODO(F-AUC-006): AUCTION 연계 후 실제 이력으로 교체 */}
           <div className="seller-history">
             <p className="muted small" style={{ padding: '14px 2px' }}>
               경매 활동 이력은 AUCTION 연계 후 표시됩니다.
@@ -316,6 +327,7 @@ export default function ProductDetailSellerPage() {
           </div>
         </div>
       </div>
+      {toast && <Toast message={toast} onClose={() => setToast('')} />}
     </main>
   );
 }

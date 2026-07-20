@@ -10,6 +10,8 @@ import { useNavigate } from 'react-router-dom';
 import { getCategories } from '@api/categoryApi';
 import { registerProduct } from '@api/productApi';
 import { deleteImage, toImageUrl, uploadImage } from '@api/fileApi';
+import Breadcrumb from '@components/common/Breadcrumb';
+import ErrorMessage from '@components/common/ErrorMessage';
 
 // ─── 거래방식 아이콘 SVG 컴포넌트 ───────────────────────────────────────────
 // deal-options(.line-option) 버튼 안에 표시되는 아이콘
@@ -239,6 +241,7 @@ export default function ProductRegisterPage() {
   // ─── 렌더링 ─────────────────────────────────────────────────────────────
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
+      <Breadcrumb items={[{ label: '홈', href: '/' }, { label: '상품 등록' }]} />
       <div className="page-title"><div><h1>상품 등록</h1></div></div>
 
       <section className="card" style={{ maxWidth: 900, margin: '0 auto' }}>
@@ -254,11 +257,7 @@ export default function ProductRegisterPage() {
           ))}
         </div>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm" style={{ maxWidth: 720, margin: '0 auto 16px' }}>
-            {error}
-          </div>
-        )}
+        <ErrorMessage message={error} />
 
         {/* ── Step 0: 상품정보 ── */}
         {step === 0 && (
