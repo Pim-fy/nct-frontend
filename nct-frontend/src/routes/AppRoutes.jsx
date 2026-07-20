@@ -68,12 +68,6 @@ import ProductDetailSellerPage from '@pages/product/ProductDetailSellerPage';
 // Admin 페이지
 // ──────────────────────────────────────────
 import Dashboard        from '@pages/admin/Dashboard';
-import OperationsIntegrationPreview from '@pages/admin/OperationsIntegrationPreview';
-import AdminNoticeListPage from '@pages/admin/notice/AdminNoticeListPage';
-import AdminNoticeFormPage from '@pages/admin/notice/AdminNoticeFormPage';
-import AdminGuidePage from '@pages/admin/guide/AdminGuidePage';
-import AdminAuditLogPage from '@pages/admin/audit/AdminAuditLogPage';
-import AdminSystemSettingPage from '@pages/admin/setting/AdminSystemSettingPage';
 
 // 개발 플래그가 켜진 로컬 환경에서만 로그인 없는 거래 화면 검토 경로를 제공한다.
 const isTradePreviewEnabled = import.meta.env.VITE_USE_TRADE_PREVIEW === 'true';
@@ -102,6 +96,17 @@ const AppRoutes = () => {
       <Route path="/404"             element={<NotFoundPage />} />
       <Route path="/500"             element={<ServerErrorPage />} />
 
+      {/* ────────────────────────────────
+          공개 조회 영역 (UserLayout)
+      ──────────────────────────────── */}
+      <Route element={<UserLayout />}>
+        {/* 담당자 7의 F-COM-002/015 화면. 공통 route 소유자(담당자 1)에게 동일 manifest로 전달합니다. */}
+        <Route path="/services" element={<ServiceListPage />} />
+        <Route path="/providers/:providerId" element={<PublicProviderProfilePage />} />
+        <Route path="/guide" element={<GuidePage />} />
+        <Route path="/customersupport/notice" element={<NoticeListPage />} />
+        <Route path="/customersupport/notice/:noticeId" element={<NoticeDetailPage />} />
+        {/* 마이페이지 */}
       {/* 실제 거래 경로의 인증 정책과 분리된 개발용 화면 확인 경로 */}
       {isTradePreviewEnabled && (
         <>
@@ -127,22 +132,6 @@ const AppRoutes = () => {
         )}
       >
         <Route element={<UserLayout />}>
-        <Route path="/user/mypage" element={<MyPage />} />
-        <Route path="/trades" element={<TradeHistory />} />
-        {/* 물건 거래 상세: 인증·거래 API 연결 후 당사자 역할에 따라 단일 경로로 통합 */}
-        <Route path="/trades/:tradeId" element={<TradeDetailBuyer />} />
-        <Route path="/trades/:tradeId/seller" element={<TradeDetailSeller />} />
-      {/* ────────────────────────────────
-          공개 조회 영역 (UserLayout)
-      ──────────────────────────────── */}
-      <Route element={<UserLayout />}>
-        {/* 담당자 7의 F-COM-002/015 화면. 공통 route 소유자(담당자 1)에게 동일 manifest로 전달합니다. */}
-        <Route path="/services" element={<ServiceListPage />} />
-        <Route path="/providers/:providerId" element={<PublicProviderProfilePage />} />
-        <Route path="/guide" element={<GuidePage />} />
-        <Route path="/customersupport/notice" element={<NoticeListPage />} />
-        <Route path="/customersupport/notice/:noticeId" element={<NoticeDetailPage />} />
-        {/* 마이페이지 */}
         <Route path="/user/mypage" element={<MyPage />} />
         {/* 포인트 지갑 (BJN) */}
         <Route path="/user/point" element={<PointWalletPage />} />
