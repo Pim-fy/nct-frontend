@@ -282,11 +282,6 @@ export default function ProductDetailSellerPage() {
               입찰이 시작된 상품은 핵심 정보 수정이 제한됩니다.
             </p>
           )}
-          {isEnded && (
-            <p className="muted small" style={{ marginBottom: 18, lineHeight: 1.65 }}>
-              상품 정보를 보완해 같은 조건 또는 새 조건으로 다시 등록할 수 있습니다.
-            </p>
-          )}
           {isDraft && (
             <p className="muted small" style={{ marginBottom: 18, lineHeight: 1.65 }}>
               경매 설정을 완료해 공개할 수 있습니다.
@@ -307,14 +302,9 @@ export default function ProductDetailSellerPage() {
             )}
 
             {isEnded && (
-              <>
-                <button className="btn btn-primary" onClick={() => navigate('/product/register')}>
-                  다시 등록
-                </button>
-                <button className="btn btn-outline" onClick={() => auctionStatus?.aucSn && navigate(`/auction/${auctionStatus.aucSn}`)}>
-                  종료 화면 보기
-                </button>
-              </>
+              <button className="btn btn-outline" onClick={() => auctionStatus?.aucSn && navigate(`/auction/${auctionStatus.aucSn}`)}>
+                종료 화면 보기
+              </button>
             )}
 
             {isDraft && (

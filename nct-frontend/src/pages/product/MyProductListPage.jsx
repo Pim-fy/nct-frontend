@@ -33,6 +33,23 @@ const STATUS_BADGE = {
   PRDC0004: 'badge-danger',
 };
 
+// F-AUC-005 경매 상태(AUCC) 라벨·배지 — 옥동민(5) 연계
+const AUC_STATUS_LABEL = {
+  AUCC0001: '준비',
+  AUCC0002: '진행중',
+  AUCC0003: '종료',
+  AUCC0004: '유찰',
+  AUCC0005: '취소',
+};
+
+const AUC_STATUS_BADGE = {
+  AUCC0001: 'badge-gray',
+  AUCC0002: 'badge-success',
+  AUCC0003: 'badge-gray',
+  AUCC0004: 'badge-warning',
+  AUCC0005: 'badge-danger',
+};
+
 const TRADE_LABEL = {
   TRDC0009: '배송만',
   TRDC0010: '직거래만',
@@ -163,9 +180,15 @@ export default function MyProductListPage() {
                   <div className="history-row-title">
                     <div className="row" style={{ gap: 6 }}>
                       <span className="badge badge-goods">판매</span>
-                      <span className={`badge ${STATUS_BADGE[p.prdStatusCd] ?? 'badge-gray'}`}>
-                        {STATUS_LABEL[p.prdStatusCd] ?? p.prdStatusCd}
-                      </span>
+                      {p.aucStatusCd ? (
+                        <span className={`badge ${AUC_STATUS_BADGE[p.aucStatusCd] ?? 'badge-gray'}`}>
+                          경매 {AUC_STATUS_LABEL[p.aucStatusCd] ?? p.aucStatusCd}
+                        </span>
+                      ) : (
+                        <span className={`badge ${STATUS_BADGE[p.prdStatusCd] ?? 'badge-gray'}`}>
+                          {STATUS_LABEL[p.prdStatusCd] ?? p.prdStatusCd}
+                        </span>
+                      )}
                     </div>
                     <h4>{p.prdNm}</h4>
                     <p className="muted">
