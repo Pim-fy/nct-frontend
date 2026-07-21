@@ -6,28 +6,22 @@ import NotificationItem from './components/NotificationItem';
 import { useMarkAllRead, useMarkRead, useNotifications } from '../../../hooks/useNotification';
 import relativeTime from '../../../utils/relativeTime';
 
-// 도메인 그룹 (목업 20_notification.html 기준)
-// 채팅 도메인 코드(NTFC0014)는 팀 결정(2026-07-17)으로 NTFG03에 추가 확정 — 코드 추가 SQL은
-// 팀전달_NTFG03_채팅코드추가_260717.md 참조. 채팅 알림 발행은 채팅 기능 담당자 구현 후 표시됨
-const DOMAINS = ['경매·입찰', '거래·배송', '채팅', '서비스', '운영·환전'];
-const FILTERS = ['전체', '경매', '거래', '채팅', '서비스', '운영'];
-const FILTER_TO_DOMAIN = {
-  경매: '경매·입찰',
-  거래: '거래·배송',
-  채팅: '채팅',
-  서비스: '서비스',
-  운영: '운영·환전',
-};
-
-// DB 도메인 코드(NTFG03) → 화면 그룹 라벨 매핑
-// 코드값 기준으로 매핑해서 DB의 한글명(CMM_NM) 표기가 바뀌어도 그룹핑이 깨지지 않게 한다
-const DOMAIN_CODE_TO_LABEL = {
-  NTFC0010: '경매·입찰',
-  NTFC0011: '거래·배송',
-  NTFC0012: '서비스',
-  NTFC0013: '운영·환전',
-  NTFC0014: '채팅', // 팀 결정(2026-07-17)으로 추가된 채팅 도메인
-};
+// 도메인 정의 단일표 (목업 20_notification.html 기준) — DB 코드(NTFG03)·그룹 라벨·필터명을
+// 한 곳에 정의하고 나머지 형태는 전부 여기서 파생시킨다. 네 벌로 나눠 적으면 도메인 하나
+// 추가할 때 네 곳을 고쳐야 해서 정합성이 깨지기 쉬웠다 (2026-07-20 통합).
+// 코드값 기준 매핑이라 DB 한글명(CMM_NM) 표기가 바뀌어도 그룹핑이 깨지지 않는다.
+// 채팅(NTFC0014)은 팀 결정(2026-07-17)으로 추가 — 알림 발행은 채팅 기능 담당자 구현 후 표시됨
+const DOMAIN_DEFS = [
+  { code: 'NTFC0010', label: '경매·입찰', filter: '경매' },
+  { code: 'NTFC0011', label: '거래·배송', filter: '거래' },
+  { code: 'NTFC0014', label: '채팅', filter: '채팅' },
+  { code: 'NTFC0012', label: '서비스', filter: '서비스' },
+  { code: 'NTFC0013', label: '운영·환전', filter: '운영' },
+];
+const DOMAINS = DOMAIN_DEFS.map((d) => d.label);
+const FILTERS = ['전체', ...DOMAIN_DEFS.map((d) => d.filter)];
+const FILTER_TO_DOMAIN = Object.fromEntries(DOMAIN_DEFS.map((d) => [d.filter, d.label]));
+const DOMAIN_CODE_TO_LABEL = Object.fromEntries(DOMAIN_DEFS.map((d) => [d.code, d.label]));
 
 // 일반/제공자 구분 필터 (F-COM-011, 팀 결정 2026-07-17)
 // "내가 소비자로서 받은 알림(일반)"과 "내가 서비스 제공자로서 받은 업무 알림(제공자)"을 나눈다

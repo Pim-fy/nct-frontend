@@ -24,5 +24,9 @@ export const uploadImage = (file, service) => {
 /** 본인이 올린 파일 삭제 — 등록 전 화면에서 이미지를 뺄 때 고아 파일 정리용 */
 export const deleteImage = (flSn) => api.delete(`/attachment/${flSn}`);
 
-/** 서버가 내려준 상대 경로(/api/attachment/...)를 화면에 그릴 수 있는 절대 URL로 변환 */
-export const toImageUrl = (path) => (path ? `${BACKEND_URL}${path}` : null);
+/** 서버가 내려준 경로를 화면에 그릴 수 있는 절대 URL로 변환. 이미 절대 URL이면 그대로 반환 */
+export const toImageUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith('http')) return path;
+  return `${BACKEND_URL}${path}`;
+};
