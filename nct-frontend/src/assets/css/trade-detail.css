@@ -147,6 +147,51 @@
   color: #3e5f9b;
 }
 
+.trade-trust__score {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  color: #4e607a;
+}
+
+.trade-trust__score strong {
+  color: #ff9f1c;
+}
+
+.trade-trust__score span {
+  color: #718098;
+  font-size: 13px;
+}
+
+.trade-trust__reviews {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trade-trust__reviews li {
+  padding-top: 10px;
+  border-top: 1px solid #dbe7ff;
+}
+
+.trade-trust__reviews li > span {
+  color: #ff9f1c;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.trade-trust__reviews p {
+  margin: 4px 0;
+  color: #4e607a;
+}
+
+.trade-trust__reviews small {
+  color: #8893a5;
+}
+
 .trade-warning,
 .trade-auto-complete {
   border: 1px solid #fde4b4;

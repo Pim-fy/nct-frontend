@@ -11,6 +11,7 @@ import {
 } from '@api/tradeApi';
 import { getDeliveryProofBlob } from '@api/fileApi';
 import { toTradeDetail } from '@api/tradeAdapter';
+import TradeTrustSummary from '@components/trade/TradeTrustSummary';
 import '@assets/css/trade-detail.css';
 
 // 상태 코드표가 확정되기 전까지는 이미 합의된 화면 문구만 제한적으로 표시한다.
@@ -251,10 +252,8 @@ const TradeDetailBuyer = () => {
 
           <section className="trade-detail-card">
             <h2>상대방 정보</h2>
-            <p>닉네임 {trade.counterpart} · 별점 ★{trade.rating}</p>
-            <div className="trade-trust">
-              리뷰와 신뢰지표는 거래 완료 후 조회 계약에 연결됩니다.
-            </div>
+            <p>닉네임 {trade.counterpart}</p>
+            <TradeTrustSummary counterpartUserId={trade.counterpartUserId} />
           </section>
 
           {/* 거래 방식에 따라 배송 정보와 직거래 정보를 동시에 노출하지 않는다. */}
