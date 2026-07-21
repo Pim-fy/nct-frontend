@@ -8,7 +8,12 @@ import Toast from '@components/common/Toast';
 import {
   getTradeDetail,
   proposeTradeOfflineSchedule,
+  submitTradeDeliveryProof,
 } from '@api/tradeApi';
+import {
+  deleteImage,
+  uploadDeliveryProof,
+} from '@api/fileApi';
 import { toTradeDetail } from '@api/tradeAdapter';
 import '@assets/css/trade-detail.css';
 
@@ -23,6 +28,7 @@ const getTodayDate = () => {
 };
 
 const MAX_SHIPPING_PROOF_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_SHIPPING_PROOF_FILES = 5;
 const SHIPPING_PROOF_IMAGE_TYPES = [
   'image/jpeg',
   'image/png',
@@ -35,8 +41,8 @@ const TradeDetailSeller = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [shippingMemo, setShippingMemo] = useState('');
-  const [shippingProofFile, setShippingProofFile] = useState(null);
-  const [shippingProofPreview, setShippingProofPreview] = useState('');
+  const [shippingProofFiles, setShippingProofFiles] = useState([]);
+  const [isUploadingProof, setIsUploadingProof] = useState(false);
   const [shippingProofError, setShippingProofError] = useState('');
   const [meetingDate, setMeetingDate] = useState('');
   const [meetingTime, setMeetingTime] = useState('');
@@ -77,42 +83,110 @@ const TradeDetailSeller = () => {
     return () => window.clearTimeout(requestTimer);
   }, [loadTrade]);
 
-  // 선택한 인증 사진을 브라우저에서만 미리 보기로 만들고, 교체·이탈 시 URL을 해제한다.
-  useEffect(() => {
-    if (!shippingProofFile) {
-      setShippingProofPreview('');
-      return undefined;
-    }
+  // 파일을 고른 즉시 업로드하고, 제출 전까지는 파일 번호와 로컬 미리보기만 유지한다.
+  const handleShippingProofChange = async (event) => {
+    const selectedFiles = Array.from(event.target.files ?? []);
 
-    const previewUrl = URL.createObjectURL(shippingProofFile);
-
-    setShippingProofPreview(previewUrl);
-
-    return () => URL.revokeObjectURL(previewUrl);
-  }, [shippingProofFile]);
-
-  // 업로드 계약 전에도 허용 파일과 용량을 먼저 검증해 잘못된 인증 사진 선택을 막는다.
-  const handleShippingProofChange = (event) => {
-    const selectedFile = event.target.files?.[0];
-
-    if (!selectedFile) {
+    if (!selectedFiles.length) {
       return;
     }
 
-    if (!SHIPPING_PROOF_IMAGE_TYPES.includes(selectedFile.type)) {
-      setShippingProofError('JPG, PNG, WEBP 이미지 파일만 선택할 수 있습니다.');
+    if (shippingProofFiles.length + selectedFiles.length > MAX_SHIPPING_PROOF_FILES) {
+      setShippingProofError(`인증 사진은 최대 ${MAX_SHIPPING_PROOF_FILES}장까지 등록할 수 있습니다.`);
       event.target.value = '';
       return;
     }
 
-    if (selectedFile.size > MAX_SHIPPING_PROOF_FILE_SIZE) {
-      setShippingProofError('인증 사진은 10MB 이하 파일만 등록할 수 있습니다.');
+    for (const selectedFile of selectedFiles) {
+      if (!SHIPPING_PROOF_IMAGE_TYPES.includes(selectedFile.type)) {
+        setShippingProofError('JPG, PNG, WEBP 이미지 파일만 선택할 수 있습니다.');
+        event.target.value = '';
+        return;
+      }
+
+      if (selectedFile.size > MAX_SHIPPING_PROOF_FILE_SIZE) {
+        setShippingProofError('인증 사진은 10MB 이하 파일만 등록할 수 있습니다.');
+        event.target.value = '';
+        return;
+      }
+    }
+
+    setShippingProofError('');
+    setIsUploadingProof(true);
+
+    try {
+      const uploadedFiles = await Promise.all(selectedFiles.map(async (file) => ({
+        ...(await uploadDeliveryProof(file)),
+        name: file.name,
+        previewUrl: URL.createObjectURL(file),
+      })));
+
+      setShippingProofFiles((currentFiles) => [
+        ...currentFiles,
+        ...uploadedFiles,
+      ]);
+    } catch (uploadError) {
+      setShippingProofError(
+        uploadError.response?.data?.message
+          ?? '인증 사진 업로드에 실패했습니다. 다시 시도해 주세요.',
+      );
+    } finally {
       event.target.value = '';
+      setIsUploadingProof(false);
+    }
+  };
+
+  // 제출 전 사진을 지우면 서버의 고아 파일도 함께 정리한다. 연결 완료 파일은 서버가 삭제를 거부한다.
+  const removeShippingProof = async (fileToRemove) => {
+    setShippingProofError('');
+
+    try {
+      await deleteImage(fileToRemove.flSn);
+      URL.revokeObjectURL(fileToRemove.previewUrl);
+      setShippingProofFiles((currentFiles) => currentFiles.filter(
+        (file) => file.flSn !== fileToRemove.flSn,
+      ));
+    } catch (deleteError) {
+      setShippingProofError(
+        deleteError.response?.data?.message
+          ?? '인증 사진 삭제에 실패했습니다. 다시 시도해 주세요.',
+      );
+    }
+  };
+
+  // 파일과 메모를 한 트랜잭션으로 제출해 메모만 저장되는 반쪽 상태를 막는다.
+  const submitDeliveryProof = async () => {
+    if (!shippingMemo.trim()) {
+      setShippingProofError('배송 메모를 작성해 주세요.');
+      return;
+    }
+
+    if (!shippingProofFiles.length) {
+      setShippingProofError('발송 인증 사진을 한 장 이상 등록해 주세요.');
       return;
     }
 
     setShippingProofError('');
-    setShippingProofFile(selectedFile);
+    setIsSubmitting(true);
+
+    try {
+      const response = await submitTradeDeliveryProof(tradeId, {
+        deliveryMessage: shippingMemo.trim(),
+        fileIds: shippingProofFiles.map((file) => file.flSn),
+      });
+
+      shippingProofFiles.forEach((file) => URL.revokeObjectURL(file.previewUrl));
+      setShippingProofFiles([]);
+      setTrade(toTradeDetail(response));
+      setNotice('발송 인증을 등록했습니다. 구매자가 인증 사진을 확인할 수 있습니다.');
+    } catch (submitError) {
+      setShippingProofError(
+        submitError.response?.data?.message
+          ?? '발송 인증 등록에 실패했습니다. 다시 시도해 주세요.',
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // 서버에 저장한 뒤 응답 상세로 폼을 다시 채워, 새로고침해도 같은 일정이 보이게 한다.
@@ -411,11 +485,10 @@ const TradeDetailSeller = () => {
           </p>
         </section>
 
-        {/* 파일 저장 계약 전에는 선택·검증만 제공하고, 등록 완료 상태를 가짜로 만들지 않는다. */}
         <section className="trade-detail-card trade-seller-section">
           <h2>발송 인증 등록</h2>
           <p className="trade-notice">
-            발송한 상품과 포장 상태가 보이도록 사진을 등록하고, 배송 메모를 작성해 주세요.
+            발송한 상품과 포장 상태가 보이도록 사진을 최대 5장 등록하고, 배송 메모를 작성해 주세요.
           </p>
 
           <div className="trade-proof-upload-area">
@@ -425,27 +498,38 @@ const TradeDetailSeller = () => {
                 className="trade-proof-upload__input"
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
+                multiple
                 onChange={handleShippingProofChange}
+                disabled={isUploadingProof || isSubmitting}
               />
               <span className="trade-proof-upload__icon" aria-hidden="true">
                 ↑
               </span>
               <strong>발송 인증 사진 선택</strong>
-              <span>JPG, PNG, WEBP · 최대 10MB</span>
+              <span>JPG, PNG, WEBP · 장당 최대 10MB · 최대 5장</span>
             </label>
 
-            {shippingProofFile && (
-              <p className="trade-proof-upload__filename">
-                선택한 파일: {shippingProofFile.name}
-              </p>
-            )}
-
-            {shippingProofPreview && (
-              <img
-                className="trade-proof-preview"
-                src={shippingProofPreview}
-                alt="선택한 발송 인증 사진 미리 보기"
-              />
+            {isUploadingProof && <p className="trade-proof-upload__filename">사진을 업로드하는 중입니다.</p>}
+            {shippingProofFiles.length > 0 && (
+              <ul className="trade-proof-list" aria-label="업로드한 발송 인증 사진">
+                {shippingProofFiles.map((file, index) => (
+                  <li className="trade-proof-list__item" key={file.flSn}>
+                    <img src={file.previewUrl} alt={`발송 인증 사진 ${index + 1}`} />
+                    <div>
+                      <strong>{file.name}</strong>
+                      <span>업로드 완료</span>
+                    </div>
+                    <button
+                      className="btn btn-ghost"
+                      type="button"
+                      onClick={() => removeShippingProof(file)}
+                      disabled={isSubmitting}
+                    >
+                      삭제
+                    </button>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
 
@@ -469,17 +553,17 @@ const TradeDetailSeller = () => {
             </p>
           )}
 
-          <p className="trade-warning">
-            인증 사진의 실제 저장과 연결은 첨부파일 API 계약이 확정된 뒤 활성화됩니다.
-            현재 선택한 사진과 메모는 이 화면을 벗어나면 저장되지 않습니다.
-          </p>
           <button
             className="btn btn-primary"
             type="button"
-            disabled
+            onClick={submitDeliveryProof}
+            disabled={isUploadingProof || isSubmitting || trade.status !== 'IN_PROGRESS'}
           >
-            발송 인증 등록 준비 중
+            {isSubmitting ? '발송 인증 등록 중...' : '발송 인증 등록하기'}
           </button>
+          {trade.status !== 'IN_PROGRESS' && (
+            <p className="trade-warning">이미 발송 처리된 거래는 발송 인증을 다시 등록할 수 없습니다.</p>
+          )}
         </section>
       </div>
       {notice && <Toast message={notice} onClose={() => setNotice('')} />}

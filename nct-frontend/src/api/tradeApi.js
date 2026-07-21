@@ -87,3 +87,25 @@ export const requestTradeCompletion = async (tradeId) => {
 
   return response.data;
 };
+
+/** 판매자가 업로드 완료한 배송 인증사진과 메모를 한 번에 거래에 연결한다. */
+export const submitTradeDeliveryProof = async (tradeId, payload) => {
+  if (shouldUseTradePreview()) {
+    return {
+      ...getTradePreviewDetail(tradeId),
+      deliveryMessage: payload.deliveryMessage,
+      deliveryProofFiles: payload.fileIds.map((fileId, index) => ({
+        fileId,
+        sortOrder: index + 1,
+      })),
+      tradeStatus: 'DELIVERING',
+    };
+  }
+
+  const response = await api.post(
+    `${TRADE_ENDPOINT}/${tradeId}/delivery-proofs`,
+    payload,
+  );
+
+  return response.data;
+};

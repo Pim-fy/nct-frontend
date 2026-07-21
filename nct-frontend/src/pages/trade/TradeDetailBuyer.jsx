@@ -9,6 +9,7 @@ import {
   getTradeDetail,
   requestTradeCompletion,
 } from '@api/tradeApi';
+import { getDeliveryProofBlob } from '@api/fileApi';
 import { toTradeDetail } from '@api/tradeAdapter';
 import '@assets/css/trade-detail.css';
 
@@ -73,6 +74,7 @@ const TradeDetailBuyer = () => {
   const [completionAgreed, setCompletionAgreed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notice, setNotice] = useState('');
+  const [deliveryProofUrls, setDeliveryProofUrls] = useState([]);
 
   // URL의 거래 번호로 서버 상세를 조회해 직접 URL 접근에도 같은 데이터를 표시한다.
   const loadTrade = useCallback(async () => {
@@ -98,6 +100,47 @@ const TradeDetailBuyer = () => {
 
     return () => window.clearTimeout(requestTimer);
   }, [loadTrade]);
+
+  // 보호된 배송 사진은 axios 요청으로 Blob을 받아, 브라우저가 인증 쿠키를 빠뜨리지 않게 표시한다.
+  useEffect(() => {
+    if (!trade?.deliveryId || !trade.deliveryProofFiles.length) {
+      setDeliveryProofUrls([]);
+      return undefined;
+    }
+
+    let isActive = true;
+    const objectUrls = [];
+
+    const loadDeliveryProofs = async () => {
+      try {
+        const files = await Promise.all(trade.deliveryProofFiles.map(async (file) => {
+          const response = await getDeliveryProofBlob(trade.deliveryId, file.fileId);
+          const objectUrl = URL.createObjectURL(response.data);
+
+          objectUrls.push(objectUrl);
+          return {
+            ...file,
+            objectUrl,
+          };
+        }));
+
+        if (isActive) {
+          setDeliveryProofUrls(files);
+        }
+      } catch {
+        if (isActive) {
+          setDeliveryProofUrls([]);
+        }
+      }
+    };
+
+    loadDeliveryProofs();
+
+    return () => {
+      isActive = false;
+      objectUrls.forEach((objectUrl) => URL.revokeObjectURL(objectUrl));
+    };
+  }, [trade?.deliveryId, trade?.deliveryProofFiles]);
 
   const currentStatus = statusInfo[trade?.status] ?? unknownStatus;
   const isInProgress = currentStatus.step === 0;
@@ -226,6 +269,20 @@ const TradeDetailBuyer = () => {
               <p className="trade-detail-card__muted">
                 배송지와 배송 메모는 거래 시점에 고정된 정보입니다.
               </p>
+              {deliveryProofUrls.length > 0 && (
+                <div className="trade-delivery-proof-gallery">
+                  <strong>판매자 발송 인증사진</strong>
+                  <div>
+                    {deliveryProofUrls.map((file, index) => (
+                      <img
+                        key={file.fileId}
+                        src={file.objectUrl}
+                        alt={`판매자 발송 인증 사진 ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </section>
           ) : (
             <section className="trade-detail-card">
