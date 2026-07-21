@@ -1,7 +1,7 @@
 // src/components/mypage/MyPageProviderDashboard.jsx
 // Figma: mypage_02제공자모드(node 57:495) CONTENTS 구간("MY 홈" 탭, 제공자 모드).
-// - 정산현황 카드의 "정산관리"/"정산 계좌 확인" 버튼은 담당자BJN이 이미 구현한 /user/settlement 로 연결한다.
-// - 견적/서비스거래/서비스채팅 등 아직 화면이 없는 항목은 "준비 중" 안내만 띄운다.
+// - 절대좌표 → 반응형 전환. 통계카드 2x2→4열, 오늘할일 1→3열 그리드.
+// - 정산관리/정산계좌 버튼은 담당자BJN의 /user/settlement 로 연결.
 // TODO: 서비스 제공(F-SVC)/견적(F-QUOTE)/정산(F-PAY) 도메인 API가 준비되면
 //       STAT_CARDS / TODAY_TASKS / IN_PROGRESS_ITEMS / RECENT_QUOTE_ITEMS 를 각 조회 결과로 교체한다.
 import React from "react";
@@ -54,7 +54,6 @@ const SETTLEMENT_STATS = [
   { label: "다음 정산 예정", value: "42,000원", desc: "완료 확인 대기 서비스 기준" },
 ];
 
-// 오전 방문 일정류는 "채팅", 견적/확인 요청류는 "견적" 버튼 - Figma가 같은 텍스트를 반복 배치한 정적 목업이라 그대로 따른다.
 const TODAY_TASKS = [
   { title: "오전 이사 방문 일정 확인", desc: "의뢰인 김서연님과 10:00 방문 전 채팅 확인이 필요합니다.", action: "chat" },
   { title: "에어컨 청소 견적 문의 답변", desc: "요청 조건을 확인하고 견적서를 작성해 주세요.", action: "quote" },
@@ -105,128 +104,90 @@ const RECENT_QUOTE_ITEMS = [
 
 function StatCard({ color, icon, label, value, unit, meta }) {
   return (
-    <div
-      className="relative h-[161px] w-[316px] rounded-[15px] text-white shrink-0"
-      style={{ backgroundColor: color }}
-    >
-      <p className="absolute left-[96px] top-[21px] font-['Noto_Sans_KR:Bold'] font-bold text-[16px] tracking-[-0.8px]">
-        {label}
-      </p>
-      <img src={icon} alt="" className="absolute left-[24px] top-[37px] size-[44px] object-contain" />
-      <p className="absolute left-[96px] top-[58px] font-['Noto_Sans_KR:Bold'] font-bold text-[30px] tracking-[-1.5px]">
-        {value}
-        {unit}
-      </p>
-      <p className="absolute left-[24px] top-[111px] font-['Noto_Sans_KR:Medium'] text-[16px] tracking-[-0.8px] whitespace-nowrap">
-        {meta}
-      </p>
+    <div className="relative rounded-[10px] text-white p-3" style={{ backgroundColor: color }}>
       <button
         type="button"
         onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
-        className="absolute right-[18px] top-[18px] bg-transparent border-none cursor-pointer text-white text-[19px] font-bold leading-none"
+        className="absolute right-4 top-4 bg-transparent border-none cursor-pointer text-white text-[20px] font-bold leading-none"
         aria-label={`${label} 더보기`}
       >
         +
       </button>
+      <div className="flex items-start gap-3 mb-3">
+        <img src={icon} alt="" className="size-[40px] object-contain shrink-0 mt-0.5" />
+        <div className="min-w-0 pr-6">
+          <p className="font-bold text-[13px] opacity-90 leading-tight">{label}</p>
+          <p className="font-bold text-[24px] leading-tight mt-0.5">{value}{unit}</p>
+        </div>
+      </div>
+      <p className="text-[11px] opacity-80 truncate">{meta}</p>
     </div>
   );
 }
-
-// 오늘 확인할 일 섹션 높이 동적 계산 (태스크 수에 따라 자동 조정)
-function computeTodayTasksHeight(taskCount) {
-  if (taskCount === 0) return 150; // header(70) + empty message(80)
-  const rows = Math.ceil(taskCount / 3);
-  const gridH = rows * 109 + (rows - 1) * 21;
-  return 70 + 21 + gridH + 21; // header + padding-top + grid + padding-bottom
-}
-
-// 섹션 top 위치 계산 (동적 높이 기반)
-const TODAY_TASKS_TOP = 530;
-const TODAY_TASKS_H = computeTodayTasksHeight(TODAY_TASKS.length);
-const SETTLEMENT_TOP = TODAY_TASKS_TOP + TODAY_TASKS_H + 20;
-const SETTLEMENT_H = 192;
-const PANELS_TOP = SETTLEMENT_TOP + SETTLEMENT_H + 20;
 
 function TaskCard({ title, desc, action }) {
   return (
-    <div className="relative h-[109px] w-full rounded-[5px] border border-[#eaeaea] bg-[#f7f7f7]">
-      <p className="absolute left-[20px] top-[24px] right-[100px] font-['Noto_Sans_KR:Bold'] font-bold text-[18px] text-[#3a3a3a] tracking-[-0.9px] truncate">
-        {title}
-      </p>
-      <p className="absolute left-[20px] top-[50px] right-[100px] font-['Noto_Sans_KR:Medium'] text-[14px] leading-[20px] text-[#555] tracking-[-0.7px] line-clamp-2">
-        {desc}
-      </p>
-      <button
-        type="button"
-        onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
-        className="absolute right-[20px] top-[39px] flex h-[30px] items-center gap-1.5 rounded-[5px] border border-[#4e4e4e] bg-white px-3 text-[15px] font-['Noto_Sans_KR:Medium'] text-[#4e4e4e] cursor-pointer hover:bg-[#f5f5f5] transition-colors whitespace-nowrap"
-      >
-        <img src={action === "chat" ? assets.iconChat : assets.iconReport} alt="" className="size-[13px]" />
-        {action === "chat" ? "채팅" : "견적"}
-      </button>
+    <div className="rounded-[5px] border border-[#eaeaea] bg-[#f7f7f7] p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-bold text-[15px] text-[#3a3a3a] truncate">{title}</p>
+          <p className="text-[12px] leading-[18px] text-[#555] mt-1 line-clamp-2">{desc}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
+          className="shrink-0 flex h-[28px] items-center gap-1.5 rounded-[5px] border border-[#4e4e4e] bg-white px-2.5 text-[12px] text-[#4e4e4e] cursor-pointer hover:bg-[#f5f5f5] transition-colors whitespace-nowrap"
+        >
+          <img src={action === "chat" ? assets.iconChat : assets.iconReport} alt="" className="size-[11px]" />
+          {action === "chat" ? "채팅" : "견적"}
+        </button>
+      </div>
     </div>
   );
 }
 
-function CompactListPanel({ title, items, itemLabelSize = "normal" }) {
+function CompactListPanel({ title, items }) {
   return (
-    <div className="relative h-[492px] w-[650px] shrink-0 overflow-hidden rounded-[15px] border border-[rgba(0,0,0,0.11)] bg-white">
-      <div className="absolute left-0 top-0 h-[70px] w-full rounded-t-[15px] bg-[rgba(0,100,255,0.05)]" />
-      <p className="absolute left-[30px] top-[25px] font-['Inter:Bold'] font-bold text-[18px] text-[#3a3a3a] tracking-[-0.9px]">
-        {title}
-      </p>
-      <button
-        type="button"
-        onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
-        className="absolute right-[19px] top-[25px] bg-transparent border-none cursor-pointer text-[19px] font-bold leading-none text-[#3a3a3a]"
-        aria-label={`${title} 더보기`}
-      >
-        +
-      </button>
-
-      {items.map((item, index) => (
-        <div key={item.title} className="absolute left-0 w-full" style={{ top: 95 + index * 135 }}>
-          <div className="absolute left-[30px] size-[85px] overflow-hidden rounded-[5px] border border-[#d9d9d9]">
-            <img alt={item.title} className="size-full object-cover" src={item.thumbnail} />
-          </div>
-
-          <span
-            className="absolute h-[25px] rounded-[20px] border flex items-center px-3 font-['Noto_Sans_KR:Regular'] text-[14px] whitespace-nowrap"
-            style={{ left: 135, top: -3, borderColor: item.badge.color, color: item.badge.color }}
-          >
-            {item.badge.label}
-          </span>
-          <p
-            className={`absolute font-['Noto_Sans_KR:Bold'] font-bold text-black truncate ${
-              itemLabelSize === "small" ? "text-[18px]" : "text-[18px]"
-            }`}
-            style={{ left: 135, top: 33, width: 320 }}
-          >
-            {item.title}
-          </p>
-          {item.meta && (
-            <p
-              className="absolute font-['Noto_Sans_KR:Regular'] text-[15px] text-[#4e4e4e] truncate"
-              style={{ left: 135, top: 64, width: 320 }}
+    <div className="border border-[rgba(0,0,0,0.11)] rounded-[15px] overflow-hidden">
+      <div className="bg-[rgba(0,100,255,0.05)] px-5 h-[50px] flex items-center justify-between">
+        <span className="font-bold text-[16px] text-[#3a3a3a]">{title}</span>
+        <button
+          type="button"
+          onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
+          className="bg-transparent border-none cursor-pointer text-[20px] font-bold leading-none text-[#3a3a3a]"
+          aria-label={`${title} 더보기`}
+        >
+          +
+        </button>
+      </div>
+      <div className="divide-y divide-[#e5e5e5]">
+        {items.map((item) => (
+          <div key={item.title} className="flex items-start gap-4 p-4">
+            <div className="size-[72px] shrink-0 rounded-[5px] border border-[#d9d9d9] overflow-hidden">
+              <img alt={item.title} className="size-full object-cover" src={item.thumbnail} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <span
+                className="inline-flex h-[22px] rounded-full border items-center px-2.5 text-[12px] whitespace-nowrap mb-1"
+                style={{ borderColor: item.badge.color, color: item.badge.color }}
+              >
+                {item.badge.label}
+              </span>
+              <p className="font-bold text-[14px] text-black truncate">{item.title}</p>
+              {item.meta && (
+                <p className="text-[12px] text-[#4e4e4e] truncate mt-0.5">{item.meta}</p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
+              className="shrink-0 flex h-[28px] items-center gap-1 rounded-[5px] border border-[#969696] bg-white px-3 text-[12px] text-[#969696] cursor-pointer hover:bg-[#f5f5f5] transition-colors whitespace-nowrap"
             >
-              {item.meta}
-            </p>
-          )}
-
-          <button
-            type="button"
-            onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
-            className="absolute right-[19px] flex h-[29px] items-center gap-1 rounded-[5px] border border-[#969696] bg-white px-3 text-[14px] font-['Noto_Sans_KR:Medium'] text-[#969696] cursor-pointer hover:bg-[#f5f5f5] transition-colors"
-            style={{ top: 4 }}
-          >
-            더보기 ›
-          </button>
-
-          {index < items.length - 1 && (
-            <div className="absolute left-[30px] right-[19px] top-[111px] h-px bg-[#e5e5e5]" />
-          )}
-        </div>
-      ))}
+              더보기 ›
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -237,89 +198,77 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral }) {
   const email = user?.email || "";
 
   return (
-    <div className="absolute contents left-[448px] top-[167px]" data-name="CONTENTS">
-      {/* 프로필 요약 */}
-      <div className="absolute left-[448px] top-[167px] size-[72px] overflow-hidden rounded-full bg-[#e6f0ff]">
-        <img src={assets.profile} alt="" className="size-full object-cover" />
-      </div>
-      <p className="absolute left-[543px] top-[167px] flex items-center gap-1 font-['Noto_Sans_KR:Bold'] font-bold text-[18px] text-[#4e4e4e]">
-        <span className="inline-block size-[8px] rounded-full bg-[#2ecc71]" />
-        {nickname}님
-      </p>
-      <p className="absolute left-[543px] top-[194px] font-['Noto_Sans_KR:Regular'] text-[14px] text-[#969696] tracking-[-0.7px]">
-        {email}
-      </p>
+    <div className="space-y-5">
+      {/* 프로필 헤더 + 알림 배너 */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="size-[64px] rounded-full overflow-hidden bg-[#e6f0ff] shrink-0">
+            <img src={assets.profile} alt="" className="size-full object-cover" />
+          </div>
+          <div>
+            <p className="font-bold text-[16px] text-[#4e4e4e] flex items-center gap-1.5">
+              <span className="inline-block size-[8px] rounded-full bg-[#2ecc71]" />
+              {nickname}님
+            </p>
+            <p className="text-[13px] text-[#969696] mt-0.5">{email}</p>
+            <div className="flex gap-2 mt-2">
+              <button
+                type="button"
+                className="h-[30px] px-3 rounded-full border border-[#d9d9d9] bg-white text-[#4e4e4e] text-[12px] cursor-pointer hover:bg-[#f5f5f5] transition-colors flex items-center gap-1.5"
+              >
+                <img src={assets.iconLogout} alt="" className="size-[12px]" />
+                로그아웃
+              </button>
+              <button
+                type="button"
+                onClick={onSwitchToGeneral}
+                className="h-[30px] px-3 rounded-full border border-[#d9d9d9] bg-white text-[#4e4e4e] text-[12px] cursor-pointer hover:bg-[#f5f5f5] transition-colors flex items-center gap-1.5"
+              >
+                <img src={assets.iconSwitch1} alt="" className="size-[10px]" />
+                일반 전환
+              </button>
+            </div>
+          </div>
+        </div>
 
-      <div className="absolute left-[448px] top-[247px] flex gap-2">
-        <button
-          type="button"
-          className="flex h-[38px] w-[100px] items-center justify-center gap-1.5 rounded-[19px] border border-[#d9d9d9] bg-white text-[14px] font-['Noto_Sans_KR:Regular'] text-[#4e4e4e] cursor-pointer hover:bg-[#f5f5f5] transition-colors"
-        >
-          <img src={assets.iconLogout} alt="" className="size-[13px]" />
-          로그아웃
-        </button>
-        <button
-          type="button"
-          onClick={onSwitchToGeneral}
-          className="flex h-[38px] w-[100px] items-center justify-center gap-1.5 rounded-[19px] border border-[#d9d9d9] bg-white text-[14px] font-['Noto_Sans_KR:Regular'] text-[#4e4e4e] cursor-pointer hover:bg-[#f5f5f5] transition-colors"
-        >
-          <img src={assets.iconSwitch1} alt="" className="size-[11px]" />
-          일반 전환
-        </button>
-      </div>
-
-      {/* 안읽은 알림 */}
-      <div className="absolute left-[784px] top-[237px] flex h-[46px] w-[984px] items-center gap-1 rounded-[20px] border border-[rgba(0,100,255,0.28)] bg-white px-4">
-        <span className="relative flex size-[19px] shrink-0 items-center justify-center rounded-full bg-[#0064ff] font-['Noto_Sans_KR:Bold'] font-bold text-[12px] text-white">
-          3
-        </span>
-        <span className="ml-1 shrink-0 font-['Noto_Sans_KR:Bold'] font-bold text-[14px] text-[#404040]">안읽은 알림</span>
-        <span className="ml-4 flex items-center gap-1 truncate text-[14px] text-[#404040]">
-          <span className="text-[8px]">▶</span>
-          입찰가가 갱신되었습니다.
-        </span>
-        <span className="ml-4 flex items-center gap-1 truncate text-[14px] text-[#404040]">
-          <span className="text-[8px]">▶</span>
-          관심 상품 마감 10분 전입니다
-        </span>
-        <span className="ml-4 flex items-center gap-1 truncate text-[14px] text-[#404040]">
-          <span className="text-[8px]">▶</span>
-          새 견적이 도착했습니다
-        </span>
-        <button
-          type="button"
-          onClick={() => navigate("/user/notification")}
-          className="ml-auto bg-transparent border-none cursor-pointer font-['Noto_Sans_KR:Bold'] font-bold text-[14px] text-[#404040]"
-        >
-          +
-        </button>
+        {/* 안읽은 알림 배너 */}
+        <div className="flex-1 min-w-0 min-h-[40px] rounded-[20px] border border-[rgba(0,100,255,0.28)] bg-white flex items-center px-4 gap-2 overflow-hidden">
+          <span className="flex items-center justify-center size-[18px] rounded-full bg-[#0064ff] text-white text-[11px] font-bold shrink-0">
+            3
+          </span>
+          <span className="font-bold text-[13px] text-[#404040] shrink-0">안읽은 알림</span>
+          <span className="hidden sm:flex items-center gap-1 text-[12px] text-[#404040] ml-2 truncate">
+            <span className="text-[7px]">▶</span>
+            입찰가가 갱신되었습니다.
+          </span>
+          <button
+            type="button"
+            onClick={() => navigate("/user/notification")}
+            className="ml-auto bg-transparent border-none cursor-pointer font-bold text-[14px] text-[#404040] shrink-0"
+          >
+            +
+          </button>
+        </div>
       </div>
 
-      {/* 통계 카드 4개 */}
-      <div className="absolute left-[448px] top-[315px] flex gap-[18px]">
+      {/* 통계 카드 4개 — 모바일: 4행 1열 / 태블릿: 2×2 / 데스크톱: 1행 4열 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         {STAT_CARDS.map(({ key, ...card }) => (
           <StatCard key={key} {...card} />
         ))}
       </div>
 
-      {/* 오늘 확인할 일 (전체폭, 동적 높이 - 디자인상 정산현황 위) */}
-      <div
-        className="absolute left-[448px] w-[1318px] rounded-[15px] border border-[rgba(0,0,0,0.11)] bg-white"
-        style={{ top: TODAY_TASKS_TOP }}
-      >
-        <div className="h-[70px] rounded-t-[15px] bg-[rgba(0,100,255,0.05)] flex items-center px-[30px]">
-          <p className="font-['Noto_Sans_KR:Bold'] font-bold text-[18px] text-[#3a3a3a] tracking-[-0.9px]">
-            오늘 확인할 일
-          </p>
+      {/* 오늘 확인할 일 */}
+      <div className="border border-[rgba(0,0,0,0.11)] rounded-[15px] overflow-hidden">
+        <div className="bg-[rgba(0,100,255,0.05)] h-[50px] px-5 flex items-center">
+          <p className="font-bold text-[16px] text-[#3a3a3a]">오늘 확인할 일</p>
         </div>
         {TODAY_TASKS.length === 0 ? (
-          <div className="flex items-center justify-center py-[40px]">
-            <p className="font-['Noto_Sans_KR:Medium'] text-[16px] text-[#969696]">
-              오늘 확인할 일이 없습니다.
-            </p>
+          <div className="flex items-center justify-center py-10">
+            <p className="text-[15px] text-[#969696]">오늘 확인할 일이 없습니다.</p>
           </div>
         ) : (
-          <div className="p-[21px] grid grid-cols-3 gap-x-[25px] gap-y-[21px]">
+          <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {TODAY_TASKS.map((task, i) => (
               <TaskCard key={`${task.title}-${i}`} {...task} />
             ))}
@@ -327,54 +276,44 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral }) {
         )}
       </div>
 
-      {/* 정산현황 (디자인상 오늘 확인할 일 아래) */}
-      <div
-        className="absolute left-[448px] h-[192px] w-[1318px] overflow-hidden rounded-[15px] border border-[rgba(0,0,0,0.11)] bg-white"
-        style={{ top: SETTLEMENT_TOP }}
-      >
-        <div className="absolute left-0 top-0 h-[70px] w-full rounded-t-[15px] bg-[rgba(0,100,255,0.05)]" />
-        <p className="absolute left-[30px] top-[26px] font-['Noto_Sans_KR:Bold'] font-bold text-[18px] text-[#3a3a3a] tracking-[-0.9px]">
-          정산현황
-        </p>
-        <button
-          type="button"
-          onClick={() => navigate("/user/settlement")}
-          className="absolute right-[168px] top-[13px] flex h-[45px] w-[95px] items-center justify-center rounded-[5px] bg-primary text-[16px] font-['Noto_Sans_KR:Medium'] text-white cursor-pointer hover:bg-[#0048bf] transition-colors"
-        >
-          정산관리
-        </button>
-        <button
-          type="button"
-          onClick={() => navigate("/user/settlement")}
-          className="absolute right-[19px] top-[13px] flex h-[45px] w-[125px] items-center justify-center rounded-[5px] border border-primary bg-white text-[16px] font-['Noto_Sans_KR:Medium'] text-primary cursor-pointer hover:bg-[#f0f6ff] transition-colors"
-        >
-          정산 계좌 확인
-        </button>
-
-        {SETTLEMENT_STATS.map((stat, i) => (
-          <div key={stat.label} className="absolute top-[108px] w-[400px]" style={{ left: 30 + i * 436 }}>
-            <div className="flex items-baseline gap-2">
-              <span className="font-['Noto_Sans_KR:Bold'] font-bold text-[18px] text-[#3a3a3a] tracking-[-0.9px] whitespace-nowrap">
-                {stat.label}
-              </span>
-              <span className="font-['Noto_Sans_KR:Bold'] font-bold text-[25px] text-[#3a3a3a] tracking-[-1.25px] whitespace-nowrap">
-                {stat.value}
-              </span>
-            </div>
-            <p className="mt-[10px] font-['Noto_Sans_KR:Medium'] text-[16px] text-[#3a3a3a] tracking-[-0.8px] whitespace-nowrap">
-              {stat.desc}
-            </p>
+      {/* 정산현황 */}
+      <div className="border border-[rgba(0,0,0,0.11)] rounded-[15px] overflow-hidden">
+        <div className="bg-[rgba(0,100,255,0.05)] h-[50px] px-5 flex items-center justify-between">
+          <p className="font-bold text-[16px] text-[#3a3a3a]">정산현황</p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => navigate("/user/settlement")}
+              className="h-[38px] px-4 rounded-[5px] bg-primary text-white text-[14px] cursor-pointer hover:bg-[#0048bf] transition-colors"
+            >
+              정산관리
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/user/settlement")}
+              className="h-[38px] px-4 rounded-[5px] border border-primary bg-white text-primary text-[14px] cursor-pointer hover:bg-[#f0f6ff] transition-colors"
+            >
+              정산 계좌 확인
+            </button>
           </div>
-        ))}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 p-5 gap-4">
+          {SETTLEMENT_STATS.map((stat, i) => (
+            <div key={stat.label} className={`${i > 0 ? "sm:border-l sm:border-[#f0f0f0] sm:pl-5" : ""}`}>
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span className="font-bold text-[15px] text-[#3a3a3a]">{stat.label}</span>
+                <span className="font-bold text-[20px] text-[#3a3a3a]">{stat.value}</span>
+              </div>
+              <p className="text-[12px] text-[#555] mt-1">{stat.desc}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* 진행 중 서비스 / 최근 수주·견적 */}
-      <div
-        className="absolute left-[448px] flex gap-[18px]"
-        style={{ top: PANELS_TOP }}
-      >
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <CompactListPanel title="진행 중 서비스" items={IN_PROGRESS_ITEMS} />
-        <CompactListPanel title="최근 수주·견적" items={RECENT_QUOTE_ITEMS} itemLabelSize="small" />
+        <CompactListPanel title="최근 수주·견적" items={RECENT_QUOTE_ITEMS} />
       </div>
     </div>
   );

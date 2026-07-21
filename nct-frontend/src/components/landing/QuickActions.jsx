@@ -39,8 +39,8 @@ const QuickActions = () => {
 
   return (
     <>
-      {/* 퀵 레일 */}
-      <div className="quick-rail">
+      {/* 데스크톱 플로팅 퀵 레일 (md 이상) */}
+      <div className="quick-rail hidden md:flex">
         {/* 최근 본 상품 */}
         <button
           className="quick-item"
@@ -69,8 +69,8 @@ const QuickActions = () => {
         </button>
       </div>
 
-      {/* TOP 버튼 */}
-      <button className="quick-item quick-top" type="button" onClick={scrollToTop} title="TOP">
+      {/* TOP 버튼 (데스크톱) */}
+      <button className="quick-item quick-top hidden md:flex" type="button" onClick={scrollToTop} title="TOP">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M5 3h14" />
           <path d="m18 13-6-6-6 6" />
@@ -96,6 +96,26 @@ const QuickActions = () => {
           <p style={{ color: '#888', fontSize: '13px' }}>최근 본 상품이 없습니다.</p>
         </div>
       )}
+
+      {/* 모바일 하단 고정 퀵바 (md 미만) */}
+      <div className="fixed bottom-0 left-0 right-0 flex md:hidden z-[150] h-[60px]">
+        <button
+          type="button"
+          onClick={handleAuctionCreate}
+          className="flex-1 flex items-center justify-center gap-2 bg-[#0064ff] text-white font-bold text-[15px] border-none cursor-pointer"
+        >
+          <img src={cursorIcon} alt="" width="22" height="22" style={{ filter: 'brightness(0) invert(1)' }} />
+          경매등록
+        </button>
+        <button
+          type="button"
+          onClick={handleServiceCreate}
+          className="flex-1 flex items-center justify-center gap-2 bg-[#8b5cf6] text-white font-bold text-[15px] border-none cursor-pointer"
+        >
+          <img src={commentIcon} alt="" width="22" height="22" style={{ filter: 'brightness(0) invert(1)' }} />
+          서비스요청
+        </button>
+      </div>
     </>
   );
 };

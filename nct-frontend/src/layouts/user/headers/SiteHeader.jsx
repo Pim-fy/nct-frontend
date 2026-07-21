@@ -284,7 +284,7 @@ const SiteHeader = () => {
           </div>
 
           {/* 지갑 → POINT 박스 */}
-          <div className="relative hidden sm:block">
+          <div className="relative">
             <button
               type="button"
               title="포인트 지갑"

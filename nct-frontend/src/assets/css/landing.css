@@ -437,11 +437,11 @@
   .rail-arrow.next { right: -38px; }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .home-notice-strip { top: 108px; }
-  .quick-rail { right: 0; top: auto; bottom: 150px; transform: none; justify-content: center; padding-right:10px; }
-  .quick-item { width: 75px; height: 75px; min-height: 75px; font-size: 13px; }
-  .quick-top  { right: 10px; bottom: 76px; }
+  /* 모바일: 플로팅 레일/TOP 버튼 숨김 — 하단 고정 바로 대체 */
+  .quick-rail { display: none !important; }
+  .quick-top  { display: none !important; }
 }
 
 @media (max-width: 560px) {
