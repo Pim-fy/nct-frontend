@@ -10,13 +10,13 @@ import {
   removeAuctionFavorite,
 } from '@api/auctionApi';
 import { useAuth } from '@hooks/useAuth';
+import useCountdown from '@hooks/useCountdown';
 import AuctionBidPanel from './components/AuctionBidPanel';
 import AuctionBuyNowModal from './components/AuctionBuyNowModal';
 import AuctionDetailModal from './components/AuctionDetailModal';
 import AuctionImageGallery, { AuctionPreviewRail } from './components/AuctionImageGallery';
 import AuctionInfoGrid from './components/AuctionInfoGrid';
 import AuctionToast from './components/AuctionToast';
-import useCountdown from './hooks/useCountdown';
 import {
   createImageItems,
   formatNumber,
@@ -161,6 +161,12 @@ const AuctionDetailPage = () => {
     auction.auctionStatusName,
     now,
   );
+  const auctionEndTimestamp = auction.endDateTime
+    ? new Date(auction.endDateTime).getTime()
+    : null;
+  const isAuctionOpen = auction.auctionStatusCode === 'AUCC0002'
+    && (auctionEndTimestamp === null || auctionEndTimestamp > now);
+  const isBuyNowAvailable = isAuctionOpen && Number(auction.instantBuyPrice || 0) > 0;
   const selectedTradeValue = auction.tradeMethodCode || '';
   const selectedTradeName = auction.tradeMethodName || '거래 방식 미정';
   const displayedBidAmount = bidAmount || formatNumber(minimumBidPrice);
@@ -186,6 +192,10 @@ const AuctionDetailPage = () => {
   const handleBidInputChange = (event) => setBidAmount(formatNumber(parseAmount(event.target.value)));
   const handleQuickAdd = (amount) => setBidAmount((value) => formatNumber(parseAmount(value || displayedBidAmount) + amount));
   const handleBidSubmit = () => {
+    if (!isAuctionOpen) {
+      showToast('종료된 경매에는 입찰할 수 없습니다');
+      return;
+    }
     const amount = parseAmount(displayedBidAmount);
     if (!holdAgreed) {
       showToast('포인트 홀딩 동의가 필요합니다');
@@ -201,6 +211,14 @@ const AuctionDetailPage = () => {
     });
   };
   const handleBuyNowOpen = () => {
+    if (!isAuctionOpen) {
+      showToast('종료된 경매에는 즉시구매할 수 없습니다');
+      return;
+    }
+    if (!isBuyNowAvailable) {
+      showToast('즉시구매가 제공되지 않는 경매입니다');
+      return;
+    }
     if (!holdAgreed) {
       showToast('포인트 홀딩 동의가 필요합니다');
       return;
@@ -208,6 +226,11 @@ const AuctionDetailPage = () => {
     setIsBuyNowOpen(true);
   };
   const handleBuyNowConfirm = () => {
+    if (!isBuyNowAvailable) {
+      setIsBuyNowOpen(false);
+      showToast('즉시구매를 진행할 수 없는 경매입니다');
+      return;
+    }
     buyNowMutation.mutate({
       tradeMethod: selectedTradeValue,
     });
@@ -256,6 +279,8 @@ const AuctionDetailPage = () => {
               holdAgreed={holdAgreed}
               isBidPending={bidMutation.isPending}
               isBuyNowPending={buyNowMutation.isPending}
+              isAuctionOpen={isAuctionOpen}
+              isBuyNowAvailable={isBuyNowAvailable}
               isFavoritePending={favoriteMutation.isPending || favoriteStatusQuery.isFetching}
               onBidInputChange={handleBidInputChange}
               onQuickAdd={handleQuickAdd}
@@ -291,6 +316,7 @@ const AuctionDetailPage = () => {
         selectedTradeName={selectedTradeName}
         holdAgreed={holdAgreed}
         isPending={buyNowMutation.isPending}
+        isBuyNowAvailable={isBuyNowAvailable}
         onClose={() => setIsBuyNowOpen(false)}
         onConfirm={handleBuyNowConfirm}
       />

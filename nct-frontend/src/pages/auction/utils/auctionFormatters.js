@@ -1,4 +1,4 @@
-const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+import { toImageUrl } from '@api/fileApi';
 
 export const formatPrice = (value) => {
   const number = Number(value || 0);
@@ -12,15 +12,9 @@ export const formatNumber = (value) => {
 
 export const parseAmount = (value) => Number(String(value || '').replace(/[^0-9]/g, '')) || 0;
 
-export const getImageUrl = (path) => {
-  if (!path) return null;
-  if (path.startsWith('http')) return path;
-  return `${BACKEND_URL}${path}`;
-};
-
 export const createImageItems = (images = []) => images.map((image, index) => ({
   id: image.imageId || `image-${index}`,
-  url: getImageUrl(image.path),
+  url: toImageUrl(image.path),
   alt: image.originalName || `상품 이미지 ${index + 1}`,
   representative: image.representative,
 })).filter((image) => image.url);

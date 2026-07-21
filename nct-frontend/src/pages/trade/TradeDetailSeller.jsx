@@ -15,6 +15,7 @@ import {
   uploadDeliveryProof,
 } from '@api/fileApi';
 import { toTradeDetail } from '@api/tradeAdapter';
+import TradeTrustSummary from '@components/trade/TradeTrustSummary';
 import '@assets/css/trade-detail.css';
 
 // date 입력의 최소값에 사용할 오늘 날짜를 사용자의 현지 시간 기준으로 만든다.
@@ -291,7 +292,8 @@ const TradeDetailSeller = () => {
             </section>
             <section className="trade-detail-card">
               <h2>구매자 정보</h2>
-              <p>닉네임 {trade.counterpart} · 별점 ★{trade.rating}</p>
+              <p>닉네임 {trade.counterpart}</p>
+              <TradeTrustSummary counterpartUserId={trade.counterpartUserId} />
               <p className="trade-detail-card__muted">
                 저장한 일정과 장소는 구매자 거래 상세에도 바로 표시됩니다.
               </p>
@@ -445,7 +447,8 @@ const TradeDetailSeller = () => {
           </section>
           <section className="trade-detail-card">
             <h2>구매자 정보</h2>
-            <p>닉네임 {trade.counterpart} · 별점 ★{trade.rating}</p>
+            <p>닉네임 {trade.counterpart}</p>
+            <TradeTrustSummary counterpartUserId={trade.counterpartUserId} />
             <p className="trade-detail-card__muted">
               택배 거래에서는 거래 채팅방이 생성되지 않습니다.
             </p>

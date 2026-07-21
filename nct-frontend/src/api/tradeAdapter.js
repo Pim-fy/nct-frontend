@@ -114,6 +114,7 @@ export const toTradeDetail = (response) => {
     method: trade.tradeMethod ?? trade.method ?? null,
     status: normalizeTradeStatus(trade.tradeStatus ?? trade.status),
     counterpart: trade.counterpartNickname ?? trade.counterpart ?? '-',
+    counterpartUserId: trade.counterpartUserId ?? trade.counterpartUsrSn ?? null,
     rating: trade.counterpartRating ?? trade.rating ?? '-',
     deliveryAddress: trade.deliveryAddress ?? trade.address ?? '-',
     deliveryMessage: trade.deliveryMessage ?? trade.shippingMemo ?? '-',
