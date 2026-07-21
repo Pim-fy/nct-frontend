@@ -4,7 +4,7 @@
 // 목업: 06_auction_detail_seller.html 기반
 // 라우트: /product/:prdSn/seller
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toImageUrl } from '@api/fileApi';
 import { getProduct, postProductComment, fetchProductComments } from '@api/productApi';
@@ -50,6 +50,29 @@ export default function ProductDetailSellerPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // ─── 남은 시간 카운트다운 (F-AUC-006) ───────────────────────────────────
+  const [remainTime, setRemainTime] = useState('');
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    if (!auctionStatus?.aucEndDt) return;
+
+    const calc = () => {
+      const diff = new Date(auctionStatus.aucEndDt) - new Date();
+      if (diff <= 0) { setRemainTime('종료'); clearInterval(timerRef.current); return; }
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      const pad = n => String(n).padStart(2, '0');
+      setRemainTime(d > 0 ? `${d}일 ${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(h)}:${pad(m)}:${pad(s)}`);
+    };
+
+    calc();
+    timerRef.current = setInterval(calc, 1000);
+    return () => clearInterval(timerRef.current);
+  }, [auctionStatus?.aucEndDt]);
+
   // ─── 추가 공지 상태 (F-AUC-007) ─────────────────────────────────────────
   const [comments, setComments] = useState([]);
   const [cmtTtl, setCmtTtl] = useState('');
@@ -59,7 +82,6 @@ export default function ProductDetailSellerPage() {
   // ─── 취소 요청 모달 상태 (F-AUC-008) ────────────────────────────────────
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
-  const [cancelDetail, setCancelDetail] = useState('');
   const [cancelSubmitting, setCancelSubmitting] = useState(false);
   const [toast, setToast] = useState('');
 
@@ -71,7 +93,7 @@ export default function ProductDetailSellerPage() {
         const p = res.data;
         setProduct(p);
         const sideLoads = [fetchProductComments(prdSn).then(setComments).catch(() => {})];
-        if (p.prdStatusCd === 'PRDC0002') {
+        if (p.prdStatusCd !== 'PRDC0001') {
           sideLoads.push(getAuctionStatus(prdSn).then(auc => setAuctionStatus(auc)).catch(() => {}));
         }
         return Promise.all(sideLoads);
@@ -92,11 +114,10 @@ export default function ProductDetailSellerPage() {
     }
     setCancelSubmitting(true);
     try {
-      await requestAuctionCancel(auctionStatus.aucSn, { reason: cancelReason, detail: cancelDetail });
+      await requestAuctionCancel(auctionStatus.aucSn, { reason: cancelReason });
       setToast('취소 요청이 접수되었습니다.');
       setCancelOpen(false);
       setCancelReason('');
-      setCancelDetail('');
     } catch {
       setToast('취소 요청에 실패했습니다.');
     } finally {
@@ -129,7 +150,6 @@ export default function ProductDetailSellerPage() {
   const closeCancel = () => {
     setCancelOpen(false);
     setCancelReason('');
-    setCancelDetail('');
   };
 
   if (loading) return <ViewSkeleton />;
@@ -235,12 +255,14 @@ export default function ProductDetailSellerPage() {
               <strong>—</strong>
             </div>
             <div className="seller-metric">
-              <span>종료 정보</span>
-              <strong>
-                {auctionStatus?.aucEndDt
-                  ? new Date(auctionStatus.aucEndDt).toLocaleDateString('ko-KR')
-                  : '—'}
-              </strong>
+              <span>남은 시간</span>
+              <strong>{remainTime || '—'}</strong>
+              {auctionStatus?.aucEndDt && (
+                <small className="muted" style={{ fontSize: 11, marginTop: 2 }}>
+                  {new Date(auctionStatus.aucEndDt).toLocaleString('ko-KR')} 종료
+                  {auctionStatus.aucExtCnt > 0 && ` · 자동연장 ${auctionStatus.aucExtCnt}회`}
+                </small>
+              )}
             </div>
           </div>
 
@@ -275,7 +297,7 @@ export default function ProductDetailSellerPage() {
             {isActive && (
               <>
                 {/* TODO: 담당자5(옥동민) route /auction/:prdSn 확인 후 경로 수정 */}
-                <button className="btn btn-outline" onClick={() => navigate(`/auction/${prdSn}`)}>
+                <button className="btn btn-outline" onClick={() => auctionStatus?.aucSn && navigate(`/auction/${auctionStatus.aucSn}`)}>
                   구매자 화면 보기
                 </button>
                 <button className="btn btn-danger" onClick={() => setCancelOpen(true)}>
@@ -289,7 +311,7 @@ export default function ProductDetailSellerPage() {
                 <button className="btn btn-primary" onClick={() => navigate('/product/register')}>
                   다시 등록
                 </button>
-                <button className="btn btn-outline" onClick={() => navigate(`/auction/${prdSn}`)}>
+                <button className="btn btn-outline" onClick={() => auctionStatus?.aucSn && navigate(`/auction/${auctionStatus.aucSn}`)}>
                   종료 화면 보기
                 </button>
               </>
@@ -388,16 +410,6 @@ export default function ProductDetailSellerPage() {
                 <option key={r} value={r}>{r}</option>
               ))}
             </select>
-          </div>
-
-          <div className="field">
-            <label>상세 사유</label>
-            <textarea
-              rows={4}
-              placeholder="선택한 사유를 보완하거나 직접 입력해 주세요"
-              value={cancelDetail}
-              onChange={e => setCancelDetail(e.target.value)}
-            />
           </div>
 
           <p className="muted small" style={{ marginBottom: 16 }}>
