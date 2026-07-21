@@ -14,11 +14,33 @@ import { usePointBalance, usePointLedger, usePointChargeOrders, usePointExchange
 import { confirmPointCharge, requestPointExchange, convertPoint } from '../../../api/pointApi';
 
 // 데이터 도착 전(로딩 중) 카드가 깨지지 않도록 쓰는 0값 기본 잔액
-const EMPTY_BALANCE = { available: 0, hold: 0, settleable: 0 };
+const EMPTY_BALANCE = { available: 0, hold: 0, settleable: 0, total: 0 };
 
 /** axios 오류에서 백엔드 ApiResponse의 message를 꺼낸다 (없으면 일반 안내) */
 const errorMessage = (err) =>
   err?.response?.data?.message ?? '처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
+
+/**
+ * 환전/전환 제출 설정 — 두 기능은 "검증 → 모달 닫기 → API 호출 → 포인트 캐시 갱신 → 결과 안내"
+ * 구조가 완전히 같고 API와 문구만 달라서, 흐름은 submitAmount 하나로 쓰고 차이만 여기 모았다
+ * (환전 F-PAY-012: 신청 즉시 차감·관리자 수동 지급 / 전환 F-PAY-010: 분쟁 없을 때만 서버가 허용)
+ */
+const SUBMIT_ACTIONS = {
+  exchange: {
+    api: requestPointExchange,
+    invalidText: '환전 금액은 1P 이상의 정수만 가능합니다.',
+    successTitle: '환전 신청 완료',
+    successText: '신청 금액이 차감되었고, 등록하신 계좌로 며칠 내 지급될 예정입니다.',
+    failTitle: '환전 신청 실패',
+  },
+  convert: {
+    api: convertPoint,
+    invalidText: '전환 금액은 1P 이상의 정수만 가능합니다.',
+    successTitle: '전환 완료',
+    successText: '정산 가능 포인트가 사용 가능 포인트로 전환되었습니다.',
+    failTitle: '전환 실패',
+  },
+};
 
 /**
  * 포인트 지갑 (목업 17_point_wallet.html, F-PAY-006/007/011)
@@ -94,73 +116,37 @@ const PointWalletPage = () => {
   }, [searchParams, setSearchParams, queryClient]);
 
   /**
-   * 환전 신청 (F-PAY-012, D-026 확정 반영)
-   * - 서버가 검증(계좌 등록·잔액)→즉시 차감→계좌 스냅샷 기록→접수 알림까지 한 번에 처리한다
-   * - 성공하면 잔액·원장·환전내역이 전부 바뀌므로 포인트 캐시 전체를 갱신한다
+   * 환전/전환 공통 제출 처리 — 어느 쪽인지(kind)에 따라 SUBMIT_ACTIONS의 API·문구만 갈아끼운다.
+   * 서버가 검증(계좌·잔액·분쟁)을 전부 하므로 프론트는 정수 확인만 하고 사유는 서버 응답을 그대로 안내
    */
-  const submitExchange = (amount) => {
+  const submitAmount = (kind) => (amount) => {
+    const action = SUBMIT_ACTIONS[kind];
     if (!Number.isInteger(amount) || amount <= 0) {
       Swal.fire({
         icon: 'warning',
         title: '금액을 확인해 주세요',
-        text: '환전 금액은 1P 이상의 정수만 가능합니다.',
+        text: action.invalidText,
         confirmButtonColor: '#0064ff',
       });
       return;
     }
     setOpenModal(null);
-    requestPointExchange(amount)
+    action.api(amount)
       .then(() => {
+        // 잔액·원장·내역이 전부 바뀌므로 포인트 캐시 전체 갱신
         queryClient.invalidateQueries({ queryKey: ['point'] });
         Swal.fire({
           icon: 'success',
-          title: '환전 신청 완료',
-          text: '신청 금액이 차감되었고, 등록하신 계좌로 며칠 내 지급될 예정입니다.',
+          title: action.successTitle,
+          text: action.successText,
           confirmButtonColor: '#0064ff',
         });
       })
       .catch((err) => {
-        // 계좌 미등록·잔액 부족 등 서버가 알려준 사유를 그대로 안내
+        // 계좌 미등록·잔액 부족·분쟁 진행 중 등 서버가 알려준 사유를 그대로 안내
         Swal.fire({
           icon: 'error',
-          title: '환전 신청 실패',
-          text: errorMessage(err),
-          confirmButtonColor: '#0064ff',
-        });
-      });
-  };
-
-  /**
-   * 포인트 전환 (F-PAY-010, 조건 확정 2026-07-18: 분쟁 없음 확인 후 전환)
-   * - 정산가능 포인트를 사용가능으로 옮긴다 — 환전(현금화)과 달리 플랫폼 안에서 다시 쓰는 용도
-   * - 진행 중 거래 문제가 있으면 서버가 거절하고, 그 사유를 그대로 안내한다
-   */
-  const submitConvert = (amount) => {
-    if (!Number.isInteger(amount) || amount <= 0) {
-      Swal.fire({
-        icon: 'warning',
-        title: '금액을 확인해 주세요',
-        text: '전환 금액은 1P 이상의 정수만 가능합니다.',
-        confirmButtonColor: '#0064ff',
-      });
-      return;
-    }
-    setOpenModal(null);
-    convertPoint(amount)
-      .then(() => {
-        queryClient.invalidateQueries({ queryKey: ['point'] });
-        Swal.fire({
-          icon: 'success',
-          title: '전환 완료',
-          text: '정산 가능 포인트가 사용 가능 포인트로 전환되었습니다.',
-          confirmButtonColor: '#0064ff',
-        });
-      })
-      .catch((err) => {
-        // 분쟁 진행 중·잔액 부족 등 서버가 알려준 사유를 그대로 안내
-        Swal.fire({
-          icon: 'error',
-          title: '전환 실패',
+          title: action.failTitle,
           text: errorMessage(err),
           confirmButtonColor: '#0064ff',
         });
@@ -222,7 +208,7 @@ const PointWalletPage = () => {
           title="환전 신청"
           submitLabel="환전"
           infoRow={{ label: '환전 가능 포인트', value: `${balance.settleable.toLocaleString()} P` }}
-          onSubmit={submitExchange}
+          onSubmit={submitAmount('exchange')}
           onClose={() => setOpenModal(null)}
         />
       )}
@@ -231,7 +217,7 @@ const PointWalletPage = () => {
           title="포인트 전환"
           submitLabel="전환"
           infoRow={{ label: '전환 가능 포인트', value: `${balance.settleable.toLocaleString()} P` }}
-          onSubmit={submitConvert}
+          onSubmit={submitAmount('convert')}
           onClose={() => setOpenModal(null)}
         />
       )}
