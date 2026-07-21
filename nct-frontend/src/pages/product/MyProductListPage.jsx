@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { deleteProduct, getMyProducts } from '@api/productApi';
 import { toImageUrl } from '@api/fileApi';
+import { TRADE_LABEL, STATUS_LABEL, STATUS_BADGE } from '@/constants/productConstants';
 import Pagination from '@components/common/Pagination';
 import { usePagination } from '@hooks/usePagination';
 import Breadcrumb from '@components/common/Breadcrumb';
@@ -19,20 +20,6 @@ import ConfirmModal from '@components/common/ConfirmModal';
 // ─── 상수 정의 ───────────────────────────────────────────────────────────────
 // 상태 코드(PRDC)별 한글 라벨 · 배지 클래스 · 필터 옵션
 // 거래방식 코드(TRDC)별 한글 라벨
-const STATUS_LABEL = {
-  PRDC0001: '임시저장',
-  PRDC0002: '경매 진행중',
-  PRDC0003: '종료',
-  PRDC0004: '삭제',
-};
-
-const STATUS_BADGE = {
-  PRDC0001: 'badge-gray',
-  PRDC0002: 'badge-success',
-  PRDC0003: 'badge-gray',
-  PRDC0004: 'badge-danger',
-};
-
 // F-AUC-005 경매 상태(AUCC) 라벨·배지 — 옥동민(5) 연계
 const AUC_STATUS_LABEL = {
   AUCC0001: '준비',
@@ -48,12 +35,6 @@ const AUC_STATUS_BADGE = {
   AUCC0003: 'badge-gray',
   AUCC0004: 'badge-warning',
   AUCC0005: 'badge-danger',
-};
-
-const TRADE_LABEL = {
-  TRDC0009: '배송만',
-  TRDC0010: '직거래만',
-  TRDC0020: '둘 다 가능',
 };
 
 const FILTERS = [

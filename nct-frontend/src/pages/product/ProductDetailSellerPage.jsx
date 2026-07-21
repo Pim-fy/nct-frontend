@@ -9,35 +9,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { toImageUrl } from '@api/fileApi';
 import { getProduct, postProductComment, fetchProductComments } from '@api/productApi';
 import { getAuctionStatus, requestAuctionCancel } from '@api/auctionApi';
+import { TRADE_LABEL, STATUS_LABEL, STATUS_BADGE } from '@/constants/productConstants';
 import Breadcrumb from '@components/common/Breadcrumb';
 import ErrorMessage from '@components/common/ErrorMessage';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
 import Toast from '@components/common/Toast';
 
 // ─── 상수 정의 ───────────────────────────────────────────────────────────────
-// 상태 코드(PRDC)별 한글 라벨 · 배지 클래스
-// 거래방식 코드(TRDC)별 한글 라벨
-// 취소 요청 사유 선택지
-const STATUS_LABEL = {
-  PRDC0001: '임시저장',
-  PRDC0002: '진행중',
-  PRDC0003: '종료',
-  PRDC0004: '삭제',
-};
-
-const STATUS_BADGE = {
-  PRDC0001: 'badge-gray',
-  PRDC0002: 'badge-blue',
-  PRDC0003: 'badge-gray',
-  PRDC0004: 'badge-danger',
-};
-
-const TRADE_LABEL = {
-  TRDC0009: '배송만',
-  TRDC0010: '직거래만',
-  TRDC0020: '둘 다 가능',
-};
-
+// 취소 요청 사유 선택지 (STATUS_LABEL · STATUS_BADGE · TRADE_LABEL → productConstants)
 const CANCEL_REASONS = ['상품 상태 변경', '상품 정보 오류', '판매 진행 불가', '기타'];
 
 export default function ProductDetailSellerPage() {
