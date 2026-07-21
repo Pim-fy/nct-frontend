@@ -86,7 +86,7 @@ export default function ProductRegisterPage() {
       })
       .catch(() => setError('카테고리를 불러오지 못했습니다.'));
     fetchBannedKeywords()
-      .then(setBannedKeywords)
+      .then(res => setBannedKeywords(res.data))
       .catch(() => {});
   }, []);
 

@@ -24,12 +24,12 @@ export const deleteProduct = (prdSn) =>
 
 /** 금지 키워드 목록 조회 (F-AUC-004) */
 export const fetchBannedKeywords = () =>
-  api.get('/products/banned-keywords').then(res => res.data.data);
+  api.get('/products/banned-keywords').then(res => res.data);
 
 /** 추가 공지 등록 — 판매자 전용 (F-AUC-007) */
 export const postProductComment = (prdSn, data) =>
-  api.post(`/products/${prdSn}/comments`, data).then(res => res.data.data);
+  api.post(`/products/${prdSn}/comments`, data).then(res => res.data);
 
 /** 추가 공지 목록 조회 — 최신 4개, 비로그인 포함 (F-AUC-007) */
 export const fetchProductComments = (prdSn) =>
-  api.get(`/products/${prdSn}/comments`).then(res => res.data.data);
+  api.get(`/products/${prdSn}/comments`).then(res => res.data);

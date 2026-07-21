@@ -71,7 +71,7 @@ export default function ProductDetailSellerPage() {
       .then(res => {
         const p = res.data;
         setProduct(p);
-        const sideLoads = [fetchProductComments(prdSn).then(setComments).catch(() => {})];
+        const sideLoads = [fetchProductComments(prdSn).then(res => setComments(res.data)).catch(() => {})];
         if (p.prdStatusCd !== 'PRDC0001') {
           sideLoads.push(getAuctionStatus(prdSn).then(auc => setAuctionStatus(auc)).catch(() => {}));
         }
@@ -114,7 +114,7 @@ export default function ProductDetailSellerPage() {
     try {
       await postProductComment(prdSn, { ttl: cmtTtl.trim(), cn: cmtCn.trim() || null });
       const updated = await fetchProductComments(prdSn);
-      setComments(updated);
+      setComments(updated.data);
       setCmtTtl('');
       setCmtCn('');
       setToast('추가 공지가 등록되었습니다.');
