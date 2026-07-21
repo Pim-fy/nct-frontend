@@ -16,7 +16,7 @@ import AuctionDetailModal from './components/AuctionDetailModal';
 import AuctionImageGallery, { AuctionPreviewRail } from './components/AuctionImageGallery';
 import AuctionInfoGrid from './components/AuctionInfoGrid';
 import AuctionToast from './components/AuctionToast';
-import useCountdown from './hooks/useCountdown';
+import useCountdown from '@hooks/useCountdown';
 import {
   createImageItems,
   formatNumber,
