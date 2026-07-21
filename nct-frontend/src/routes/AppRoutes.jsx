@@ -28,6 +28,7 @@ import FindEmailPage      from '@pages/auth/FindEmailPage';
 import ResetPasswordPage  from '@pages/auth/ResetPasswordPage';
 import WithdrawalRequestPage from '@pages/auth/WithdrawalRequestPage';
 import OAuthRedirectHandler from '@pages/auth/OAuthRedirectHandler';
+import OAuthOnboardingPage from '@pages/auth/OAuthOnboardingPage';
 
 // 에러 페이지
 import NotFoundPage   from '@pages/error/NotFoundPage';
@@ -108,6 +109,7 @@ const AppRoutes = () => {
       <Route path="/reset-password"  element={<ResetPasswordPage />} />
       <Route path="/withdrawal"      element={<WithdrawalRequestPage />} />
       <Route path="/oauth/redirect"  element={<OAuthRedirectHandler />} />
+      <Route path="/oauth/onboarding" element={<OAuthOnboardingPage />} />
       <Route path="/unauthorized"    element={<Unauthorized />} />
       <Route path="/403"             element={<Unauthorized />} />
       <Route path="/404"             element={<NotFoundPage />} />

@@ -58,3 +58,12 @@ export const verifySignupEmailVerification = (verificationId, payload) =>
 /** 닉네임 중복 확인 */
 export const checkNickname = (nickname) =>
   api.get('/auth/check-nickname', { params: { nickname } }).then(res => res.data);
+
+// @ai_generated: 작업단위5(F-AUTH-004 온보딩, ISS-009) - 소셜 최초 가입 온보딩
+/** 온보딩 화면 진입값 조회 (닉네임 기본값·provider) */
+export const getOauthOnboardingPending = () =>
+  api.get('/auth/oauth-onboarding/pending').then(res => res.data);
+
+/** 온보딩 완료 (약관 동의 + 닉네임 확정) */
+export const completeOauthOnboarding = (payload) =>
+  api.post('/auth/oauth-onboarding/complete', payload).then(res => res.data);

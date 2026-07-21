@@ -124,6 +124,8 @@ export const toTradeDetail = (response) => {
     recipientPhone: trade.recipientPhone ?? '-',
     addressDetail: trade.addressDetail ?? '-',
     deliveryRequest: trade.deliveryRequest ?? '-',
+    deliveryId: trade.deliveryId ?? trade.trdDlvrSn ?? null,
+    deliveryProofFiles: trade.deliveryProofFiles ?? [],
     meetingDate: trade.meetingDate ?? meetingDateTime.date,
     meetingTime: trade.meetingTime ?? meetingDateTime.time,
     meetingPlace: trade.meetingPlace ?? '-',
