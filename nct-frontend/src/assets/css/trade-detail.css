@@ -377,6 +377,76 @@
   margin-top: 16px;
 }
 
+.trade-proof-list {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trade-proof-list__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid #e3e9f5;
+  border-radius: 12px;
+  background: #fbfcff;
+}
+
+.trade-proof-list__item img {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.trade-proof-list__item div {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 4px;
+}
+
+.trade-proof-list__item strong {
+  overflow: hidden;
+  color: #344054;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-proof-list__item span {
+  color: #16794c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.trade-delivery-proof-gallery {
+  margin-top: 16px;
+}
+
+.trade-delivery-proof-gallery > strong {
+  color: #344054;
+  font-size: 13px;
+}
+
+.trade-delivery-proof-gallery > div {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.trade-delivery-proof-gallery img {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid #e3e9f5;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
 .trade-proof-upload {
   display: grid;
   min-height: 160px;
