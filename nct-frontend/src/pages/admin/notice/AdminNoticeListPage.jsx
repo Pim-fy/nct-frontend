@@ -97,10 +97,24 @@ const AdminNoticeListPage = () => {
               placeholder="검색어를 입력하세요"
               value={keywordInput}
             />
-            <button className="btn btn-outline" type="submit"><Search aria-hidden="true" /> 검색</button>
+            <button className="btn btn-outline" type="submit">
+              <Search aria-hidden="true" />
+              검색
+            </button>
           </div>
         </label>
-        {hasActiveFilters && <button className="btn btn-outline admin-notice-filters__reset" onClick={() => { setKeywordInput(''); changeFilters({ typeCode: '', statusCode: '', keyword: '', page: 1 }); }} type="button">필터 초기화</button>}
+        {hasActiveFilters && (
+          <button
+            className="btn btn-outline admin-notice-filters__reset"
+            onClick={() => {
+              setKeywordInput('');
+              changeFilters({ typeCode: '', statusCode: '', keyword: '', page: 1 });
+            }}
+            type="button"
+          >
+            필터 초기화
+          </button>
+        )}
       </form>
 
       {noticesQuery.isLoading && <div className="card admin-content-state">공지 목록을 불러오는 중입니다.</div>}
@@ -121,8 +135,15 @@ const AdminNoticeListPage = () => {
             <table>
               <thead>
                 <tr>
-                  <th>번호</th><th>유형</th><th>제목</th><th>상태</th><th>현재 노출</th>
-                  <th>노출 시작</th><th>노출 종료</th><th>작성자</th><th>조회수</th>
+                  <th>번호</th>
+                  <th>유형</th>
+                  <th>제목</th>
+                  <th>상태</th>
+                  <th>현재 노출</th>
+                  <th>노출 시작</th>
+                  <th>노출 종료</th>
+                  <th>작성자</th>
+                  <th>조회수</th>
                 </tr>
               </thead>
               <tbody>
@@ -135,8 +156,16 @@ const AdminNoticeListPage = () => {
                         {notice.pinned && <span aria-label="중요 공지">[중요] </span>}{notice.title}
                       </Link>
                     </td>
-                    <td><MockupAdminStatusBadge tone={statusTone(notice.statusCode)}>{notice.statusName}</MockupAdminStatusBadge></td>
-                    <td><MockupAdminStatusBadge tone={notice.visibleNow ? 'success' : 'neutral'}>{notice.visibleNow ? '노출 중' : '미노출'}</MockupAdminStatusBadge></td>
+                    <td>
+                      <MockupAdminStatusBadge tone={statusTone(notice.statusCode)}>
+                        {notice.statusName}
+                      </MockupAdminStatusBadge>
+                    </td>
+                    <td>
+                      <MockupAdminStatusBadge tone={notice.visibleNow ? 'success' : 'neutral'}>
+                        {notice.visibleNow ? '노출 중' : '미노출'}
+                      </MockupAdminStatusBadge>
+                    </td>
                     <td>{formatDateTime(notice.postingStartAt)}</td>
                     <td>{formatDateTime(notice.postingEndAt)}</td>
                     <td>{notice.writerName}</td>
@@ -144,7 +173,11 @@ const AdminNoticeListPage = () => {
                   </tr>
                 ))}
                 {(noticePage?.items ?? []).length === 0 && (
-                  <tr><td className="admin-notice-list__empty" colSpan="9">조건에 맞는 공지가 없습니다.</td></tr>
+                  <tr>
+                    <td className="admin-notice-list__empty" colSpan="9">
+                      조건에 맞는 공지가 없습니다.
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>
@@ -152,9 +185,23 @@ const AdminNoticeListPage = () => {
 
           {(noticePage?.totalPages ?? 0) > 1 && (
             <div className="admin-pagination">
-              <button className="btn btn-outline" disabled={page <= 1} onClick={() => changeFilters({ page: page - 1 })} type="button">이전</button>
+              <button
+                className="btn btn-outline"
+                disabled={page <= 1}
+                onClick={() => changeFilters({ page: page - 1 })}
+                type="button"
+              >
+                이전
+              </button>
               <span>{page} / {noticePage.totalPages}</span>
-              <button className="btn btn-outline" disabled={page >= noticePage.totalPages} onClick={() => changeFilters({ page: page + 1 })} type="button">다음</button>
+              <button
+                className="btn btn-outline"
+                disabled={page >= noticePage.totalPages}
+                onClick={() => changeFilters({ page: page + 1 })}
+                type="button"
+              >
+                다음
+              </button>
             </div>
           )}
         </section>
