@@ -1,7 +1,7 @@
 // src/layouts/UserLayout.jsx
 import { Outlet } from 'react-router-dom';
 import { ThemeProvider } from '@context/ThemeContext';
-import MainHeader from '@layouts/user/headers/MainHeader';
+import SiteHeader from '@layouts/user/headers/SiteHeader';
 import MainFooter from '@layouts/user/footers/MainFooter';
 
 const UserLayout = () => {
@@ -9,7 +9,7 @@ const UserLayout = () => {
     <ThemeProvider>
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         {/* 헤더 */}
-        <MainHeader />
+        <SiteHeader />
 
         {/* 콘텐츠 */}
         <main style={{ flex: 1 }}>

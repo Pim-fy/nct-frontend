@@ -10,13 +10,13 @@ import {
   removeAuctionFavorite,
 } from '@api/auctionApi';
 import { useAuth } from '@hooks/useAuth';
+import useCountdown from '@hooks/useCountdown';
 import AuctionBidPanel from './components/AuctionBidPanel';
 import AuctionBuyNowModal from './components/AuctionBuyNowModal';
 import AuctionDetailModal from './components/AuctionDetailModal';
 import AuctionImageGallery, { AuctionPreviewRail } from './components/AuctionImageGallery';
 import AuctionInfoGrid from './components/AuctionInfoGrid';
 import AuctionToast from './components/AuctionToast';
-import useCountdown from '@hooks/useCountdown';
 import {
   createImageItems,
   formatNumber,
@@ -228,7 +228,7 @@ const AuctionDetailPage = () => {
   const handleBuyNowConfirm = () => {
     if (!isBuyNowAvailable) {
       setIsBuyNowOpen(false);
-      showToast('현재 즉시구매를 진행할 수 없습니다');
+      showToast('즉시구매를 진행할 수 없는 경매입니다');
       return;
     }
     buyNowMutation.mutate({
@@ -277,10 +277,10 @@ const AuctionDetailPage = () => {
               selectedTradeName={selectedTradeName}
               displayedBidAmount={displayedBidAmount}
               holdAgreed={holdAgreed}
-              isAuctionOpen={isAuctionOpen}
-              isBuyNowAvailable={isBuyNowAvailable}
               isBidPending={bidMutation.isPending}
               isBuyNowPending={buyNowMutation.isPending}
+              isAuctionOpen={isAuctionOpen}
+              isBuyNowAvailable={isBuyNowAvailable}
               isFavoritePending={favoriteMutation.isPending || favoriteStatusQuery.isFetching}
               onBidInputChange={handleBidInputChange}
               onQuickAdd={handleQuickAdd}
@@ -315,8 +315,8 @@ const AuctionDetailPage = () => {
         auction={auction}
         selectedTradeName={selectedTradeName}
         holdAgreed={holdAgreed}
-        isBuyNowAvailable={isBuyNowAvailable}
         isPending={buyNowMutation.isPending}
+        isBuyNowAvailable={isBuyNowAvailable}
         onClose={() => setIsBuyNowOpen(false)}
         onConfirm={handleBuyNowConfirm}
       />

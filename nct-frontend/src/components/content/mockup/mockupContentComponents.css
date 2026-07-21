@@ -1,0 +1,88 @@
+.mockup-content-page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 22px;
+  margin-bottom: 24px;
+}
+
+.mockup-content-page-header > div:first-child > span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--color-primary, #0064ff);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* 담당자 7: 담당자 3 경매 화면이 따르는 공통 page-title(28px) 기준에 맞춥니다. */
+.mockup-content-page-header h1 { margin: 0; color: #1a1a18; font-size: 28px; }
+.mockup-content-page-header p { max-width: 720px; margin: 9px 0 0; color: #5f5e5a; line-height: 1.65; }
+
+/* 담당자 7 | F-COM-013: 공개 공지 목록을 카드형에서 행형 리스트로 표시합니다. */
+.notice-list { overflow: hidden; border: 1px solid #f0efec; border-radius: 16px; background: #fff; }
+
+.mockup-notice-row {
+  display: grid;
+  grid-template-columns: 74px 92px minmax(0, 1fr) 96px 64px;
+  align-items: center;
+  min-height: 48px;
+  border-top: 1px solid #f0efec;
+  color: #5f5e5a;
+  font-size: 13px;
+  text-decoration: none;
+  transition: background-color 140ms ease;
+}
+
+.mockup-notice-row:first-child { border-top: 0; }
+.mockup-notice-row:not(.mockup-notice-row--head):hover { background: #fafaf8; }
+.mockup-notice-row.is-important { border-top-color: #f1d6d6; background: #fff6f6; }
+.mockup-notice-row.is-important:hover { background: #ffeded; }
+.mockup-notice-row > span,
+.mockup-notice-row > strong { min-width: 0; padding: 0 12px; }
+.mockup-notice-row__number,
+.mockup-notice-row__date,
+.mockup-notice-row__views { color: #8a94a8; text-align: center; }
+.mockup-notice-row__number,
+.mockup-notice-row__views { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+.mockup-notice-row__number svg,
+.mockup-notice-row__views svg { width: 14px; height: 14px; }
+.mockup-notice-row.is-important .mockup-notice-row__number { color: #bb3e45; font-weight: 800; }
+.mockup-notice-row.is-important .mockup-notice-row__title { color: #942f37; }
+.mockup-notice-row__type { color: var(--color-primary-dark, #0048bf); font-weight: 750; }
+.mockup-notice-row__title { overflow: hidden; color: #1a1a18; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.mockup-notice-row--head { min-height: 36px; border-top: 0; background: #fafaf8; color: #5f5e5a; font-size: 12px; font-weight: 800; text-align: center; }
+.mockup-notice-row--head > span:nth-child(3) { text-align: left; }
+
+@media (max-width: 640px) {
+  .mockup-notice-row { grid-template-columns: 70px minmax(0, 1fr) 82px; min-height: 46px; }
+  .mockup-notice-row__type { display: none; }
+  .mockup-notice-row__title { grid-column: 2; }
+  .mockup-notice-row__date { grid-column: 3; }
+  .mockup-notice-row__views { display: none; }
+  .mockup-notice-row--head { display: none; }
+}
+
+.mockup-guide-flow-card {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  color: #1a1a18;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 140ms ease, transform 140ms ease;
+}
+
+.mockup-guide-flow-card:hover { transform: translateY(-2px); border-color: var(--color-primary, #0064ff); }
+.mockup-guide-flow-card__number { display: inline-flex; width: 42px; height: 42px; align-items: center; justify-content: center; border-radius: 8px; background: var(--color-primary-light, #e5efff); color: var(--color-primary-dark, #0048bf); font-size: 17px; font-weight: 900; }
+.mockup-guide-flow-card__copy { display: grid; gap: 5px; }
+.mockup-guide-flow-card__copy strong { font-size: 16px; }
+.mockup-guide-flow-card__copy small { color: #5f5e5a; font-size: 13px; line-height: 1.5; }
+.mockup-guide-flow-card__action { border-radius: 8px; padding: 8px 10px; background: #f0f0ee; color: #5f5e5a; font-size: 11px; font-weight: 800; white-space: nowrap; }
+
+@media (max-width: 640px) {
+  .mockup-content-page-header { align-items: flex-start; flex-direction: column; }
+  .mockup-guide-flow-card { grid-template-columns: 38px minmax(0, 1fr); }
+  .mockup-guide-flow-card__action { grid-column: 2; justify-self: start; }
+}

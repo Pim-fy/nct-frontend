@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
+import { toImageUrl } from '@api/fileApi';
 import { formatPrice } from '../utils/auctionFormatters';
-
-const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 const formatAuctionCardTimeLabel = (endDateTime, statusCode, statusName) => {
   if (statusCode !== 'AUCC0002') return statusName || '준비';
@@ -21,19 +20,9 @@ const formatAuctionCardTimeLabel = (endDateTime, statusCode, statusName) => {
   return `종료 임박 ${minutes}분`;
 };
 
-const getImageUrl = (path) => {
-  if (!path) return null;
-  if (path.startsWith('http')) return path;
-  return `${BACKEND_URL}${path}`;
-};
-
 const AuctionCard = ({ item }) => {
-  const imageUrl = getImageUrl(item.thumbnailPath);
-  const remainingTime = formatAuctionCardTimeLabel(
-    item.endDateTime,
-    item.auctionStatusCode,
-    item.auctionStatusName,
-  );
+  const imageUrl = toImageUrl(item.thumbnailPath);
+  const remainingTime = formatAuctionCardTimeLabel(item.endDateTime, item.auctionStatusCode, item.auctionStatusName);
   const isEndingSoon = remainingTime.startsWith('종료 임박');
 
   return (

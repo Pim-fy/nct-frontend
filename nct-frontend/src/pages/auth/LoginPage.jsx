@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@hooks/useAuth';
+import BrandLogo from '@components/common/BrandLogo';
 
 // ── 소셜 로그인 버튼 데이터 ──────────────────────────────
 const SOCIAL_PROVIDERS = [
@@ -62,6 +63,8 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe,   setRememberMe]   = useState(false);
   const [loading,      setLoading]      = useState(false);
+  // @ai_generated: F-AUTH-011 - 정지 계정은 로그인이 막혀 있어, alert 대신 탈퇴 요청 경로로 안내한다.
+  const [suspendedLoginId, setSuspendedLoginId] = useState(null);
 
   // ── 일반 로그인 ───────────────────────────────────────
   const handleLogin = async () => {
@@ -84,7 +87,11 @@ export default function LoginPage() {
         navigate(safePath, { replace: true });
       }
     } catch (error) {
-      if (error.response?.status === 401) {
+      // @ai_generated: F-AUTH-011 - ACCOUNT_SUSPENDED만 따로 분기해 탈퇴 요청 버튼이 있는 모달로 안내한다.
+      // WITHDRAWN_USER 등 나머지는 기존 message alert() 그대로 유지.
+      if (error.response?.data?.code === 'ACCOUNT_SUSPENDED') {
+        setSuspendedLoginId(userId);
+      } else if (error.response?.status === 401) {
         alert('아이디 또는 비밀번호가 일치하지 않습니다.');
       } else if (error.response?.data?.message) {
         alert(error.response.data.message);
@@ -103,20 +110,18 @@ export default function LoginPage() {
 
   // ── 소셜 로그인 ───────────────────────────────────────
   const handleSocialLogin = (provider) => {
-    window.location.href = provider.href();
+    window.location.assign(provider.href());
   };
 
   // ── 렌더 ─────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-[440px] bg-white rounded-2xl shadow-lg px-8 py-10">
+      <div className="w-full max-w-110 bg-white rounded-2xl shadow-lg px-8 py-10">
 
         {/* 로고 */}
         <div className="text-center mb-8">
-          <Link to="/">
-            <h1 className="text-4xl font-extrabold text-blue-600 tracking-tight">
-              Ksteam
-            </h1>
+          <Link aria-label="에누리컷 홈" className="inline-flex" to="/">
+            <BrandLogo className="brand-logo--auth" />
           </Link>
         </div>
 
@@ -246,6 +251,35 @@ export default function LoginPage() {
         </div>
 
       </div>
+
+      {/* 정지 계정 안내 모달 (F-AUTH-011) */}
+      {suspendedLoginId && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center px-4 z-50">
+          <div className="w-full max-w-100 bg-white rounded-2xl shadow-lg px-8 py-8 text-center">
+            <div className="w-14 h-14 mx-auto rounded-full bg-red-50 flex items-center justify-center text-2xl mb-4">⚠️</div>
+            <h2 className="text-base font-bold mb-2">정지된 계정입니다</h2>
+            <p className="text-sm text-gray-500 mb-8">
+              관리자에게 문의하시거나, 계속 이용이 어려우시면<br />아래에서 탈퇴를 요청하실 수 있습니다.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setSuspendedLoginId(null)}
+                className="h-11 rounded-lg border border-gray-300 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition"
+              >
+                닫기
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/withdrawal', { state: { loginId: suspendedLoginId } })}
+                className="h-11 rounded-lg border border-red-600 text-red-600 text-sm font-semibold hover:bg-red-50 transition"
+              >
+                탈퇴 요청하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { mapDataToState } from '@utils/common';
 
 const defaultValues = {
   pageTitle   : '',
-  logoText    : 'Ksteam',
+  logoText    : '에누리컷',
   curRegion   : {},
   curRegionEn : '',
   curRegionKr : '',
@@ -19,7 +19,7 @@ const defaultValues = {
     fax             : '02-1234-5679',
     slogan          : '실시간 경매와 생활 서비스를 한 화면에서',
     subSlogan       : '누구나 쉽게 이용하는 C2C 마켓플레이스',
-    copyright       : '© 2026 Ksteam. All rights reserved.',
+    copyright       : '© 2026 에누리컷. All rights reserved.',
     portfolioNotice : '본 사이트는 포트폴리오 목적으로 제작된 프로젝트입니다.',
     devTeam         : [],
   },

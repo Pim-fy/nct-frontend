@@ -8,10 +8,10 @@ const AuctionBidPanel = ({
   selectedTradeName,
   displayedBidAmount,
   holdAgreed,
-  isAuctionOpen,
-  isBuyNowAvailable,
   isBidPending,
   isBuyNowPending,
+  isAuctionOpen,
+  isBuyNowAvailable,
   isFavoritePending,
   onBidInputChange,
   onQuickAdd,
@@ -104,7 +104,7 @@ const AuctionBidPanel = ({
           disabled={!isAuctionOpen || isBidPending}
           onClick={onBidSubmit}
         >
-          {isBidPending ? '입찰 중' : isAuctionOpen ? '입찰하기' : '입찰 종료'}
+          {!isAuctionOpen ? '입찰 종료' : (isBidPending ? '입찰 중' : '입찰하기')}
         </button>
         <button
           className="btn btn-outline"
@@ -115,9 +115,9 @@ const AuctionBidPanel = ({
         >
           {!isAuctionOpen
             ? '즉시구매 종료'
-            : isBuyNowAvailable
+            : (isBuyNowAvailable
               ? `즉시구매 ${formatPrice(auction.instantBuyPrice)}`
-              : '즉시구매 불가'}
+              : '즉시구매 불가')}
         </button>
       </div>
     </div>
