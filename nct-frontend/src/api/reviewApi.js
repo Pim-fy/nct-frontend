@@ -7,16 +7,17 @@ import api from './axios';
 export const getWritableReviews = () =>
   api.get('/reviews/writable').then(res => res.data);
 
-/** 내가 작성한 리뷰 목록 */
-export const getMyReviews = () =>
-  api.get('/reviews/me').then(res => res.data);
+/** 거래 상세의 상대방 신뢰지표를 조회한다. totalScore가 null이면 작성된 리뷰가 없는 상태다. */
+export const getUserReviewTrust = (userId) => (
+  api.get(`/reviews/trust/${userId}`).then(res => res.data)
+);
 
-// axios 인스턴스 기본 헤더가 'Content-Type: application/json'이라, FormData를 보낼 땐
-// multipart로 명시적으로 덮어써야 한다 (안 하면 서버가 파트를 못 읽고 필수 파라미터 누락으로 500)
-// - fileApi.js의 uploadImage와 동일한 이유.
-const MULTIPART_CONFIG = { headers: { 'Content-Type': 'multipart/form-data' } };
+/** 물건·서비스 거래 유형을 구분한 상대방의 받은 리뷰 목록을 페이지 단위로 조회한다. */
+export const getUserReviews = (userId, params) => (
+  api.get(`/reviews/user/${userId}`, { params }).then(res => res.data)
+);
 
-/** 리뷰 등록 (multipart/form-data: targetId, rating, content, photos) */
+/** 리뷰 등록 */
 export const createReview = (data) =>
   api.post('/reviews', data, MULTIPART_CONFIG).then(res => res.data);
 

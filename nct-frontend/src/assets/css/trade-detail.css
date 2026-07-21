@@ -147,6 +147,51 @@
   color: #3e5f9b;
 }
 
+.trade-trust__score {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  color: #4e607a;
+}
+
+.trade-trust__score strong {
+  color: #ff9f1c;
+}
+
+.trade-trust__score span {
+  color: #718098;
+  font-size: 13px;
+}
+
+.trade-trust__reviews {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trade-trust__reviews li {
+  padding-top: 10px;
+  border-top: 1px solid #dbe7ff;
+}
+
+.trade-trust__reviews li > span {
+  color: #ff9f1c;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.trade-trust__reviews p {
+  margin: 4px 0;
+  color: #4e607a;
+}
+
+.trade-trust__reviews small {
+  color: #8893a5;
+}
+
 .trade-warning,
 .trade-auto-complete {
   border: 1px solid #fde4b4;
@@ -375,6 +420,76 @@
 
 .trade-proof-upload-area {
   margin-top: 16px;
+}
+
+.trade-proof-list {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trade-proof-list__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid #e3e9f5;
+  border-radius: 12px;
+  background: #fbfcff;
+}
+
+.trade-proof-list__item img {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.trade-proof-list__item div {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 4px;
+}
+
+.trade-proof-list__item strong {
+  overflow: hidden;
+  color: #344054;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-proof-list__item span {
+  color: #16794c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.trade-delivery-proof-gallery {
+  margin-top: 16px;
+}
+
+.trade-delivery-proof-gallery > strong {
+  color: #344054;
+  font-size: 13px;
+}
+
+.trade-delivery-proof-gallery > div {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.trade-delivery-proof-gallery img {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid #e3e9f5;
+  border-radius: 10px;
+  object-fit: cover;
 }
 
 .trade-proof-upload {

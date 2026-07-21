@@ -6,6 +6,7 @@ const AuctionBuyNowModal = ({
   selectedTradeName,
   holdAgreed,
   isPending,
+  isBuyNowAvailable,
   onClose,
   onConfirm,
 }) => (
@@ -29,10 +30,10 @@ const AuctionBuyNowModal = ({
             className="btn btn-primary"
             id="buyNowConfirmBtn"
             type="button"
-            disabled={isPending}
+            disabled={!isBuyNowAvailable || isPending}
             onClick={onConfirm}
           >
-            {isPending ? '처리 중' : '확정'}
+            {!isBuyNowAvailable ? '구매 불가' : (isPending ? '처리 중' : '확정')}
           </button>
         </div>
       </div>
