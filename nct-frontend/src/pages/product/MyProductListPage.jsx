@@ -64,7 +64,7 @@ export default function MyProductListPage() {
   const fetchProducts = useCallback(() => {
     setLoading(true);
     setError('');
-    getMyProducts(page, size)
+    getMyProducts(page, size, filter === 'all' ? null : filter)
       .then(res => {
         const { list, totalPages: tp } = res.data;
         setProducts(list);
@@ -72,7 +72,7 @@ export default function MyProductListPage() {
       })
       .catch(() => setError('목록을 불러오지 못했습니다.'))
       .finally(() => setLoading(false));
-  }, [page, size, setTotalPages]);
+  }, [page, size, filter, setTotalPages]);
 
   useEffect(() => {
     fetchProducts();
@@ -94,11 +94,11 @@ export default function MyProductListPage() {
     }
   };
 
-  // ─── 필터링 ─────────────────────────────────────────────────────────────
-  // 전체 선택 시 서버에서 받은 전체 목록, 그 외는 상태 코드로 클라이언트 필터
-  const filtered = filter === 'all'
-    ? products
-    : products.filter(p => p.prdStatusCd === filter);
+  // ─── 필터 변경 ──────────────────────────────────────────────────────────
+  const handleFilterChange = (value) => {
+    setFilter(value);
+    goToPage(1);
+  };
 
   // ─── 렌더링 ─────────────────────────────────────────────────────────────
   // loading → 전체 빈 목록 → 목록+필터 3-way 분기
@@ -124,7 +124,7 @@ export default function MyProductListPage() {
 
       {loading ? (
         <ListSkeleton />
-      ) : products.length === 0 ? (
+      ) : filter === 'all' && products.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '64px 0' }}>
           <p className="muted" style={{ marginBottom: 16 }}>등록한 상품이 없습니다.</p>
           <button onClick={() => navigate('/product/register')} className="btn btn-primary">
@@ -140,7 +140,7 @@ export default function MyProductListPage() {
                 <button
                   key={f.value}
                   type="button"
-                  onClick={() => setFilter(f.value)}
+                  onClick={() => handleFilterChange(f.value)}
                   className={`chip ${filter === f.value ? 'active' : ''}`}
                 >
                   {f.label}
@@ -150,9 +150,9 @@ export default function MyProductListPage() {
           </div>
 
           <div className="history-list">
-            {filtered.length === 0 ? (
+            {products.length === 0 ? (
               <p className="muted small" style={{ padding: '24px 0' }}>해당 상태의 상품이 없습니다.</p>
-            ) : filtered.map(p => (
+            ) : products.map(p => (
               <div key={p.prdSn} className="list-row">
                 <div className="history-entry-main">
                   {/* 이미지 (F-AUC-002) — 대표이미지 없으면 빈 placeholder 유지 */}

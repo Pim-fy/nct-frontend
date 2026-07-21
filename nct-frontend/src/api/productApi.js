@@ -11,8 +11,8 @@ export const registerProduct = (data) =>
   api.post('/products', data).then(res => res.data);
 
 /** 내 판매 목록 */
-export const getMyProducts = (page = 1, size = 10) =>
-  api.get('/products/me', { params: { page, size } }).then(res => res.data);
+export const getMyProducts = (page = 1, size = 10, prdStatusCd = null) =>
+  api.get('/products/me', { params: { page, size, ...(prdStatusCd ? { prdStatusCd } : {}) } }).then(res => res.data);
 
 /** 상품 상세 조회 */
 export const getProduct = (prdSn) =>
