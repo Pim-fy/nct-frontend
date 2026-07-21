@@ -8,8 +8,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCategories } from '@api/categoryApi';
-import { registerProduct } from '@api/productApi';
+import { fetchBannedKeywords, registerProduct } from '@api/productApi';
 import { deleteImage, toImageUrl, uploadImage } from '@api/fileApi';
+import Breadcrumb from '@components/common/Breadcrumb';
+import ErrorMessage from '@components/common/ErrorMessage';
 
 // ─── 거래방식 아이콘 SVG 컴포넌트 ───────────────────────────────────────────
 // deal-options(.line-option) 버튼 안에 표시되는 아이콘
@@ -34,8 +36,7 @@ const BothIcon = () => (
 const TRADE_METHODS = [
   { value: 'TRDC0009', label: '배송만',    Icon: TruckIcon },
   { value: 'TRDC0010', label: '직거래만',  Icon: PinIcon },
-  // TODO: 공통코드 확인 후 실제 코드값으로 교체
-  { value: 'TRDC0011', label: '둘 다 가능', Icon: BothIcon },
+  { value: 'TRDC0020', label: '둘 다 가능', Icon: BothIcon },
 ];
 
 const DURATION_DAYS = [1, 3, 5, 7];
@@ -61,13 +62,15 @@ export default function ProductRegisterPage() {
   const [images, setImages] = useState([]);                // 업로드 완료된 이미지 [{ flSn, url }] — 첫 번째가 대표
   const [imageUploading, setImageUploading] = useState(false);
   const fileInputRef = useRef(null);
+  const [bannedKeywords, setBannedKeywords] = useState([]);
+  const [bannedKeywordError, setBannedKeywordError] = useState('');
 
   // ─── 폼 입력값 ───────────────────────────────────────────────────────────
   const [form, setForm] = useState({
     catSn: '',
     prdNm: '',
     prdCn: '',
-    prdTrdMethodCd: 'TRDC0011',
+    prdTrdMethodCd: 'TRDC0009',
     prdStartAmt: '',
     prdIbyAmt: '',
     durationDays: 3,
@@ -85,7 +88,20 @@ export default function ProductRegisterPage() {
         setCategories(children);
       })
       .catch(() => setError('카테고리를 불러오지 못했습니다.'));
+    fetchBannedKeywords()
+      .then(setBannedKeywords)
+      .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!form.prdNm || bannedKeywords.length === 0) {
+      setBannedKeywordError('');
+      return;
+    }
+    const lower = form.prdNm.toLowerCase();
+    const found = bannedKeywords.find(kwd => lower.includes(kwd.toLowerCase()));
+    setBannedKeywordError(found ? `'${found}'은(는) 등록할 수 없는 키워드입니다.` : '');
+  }, [form.prdNm, bannedKeywords]);
 
   // ─── 폼 필드 단일 업데이트 헬퍼 ─────────────────────────────────────────
   const set = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
@@ -193,6 +209,7 @@ export default function ProductRegisterPage() {
         // 임시저장(PRDC0001)이면 경매 일정 없음 → 둘 다 null, 경매 등록(PRDC0002)이면 시작·종료일시 전송
         aucStartDt:     isDraft ? null : startDt.toISOString(),
         aucEndDt:       isDraft || !endDt ? null : endDt.toISOString(),
+        bidUnit:        isDraft ? null : form.bidUnit,
       };
       await registerProduct(payload);
       navigate('/product/me');
@@ -210,6 +227,10 @@ export default function ProductRegisterPage() {
     if (step === 0) {
       if (!form.prdNm.trim() || !form.catSn || !form.prdTrdMethodCd) {
         setError('상품명, 카테고리, 거래방식을 모두 입력해 주세요.');
+        return;
+      }
+      if (bannedKeywordError) {
+        setError(bannedKeywordError);
         return;
       }
     }
@@ -240,6 +261,7 @@ export default function ProductRegisterPage() {
   // ─── 렌더링 ─────────────────────────────────────────────────────────────
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
+      <Breadcrumb items={[{ label: '홈', href: '/' }, { label: '상품 등록' }]} />
       <div className="page-title"><div><h1>상품 등록</h1></div></div>
 
       <section className="card" style={{ maxWidth: 900, margin: '0 auto' }}>
@@ -255,11 +277,7 @@ export default function ProductRegisterPage() {
           ))}
         </div>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm" style={{ maxWidth: 720, margin: '0 auto 16px' }}>
-            {error}
-          </div>
-        )}
+        <ErrorMessage message={error} />
 
         {/* ── Step 0: 상품정보 ── */}
         {step === 0 && (
@@ -274,6 +292,11 @@ export default function ProductRegisterPage() {
                 maxLength={100}
                 placeholder="다이슨 V11 청소기"
               />
+              {bannedKeywordError && (
+                <p className="field-error" style={{ color: 'var(--color-danger, #e53e3e)', fontSize: 13, marginTop: 4 }}>
+                  {bannedKeywordError}
+                </p>
+              )}
             </div>
 
             <div className="row" style={{ marginBottom: 14 }}>
