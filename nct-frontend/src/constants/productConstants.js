@@ -1,4 +1,22 @@
 // 상품(PRODUCT) 관련 공통 상수 — ProductRegisterPage / MyProductListPage / ProductDetailSellerPage 공유
+// F-AUC-005 거래 상태(TRDC) 라벨·배지 — 정민재(4) 연계
+export const TRADE_STATUS_LABEL = {
+  TRDC0003: '거래 진행중',
+  TRDC0004: '배송중',
+  TRDC0005: '구매자 확인 대기',
+  TRDC0006: '거래 완료',
+  TRDC0007: '거래 보류/분쟁',
+  TRDC0008: '거래 취소',
+};
+
+export const TRADE_STATUS_BADGE = {
+  TRDC0003: 'badge-warning',
+  TRDC0004: 'badge-success',
+  TRDC0005: 'badge-warning',
+  TRDC0006: 'badge-gray',
+  TRDC0007: 'badge-danger',
+  TRDC0008: 'badge-danger',
+};
 
 export const TRADE_LABEL = {
   TRDC0009: '배송만',

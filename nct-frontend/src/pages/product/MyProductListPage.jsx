@@ -8,7 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { deleteProduct, getMyProducts } from '@api/productApi';
 import { toImageUrl } from '@api/fileApi';
-import { TRADE_LABEL, STATUS_LABEL, STATUS_BADGE } from '@/constants/productConstants';
+import { TRADE_LABEL, STATUS_LABEL, STATUS_BADGE, TRADE_STATUS_LABEL, TRADE_STATUS_BADGE } from '@/constants/productConstants';
 import Pagination from '@components/common/Pagination';
 import { usePagination } from '@hooks/usePagination';
 import Breadcrumb from '@components/common/Breadcrumb';
@@ -161,7 +161,11 @@ export default function MyProductListPage() {
                   <div className="history-row-title">
                     <div className="row" style={{ gap: 6 }}>
                       <span className="badge badge-goods">판매</span>
-                      {p.aucStatusCd ? (
+                      {p.tradeSn ? (
+                        <span className={`badge ${TRADE_STATUS_BADGE[p.tradeStatusCd] ?? 'badge-gray'}`}>
+                          {TRADE_STATUS_LABEL[p.tradeStatusCd] ?? p.tradeStatusCd}
+                        </span>
+                      ) : p.aucStatusCd ? (
                         <span className={`badge ${AUC_STATUS_BADGE[p.aucStatusCd] ?? 'badge-gray'}`}>
                           경매 {AUC_STATUS_LABEL[p.aucStatusCd] ?? p.aucStatusCd}
                         </span>
