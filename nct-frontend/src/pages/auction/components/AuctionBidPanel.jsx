@@ -8,6 +8,8 @@ const AuctionBidPanel = ({
   selectedTradeName,
   displayedBidAmount,
   holdAgreed,
+  isAuctionOpen,
+  isBuyNowAvailable,
   isBidPending,
   isBuyNowPending,
   isFavoritePending,
@@ -58,15 +60,16 @@ const AuctionBidPanel = ({
             type="text"
             inputMode="numeric"
             value={displayedBidAmount}
+            disabled={!isAuctionOpen}
             onChange={onBidInputChange}
           />
         </div>
 
         <div className="quick-row">
-          <button className="chip quick" type="button" data-add="5000" onClick={() => onQuickAdd(5000)}>+5천</button>
-          <button className="chip quick" type="button" data-add="10000" onClick={() => onQuickAdd(10000)}>+1만</button>
-          <button className="chip quick" type="button" data-add="30000" onClick={() => onQuickAdd(30000)}>+3만</button>
-          <button className="chip quick" type="button" data-add="50000" onClick={() => onQuickAdd(50000)}>+5만</button>
+          <button className="chip quick" type="button" data-add="5000" disabled={!isAuctionOpen} onClick={() => onQuickAdd(5000)}>+5천</button>
+          <button className="chip quick" type="button" data-add="10000" disabled={!isAuctionOpen} onClick={() => onQuickAdd(10000)}>+1만</button>
+          <button className="chip quick" type="button" data-add="30000" disabled={!isAuctionOpen} onClick={() => onQuickAdd(30000)}>+3만</button>
+          <button className="chip quick" type="button" data-add="50000" disabled={!isAuctionOpen} onClick={() => onQuickAdd(50000)}>+5만</button>
         </div>
 
         <p className="hint">현재가+{bidUnitPrice.toLocaleString('ko-KR')}원 이상 입력</p>
@@ -88,6 +91,7 @@ const AuctionBidPanel = ({
           id="holdAgree"
           type="checkbox"
           checked={holdAgreed}
+          disabled={!isAuctionOpen}
           onChange={(event) => onHoldAgreedChange(event.target.checked)}
         /> 포인트 홀딩에 동의합니다
       </label>
@@ -97,19 +101,23 @@ const AuctionBidPanel = ({
           className="btn btn-primary"
           id="bidBtn"
           type="button"
-          disabled={isBidPending}
+          disabled={!isAuctionOpen || isBidPending}
           onClick={onBidSubmit}
         >
-          {isBidPending ? '입찰 중' : '입찰하기'}
+          {isBidPending ? '입찰 중' : isAuctionOpen ? '입찰하기' : '입찰 종료'}
         </button>
         <button
           className="btn btn-outline"
           id="buyNowBtn"
           type="button"
-          disabled={isBuyNowPending}
+          disabled={!isBuyNowAvailable || isBuyNowPending}
           onClick={onBuyNowOpen}
         >
-          즉시구매 {formatPrice(auction.instantBuyPrice)}
+          {!isAuctionOpen
+            ? '즉시구매 종료'
+            : isBuyNowAvailable
+              ? `즉시구매 ${formatPrice(auction.instantBuyPrice)}`
+              : '즉시구매 불가'}
         </button>
       </div>
     </div>
