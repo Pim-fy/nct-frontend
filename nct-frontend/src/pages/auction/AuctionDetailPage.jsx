@@ -11,6 +11,7 @@ import {
 } from '@api/auctionApi';
 import { useAuth } from '@hooks/useAuth';
 import useCountdown from '@hooks/useCountdown';
+import { usePointBalance } from '@hooks/usePoint';
 import AuctionBidPanel from './components/AuctionBidPanel';
 import AuctionBuyNowModal from './components/AuctionBuyNowModal';
 import AuctionDetailModal from './components/AuctionDetailModal';
@@ -29,7 +30,7 @@ import '@assets/css/auction.css';
 const AuctionDetailPage = () => {
   const { auctionId } = useParams();
   const queryClient = useQueryClient();
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [bidAmount, setBidAmount] = useState('');
   const [holdAgreed, setHoldAgreed] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -48,6 +49,13 @@ const AuctionDetailPage = () => {
     queryFn: () => fetchAuctionDetail(auctionId),
     enabled: Boolean(auctionId),
   });
+  const authenticatedUserId = user?.id ?? user?.userId ?? user?.userSn ?? user?.usrSn;
+  const isOwnAuction = authenticatedUserId != null
+    && auction?.sellerId != null
+    && String(authenticatedUserId) === String(auction.sellerId);
+  const pointBalanceQuery = usePointBalance({
+    enabled: Boolean(isAuthenticated && auction && !isOwnAuction),
+  });
   const favoriteStatusQuery = useQuery({
     queryKey: ['auctionFavoriteStatus', auctionId],
     queryFn: () => fetchAuctionFavoriteStatus(auctionId),
@@ -64,8 +72,15 @@ const AuctionDetailPage = () => {
   const getErrorMessage = (error) => error?.response?.data?.message || '요청 처리 중 오류가 발생했습니다';
   const handleMutationSuccess = (updatedAuction) => {
     queryClient.setQueryData(detailQueryKey, updatedAuction);
+    queryClient.invalidateQueries({ queryKey: ['point', 'balance'] });
     setBidAmount('');
     setHoldAgreed(false);
+  };
+  const handleAuctionMutationError = (error) => {
+    if (error?.response?.data?.code === 'POINT_INSUFFICIENT') {
+      queryClient.invalidateQueries({ queryKey: ['point', 'balance'] });
+    }
+    showToast(getErrorMessage(error));
   };
   const applyFavoriteStatus = useCallback((status) => {
     queryClient.setQueryData(detailQueryKey, (prev) => {
@@ -84,7 +99,7 @@ const AuctionDetailPage = () => {
       handleMutationSuccess(updatedAuction);
       showToast('입찰이 등록되었습니다');
     },
-    onError: (error) => showToast(getErrorMessage(error)),
+    onError: handleAuctionMutationError,
   });
   const buyNowMutation = useMutation({
     mutationFn: (payload) => buyNowAuction(auctionId, payload),
@@ -93,7 +108,7 @@ const AuctionDetailPage = () => {
       setIsBuyNowOpen(false);
       showToast('즉시구매가 완료되었습니다');
     },
-    onError: (error) => showToast(getErrorMessage(error)),
+    onError: handleAuctionMutationError,
   });
   const favoriteMutation = useMutation({
     mutationFn: () => (auction?.favorite
@@ -166,10 +181,24 @@ const AuctionDetailPage = () => {
     : null;
   const isAuctionOpen = auction.auctionStatusCode === 'AUCC0002'
     && (auctionEndTimestamp === null || auctionEndTimestamp > now);
-  const isBuyNowAvailable = isAuctionOpen && Number(auction.instantBuyPrice || 0) > 0;
+  const isBuyNowAvailable = isAuctionOpen
+    && !isOwnAuction
+    && Number(auction.instantBuyPrice || 0) > 0;
+  const isCurrentHighestBidder = Boolean(auction.currentHighestBidder);
   const selectedTradeValue = auction.tradeMethodCode || '';
   const selectedTradeName = auction.tradeMethodName || '거래 방식 미정';
   const displayedBidAmount = bidAmount || formatNumber(minimumBidPrice);
+  const requestedBidAmount = parseAmount(displayedBidAmount);
+  const instantBuyPrice = Number(auction.instantBuyPrice || 0);
+  const availablePointValue = pointBalanceQuery.data?.available;
+  const availablePoint = availablePointValue == null ? null : Number(availablePointValue);
+  const hasAvailablePoint = Number.isFinite(availablePoint);
+  const isBidPointSufficient = !hasAvailablePoint || availablePoint >= requestedBidAmount;
+  const isBuyNowPointSufficient = !hasAvailablePoint || availablePoint >= instantBuyPrice;
+  const isPointBalanceLoading = isAuthenticated
+    && !hasAvailablePoint
+    && pointBalanceQuery.isLoading;
+  const isPointBalanceError = isAuthenticated && pointBalanceQuery.isError;
   const sellerSummary = `${auction.sellerName || '판매자'} · ${selectedTradeName}`;
   const detailModalContent = detailModalKey === 'seller'
     ? {
@@ -192,17 +221,33 @@ const AuctionDetailPage = () => {
   const handleBidInputChange = (event) => setBidAmount(formatNumber(parseAmount(event.target.value)));
   const handleQuickAdd = (amount) => setBidAmount((value) => formatNumber(parseAmount(value || displayedBidAmount) + amount));
   const handleBidSubmit = () => {
+    if (!isAuthenticated) {
+      showToast('로그인 후 입찰할 수 있습니다');
+      return;
+    }
+    if (isOwnAuction) {
+      showToast('본인이 등록한 경매에는 입찰할 수 없습니다');
+      return;
+    }
+    if (isCurrentHighestBidder) {
+      showToast('현재 최고입찰자입니다');
+      return;
+    }
     if (!isAuctionOpen) {
       showToast('종료된 경매에는 입찰할 수 없습니다');
       return;
     }
-    const amount = parseAmount(displayedBidAmount);
-    if (!holdAgreed) {
-      showToast('포인트 홀딩 동의가 필요합니다');
-      return;
-    }
+    const amount = requestedBidAmount;
     if (amount < minimumBidPrice) {
       showToast(`최소 ${formatPrice(minimumBidPrice)} 이상 입력해 주세요`);
+      return;
+    }
+    if (hasAvailablePoint && availablePoint < amount) {
+      showToast(`사용 가능 포인트가 부족합니다. 필요 ${formatNumber(amount)}P, 보유 ${formatNumber(availablePoint)}P`);
+      return;
+    }
+    if (!holdAgreed) {
+      showToast('포인트 홀딩 동의가 필요합니다');
       return;
     }
     bidMutation.mutate({
@@ -211,12 +256,24 @@ const AuctionDetailPage = () => {
     });
   };
   const handleBuyNowOpen = () => {
+    if (!isAuthenticated) {
+      showToast('로그인 후 즉시구매할 수 있습니다');
+      return;
+    }
+    if (isOwnAuction) {
+      showToast('본인이 등록한 경매는 즉시구매할 수 없습니다');
+      return;
+    }
     if (!isAuctionOpen) {
       showToast('종료된 경매에는 즉시구매할 수 없습니다');
       return;
     }
     if (!isBuyNowAvailable) {
       showToast('즉시구매가 제공되지 않는 경매입니다');
+      return;
+    }
+    if (hasAvailablePoint && availablePoint < instantBuyPrice) {
+      showToast(`사용 가능 포인트가 부족합니다. 필요 ${formatNumber(instantBuyPrice)}P, 보유 ${formatNumber(availablePoint)}P`);
       return;
     }
     if (!holdAgreed) {
@@ -229,6 +286,11 @@ const AuctionDetailPage = () => {
     if (!isBuyNowAvailable) {
       setIsBuyNowOpen(false);
       showToast('즉시구매를 진행할 수 없는 경매입니다');
+      return;
+    }
+    if (hasAvailablePoint && availablePoint < instantBuyPrice) {
+      setIsBuyNowOpen(false);
+      showToast(`사용 가능 포인트가 부족합니다. 필요 ${formatNumber(instantBuyPrice)}P, 보유 ${formatNumber(availablePoint)}P`);
       return;
     }
     buyNowMutation.mutate({
@@ -280,7 +342,16 @@ const AuctionDetailPage = () => {
               isBidPending={bidMutation.isPending}
               isBuyNowPending={buyNowMutation.isPending}
               isAuctionOpen={isAuctionOpen}
+              isOwnAuction={isOwnAuction}
+              isCurrentHighestBidder={isCurrentHighestBidder}
               isBuyNowAvailable={isBuyNowAvailable}
+              isAuthenticated={isAuthenticated}
+              availablePoint={availablePoint}
+              hasAvailablePoint={hasAvailablePoint}
+              isPointBalanceLoading={isPointBalanceLoading}
+              isPointBalanceError={isPointBalanceError}
+              isBidPointSufficient={isBidPointSufficient}
+              isBuyNowPointSufficient={isBuyNowPointSufficient}
               isFavoritePending={favoriteMutation.isPending || favoriteStatusQuery.isFetching}
               onBidInputChange={handleBidInputChange}
               onQuickAdd={handleQuickAdd}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, RotateCcw, Search, SlidersHorizontal } from 'lucide-react';
+import { RotateCcw, Search, SlidersHorizontal } from 'lucide-react';
 import { fetchAuctions } from '@api/auctionApi';
 import {
   AUCTION_CATEGORIES,
@@ -302,10 +302,6 @@ const AuctionListPage = () => {
         </div>
       </main>
 
-      <Link className="auction-register-fab" to="/product/register" aria-label="경매 등록">
-        <Plus size={20} />
-        <span>경매 등록</span>
-      </Link>
     </div>
   );
 };

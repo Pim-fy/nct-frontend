@@ -104,23 +104,25 @@ const RECENT_QUOTE_ITEMS = [
 
 function StatCard({ color, icon, label, value, unit, meta }) {
   return (
-    <div className="relative rounded-[10px] text-white p-3" style={{ backgroundColor: color }}>
+    <div className="relative rounded-[10px] text-white p-3  mb-5 mt-5" style={{ backgroundColor: color }}>
       <button
         type="button"
         onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
-        className="absolute right-4 top-4 bg-transparent border-none cursor-pointer text-white text-[20px] font-bold leading-none"
+        className="absolute right-4 top-4 bg-transparent border-none cursor-pointer text-white text-[20px] font-bold leading-none "
         aria-label={`${label} 더보기`}
       >
         +
       </button>
-      <div className="flex items-start gap-3 mb-3">
-        <img src={icon} alt="" className="size-[40px] object-contain shrink-0 mt-0.5" />
-        <div className="min-w-0 pr-6">
-          <p className="font-bold text-[13px] opacity-90 leading-tight">{label}</p>
-          <p className="font-bold text-[24px] leading-tight mt-0.5">{value}{unit}</p>
+      <div className=" gap-3 p-2">
+        <div className="flex items-start mb-3">
+          <img src={icon} alt="" className="size-[40px] object-contain shrink-0 mt-0.5" />
+          <div className="min-w-0 pr-6 pl-3">
+            <p className="font-bold opacity-90 leading-tight">{label}</p>
+            <p className="font-bold text-[30px] leading-tight mt-0.5">{value}{unit}</p>
+          </div>
         </div>
+        <p className="opacity-80 truncate">{meta}</p>
       </div>
-      <p className="text-[11px] opacity-80 truncate">{meta}</p>
     </div>
   );
 }
@@ -131,12 +133,12 @@ function TaskCard({ title, desc, action }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-bold text-[15px] text-[#3a3a3a] truncate">{title}</p>
-          <p className="text-[12px] leading-[18px] text-[#555] mt-1 line-clamp-2">{desc}</p>
+          <p className="text-[14px] leading-[18px] text-[#555] mt-1 line-clamp-2">{desc}</p>
         </div>
         <button
           type="button"
           onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
-          className="shrink-0 flex h-[28px] items-center gap-1.5 rounded-[5px] border border-[#4e4e4e] bg-white px-2.5 text-[12px] text-[#4e4e4e] cursor-pointer hover:bg-[#f5f5f5] transition-colors whitespace-nowrap"
+          className="shrink-0 flex h-[28px] items-center gap-1.5 rounded-[5px] border border-[#4e4e4e] bg-white px-2.5 text-[14px] text-[#4e4e4e] cursor-pointer hover:bg-[#f5f5f5] transition-colors whitespace-nowrap"
         >
           <img src={action === "chat" ? assets.iconChat : assets.iconReport} alt="" className="size-[11px]" />
           {action === "chat" ? "채팅" : "견적"}
@@ -162,18 +164,18 @@ function CompactListPanel({ title, items }) {
       </div>
       <div className="divide-y divide-[#e5e5e5]">
         {items.map((item) => (
-          <div key={item.title} className="flex items-start gap-4 p-4">
+          <div key={item.title} className="flex items-start gap-4 p-5">
             <div className="size-[72px] shrink-0 rounded-[5px] border border-[#d9d9d9] overflow-hidden">
               <img alt={item.title} className="size-full object-cover" src={item.thumbnail} />
             </div>
             <div className="flex-1 min-w-0">
               <span
-                className="inline-flex h-[22px] rounded-full border items-center px-2.5 text-[12px] whitespace-nowrap mb-1"
+                className="inline-flex h-[22px] rounded-full border items-center px-2.5 whitespace-nowrap mb-1"
                 style={{ borderColor: item.badge.color, color: item.badge.color }}
               >
                 {item.badge.label}
               </span>
-              <p className="font-bold text-[14px] text-black truncate">{item.title}</p>
+              <p className="font-bold text-black truncate">{item.title}</p>
               {item.meta && (
                 <p className="text-[12px] text-[#4e4e4e] truncate mt-0.5">{item.meta}</p>
               )}
@@ -181,7 +183,7 @@ function CompactListPanel({ title, items }) {
             <button
               type="button"
               onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
-              className="shrink-0 flex h-[28px] items-center gap-1 rounded-[5px] border border-[#969696] bg-white px-3 text-[12px] text-[#969696] cursor-pointer hover:bg-[#f5f5f5] transition-colors whitespace-nowrap"
+              className="shrink-0 flex h-[28px] items-center gap-1 rounded-[5px] border border-[#969696] bg-white px-3 text-[#969696] cursor-pointer hover:bg-[#f5f5f5] transition-colors whitespace-nowrap"
             >
               더보기 ›
             </button>
@@ -210,11 +212,11 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral }) {
               <span className="inline-block size-[8px] rounded-full bg-[#2ecc71]" />
               {nickname}님
             </p>
-            <p className="text-[13px] text-[#969696] mt-0.5">{email}</p>
+            <p className="text-[14px] text-[#969696] mt-0.5">{email}</p>
             <div className="flex gap-2 mt-2">
               <button
                 type="button"
-                className="h-[30px] px-3 rounded-full border border-[#d9d9d9] bg-white text-[#4e4e4e] text-[12px] cursor-pointer hover:bg-[#f5f5f5] transition-colors flex items-center gap-1.5"
+                className="h-[30px] px-3 rounded-full border border-[#d9d9d9] bg-white text-[#4e4e4e] text-[14px] cursor-pointer hover:bg-[#f5f5f5] transition-colors flex items-center gap-1.5"
               >
                 <img src={assets.iconLogout} alt="" className="size-[12px]" />
                 로그아웃
@@ -222,7 +224,7 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral }) {
               <button
                 type="button"
                 onClick={onSwitchToGeneral}
-                className="h-[30px] px-3 rounded-full border border-[#d9d9d9] bg-white text-[#4e4e4e] text-[12px] cursor-pointer hover:bg-[#f5f5f5] transition-colors flex items-center gap-1.5"
+                className="h-[30px] px-3 rounded-full border border-[#d9d9d9] bg-white text-[#4e4e4e] text-[14px] cursor-pointer hover:bg-[#f5f5f5] transition-colors flex items-center gap-1.5"
               >
                 <img src={assets.iconSwitch1} alt="" className="size-[10px]" />
                 일반 전환
@@ -232,19 +234,19 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral }) {
         </div>
 
         {/* 안읽은 알림 배너 */}
-        <div className="flex-1 min-w-0 min-h-[40px] rounded-[20px] border border-[rgba(0,100,255,0.28)] bg-white flex items-center px-4 gap-2 overflow-hidden">
-          <span className="flex items-center justify-center size-[18px] rounded-full bg-[#0064ff] text-white text-[11px] font-bold shrink-0">
+        <div className="flex-1 min-w-0 min-h-[45px] rounded-[25px] border border-[rgba(0,100,255,0.28)] bg-white flex items-center px-4 gap-2 overflow-hidden">
+          <span className="flex items-center justify-center size-[18px] rounded-full bg-[#0064ff] text-white text-[13px] font-bold shrink-0">
             3
           </span>
-          <span className="font-bold text-[13px] text-[#404040] shrink-0">안읽은 알림</span>
-          <span className="hidden sm:flex items-center gap-1 text-[12px] text-[#404040] ml-2 truncate">
+          <span className="font-bold text-[16px] text-[#404040] shrink-0">안읽은 알림</span>
+          <span className="hidden sm:flex items-center gap-1 text-[14px] text-[#404040] ml-2 truncate">
             <span className="text-[7px]">▶</span>
             입찰가가 갱신되었습니다.
           </span>
           <button
             type="button"
             onClick={() => navigate("/user/notification")}
-            className="ml-auto bg-transparent border-none cursor-pointer font-bold text-[14px] text-[#404040] shrink-0"
+            className="ml-auto bg-transparent border-none cursor-pointer font-bold text-[#404040] shrink-0"
           >
             +
           </button>
@@ -265,7 +267,7 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral }) {
         </div>
         {TODAY_TASKS.length === 0 ? (
           <div className="flex items-center justify-center py-10">
-            <p className="text-[15px] text-[#969696]">오늘 확인할 일이 없습니다.</p>
+            <p className="text-[16px] text-[#969696]">오늘 확인할 일이 없습니다.</p>
           </div>
         ) : (
           <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -284,14 +286,14 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral }) {
             <button
               type="button"
               onClick={() => navigate("/user/settlement")}
-              className="h-[38px] px-4 rounded-[5px] bg-primary text-white text-[14px] cursor-pointer hover:bg-[#0048bf] transition-colors"
+              className="h-[38px] px-4 rounded-[5px] bg-primary text-white cursor-pointer hover:bg-[#0048bf] transition-colors"
             >
               정산관리
             </button>
             <button
               type="button"
               onClick={() => navigate("/user/settlement")}
-              className="h-[38px] px-4 rounded-[5px] border border-primary bg-white text-primary text-[14px] cursor-pointer hover:bg-[#f0f6ff] transition-colors"
+              className="h-[38px] px-4 rounded-[5px] border border-primary bg-white text-primary cursor-pointer hover:bg-[#f0f6ff] transition-colors"
             >
               정산 계좌 확인
             </button>
@@ -304,7 +306,7 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral }) {
                 <span className="font-bold text-[15px] text-[#3a3a3a]">{stat.label}</span>
                 <span className="font-bold text-[20px] text-[#3a3a3a]">{stat.value}</span>
               </div>
-              <p className="text-[12px] text-[#555] mt-1">{stat.desc}</p>
+              <p className="text-[14px] text-[#555] mt-1">{stat.desc}</p>
             </div>
           ))}
         </div>
