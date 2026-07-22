@@ -6,6 +6,7 @@
 //   절대좌표 포팅(ScaledStage) 대신 SignupPage.jsx 와 같은 방식(시맨틱 Tailwind + 실제 상태관리)을 따랐다.
 import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Camera, X } from "lucide-react";
 import StarRating from "@components/review/StarRating";
 import { createReview } from "@api/reviewApi";
@@ -23,6 +24,7 @@ export default function ReviewWritePage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   // 목록 페이지에서 navigate(..., { state: { item } }) 로 넘겨준 리뷰 대상 정보.
   // 새로고침 등으로 state 가 없으면(직접 URL 접근) 대상 정보를 알 수 없으므로 안내만 보여준다.
   const item = location.state?.item;
@@ -100,20 +102,9 @@ export default function ReviewWritePage() {
     try {
       await createReview(formData);
       toast({ icon: "success", title: "리뷰가 등록되었습니다." });
-      // TODO: 리뷰 목록 GET API가 아직 없어(reviewApi.getReviews 미연동), 방금 등록한 리뷰를
-      // location.state로 들려 보내서 목록 화면이 새로고침 없이 바로 반영하게 한다.
-      navigate("/user/reviews", {
-        state: {
-          newReview: {
-            id: item.id,
-            thumbnail: item.thumbnail,
-            title: item.title,
-            dealType: item.dealType,
-            rating,
-            content,
-          },
-        },
-      });
+      // 목록 화면의 캐시를 무효화해 다음에 보일 때 방금 등록한 리뷰까지 실제 API로 다시 불러오게 한다.
+      await queryClient.invalidateQueries({ queryKey: ["reviews"] });
+      navigate("/user/reviews", { state: { justWrote: true } });
     } catch (err) {
       console.error("리뷰 등록 실패:", err);
       toast({ icon: "error", title: "리뷰 등록에 실패했습니다. 잠시 후 다시 시도해주세요." });

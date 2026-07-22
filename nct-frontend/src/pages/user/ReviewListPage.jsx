@@ -7,93 +7,71 @@
 //   Figma 프레임의 HEADER/FOOTER 구간은 그대로 옮기지 않고, CONTENTS 구간만 구현한다.
 // - 절대좌표(1920px 고정) 포팅 + ScaledStage 로 스케일링하는 방식은
 //   @components/landing/sections 의 기존 포팅 방식을 그대로 따른 것이다.
+// - GET /api/reviews/writable, /me 연동 완료 (useReview.js). 생성/수정은 각각 ReviewWritePage/
+//   ReviewEditPage에서 처리하고, 이 화면으로 돌아올 때 TanStack Query 캐시를 무효화해 다시 불러온다
+//   (그 전엔 GET API가 없어 location.state로 방금 등록/수정한 항목만 화면에 끼워 넣었었다).
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import ScaledStage from "@components/landing/sections/ScaledStage";
 import ReviewableItemCard from "@components/review/ReviewableItemCard";
 import WrittenReviewItemCard from "@components/review/WrittenReviewItemCard";
 import Pagination from "@components/common/Pagination";
-import { assets } from "@components/review/assets";
+import { useWritableReviews, useMyReviews } from "@hooks/useReview";
+import { deleteReview } from "@api/reviewApi";
+import { toImageUrl } from "@api/fileApi";
 import { confirm, toast } from "@utils/common";
 
 // 탭마다 Figma 프레임 전체 높이가 달라서(항목 개수가 다름) 탭별로 다른 값을 쓴다.
 // 헤더 0~82 는 공통이며, 자체 헤더를 쓰므로 그만큼만 잘라낸다(topCrop).
 const TOP_CROP = 82;
-const WRITABLE_CANVAS_HEIGHT = 1033; // node 42:289 FOOTER top(951) + height(82, 헤더 포함 좌표계 보정)
-const WRITTEN_CANVAS_HEIGHT = 2977;  // node 56:138 FOOTER top(2786) + height(191)
+const MIN_CANVAS_HEIGHT = 500; // 항목이 0건이어도 "없습니다" 안내가 잘리지 않을 최소 높이
 
 const ITEM_ROW_HEIGHT = 235; // Figma 항목 간 간격 (491-256, 726-491, ... 모두 235로 일정)
 const FIRST_ITEM_TOP = 256;
 const PAGE_SIZE = 10; // 작성한 리뷰 탭 - Figma 페이지네이션이 5페이지/12건 기준 10건/페이지로 설계됨
 
-// TODO: 백엔드 리뷰 목록 조회 API(reviewApi.getReviews)가 아직 이 화면에 연동되지 않아 정적 데이터로 구성했다.
-// 실제 연동되면 이 배열들을 API 응답으로 교체한다.
-const WRITABLE_ITEMS_SEED = [
-  {
-    id: 1,
-    thumbnail: assets.reviewItem1,
-    title: "피씨오브플레이어 컴퓨터 게이밍 조립컴퓨터",
-    dealType: "goods",
-    partyLabel: "판매자",
-    partyName: "이**",
-    completedDate: "2026-06-18",
-  },
-  {
-    id: 2,
-    thumbnail: assets.reviewItem2,
-    title: "발받침 포함 각도 조절 가능 게이밍의자 회전 컴포트 컴퓨터 의자 승강 가능한 사무실 의자",
-    dealType: "goods",
-    partyLabel: "판매자",
-    partyName: "이**",
-    completedDate: "2026-06-18",
-  },
-  {
-    id: 3,
-    thumbnail: assets.reviewItem3,
-    title: "성수동 원룸 이사 운반",
-    dealType: "service",
-    partyLabel: "제공자",
-    partyName: "이**",
-    completedDate: "2026-06-18",
-  },
-];
-
-// Figma는 위 3건을 반복해서 12건짜리 리스트(5페이지 페이지네이션)를 보여준다 - 실제 서비스에서는
-// 서로 다른 리뷰 12건이 오겠지만, 지금은 그 반복 패턴 그대로 정적 데이터를 만들었다.
-const WRITTEN_ITEMS_BASE = [
-  { thumbnail: assets.reviewItem1, title: "피씨오브플레이어 컴퓨터 게이밍 조립컴퓨터", dealType: "goods", rating: 4, content: "빠른 배송과 친절한 응대가 좋았습니다." },
-  { thumbnail: assets.reviewItem2, title: "발받침 포함 각도 조절 가능 게이밍의자 회전 컴포트 컴퓨터 의자 승강 가능한 사무실 의자", dealType: "goods", rating: 4, content: "빠른 배송과 친절한 응대가 좋았습니다." },
-  { thumbnail: assets.reviewItem3, title: "성수동 원룸 이사 운반", dealType: "service", rating: 4, content: "시간 약속을 잘 지켜주셨습니다." },
-];
-const WRITTEN_ITEMS_ALL = Array.from({ length: 12 }, (_, i) => ({
-  id: i + 1,
-  ...WRITTEN_ITEMS_BASE[i % WRITTEN_ITEMS_BASE.length],
-}));
-
 export default function ReviewListPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("writable");
-  const [writableItems, setWritableItems] = useState(WRITABLE_ITEMS_SEED);
-  const [writtenItems, setWrittenItems] = useState(WRITTEN_ITEMS_ALL);
   const [page, setPage] = useState(1);
 
-  // ReviewWritePage/ReviewEditPage 에서 navigate(..., { state: { newReview / updatedReview } })로
-  // 넘겨준 값을 반영한다 - 리뷰 목록 GET API가 없어 이 화면 state만으로 "방금 등록/수정한 리뷰"를 보여준다.
+  const writableQuery = useWritableReviews();
+  const myReviewsQuery = useMyReviews();
+
+  // WritableTradeItem.thumbnail은 지금은 항상 null이지만(PRODUCT_IMAGE 연동 전), 나중에 값이
+  // 채워지면 다른 파일 응답과 동일하게 백엔드 상대 경로(/uploads/...)로 올 것이므로 미리 변환해둔다.
+  const writableItems = useMemo(
+    () => (writableQuery.data ?? []).map((item) => ({ ...item, thumbnail: toImageUrl(item.thumbnail) })),
+    [writableQuery.data],
+  );
+  // WrittenReviewItemCard는 단일 thumbnail을 기대하는데, GET /reviews/me는 여러 장(photos)을
+  // 다형성 첨부(FILE_ATTACH)로 내려준다 - 대표 이미지로 첫 장만 쓴다.
+  const writtenItems = useMemo(
+    () => (myReviewsQuery.data ?? []).map((item) => ({ ...item, thumbnail: toImageUrl(item.photos?.[0]) })),
+    [myReviewsQuery.data],
+  );
+
+  const isLoading = activeTab === "writable" ? writableQuery.isLoading : myReviewsQuery.isLoading;
+  const isError = activeTab === "writable" ? writableQuery.isError : myReviewsQuery.isError;
+  const refetchCurrent = activeTab === "writable" ? writableQuery.refetch : myReviewsQuery.refetch;
+
+  // ReviewWritePage/ReviewEditPage에서 navigate(..., { state: { justWrote / justUpdated } })로
+  // 넘겨준 신호를 받아 "작성한 리뷰" 탭으로 전환하고 토스트를 띄운다. 실제 목록은 useMyReviews가
+  // 다시 불러온다(아래 두 페이지가 성공 시 ['reviews'] 쿼리를 무효화해뒀다).
   useEffect(() => {
-    const { newReview, updatedReview } = location.state ?? {};
-    if (newReview) {
-      setWritableItems((prev) => prev.filter((i) => i.id !== newReview.id));
-      setWrittenItems((prev) => [newReview, ...prev.filter((i) => i.id !== newReview.id)]);
+    const { justWrote, justUpdated } = location.state ?? {};
+    if (justWrote) {
       setActiveTab("written");
       setPage(1);
       toast({ icon: "success", title: "작성한 리뷰 목록에 추가되었습니다." });
-    } else if (updatedReview) {
-      setWrittenItems((prev) => prev.map((i) => (i.id === updatedReview.id ? { ...i, ...updatedReview } : i)));
+    } else if (justUpdated) {
       setActiveTab("written");
+      toast({ icon: "success", title: "리뷰가 수정되었습니다." });
     }
-    // 새로고침/뒤로가기 시 같은 state로 중복 반영되지 않도록 history state를 비운다.
-    if (newReview || updatedReview) {
+    if (justWrote || justUpdated) {
       navigate(location.pathname, { replace: true, state: null });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -131,10 +109,15 @@ export default function ReviewListPage() {
   const handleDeleteReview = async (item) => {
     const ok = await confirm({ title: "리뷰를 삭제하시겠습니까?", text: "삭제한 리뷰는 복구할 수 없습니다." });
     if (!ok) return;
-    // TODO: DELETE /api/reviews/{id} 연동 전까지는 화면 목록에서만 제거한다.
-    setWrittenItems((prev) => prev.filter((i) => i.id !== item.id));
-    if (pagedWrittenItems.length === 1 && page > 1) setPage(page - 1);
-    toast({ icon: "success", title: "리뷰가 삭제되었습니다." });
+    try {
+      await deleteReview(item.id);
+      await queryClient.invalidateQueries({ queryKey: ["reviews"] });
+      if (pagedWrittenItems.length === 1 && page > 1) setPage(page - 1);
+      toast({ icon: "success", title: "리뷰가 삭제되었습니다." });
+    } catch (err) {
+      const message = err.response?.data?.message;
+      toast({ icon: "error", title: message || "리뷰 삭제에 실패했습니다. 잠시 후 다시 시도해주세요." });
+    }
   };
 
   // 썸네일/제목 클릭 시 리뷰 대상(경매 상품/서비스) 페이지로 이동.
@@ -144,7 +127,11 @@ export default function ReviewListPage() {
     navigate(item.dealType === "service" ? `/services/${item.id}` : `/auction/${item.id}`);
   };
 
-  const canvasHeight = activeTab === "writable" ? WRITABLE_CANVAS_HEIGHT : WRITTEN_CANVAS_HEIGHT;
+  // "작성한 리뷰" 탭은 페이지네이션 컨트롤이 PAGE_SIZE(10건) 기준 고정 위치에 그려지므로,
+  // 마지막 페이지처럼 실제 항목이 적어도 캔버스 높이는 항상 그 자리를 포함해야 잘리지 않는다.
+  const canvasHeight = activeTab === "writable"
+    ? Math.max(MIN_CANVAS_HEIGHT, FIRST_ITEM_TOP + writableItems.length * ITEM_ROW_HEIGHT + 150)
+    : FIRST_ITEM_TOP + PAGE_SIZE * ITEM_ROW_HEIGHT + 300;
 
   return (
     <ScaledStage canvasHeight={canvasHeight} topCrop={TOP_CROP}>
@@ -186,8 +173,25 @@ export default function ReviewListPage() {
         })}
       </div>
 
+      {isLoading && (
+        <p className="absolute left-[173px] top-[300px] text-[#888] text-[15px]">불러오는 중...</p>
+      )}
+
+      {!isLoading && isError && (
+        <div className="absolute left-[173px] top-[300px]">
+          <p className="text-[#e63946] text-[15px] mb-2">목록을 불러오지 못했습니다.</p>
+          <button
+            type="button"
+            onClick={() => refetchCurrent()}
+            className="rounded border border-[#d9d9d9] bg-white px-4 py-2 text-sm text-[#4e4e4e] hover:bg-[#f5f5f5]"
+          >
+            다시 시도
+          </button>
+        </div>
+      )}
+
       {/* 작성가능한 리뷰 */}
-      {activeTab === "writable" && (
+      {!isLoading && !isError && activeTab === "writable" && (
         writableItems.length === 0 ? (
           <p className="absolute left-[173px] top-[300px] text-[#888] text-[15px]">
             아직 작성 가능한 리뷰가 없습니다.
@@ -212,7 +216,7 @@ export default function ReviewListPage() {
       )}
 
       {/* 작성한 리뷰 */}
-      {activeTab === "written" && (
+      {!isLoading && !isError && activeTab === "written" && (
         writtenItems.length === 0 ? (
           <p className="absolute left-[173px] top-[300px] text-[#888] text-[15px]">
             아직 작성한 리뷰가 없습니다.

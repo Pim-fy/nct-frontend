@@ -27,9 +27,9 @@ export default function ArrowIcon({ direction = "left", className = "", barClass
       aria-label={direction === "left" ? "이전" : "다음"}
       onClick={onClick}
       disabled={disabled}
-      className={`absolute flex items-center justify-center size-[45px] rounded-full border border-solid border-[#ebebeb] bg-white/80 cursor-pointer hover:bg-white transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${className}`}
+      className={`absolute flex items-center justify-center size-[50px] rounded-full disabled:cursor-not-allowed disabled:opacity-40 ${className}`}
     >
-      <Icon size={22} className={colorClass || "text-[#434343]"} />
+      <Icon size={50} className={colorClass || "text-[#434343]"} />
     </button>
   );
 }

@@ -31,39 +31,95 @@ export default function MobileLandingSections() {
   const auctionItems = activeTab === "new" ? NEW_AUCTION_ITEMS : CLOSING_AUCTION_ITEMS;
 
   return (
-    <div className="flex flex-col gap-8 py-6 lg:hidden">
-      {/* 히어로: 타이틀 + 검색 + 태그 */}
-      <section className="px-4 text-center">
-        <h1 className="text-[28px] font-bold leading-tight tracking-tight sm:text-[34px]">
-          <span className="text-[#474baa]">실시간 경매</span>와<br />
-          <span className="text-[#00ccd0]">생활 서비스</span>를 한 화면에서
-        </h1>
-
-        <div className="mt-5 flex items-center gap-2 rounded-full border border-[#e5e5e5] bg-white px-4 py-3 shadow-sm">
-          <input
-            type="text"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") runSearch(keyword); }}
-            placeholder="검색어를 입력하세요."
-            className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-[#b1b1b1]"
-          />
-          <button type="button" onClick={() => runSearch(keyword)} aria-label="검색">
-            <Search size={18} className="text-[#0064ff]" />
-          </button>
+    <div className="flex flex-col gap-8 lg:hidden">
+      {/* ── 히어로: 배경 이미지 + 타이틀 + 태그 + 검색 + 슬라이드 배너 ── */}
+      <section className="relative overflow-hidden">
+        {/* 배경 이미지 + 오버레이 */}
+        <div className="absolute inset-0">
+          <img src={assets.bgImg} alt="" className="w-full h-full object-cover object-center" />
+          <div className="absolute inset-0 bg-black/45" />
         </div>
 
-        <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {SEARCH_TAGS.map((tag) => (
-            <button
-              key={tag}
-              type="button"
-              onClick={() => { setKeyword(tag.replace(/^#/, "")); runSearch(tag.replace(/^#/, "")); }}
-              className="shrink-0 rounded-full bg-[#f5f5f4] px-3 py-1.5 text-[13px] text-[#4e4e4e]"
-            >
-              {tag}
+        <div className="relative z-10 px-4 pt-8 pb-6 text-center">
+          {/* 타이틀 */}
+          <h1 className="text-[28px] font-bold leading-tight tracking-tight sm:text-[34px]">
+            <span className="text-[#7b82e0]">실시간 경매</span>
+            <span className="text-white">와</span><br />
+            <span className="text-[#00ccd0]">생활 서비스</span>
+            <span className="text-white">를 한 화면에서</span>
+          </h1>
+
+          {/* 검색 태그 */}
+          <div className="mt-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden justify-start">
+            {SEARCH_TAGS.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => { setKeyword(tag.replace(/^#/, "")); runSearch(tag.replace(/^#/, "")); }}
+                className="shrink-0 rounded-full bg-white/20 border border-white/40 px-3 py-1.5 text-[13px] text-white backdrop-blur-sm"
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+
+          {/* 검색 입력 */}
+          <div className="mt-3 flex items-center gap-2 rounded-full bg-white px-4 py-3 shadow-md">
+            <span className="shrink-0 text-[14px] font-bold text-black">통합검색</span>
+            <span className="text-[#b1b1b1] text-[12px]">▼</span>
+            <div className="mx-1 h-4 w-px bg-[#d9d9d9]" />
+            <input
+              type="text"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") runSearch(keyword); }}
+              placeholder="검색어를 입력하세요."
+              className="min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-[#b1b1b1]"
+            />
+            <button type="button" onClick={() => runSearch(keyword)} aria-label="검색">
+              <img src={assets.searchIcon} alt="검색" className="size-[20px] object-contain" />
             </button>
-          ))}
+          </div>
+
+          {/* 슬라이드 배너 */}
+          <div className="mt-4 relative">
+            <div className="relative overflow-hidden rounded-[20px] bg-white shadow-[0px_4px_10px_0px_rgba(0,0,0,0.2)]">
+              {/* 배경 패턴(슬라이드 이미지) */}
+              <img src={assets.slide} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30 pointer-events-none" />
+              {/* 배너 콘텐츠 */}
+              <div className="relative z-10 flex items-center gap-2 px-5 py-5">
+                <div className="flex-1 text-left">
+                  <p className="font-bold text-[20px] text-black leading-snug tracking-tight">
+                    서비스 요청만 해도<br />쿠폰 100% 당첨
+                  </p>
+                  <div className="h-[7px] bg-[#ffd900] w-[110px] mt-1 mb-2" />
+                  <p className="text-[12px] text-black">회원가입시에 최대 쿠폰 10,000원 증정</p>
+                  <button
+                    type="button"
+                    className="mt-3 bg-[#0064ff] text-white font-bold text-[14px] px-5 py-[9px] rounded-[10px] cursor-pointer border-none"
+                  >
+                    응모하기
+                  </button>
+                </div>
+                <img src={assets.giftVoucher} alt="기프트 쿠폰" className="w-[110px] object-contain shrink-0" />
+              </div>
+            </div>
+            {/* 좌우 화살표 */}
+            <button
+              type="button"
+              className="absolute -left-1 top-1/2 -translate-y-1/2 flex size-[32px] items-center justify-center text-[28px] text-[#7b8290] font-light leading-none bg-transparent border-none cursor-pointer"
+              aria-label="이전"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              className="absolute -right-1 top-1/2 -translate-y-1/2 flex size-[32px] items-center justify-center text-[28px] text-[#7b8290] font-light leading-none bg-transparent border-none cursor-pointer"
+              aria-label="다음"
+            >
+              ›
+            </button>
+          </div>
         </div>
       </section>
 
