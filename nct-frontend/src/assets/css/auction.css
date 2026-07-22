@@ -775,6 +775,19 @@
   font-weight: 700;
 }
 
+.auction-detail-page .highest-bidder-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border: 1px solid #88c9a1;
+  border-radius: 8px;
+  background: #edf9f1;
+  color: #176b3a;
+  padding: 2px 9px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .auction-detail-page .field {
   display: grid;
   gap: 8px;
@@ -963,7 +976,11 @@
 
 .auction-detail-page .btn:disabled {
   opacity: .58;
-  cursor: wait;
+  cursor: not-allowed;
+}
+
+.auction-detail-page .btn[aria-busy="true"] {
+  cursor: progress;
 }
 
 .auction-detail-page .btn-primary {

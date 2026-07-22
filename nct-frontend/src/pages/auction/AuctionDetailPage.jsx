@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   addAuctionFavorite,
@@ -29,8 +29,11 @@ import '@assets/css/auction.css';
 
 const AuctionDetailPage = () => {
   const { auctionId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading: isAuthLoading } = useAuth();
+  const authenticatedUserId = user?.id ?? user?.userId ?? user?.userSn ?? user?.usrSn;
   const [bidAmount, setBidAmount] = useState('');
   const [holdAgreed, setHoldAgreed] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -39,7 +42,10 @@ const AuctionDetailPage = () => {
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
   const [failedImageUrls, setFailedImageUrls] = useState(() => new Set());
 
-  const detailQueryKey = useMemo(() => ['auctionDetail', auctionId], [auctionId]);
+  const detailQueryKey = useMemo(
+    () => ['auctionDetail', auctionId, authenticatedUserId ?? 'anonymous'],
+    [auctionId, authenticatedUserId],
+  );
   const {
     data: auction,
     isLoading,
@@ -47,9 +53,8 @@ const AuctionDetailPage = () => {
   } = useQuery({
     queryKey: detailQueryKey,
     queryFn: () => fetchAuctionDetail(auctionId),
-    enabled: Boolean(auctionId),
+    enabled: Boolean(auctionId && !isAuthLoading),
   });
-  const authenticatedUserId = user?.id ?? user?.userId ?? user?.userSn ?? user?.usrSn;
   const isOwnAuction = authenticatedUserId != null
     && auction?.sellerId != null
     && String(authenticatedUserId) === String(auction.sellerId);
@@ -133,7 +138,7 @@ const AuctionDetailPage = () => {
     return () => window.clearTimeout(timerId);
   }, [toastMessage]);
 
-  if (isLoading) {
+  if (isAuthLoading || isLoading) {
     return (
       <main className="auction-detail-page">
         <div className="auction-detail-container">
@@ -222,7 +227,7 @@ const AuctionDetailPage = () => {
   const handleQuickAdd = (amount) => setBidAmount((value) => formatNumber(parseAmount(value || displayedBidAmount) + amount));
   const handleBidSubmit = () => {
     if (!isAuthenticated) {
-      showToast('로그인 후 입찰할 수 있습니다');
+      navigate('/login', { state: { from: location } });
       return;
     }
     if (isOwnAuction) {
@@ -257,7 +262,7 @@ const AuctionDetailPage = () => {
   };
   const handleBuyNowOpen = () => {
     if (!isAuthenticated) {
-      showToast('로그인 후 즉시구매할 수 있습니다');
+      navigate('/login', { state: { from: location } });
       return;
     }
     if (isOwnAuction) {

@@ -58,6 +58,9 @@ const AuctionBidPanel = ({
           {auction.tradeMethodName && (
             <span className="deal-badge">{auction.tradeMethodName}</span>
           )}
+          {isCurrentHighestBidder && (
+            <span className="highest-bidder-badge" role="status">최고입찰자</span>
+          )}
         </div>
 
         <p className="label">현재 최고가</p>
@@ -133,6 +136,7 @@ const AuctionBidPanel = ({
               className="btn btn-primary"
               id="bidBtn"
               type="button"
+              aria-busy={isBidPending}
               disabled={!isAuctionOpen || isCurrentHighestBidder || isBidPending || isBidPointInsufficient}
               onClick={onBidSubmit}
             >
@@ -148,6 +152,7 @@ const AuctionBidPanel = ({
               className="btn btn-outline"
               id="buyNowBtn"
               type="button"
+              aria-busy={isBuyNowPending}
               disabled={!isBuyNowAvailable || isBuyNowPending || isBuyNowPointInsufficient}
               onClick={onBuyNowOpen}
             >
