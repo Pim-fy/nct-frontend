@@ -149,10 +149,10 @@ const AppRoutes = () => {
         </>
       )}
 
-      {/* 거래와 마이페이지는 로그인한 사용자만 접근한다. */}
+      {/* @ai_generated CHG-032: 아래는 일반회원 전용 기능이므로 ROLE_USER 현재 모드만 접근한다. */}
       <Route
         element={(
-          <ProtectedRoute allowedRoles={['ROLE_USER', 'ROLE_SERVICE', 'ROLE_ADMIN']} />
+          <ProtectedRoute allowedRoles={['ROLE_USER']} />
         )}
       >
         <Route element={<UserLayout />}>
