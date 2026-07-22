@@ -18,11 +18,11 @@ export default function MoreButton({ left, top, variant = "light", onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="absolute h-[45px] w-[133px] cursor-pointer border-none bg-transparent p-0"
+      className="absolute h-[45px] w-[100px] cursor-pointer border-none bg-transparent p-0"
       style={{ left, top }}
     >
       <span
-        className={`absolute inset-0 h-[45px] rounded-[40px] w-[133px] border border-solid transition-colors ${
+        className={`absolute inset-0 h-[45px] rounded-[40px] w-[100px] border border-solid transition-colors ${
           isDark ? "bg-transparent border-[#ebebeb] hover:bg-white/10" : "bg-[#f3f5fa] border-[#ebebeb] hover:bg-[#e9edf5]"
         }`}
       />

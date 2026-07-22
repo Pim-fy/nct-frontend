@@ -63,6 +63,8 @@ import SettlementListPage from '@pages/user/settlement/SettlementListPage';
 import ReviewListPage from '@pages/user/ReviewListPage';
 import ReviewWritePage from '@pages/user/ReviewWritePage';
 import ReviewEditPage from '@pages/user/ReviewEditPage';
+// 내 입찰 내역 (F-AUC-022)
+import MyBidHistoryPage from '@pages/user/MyBidHistoryPage';
 
 // 담당자 7 병합 검증: develop의 상품 route가 참조하는 페이지 import가 누락되어 런타임 빈 화면이 발생해 복구했습니다.
 // 임시 코드는 아니며 상품 기능의 구현·소유권은 기존 상품 담당자에게 그대로 있습니다.
@@ -165,6 +167,8 @@ const AppRoutes = () => {
           <Route path="/user/reviews" element={<ReviewListPage />} />
           <Route path="/user/reviews/write/:id" element={<ReviewWritePage />} />
           <Route path="/user/reviews/edit/:id" element={<ReviewEditPage />} />
+          {/* 경매 거래내역 — 내 입찰 내역 + 내 판매 내역 2탭 (담당자3 HSK, F-AUC-022) */}
+          <Route path="/my-bids" element={<MyBidHistoryPage />} />
 
           <Route path="/trades" element={<TradeHistory />} />
           <Route path="/trades/:tradeId/chat" element={<TradeChat />} />
