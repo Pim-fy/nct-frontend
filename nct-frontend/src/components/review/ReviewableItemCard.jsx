@@ -44,14 +44,17 @@ export default function ReviewableItemCard({
         type="button"
         onClick={onViewTarget}
         aria-label={`${title} 상세보기`}
-        className="absolute border border-[#d9d9d9] border-solid left-[210px] rounded-[10px] size-[129px] cursor-pointer overflow-hidden p-0"
+        className="absolute border border-[#d9d9d9] border-solid left-[210px] rounded-[10px] size-[129px] cursor-pointer overflow-hidden p-0 bg-[#e5e4df]"
         style={{ top: top + 42 }}
       >
-        <img
-          alt={title}
-          className="pointer-events-none size-full object-cover"
-          src={thumbnail}
-        />
+        {/* 상품/서비스 대표 이미지 - 아직 PRODUCT_IMAGE 연동 전이라 지금은 항상 빈 박스로 보인다 */}
+        {thumbnail && (
+          <img
+            alt={title}
+            className="pointer-events-none size-full object-cover"
+            src={thumbnail}
+          />
+        )}
       </button>
 
       {/* 거래유형 배지 */}

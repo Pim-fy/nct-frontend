@@ -93,8 +93,8 @@ a.list-row:hover {
   cursor: pointer;
 }
 .chip.active {
-  background: var(--color-primary-light, #e5efff);
-  color: var(--color-primary-dark, #0048bf);
+  background: var(--color-primary, #0064ff);
+  color: #fff;
   border-color: var(--color-primary, #0064ff);
 }
 
@@ -166,7 +166,7 @@ table tr:last-child td { border-bottom: none; }
 .policy-agree { margin-top: 12px; padding: 12px 14px; border: 1px solid #f0efec; border-radius: 8px; background: #fff; }
 
 /* 소형 버튼(.btn-sm) — MyProductListPage 목록 행의 판매 관리·삭제 등 인라인 버튼 크기 축소 */
-.btn-sm { padding: 6px 10px; font-size: 12px; }
+.btn-sm { padding: 6px 10px; font-size: 13px; }
 
 /* 이력 목록 — MyProductListPage 판매 목록·ProductDetailSellerPage 경매 활동 이력 행 레이아웃
    썸네일(.history-thumb) + 제목·부가정보(.history-row-title) 가로 배치 */

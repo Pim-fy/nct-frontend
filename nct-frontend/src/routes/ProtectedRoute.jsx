@@ -24,9 +24,11 @@ const ProtectedRoute = ({ allowedRoles = [] }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // 역할 검사 - 백엔드 응답 필드: role (단수)
+  // @ai_generated CHG-032: 현재 DB ROLE과 정확히 일치하는 화면만 통과한다.
+  // 역할 검사 - 백엔드 응답 필드: role (단수).
   if (allowedRoles.length > 0) {
-    const hasRole = allowedRoles.some(role => user?.role === role);
+    const currentRole = user?.role;
+    const hasRole = allowedRoles.includes(currentRole);
     if (!hasRole) {
       return <Navigate to="/unauthorized" replace />;
     }

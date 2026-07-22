@@ -5,6 +5,7 @@
 // 차이는 (1) 기존 별점·내용·사진으로 미리 채워진다는 것, (2) createReview 대신 updateReview를 호출한다는 것뿐이다.
 import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Camera, X } from "lucide-react";
 import StarRating from "@components/review/StarRating";
 import { updateReview } from "@api/reviewApi";
@@ -22,6 +23,7 @@ export default function ReviewEditPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   // 목록 페이지에서 navigate(..., { state: { item } }) 로 넘겨준, 수정 대상 리뷰(기존 rating/content 포함).
   // 새로고침 등으로 state 가 없으면(직접 URL 접근) 대상 정보를 알 수 없으므로 안내만 보여준다.
   const item = location.state?.item;
@@ -98,11 +100,9 @@ export default function ReviewEditPage() {
     try {
       await updateReview(id ?? item.id, formData);
       toast({ icon: "success", title: "리뷰가 수정되었습니다." });
-      // TODO: 리뷰 목록 GET API가 아직 없어(reviewApi.getReviews 미연동), 수정한 내용을
-      // location.state로 들려 보내서 목록 화면이 새로고침 없이 바로 반영하게 한다.
-      navigate("/user/reviews", {
-        state: { updatedReview: { id: item.id, rating, content } },
-      });
+      // 목록 화면의 캐시를 무효화해 다음에 보일 때 수정한 내용까지 실제 API로 다시 불러오게 한다.
+      await queryClient.invalidateQueries({ queryKey: ["reviews"] });
+      navigate("/user/reviews", { state: { justUpdated: true } });
     } catch (err) {
       console.error("리뷰 수정 실패:", err);
       toast({ icon: "error", title: "리뷰 수정에 실패했습니다. 잠시 후 다시 시도해주세요." });
