@@ -24,12 +24,11 @@ const ProtectedRoute = ({ allowedRoles = [] }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // @ai_generated CHG-032: 현재 DB ROLE과 정확히 일치하는 화면만 통과한다.
   // 역할 검사 - 백엔드 응답 필드: role (단수).
-  // F-AUTH-013: 제공자 모드는 일반 사용자 권한을 포함한다. 관리자 역할의 상속은 없다.
   if (allowedRoles.length > 0) {
     const currentRole = user?.role;
-    const hasRole = allowedRoles.includes(currentRole)
-      || (currentRole === 'ROLE_SERVICE' && allowedRoles.includes('ROLE_USER'));
+    const hasRole = allowedRoles.includes(currentRole);
     if (!hasRole) {
       return <Navigate to="/unauthorized" replace />;
     }
