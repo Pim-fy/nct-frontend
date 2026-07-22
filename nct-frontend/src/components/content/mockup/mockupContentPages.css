@@ -1,7 +1,7 @@
 .content-page {
-  width: min(1080px, calc(100% - 32px));
+  width: min(1320px, calc(100% - 52px));
   margin: 0 auto;
-  padding: 54px 0 72px;
+  padding: 56px 0 72px;
   color: #1a1a18;
 }
 
@@ -308,7 +308,8 @@
 
 @media (max-width: 760px) {
   .content-page {
-    padding-top: 36px;
+    width: min(100% - 32px, 1320px);
+    padding-top: 34px;
   }
 
   .guide-flow-grid {

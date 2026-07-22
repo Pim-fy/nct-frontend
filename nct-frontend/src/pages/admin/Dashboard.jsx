@@ -32,7 +32,7 @@ const SUMMARY_ITEMS = [
   {
     label: '신고·리스크 이벤트',
     description: '마스킹·탐지 결과와 위험 이벤트 미리보기가 연결돼 있습니다.',
-    owner: 'F-OPS-011·012·013',
+    owner: 'F-OPS-012·013',
     status: '부분 연결',
     tone: 'warning',
     icon: ShieldAlert,
@@ -129,7 +129,7 @@ const Dashboard = () => (
           <li><CircleDashed aria-hidden="true" /> 실제 신고·제재 담당 계약 연결 대기</li>
         </ul>
         <Link className="admin-dashboard-card__action" to="/admin/operations-preview">
-          운영 연동 미리보기 열기
+          민감정보 탐지 이벤트 열기
         </Link>
       </article>
 
