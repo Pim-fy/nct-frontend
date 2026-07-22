@@ -5,8 +5,28 @@ import {
   ContentState,
   NoticeDetail,
 } from '@components/content/ContentUi';
-import ViewSkeleton from '@components/skeleton/ViewSkeleton';
 import { usePublicNoticeDetail } from '@hooks/usePublicNotices';
+
+const NoticeDetailSkeleton = () => (
+  <article className="content-page notice-detail public-notice-detail-skeleton" aria-label="공지사항 상세를 불러오는 중">
+    <div className="public-notice-detail-skeleton__back" />
+    <header className="public-notice-detail-skeleton__header">
+      <span />
+      <strong />
+      <div>
+        <span />
+        <span />
+        <span />
+      </div>
+    </header>
+    <div className="public-notice-detail-skeleton__content">
+      <span />
+      <span />
+      <span />
+      <span />
+    </div>
+  </article>
+);
 
 /** F-COM-013: 공개 공지 한 건을 안전한 일반 텍스트로 표시합니다. */
 const NoticeDetailPage = () => {
@@ -29,7 +49,7 @@ const NoticeDetailPage = () => {
     );
   }
 
-  if (noticeQuery.isLoading) return <ViewSkeleton />;
+  if (noticeQuery.isLoading) return <NoticeDetailSkeleton />;
 
   if (noticeQuery.isError) {
     const isNotFound = noticeQuery.error?.response?.status === 404;
