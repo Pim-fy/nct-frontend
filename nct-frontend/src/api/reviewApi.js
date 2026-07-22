@@ -3,6 +3,8 @@
 // API 호출 함수를 만들어 타 파일에서도 사용할 수 있게 내보냄.
 import api from './axios';
 
+const MULTIPART_CONFIG = { headers: { 'Content-Type': 'multipart/form-data' } };
+
 /** 작성 가능한 리뷰 목록 (완료 거래 중 아직 리뷰를 안 쓴 것) */
 export const getWritableReviews = () =>
   api.get('/reviews/writable').then(res => res.data);
