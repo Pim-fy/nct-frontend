@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import './MockupAdminSidebar.css';
 
-// 관리자 목업 v2와 업무분장 v7을 화면으로 확인하기 위한 임시 메뉴입니다.
+// 관리자 목업 v2와 업무분장 v11을 화면으로 확인하기 위한 임시 메뉴입니다.
 // route가 없는 다른 담당자 화면은 클릭을 막아 미완성 경로에서 404가 나지 않게 합니다.
 const MENU_SECTIONS = [
   [
@@ -41,7 +41,7 @@ const MENU_SECTIONS = [
   [{ label: '신고·거래 문제 처리', icon: Siren, owner: '담당자 4' }],
   [
     { label: '감사 로그', icon: ScrollText, to: '/admin/audit-logs', owner: '담당자 6' },
-    { label: '시스템 설정', icon: Settings, to: '/admin/system-settings', owner: '담당자 6' },
+    { label: '시스템 설정', icon: Settings, to: '/admin/system-settings', owner: '담당자 7·6', note: '1단계 최소 설정 / 3단계 인수' },
   ],
 ];
 
@@ -86,11 +86,11 @@ const MockupAdminSidebar = ({ collapsed = false, id, onNavigate }) => (
         <NavLink
           className={({ isActive }) => `mockup-admin-nav__item${isActive ? ' is-active' : ''}`}
           onClick={onNavigate}
-          title={collapsed ? '운영 연동 미리보기' : undefined}
+          title={collapsed ? '민감정보 탐지 이벤트' : undefined}
           to="/admin/operations-preview"
         >
           <Siren aria-hidden="true" />
-          <span><strong>운영 연동 미리보기</strong><small>담당자 7 · 개발 확인</small></span>
+          <span><strong>민감정보 탐지 이벤트</strong><small>담당자 7 · F-OPS-013</small></span>
         </NavLink>
       </div>
     </nav>

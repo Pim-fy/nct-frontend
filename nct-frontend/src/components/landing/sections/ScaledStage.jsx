@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 // Figma 디자인 원본 캔버스 크기 (헤더 하단 ~ 푸터 상단 구간)
 // 페이지마다 원본 프레임 높이가 다르므로 props로 오버라이드할 수 있게 열어둔다.
 const DEFAULT_DESIGN_WIDTH = 1920;
-const DEFAULT_CANVAS_HEIGHT = 2662; // 원본 헤더(top:0~82) 포함 좌표계에서의 전체 높이
+const DEFAULT_CANVAS_HEIGHT = 2587; // 원본 헤더(top:0~82) 포함 좌표계에서의 전체 높이 (섹션 75px 상향 반영)
 const DEFAULT_TOP_CROP = 82; // 이 프로젝트는 자체 헤더(<LandingHeader />/<MainHeader />)를 쓰므로 그만큼 상단을 잘라냄
 
 /**
