@@ -58,11 +58,7 @@ export default function HeroSection() {
       {/* 통합 검색 + 인기 태그 */}
 
       <div className="absolute contents left-[571px] top-[368px]" data-name="search">
-        <div className="absolute h-[73px] left-[571px] top-[418px] w-[800px]">
-          <div className="absolute inset-[-21.92%_-2.5%_-32.88%_-2.5%]">
-            <img alt="" className="block max-w-none size-full" src={assets.searchBg} />
-          </div>
-        </div>
+        <div className="absolute h-[73px] left-[571px] top-[418px] w-[800px] bg-white rounded-[40px] shadow-[0px_4px_20px_0px_rgba(0,0,0,0.15)] border-2 border-[#0064ff]" />
         <p className="absolute font-['Noto_Sans_KR:Medium'] font-medium leading-[normal] left-[608px] text-[18px] text-black top-[444px] whitespace-nowrap">통합검색</p>
         <p className="absolute font-['Noto_Sans_KR:Medium'] font-medium leading-[normal] left-[693px] text-[9px] text-black top-[449px] whitespace-nowrap">▼</p>
         

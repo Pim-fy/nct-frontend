@@ -66,11 +66,11 @@ function StatCard({ color, icon, label, value, unit, meta, onMore }) {
       <div className="flex items-start gap-3 mb-3">
         <img src={icon} alt="" className="size-[40px] object-contain shrink-0 mt-0.5" />
         <div className="min-w-0 pr-6">
-          <p className="font-bold text-[13px] opacity-90 leading-tight">{label}</p>
-          <p className="font-bold text-[24px] leading-tight mt-0.5">{value}{unit}</p>
+          <p className="font-bold text-[16px] opacity-90 leading-tight">{label}</p>
+          <p className="font-bold text-[30px] leading-tight mt-0.5">{value}{unit}</p>
         </div>
       </div>
-      <p className="text-[11px] opacity-80 truncate">{meta}</p>
+      <p className="text-[15px] opacity-80 truncate">{meta}</p>
     </div>
   );
 }
@@ -80,8 +80,8 @@ function ListPanel({ title, items }) {
     <div className="border border-[rgba(0,0,0,0.11)] rounded-[15px] overflow-hidden">
       <div className="bg-[rgba(0,100,255,0.05)] px-5 h-[50px] flex items-center justify-between">
         <div className="flex items-center gap-4 min-w-0">
-          <span className="font-bold text-[16px] text-[#3a3a3a] shrink-0">{title}</span>
-          <div className="hidden sm:flex items-center gap-3 text-[13px]">
+          <span className="font-bold text-[18px] text-[#3a3a3a] shrink-0">{title}</span>
+          <div className="hidden sm:flex items-center gap-3 text-[15px]">
             <span className="text-[#0064ff] font-bold border-b-2 border-[#0064ff] pb-px">전체</span>
             <span className="text-[#4e4e4e]">거래</span>
             <span className="text-[#4e4e4e]">서비스요청</span>
@@ -115,13 +115,13 @@ function ListPanel({ title, items }) {
                   </span>
                 ))}
               </div>
-              <p className="font-bold text-[14px] text-black truncate">{item.title}</p>
-              <p className="text-[12px] text-[#4e4e4e] truncate mt-0.5">{item.meta}</p>
+              <p className="font-bold text-[18px] text-black truncate">{item.title}</p>
+              <p className="text-[15px] text-[#4e4e4e] truncate mt-0.5">{item.meta}</p>
             </div>
             <button
               type="button"
               onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
-              className="shrink-0 flex items-center gap-1 h-[28px] px-3 rounded-[5px] border border-[#969696] bg-white text-[#969696] text-[12px] font-medium cursor-pointer hover:bg-[#f5f5f5] transition-colors whitespace-nowrap"
+              className="shrink-0 flex items-center gap-1 h-[28px] px-3 rounded-[5px] border border-[#969696] bg-white text-[#969696] text-[14px] font-medium cursor-pointer hover:bg-[#f5f5f5] transition-colors whitespace-nowrap"
             >
               더보기 ›
             </button>
