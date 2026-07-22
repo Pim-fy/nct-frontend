@@ -12,6 +12,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, ChevronRight } from 'lucide-react';
 import { useAuth } from '@hooks/useAuth';
 import { useNotifications } from '@hooks/useNotification';
+import { useNotificationStream } from '@hooks/useNotificationStream';
 import { usePointBalance } from '@hooks/usePoint';
 import relativeTime from '@utils/relativeTime';
 import { isProviderAccount, requestMypageMode } from '@utils/providerMode';
@@ -57,6 +58,7 @@ const SiteHeader = () => {
 
   // 알림·포인트 실데이터 — 로그인 상태일 때만 호출 (비로그인 401 방지)
   const notiQuery = useNotifications({ enabled: !!user });
+  useNotificationStream(!!user); // 실시간 push 구독 — 새 알림 오면 notiQuery를 자동 invalidate
   const balanceQuery = usePointBalance({ enabled: !!user });
   // 안읽은 알림: 배지 숫자와 드롭다운 목록의 공통 원천
   const unreadNotis = (notiQuery.data ?? []).filter((n) => !n.read);
