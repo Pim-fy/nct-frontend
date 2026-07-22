@@ -172,6 +172,18 @@
   accent-color: var(--auction-primary);
 }
 
+.auction-filter-message {
+  min-height: 20px;
+  margin: 0;
+  color: var(--auction-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.auction-filter-message.error {
+  color: #b42318;
+}
+
 .auction-price-range {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
