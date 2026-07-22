@@ -28,3 +28,7 @@ export const updateReview = (id, data) =>
 /** 리뷰 삭제 */
 export const deleteReview = (id) =>
   api.delete(`/reviews/${id}`).then(res => res.data);
+
+/** 내가 작성한 리뷰 목록 */
+export const getMyReviews = () =>
+  api.get('/reviews/me').then(res => res.data);
