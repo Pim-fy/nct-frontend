@@ -12,6 +12,7 @@ import React from "react";
 const OVERHANG = 25;
 const CARD_WIDTH = 295;
 const CARD_BODY_HEIGHT = 323;
+const OVERHANG_BOTTOM = 25;
 
 export default function AuctionCard({ item, onClick }) {
   return (
@@ -21,7 +22,7 @@ export default function AuctionCard({ item, onClick }) {
       onClick={onClick}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onClick?.(); }}
       className="relative shrink-0 cursor-pointer"
-      style={{ width: CARD_WIDTH, height: CARD_BODY_HEIGHT + OVERHANG }}
+      style={{ width: CARD_WIDTH, height: CARD_BODY_HEIGHT + OVERHANG + OVERHANG_BOTTOM}}
     >
       <div
         className="absolute bg-white border border-[#ebebeb] border-solid rounded-[20px] shadow-[0px_0px_20px_0px_rgba(0,0,0,0.15)]"

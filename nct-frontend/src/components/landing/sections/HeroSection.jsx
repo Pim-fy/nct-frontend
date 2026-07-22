@@ -44,13 +44,11 @@ export default function HeroSection() {
       </div>
 
       {/* 타이틀 카피 */}
-      <div className="absolute contents left-[714px] top-[208px]">
-        <div className="-translate-x-1/2 absolute font-['Noto_Sans_KR:Bold'] font-bold leading-[0] left-[968px] text-[0px] text-black text-center top-[208px] tracking-[-2.5px] whitespace-nowrap">
+      <div className="absolute contents left-[714px]">
+        <div className="-translate-x-1/2 absolute font-['Noto_Sans_KR:Bold'] font-bold leading-[0] left-[968px] text-[0px] text-black text-center top-[150px] tracking-[-2.5px] whitespace-nowrap">
           <p className="leading-[normal] mb-0 text-[50px]">
             <span className="text-[#474baa]">실시간 경매</span>
-            <span>와</span>
-          </p>
-          <p className="leading-[normal] text-[50px]">
+            <span>와</span><br />         
             <span className="text-[#00ccd0]">생활 서비스</span>
             <span>를 한 화면에서</span>
           </p>
@@ -58,14 +56,12 @@ export default function HeroSection() {
       </div>
 
       {/* 통합 검색 + 인기 태그 */}
+
       <div className="absolute contents left-[571px] top-[368px]" data-name="search">
-        <div className="absolute h-[73px] left-[571px] top-[418px] w-[800px]">
-          <div className="absolute inset-[-21.92%_-2.5%_-32.88%_-2.5%]">
-            <img alt="" className="block max-w-none size-full" src={assets.searchBg} />
-          </div>
-        </div>
+        <div className="absolute h-[73px] left-[571px] top-[418px] w-[800px] bg-white rounded-[40px] shadow-[0px_4px_20px_0px_rgba(0,0,0,0.15)] border-2 border-[#0064ff]" />
         <p className="absolute font-['Noto_Sans_KR:Medium'] font-medium leading-[normal] left-[608px] text-[18px] text-black top-[444px] whitespace-nowrap">통합검색</p>
         <p className="absolute font-['Noto_Sans_KR:Medium'] font-medium leading-[normal] left-[693px] text-[9px] text-black top-[449px] whitespace-nowrap">▼</p>
+        
         <input
           type="text"
           value={keyword}
@@ -74,6 +70,7 @@ export default function HeroSection() {
           placeholder="검색어를 입력하세요."
           className="absolute left-[729px] top-[440px] w-[560px] bg-transparent font-['Noto_Sans_KR:Regular'] font-normal text-[18px] text-black placeholder:text-[#b1b1b1] outline-none"
         />
+        
         <button type="button" onClick={() => runSearch(keyword)} className="absolute left-[1317px] size-[27px] top-[442px]">
           <img alt="검색" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={assets.searchIcon} />
         </button>

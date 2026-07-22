@@ -37,14 +37,17 @@ export default function WrittenReviewItemCard({
         type="button"
         onClick={onViewTarget}
         aria-label={`${title} 상세보기`}
-        className="absolute border border-[#d9d9d9] border-solid left-[210px] rounded-[10px] size-[129px] cursor-pointer overflow-hidden p-0"
+        className="absolute border border-[#d9d9d9] border-solid left-[210px] rounded-[10px] size-[129px] cursor-pointer overflow-hidden p-0 bg-[#e5e4df]"
         style={{ top: top + 42 }}
       >
-        <img
-          alt={title}
-          className="pointer-events-none size-full object-cover"
-          src={thumbnail}
-        />
+        {/* 리뷰 첨부 사진 중 대표(첫 장) - 사진 없이 작성한 리뷰는 빈 박스로 보인다 */}
+        {thumbnail && (
+          <img
+            alt={title}
+            className="pointer-events-none size-full object-cover"
+            src={thumbnail}
+          />
+        )}
       </button>
 
       {/* 거래유형 배지 */}
