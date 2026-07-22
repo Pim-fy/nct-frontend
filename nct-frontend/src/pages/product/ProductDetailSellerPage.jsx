@@ -89,6 +89,7 @@ export default function ProductDetailSellerPage() {
       setToast('취소 요청이 접수되었습니다.');
       setCancelOpen(false);
       setCancelReason('');
+      getAuctionStatus(prdSn).then(auc => setAuctionStatus(auc)).catch(() => {});
     } catch {
       setToast('취소 요청에 실패했습니다.');
     } finally {
@@ -135,24 +136,28 @@ export default function ProductDetailSellerPage() {
 
   // ─── 상태 파생값 ─────────────────────────────────────────────────────────
   // 상태 코드에 따라 렌더링 분기(가격 라벨·결과 텍스트·버튼·notice)에 사용
-  const isActive = product.prdStatusCd === 'PRDC0002';
-  const isEnded  = product.prdStatusCd === 'PRDC0003';
-  const isDraft  = product.prdStatusCd === 'PRDC0001';
+  const isActive        = product.prdStatusCd === 'PRDC0002';
+  const isEnded         = product.prdStatusCd === 'PRDC0003';
+  const isDraft         = product.prdStatusCd === 'PRDC0001';
+  const isCancelPending = isActive && auctionStatus?.aucStatusCd === 'AUCC0006';
 
   const priceLabel = isActive ? '현재가' : '시작가';
   const priceAmt = isActive && auctionStatus?.aucCurAmt != null
     ? auctionStatus.aucCurAmt
     : product.prdStartAmt;
 
-  const resultText = isActive
+  const resultText = isCancelPending
+    ? '취소 요청 검토 중입니다.'
+    : isActive
     ? '내가 등록한 경매가 진행 중입니다.'
     : isEnded
     ? '유효 입찰 없이 경매가 종료되었습니다.'
     : '임시저장 상태입니다. 경매 설정을 완료해 공개할 수 있습니다.';
 
-  // TODO(F-AUC-008/F-AUC-006): 판매자 귀책 취소 확정 시 'danger-note'로 교체
-  const noticeClass = 'notice';
-  const noticeText = isActive
+  const noticeClass = isCancelPending ? 'danger-note' : 'notice';
+  const noticeText = isCancelPending
+    ? '취소 요청이 접수되었습니다. 관리자 검토 중이며 승인 전까지 입찰·즉시구매가 차단됩니다.'
+    : isActive
     ? '입찰자의 포인트가 홀딩되어 있어 취소 시 관리자 승인이 필요합니다.'
     : isEnded
     ? '유찰 건은 거래와 정산이 생성되지 않습니다.'
@@ -248,7 +253,12 @@ export default function ProductDetailSellerPage() {
         <aside className="card">
           <h3 style={{ margin: '0 0 6px', fontSize: 20 }}>상태별 관리</h3>
 
-          {isActive && (
+          {isCancelPending && (
+            <p className="muted small" style={{ marginBottom: 18, lineHeight: 1.65 }}>
+              취소 요청 검토 중입니다. 승인 시 경매가 취소되며 반려 시 경매가 재개됩니다.
+            </p>
+          )}
+          {isActive && !isCancelPending && (
             <p className="muted small" style={{ marginBottom: 18, lineHeight: 1.65 }}>
               입찰이 시작된 상품은 핵심 정보 수정이 제한됩니다.
             </p>
@@ -262,13 +272,13 @@ export default function ProductDetailSellerPage() {
           <div className="seller-action-list">
             {isActive && (
               <>
-                {/* TODO: 담당자5(옥동민) route /auction/:prdSn 확인 후 경로 수정 */}
                 <button className="btn btn-outline" onClick={() => auctionStatus?.aucSn && navigate(`/auction/${auctionStatus.aucSn}`)}>
                   구매자 화면 보기
                 </button>
-                <button className="btn btn-danger" onClick={() => setCancelOpen(true)}>
-                  경매 취소 요청
-                </button>
+                {isCancelPending
+                  ? <button className="btn btn-danger" disabled>취소 요청 검토 중</button>
+                  : <button className="btn btn-danger" onClick={() => setCancelOpen(true)}>경매 취소 요청</button>
+                }
               </>
             )}
 
