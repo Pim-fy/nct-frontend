@@ -60,9 +60,11 @@ export default function ServiceMenuSection() {
 
         <div className="absolute contents left-[1360px] top-[1032px]" data-name="num">
           {HOT_ITEMS.map((item, i) => (
-            <div key={item.rank} className="absolute left-[1360px] size-[29px]" style={{ top: 1042 + i * 50 }}>
-              <img alt="" className="absolute block inset-0 max-w-none size-full" src={i === 0 ? assets.ellipse13 : assets.ellipse14} />
-            </div>
+            <div
+              key={item.rank}
+              className={`absolute left-[1360px] size-[29px] rounded-full ${i === 0 ? 'bg-[#0064ff]' : 'bg-[#c9d3e0]'}`}
+              style={{ top: 1042 + i * 50 }}
+            />
           ))}
           <div className="absolute font-['Noto_Sans_KR:Bold'] font-bold leading-[0] left-[1371px] text-[13px] text-white top-[1032px] tracking-[-0.65px] whitespace-nowrap">
             {HOT_ITEMS.map((item, i) => (
@@ -84,10 +86,10 @@ export default function ServiceMenuSection() {
           ))}
         </div>
 
-        <div className="absolute h-[200px] left-[1361px] top-[1081px] w-[380px]">
-          <div className="absolute inset-[-0.5%_0_0_0]">
-            <img alt="" className="block max-w-none size-full" src={assets.hotItemLine} />
-          </div>
+        <div className="absolute left-[1361px] top-[1081px] w-[380px] flex flex-col">
+          {[0,1,2,3].map(i => (
+            <div key={i} className="h-[50px] border-b border-[#ebebeb]" />
+          ))}
         </div>
       </div>
     </section>
