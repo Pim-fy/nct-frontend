@@ -14,7 +14,7 @@ import { usePointBalance, usePointLedger, usePointChargeOrders, usePointExchange
 import { confirmPointCharge, requestPointExchange, convertPoint } from '../../../api/pointApi';
 
 // 데이터 도착 전(로딩 중) 카드가 깨지지 않도록 쓰는 0값 기본 잔액
-const EMPTY_BALANCE = { available: 0, hold: 0, settleable: 0, total: 0 };
+const EMPTY_BALANCE = { available: 0, hold: 0, settleable: 0, total: 0, exchangeable: 0 };
 
 /** axios 오류에서 백엔드 ApiResponse의 message를 꺼낸다 (없으면 일반 안내) */
 const errorMessage = (err) =>
@@ -207,7 +207,7 @@ const PointWalletPage = () => {
         <PointAmountModal
           title="환전 신청"
           submitLabel="환전"
-          infoRow={{ label: '환전 가능 포인트', value: `${balance.settleable.toLocaleString()} P` }}
+          infoRow={{ label: '환전 가능 포인트', value: `${balance.exchangeable.toLocaleString()} P` }}
           onSubmit={submitAmount('exchange')}
           onClose={() => setOpenModal(null)}
         />
