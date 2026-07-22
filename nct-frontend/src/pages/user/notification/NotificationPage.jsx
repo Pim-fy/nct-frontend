@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import NotificationDetailModal from './components/NotificationDetailModal';
 import NotificationItem from './components/NotificationItem';
 import { useMarkAllRead, useMarkRead, useNotifications } from '../../../hooks/useNotification';
 import relativeTime from '../../../utils/relativeTime';
@@ -36,6 +37,7 @@ const toViewItem = (n) => ({
   type: n.type,                                          // 유형 한글명 (배지 표시)
   audienceCd: n.audienceCd,                              // 일반/제공자 필터 기준 (F-COM-011)
   title: n.title,
+  content: n.content,                                    // 상세 팝업 본문
   time: relativeTime(n.regDt),                           // "방금 전 / N분 전" 상대 표기
   ref: n.refSn != null ? '관련 링크' : null,             // 참조 대상 페이지 라우팅은 해당 화면 구현 후
   read: n.read,
@@ -50,6 +52,8 @@ const NotificationPage = () => {
   const [filter, setFilter] = useState('전체');
   // 일반/제공자 구분 필터 (F-COM-011) — 도메인 필터와 독립적으로 겹쳐 적용된다
   const [audienceFilter, setAudienceFilter] = useState('전체');
+  // 상세 팝업에 띄울 알림 — null이면 팝업 닫힌 상태
+  const [selectedItem, setSelectedItem] = useState(null);
 
   const { data: notifications = [], isLoading } = useNotifications();
   const markReadMutation = useMarkRead();
@@ -61,8 +65,12 @@ const NotificationPage = () => {
     .filter((n) => audienceFilter === '전체' || n.audienceCd === AUDIENCE_TO_CODE[audienceFilter]);
   const unreadCount = items.filter((n) => !n.read).length;
 
-  const markRead = (id) => markReadMutation.mutate(id);
   const markAllRead = () => markAllReadMutation.mutate();
+  // 알림 클릭 — 읽음 처리와 상세 팝업 노출을 함께 한다
+  const openItem = (item) => {
+    markReadMutation.mutate(item.id);
+    setSelectedItem(item);
+  };
 
   const visibleDomains =
     filter === '전체' ? DOMAINS : [FILTER_TO_DOMAIN[filter]];
@@ -145,7 +153,7 @@ const NotificationPage = () => {
                     <p className="text-sm text-gray-400 text-center py-6 m-0">알림이 없습니다.</p>
                   )}
                   {domainItems.map((item) => (
-                    <NotificationItem key={item.id} item={item} onRead={markRead} />
+                    <NotificationItem key={item.id} item={item} onClick={openItem} />
                   ))}
                 </div>
               </div>
@@ -153,6 +161,8 @@ const NotificationPage = () => {
           })}
         </section>
       )}
+
+      <NotificationDetailModal item={selectedItem} onClose={() => setSelectedItem(null)} />
     </div>
   );
 };

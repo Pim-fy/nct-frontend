@@ -2,12 +2,13 @@
 
 /**
  * 알림 한 건 — 미읽음이면 파란 배경 + 좌측 강조선 (목업 20_notification.html)
+ * 클릭하면 읽음 처리와 함께 상세 팝업(NotificationDetailModal)이 뜬다.
  */
-const NotificationItem = ({ item, onRead }) => {
+const NotificationItem = ({ item, onClick }) => {
   return (
     <button
       type="button"
-      onClick={() => onRead(item.id)}
+      onClick={() => onClick(item)}
       className={`w-full text-left border rounded-2xl p-4 transition-colors
         ${item.read
           ? 'bg-white border-gray-100 hover:bg-gray-50'

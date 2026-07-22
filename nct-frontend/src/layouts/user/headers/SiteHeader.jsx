@@ -11,12 +11,13 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, ChevronRight } from 'lucide-react';
 import { useAuth } from '@hooks/useAuth';
-import { useNotifications } from '@hooks/useNotification';
+import { useMarkRead, useNotifications } from '@hooks/useNotification';
 import { useNotificationStream } from '@hooks/useNotificationStream';
 import { usePointBalance } from '@hooks/usePoint';
 import relativeTime from '@utils/relativeTime';
 import { isProviderAccount, requestMypageMode } from '@utils/providerMode';
 import QuickActions from '@components/landing/QuickActions';
+import NotificationDetailModal from '@pages/user/notification/components/NotificationDetailModal';
 import logoImg from '@assets/img/logo.png';
 import bellIcon from '@assets/img/bellIcon.png';
 import walletIcon from '@assets/img/walletIcon.png';
@@ -59,6 +60,8 @@ const SiteHeader = () => {
   // 알림·포인트 실데이터 — 로그인 상태일 때만 호출 (비로그인 401 방지)
   const notiQuery = useNotifications({ enabled: !!user });
   useNotificationStream(!!user); // 실시간 push 구독 — 새 알림 오면 notiQuery를 자동 invalidate
+  const markReadMutation = useMarkRead();
+  const [selectedNoti, setSelectedNoti] = useState(null); // 클릭한 알림 상세 팝업
   const balanceQuery = usePointBalance({ enabled: !!user });
   // 안읽은 알림: 배지 숫자와 드롭다운 목록의 공통 원천
   const unreadNotis = (notiQuery.data ?? []).filter((n) => !n.read);
@@ -263,12 +266,22 @@ const SiteHeader = () => {
                 ) : (
                   <ul className="flex flex-col gap-3">
                     {unreadNotis.slice(0, NOTI_PREVIEW_MAX).map((item) => (
-                      <li key={item.id} className="flex items-start gap-2">
-                        <span className="mt-[6px] size-[6px] shrink-0 rounded-full bg-primary" />
-                        <div className="min-w-0">
-                          <p className="truncate text-[13px] text-[#333]">{item.title}</p>
-                          <p className="text-[11px] text-[#969696]">{relativeTime(item.regDt)}</p>
-                        </div>
+                      <li key={item.id}>
+                        <button
+                          type="button"
+                          className="flex w-full items-start gap-2 text-left"
+                          onClick={() => {
+                            markReadMutation.mutate(item.id);
+                            setSelectedNoti({ ...item, time: relativeTime(item.regDt) });
+                            setNotiOpen(false);
+                          }}
+                        >
+                          <span className="mt-[6px] size-[6px] shrink-0 rounded-full bg-primary" />
+                          <div className="min-w-0">
+                            <p className="truncate text-[13px] text-[#333]">{item.title}</p>
+                            <p className="text-[11px] text-[#969696]">{relativeTime(item.regDt)}</p>
+                          </div>
+                        </button>
                       </li>
                     ))}
                   </ul>
@@ -523,6 +536,7 @@ const SiteHeader = () => {
     </header>
     {/* 퀵메뉴(경매등록/서비스요청 등)를 헤더 컴포넌트에 포함시켜 모든 페이지에서 우측에 고정 노출한다. */}
     <QuickActions />
+    <NotificationDetailModal item={selectedNoti} onClose={() => setSelectedNoti(null)} />
     </>
   );
 };
