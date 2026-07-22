@@ -12,6 +12,10 @@ export const login = (credentials) =>
 export const logout = () =>
   api.post('/auth/logout').then(res => res.data);
 
+// @ai_generated CHG-032/F-PROV-015 - 담당자2의 모드 전환 화면이 공통 AUTH API를 소비하는 계약.
+export const switchMode = (to) =>
+  api.post('/auth/mode', null, { params: { to } }).then(res => res.data);
+
 /** 회원가입 */
 export const signup = (userData) =>
   api.post('/auth/signup', userData).then(res => res.data);
