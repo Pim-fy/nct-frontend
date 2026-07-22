@@ -4,9 +4,10 @@
 // 라우트: /product/register
 // 단계: 0(상품정보) → 1(경매설정) → 2(등록확인)
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { getCategories } from '@api/categoryApi';
-import { fetchBannedKeywords, registerProduct } from '@api/productApi';
+import { fetchBannedKeywords, registerProduct, updateProduct, getProduct } from '@api/productApi';
 import Breadcrumb from '@components/common/Breadcrumb';
 import ErrorMessage from '@components/common/ErrorMessage';
 import AuctionCalendarModal from '@components/product/AuctionCalendarModal';
@@ -48,6 +49,9 @@ const MAX_IMAGES = 5; // F-AUC-002 — 대표이미지 포함 최대 5장
 
 export default function ProductRegisterPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryClient = useQueryClient();
+  const editPrdSn = location.state?.prdSn ?? null; // 임시저장 수정 모드
 
   // ─── UI 상태 ─────────────────────────────────────────────────────────────
   const [step, setStep] = useState(0);
@@ -76,18 +80,41 @@ export default function ProductRegisterPage() {
     bidUnit: 1000,
   });
 
-  // ─── 카테고리 목록 로드 ──────────────────────────────────────────────────
-  // 마운트 시 1회 실행, 하위 카테고리(catParentSn != null)만 필터링해 사용
+  // ─── 카테고리 목록 + (수정 모드) 기존 상품 데이터 로드 ─────────────────
   useEffect(() => {
-    getCategories(PRODUCT_DOMAIN_CD)
-      .then(res => {
-        const children = res.data.filter(c => c.catParentSn !== null);
-        setCategories(children);
-      })
-      .catch(() => setError('카테고리를 불러오지 못했습니다.'));
-    fetchBannedKeywords()
-      .then(res => setBannedKeywords(res.data))
-      .catch(() => {});
+    const loads = [
+      getCategories(PRODUCT_DOMAIN_CD)
+        .then(res => {
+          const children = res.data.filter(c => c.catParentSn !== null);
+          setCategories(children);
+        })
+        .catch(() => setError('카테고리를 불러오지 못했습니다.')),
+      fetchBannedKeywords()
+        .then(res => setBannedKeywords(res.data))
+        .catch(() => {}),
+    ];
+
+    if (editPrdSn) {
+      loads.push(
+        getProduct(editPrdSn)
+          .then(res => {
+            const p = res.data;
+            setForm(prev => ({
+              ...prev,
+              catSn:          p.catSn ?? '',
+              prdNm:          p.prdNm ?? '',
+              prdCn:          p.prdCn ?? '',
+              prdTrdMethodCd: p.prdTrdMethodCd ?? 'TRDC0009',
+              prdStartAmt:    p.prdStartAmt != null ? String(p.prdStartAmt) : '',
+              prdIbyAmt:      p.prdIbyAmt  != null ? String(p.prdIbyAmt)  : '',
+            }));
+          })
+          .catch(() => setError('기존 상품 정보를 불러오지 못했습니다.'))
+      );
+    }
+
+    Promise.all(loads);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -150,17 +177,21 @@ export default function ProductRegisterPage() {
         prdIbyAmt:      form.prdIbyAmt ? Number(form.prdIbyAmt) : null,
         prdTrdMethodCd: form.prdTrdMethodCd,
         prdStatusCd:    statusCd,
-        flSnList:       images.map(img => img.flSn),
-        // 임시저장(PRDC0001)이면 경매 일정 없음 → 둘 다 null, 경매 등록(PRDC0002)이면 시작·종료일시 전송
+        // 수정 모드에서 새 이미지를 업로드하지 않으면 null → 백엔드에서 기존 이미지 유지
+        flSnList:       images.length > 0 ? images.map(img => img.flSn) : null,
         aucStartDt:     isDraft ? null : startDt.toISOString(),
         aucEndDt:       isDraft || !endDt ? null : endDt.toISOString(),
         bidUnit:        isDraft ? null : form.bidUnit,
       };
-      await registerProduct(payload);
-      navigate('/product/me');
+      const result = editPrdSn
+        ? await updateProduct(editPrdSn, payload)
+        : await registerProduct(payload);
+      const prdSn = result.data?.prdSn ?? editPrdSn;
+      queryClient.invalidateQueries({ queryKey: ['products', 'my'] });
+      navigate(`/product/${prdSn}/seller`);
     } catch (err) {
       const msg = err.response?.data?.message;
-      setError(msg || '상품 등록에 실패했습니다.');
+      setError(msg || (editPrdSn ? '상품 수정에 실패했습니다.' : '상품 등록에 실패했습니다.'));
     } finally {
       setLoading(false);
     }
@@ -204,8 +235,8 @@ export default function ProductRegisterPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      <Breadcrumb items={[{ label: '홈', href: '/' }, { label: '상품 등록' }]} />
-      <div className="page-title"><div><h1>상품 등록</h1></div></div>
+      <Breadcrumb items={[{ label: '홈', href: '/' }, { label: editPrdSn ? '경매 설정 완료' : '상품 등록' }]} />
+      <div className="page-title"><div><h1>{editPrdSn ? '경매 설정 완료' : '상품 등록'}</h1></div></div>
 
       <section className="card" style={{ maxWidth: 900, margin: '0 auto' }}>
         {/* 스텝 인디케이터 */}

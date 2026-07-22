@@ -110,7 +110,7 @@ export default function ProductDetailSellerPage() {
       setComments(updated.data);
       setCmtTtl('');
       setCmtCn('');
-      setToast('추가 공지가 등록되었습니다.');
+      setToast('수정 이력이 등록되었습니다.');
     } catch {
       setToast('추가 공지 등록에 실패했습니다.');
     } finally {
@@ -289,7 +289,7 @@ export default function ProductDetailSellerPage() {
             )}
 
             {isDraft && (
-              <button className="btn btn-primary" onClick={() => navigate('/product/register')}>
+              <button className="btn btn-primary" onClick={() => navigate('/product/register', { state: { prdSn: Number(prdSn) } })}>
                 경매 설정 완료하기
               </button>
             )}
@@ -303,7 +303,7 @@ export default function ProductDetailSellerPage() {
 
       {/* 추가 공지 섹션 (F-AUC-007) */}
       <section className="card" style={{ marginTop: 24 }}>
-        <h3 style={{ margin: '0 0 16px', fontSize: 20 }}>추가 공지 이력</h3>
+        <h3 style={{ margin: '0 0 16px', fontSize: 20 }}>상품 수정 이력</h3>
 
         {/* 등록 폼 — 진행중 상태에서만 표시 */}
         {isActive && (
@@ -313,7 +313,7 @@ export default function ProductDetailSellerPage() {
               <input
                 type="text"
                 maxLength={200}
-                placeholder="추가 공지 제목을 입력해 주세요"
+                placeholder="수정 이력 제목을 입력해 주세요"
                 value={cmtTtl}
                 onChange={e => setCmtTtl(e.target.value)}
               />
@@ -334,7 +334,7 @@ export default function ProductDetailSellerPage() {
                 onClick={handleCommentSubmit}
                 disabled={cmtSubmitting}
               >
-                {cmtSubmitting ? '등록 중...' : '공지 등록'}
+                {cmtSubmitting ? '등록 중...' : '수정 이력 등록'}
               </button>
             </div>
           </div>
@@ -342,7 +342,7 @@ export default function ProductDetailSellerPage() {
 
         {/* 공지 목록 — 최신 4개 */}
         {comments.length === 0 ? (
-          <p className="muted small" style={{ padding: '12px 2px' }}>등록된 추가 공지가 없습니다.</p>
+          <p className="muted small" style={{ padding: '12px 2px' }}>등록된 수정 이력이 없습니다.</p>
         ) : (
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
             {comments.map(c => (

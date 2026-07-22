@@ -10,13 +10,17 @@ import api from './axios';
 export const registerProduct = (data) =>
   api.post('/products', data).then(res => res.data);
 
-/** 내 판매 목록 */
-export const getMyProducts = (page = 1, size = 10, prdStatusCd = null) =>
-  api.get('/products/me', { params: { page, size, ...(prdStatusCd ? { prdStatusCd } : {}) } }).then(res => res.data);
+/** 내 판매 목록 — filterType: DRAFT | ACTIVE | WON | TRADING | DONE | CANCELED | ENDED | null(전체) */
+export const getMyProducts = (page = 1, size = 10, filterType = null) =>
+  api.get('/products/me', { params: { page, size, ...(filterType ? { filterType } : {}) } }).then(res => res.data);
 
 /** 상품 상세 조회 */
 export const getProduct = (prdSn) =>
   api.get(`/products/${prdSn}`).then(res => res.data);
+
+/** 임시저장 상품 수정 및 등록 전환 */
+export const updateProduct = (prdSn, data) =>
+  api.put(`/products/${prdSn}`, data).then(res => res.data);
 
 /** 상품 삭제 */
 export const deleteProduct = (prdSn) =>
