@@ -20,21 +20,14 @@ import ConfirmModal from '@components/common/ConfirmModal';
 // ─── 상수 정의 ───────────────────────────────────────────────────────────────
 // 상태 코드(PRDC)별 한글 라벨 · 배지 클래스 · 필터 옵션
 // 거래방식 코드(TRDC)별 한글 라벨
-// F-AUC-005 경매 상태(AUCC) 라벨·배지 — 옥동민(5) 연계
-const AUC_STATUS_LABEL = {
-  AUCC0001: '준비',
-  AUCC0002: '진행중',
-  AUCC0003: '종료',
-  AUCC0004: '유찰',
-  AUCC0005: '취소',
-};
-
+// F-AUC-005 경매 상태(AUCC) 배지 클래스 — 라벨은 백엔드 aucStatusNm 직접 사용
 const AUC_STATUS_BADGE = {
   AUCC0001: 'badge-gray',
   AUCC0002: 'badge-success',
   AUCC0003: 'badge-gray',
   AUCC0004: 'badge-warning',
   AUCC0005: 'badge-danger',
+  AUCC0006: 'badge-warning',
 };
 
 const FILTERS = [
@@ -167,7 +160,7 @@ export default function MyProductListPage() {
                         </span>
                       ) : p.aucStatusCd ? (
                         <span className={`badge ${AUC_STATUS_BADGE[p.aucStatusCd] ?? 'badge-gray'}`}>
-                          경매 {AUC_STATUS_LABEL[p.aucStatusCd] ?? p.aucStatusCd}
+                          경매 {p.aucStatusNm ?? p.aucStatusCd}
                         </span>
                       ) : (
                         <span className={`badge ${STATUS_BADGE[p.prdStatusCd] ?? 'badge-gray'}`}>

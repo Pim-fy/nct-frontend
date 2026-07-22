@@ -4,12 +4,13 @@
 // 목업: 06_auction_detail_seller.html 기반
 // 라우트: /product/:prdSn/seller
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toImageUrl } from '@api/fileApi';
 import { getProduct, postProductComment, fetchProductComments } from '@api/productApi';
 import { getAuctionStatus, requestAuctionCancel } from '@api/auctionApi';
 import { TRADE_LABEL, STATUS_LABEL, STATUS_BADGE } from '@/constants/productConstants';
+import useCountdown from '@hooks/useCountdown';
 import Breadcrumb from '@components/common/Breadcrumb';
 import ErrorMessage from '@components/common/ErrorMessage';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
@@ -30,27 +31,18 @@ export default function ProductDetailSellerPage() {
   const [error, setError] = useState('');
 
   // ─── 남은 시간 카운트다운 (F-AUC-006) ───────────────────────────────────
-  const [remainTime, setRemainTime] = useState('');
-  const timerRef = useRef(null);
-
-  useEffect(() => {
-    if (!auctionStatus?.aucEndDt) return;
-
-    const calc = () => {
-      const diff = new Date(auctionStatus.aucEndDt) - new Date();
-      if (diff <= 0) { setRemainTime('종료'); clearInterval(timerRef.current); return; }
-      const d = Math.floor(diff / 86400000);
-      const h = Math.floor((diff % 86400000) / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      const pad = n => String(n).padStart(2, '0');
-      setRemainTime(d > 0 ? `${d}일 ${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(h)}:${pad(m)}:${pad(s)}`);
-    };
-
-    calc();
-    timerRef.current = setInterval(calc, 1000);
-    return () => clearInterval(timerRef.current);
-  }, [auctionStatus?.aucEndDt]);
+  const now = useCountdown(!!auctionStatus?.aucEndDt);
+  const remainTime = (() => {
+    if (!auctionStatus?.aucEndDt) return '';
+    const diff = new Date(auctionStatus.aucEndDt) - now;
+    if (diff <= 0) return '종료';
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    const pad = n => String(n).padStart(2, '0');
+    return d > 0 ? `${d}일 ${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(h)}:${pad(m)}:${pad(s)}`;
+  })();
 
   // ─── 추가 공지 상태 (F-AUC-007) ─────────────────────────────────────────
   const [comments, setComments] = useState([]);
