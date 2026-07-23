@@ -17,7 +17,9 @@ const BUTTON_OUTLINE = 'shrink-0 rounded-lg border border-primary px-4 py-2.5 te
 const BUTTON_PRIMARY = 'rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50';
 const BUTTON_GHOST = 'rounded-lg border border-[#e2e1dc] px-3 py-2 text-sm text-[#5f5e5a] transition hover:bg-[#f8f8f6]';
 
-const LOGIN_ID_PATTERN = /^[A-Za-z0-9._-]{6,50}$/;
+const LOGIN_ID_PATTERN = /^[A-Za-z0-9._-]{4,50}$/;
+// @ai_generated: 로그인 ID 안내가 실제 정규식의 최소·최대 길이와 항상 일치하도록 유지한다.
+const LOGIN_ID_GUIDE = '영문·숫자·. _ - 조합으로 4~50자';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TELNO_PATTERN = /^$|^01[016789]-\d{3,4}-\d{4}$/;
 const VERIFICATION_CODE_PATTERN = /^\d{6}$/;
@@ -121,7 +123,7 @@ const AgreementModal = ({ agreement, onClose }) => {
 const validateLoginId = (value) => {
   const loginId = value.trim();
   if (!loginId) return '로그인 아이디를 입력해주세요.';
-  if (!LOGIN_ID_PATTERN.test(loginId)) return '영문·숫자·. _ - 조합으로 6~50자 입력해주세요.';
+  if (!LOGIN_ID_PATTERN.test(loginId)) return `${LOGIN_ID_GUIDE} 입력해주세요.`;
   if (loginId.toUpperCase().startsWith('OAUTH_')) return 'OAUTH_로 시작하는 아이디는 사용할 수 없습니다.';
   return '';
 };
@@ -606,7 +608,7 @@ const SignupPage = () => {
                         className={INPUT_CLASS}
                         onBlur={handleFieldBlur('loginId')}
                         onChange={handleFieldChange('loginId')}
-                        placeholder="영문·숫자·. _ - 6~50자"
+                        placeholder="영문·숫자·. _ - 4~50자"
                         value={form.loginId}
                       />
                       <button
