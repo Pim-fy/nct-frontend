@@ -202,12 +202,12 @@ const AppRoutes = () => {
           <Route path="services" element={<AdminServiceRequestPage />} />
           <Route path="provider-applications" element={<AdminProviderApprovalPage />} />
           <Route path="auctions" element={<AdminAuctionManagementPage />} />
-          {/* 보안/감사·시스템 설정 (담당자6, F-OPS-014/016/024) */}
+          {/* 보안/감사·시스템 설정: 1단계 최소 설정은 담당자7 F-OPS-024, 3단계 감사/제한조회 화면은 담당자6 인수 범위입니다. */}
           <Route path="audit-logs" element={<AdminAuditLogPage />} />
           <Route path="system-settings" element={<AdminSystemSettingPage />} />
           {/* 관리자 알림 (담당자6, F-COM-004/005) */}
           <Route path="notifications" element={<AdminNotificationPage />} />
-          {/* F-OPS-012/013 임시 연동 및 신고 목업 확인용 읽기 전용 화면 */}
+          {/* 담당자7 · F-OPS-013 민감정보 탐지 이벤트 읽기 전용 확인 화면 */}
           <Route path="operations-preview" element={<OperationsIntegrationPreview />} />
         </Route>
       </Route>

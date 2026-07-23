@@ -48,10 +48,10 @@ export default function AuctionSection() {
   const goNext = () => setSlideIndex((i) => Math.min(maxIndex, i + 1));
 
   return (
-    <section className="absolute contents left-0 top-[1329px]" data-name="SECTION_3(신규경매/마감임박경매)">
+    <section className="absolute contents left-0 top-[1254px]" data-name="SECTION_3(신규경매/마감임박경매)">
       {/* 탭 메뉴 */}
-      <div className="absolute contents left-0 top-[1329px]" data-name="tabmen">
-        <div className="absolute h-0 left-0 top-[1361px] w-[1955px]">
+      <div className="absolute contents left-0 top-[1254px]" data-name="tabmen">
+        <div className="absolute h-0 left-0 top-[1286px] w-[1955px]">
           <div className="absolute inset-[-1px_0_0_0]">
             <img alt="" className="block max-w-none size-full" src={assets.divider1} />
           </div>
@@ -59,7 +59,7 @@ export default function AuctionSection() {
         <button
           type="button"
           onClick={() => handleTabChange("new")}
-          className={`absolute h-[60px] left-[711px] rounded-[40px] top-[1329px] w-[242px] cursor-pointer transition-colors ${
+          className={`absolute h-[60px] left-[711px] rounded-[40px] top-[1254px] w-[242px] cursor-pointer transition-colors ${
             activeTab === "new" ? "bg-[#0064ff]" : "bg-[#ebebeb]"
           }`}
         >
@@ -74,7 +74,7 @@ export default function AuctionSection() {
         <button
           type="button"
           onClick={() => handleTabChange("closing")}
-          className={`absolute h-[60px] left-[969px] rounded-[40px] top-[1329px] w-[242px] cursor-pointer transition-colors ${
+          className={`absolute h-[60px] left-[969px] rounded-[40px] top-[1254px] w-[242px] cursor-pointer transition-colors ${
             activeTab === "closing" ? "bg-[#0064ff]" : "bg-[#ebebeb]"
           }`}
         >
@@ -88,11 +88,7 @@ export default function AuctionSection() {
         </button>
       </div>
 
-      {/* 경매 카드 캐러셀
-          overflow-hidden(양방향 클리핑)을 쓰면 카드 그림자(box-shadow blur 20px)가
-          아래쪽에서 잘려 보였다. 슬라이드에 필요한 건 가로 방향 클리핑뿐이라
-          overflow-x만 숨기고 overflow-y는 visible로 둬서 그림자가 안 잘리게 한다. */}
-      <div className="absolute top-[1462px] overflow-x-hidden overflow-y-visible" style={{ left: VIEWPORT_LEFT, width: VIEWPORT_WIDTH }}>
+      <div className="absolute top-[1387px] overflow-x-hidden overflow-y-visible" style={{ left: VIEWPORT_LEFT, width: VIEWPORT_WIDTH }}>
         <div
           className="flex gap-[24px] transition-transform duration-300 ease-out"
           style={{ transform: `translateX(${-slideIndex * CARD_STEP}px)` }}
@@ -103,11 +99,10 @@ export default function AuctionSection() {
         </div>
       </div>
 
-      <ArrowIcon direction="left" className="left-[111px] top-[1616px]" barClassName="bg-[#434343]" onClick={goPrev} disabled={slideIndex === 0} />
-      <ArrowIcon direction="right" className="left-[1800px] top-[1616px]" barClassName="bg-[#434343]" onClick={goNext} disabled={slideIndex >= maxIndex} />
+      <ArrowIcon direction="left" className="left-[111px] top-[1541px]" barClassName="bg-[#434343]" onClick={goPrev} disabled={slideIndex === 0} />
+      <ArrowIcon direction="right" className="left-[1800px] top-[1541px]" barClassName="bg-[#434343]" onClick={goNext} disabled={slideIndex >= maxIndex} />
 
-      {/* 더보기 → 경매 리스트 페이지 (F-AUC 담당자가 라우트를 만들기 전까지는 404) */}
-      <MoreButton left={895} top={1849} variant="light" onClick={() => navigate("/auction")} />
+      <MoreButton left={895} top={1774} variant="light" onClick={() => navigate("/auction")} />
     </section>
   );
 }

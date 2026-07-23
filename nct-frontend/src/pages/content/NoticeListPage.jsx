@@ -10,11 +10,35 @@ import {
   NoticeList,
   NoticeListSummary,
 } from '@components/content/ContentUi';
-import ListSkeleton from '@components/skeleton/ListSkeleton';
 import { usePublicNoticeList, usePublicNoticeTypes } from '@hooks/usePublicNotices';
 import './noticePage.css';
 
 const PAGE_SIZE = 10;
+
+const NoticeListSkeleton = () => (
+  <section className="public-notice-skeleton" aria-label="공지사항 목록을 불러오는 중">
+    <div className="public-notice-skeleton__toolbar">
+      <span />
+      <span />
+    </div>
+    <div className="public-notice-skeleton__table">
+      <div className="public-notice-skeleton__row public-notice-skeleton__row--head">
+        <span />
+        <span />
+        <span />
+        <span />
+      </div>
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div className="public-notice-skeleton__row" key={index}>
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+      ))}
+    </div>
+  </section>
+);
 
 /** F-COM-013: 공개 조건을 만족한 공지만 보여 주는 목록 화면입니다. */
 const NoticeListPage = () => {
@@ -64,7 +88,7 @@ const NoticeListPage = () => {
         selectedTypeCode={typeCode}
         types={typesQuery.data ?? []}
       />
-      {noticesQuery.isLoading && <ListSkeleton />}
+      {noticesQuery.isLoading && <NoticeListSkeleton />}
 
       {noticesQuery.isError && (
         <ContentState

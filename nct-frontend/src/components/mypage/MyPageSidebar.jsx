@@ -43,7 +43,7 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
   return (
     <nav className="lg:w-[210px] lg:shrink-0">
       {/* 타이틀 (데스크톱) */}
-      <h2 className="hidden lg:block font-bold text-[22px] text-black mb-5 px-2">
+      <h2 className="hidden lg:block font-bold text-[25px] text-black mb-5 px-2">
         마이페이지
         {mode === "provider" && (
           <span className="text-[14px] text-[#0064ff] ml-1">(제공자)</span>
@@ -85,7 +85,7 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
                 }`}
               >
                 <span
-                  className={`text-[15px] ${
+                  className={`text-[16px] ${
                     isActive ? "font-bold text-white" : "font-medium text-[#333]"
                   }`}
                 >

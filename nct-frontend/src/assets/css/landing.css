@@ -391,8 +391,7 @@
 .quick-rail {
   position: fixed;
   right: 24px;
-  top: 50%;
-  transform: translateY(-50%);
+  bottom: 117px; /* TOP 버튼(85px + 24px 하단 여백 + 8px 간격) 바로 위 */
   display: flex;
   flex-direction: column;
   gap: 8px;

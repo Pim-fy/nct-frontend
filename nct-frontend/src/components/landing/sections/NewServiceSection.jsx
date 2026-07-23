@@ -32,21 +32,21 @@ export default function NewServiceSection() {
   const goNext = () => setPage((p) => Math.min(totalPages - 1, p + 1));
 
   return (
-    <section className="absolute contents left-0 top-[1978px]" data-name="SECTION_4(신규서비스요청)">
-      <div className="absolute bg-[#f5f9ff] h-[684px] left-0 top-[1978px] w-[1920px]" />
-      <div className="absolute h-[684px] left-0 top-[1978px] w-[1920px]">
+    <section className="absolute contents left-0 top-[1903px]" data-name="SECTION_4(신규서비스요청)">
+      <div className="absolute bg-[#f5f9ff] h-[684px] left-0 top-[1903px] w-[1920px]" />
+      <div className="absolute h-[684px] left-0 top-[1903px] w-[1920px]">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <img alt="" className="absolute h-[210.37%] left-[-6.02%] max-w-none top-[-44.67%] w-[112.64%]" src={assets.glennCarstensPeters} />
         </div>
       </div>
-      <div className="absolute bg-[rgba(0,0,0,0.3)] h-[684px] left-0 top-[1978px] w-[1920px]" />
+      <div className="absolute bg-[rgba(0,0,0,0.3)] h-[684px] left-0 top-[1903px] w-[1920px]" />
 
-      <p className="absolute font-['Noto_Sans_KR:Bold'] font-bold leading-[normal] left-[168px] text-[25px] text-white top-[2042px] tracking-[-2px] whitespace-nowrap">
+      <p className="absolute font-bold leading-[normal] left-[168px] text-[25px] text-white top-[1967px] tracking-[-2px] whitespace-nowrap">
         신규 서비스 요청
       </p>
 
       {/* 서비스요청 카드 캐러셀 (페이지 단위 슬라이드) */}
-      <div className="absolute top-[2092px] overflow-hidden" style={{ left: VIEWPORT_LEFT, width: VIEWPORT_WIDTH }}>
+      <div className="absolute top-[2017px] overflow-hidden" style={{ left: VIEWPORT_LEFT, width: VIEWPORT_WIDTH }}>
         <div
           className="flex transition-transform duration-300 ease-out"
           style={{ transform: `translateX(${-page * VIEWPORT_WIDTH}px)` }}
@@ -65,11 +65,10 @@ export default function NewServiceSection() {
         </div>
       </div>
 
-      <ArrowIcon direction="left" className="left-[111px] top-[2271px]" barClassName="bg-white" onClick={goPrev} disabled={page === 0} />
-      <ArrowIcon direction="right" className="left-[1800px] top-[2271px]" barClassName="bg-white" onClick={goNext} disabled={page >= totalPages - 1} />
+      <ArrowIcon direction="left" className="left-[111px] top-[2196px]" barClassName="bg-white" onClick={goPrev} disabled={page === 0} />
+      <ArrowIcon direction="right" className="left-[1800px] top-[2196px]" barClassName="bg-white" onClick={goNext} disabled={page >= totalPages - 1} />
 
-      {/* 더보기 → 서비스 페이지 (실제 존재하는 라우트) */}
-      <MoreButton left={895} top={2514} variant="dark" onClick={() => navigate("/services")} />
+      <MoreButton left={895} top={2439} variant="dark" onClick={() => navigate("/services")} />
     </section>
   );
 }

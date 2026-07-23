@@ -11,7 +11,7 @@ const PointSummaryCards = ({ balance }) => {
     { label: '총 보유 포인트',   value: balance.total,       bg: 'bg-white',      text: 'text-blue-700' },
     { label: '사용 가능 포인트', value: balance.available,   bg: 'bg-blue-50',    text: 'text-blue-700' },
     { label: '홀딩 포인트',      value: balance.hold,        bg: 'bg-amber-50',   text: 'text-amber-700' },
-    { label: '환전 가능 포인트', value: balance.settleable,  bg: 'bg-indigo-50',  text: 'text-indigo-700' },
+    { label: '환전 가능 포인트', value: balance.exchangeable, bg: 'bg-indigo-50',  text: 'text-indigo-700' },
   ];
 
   return (
