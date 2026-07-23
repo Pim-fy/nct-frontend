@@ -178,7 +178,11 @@ export default function ProductDetailSellerPage() {
       <div className="seller-auction-layout" style={{ alignItems: 'stretch' }}>
 
         {/* 왼쪽: 상품 정보 */}
-        <section className="card" style={{ display: 'flex', flexDirection: 'column' }}>
+        <section className="card" style={{ display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
+          <div style={{ background: '#eef2fb', padding: '14px 20px' }}>
+            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>상품 상세내용</h3>
+          </div>
+          <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', flex: 1 }}>
           <div className="seller-product" style={{ alignItems: 'flex-start' }}>
             <div className="seller-product-img">
               {product.prdImgUrl && (
@@ -230,7 +234,7 @@ export default function ProductDetailSellerPage() {
           )}
 
           {product.prdCn && (
-            <div style={{ textAlign: 'center', marginTop: 'auto', paddingTop: 16, borderTop: '1px solid #f0efec' }}>
+            <div style={{ textAlign: 'center', marginTop: 'auto', paddingTop: 16 }}>
               <button
                 type="button"
                 onClick={() => setDescOpen(v => !v)}
@@ -240,6 +244,8 @@ export default function ProductDetailSellerPage() {
               </button>
             </div>
           )}
+
+          </div>{/* /padding div */}
 
         </section>
 

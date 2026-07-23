@@ -9,17 +9,23 @@ export default function MyProductListPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <main className="container seller-page">
       <Breadcrumb items={[{ label: '홈', href: '/' }, { label: '내 판매 내역' }]} />
       <div className="page-title">
-        <div>
-          <h1>내 판매 내역</h1>
-        </div>
-        <a onClick={() => navigate('/product/register')} className="btn btn-outline" style={{ cursor: 'pointer' }}>
+        <div><h1>내 판매 내역</h1></div>
+        <button type="button" onClick={() => navigate('/product/register')} className="btn btn-outline">
           경매 등록
-        </a>
+        </button>
       </div>
-      <MyProductList />
-    </div>
+
+      <section className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div style={{ background: '#eef2fb', padding: '14px 20px' }}>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>상품 판매 내역</h3>
+        </div>
+        <div style={{ padding: '20px' }}>
+          <MyProductList />
+        </div>
+      </section>
+    </main>
   );
 }

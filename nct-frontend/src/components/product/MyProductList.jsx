@@ -225,7 +225,7 @@ export default function MyProductList() {
               return (
                 <div key={p.prdSn} className="list-row">
                   <div className="history-entry-main">
-                    <div style={{ flex: '0 0 88px', width: 88, height: 88, border: '1px solid #f0efec', borderRadius: 8, background: '#e5e4df', overflow: 'hidden' }}>
+                    <div style={{ flex: '0 0 120px', width: 120, height: 120, border: '1px solid #f0efec', borderRadius: 8, background: '#e5e4df', overflow: 'hidden' }}>
                       {p.prdImgUrl && (
                         <img src={toImageUrl(p.prdImgUrl)} alt={p.prdNm} style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }} />
                       )}
@@ -235,7 +235,7 @@ export default function MyProductList() {
                         <span className={`badge ${badgeClass}`}>{badgeLabel}</span>
                       </div>
                       <h4>{p.prdNm}</h4>
-                      <p className="muted" style={{ fontSize: 14 }}>
+                      <p className="muted" style={{ fontSize: 15 }}>
                         시작가 {fmtPrice(p.prdStartAmt)}
                         {p.prdIbyAmt != null && ` · 즉시구매 ${fmtPrice(p.prdIbyAmt)}`}
                         {` · ${TRADE_LABEL[p.prdTrdMethodCd] ?? p.prdTrdMethodCd}`}
