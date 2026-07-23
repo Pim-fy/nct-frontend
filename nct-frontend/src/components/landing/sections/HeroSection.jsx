@@ -40,11 +40,9 @@ export default function HeroSection() {
     navigate(`/search/${encodeURIComponent(trimmed)}`);
   };
 
-  // 태그를 클릭하면 검색창에 그 키워드가 채워지고 바로 검색까지 실행된다.
+  // 태그 클릭 시 검색창에 키워드만 채운다 (검색 실행은 사용자가 직접).
   const handleTagClick = (label) => {
-    const word = label.replace(/^#/, "");
-    setKeyword(word);
-    runSearch(word);
+    setKeyword(label.replace(/^#/, ""));
   };
 
   return (

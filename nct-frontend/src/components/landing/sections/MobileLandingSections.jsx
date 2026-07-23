@@ -55,7 +55,7 @@ export default function MobileLandingSections() {
               <button
                 key={tag}
                 type="button"
-                onClick={() => { setKeyword(tag.replace(/^#/, "")); runSearch(tag.replace(/^#/, "")); }}
+                onClick={() => setKeyword(tag.replace(/^#/, ""))}
                 className="shrink-0 rounded-full bg-white/20 border border-white/40 px-3 py-1.5 text-[13px] text-white backdrop-blur-sm"
               >
                 {tag}
