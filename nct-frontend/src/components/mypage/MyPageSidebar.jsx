@@ -5,12 +5,12 @@
 //   데스크톱(lg+): 좌측 세로 목록 / 모바일: 상단 가로 스크롤 탭.
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp } from "lucide-react";
 import { toast } from "@utils/common";
 
 const GENERAL_MENU_ITEMS = [
-  { key: "home",    label: "MY 홈",     type: "section" },
-  { key: "profile", label: "프로필수정", type: "section" },
+  { key: "home",    label: "MY 홈",  type: "section" },
+  { key: "profile", label: "프로필", type: "section" },
   {
     key: "auction-history",
     label: "경매 거래내역",
@@ -20,7 +20,15 @@ const GENERAL_MENU_ITEMS = [
       { key: "auction-sales", label: "상품 판매 내역", type: "section" },
     ],
   },
-  { key: "service-history", label: "서비스 거래내역", type: "todo" },
+  {
+    key: "service-history",
+    label: "서비스 거래내역",
+    type: "accordion",
+    children: [
+      { key: "service-bids",  label: "서비스 입찰 내역", type: "todo" },
+      { key: "service-sales", label: "서비스 판매 내역", type: "todo" },
+    ],
+  },
   { key: "wishlist",        label: "관심 상품",       type: "todo" },
   { key: "chat",            label: "채팅",            type: "todo" },
   { key: "wallet",          label: "포인트 지갑",     type: "route", to: "/user/point" },
@@ -28,7 +36,8 @@ const GENERAL_MENU_ITEMS = [
 
 // 아코디언 key → 포함되는 child key 목록
 const ACCORDION_CHILDREN = {
-  "auction-history": ["auction-bids", "auction-sales"],
+  "auction-history":  ["auction-bids", "auction-sales"],
+  "service-history":  ["service-bids", "service-sales"],
 };
 
 function getParentAccordion(sectionKey) {
@@ -63,9 +72,18 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
 
   const handleClick = (item) => {
     if (item.type === "accordion") {
+      const isCurrentlyOpen = openAccordion === item.key;
       setOpenAccordion(prev => prev === item.key ? null : item.key);
+      // 열릴 때 첫 번째 자식으로 자동 이동
+      if (!isCurrentlyOpen) {
+        const firstChild = (item.children ?? [])[0];
+        if (firstChild) onSelect(firstChild.key);
+      }
       return;
     }
+    // 아코디언 자식이 아닌 항목 클릭 시 아코디언 닫기
+    if (!getParentAccordion(item.key)) setOpenAccordion(null);
+
     if (item.type === "section") { onSelect(item.key); return; }
     if (item.type === "route")   { navigate(item.to); return; }
     if (item.type === "provider-switch") { onRequestProviderSwitch(); return; }
@@ -96,7 +114,7 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
               key={item.key}
               type="button"
               onClick={() => handleClick(item)}
-              className={`shrink-0 h-[34px] px-4 rounded-full text-[13px] font-medium whitespace-nowrap border transition-colors ${
+              className={`cursor-pointer shrink-0 h-[34px] px-4 rounded-full text-[13px] font-medium whitespace-nowrap border transition-colors ${
                 isActive
                   ? "bg-[#0064ff] text-white border-[#0064ff]"
                   : "bg-white text-[#333] border-[#d9d9d9] hover:bg-[#f3f5fa]"
@@ -121,56 +139,56 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
               <button
                 type="button"
                 onClick={() => handleClick(item)}
-                className={`w-full flex items-center justify-between h-[50px] px-[18px] rounded-[10px] text-left transition-colors ${
-                  isActive || hasActiveChild ? "bg-[#0064ff]" : "bg-transparent hover:bg-[#f3f5fa]"
+                className={`cursor-pointer w-full flex items-center justify-between h-[70px] px-[18px] text-left transition-all ${
+                  isActive || hasActiveChild || isOpen
+                    ? "bg-[#0064ff] rounded-[10px] shadow-[0_4px_14px_rgba(0,0,0,0.10)]"
+                    : "bg-transparent hover:bg-[#f3f5fa]"
                 }`}
               >
                 <span
-                  className={`text-[16px] ${
-                    isActive || hasActiveChild ? "font-bold text-white" : "font-medium text-[#333]"
+                  className={`text-[17px] ${
+                    isActive || hasActiveChild || isOpen ? "font-bold text-white" : "font-medium text-[#333]"
                   }`}
                 >
                   {item.label}
                 </span>
                 {isAccordion ? (
                   isOpen
-                    ? <ChevronDown size={14} className={hasActiveChild ? "text-white" : "text-[#888]"} />
-                    : <ChevronRight size={14} className={hasActiveChild ? "text-white" : "text-[#888]"} />
-                ) : (
-                  isActive && <ChevronRight size={14} className="text-white" />
-                )}
+                    ? <ChevronUp   size={14} className="text-white" />
+                    : <ChevronDown size={14} className={hasActiveChild ? "text-white" : "text-[#888]"} />
+                ) : item.showChevron ? (
+                  <ChevronDown size={14} className="text-[#888]" />
+                ) : null}
               </button>
-              <div className="h-px bg-[#e5e5e5] mx-[18px]" />
 
-              {/* 아코디언 하위 메뉴 */}
+              {/* 아코디언 하위 메뉴 — 구분선보다 위에 렌더링 */}
               {isAccordion && isOpen && (
-                <div className="pl-4">
+                <div className="bg-[#F3F5FA] px-[18px] py-3">
                   {(item.children ?? []).map(child => {
                     const isChildActive = child.key === activeSection;
                     return (
-                      <React.Fragment key={child.key}>
-                        <button
-                          type="button"
-                          onClick={() => handleClick(child)}
-                          className={`w-full flex items-center justify-between h-[44px] px-[18px] rounded-[8px] text-left transition-colors ${
-                            isChildActive ? "bg-[#e5efff]" : "bg-transparent hover:bg-[#f3f5fa]"
+                      <button
+                        key={child.key}
+                        type="button"
+                        onClick={() => handleClick(child)}
+                        className="group cursor-pointer w-full flex items-center h-[36px] text-left"
+                      >
+                        <span
+                          className={`text-[16px] transition-colors ${
+                            isChildActive
+                              ? "font-normal text-[#0064ff]"
+                              : "font-normal text-[#333] group-hover:text-[#0064ff]"
                           }`}
                         >
-                          <span
-                            className={`text-[14px] ${
-                              isChildActive ? "font-bold text-[#0064ff]" : "font-medium text-[#555]"
-                            }`}
-                          >
-                            {child.label}
-                          </span>
-                          {isChildActive && <ChevronRight size={12} className="text-[#0064ff]" />}
-                        </button>
-                        <div className="h-px bg-[#f0f0f0] mx-[18px]" />
-                      </React.Fragment>
+                          {child.label}
+                        </span>
+                      </button>
                     );
                   })}
                 </div>
               )}
+
+              <div className="h-px bg-[#e5e5e5]" />
             </React.Fragment>
           );
         })}
