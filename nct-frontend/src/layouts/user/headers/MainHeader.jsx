@@ -31,7 +31,7 @@ const MainHeader = () => {
         {/* 네비게이션 */}
         <nav style={{ display: 'flex', gap: '22px', alignItems: 'center' }}>
           <Link to="/auction">경매</Link>
-          <Link to="/services">서비스</Link>
+          <Link to="/service">서비스</Link>
           <Link to="/customersupport/notice">공지사항</Link>
         </nav>
 

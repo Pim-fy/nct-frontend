@@ -50,6 +50,7 @@ import TradeDetailSeller from '@pages/trade/TradeDetailSeller';
 import TradeChat from '@pages/trade/TradeChat';
 // 담당자 7 공개 콘텐츠 route. 공통 route 소유자(담당자 1)에게 동일 manifest로 전달합니다.
 import GuidePage from '@pages/content/GuidePage';
+import FaqPage from '@pages/content/FaqPage';
 import NoticeListPage from '@pages/content/NoticeListPage';
 import NoticeDetailPage from '@pages/content/NoticeDetailPage';
 import ServiceListPage from '@pages/service/ServiceListPage';
@@ -126,11 +127,12 @@ const AppRoutes = () => {
         <Route path="/auction/:auctionId" element={<AuctionDetailPage />} />
 
         {/* 담당자 7의 F-COM-002/015 화면. 공통 route 소유자(담당자 1)에게 동일 manifest로 전달합니다. */}
-        <Route path="/services" element={<ServiceListPage />} />
+        <Route path="/service" element={<ServiceListPage />} />
         <Route path="/providers/:providerId" element={<PublicProviderProfilePage />} />
         <Route path="/guide" element={<GuidePage />} />
         <Route path="/customersupport/notice" element={<NoticeListPage />} />
         <Route path="/customersupport/notice/:noticeId" element={<NoticeDetailPage />} />
+        <Route path="/customersupport/faq" element={<FaqPage />} />
       </Route>
 
       {/* 실제 거래 경로의 인증 정책과 분리된 개발용 화면 확인 경로 */}

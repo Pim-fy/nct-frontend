@@ -58,7 +58,7 @@ export default function NewServiceSection() {
               style={{ width: VIEWPORT_WIDTH }}
             >
               {SERVICE_REQUEST_ITEMS.slice(p * PAGE_SIZE, p * PAGE_SIZE + PAGE_SIZE).map((item) => (
-                <ServiceRequestCard key={item.key} item={item} onClick={() => navigate(`/services/${item.id}`)} />
+                <ServiceRequestCard key={item.key} item={item} onClick={() => navigate(`/service/${item.id}`)} />
               ))}
             </div>
           ))}
@@ -68,7 +68,7 @@ export default function NewServiceSection() {
       <ArrowIcon direction="left" className="left-[111px] top-[2196px]" barClassName="bg-white" onClick={goPrev} disabled={page === 0} />
       <ArrowIcon direction="right" className="left-[1800px] top-[2196px]" barClassName="bg-white" onClick={goNext} disabled={page >= totalPages - 1} />
 
-      <MoreButton left={895} top={2439} variant="dark" onClick={() => navigate("/services")} />
+      <MoreButton left={895} top={2439} variant="dark" onClick={() => navigate("/service")} />
     </section>
   );
 }
