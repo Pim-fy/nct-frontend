@@ -8,7 +8,7 @@ import {
 } from '@hooks/useAdminRiskEvents';
 import './operationsIntegrationPreview.css';
 
-/** 담당자 7 · F-OPS-011: 실제 위험 이벤트 API를 읽기 전용으로 보여 주는 관리자 화면입니다. */
+/** 담당자 7 · F-OPS-013: 민감정보 탐지 결과로 생성된 위험 이벤트를 읽기 전용으로 확인하는 화면입니다. */
 const OperationsIntegrationPreview = () => {
   const [typeCode, setTypeCode] = useState('');
   const [processed, setProcessed] = useState('');
@@ -59,9 +59,9 @@ const OperationsIntegrationPreview = () => {
 
       <header className="operations-preview__header">
         <div>
-          <p className="operations-preview__eyebrow">담당자 7 · F-OPS-011</p>
-          <h1>위험 이벤트</h1>
-          <p>민감정보 탐지 등 운영자가 확인할 사건을 실제 서버 목록으로 조회합니다.</p>
+          <p className="operations-preview__eyebrow">담당자 7 · F-OPS-013</p>
+          <h1>민감정보 탐지 이벤트</h1>
+          <p>민감정보 탐지로 생성된 신고·리스크 이벤트를 실제 서버 목록으로 조회합니다.</p>
         </div>
         <AdminStatusBadge tone="info">읽기 전용</AdminStatusBadge>
       </header>
