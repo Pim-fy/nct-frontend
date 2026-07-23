@@ -14,6 +14,7 @@ import MyPageDashboard from "@components/mypage/MyPageDashboard";
 import MyPageProfileEdit from "@components/mypage/MyPageProfileEdit";
 import MyPageProviderDashboard from "@components/mypage/MyPageProviderDashboard";
 import MyBidHistoryPage from "@pages/user/MyBidHistoryPage";
+import MyProductList from "@components/product/MyProductList";
 import { useAuth } from "@hooks/useAuth";
 import { confirm } from "@utils/common";
 import { isProviderAccount, MYPAGE_MODE_EVENT } from "@utils/providerMode";
@@ -68,7 +69,8 @@ export default function MyPage() {
             <MyPageProviderDashboard user={user} onSwitchToGeneral={() => switchMode("general")} />
           )}
           {activeSection === "profile" && <MyPageProfileEdit user={user} />}
-          {activeSection === "auction-history" && <MyBidHistoryPage />}
+          {activeSection === "auction-bids" && <MyBidHistoryPage />}
+          {activeSection === "auction-sales" && <MyProductList />}
         </div>
       </div>
     </div>
