@@ -8,7 +8,7 @@ const UserLayout = () => {
   const { pathname } = useLocation();
   const showQuickActions =
     pathname === '/auction' ||
-    pathname === '/services';
+    pathname === '/service';
   return (
     <ThemeProvider>
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
