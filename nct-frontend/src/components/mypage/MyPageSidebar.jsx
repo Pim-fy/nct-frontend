@@ -135,21 +135,29 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
                 type="button"
                 onClick={() => handleClick(item)}
                 className={`cursor-pointer w-full flex items-center justify-between h-[70px] px-[18px] text-left transition-all ${
-                  isActive || isOpen
+                  isActive
                     ? "bg-[#0064ff] rounded-[10px] shadow-[0_4px_14px_rgba(0,0,0,0.10)]"
+                    : isOpen && hasActiveChild
+                    ? "bg-[#0064ff] rounded-t-[10px] shadow-[0_4px_14px_rgba(0,0,0,0.10)]"
+                    : isOpen
+                    ? "bg-[#DAE1F0] rounded-t-[10px]"
                     : "bg-transparent hover:bg-[#f3f5fa]"
                 }`}
               >
                 <span
                   className={`text-[17px] ${
-                    isActive || isOpen ? "font-bold text-white" : "font-medium text-[#333]"
+                    isActive || (isOpen && hasActiveChild)
+                      ? "font-bold text-white"
+                      : isOpen
+                      ? "font-bold text-[#0064ff]"
+                      : "font-medium text-[#333]"
                   }`}
                 >
                   {item.label}
                 </span>
                 {isAccordion ? (
                   isOpen
-                    ? <ChevronUp   size={14} className="text-white" />
+                    ? <ChevronUp   size={14} className={isActive || hasActiveChild ? "text-white" : "text-[#0064ff]"} />
                     : <ChevronDown size={14} className="text-[#888]" />
                 ) : item.showChevron ? (
                   <ChevronDown size={14} className="text-[#888]" />
@@ -158,7 +166,7 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
 
               {/* 아코디언 하위 메뉴 — 구분선보다 위에 렌더링 */}
               {isAccordion && isOpen && (
-                <div className="bg-[#F3F5FA] px-[18px] py-3">
+                <div className="bg-[#F3F5FA] px-[18px] py-3 rounded-b-[10px]">
                   {(item.children ?? []).map(child => {
                     const isChildActive = child.key === activeSection;
                     return (
@@ -171,7 +179,7 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
                         <span
                           className={`text-[16px] transition-colors ${
                             isChildActive
-                              ? "font-normal text-[#0064ff]"
+                              ? "font-bold text-[#0064ff]"
                               : "font-normal text-[#333] group-hover:text-[#0064ff]"
                           }`}
                         >
