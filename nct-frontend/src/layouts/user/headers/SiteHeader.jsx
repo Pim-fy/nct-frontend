@@ -472,6 +472,13 @@ const SiteHeader = () => {
                     로그아웃
                   </button>
                 </div>
+                <button
+                  type="button"
+                  className="mt-2 w-full h-[40px] rounded-[8px] bg-[#f3f5fa] text-[14px] font-medium text-[#333333] hover:bg-[#e9edf5] transition-colors"
+                  onClick={() => { closeMobileMenu(); navigate('/user/mypage'); }}
+                >
+                  마이페이지 바로가기
+                </button>
               </div>
             )}
 
