@@ -41,7 +41,7 @@ export default function NewServiceSection() {
       </div>
       <div className="absolute bg-[rgba(0,0,0,0.3)] h-[684px] left-0 top-[1903px] w-[1920px]" />
 
-      <p className="absolute font-['Noto_Sans_KR:Bold'] font-bold leading-[normal] left-[168px] text-[25px] text-white top-[1967px] tracking-[-2px] whitespace-nowrap">
+      <p className="absolute font-bold leading-[normal] left-[168px] text-[25px] text-white top-[1967px] tracking-[-2px] whitespace-nowrap">
         신규 서비스 요청
       </p>
 
