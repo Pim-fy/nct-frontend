@@ -16,6 +16,7 @@ import MyPageProviderDashboard from "@components/mypage/MyPageProviderDashboard"
 import MyPageTradeChatList from "@components/mypage/MyPageTradeChatList";
 import TradeChat from "@pages/trade/TradeChat";
 import MyBidHistoryPage from "@pages/user/MyBidHistoryPage";
+import MyActiveAuctionPage from "@pages/user/MyActiveAuctionPage";
 import TradeHistory from "@pages/trade/TradeHistory";
 import MyProductList from "@components/product/MyProductList";
 import { useAuth } from "@hooks/useAuth";
@@ -23,6 +24,7 @@ import { confirm } from "@utils/common";
 import { isProviderAccount, MYPAGE_MODE_EVENT } from "@utils/providerMode";
 
 const MYPAGE_SECTION_QUERY_VALUES = new Set([
+  "active-auctions",
   "auction-bids",
   "auction-sales",
   "chat",
@@ -101,6 +103,7 @@ export default function MyPage({
             <MyPageProviderDashboard user={user} onSwitchToGeneral={() => switchMode("general")} />
           )}
           {activeSection === "profile" && <MyPageProfileEdit user={user} />}
+          {activeSection === "active-auctions" && <MyActiveAuctionPage />}
           {activeSection === "auction-bids" && (
             <TradeHistory
               embedded
