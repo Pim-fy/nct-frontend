@@ -3,7 +3,7 @@
 // 타 API 파일에서 이 파일의 api라는 Axios 인스턴스를 가져다 씀.
 import axios from 'axios';
 
-const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+export const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 /**
  * 백엔드 API 통신에 사용할 공통 Axios 인스턴스.
