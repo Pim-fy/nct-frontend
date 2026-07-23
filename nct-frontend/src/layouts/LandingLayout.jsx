@@ -3,7 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { ThemeProvider } from '@context/ThemeContext';
 import SiteHeader from '@layouts/user/headers/SiteHeader';
 import MainFooter from '@layouts/user/footers/MainFooter';
-
+import QuickActions from '@components/landing/QuickActions';
 const LandingLayout = () => {
   return (
     <ThemeProvider>
@@ -15,6 +15,11 @@ const LandingLayout = () => {
         <main style={{ flex: 1 }} className="pb-16 md:pb-0">
           <Outlet />
         </main>
+        
+        <aside>
+          {/* 퀵메뉴(경매등록/서비스요청 등)를  우측에 고정 노출한다. */}
+          <QuickActions />
+        </aside>
 
         {/* 푸터 */}
         <MainFooter />

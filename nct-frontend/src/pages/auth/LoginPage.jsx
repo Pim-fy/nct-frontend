@@ -4,6 +4,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@hooks/useAuth';
 import BrandLogo from '@components/common/BrandLogo';
+import SiteHeader from '@layouts/user/headers/SiteHeader';
+import MainFooter from '@layouts/user/footers/MainFooter';
 
 // ── 소셜 로그인 버튼 데이터 ──────────────────────────────
 const SOCIAL_PROVIDERS = [
@@ -116,6 +118,7 @@ export default function LoginPage() {
   // ── 렌더 ─────────────────────────────────────────────
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
+      <SiteHeader />
       <main className="flex flex-1 items-center justify-center px-4 py-10">
         <div className="w-full max-w-110 bg-white rounded-2xl shadow-lg px-8 py-10">
 
@@ -282,6 +285,7 @@ export default function LoginPage() {
           </div>
         </div>
       )}
+      <MainFooter />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { requestPasswordReset, confirmPasswordReset } from '@api/authApi';
 import SiteHeader from '@layouts/user/headers/SiteHeader';
+import MainFooter from '@layouts/user/footers/MainFooter';
 
 // @ai_generated: 목업(38_password_reset.html)의 이메일 마스킹 규칙을 그대로 재사용한다.
 const maskEmail = (email) =>
@@ -55,7 +56,7 @@ function RequestForm() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      <SiteHeader variant="auth" />
+      <SiteHeader />
       <main className="flex flex-1 items-center justify-center px-4 py-10">
         <div className="w-full max-w-110 bg-white rounded-2xl shadow-lg px-8 py-10">
         <h1 className="text-xl font-bold text-center mb-8">비밀번호 재설정</h1>
@@ -139,6 +140,7 @@ function RequestForm() {
         </div>
         </div>
       </main>
+      <MainFooter />
     </div>
   );
 }
@@ -187,7 +189,7 @@ function ConfirmForm({ token }) {
   if (invalid) {
     return (
       <div className="flex min-h-screen flex-col bg-gray-50">
-        <SiteHeader variant="auth" />
+        <SiteHeader />
         <main className="flex flex-1 items-center justify-center px-4 py-10">
           <div className="w-full max-w-110 bg-white rounded-2xl shadow-lg px-8 py-10 text-center">
           <div className="w-14 h-14 mx-auto rounded-full bg-red-50 flex items-center justify-center text-2xl mb-4">⚠️</div>
@@ -203,6 +205,7 @@ function ConfirmForm({ token }) {
           </Link>
           </div>
         </main>
+        <MainFooter />
       </div>
     );
   }
@@ -210,7 +213,7 @@ function ConfirmForm({ token }) {
   if (done) {
     return (
       <div className="flex min-h-screen flex-col bg-gray-50">
-        <SiteHeader variant="auth" />
+        <SiteHeader />
         <main className="flex flex-1 items-center justify-center px-4 py-10">
           <div className="w-full max-w-110 bg-white rounded-2xl shadow-lg px-8 py-10 text-center">
           <div className="w-14 h-14 mx-auto rounded-full bg-green-50 flex items-center justify-center text-2xl mb-4">✅</div>
@@ -227,13 +230,14 @@ function ConfirmForm({ token }) {
           </Link>
           </div>
         </main>
+        <MainFooter />
       </div>
     );
   }
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      <SiteHeader variant="auth" />
+      <SiteHeader />
       <main className="flex flex-1 items-center justify-center px-4 py-10">
         <div className="w-full max-w-110 bg-white rounded-2xl shadow-lg px-8 py-10">
         <h1 className="text-xl font-bold text-center mb-2">새 비밀번호 설정</h1>
@@ -274,6 +278,7 @@ function ConfirmForm({ token }) {
         </div>
         </div>
       </main>
+      <MainFooter />
     </div>
   );
 }

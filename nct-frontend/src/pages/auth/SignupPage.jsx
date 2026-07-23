@@ -12,6 +12,7 @@ import {
   verifySignupEmailVerification,
 } from '@api/authApi';
 import SiteHeader from '@layouts/user/headers/SiteHeader';
+import MainFooter from '@layouts/user/footers/MainFooter';
 import { SIGNUP_TERMS } from './signupTerms';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-[#e2e1dc] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-primary disabled:cursor-not-allowed disabled:bg-[#f8f8f6]';
@@ -43,7 +44,7 @@ const INITIAL_FORM = {
 const INITIAL_AVAILABILITY = {
   checkedValue: '',
   state: 'idle',
-  message: '중복 확인 전',
+  message: '',
 };
 
 const INITIAL_VERIFICATION = {
@@ -578,6 +579,9 @@ const SignupPage = () => {
 
   const renderAvailabilityMessage = (field) => {
     const status = currentAvailability(field);
+    // @ai_generated: 초기 안내와 Field가 이미 표시한 입력 오류는 중복해 렌더링하지 않는다.
+    if (status.state === 'idle' || (status.state === 'error' && fieldError(field))) return null;
+
     return (
       <span aria-live="polite" className={`min-h-5 text-xs ${AVAILABILITY_CLASS[status.state]}`}>
         {status.message}
@@ -606,22 +610,20 @@ const SignupPage = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-[#1a1a18]">
-      <SiteHeader variant="auth" />
+      <SiteHeader />
 
       <main className="mx-auto w-[90%] max-w-[1800px] flex-1 py-7">
-        {/* @ai_generated: 가입 동작은 세 카드의 바깥, 제목 행 우측에 배치한다. */}
-        <div className="mb-4 mt-7 flex flex-col gap-3 min-[769px]:flex-row min-[769px]:items-start min-[769px]:justify-between">
-          <h1 className="m-0 text-[28px]">회원가입</h1>
-          {!signupSucceeded ? (
-            <div className="flex flex-col items-end gap-2">
-              <button className={BUTTON_PRIMARY} disabled={submission.signup} onClick={handleSignup} type="button">
-                {submission.signup ? '가입 처리 중...' : '가입 완료'}
-              </button>
-              <p aria-live="polite" className={`m-0 text-right text-xs ${signupMessage ? 'text-[#a32d2d]' : 'text-[#888780]'}`}>
+        {/* @ai_generated: 가입 동작은 입력 카드 전체의 바깥 우하단에 배치한다. */}
+        <div className="mx-auto mb-4 mt-7 flex max-w-[1480px] flex-col gap-3 min-[769px]:flex-row min-[769px]:items-start min-[769px]:justify-between">
+          <div className="flex flex-col gap-1.5">
+            <h1 className="m-0 text-[28px]">회원가입</h1>
+            {!signupSucceeded ? (
+              // @ai_generated: 가입 전 안내는 제목 바로 아래에 두고 상태 변화도 계속 알린다.
+              <p aria-live="polite" className={`m-0 text-left text-xs ${signupMessage ? 'text-[#a32d2d]' : 'text-[#888780]'}`}>
                 {signupMessage || (verifiedForCurrentEmail ? '가입 완료를 누르면 계정이 생성됩니다.' : '필수 약관 동의와 이메일 인증을 완료하면 가입할 수 있습니다.')}
               </p>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </div>
 
         {signupSucceeded ? (
@@ -633,15 +635,16 @@ const SignupPage = () => {
             </button>
           </section>
         ) : (
-          <div className="mx-auto grid max-w-[1480px] items-start gap-6 lg:grid-cols-3">
-              {/* @ai_generated: 세 가입 단계를 독립 카드로 분리해 각 영역의 경계를 명확히 한다. */}
+          <>
+          <div className="mx-auto grid max-w-[1480px] gap-6">
+              {/* @ai_generated: 약관은 상단 전체폭, 입력 정보는 하단 동등한 2열 카드로 그룹화한다. */}
               <section aria-labelledby="agreement-title" className="rounded-2xl border border-[#f0efec] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,.04),0_2px_8px_rgba(0,0,0,.06)]">
                 <h2 className="m-0 text-lg" id="agreement-title">약관 동의</h2>
                 <label className="mt-3.5 inline-flex items-center gap-2 text-sm text-[#1a1a18]">
                   <input checked={allAgreed} onChange={handleAllAgreements} type="checkbox" />
                   전체 동의
                 </label>
-                <div className="mt-3.5 grid gap-2.5">
+                <div className="mt-3.5 grid gap-2.5 lg:grid-cols-3">
                   {AGREEMENT_ITEMS.map((agreement) => (
                     <AgreementRow
                       agreement={agreement}
@@ -657,6 +660,8 @@ const SignupPage = () => {
                 </p>
               </section>
 
+              <div className="relative">
+                <div className="grid items-start gap-6 lg:grid-cols-2">
               <section aria-labelledby="signup-info-title" className="rounded-2xl border border-[#f0efec] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,.04),0_2px_8px_rgba(0,0,0,.06)]">
                 <h2 className="m-0 text-lg" id="signup-info-title">기본 정보</h2>
                 <div className="mt-3.5 grid gap-3.5">
@@ -808,7 +813,6 @@ const SignupPage = () => {
                       type="tel"
                       value={form.telno}
                     />
-                    <span className="text-xs text-[#888780]">인증번호를 받지 않는 선택 입력입니다.</span>
                   </Field>
 
                   <Field error={fieldError('address') || fieldError('zip')} label="주소(선택)">
@@ -863,7 +867,15 @@ const SignupPage = () => {
                   </Field>
                 </div>
               </section>
-          </div>
+              </div>
+                <div className="mt-6 flex justify-end lg:absolute lg:bottom-0 lg:right-0 lg:mt-0">
+                  <button className={BUTTON_PRIMARY} disabled={submission.signup} onClick={handleSignup} type="button">
+                    {submission.signup ? '가입 처리 중...' : '가입 완료'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
         )}
       </main>
 
@@ -883,19 +895,7 @@ const SignupPage = () => {
 
       {selectedAgreement ? <AgreementModal agreement={selectedAgreement} onClose={() => setOpenAgreement(null)} /> : null}
 
-      <footer className="mt-auto border-t-[40px] border-white bg-[#1a1a18] px-4 py-7 text-[#d3d1c7]">
-        <div className="mx-auto flex w-[90%] max-w-[1800px] flex-wrap items-center justify-between gap-3">
-          <Link aria-label="에누리컷 홈" className="inline-flex" to="/">
-          </Link>
-          <div className="flex flex-wrap items-center gap-3 text-[13px]">
-            <a className="hover:text-white" href="#소개">서비스 소개</a>
-            <a className="hover:text-white" href="#약관">이용약관</a>
-            <a className="hover:text-white" href="#개인정보">개인정보처리방침</a>
-            <a className="hover:text-white" href="#문의">문의</a>
-          </div>
-          <span className="text-[13px]">© 2026 에누리컷</span>
-        </div>
-      </footer>
+      <MainFooter />
     </div>
   );
 };
