@@ -17,7 +17,7 @@ const GRAY_FILTER = 'grayscale(100%) brightness(1.4)';
 const NAV_ITEMS = [
   { key: 'home',    label: '홈',     to: '/',            type: 'lucide' },
   { key: 'auction', label: '경매',   to: '/auction',     type: 'img', src: cursorIcon },
-  { key: 'service', label: '서비스', to: '/services',    type: 'img', src: commentIcon },
+  { key: 'service', label: '서비스', to: '/service',    type: 'img', src: commentIcon },
   { key: 'mypage',  label: 'MY',     to: '/user/mypage', type: 'img', src: userIcon },
 ];
 

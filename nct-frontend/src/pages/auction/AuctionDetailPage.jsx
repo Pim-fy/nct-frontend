@@ -11,6 +11,7 @@ import {
 } from '@api/auctionApi';
 import { useAuth } from '@hooks/useAuth';
 import { useAuctionStream } from '@hooks/useAuctionStream';
+import { useAuctionViewTracking } from '@hooks/useAuctionViewTracking';
 import useCountdown from '@hooks/useCountdown';
 import { usePointBalance } from '@hooks/usePoint';
 import AuctionBidPanel from './components/AuctionBidPanel';
@@ -73,7 +74,8 @@ const AuctionDetailPage = () => {
       && typeof auction.favorite !== 'boolean'
     ),
   });
-  useAuctionStream(auctionId, Boolean(isAuthenticated && !isAuthLoading));
+  useAuctionStream(auctionId);
+  useAuctionViewTracking(auctionId, auction?.productId);
   const now = useCountdown(Boolean(auction?.endDateTime && auction?.auctionStatusCode === 'AUCC0002'));
 
   const showToast = (message) => setToastMessage(message);

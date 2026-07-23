@@ -18,6 +18,10 @@ export const getMyProducts = (page = 1, size = 10, filterType = null) =>
 export const getProduct = (prdSn) =>
   api.get(`/products/${prdSn}`).then(res => res.data);
 
+/** 상품 상세 진입 조회수 증가 */
+export const increaseProductViewCount = (prdSn) =>
+  api.post(`/products/${prdSn}/view`).then(res => res.data);
+
 /** 임시저장 상품 수정 및 등록 전환 */
 export const updateProduct = (prdSn, data) =>
   api.put(`/products/${prdSn}`, data).then(res => res.data);

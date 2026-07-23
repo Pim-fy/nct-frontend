@@ -2,11 +2,11 @@ import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { BACKEND_URL } from '@api/axios';
 
-export function useAuctionStream(auctionId, enabled) {
+export function useAuctionStream(auctionId) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!enabled || !auctionId) return undefined;
+    if (!auctionId) return undefined;
 
     const eventSource = new EventSource(
       `${BACKEND_URL}/api/auctions/${auctionId}/stream`,
@@ -14,7 +14,10 @@ export function useAuctionStream(auctionId, enabled) {
     );
 
     const handleAuctionUpdated = () => {
-      queryClient.invalidateQueries({ queryKey: ['auctionDetail', auctionId] });
+      queryClient.refetchQueries({
+        queryKey: ['auctionDetail', auctionId],
+        type: 'active',
+      });
       queryClient.invalidateQueries({ queryKey: ['auctions'] });
       queryClient.invalidateQueries({ queryKey: ['bids', 'my'] });
       queryClient.invalidateQueries({ queryKey: ['point', 'balance'] });
@@ -27,5 +30,5 @@ export function useAuctionStream(auctionId, enabled) {
       eventSource.removeEventListener('auction-updated', handleAuctionUpdated);
       eventSource.close();
     };
-  }, [auctionId, enabled, queryClient]);
+  }, [auctionId, queryClient]);
 }

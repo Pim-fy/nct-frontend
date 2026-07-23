@@ -178,7 +178,7 @@ const SiteHeader = () => {
               onMouseEnter={() => setServiceMenuOpen(true)}
               onMouseLeave={() => setServiceMenuOpen(false)}
             >
-              <Link to="/services" className={NAV_LINK_CLASS}>
+              <Link to="/service" className={NAV_LINK_CLASS}>
                 서비스
               </Link>
               {serviceMenuOpen && (
@@ -187,7 +187,7 @@ const SiteHeader = () => {
                     {SERVICE_CATEGORIES.map((label, i) => (
                       <Link
                         key={label}
-                        to={`/services?category=${encodeURIComponent(label)}`}
+                        to={`/service?category=${encodeURIComponent(label)}`}
                         className={`flex items-center justify-between px-4 py-[7px] text-[16px] font-medium hover:bg-[#f9fafb] ${
                           i === 0 ? 'bg-[#f9fafb] font-bold text-primary' : 'text-black'
                         }`}
@@ -200,7 +200,16 @@ const SiteHeader = () => {
               )}
             </div>
 
-            <Link to="/customersupport/notice" className={NAV_LINK_CLASS}>공지사항</Link>
+            <details className="relative">
+              <summary className={`${NAV_LINK_CLASS} cursor-pointer list-none`}>
+                고객센터
+              </summary>
+              <div className="absolute left-0 top-[calc(100%+12px)] z-50 grid min-w-40 gap-1 rounded-lg border border-[#e5e5e5] bg-white p-2 shadow-lg">
+                <Link className="rounded-md px-3 py-2 text-[15px] font-medium hover:bg-[#f3f5fa]" to="/customersupport/notice">공지사항</Link>
+                <Link className="rounded-md px-3 py-2 text-[15px] font-medium hover:bg-[#f3f5fa]" to="/guide">이용가이드</Link>
+                <Link className="rounded-md px-3 py-2 text-[15px] font-medium hover:bg-[#f3f5fa]" to="/customersupport/faq">FAQ</Link>
+              </div>
+            </details>
           </nav>
         </div>
 
@@ -523,13 +532,13 @@ const SiteHeader = () => {
               </button>
               {mobileServiceOpen && (
                 <div className="flex flex-col gap-1 pb-3 pl-2">
-                  <Link to="/services" className="py-2 text-[16px] font-bold text-primary" onClick={closeMobileMenu}>
+                  <Link to="/service" className="py-2 text-[16px] font-bold text-primary" onClick={closeMobileMenu}>
                     전체보기
                   </Link>
                   {SERVICE_CATEGORIES.map((label) => (
                     <Link
                       key={label}
-                      to={`/services?category=${encodeURIComponent(label)}`}
+                      to={`/service?category=${encodeURIComponent(label)}`}
                       className="py-2 text-[15px] text-[#4e4e4e]"
                       onClick={closeMobileMenu}
                     >
@@ -540,13 +549,14 @@ const SiteHeader = () => {
               )}
             </div>
 
-            <Link
-              to="/customersupport/notice"
-              className="block border-b border-[#f0f0f0] py-4 text-[20px] font-bold text-[#333333]"
-              onClick={closeMobileMenu}
-            >
-              공지사항
-            </Link>
+            <div className="border-b border-[#f0f0f0] py-4">
+              <p className="mb-2 text-[20px] font-bold text-[#333333]">고객센터</p>
+              <div className="flex flex-col gap-1 pl-2">
+                <Link to="/customersupport/notice" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>공지사항</Link>
+                <Link to="/guide" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>이용가이드</Link>
+                <Link to="/customersupport/faq" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>FAQ</Link>
+              </div>
+            </div>
 
             {!user && (
               <div className="mt-6 flex gap-2">
