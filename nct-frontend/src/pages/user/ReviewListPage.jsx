@@ -124,7 +124,7 @@ export default function ReviewListPage() {
   // TODO: 경매(F-AUC)/서비스(F-SVC) 상세 페이지 라우트가 아직 없어(담당자5/서비스 담당자 영역),
   //       라우트가 생기면 이 경로만 실제 상세 페이지로 바꿔주면 된다.
   const handleViewTarget = (item) => {
-    navigate(item.dealType === "service" ? `/services/${item.id}` : `/auction/${item.id}`);
+    navigate(item.dealType === "service" ? `/service/${item.id}` : `/auction/${item.id}`);
   };
 
   // "작성한 리뷰" 탭은 페이지네이션 컨트롤이 PAGE_SIZE(10건) 기준 고정 위치에 그려지므로,

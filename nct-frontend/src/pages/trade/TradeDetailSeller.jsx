@@ -3,7 +3,13 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
 import Toast from '@components/common/Toast';
 import {
   getTradeDetail,
@@ -38,6 +44,9 @@ const SHIPPING_PROOF_IMAGE_TYPES = [
 
 const TradeDetailSeller = () => {
   const { tradeId } = useParams();
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [trade, setTrade] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -54,6 +63,32 @@ const TradeDetailSeller = () => {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const todayDate = getTodayDate();
+  const isPreview = pathname.startsWith('/trades/preview');
+  const isOfflineTradeInProgress = meetingProposed
+    && trade?.status === 'IN_PROGRESS';
+  const chatPath = isPreview
+    ? `/trades/preview/${tradeId}/chat`
+    : `/trades/${tradeId}/chat`;
+
+  // 마이페이지에서 진입한 상세는 브라우저 이력 대신 거래내역 탭으로 명확하게 복귀한다.
+  const handleBackToList = () => {
+    if (searchParams.get('from') === 'mypage') {
+      const returnSection = searchParams.get('section');
+      const myPageSection = returnSection === 'auction-sales'
+        ? 'auction-sales'
+        : 'auction-sales';
+      const myPagePath = pathname.startsWith('/trades/preview')
+        ? `/user/mypage/preview/trades?verify=1&section=${myPageSection}`
+        : `/user/mypage?section=${myPageSection}`;
+
+      navigate(myPagePath);
+      return;
+    }
+
+    navigate(isPreview
+      ? '/user/mypage/preview/trades?verify=1&section=auction-sales'
+      : '/user/mypage?section=auction-sales');
+  };
 
   // URL의 거래 번호로 서버 상세를 조회해 새로고침해도 같은 거래를 표시한다.
   const loadTrade = useCallback(async () => {
@@ -262,17 +297,25 @@ const TradeDetailSeller = () => {
             <button
               className="btn btn-ghost"
               type="button"
-              onClick={() => window.history.back()}
+              onClick={handleBackToList}
             >
               ← 목록으로
             </button>
           </header>
 
           <ol className="trade-progress" aria-label="직거래 진행 단계">
-            <li className="trade-progress__item trade-progress__item--active">
+            <li className={meetingProposed
+              ? 'trade-progress__item'
+              : 'trade-progress__item trade-progress__item--active'}
+            >
               일정 제안
             </li>
-            <li className="trade-progress__item">직거래 진행</li>
+            <li className={meetingProposed
+              ? 'trade-progress__item trade-progress__item--active'
+              : 'trade-progress__item'}
+            >
+              직거래 진행
+            </li>
             <li className="trade-progress__item">거래 완료</li>
           </ol>
 
@@ -289,6 +332,11 @@ const TradeDetailSeller = () => {
                   </p>
                 </div>
               </div>
+              <p className="trade-detail-card__muted">
+                거래 상태: {isOfflineTradeInProgress
+                  ? '직거래 진행 중'
+                  : '일정 제안 대기'}
+              </p>
             </section>
             <section className="trade-detail-card">
               <h2>구매자 정보</h2>
@@ -300,85 +348,88 @@ const TradeDetailSeller = () => {
             </section>
           </div>
 
-          <form
-            className="trade-detail-card trade-seller-section"
-            onSubmit={proposeMeetingSchedule}
-          >
-            <h2>직거래 일정 제안</h2>
-            <p className="trade-notice">
-              구매자가 찾기 쉬운 공개 장소와 거래 가능 시간을 제안해 주세요.
-            </p>
-            <div className="trade-address-grid">
-              <label className="trade-form-field">
-                거래 날짜
-                <input
-                  className="input"
-                  type="date"
-                  value={meetingDate}
-                  min={todayDate}
-                  onChange={(event) => setMeetingDate(event.target.value)}
-                  disabled={isSubmitting}
-                />
-              </label>
-              <label className="trade-form-field">
-                거래 시간
-                <input
-                  className="input"
-                  type="time"
-                  value={meetingTime}
-                  onChange={(event) => setMeetingTime(event.target.value)}
-                  disabled={isSubmitting}
-                />
-              </label>
-            </div>
-            <label className="trade-form-field">
-              거래 장소
-              <input
-                className="input"
-                value={meetingPlace}
-                onChange={(event) => setMeetingPlace(event.target.value)}
-                placeholder="예: 합정역 8번 출구 앞"
-                disabled={isSubmitting}
-              />
-            </label>
-            <label className="trade-form-field">
-              상세 주소
-              <span className="trade-detail-card__muted">(선택)</span>
-              <input
-                className="input"
-                value={meetingAddress}
-                onChange={(event) => setMeetingAddress(event.target.value)}
-                placeholder="예: 서울 마포구 양화로 45"
-                disabled={isSubmitting}
-              />
-            </label>
-            {error && (
-              <p className="trade-form-error" role="alert">
-                {error}
-              </p>
-            )}
-            {meetingProposed && (
+          {meetingProposed ? (
+            <section className="trade-detail-card trade-seller-section">
+              <h2>직거래 일정</h2>
               <p className="trade-success">
                 {meetingDate} {meetingTime} · {meetingPlace} 일정이 제안되었습니다.
               </p>
-            )}
-            <button
-              className="btn btn-primary"
-              type="submit"
-              disabled={isSubmitting}
+              <p className="trade-detail-card__muted">
+                시간 또는 장소 조율이 필요하면 거래 채팅에서 상대방과 협의해 주세요.
+              </p>
+              <div className="trade-detail-actions">
+                <Link className="btn btn-outline" to={chatPath}>
+                  거래 채팅
+                </Link>
+              </div>
+            </section>
+          ) : (
+            <form
+              className="trade-detail-card trade-seller-section"
+              onSubmit={proposeMeetingSchedule}
             >
-              {isSubmitting
-                ? '저장 중...'
-                : meetingProposed
-                  ? '일정 수정하기'
-                  : '일정 제안하기'}
-            </button>
-            <div className="trade-detail-actions">
-              <Link className="btn btn-outline" to={`/trades/${trade.id}/chat`}>
-                거래 채팅
-              </Link>
-            </div>
-          </form>
+              <h2>직거래 일정 제안</h2>
+              <p className="trade-notice">
+                구매자가 찾기 쉬운 공개 장소와 거래 가능 시간을 제안해 주세요.
+              </p>
+              <div className="trade-address-grid">
+                <label className="trade-form-field">
+                  거래 날짜
+                  <input
+                    className="input"
+                    type="date"
+                    value={meetingDate}
+                    min={todayDate}
+                    onChange={(event) => setMeetingDate(event.target.value)}
+                    disabled={isSubmitting}
+                  />
+                </label>
+                <label className="trade-form-field">
+                  거래 시간
+                  <input
+                    className="input"
+                    type="time"
+                    value={meetingTime}
+                    onChange={(event) => setMeetingTime(event.target.value)}
+                    disabled={isSubmitting}
+                  />
+                </label>
+              </div>
+              <label className="trade-form-field">
+                거래 장소
+                <input
+                  className="input"
+                  value={meetingPlace}
+                  onChange={(event) => setMeetingPlace(event.target.value)}
+                  placeholder="예: 합정역 8번 출구 앞"
+                  disabled={isSubmitting}
+                />
+              </label>
+              <label className="trade-form-field">
+                상세 주소
+                <span className="trade-detail-card__muted">(선택)</span>
+                <input
+                  className="input"
+                  value={meetingAddress}
+                  onChange={(event) => setMeetingAddress(event.target.value)}
+                  placeholder="예: 서울 마포구 양화로 45"
+                  disabled={isSubmitting}
+                />
+              </label>
+              {error && (
+                <p className="trade-form-error" role="alert">
+                  {error}
+                </p>
+              )}
+              <button
+                className="btn btn-primary"
+                type="submit"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? '저장 중...' : '일정 제안하기'}
+              </button>
+            </form>
+          )}
         </div>
         {notice && <Toast message={notice} onClose={() => setNotice('')} />}
       </div>
@@ -396,7 +447,7 @@ const TradeDetailSeller = () => {
             <button
               className="btn btn-ghost"
               type="button"
-              onClick={() => window.history.back()}
+              onClick={handleBackToList}
             >
               ← 목록으로
             </button>
@@ -417,7 +468,7 @@ const TradeDetailSeller = () => {
           <button
             className="btn btn-ghost"
             type="button"
-            onClick={() => window.history.back()}
+            onClick={handleBackToList}
           >
             ← 목록으로
           </button>

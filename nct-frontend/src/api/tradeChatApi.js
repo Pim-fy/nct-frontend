@@ -8,8 +8,8 @@ import {
 const CHAT_ROOM_ENDPOINT = '/chat-rooms';
 
 /** 로그인한 거래 당사자의 대면 거래 채팅방을 조회한다. */
-export const getTradeChatRooms = async (params = {}) => {
-  if (shouldUseTradePreview()) {
+export const getTradeChatRooms = async (params = {}, options = {}) => {
+  if (options.preview || shouldUseTradePreview()) {
     return getTradePreviewChatRooms(params);
   }
 
@@ -21,8 +21,8 @@ export const getTradeChatRooms = async (params = {}) => {
 };
 
 /** 채팅방 입장과 함께 상대방이 보낸 미확인 메시지를 읽음으로 처리한다. */
-export const getTradeChatMessages = async (roomId) => {
-  if (shouldUseTradePreview()) {
+export const getTradeChatMessages = async (roomId, options = {}) => {
+  if (options.preview || shouldUseTradePreview()) {
     return getTradePreviewChatMessages(roomId);
   }
 
@@ -32,8 +32,8 @@ export const getTradeChatMessages = async (roomId) => {
 };
 
 /** 활성 채팅방에 메시지를 전송하고, 서버가 마스킹한 저장 결과를 반환한다. */
-export const sendTradeChatMessage = async (roomId, payload) => {
-  if (shouldUseTradePreview()) {
+export const sendTradeChatMessage = async (roomId, payload, options = {}) => {
+  if (options.preview || shouldUseTradePreview()) {
     return {
       messageId: `local-message-${Date.now()}`,
       senderType: 'ME',

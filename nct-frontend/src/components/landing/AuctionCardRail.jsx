@@ -103,7 +103,7 @@ const AuctionCard = ({ item }) => (
 const ServiceRequestCard = ({ item }) => (
   <Link
     className="card auction-card request-card"
-    to={`/services/${item.id}`}
+    to={`/service/${item.id}`}
     style={{ textDecoration: 'none', color: 'inherit' }}
   >
     <div className="auction-card-body">
