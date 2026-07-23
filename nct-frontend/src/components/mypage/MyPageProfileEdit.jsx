@@ -3,23 +3,24 @@
 // - 절대좌표 → 반응형 전환.
 //   메인 폼(좌)/소셜+알림(우) → xl 이상 가로 배치, 그 이하 세로 스택.
 //   폼 내부 필드: sm 이상 2열 그리드, 그 이하 단일 열.
-// TODO: 회원(F-USR) 정보수정 API가 아직 없어 폼 상태만 로컬로 관리한다.
 import React, { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@utils/common";
 import { assets } from "@components/mypage/assets";
+import { updateProfile } from "@api/memberApi";
 
 const FIELD_CLASS =
   "w-full h-[40px] rounded-[5px] border border-[#d9d9d9] bg-white px-3 text-[14px] text-[#404040] focus:outline-none focus:border-[#0064ff]";
 
 export default function MyPageProfileEdit({ user }) {
+  const queryClient = useQueryClient();
   const [form, setForm] = useState({
-    name: user?.name || "홍길동",
-    nickname: user?.nickname || "초록구매자",
+    nickname: user?.nickname || "",
     currentPassword: "",
     newPassword: "",
     newPasswordConfirm: "",
-    address: "",
-    addressDetail: "",
+    address: user?.address || "",
+    addressDetail: user?.addressDetail || "",
   });
   const [notify, setNotify] = useState({
     auction: { inapp: true, email: false },
@@ -31,9 +32,18 @@ export default function MyPageProfileEdit({ user }) {
   const handleChange = (field) => (e) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    toast({ icon: "success", title: "정보수정 기능은 준비 중입니다." });
+    try {
+      const res = await updateProfile({ nickname: form.nickname });
+      queryClient.setQueryData(["auth", "user"], (prev) =>
+        prev ? { ...prev, nickname: res.data.nickname } : prev
+      );
+      toast({ icon: "success", title: "닉네임이 저장되었습니다." });
+    } catch (err) {
+      const msg = err?.response?.data?.message || "저장에 실패했습니다.";
+      toast({ icon: "error", title: msg });
+    }
   };
 
   const toggleNotify = (group, channel) =>
@@ -66,16 +76,10 @@ export default function MyPageProfileEdit({ user }) {
             </button>
           </div>
 
-          {/* 이름 / 닉네임 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block font-bold text-[14px] text-[#404040] mb-1.5">이름</label>
-              <input className={FIELD_CLASS} value={form.name} onChange={handleChange("name")} />
-            </div>
-            <div>
-              <label className="block font-bold text-[14px] text-[#404040] mb-1.5">닉네임</label>
-              <input className={FIELD_CLASS} value={form.nickname} onChange={handleChange("nickname")} />
-            </div>
+          {/* 닉네임 */}
+          <div>
+            <label className="block font-bold text-[14px] text-[#404040] mb-1.5">닉네임</label>
+            <input className={FIELD_CLASS} value={form.nickname} onChange={handleChange("nickname")} />
           </div>
 
           {/* 이메일 / 전화번호 */}
