@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   addAuctionFavorite,
@@ -10,7 +10,9 @@ import {
   removeAuctionFavorite,
 } from '@api/auctionApi';
 import { useAuth } from '@hooks/useAuth';
+import { useAuctionStream } from '@hooks/useAuctionStream';
 import useCountdown from '@hooks/useCountdown';
+import { usePointBalance } from '@hooks/usePoint';
 import { usePointBalance } from '@hooks/usePoint';
 import AuctionBidPanel from './components/AuctionBidPanel';
 import AuctionBuyNowModal from './components/AuctionBuyNowModal';
@@ -24,13 +26,17 @@ import {
   formatPrice,
   formatRemainingTime,
   parseAmount,
+  resolveAuctionResultLabel,
 } from './utils/auctionFormatters';
 import '@assets/css/auction.css';
 
 const AuctionDetailPage = () => {
   const { auctionId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading: isAuthLoading } = useAuth();
+  const authenticatedUserId = user?.id ?? user?.userId ?? user?.userSn ?? user?.usrSn;
   const [bidAmount, setBidAmount] = useState('');
   const [holdAgreed, setHoldAgreed] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -39,7 +45,10 @@ const AuctionDetailPage = () => {
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
   const [failedImageUrls, setFailedImageUrls] = useState(() => new Set());
 
-  const detailQueryKey = useMemo(() => ['auctionDetail', auctionId], [auctionId]);
+  const detailQueryKey = useMemo(
+    () => ['auctionDetail', auctionId, authenticatedUserId ?? 'anonymous'],
+    [auctionId, authenticatedUserId],
+  );
   const {
     data: auction,
     isLoading,
@@ -66,6 +75,7 @@ const AuctionDetailPage = () => {
       && typeof auction.favorite !== 'boolean'
     ),
   });
+  useAuctionStream(auctionId, Boolean(isAuthenticated && !isAuthLoading));
   const now = useCountdown(Boolean(auction?.endDateTime && auction?.auctionStatusCode === 'AUCC0002'));
 
   const showToast = (message) => setToastMessage(message);
@@ -73,8 +83,15 @@ const AuctionDetailPage = () => {
   const handleMutationSuccess = (updatedAuction) => {
     queryClient.setQueryData(detailQueryKey, updatedAuction);
     queryClient.invalidateQueries({ queryKey: ['point', 'balance'] });
+    queryClient.invalidateQueries({ queryKey: ['point', 'balance'] });
     setBidAmount('');
     setHoldAgreed(false);
+  };
+  const handleAuctionMutationError = (error) => {
+    if (error?.response?.data?.code === 'POINT_INSUFFICIENT') {
+      queryClient.invalidateQueries({ queryKey: ['point', 'balance'] });
+    }
+    showToast(getErrorMessage(error));
   };
   const handleAuctionMutationError = (error) => {
     if (error?.response?.data?.code === 'POINT_INSUFFICIENT') {
@@ -100,6 +117,7 @@ const AuctionDetailPage = () => {
       showToast('입찰이 등록되었습니다');
     },
     onError: handleAuctionMutationError,
+    onError: handleAuctionMutationError,
   });
   const buyNowMutation = useMutation({
     mutationFn: (payload) => buyNowAuction(auctionId, payload),
@@ -108,6 +126,7 @@ const AuctionDetailPage = () => {
       setIsBuyNowOpen(false);
       showToast('즉시구매가 완료되었습니다');
     },
+    onError: handleAuctionMutationError,
     onError: handleAuctionMutationError,
   });
   const favoriteMutation = useMutation({
@@ -133,7 +152,7 @@ const AuctionDetailPage = () => {
     return () => window.clearTimeout(timerId);
   }, [toastMessage]);
 
-  if (isLoading) {
+  if (isAuthLoading || isLoading) {
     return (
       <main className="auction-detail-page">
         <div className="auction-detail-container">
@@ -170,12 +189,11 @@ const AuctionDetailPage = () => {
   const currentPrice = Number(auction.currentPrice || auction.startPrice || 0);
   const bidUnitPrice = Number(auction.bidUnitPrice || 1000);
   const minimumBidPrice = currentPrice + bidUnitPrice;
-  const remainingTime = formatRemainingTime(
-    auction.endDateTime,
-    auction.auctionStatusCode,
-    auction.auctionStatusName,
-    now,
-  );
+  const auctionResultLabel = resolveAuctionResultLabel(auction);
+  const remainingTime = formatRemainingTime(auction, now);
+  const remainingTimeLabel = auctionResultLabel
+    ? '경매 결과'
+    : '경매 종료까지 남은 시간';
   const auctionEndTimestamp = auction.endDateTime
     ? new Date(auction.endDateTime).getTime()
     : null;
@@ -185,9 +203,24 @@ const AuctionDetailPage = () => {
     && !isOwnAuction
     && Number(auction.instantBuyPrice || 0) > 0;
   const isCurrentHighestBidder = Boolean(auction.currentHighestBidder);
+  const isBuyNowAvailable = isAuctionOpen
+    && !isOwnAuction
+    && Number(auction.instantBuyPrice || 0) > 0;
+  const isCurrentHighestBidder = Boolean(auction.currentHighestBidder);
   const selectedTradeValue = auction.tradeMethodCode || '';
   const selectedTradeName = auction.tradeMethodName || '거래 방식 미정';
   const displayedBidAmount = bidAmount || formatNumber(minimumBidPrice);
+  const requestedBidAmount = parseAmount(displayedBidAmount);
+  const instantBuyPrice = Number(auction.instantBuyPrice || 0);
+  const availablePointValue = pointBalanceQuery.data?.available;
+  const availablePoint = availablePointValue == null ? null : Number(availablePointValue);
+  const hasAvailablePoint = Number.isFinite(availablePoint);
+  const isBidPointSufficient = !hasAvailablePoint || availablePoint >= requestedBidAmount;
+  const isBuyNowPointSufficient = !hasAvailablePoint || availablePoint >= instantBuyPrice;
+  const isPointBalanceLoading = isAuthenticated
+    && !hasAvailablePoint
+    && pointBalanceQuery.isLoading;
+  const isPointBalanceError = isAuthenticated && pointBalanceQuery.isError;
   const requestedBidAmount = parseAmount(displayedBidAmount);
   const instantBuyPrice = Number(auction.instantBuyPrice || 0);
   const availablePointValue = pointBalanceQuery.data?.available;
@@ -222,6 +255,18 @@ const AuctionDetailPage = () => {
   const handleQuickAdd = (amount) => setBidAmount((value) => formatNumber(parseAmount(value || displayedBidAmount) + amount));
   const handleBidSubmit = () => {
     if (!isAuthenticated) {
+      navigate('/login', { state: { from: location } });
+      return;
+    }
+    if (isOwnAuction) {
+      showToast('본인이 등록한 경매에는 입찰할 수 없습니다');
+      return;
+    }
+    if (isCurrentHighestBidder) {
+      showToast('현재 최고입찰자입니다');
+      return;
+    }
+    if (!isAuthenticated) {
       showToast('로그인 후 입찰할 수 있습니다');
       return;
     }
@@ -238,8 +283,17 @@ const AuctionDetailPage = () => {
       return;
     }
     const amount = requestedBidAmount;
+    const amount = requestedBidAmount;
     if (amount < minimumBidPrice) {
       showToast(`최소 ${formatPrice(minimumBidPrice)} 이상 입력해 주세요`);
+      return;
+    }
+    if (hasAvailablePoint && availablePoint < amount) {
+      showToast(`사용 가능 포인트가 부족합니다. 필요 ${formatNumber(amount)}P, 보유 ${formatNumber(availablePoint)}P`);
+      return;
+    }
+    if (!holdAgreed) {
+      showToast('포인트 홀딩 동의가 필요합니다');
       return;
     }
     if (hasAvailablePoint && availablePoint < amount) {
@@ -257,7 +311,7 @@ const AuctionDetailPage = () => {
   };
   const handleBuyNowOpen = () => {
     if (!isAuthenticated) {
-      showToast('로그인 후 즉시구매할 수 있습니다');
+      navigate('/login', { state: { from: location } });
       return;
     }
     if (isOwnAuction) {
@@ -276,6 +330,10 @@ const AuctionDetailPage = () => {
       showToast(`사용 가능 포인트가 부족합니다. 필요 ${formatNumber(instantBuyPrice)}P, 보유 ${formatNumber(availablePoint)}P`);
       return;
     }
+    if (hasAvailablePoint && availablePoint < instantBuyPrice) {
+      showToast(`사용 가능 포인트가 부족합니다. 필요 ${formatNumber(instantBuyPrice)}P, 보유 ${formatNumber(availablePoint)}P`);
+      return;
+    }
     if (!holdAgreed) {
       showToast('포인트 홀딩 동의가 필요합니다');
       return;
@@ -286,6 +344,11 @@ const AuctionDetailPage = () => {
     if (!isBuyNowAvailable) {
       setIsBuyNowOpen(false);
       showToast('즉시구매를 진행할 수 없는 경매입니다');
+      return;
+    }
+    if (hasAvailablePoint && availablePoint < instantBuyPrice) {
+      setIsBuyNowOpen(false);
+      showToast(`사용 가능 포인트가 부족합니다. 필요 ${formatNumber(instantBuyPrice)}P, 보유 ${formatNumber(availablePoint)}P`);
       return;
     }
     if (hasAvailablePoint && availablePoint < instantBuyPrice) {
@@ -336,6 +399,7 @@ const AuctionDetailPage = () => {
               currentPrice={currentPrice}
               bidUnitPrice={bidUnitPrice}
               remainingTime={remainingTime}
+              remainingTimeLabel={remainingTimeLabel}
               selectedTradeName={selectedTradeName}
               displayedBidAmount={displayedBidAmount}
               holdAgreed={holdAgreed}
@@ -344,7 +408,16 @@ const AuctionDetailPage = () => {
               isAuctionOpen={isAuctionOpen}
               isOwnAuction={isOwnAuction}
               isCurrentHighestBidder={isCurrentHighestBidder}
+              isOwnAuction={isOwnAuction}
+              isCurrentHighestBidder={isCurrentHighestBidder}
               isBuyNowAvailable={isBuyNowAvailable}
+              isAuthenticated={isAuthenticated}
+              availablePoint={availablePoint}
+              hasAvailablePoint={hasAvailablePoint}
+              isPointBalanceLoading={isPointBalanceLoading}
+              isPointBalanceError={isPointBalanceError}
+              isBidPointSufficient={isBidPointSufficient}
+              isBuyNowPointSufficient={isBuyNowPointSufficient}
               isAuthenticated={isAuthenticated}
               availablePoint={availablePoint}
               hasAvailablePoint={hasAvailablePoint}

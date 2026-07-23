@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { formatNumber, formatPrice } from '../utils/auctionFormatters';
 
 const AuctionBidPanel = ({
@@ -6,6 +7,7 @@ const AuctionBidPanel = ({
   currentPrice,
   bidUnitPrice,
   remainingTime,
+  remainingTimeLabel,
   selectedTradeName,
   displayedBidAmount,
   holdAgreed,
@@ -14,7 +16,16 @@ const AuctionBidPanel = ({
   isAuctionOpen,
   isOwnAuction,
   isCurrentHighestBidder,
+  isOwnAuction,
+  isCurrentHighestBidder,
   isBuyNowAvailable,
+  isAuthenticated,
+  availablePoint,
+  hasAvailablePoint,
+  isPointBalanceLoading,
+  isPointBalanceError,
+  isBidPointSufficient,
+  isBuyNowPointSufficient,
   isAuthenticated,
   availablePoint,
   hasAvailablePoint,
@@ -29,6 +40,19 @@ const AuctionBidPanel = ({
   onBidSubmit,
   onBuyNowOpen,
   onFavoriteToggle,
+}) => {
+  const isBidPointInsufficient = hasAvailablePoint && !isBidPointSufficient;
+  const isBuyNowPointInsufficient = hasAvailablePoint && !isBuyNowPointSufficient;
+  const pointBalanceLabel = !isAuthenticated
+    ? '로그인 필요'
+    : (isPointBalanceLoading
+      ? '조회 중'
+      : (isPointBalanceError
+        ? '확인 불가'
+        : (hasAvailablePoint ? `${formatNumber(availablePoint)}P` : '-')));
+
+  return (
+    <aside className="bid-card">
 }) => {
   const isBidPointInsufficient = hasAvailablePoint && !isBidPointSufficient;
   const isBuyNowPointInsufficient = hasAvailablePoint && !isBuyNowPointSufficient;
@@ -58,6 +82,9 @@ const AuctionBidPanel = ({
           {auction.tradeMethodName && (
             <span className="deal-badge">{auction.tradeMethodName}</span>
           )}
+          {isCurrentHighestBidder && (
+            <span className="highest-bidder-badge" role="status">최고입찰자</span>
+          )}
         </div>
 
         <p className="label">현재 최고가</p>
@@ -65,13 +92,29 @@ const AuctionBidPanel = ({
         <p className="subcopy">
           시작가 {formatPrice(auction.startPrice)} · 즉시구매가 {formatPrice(auction.instantBuyPrice)}
         </p>
-        <p className="timer price-timer" id="countdown">
-          <span className="timer-label" id="countdownLabel">경매 종료까지 남은 시간</span>
+        <p className={`timer price-timer${isAuctionOpen ? '' : ' ended'}`} id="countdown">
+          <span className="timer-label" id="countdownLabel">{remainingTimeLabel}</span>
           <span className="timer-value mono" id="countdownValue">{remainingTime}</span>
         </p>
         <p className="small timer-small">마감 10분 이내 유효 입찰 시 자동 연장(1회)</p>
       </div>
 
+      {isOwnAuction ? (
+        <div className="owner-auction-state" role="status">본인 경매 상품</div>
+      ) : (
+        <div className="bid-controls">
+          <div className="field">
+            <label htmlFor="bidAmount">입찰 금액</label>
+            <input
+              className="input"
+              id="bidAmount"
+              type="text"
+              inputMode="numeric"
+              value={displayedBidAmount}
+              disabled={!isAuctionOpen || isCurrentHighestBidder}
+              onChange={onBidInputChange}
+            />
+          </div>
       {isOwnAuction ? (
         <div className="owner-auction-state" role="status">본인 경매 상품</div>
       ) : (
@@ -95,7 +138,21 @@ const AuctionBidPanel = ({
             <button className="chip quick" type="button" data-add="30000" disabled={!isAuctionOpen || isCurrentHighestBidder} onClick={() => onQuickAdd(30000)}>+3만</button>
             <button className="chip quick" type="button" data-add="50000" disabled={!isAuctionOpen || isCurrentHighestBidder} onClick={() => onQuickAdd(50000)}>+5만</button>
           </div>
+          <div className="quick-row">
+            <button className="chip quick" type="button" data-add="5000" disabled={!isAuctionOpen || isCurrentHighestBidder} onClick={() => onQuickAdd(5000)}>+5천</button>
+            <button className="chip quick" type="button" data-add="10000" disabled={!isAuctionOpen || isCurrentHighestBidder} onClick={() => onQuickAdd(10000)}>+1만</button>
+            <button className="chip quick" type="button" data-add="30000" disabled={!isAuctionOpen || isCurrentHighestBidder} onClick={() => onQuickAdd(30000)}>+3만</button>
+            <button className="chip quick" type="button" data-add="50000" disabled={!isAuctionOpen || isCurrentHighestBidder} onClick={() => onQuickAdd(50000)}>+5만</button>
+          </div>
 
+          <p className="hint">현재가+{bidUnitPrice.toLocaleString('ko-KR')}원 이상 입력</p>
+          <div className={`bid-point-balance${isBidPointInsufficient ? ' insufficient' : ''}`}>
+            <span>사용 가능 포인트</span>
+            <strong>{pointBalanceLabel}</strong>
+            {isAuthenticated && <Link to="/user/point?tab=charge">충전</Link>}
+          </div>
+        </div>
+      )}
           <p className="hint">현재가+{bidUnitPrice.toLocaleString('ko-KR')}원 이상 입력</p>
           <div className={`bid-point-balance${isBidPointInsufficient ? ' insufficient' : ''}`}>
             <span>사용 가능 포인트</span>
@@ -127,12 +184,24 @@ const AuctionBidPanel = ({
               onChange={(event) => onHoldAgreedChange(event.target.checked)}
             /> 포인트 홀딩에 동의합니다
           </label>
+      {!isOwnAuction && (
+        <>
+          <label className="agree hold-agree">
+            <input
+              id="holdAgree"
+              type="checkbox"
+              checked={holdAgreed}
+              disabled={!isAuctionOpen}
+              onChange={(event) => onHoldAgreedChange(event.target.checked)}
+            /> 포인트 홀딩에 동의합니다
+          </label>
 
           <div className="actions bid-actions">
             <button
               className="btn btn-primary"
               id="bidBtn"
               type="button"
+              aria-busy={isBidPending}
               disabled={!isAuctionOpen || isCurrentHighestBidder || isBidPending || isBidPointInsufficient}
               onClick={onBidSubmit}
             >
@@ -148,6 +217,7 @@ const AuctionBidPanel = ({
               className="btn btn-outline"
               id="buyNowBtn"
               type="button"
+              aria-busy={isBuyNowPending}
               disabled={!isBuyNowAvailable || isBuyNowPending || isBuyNowPointInsufficient}
               onClick={onBuyNowOpen}
             >
@@ -163,6 +233,9 @@ const AuctionBidPanel = ({
         </>
       )}
     </div>
+    </aside>
+  );
+};
     </aside>
   );
 };
