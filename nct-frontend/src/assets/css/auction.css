@@ -382,7 +382,8 @@
 }
 
 .auction-card-meta strong {
-  min-width: 128px;
+  width: 176px;
+  max-width: 100%;
   min-height: 36px;
   border: 1px solid #c9ddff;
   border-radius: 12px;
@@ -396,12 +397,13 @@
   line-height: 1;
   text-align: center;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
-.auction-card-meta strong.danger {
-  border-color: #f0c3c3;
-  background: #fcebeb;
-  color: #a32d2d;
+.auction-card-meta strong.ended {
+  border-color: #d8d8d8;
+  background: #f1f1f1;
+  color: #7a7a7a;
 }
 
 .auction-empty {
@@ -749,6 +751,11 @@
   color: var(--detail-text);
   font-size: 26px;
   font-weight: 700;
+}
+
+.auction-detail-page .price-timer.ended .timer-label,
+.auction-detail-page .price-timer.ended .timer-value {
+  color: #8a8a8a;
 }
 
 .auction-detail-page .mono {
@@ -1199,6 +1206,67 @@
   display: block;
 }
 
+.auction-favorites-page .auction-main {
+  min-height: calc(100vh - 180px);
+}
+
+.auction-favorites-grid {
+  width: 100%;
+}
+
+.auction-favorite-item {
+  position: relative;
+  min-width: 0;
+}
+
+.auction-favorite-item .auction-card {
+  height: 100%;
+}
+
+.auction-favorite-remove {
+  position: absolute;
+  top: 30px;
+  right: 30px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #e2e2e2;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.94);
+  color: #d63c3c;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}
+
+.auction-favorite-remove:hover:not(:disabled) {
+  background: #d63c3c;
+  color: #fff;
+}
+
+.auction-favorite-remove:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.auction-empty-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  margin-top: 18px;
+  border-radius: 6px;
+  padding: 0 18px;
+  background: #1d1d1f;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
 @media (max-width: 1100px) {
   .auction-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1255,6 +1323,11 @@
   .auction-card-meta {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .auction-favorite-remove {
+    top: 22px;
+    right: 22px;
   }
 
   .auction-detail-container {

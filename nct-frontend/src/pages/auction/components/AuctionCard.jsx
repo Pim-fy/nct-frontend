@@ -1,29 +1,38 @@
 import { Link } from 'react-router-dom';
 import { toImageUrl } from '@api/fileApi';
-import { formatPrice } from '../utils/auctionFormatters';
+import useCountdown from '@hooks/useCountdown';
+import { formatPrice, resolveAuctionResultLabel } from '../utils/auctionFormatters';
 
-const formatAuctionCardTimeLabel = (endDateTime, statusCode, statusName) => {
-  if (statusCode !== 'AUCC0002') return statusName || '준비';
-  if (!endDateTime) return '진행중';
+const formatAuctionCardTimeLabel = (item, now) => {
+  const resultLabel = resolveAuctionResultLabel(item);
+  if (resultLabel) return resultLabel;
+  if (!item.endDateTime) return '남은 시간 -';
 
-  const end = new Date(endDateTime);
-  const diffMs = end.getTime() - Date.now();
-  if (diffMs <= 0) return '종료 임박';
+  const end = new Date(item.endDateTime);
+  const diffMs = Math.max(end.getTime() - now, 0);
 
-  const totalMinutes = Math.floor(diffMs / 60000);
+  const totalMinutes = Math.ceil(diffMs / 60000);
   const days = Math.floor(totalMinutes / 1440);
   const hours = Math.floor((totalMinutes % 1440) / 60);
   const minutes = totalMinutes % 60;
 
-  if (days > 0) return `종료까지 ${days}일 ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-  if (hours > 0) return `종료까지 ${hours}시간 ${minutes}분`;
-  return `종료 임박 ${minutes}분`;
+  if (days > 0) return `남은 시간 ${days}일 ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  if (hours > 0) return `남은 시간 ${hours}시간 ${minutes}분`;
+  return `남은 시간 ${totalMinutes}분`;
 };
 
 const AuctionCard = ({ item }) => {
+  const isCountingDown = Boolean(
+    item.endDateTime && item.auctionStatusCode === 'AUCC0002',
+  );
+  const now = useCountdown(isCountingDown);
   const imageUrl = toImageUrl(item.thumbnailPath);
-  const remainingTime = formatAuctionCardTimeLabel(item.endDateTime, item.auctionStatusCode, item.auctionStatusName);
-  const isEndingSoon = remainingTime.startsWith('종료 임박');
+  const auctionResultLabel = resolveAuctionResultLabel(item);
+  const remainingTime = formatAuctionCardTimeLabel(item, now);
+  const isTimeExpired = item.auctionStatusCode !== 'AUCC0002'
+    || !item.endDateTime
+    || new Date(item.endDateTime).getTime() <= now
+    || Boolean(auctionResultLabel);
 
   return (
     <Link className="auction-card" to={`/auction/${item.auctionId}`}>
@@ -45,7 +54,7 @@ const AuctionCard = ({ item }) => {
       </div>
       <div className="auction-card-meta">
         <span>입찰 {item.bidCount ?? 0}회</span>
-        <strong className={isEndingSoon ? 'danger' : ''}>{remainingTime}</strong>
+        <strong className={isTimeExpired ? 'ended' : ''}>{remainingTime}</strong>
       </div>
     </Link>
   );

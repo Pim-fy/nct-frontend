@@ -10,6 +10,7 @@ import {
   removeAuctionFavorite,
 } from '@api/auctionApi';
 import { useAuth } from '@hooks/useAuth';
+import { useAuctionStream } from '@hooks/useAuctionStream';
 import useCountdown from '@hooks/useCountdown';
 import { usePointBalance } from '@hooks/usePoint';
 import AuctionBidPanel from './components/AuctionBidPanel';
@@ -24,6 +25,7 @@ import {
   formatPrice,
   formatRemainingTime,
   parseAmount,
+  resolveAuctionResultLabel,
 } from './utils/auctionFormatters';
 import '@assets/css/auction.css';
 
@@ -71,6 +73,7 @@ const AuctionDetailPage = () => {
       && typeof auction.favorite !== 'boolean'
     ),
   });
+  useAuctionStream(auctionId, Boolean(isAuthenticated && !isAuthLoading));
   const now = useCountdown(Boolean(auction?.endDateTime && auction?.auctionStatusCode === 'AUCC0002'));
 
   const showToast = (message) => setToastMessage(message);
@@ -175,12 +178,11 @@ const AuctionDetailPage = () => {
   const currentPrice = Number(auction.currentPrice || auction.startPrice || 0);
   const bidUnitPrice = Number(auction.bidUnitPrice || 1000);
   const minimumBidPrice = currentPrice + bidUnitPrice;
-  const remainingTime = formatRemainingTime(
-    auction.endDateTime,
-    auction.auctionStatusCode,
-    auction.auctionStatusName,
-    now,
-  );
+  const auctionResultLabel = resolveAuctionResultLabel(auction);
+  const remainingTime = formatRemainingTime(auction, now);
+  const remainingTimeLabel = auctionResultLabel
+    ? '경매 결과'
+    : '경매 종료까지 남은 시간';
   const auctionEndTimestamp = auction.endDateTime
     ? new Date(auction.endDateTime).getTime()
     : null;
@@ -341,6 +343,7 @@ const AuctionDetailPage = () => {
               currentPrice={currentPrice}
               bidUnitPrice={bidUnitPrice}
               remainingTime={remainingTime}
+              remainingTimeLabel={remainingTimeLabel}
               selectedTradeName={selectedTradeName}
               displayedBidAmount={displayedBidAmount}
               holdAgreed={holdAgreed}
