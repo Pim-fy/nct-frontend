@@ -8,22 +8,44 @@
 //   사이드바: 데스크톱(lg+) 좌측 고정 컬럼 / 모바일 상단 가로 스크롤 탭.
 //   콘텐츠: 우측 flex-1 영역.
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import MyPageSidebar from "@components/mypage/MyPageSidebar";
 import MyPageDashboard from "@components/mypage/MyPageDashboard";
 import MyPageProfileEdit from "@components/mypage/MyPageProfileEdit";
 import MyPageProviderDashboard from "@components/mypage/MyPageProviderDashboard";
+import MyPageTradeChatList from "@components/mypage/MyPageTradeChatList";
+import TradeChat from "@pages/trade/TradeChat";
 import MyBidHistoryPage from "@pages/user/MyBidHistoryPage";
+import TradeHistory from "@pages/trade/TradeHistory";
 import { useAuth } from "@hooks/useAuth";
 import { confirm } from "@utils/common";
 import { isProviderAccount, MYPAGE_MODE_EVENT } from "@utils/providerMode";
 
-export default function MyPage() {
+export default function MyPage({
+  initialSection = "home",
+  previewTrades = false,
+}) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [mode, setMode] = useState("general"); // 'general' | 'provider'
-  const [activeSection, setActiveSection] = useState("home");
+  const requestedSection = searchParams.get("section");
+  const [activeSection, setActiveSection] = useState(
+    requestedSection === "trade-history"
+      ? "trade-history"
+      : initialSection,
+  );
   const [providerAccount] = useState(isProviderAccount);
+  const [selectedChatTradeId, setSelectedChatTradeId] = useState("");
+
+  // 메뉴를 옮기면 열려 있던 마이페이지 채팅 대화를 닫는다.
+  const handleSelectSection = (section) => {
+    setActiveSection(section);
+
+    if (section !== "chat") {
+      setSelectedChatTradeId("");
+    }
+  };
 
   const switchMode = (nextMode) => {
     setMode(nextMode);
@@ -57,18 +79,46 @@ export default function MyPage() {
         <MyPageSidebar
           mode={mode}
           activeSection={activeSection}
-          onSelect={setActiveSection}
+          onSelect={handleSelectSection}
           onRequestProviderSwitch={handleProviderSwitchRequest}
         />
         <div className="flex-1 min-w-0">
           {activeSection === "home" && mode === "general" && (
-            <MyPageDashboard user={user} onRequestProviderSwitch={handleProviderSwitchRequest} />
+            <MyPageDashboard
+              user={user}
+              onRequestProviderSwitch={handleProviderSwitchRequest}
+              onOpenTradeHistory={() => setActiveSection("trade-history")}
+            />
           )}
           {activeSection === "home" && mode === "provider" && (
             <MyPageProviderDashboard user={user} onSwitchToGeneral={() => switchMode("general")} />
           )}
           {activeSection === "profile" && <MyPageProfileEdit user={user} />}
           {activeSection === "auction-history" && <MyBidHistoryPage />}
+          {/* 개발 환경에서는 거래내역과 동일한 미리보기 채팅 데이터를 사용한다. */}
+          {activeSection === "chat" && (
+            selectedChatTradeId ? (
+              <TradeChat
+                embedded
+                preview={previewTrades || import.meta.env.DEV}
+                tradeId={selectedChatTradeId}
+                onBack={() => setSelectedChatTradeId("")}
+              />
+            ) : (
+              <MyPageTradeChatList
+                preview={previewTrades || import.meta.env.DEV}
+                onOpenChatRoom={setSelectedChatTradeId}
+              />
+            )
+          )}
+          {activeSection === "trade-history" && (
+            <TradeHistory
+              embedded
+              // 개발 중에는 로그인한 마이페이지에서도 상태별 거래 UI를 검토한다.
+              // 운영 빌드는 실제 거래 API 결과만 사용한다.
+              preview={previewTrades || import.meta.env.DEV}
+            />
+          )}
         </div>
       </div>
     </div>

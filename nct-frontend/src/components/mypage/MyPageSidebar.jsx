@@ -12,9 +12,10 @@ const GENERAL_MENU_ITEMS = [
   { key: "home", label: "MY 홈", type: "section" },
   { key: "profile", label: "프로필수정", type: "section" },
   { key: "auction-history", label: "경매 거래내역", type: "section" },
+  { key: "trade-history", label: "거래내역", type: "section" },
   { key: "service-history", label: "서비스 거래내역", type: "todo" },
   { key: "wishlist", label: "관심 상품", type: "todo" },
-  { key: "chat", label: "채팅", type: "todo" },
+  { key: "chat", label: "채팅", type: "section" },
   { key: "wallet", label: "포인트 지갑", type: "route", to: "/user/point" },
 ];
 
@@ -41,7 +42,7 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
   };
 
   return (
-    <nav className="lg:w-[210px] lg:shrink-0">
+    <nav className="lg:sticky lg:top-24 lg:w-[210px] lg:shrink-0">
       {/* 타이틀 (데스크톱) */}
       <h2 className="hidden lg:block font-bold text-[22px] text-black mb-5 px-2">
         마이페이지
@@ -54,6 +55,7 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
       <div className="flex lg:hidden overflow-x-auto gap-2 pb-1 scrollbar-none">
         {menuItems.map((item) => {
           const isActive = item.type === "section" && item.key === activeSection;
+
           return (
             <button
               key={item.key}
@@ -75,6 +77,7 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
       <div className="hidden lg:block">
         {menuItems.map((item) => {
           const isActive = item.type === "section" && item.key === activeSection;
+
           return (
             <React.Fragment key={item.key}>
               <button

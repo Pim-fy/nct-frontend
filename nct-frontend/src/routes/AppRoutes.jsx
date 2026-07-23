@@ -88,8 +88,10 @@ import AdminSystemSettingPage from '@pages/admin/setting/AdminSystemSettingPage'
 import AdminAuctionManagementPage from '@pages/admin/auction/AdminAuctionManagementPage';
 import AdminNotificationPage from '@pages/admin/notification/AdminNotificationPage';
 
-// 개발 플래그가 켜진 로컬 환경에서만 로그인 없는 거래 화면 검토 경로를 제공한다.
-const isTradePreviewEnabled = import.meta.env.VITE_USE_TRADE_PREVIEW === 'true';
+// 개발 환경에서는 별도 env 설정 없이 로그인 없는 거래 화면을 검토할 수 있다.
+// 운영 빌드에서는 false가 되어 개발용 더미 경로가 노출되지 않는다.
+const isTradePreviewEnabled = import.meta.env.DEV
+  || import.meta.env.VITE_USE_TRADE_PREVIEW === 'true';
 
 const AppRoutes = () => {
   return (
@@ -137,7 +139,7 @@ const AppRoutes = () => {
       {isTradePreviewEnabled && (
         <>
           <Route path="/trades/preview" element={<TradeHistory />} />
-          <Route path="/trades/preview/chat" element={<TradeChat />} />
+          <Route path="/trades/preview/:tradeId/chat" element={<TradeChat />} />
           <Route
             path="/trades/preview/:tradeId"
             element={<TradeDetailBuyer />}
@@ -146,6 +148,13 @@ const AppRoutes = () => {
             path="/trades/preview/:tradeId/seller"
             element={<TradeDetailSeller />}
           />
+          {/* 개발 중에는 로그인 없이 마이페이지 내부 거래 목록 배치를 검토한다. */}
+          <Route element={<UserLayout />}>
+            <Route
+              path="/user/mypage/preview/trades"
+              element={<MyPage initialSection="trade-history" previewTrades />}
+            />
+          </Route>
         </>
       )}
 

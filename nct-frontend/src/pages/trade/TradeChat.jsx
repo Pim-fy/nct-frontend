@@ -19,8 +19,14 @@ import '@assets/css/trade-chat.css';
 
 const MAX_MESSAGE_LENGTH = 500;
 
-const TradeChat = () => {
-  const { tradeId } = useParams();
+const TradeChat = ({
+  embedded = false,
+  onBack,
+  preview = false,
+  tradeId: selectedTradeId,
+}) => {
+  const { tradeId: routeTradeId } = useParams();
+  const tradeId = selectedTradeId ?? routeTradeId;
   const [rooms, setRooms] = useState([]);
   const [activeRoomId, setActiveRoomId] = useState('');
   const [messages, setMessages] = useState([]);
@@ -40,9 +46,10 @@ const TradeChat = () => {
     setError('');
 
     try {
-      const roomResponse = await getTradeChatRooms({
-        tradeId,
-      });
+      const roomResponse = await getTradeChatRooms(
+        { tradeId },
+        { preview },
+      );
       const loadedRooms = toTradeChatRooms(roomResponse);
       const selectedRoom = loadedRooms.find(
         (room) => String(room.tradeId) === String(tradeId),
@@ -56,7 +63,10 @@ const TradeChat = () => {
         return;
       }
 
-      const messageResponse = await getTradeChatMessages(initialRoom.roomId);
+      const messageResponse = await getTradeChatMessages(
+        initialRoom.roomId,
+        { preview },
+      );
       const initialMessages = toTradeChatMessages(messageResponse);
 
       setRooms(loadedRooms.map((room) => {
@@ -78,12 +88,12 @@ const TradeChat = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [tradeId]);
+  }, [preview, tradeId]);
 
   // 방을 선택하면 서버가 상대방 메시지를 읽음 처리한 최신 목록을 다시 받아 온다.
   const selectChatRoom = useCallback(async (roomId) => {
     try {
-      const messageResponse = await getTradeChatMessages(roomId);
+      const messageResponse = await getTradeChatMessages(roomId, { preview });
       const loadedMessages = toTradeChatMessages(messageResponse);
 
       setActiveRoomId(roomId);
@@ -103,7 +113,7 @@ const TradeChat = () => {
         '채팅 메시지를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.',
       );
     }
-  }, []);
+  }, [preview]);
 
   useEffect(() => {
     const requestTimer = window.setTimeout(loadChatRooms, 0);
@@ -135,10 +145,14 @@ const TradeChat = () => {
     setError('');
 
     try {
-      const response = await sendTradeChatMessage(activeRoom.roomId, {
-        content,
-        detectionKey: window.crypto.randomUUID(),
-      });
+      const response = await sendTradeChatMessage(
+        activeRoom.roomId,
+        {
+          content,
+          detectionKey: window.crypto.randomUUID(),
+        },
+        { preview },
+      );
       const newMessage = toTradeChatMessage(response);
 
       setMessages((currentMessages) => [...currentMessages, newMessage]);
@@ -162,7 +176,11 @@ const TradeChat = () => {
   };
 
   return (
-    <div className="trade-chat-page">
+    <div
+      className={embedded
+        ? 'trade-chat-page trade-chat-page--embedded'
+        : 'trade-chat-page'}
+    >
       <main className="container">
         <header className="trade-chat-page__header">
           <div>
@@ -172,9 +190,9 @@ const TradeChat = () => {
           <button
             className="btn btn-ghost"
             type="button"
-            onClick={() => window.history.back()}
+            onClick={onBack ?? (() => window.history.back())}
           >
-            ← 이전으로
+            ← 채팅 목록
           </button>
         </header>
 
@@ -194,45 +212,54 @@ const TradeChat = () => {
         )}
 
         {!isLoading && !error && (
-          <div className="trade-chat-layout">
-            <aside className="trade-chat-card trade-chat-rooms" aria-label="채팅방 목록">
-              <div className="trade-chat-rooms__header">
-                <h2>채팅방</h2>
-                <span>{rooms.length}</span>
-              </div>
-              <div className="trade-chat-rooms__list">
-                {rooms.map((room) => {
-                  const isActive = room.roomId === activeRoomId;
+          <div
+            className={embedded
+              ? 'trade-chat-layout trade-chat-layout--conversation-only'
+              : 'trade-chat-layout'}
+          >
+            {!embedded && (
+              <aside
+                className="trade-chat-card trade-chat-rooms"
+                aria-label="채팅방 목록"
+              >
+                <div className="trade-chat-rooms__header">
+                  <h2>채팅방</h2>
+                  <span>{rooms.length}</span>
+                </div>
+                <div className="trade-chat-rooms__list">
+                  {rooms.map((room) => {
+                    const isActive = room.roomId === activeRoomId;
 
-                  return (
-                    <button
-                      className={isActive
-                        ? 'trade-chat-room trade-chat-room--active'
-                        : 'trade-chat-room'}
-                      key={room.roomId}
-                      type="button"
-                      onClick={() => selectChatRoom(room.roomId)}
-                    >
-                      <span className="trade-chat-room__topline">
-                        <strong>{room.counterpartNickname}</strong>
-                        <time>{room.latestMessageAt}</time>
-                      </span>
-                      <span className="trade-chat-room__product">
-                        {room.productName}
-                      </span>
-                      <span className="trade-chat-room__preview">
-                        {room.lastMessage}
-                      </span>
-                      {room.unreadCount > 0 && (
-                        <span className="trade-chat-room__unread">
-                          새 메시지 {room.unreadCount}개
+                    return (
+                      <button
+                        className={isActive
+                          ? 'trade-chat-room trade-chat-room--active'
+                          : 'trade-chat-room'}
+                        key={room.roomId}
+                        type="button"
+                        onClick={() => selectChatRoom(room.roomId)}
+                      >
+                        <span className="trade-chat-room__topline">
+                          <strong>{room.counterpartNickname}</strong>
+                          <time>{room.latestMessageAt}</time>
                         </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </aside>
+                        <span className="trade-chat-room__product">
+                          {room.productName}
+                        </span>
+                        <span className="trade-chat-room__preview">
+                          {room.lastMessage}
+                        </span>
+                        {room.unreadCount > 0 && (
+                          <span className="trade-chat-room__unread">
+                            새 메시지 {room.unreadCount}개
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </aside>
+            )}
 
             <section className="trade-chat-card trade-chat-conversation">
               {activeRoom ? (
