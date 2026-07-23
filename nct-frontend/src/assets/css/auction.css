@@ -459,30 +459,6 @@
   cursor: not-allowed;
 }
 
-.auction-register-fab {
-  position: fixed;
-  right: 24px;
-  bottom: 24px;
-  z-index: 120;
-  min-height: 48px;
-  padding: 0 18px;
-  border: 1px solid var(--auction-primary);
-  border-radius: 999px;
-  background: var(--auction-primary);
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  text-decoration: none;
-  font-weight: 800;
-  box-shadow: 0 10px 24px rgba(0, 100, 255, .22);
-}
-
-.auction-register-fab:hover {
-  background: var(--auction-primary-dark);
-  border-color: var(--auction-primary-dark);
-}
-
 .auction-detail-page {
   --detail-primary: var(--auction-primary, #0064ff);
   --detail-primary-dark: var(--auction-primary-dark, #0048bf);
@@ -777,6 +753,16 @@
   padding-top: 42px;
 }
 
+.auction-detail-page .owner-auction-state {
+  min-height: 144px;
+  padding-top: 42px;
+  display: grid;
+  place-items: center;
+  color: var(--detail-primary-dark);
+  font-size: 18px;
+  font-weight: 700;
+}
+
 .auction-detail-page .field {
   display: grid;
   gap: 8px;
@@ -824,6 +810,32 @@
   margin: 12px 0 12px;
   color: var(--detail-muted);
   font-size: 14px;
+}
+
+.auction-detail-page .bid-point-balance {
+  min-height: 28px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  color: var(--detail-muted);
+  font-size: 13px;
+}
+
+.auction-detail-page .bid-point-balance strong {
+  color: var(--detail-text);
+  font-size: 14px;
+}
+
+.auction-detail-page .bid-point-balance.insufficient strong {
+  color: #b42318;
+}
+
+.auction-detail-page .bid-point-balance a {
+  color: var(--detail-primary-dark);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .auction-detail-page .meta-stats {
@@ -1214,14 +1226,6 @@
   .auction-card-meta {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .auction-register-fab {
-    right: 16px;
-    bottom: 16px;
-    min-height: 44px;
-    padding: 0 14px;
-    font-size: 13px;
   }
 
   .auction-detail-container {
