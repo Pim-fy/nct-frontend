@@ -247,21 +247,13 @@ const SiteHeader = () => {
                     <span className="text-[15px] font-bold text-black tracking-[-0.5px]">알림</span>
                     <span className="text-[12px] text-[#0064ff]">{notiCount}</span>
                   </span>
-                  <button
-                    type="button"
-                    className="flex size-[22px] items-center justify-center rounded-full bg-[#f3f5fa] text-[13px] text-[#4e4e4e] hover:bg-[#e9edf5]"
-                    onClick={() => { setNotiOpen(false); navigate('/user/notification'); }}
-                    aria-label="알림함으로 이동"
-                  >
-                    +
-                  </button>
                 </div>
-                <div className="my-3 h-px bg-[#e5e5e5]" />
+                <div className="my-2 h-px bg-[#e5e5e5]" />
                 {/* 알림 목록 — 안읽은 알림 최근 N건, 없으면 안내 문구 */}
                 {unreadNotis.length === 0 ? (
                   <p className="py-2 text-center text-[13px] text-[#969696]">새 알림이 없습니다.</p>
                 ) : (
-                  <ul className="flex flex-col gap-3">
+                  <ul className="flex flex-col gap-1.5">
                     {unreadNotis.slice(0, NOTI_PREVIEW_MAX).map((item) => (
                       <li key={item.id} className="flex items-start gap-2">
                         <span className="mt-[6px] size-[6px] shrink-0 rounded-full bg-primary" />
@@ -300,14 +292,6 @@ const SiteHeader = () => {
                 {/* 헤더 */}
                 <div className="flex items-center justify-between">
                   <span className="text-[15px] font-bold text-black tracking-[-0.5px]">POINT</span>
-                  <button
-                    type="button"
-                    className="flex size-[22px] items-center justify-center rounded-full bg-[#f3f5fa] text-[13px] text-[#4e4e4e] hover:bg-[#e9edf5]"
-                    onClick={() => { setPointOpen(false); navigate('/user/point'); }}
-                    aria-label="포인트 지갑으로 이동"
-                  >
-                    +
-                  </button>
                 </div>
                 <div className="my-3 h-px bg-[#e5e5e5]" />
                 {/* 잔액 */}
@@ -336,6 +320,13 @@ const SiteHeader = () => {
                     환전
                   </button>
                 </div>
+                <button
+                  type="button"
+                  className="mt-2 h-[34px] w-full rounded-[6px] border border-primary text-[14px] font-bold text-primary hover:bg-[#f0f6ff] transition-colors"
+                  onClick={() => { setPointOpen(false); navigate('/user/point'); }}
+                >
+                  포인트지갑 상세보기
+                </button>
               </div>
             )}
           </div>
@@ -362,14 +353,6 @@ const SiteHeader = () => {
                   ) : (
                     <span className="text-[14px] text-[#969696]">로그인이 필요합니다</span>
                   )}
-                  <button
-                    type="button"
-                    className="flex size-[22px] items-center justify-center rounded-full bg-[#f3f5fa] text-[13px] text-[#4e4e4e] hover:bg-[#e9edf5]"
-                    onClick={() => { setProfileOpen(false); navigate(user ? '/user/mypage' : '/login'); }}
-                    aria-label={user ? '마이페이지로 이동' : '로그인으로 이동'}
-                  >
-                    +
-                  </button>
                 </div>
                 <div className="my-3 h-px bg-[#e5e5e5]" />
                 {/* 액션 */}
@@ -407,6 +390,15 @@ const SiteHeader = () => {
                       로그인
                     </button>
                   )}
+                  {user && (
+                    <button
+                      type="button"
+                      className="h-[36px] rounded-[6px] bg-[#f3f5fa] text-[14px] font-medium text-[#4e4e4e] hover:bg-[#e9edf5] transition-colors"
+                      onClick={() => { setProfileOpen(false); navigate('/user/mypage'); }}
+                    >
+                      마이페이지 상세보기
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -442,6 +434,47 @@ const SiteHeader = () => {
           </div>
 
           <nav className="flex-1 overflow-y-auto px-4 py-2">
+            {/* 로그인 상태: 유저 정보 패널 */}
+            {user && (
+              <div className="border-b border-[#f0f0f0] py-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <img
+                    src={user?.profileImage || userIcon}
+                    alt="프로필"
+                    className="size-[48px] rounded-full object-cover bg-[#f3f5fa]"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-[16px] font-bold text-[#333333] truncate">{nickname}</p>
+                    <p className="text-[13px] text-[#969696] truncate">{user?.email || ''}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className="flex-1 h-[40px] rounded-[8px] border border-primary text-[14px] font-medium text-primary"
+                    onClick={() => {
+                      closeMobileMenu();
+                      if (isProvider) {
+                        requestMypageMode('general');
+                        navigate('/user/mypage');
+                      } else {
+                        navigate('/provider/apply');
+                      }
+                    }}
+                  >
+                    {isProvider ? '일반모드 변경' : '제공자전환'}
+                  </button>
+                  <button
+                    type="button"
+                    className="flex-1 h-[40px] rounded-[8px] bg-primary text-[14px] font-medium text-white"
+                    onClick={() => { closeMobileMenu(); logout(); }}
+                  >
+                    로그아웃
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* 경매 (아코디언) */}
             <div className="border-b border-[#f0f0f0]">
               <button
@@ -509,13 +542,22 @@ const SiteHeader = () => {
             </Link>
 
             {!user && (
-              <Link
-                to="/login/signup"
-                className="mt-6 flex h-[44px] items-center justify-center rounded-[30px] bg-primary text-[15px] font-medium text-white"
-                onClick={closeMobileMenu}
-              >
-                회원가입
-              </Link>
+              <div className="mt-6 flex gap-2">
+                <Link
+                  to="/login"
+                  className="flex flex-1 h-[44px] items-center justify-center rounded-[30px] border border-primary text-[15px] font-medium text-primary"
+                  onClick={closeMobileMenu}
+                >
+                  로그인
+                </Link>
+                <Link
+                  to="/login/signup"
+                  className="flex flex-1 h-[44px] items-center justify-center rounded-[30px] bg-primary text-[15px] font-medium text-white"
+                  onClick={closeMobileMenu}
+                >
+                  회원가입
+                </Link>
+              </div>
             )}
           </nav>
         </div>
