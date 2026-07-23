@@ -5,8 +5,8 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { requestPasswordReset, confirmPasswordReset } from '@api/authApi';
-import SiteHeader from '@layouts/user/headers/SiteHeader';
-import MainFooter from '@layouts/user/footers/MainFooter';
+import AuthPageContainer from '@components/auth/AuthPageContainer';
+import AuthCard from '@components/auth/AuthCard';
 
 // @ai_generated: 목업(38_password_reset.html)의 이메일 마스킹 규칙을 그대로 재사용한다.
 const maskEmail = (email) =>
@@ -55,10 +55,8 @@ function RequestForm() {
   const handleResend = () => handleSubmit();
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
-      <SiteHeader />
-      <main className="flex flex-1 items-center justify-center px-4 py-10">
-        <div className="w-full max-w-110 bg-white rounded-2xl shadow-lg px-8 py-10">
+    <AuthPageContainer>
+      <AuthCard className="max-w-110">
         <h1 className="text-xl font-bold text-center mb-8">비밀번호 재설정</h1>
 
         {!sent ? (
@@ -138,10 +136,8 @@ function RequestForm() {
             ← 로그인으로 돌아가기
           </Link>
         </div>
-        </div>
-      </main>
-      <MainFooter />
-    </div>
+      </AuthCard>
+    </AuthPageContainer>
   );
 }
 
@@ -188,10 +184,8 @@ function ConfirmForm({ token }) {
 
   if (invalid) {
     return (
-      <div className="flex min-h-screen flex-col bg-gray-50">
-        <SiteHeader />
-        <main className="flex flex-1 items-center justify-center px-4 py-10">
-          <div className="w-full max-w-110 bg-white rounded-2xl shadow-lg px-8 py-10 text-center">
+      <AuthPageContainer>
+        <AuthCard className="max-w-110 text-center">
           <div className="w-14 h-14 mx-auto rounded-full bg-red-50 flex items-center justify-center text-2xl mb-4">⚠️</div>
           <h1 className="text-lg font-bold mb-2">링크가 유효하지 않습니다</h1>
           <p className="text-sm text-gray-500 mb-8">
@@ -203,19 +197,15 @@ function ConfirmForm({ token }) {
           >
             다시 요청하기
           </Link>
-          </div>
-        </main>
-        <MainFooter />
-      </div>
+        </AuthCard>
+      </AuthPageContainer>
     );
   }
 
   if (done) {
     return (
-      <div className="flex min-h-screen flex-col bg-gray-50">
-        <SiteHeader />
-        <main className="flex flex-1 items-center justify-center px-4 py-10">
-          <div className="w-full max-w-110 bg-white rounded-2xl shadow-lg px-8 py-10 text-center">
+      <AuthPageContainer>
+        <AuthCard className="max-w-110 text-center">
           <div className="w-14 h-14 mx-auto rounded-full bg-green-50 flex items-center justify-center text-2xl mb-4">✅</div>
           <h1 className="text-lg font-bold mb-2">비밀번호가 변경되었습니다</h1>
           <p className="text-sm text-gray-500 mb-8">
@@ -228,18 +218,14 @@ function ConfirmForm({ token }) {
           >
             로그인하기
           </Link>
-          </div>
-        </main>
-        <MainFooter />
-      </div>
+        </AuthCard>
+      </AuthPageContainer>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
-      <SiteHeader />
-      <main className="flex flex-1 items-center justify-center px-4 py-10">
-        <div className="w-full max-w-110 bg-white rounded-2xl shadow-lg px-8 py-10">
+    <AuthPageContainer>
+      <AuthCard className="max-w-110">
         <h1 className="text-xl font-bold text-center mb-2">새 비밀번호 설정</h1>
         <p className="text-sm text-gray-500 text-center mb-8">변경 후 모든 기기에서 자동으로 로그아웃됩니다.</p>
 
@@ -276,9 +262,7 @@ function ConfirmForm({ token }) {
             {loading ? '변경 중...' : '비밀번호 변경'}
           </button>
         </div>
-        </div>
-      </main>
-      <MainFooter />
-    </div>
+      </AuthCard>
+    </AuthPageContainer>
   );
 }
