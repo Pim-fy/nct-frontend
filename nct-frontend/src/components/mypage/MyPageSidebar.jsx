@@ -1,5 +1,5 @@
 // 마이페이지 좌측 메뉴: 데스크톱 아코디언과 모바일 탭을 함께 제공합니다.
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { toast } from '@utils/common';
@@ -9,9 +9,10 @@ const GENERAL_MENU_ITEMS = [
   { key: 'profile', label: '프로필수정', type: 'section' },
   {
     key: 'auction-history',
-    label: '경매 거래내역',
+    label: '경매',
     type: 'accordion',
     children: [
+      { key: 'active-auctions', label: '진행중인 경매', type: 'section' },
       { key: 'auction-bids', label: '상품 입찰 내역', type: 'section' },
       { key: 'auction-sales', label: '상품 판매 내역', type: 'section' },
     ],
@@ -34,7 +35,7 @@ const PROVIDER_MENU_ITEMS = [
 ];
 
 const ACCORDION_CHILDREN = {
-  'auction-history': ['auction-bids', 'auction-sales'],
+  'auction-history': ['active-auctions', 'auction-bids', 'auction-sales'],
 };
 
 function getParentAccordion(sectionKey) {
@@ -50,19 +51,17 @@ export default function MyPageSidebar({
 }) {
   const navigate = useNavigate();
   const menuItems = mode === 'provider' ? PROVIDER_MENU_ITEMS : GENERAL_MENU_ITEMS;
-  const [openAccordion, setOpenAccordion] = useState(
-    () => getParentAccordion(activeSection),
-  );
-
-  // 하위 화면으로 이동했을 때 부모 메뉴가 닫히지 않도록 유지합니다.
-  useEffect(() => {
-    const parent = getParentAccordion(activeSection);
-    if (parent) setOpenAccordion(parent);
-  }, [activeSection]);
+  const [accordionOverride, setAccordionOverride] = useState(null);
+  const openAccordion = accordionOverride?.section === activeSection
+    ? accordionOverride.openKey
+    : getParentAccordion(activeSection);
 
   const handleClick = (item) => {
     if (item.type === 'accordion') {
-      setOpenAccordion((previous) => (previous === item.key ? null : item.key));
+      setAccordionOverride({
+        section: activeSection,
+        openKey: openAccordion === item.key ? null : item.key,
+      });
       return;
     }
     if (item.type === 'section') {
