@@ -16,7 +16,6 @@ import { useNotificationStream } from '@hooks/useNotificationStream';
 import { usePointBalance } from '@hooks/usePoint';
 import relativeTime from '@utils/relativeTime';
 import { isProviderAccount, requestMypageMode } from '@utils/providerMode';
-import QuickActions from '@components/landing/QuickActions';
 import logoImg from '@assets/img/logo.png';
 import bellIcon from '@assets/img/bellIcon.png';
 import walletIcon from '@assets/img/walletIcon.png';
@@ -580,8 +579,6 @@ const SiteHeader = () => {
         </div>
       )}
     </header>
-    {/* 퀵메뉴(경매등록/서비스요청 등)를 헤더 컴포넌트에 포함시켜 모든 페이지에서 우측에 고정 노출한다. */}
-    <QuickActions />
     </>
   );
 };
