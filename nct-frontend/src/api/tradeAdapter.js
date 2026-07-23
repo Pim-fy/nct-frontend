@@ -98,6 +98,9 @@ export const toTradeHistoryItem = (trade) => ({
   date: formatDate(trade.createdAt ?? trade.tradedAt ?? trade.tradeDate),
   method: trade.tradeMethod ?? trade.method,
   status: normalizeTradeStatus(trade.tradeStatus ?? trade.status),
+  meetingDate: trade.meetingDate ?? null,
+  meetingTime: trade.meetingTime ?? null,
+  meetingPlace: trade.meetingPlace ?? null,
 });
 
 /**
