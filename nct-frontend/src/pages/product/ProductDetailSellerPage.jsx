@@ -4,12 +4,13 @@
 // 목업: 06_auction_detail_seller.html 기반
 // 라우트: /product/:prdSn/seller
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toImageUrl } from '@api/fileApi';
 import { getProduct, postProductComment, fetchProductComments } from '@api/productApi';
 import { getAuctionStatus, requestAuctionCancel } from '@api/auctionApi';
 import { TRADE_LABEL, STATUS_LABEL, STATUS_BADGE } from '@/constants/productConstants';
+import useCountdown from '@hooks/useCountdown';
 import Breadcrumb from '@components/common/Breadcrumb';
 import ErrorMessage from '@components/common/ErrorMessage';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
@@ -30,27 +31,18 @@ export default function ProductDetailSellerPage() {
   const [error, setError] = useState('');
 
   // ─── 남은 시간 카운트다운 (F-AUC-006) ───────────────────────────────────
-  const [remainTime, setRemainTime] = useState('');
-  const timerRef = useRef(null);
-
-  useEffect(() => {
-    if (!auctionStatus?.aucEndDt) return;
-
-    const calc = () => {
-      const diff = new Date(auctionStatus.aucEndDt) - new Date();
-      if (diff <= 0) { setRemainTime('종료'); clearInterval(timerRef.current); return; }
-      const d = Math.floor(diff / 86400000);
-      const h = Math.floor((diff % 86400000) / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      const pad = n => String(n).padStart(2, '0');
-      setRemainTime(d > 0 ? `${d}일 ${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(h)}:${pad(m)}:${pad(s)}`);
-    };
-
-    calc();
-    timerRef.current = setInterval(calc, 1000);
-    return () => clearInterval(timerRef.current);
-  }, [auctionStatus?.aucEndDt]);
+  const now = useCountdown(!!auctionStatus?.aucEndDt);
+  const remainTime = (() => {
+    if (!auctionStatus?.aucEndDt) return '';
+    const diff = new Date(auctionStatus.aucEndDt) - now;
+    if (diff <= 0) return '종료';
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    const pad = n => String(n).padStart(2, '0');
+    return d > 0 ? `${d}일 ${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(h)}:${pad(m)}:${pad(s)}`;
+  })();
 
   // ─── 추가 공지 상태 (F-AUC-007) ─────────────────────────────────────────
   const [comments, setComments] = useState([]);
@@ -71,7 +63,7 @@ export default function ProductDetailSellerPage() {
       .then(res => {
         const p = res.data;
         setProduct(p);
-        const sideLoads = [fetchProductComments(prdSn).then(setComments).catch(() => {})];
+        const sideLoads = [fetchProductComments(prdSn).then(res => setComments(res.data)).catch(() => {})];
         if (p.prdStatusCd !== 'PRDC0001') {
           sideLoads.push(getAuctionStatus(prdSn).then(auc => setAuctionStatus(auc)).catch(() => {}));
         }
@@ -97,6 +89,7 @@ export default function ProductDetailSellerPage() {
       setToast('취소 요청이 접수되었습니다.');
       setCancelOpen(false);
       setCancelReason('');
+      getAuctionStatus(prdSn).then(auc => setAuctionStatus(auc)).catch(() => {});
     } catch {
       setToast('취소 요청에 실패했습니다.');
     } finally {
@@ -114,10 +107,10 @@ export default function ProductDetailSellerPage() {
     try {
       await postProductComment(prdSn, { ttl: cmtTtl.trim(), cn: cmtCn.trim() || null });
       const updated = await fetchProductComments(prdSn);
-      setComments(updated);
+      setComments(updated.data);
       setCmtTtl('');
       setCmtCn('');
-      setToast('추가 공지가 등록되었습니다.');
+      setToast('수정 이력이 등록되었습니다.');
     } catch {
       setToast('추가 공지 등록에 실패했습니다.');
     } finally {
@@ -143,24 +136,28 @@ export default function ProductDetailSellerPage() {
 
   // ─── 상태 파생값 ─────────────────────────────────────────────────────────
   // 상태 코드에 따라 렌더링 분기(가격 라벨·결과 텍스트·버튼·notice)에 사용
-  const isActive = product.prdStatusCd === 'PRDC0002';
-  const isEnded  = product.prdStatusCd === 'PRDC0003';
-  const isDraft  = product.prdStatusCd === 'PRDC0001';
+  const isActive        = product.prdStatusCd === 'PRDC0002';
+  const isEnded         = product.prdStatusCd === 'PRDC0003';
+  const isDraft         = product.prdStatusCd === 'PRDC0001';
+  const isCancelPending = isActive && auctionStatus?.aucStatusCd === 'AUCC0006';
 
   const priceLabel = isActive ? '현재가' : '시작가';
   const priceAmt = isActive && auctionStatus?.aucCurAmt != null
     ? auctionStatus.aucCurAmt
     : product.prdStartAmt;
 
-  const resultText = isActive
+  const resultText = isCancelPending
+    ? '취소 요청 검토 중입니다.'
+    : isActive
     ? '내가 등록한 경매가 진행 중입니다.'
     : isEnded
     ? '유효 입찰 없이 경매가 종료되었습니다.'
     : '임시저장 상태입니다. 경매 설정을 완료해 공개할 수 있습니다.';
 
-  // TODO(F-AUC-008/F-AUC-006): 판매자 귀책 취소 확정 시 'danger-note'로 교체
-  const noticeClass = 'notice';
-  const noticeText = isActive
+  const noticeClass = isCancelPending ? 'danger-note' : 'notice';
+  const noticeText = isCancelPending
+    ? '취소 요청이 접수되었습니다. 관리자 검토 중이며 승인 전까지 입찰·즉시구매가 차단됩니다.'
+    : isActive
     ? '입찰자의 포인트가 홀딩되어 있어 취소 시 관리자 승인이 필요합니다.'
     : isEnded
     ? '유찰 건은 거래와 정산이 생성되지 않습니다.'
@@ -256,7 +253,12 @@ export default function ProductDetailSellerPage() {
         <aside className="card">
           <h3 style={{ margin: '0 0 6px', fontSize: 20 }}>상태별 관리</h3>
 
-          {isActive && (
+          {isCancelPending && (
+            <p className="muted small" style={{ marginBottom: 18, lineHeight: 1.65 }}>
+              취소 요청 검토 중입니다. 승인 시 경매가 취소되며 반려 시 경매가 재개됩니다.
+            </p>
+          )}
+          {isActive && !isCancelPending && (
             <p className="muted small" style={{ marginBottom: 18, lineHeight: 1.65 }}>
               입찰이 시작된 상품은 핵심 정보 수정이 제한됩니다.
             </p>
@@ -270,13 +272,13 @@ export default function ProductDetailSellerPage() {
           <div className="seller-action-list">
             {isActive && (
               <>
-                {/* TODO: 담당자5(옥동민) route /auction/:prdSn 확인 후 경로 수정 */}
                 <button className="btn btn-outline" onClick={() => auctionStatus?.aucSn && navigate(`/auction/${auctionStatus.aucSn}`)}>
                   구매자 화면 보기
                 </button>
-                <button className="btn btn-danger" onClick={() => setCancelOpen(true)}>
-                  경매 취소 요청
-                </button>
+                {isCancelPending
+                  ? <button className="btn btn-danger" disabled>취소 요청 검토 중</button>
+                  : <button className="btn btn-danger" onClick={() => setCancelOpen(true)}>경매 취소 요청</button>
+                }
               </>
             )}
 
@@ -287,7 +289,7 @@ export default function ProductDetailSellerPage() {
             )}
 
             {isDraft && (
-              <button className="btn btn-primary" onClick={() => navigate('/product/register')}>
+              <button className="btn btn-primary" onClick={() => navigate('/product/register', { state: { prdSn: Number(prdSn) } })}>
                 경매 설정 완료하기
               </button>
             )}
@@ -301,7 +303,7 @@ export default function ProductDetailSellerPage() {
 
       {/* 추가 공지 섹션 (F-AUC-007) */}
       <section className="card" style={{ marginTop: 24 }}>
-        <h3 style={{ margin: '0 0 16px', fontSize: 20 }}>추가 공지 이력</h3>
+        <h3 style={{ margin: '0 0 16px', fontSize: 20 }}>상품 수정 이력</h3>
 
         {/* 등록 폼 — 진행중 상태에서만 표시 */}
         {isActive && (
@@ -311,7 +313,7 @@ export default function ProductDetailSellerPage() {
               <input
                 type="text"
                 maxLength={200}
-                placeholder="추가 공지 제목을 입력해 주세요"
+                placeholder="수정 이력 제목을 입력해 주세요"
                 value={cmtTtl}
                 onChange={e => setCmtTtl(e.target.value)}
               />
@@ -332,7 +334,7 @@ export default function ProductDetailSellerPage() {
                 onClick={handleCommentSubmit}
                 disabled={cmtSubmitting}
               >
-                {cmtSubmitting ? '등록 중...' : '공지 등록'}
+                {cmtSubmitting ? '등록 중...' : '수정 이력 등록'}
               </button>
             </div>
           </div>
@@ -340,7 +342,7 @@ export default function ProductDetailSellerPage() {
 
         {/* 공지 목록 — 최신 4개 */}
         {comments.length === 0 ? (
-          <p className="muted small" style={{ padding: '12px 2px' }}>등록된 추가 공지가 없습니다.</p>
+          <p className="muted small" style={{ padding: '12px 2px' }}>등록된 수정 이력이 없습니다.</p>
         ) : (
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
             {comments.map(c => (
