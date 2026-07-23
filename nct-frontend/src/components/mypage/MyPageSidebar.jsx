@@ -1,20 +1,24 @@
-// 마이페이지 좌측 메뉴: 데스크톱 아코디언과 모바일 탭을 함께 제공합니다.
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronRight } from 'lucide-react';
-import { toast } from '@utils/common';
+// src/components/mypage/MyPageSidebar.jsx
+// Figma: mypage_01일반(18:2)/mypage_01일반_프로필수정(28:12) LEFTMENU
+//        mypage_02제공자모드(57:495) LEFTMENU
+// - 절대좌표 → 반응형 전환.
+//   데스크톱(lg+): 좌측 세로 목록 / 모바일: 상단 가로 스크롤 탭.
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ChevronDown, ChevronRight, ChevronUp } from "lucide-react";
+import { toast } from "@utils/common";
 
 const GENERAL_MENU_ITEMS = [
   { key: "home",    label: "MY 홈",  type: "section" },
   { key: "profile", label: "프로필", type: "section" },
   {
-    key: 'auction-history',
-    label: '경매',
-    type: 'accordion',
+    key: "auction-history",
+    label: "경매",
+    type: "accordion",
     children: [
-      { key: 'active-auctions', label: '진행중인 경매', type: 'section' },
-      { key: 'auction-bids', label: '상품 입찰 내역', type: 'section' },
-      { key: 'auction-sales', label: '상품 판매 내역', type: 'section' },
+      { key: "active-auctions", label: "진행중인 경매",  type: "section" },
+      { key: "auction-bids",    label: "상품 입찰 내역", type: "section" },
+      { key: "auction-sales",   label: "상품 판매 내역", type: "section" },
     ],
   },
   {
@@ -26,14 +30,26 @@ const GENERAL_MENU_ITEMS = [
       { key: "service-sales", label: "서비스 판매 내역", type: "todo" },
     ],
   },
-  { key: "wishlist",        label: "관심 상품",       type: "todo" },
-  { key: "chat",            label: "채팅",            type: "section" },
-  { key: "wallet",          label: "포인트 지갑",     type: "route", to: "/user/point" },
+  { key: "wishlist", label: "관심 상품",   type: "todo" },
+  { key: "chat",     label: "채팅",        type: "section" },
+  { key: "wallet",   label: "포인트 지갑", type: "route", to: "/user/point" },
+];
+
+const PROVIDER_MENU_ITEMS = [
+  { key: "home",              label: "MY 홈",        type: "section" },
+  { key: "profile",           label: "프로필",        type: "section" },
+  { key: "quote",             label: "견적",          type: "todo" },
+  { key: "service-trade",     label: "서비스 거래",   type: "todo" },
+  { key: "settlement",        label: "정산 관리",     type: "route", to: "/user/settlement" },
+  { key: "service-chat",      label: "서비스 채팅",   type: "todo" },
+  { key: "wallet",            label: "포인트 지갑",   type: "route", to: "/user/point" },
+  { key: "approval-category", label: "승인 카테고리", type: "todo" },
 ];
 
 // 아코디언 key → 포함되는 child key 목록
 const ACCORDION_CHILDREN = {
-  'auction-history': ['active-auctions', 'auction-bids', 'auction-sales'],
+  "auction-history":  ["active-auctions", "auction-bids", "auction-sales"],
+  "service-history":  ["service-bids", "service-sales"],
 };
 
 function getParentAccordion(sectionKey) {
@@ -43,25 +59,21 @@ function getParentAccordion(sectionKey) {
   return null;
 }
 
-export default function MyPageSidebar({
-  mode = 'general',
-  activeSection,
-  onSelect,
-  onRequestProviderSwitch,
-}) {
+export default function MyPageSidebar({ mode = "general", activeSection, onSelect, onRequestProviderSwitch }) {
   const navigate = useNavigate();
-  const menuItems = mode === 'provider' ? PROVIDER_MENU_ITEMS : GENERAL_MENU_ITEMS;
-  const [accordionOverride, setAccordionOverride] = useState(null);
-  const openAccordion = accordionOverride?.section === activeSection
-    ? accordionOverride.openKey
-    : getParentAccordion(activeSection);
+  const menuItems = mode === "provider" ? PROVIDER_MENU_ITEMS : GENERAL_MENU_ITEMS;
+
+  const [openAccordion, setOpenAccordion] = useState(() => getParentAccordion(activeSection));
+
+  // activeSection이 accordion child로 변경되면 해당 accordion 자동으로 열기
+  useEffect(() => {
+    const parent = getParentAccordion(activeSection);
+    if (parent) setOpenAccordion(parent);
+  }, [activeSection]);
 
   const handleClick = (item) => {
-    if (item.type === 'accordion') {
-      setAccordionOverride({
-        section: activeSection,
-        openKey: openAccordion === item.key ? null : item.key,
-      });
+    if (item.type === "accordion") {
+      setOpenAccordion(prev => prev === item.key ? null : item.key);
       return;
     }
     // 아코디언 자식이 아닌 항목 클릭 시 아코디언 닫기
@@ -123,14 +135,14 @@ export default function MyPageSidebar({
                 type="button"
                 onClick={() => handleClick(item)}
                 className={`cursor-pointer w-full flex items-center justify-between h-[70px] px-[18px] text-left transition-all ${
-                  isActive || hasActiveChild || isOpen
+                  isActive || isOpen
                     ? "bg-[#0064ff] rounded-[10px] shadow-[0_4px_14px_rgba(0,0,0,0.10)]"
                     : "bg-transparent hover:bg-[#f3f5fa]"
                 }`}
               >
                 <span
                   className={`text-[17px] ${
-                    isActive || hasActiveChild || isOpen ? "font-bold text-white" : "font-medium text-[#333]"
+                    isActive || isOpen ? "font-bold text-white" : "font-medium text-[#333]"
                   }`}
                 >
                   {item.label}
@@ -138,7 +150,7 @@ export default function MyPageSidebar({
                 {isAccordion ? (
                   isOpen
                     ? <ChevronUp   size={14} className="text-white" />
-                    : <ChevronDown size={14} className={hasActiveChild ? "text-white" : "text-[#888]"} />
+                    : <ChevronDown size={14} className="text-[#888]" />
                 ) : item.showChevron ? (
                   <ChevronDown size={14} className="text-[#888]" />
                 ) : null}
