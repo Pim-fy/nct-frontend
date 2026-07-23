@@ -1,114 +1,101 @@
-// src/components/mypage/MyPageSidebar.jsx
-// Figma: mypage_01일반(18:2)/mypage_01일반_프로필수정(28:12) LEFTMENU
-//        mypage_02제공자모드(57:495) LEFTMENU
-// - 절대좌표 → 반응형 전환.
-//   데스크톱(lg+): 좌측 세로 목록 / 모바일: 상단 가로 스크롤 탭.
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { ChevronDown, ChevronRight, ChevronUp } from "lucide-react";
-import { toast } from "@utils/common";
+// 마이페이지 좌측 메뉴: 데스크톱 아코디언과 모바일 탭을 함께 제공합니다.
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import { toast } from '@utils/common';
 
 const GENERAL_MENU_ITEMS = [
-  { key: "home",    label: "MY 홈",  type: "section" },
-  { key: "profile", label: "프로필", type: "section" },
+  { key: 'home', label: 'MY 홈', type: 'section' },
+  { key: 'profile', label: '프로필수정', type: 'section' },
   {
-    key: "auction-history",
-    label: "경매 거래내역",
-    type: "accordion",
+    key: 'auction-history',
+    label: '경매 거래내역',
+    type: 'accordion',
     children: [
-      { key: "auction-bids",  label: "상품 입찰 내역", type: "section" },
-      { key: "auction-sales", label: "상품 판매 내역", type: "section" },
+      { key: 'auction-bids', label: '상품 입찰 내역', type: 'section' },
+      { key: 'auction-sales', label: '상품 판매 내역', type: 'section' },
     ],
   },
-  {
-    key: "service-history",
-    label: "서비스 거래내역",
-    type: "accordion",
-    children: [
-      { key: "service-bids",  label: "서비스 입찰 내역", type: "todo" },
-      { key: "service-sales", label: "서비스 판매 내역", type: "todo" },
-    ],
-  },
-  { key: "wishlist",        label: "관심 상품",       type: "todo" },
-  { key: "chat",            label: "채팅",            type: "todo" },
-  { key: "wallet",          label: "포인트 지갑",     type: "route", to: "/user/point" },
+  { key: 'service-history', label: '서비스 거래내역', type: 'todo' },
+  { key: 'wishlist', label: '관심 상품', type: 'todo' },
+  { key: 'chat', label: '채팅', type: 'section' },
+  { key: 'wallet', label: '포인트 지갑', type: 'route', to: '/user/point' },
 ];
 
-// 아코디언 key → 포함되는 child key 목록
+const PROVIDER_MENU_ITEMS = [
+  { key: 'home', label: 'MY 홈', type: 'section' },
+  { key: 'profile', label: '프로필', type: 'section' },
+  { key: 'quote', label: '견적', type: 'todo' },
+  { key: 'service-trade', label: '서비스 거래', type: 'todo' },
+  { key: 'settlement', label: '정산 관리', type: 'route', to: '/user/settlement' },
+  { key: 'service-chat', label: '서비스 채팅', type: 'todo' },
+  { key: 'wallet', label: '포인트 지갑', type: 'route', to: '/user/point' },
+  { key: 'approval-category', label: '승인 카테고리', type: 'todo' },
+];
+
 const ACCORDION_CHILDREN = {
-  "auction-history":  ["auction-bids", "auction-sales"],
-  "service-history":  ["service-bids", "service-sales"],
+  'auction-history': ['auction-bids', 'auction-sales'],
 };
 
 function getParentAccordion(sectionKey) {
-  for (const [parent, children] of Object.entries(ACCORDION_CHILDREN)) {
-    if (children.includes(sectionKey)) return parent;
-  }
-  return null;
+  return Object.entries(ACCORDION_CHILDREN)
+    .find(([, children]) => children.includes(sectionKey))?.[0] ?? null;
 }
 
-const PROVIDER_MENU_ITEMS = [
-  { key: "home", label: "MY 홈", type: "section" },
-  { key: "profile", label: "프로필", type: "section" },
-  { key: "quote", label: "견적", type: "todo" },
-  { key: "service-trade", label: "서비스 거래", type: "todo" },
-  { key: "settlement", label: "정산 관리", type: "route", to: "/user/settlement" },
-  { key: "service-chat", label: "서비스 채팅", type: "todo" },
-  { key: "wallet", label: "포인트 지갑", type: "route", to: "/user/point" },
-  { key: "approval-category", label: "승인 카테고리", type: "todo" },
-];
-
-export default function MyPageSidebar({ mode = "general", activeSection, onSelect, onRequestProviderSwitch }) {
+export default function MyPageSidebar({
+  mode = 'general',
+  activeSection,
+  onSelect,
+  onRequestProviderSwitch,
+}) {
   const navigate = useNavigate();
-  const menuItems = mode === "provider" ? PROVIDER_MENU_ITEMS : GENERAL_MENU_ITEMS;
+  const menuItems = mode === 'provider' ? PROVIDER_MENU_ITEMS : GENERAL_MENU_ITEMS;
+  const [openAccordion, setOpenAccordion] = useState(
+    () => getParentAccordion(activeSection),
+  );
 
-  const [openAccordion, setOpenAccordion] = useState(() => getParentAccordion(activeSection));
-
-  // activeSection이 accordion child로 변경되면 해당 accordion 자동으로 열기
+  // 하위 화면으로 이동했을 때 부모 메뉴가 닫히지 않도록 유지합니다.
   useEffect(() => {
     const parent = getParentAccordion(activeSection);
     if (parent) setOpenAccordion(parent);
   }, [activeSection]);
 
   const handleClick = (item) => {
-    if (item.type === "accordion") {
-      const isCurrentlyOpen = openAccordion === item.key;
-      setOpenAccordion(prev => prev === item.key ? null : item.key);
-      // 열릴 때 첫 번째 자식으로 자동 이동
-      if (!isCurrentlyOpen) {
-        const firstChild = (item.children ?? [])[0];
-        if (firstChild) onSelect(firstChild.key);
-      }
+    if (item.type === 'accordion') {
+      setOpenAccordion((previous) => (previous === item.key ? null : item.key));
       return;
     }
-    // 아코디언 자식이 아닌 항목 클릭 시 아코디언 닫기
-    if (!getParentAccordion(item.key)) setOpenAccordion(null);
-
-    if (item.type === "section") { onSelect(item.key); return; }
-    if (item.type === "route")   { navigate(item.to); return; }
-    if (item.type === "provider-switch") { onRequestProviderSwitch(); return; }
-    toast({ icon: "info", title: "준비 중인 메뉴입니다." });
+    if (item.type === 'section') {
+      onSelect(item.key);
+      return;
+    }
+    if (item.type === 'route') {
+      navigate(item.to);
+      return;
+    }
+    if (item.type === 'provider-switch') {
+      onRequestProviderSwitch();
+      return;
+    }
+    toast({ icon: 'info', title: '준비 중인 메뉴입니다.' });
   };
 
-  // 모바일 탭: accordion 항목은 children으로 평탄화, 부모 항목은 건너뜀
-  const mobileTabs = menuItems.flatMap(item =>
-    item.type === "accordion" ? (item.children ?? []) : [item]
-  );
+  const mobileTabs = menuItems.flatMap((item) => (
+    item.type === 'accordion' ? (item.children ?? []) : [item]
+  ));
 
   return (
-    <nav className="lg:w-[210px] lg:shrink-0">
-      {/* 타이틀 (데스크톱) */}
+    <nav className="lg:sticky lg:top-24 lg:w-[210px] lg:shrink-0">
       <h2 className="hidden lg:block font-bold text-[25px] text-black mb-5 px-2">
         마이페이지
-        {mode === "provider" && (
+        {mode === 'provider' && (
           <span className="text-[14px] text-[#0064ff] ml-1">(제공자)</span>
         )}
       </h2>
 
-      {/* 모바일: 가로 스크롤 탭 — accordion children 평탄화 */}
       <div className="flex lg:hidden overflow-x-auto gap-2 pb-1 scrollbar-none">
         {mobileTabs.map((item) => {
-          const isActive = item.type === "section" && item.key === activeSection;
+          const isActive = item.type === 'section' && item.key === activeSection;
           return (
             <button
               key={item.key}
@@ -116,8 +103,8 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
               onClick={() => handleClick(item)}
               className={`cursor-pointer shrink-0 h-[34px] px-4 rounded-full text-[13px] font-medium whitespace-nowrap border transition-colors ${
                 isActive
-                  ? "bg-[#0064ff] text-white border-[#0064ff]"
-                  : "bg-white text-[#333] border-[#d9d9d9] hover:bg-[#f3f5fa]"
+                  ? 'bg-[#0064ff] text-white border-[#0064ff]'
+                  : 'bg-white text-[#333] border-[#d9d9d9] hover:bg-[#f3f5fa]'
               }`}
             >
               {item.label}
@@ -126,69 +113,68 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
         })}
       </div>
 
-      {/* 데스크톱: 세로 목록 */}
       <div className="hidden lg:block">
         {menuItems.map((item) => {
-          const isAccordion    = item.type === "accordion";
-          const isOpen         = isAccordion && openAccordion === item.key;
-          const isActive       = item.type === "section" && item.key === activeSection;
-          const hasActiveChild = isAccordion && (item.children ?? []).some(c => c.key === activeSection);
+          const isAccordion = item.type === 'accordion';
+          const isOpen = isAccordion && openAccordion === item.key;
+          const isActive = item.type === 'section' && item.key === activeSection;
+          const hasActiveChild = isAccordion
+            && (item.children ?? []).some((child) => child.key === activeSection);
+          const isHighlighted = isActive || hasActiveChild;
 
           return (
             <React.Fragment key={item.key}>
               <button
                 type="button"
                 onClick={() => handleClick(item)}
-                className={`cursor-pointer w-full flex items-center justify-between h-[70px] px-[18px] text-left transition-all ${
-                  isActive || hasActiveChild || isOpen
-                    ? "bg-[#0064ff] rounded-[10px] shadow-[0_4px_14px_rgba(0,0,0,0.10)]"
-                    : "bg-transparent hover:bg-[#f3f5fa]"
+                className={`w-full flex items-center justify-between h-[50px] px-[18px] rounded-[10px] text-left transition-colors ${
+                  isHighlighted ? 'bg-[#0064ff]' : 'bg-transparent hover:bg-[#f3f5fa]'
                 }`}
               >
-                <span
-                  className={`text-[17px] ${
-                    isActive || hasActiveChild || isOpen ? "font-bold text-white" : "font-medium text-[#333]"
-                  }`}
-                >
+                <span className={`text-[16px] ${
+                  isHighlighted ? 'font-bold text-white' : 'font-medium text-[#333]'
+                }`}>
                   {item.label}
                 </span>
                 {isAccordion ? (
                   isOpen
-                    ? <ChevronUp   size={14} className="text-white" />
-                    : <ChevronDown size={14} className={hasActiveChild ? "text-white" : "text-[#888]"} />
-                ) : item.showChevron ? (
-                  <ChevronDown size={14} className="text-[#888]" />
-                ) : null}
+                    ? <ChevronDown size={14} className={hasActiveChild ? 'text-white' : 'text-[#888]'} />
+                    : <ChevronRight size={14} className={hasActiveChild ? 'text-white' : 'text-[#888]'} />
+                ) : (
+                  isActive && <ChevronRight size={14} className="text-white" />
+                )}
               </button>
-
-              {/* 아코디언 하위 메뉴 — 구분선보다 위에 렌더링 */}
+              <div className="h-px bg-[#e5e5e5] mx-[18px]" />
               {isAccordion && isOpen && (
-                <div className="bg-[#F3F5FA] px-[18px] py-3">
-                  {(item.children ?? []).map(child => {
+                <div className="pl-4">
+                  {(item.children ?? []).map((child) => {
                     const isChildActive = child.key === activeSection;
                     return (
-                      <button
-                        key={child.key}
-                        type="button"
-                        onClick={() => handleClick(child)}
-                        className="group cursor-pointer w-full flex items-center h-[36px] text-left"
-                      >
-                        <span
-                          className={`text-[16px] transition-colors ${
+                      <React.Fragment key={child.key}>
+                        <button
+                          type="button"
+                          onClick={() => handleClick(child)}
+                          className={`w-full flex items-center justify-between h-[44px] px-[18px] rounded-[8px] text-left transition-colors ${
                             isChildActive
-                              ? "font-normal text-[#0064ff]"
-                              : "font-normal text-[#333] group-hover:text-[#0064ff]"
+                              ? 'bg-[#e5efff]'
+                              : 'bg-transparent hover:bg-[#f3f5fa]'
                           }`}
                         >
-                          {child.label}
-                        </span>
-                      </button>
+                          <span className={`text-[14px] ${
+                            isChildActive
+                              ? 'font-bold text-[#0064ff]'
+                              : 'font-medium text-[#555]'
+                          }`}>
+                            {child.label}
+                          </span>
+                          {isChildActive && <ChevronRight size={12} className="text-[#0064ff]" />}
+                        </button>
+                        <div className="h-px bg-[#f0f0f0] mx-[18px]" />
+                      </React.Fragment>
                     );
                   })}
                 </div>
               )}
-
-              <div className="h-px bg-[#e5e5e5]" />
             </React.Fragment>
           );
         })}

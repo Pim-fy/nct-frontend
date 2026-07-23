@@ -55,7 +55,7 @@ const AuctionDetailPage = () => {
   } = useQuery({
     queryKey: detailQueryKey,
     queryFn: () => fetchAuctionDetail(auctionId),
-    enabled: Boolean(auctionId && !isAuthLoading),
+    enabled: Boolean(auctionId),
   });
   const isOwnAuction = authenticatedUserId != null
     && auction?.sellerId != null
