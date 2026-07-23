@@ -104,7 +104,7 @@ const RECENT_QUOTE_ITEMS = [
 
 function StatCard({ color, icon, label, value, unit, meta }) {
   return (
-    <div className="relative rounded-[10px] text-white p-3  mb-5 mt-5" style={{ backgroundColor: color }}>
+    <div className="relative rounded-[10px] text-white p-3 md:mb-5 md:mt-5" style={{ backgroundColor: color }}>
       <button
         type="button"
         onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}

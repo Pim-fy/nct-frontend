@@ -54,7 +54,7 @@ const NOTICES = ["입찰가가 갱신되었습니다.", "관심 상품 마감 10
 
 function StatCard({ color, icon, label, value, unit, meta, onMore }) {
   return (
-    <div className="relative rounded-[10px] text-white p-5 mb-5 mt-5" style={{ backgroundColor: color }}>
+    <div className="relative rounded-[10px] text-white p-5 md:mb-5 md:mt-5" style={{ backgroundColor: color }}>
       <button
         type="button"
         onClick={onMore}

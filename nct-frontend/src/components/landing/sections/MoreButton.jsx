@@ -23,7 +23,7 @@ export default function MoreButton({ left, top, variant = "light", onClick }) {
     >
       <span
         className={`absolute inset-0 h-[45px] rounded-[40px] w-[100px] border border-solid transition-colors ${
-          isDark ? "bg-transparent border-[#ebebeb] hover:bg-white/10" : "bg-[#f3f5fa] border-[#ebebeb] hover:bg-[#e9edf5]"
+          isDark ? "bg-transparent border-transparent hover:bg-white/10" : "bg-[#f3f5fa] border-[#ebebeb] hover:bg-[#e9edf5]"
         }`}
       />
       <span
