@@ -54,7 +54,7 @@ const NOTICES = ["입찰가가 갱신되었습니다.", "관심 상품 마감 10
 
 function StatCard({ color, icon, label, value, unit, meta, onMore }) {
   return (
-    <div className="relative rounded-[10px] text-white p-5" style={{ backgroundColor: color }}>
+    <div className="relative rounded-[10px] text-white p-5 mb-5 mt-5" style={{ backgroundColor: color }}>
       <button
         type="button"
         onClick={onMore}
@@ -65,12 +65,12 @@ function StatCard({ color, icon, label, value, unit, meta, onMore }) {
       </button>
       <div className="flex items-start gap-3 mb-3">
         <img src={icon} alt="" className="size-[40px] object-contain shrink-0 mt-0.5" />
-        <div className="min-w-0 pr-6">
+        <div className="min-w-0 pr-6 pl-4">
           <p className="font-bold text-[16px] opacity-90 leading-tight">{label}</p>
           <p className="font-bold text-[30px] leading-tight mt-0.5">{value}{unit}</p>
         </div>
       </div>
-      <p className="text-[15px] opacity-80 truncate">{meta}</p>
+      <p className="text-[16px] opacity-80 truncate">{meta}</p>
     </div>
   );
 }
@@ -78,10 +78,10 @@ function StatCard({ color, icon, label, value, unit, meta, onMore }) {
 function ListPanel({ title, items }) {
   return (
     <div className="border border-[rgba(0,0,0,0.11)] rounded-[15px] overflow-hidden">
-      <div className="bg-[rgba(0,100,255,0.05)] px-5 h-[50px] flex items-center justify-between">
-        <div className="flex items-center gap-4 min-w-0">
+      <div className="bg-[rgba(0,100,255,0.05)] px-5 h-[60px] flex items-center justify-between">
+        <div className="flex  items-center gap-4 min-w-0">
           <span className="font-bold text-[18px] text-[#3a3a3a] shrink-0">{title}</span>
-          <div className="hidden sm:flex items-center gap-3 text-[15px]">
+          <div className="hidden sm:flex items-center gap-4 text-[15px] mt-8 mr-0 ml-34">
             <span className="text-[#0064ff] font-bold border-b-2 border-[#0064ff] pb-px">전체</span>
             <span className="text-[#4e4e4e]">거래</span>
             <span className="text-[#4e4e4e]">서비스요청</span>
@@ -99,16 +99,16 @@ function ListPanel({ title, items }) {
       </div>
       <div className="divide-y divide-[#e5e5e5]">
         {items.map((item) => (
-          <div key={item.title} className="flex items-start gap-4 p-4">
-            <div className="size-[72px] shrink-0 rounded-[5px] border border-[#d9d9d9] overflow-hidden">
+          <div key={item.title} className="flex gap-4 p-5 items-center">
+            <div className="size-[85px] shrink-0 rounded-[5px] border border-[#d9d9d9] overflow-hidden">
               <img alt={item.title} className="size-full object-cover" src={item.thumbnail} />
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 ">
               <div className="flex flex-wrap gap-1.5 mb-1">
                 {item.badges.map((badge) => (
                   <span
                     key={badge.label}
-                    className="h-[22px] rounded-full border flex items-center px-2.5 text-[12px] whitespace-nowrap"
+                    className="h-[22px] rounded-full border flex items-center px-2.5 text-[14px] whitespace-nowrap"
                     style={{ borderColor: badge.color, color: badge.color }}
                   >
                     {badge.label}
@@ -116,7 +116,7 @@ function ListPanel({ title, items }) {
                 ))}
               </div>
               <p className="font-bold text-[18px] text-black truncate">{item.title}</p>
-              <p className="text-[15px] text-[#4e4e4e] truncate mt-0.5">{item.meta}</p>
+              <p className="text-[15px] text-[#4e4e4e] truncate mt-1">{item.meta}</p>
             </div>
             <button
               type="button"
@@ -202,11 +202,11 @@ export default function MyPageDashboard({
               <span className="inline-block size-[8px] rounded-full bg-[#2ecc71]" />
               {nickname}님
             </p>
-            <p className="text-[13px] text-[#969696] mt-0.5">{email}</p>
+            <p className="text-[14px] text-[#969696] mt-0.5">{email}</p>
             <div className="flex gap-2 mt-2">
               <button
                 type="button"
-                className="h-[30px] px-3 rounded-full border border-[#d9d9d9] bg-white text-[#4e4e4e] text-[12px] cursor-pointer hover:bg-[#f5f5f5] transition-colors flex items-center gap-1.5"
+                className="h-[30px] px-3 rounded-full border border-[#d9d9d9] bg-white text-[#4e4e4e] text-[14px] cursor-pointer hover:bg-[#f5f5f5] transition-colors flex items-center gap-1.5"
               >
                 <img src={assets.iconLogout} alt="" className="size-[12px]" />
                 로그아웃
@@ -214,7 +214,7 @@ export default function MyPageDashboard({
               <button
                 type="button"
                 onClick={onRequestProviderSwitch}
-                className="h-[30px] px-3 rounded-full border border-[#d9d9d9] bg-white text-[#4e4e4e] text-[12px] cursor-pointer hover:bg-[#f5f5f5] transition-colors flex items-center gap-1.5"
+                className="h-[30px] px-3 rounded-full border border-[#d9d9d9] bg-white text-[#4e4e4e] text-[14px] cursor-pointer hover:bg-[#f5f5f5] transition-colors flex items-center gap-1.5"
               >
                 <img src={assets.iconSwitch1} alt="" className="size-[10px]" />
                 제공자 전환
@@ -224,14 +224,14 @@ export default function MyPageDashboard({
         </div>
 
         {/* 안읽은 알림 배너 */}
-        <div className="flex-1 min-w-0 min-h-[40px] rounded-[20px] border border-[rgba(0,100,255,0.28)] bg-white flex items-center px-4 gap-2 overflow-hidden">
-          <span className="flex items-center justify-center size-[18px] rounded-full bg-[#0064ff] text-white text-[11px] font-bold shrink-0">
+        <div className="flex-1 min-w-0  min-h-[45px] rounded-[25px] border border-[rgba(0,100,255,0.28)] bg-white flex items-center px-4 gap-2 overflow-hidden">
+          <span className="flex items-center justify-center size-[18px] rounded-full bg-[#0064ff] text-white text-[13px] font-bold shrink-0">
             3
           </span>
-          <span className="font-bold text-[13px] text-[#404040] shrink-0">안읽은 알림</span>
-          <div className="flex-1 min-w-0 hidden sm:flex items-center gap-3 overflow-hidden">
+          <span className="font-bold text-[#404040] shrink-0">안읽은 알림</span>
+          <div className="flex-1 min-w-0 hidden sm:flex items-center gap-3 overflow-hidden ">
             {NOTICES.map((notice) => (
-              <span key={notice} className="text-[12px] text-[#404040] flex items-center gap-1 shrink-0 truncate">
+              <span key={notice} className=" text-[14px] text-[#404040] flex items-center gap-1 shrink-0 truncate">
                 <span className="text-[7px]">▶</span>
                 {notice}
               </span>
