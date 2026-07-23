@@ -115,10 +115,11 @@ export default function LoginPage() {
 
   // ── 렌더 ─────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-110 bg-white rounded-2xl shadow-lg px-8 py-10">
+    <div className="flex min-h-screen flex-col bg-gray-50">
+      <main className="flex flex-1 items-center justify-center px-4 py-10">
+        <div className="w-full max-w-110 bg-white rounded-2xl shadow-lg px-8 py-10">
 
-        {/* 로고 */}
+        {/* @ai_generated: 로그인 화면은 헤더 없이 카드 중앙 로고만 표시한다. */}
         <div className="text-center mb-8">
           <Link aria-label="에누리컷 홈" className="inline-flex" to="/">
             <BrandLogo className="brand-logo--auth" />
@@ -250,7 +251,8 @@ export default function LoginPage() {
           </div>
         </div>
 
-      </div>
+        </div>
+      </main>
 
       {/* 정지 계정 안내 모달 (F-AUTH-011) */}
       {suspendedLoginId && (

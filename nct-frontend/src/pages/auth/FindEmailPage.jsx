@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { findEmail } from '@api/authApi';
+import SiteHeader from '@layouts/user/headers/SiteHeader';
 
 export default function FindEmailPage() {
   const [email,        setEmail]        = useState('');
@@ -40,8 +41,10 @@ export default function FindEmailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-110 bg-white rounded-2xl shadow-lg px-8 py-10">
+    <div className="flex min-h-screen flex-col bg-gray-50">
+      <SiteHeader variant="auth" />
+      <main className="flex flex-1 items-center justify-center px-4 py-10">
+        <div className="w-full max-w-110 bg-white rounded-2xl shadow-lg px-8 py-10">
         <h1 className="text-xl font-bold text-center mb-8">아이디 찾기</h1>
 
         {maskedLoginId === null ? (
@@ -118,7 +121,8 @@ export default function FindEmailPage() {
             ← 로그인으로 돌아가기
           </Link>
         </div>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }

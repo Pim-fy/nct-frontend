@@ -51,7 +51,18 @@ const NAV_LINK_CLASS = "text-[20px] font-bold text-[#333333] tracking-[-0.02em] 
 // 헤더 드롭다운에 보여줄 최근 안읽은 알림 최대 개수
 const NOTI_PREVIEW_MAX = 5;
 
-const SiteHeader = () => {
+// @ai_generated: 인증 화면은 전역 메뉴·사용자 조회 없이 로고와 서비스명만 노출한다.
+const AuthHeader = () => (
+  <header className="sticky top-0 z-[100] h-[82px] border-b border-[#f0efec] bg-white">
+    <div className="container flex h-full items-center">
+      <Link aria-label="에누리컷 홈" className="flex shrink-0 items-center" to="/">
+        <img alt="에누리컷" className="h-[58px] w-auto" src={logoImg} />
+      </Link>
+    </div>
+  </header>
+);
+
+const FullSiteHeader = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -524,5 +535,10 @@ const SiteHeader = () => {
     </>
   );
 };
+
+// @ai_generated: 기본값 site는 기존 공용 헤더를 그대로 유지하고, 로그인·가입 페이지만 auth를 선택한다.
+const SiteHeader = ({ variant = 'site' }) => (
+  variant === 'auth' ? <AuthHeader /> : <FullSiteHeader />
+);
 
 export default SiteHeader;
