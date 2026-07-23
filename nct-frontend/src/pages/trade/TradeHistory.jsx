@@ -122,11 +122,16 @@ const getStatusInfo = (trade) => {
  * embedded=true이면 마이페이지의 사이드바·여백을 유지하고 목록 영역만 렌더링한다.
  * preview=true이면 마이페이지 내부에서도 서버 API 대신 개발용 거래 데이터를 사용한다.
  */
-const TradeHistory = ({ embedded = false, preview = false }) => {
+const TradeHistory = ({
+  embedded = false,
+  fixedRole = null,
+  preview = false,
+  returnSection = 'trade-history',
+}) => {
   const { pathname } = useLocation();
   const [allTradeItems, setAllTradeItems] = useState([]);
   const [filteredTradeItems, setFilteredTradeItems] = useState([]);
-  const [activeTab, setActiveTab] = useState('ALL');
+  const [activeTab, setActiveTab] = useState(fixedRole ?? 'ALL');
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [isLoading, setIsLoading] = useState(true);
@@ -135,6 +140,13 @@ const TradeHistory = ({ embedded = false, preview = false }) => {
   // 별도 미리보기 경로에서는 로그인 보호 경로가 아닌 미리보기 상세로 이동한다.
   const isPreview = preview || pathname.startsWith('/trades/preview');
   const tradeBasePath = isPreview ? '/trades/preview' : '/trades';
+
+  // 입찰 내역처럼 역할이 고정된 화면에서는 구매 거래만 유지한다.
+  useEffect(() => {
+    if (fixedRole) {
+      setActiveTab(fixedRole);
+    }
+  }, [fixedRole]);
 
   // 탭별 건수와 진행 중 건수는 필터와 무관한 전체 목록으로 계산한다.
   const tradeCounts = useMemo(() => {
@@ -161,6 +173,15 @@ const TradeHistory = ({ embedded = false, preview = false }) => {
       ACTIVE: 0,
     });
   }, [allTradeItems]);
+
+  // 역할이 고정된 입찰 내역에서는 해당 역할의 진행 건수만 요약에 표시한다.
+  const activeTradeCount = useMemo(() => {
+    return allTradeItems.filter((trade) => {
+      const matchesRole = !fixedRole || trade.type === fixedRole;
+
+      return matchesRole && activeTradeStatuses.has(trade.status);
+    }).length;
+  }, [allTradeItems, fixedRole]);
 
   // 요약 영역은 조건과 관계없이 로그인한 사용자의 전체 거래를 기준으로 표시한다.
   const loadAllTradeItems = useCallback(async () => {
@@ -254,8 +275,12 @@ const TradeHistory = ({ embedded = false, preview = false }) => {
         <header className="trade-history-page__header">
           <div>
             <p className="trade-history-page__eyebrow">MY TRANSACTIONS</p>
-            <h1>거래 내역</h1>
-            <p>구매와 판매 거래의 진행 상태를 한 곳에서 확인하세요.</p>
+            <h1>{fixedRole === 'BUYER' ? '상품 입찰 내역' : '거래 내역'}</h1>
+            <p>
+              {fixedRole === 'BUYER'
+                ? '낙찰 또는 즉시구매 후 생성된 구매 거래를 확인하세요.'
+                : '구매와 판매 거래의 진행 상태를 한 곳에서 확인하세요.'}
+            </p>
           </div>
         </header>
 
@@ -263,29 +288,35 @@ const TradeHistory = ({ embedded = false, preview = false }) => {
           <section className="trade-history-summary" aria-label="진행 중 거래 요약">
             <div>
               <span>진행 중 거래</span>
-              <strong>{tradeCounts.ACTIVE}건</strong>
+              <strong>{activeTradeCount}건</strong>
             </div>
-            <p>확인이 필요한 거래부터 순서대로 확인해 주세요.</p>
+            <p>
+              {fixedRole === 'BUYER'
+                ? '확인이 필요한 구매 거래부터 순서대로 확인해 주세요.'
+                : '확인이 필요한 거래부터 순서대로 확인해 주세요.'}
+            </p>
           </section>
         )}
 
         <section className="trade-history-panel" aria-label="거래 내역 필터">
-          <div className="trade-history-tabs" role="tablist">
-            {tabs.map((tab) => (
-              <button
-                className={`trade-history-tab ${
-                  activeTab === tab.value ? 'trade-history-tab--active' : ''
-                }`}
-                type="button"
-                role="tab"
-                aria-selected={activeTab === tab.value}
-                key={tab.value}
-                onClick={() => setActiveTab(tab.value)}
-              >
-                {tab.label} <span>{tradeCounts[tab.value]}</span>
-              </button>
-            ))}
-          </div>
+          {!fixedRole && (
+            <div className="trade-history-tabs" role="tablist">
+              {tabs.map((tab) => (
+                <button
+                  className={`trade-history-tab ${
+                    activeTab === tab.value ? 'trade-history-tab--active' : ''
+                  }`}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === tab.value}
+                  key={tab.value}
+                  onClick={() => setActiveTab(tab.value)}
+                >
+                  {tab.label} <span>{tradeCounts[tab.value]}</span>
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="trade-history-filters">
             <label className="trade-history-search">
@@ -347,9 +378,9 @@ const TradeHistory = ({ embedded = false, preview = false }) => {
             const detailPath = trade.type === 'SELLER'
               ? `${tradeBasePath}/${trade.id}/seller`
               : `${tradeBasePath}/${trade.id}`;
-            // 마이페이지 안에서 연 상세는 목록 버튼도 같은 거래내역 탭으로 되돌린다.
+            // 마이페이지 안에서 연 상세는 목록 버튼도 진입한 메뉴로 되돌린다.
             const detailTarget = embedded
-              ? `${detailPath}?from=mypage`
+              ? `${detailPath}?from=mypage&section=${returnSection}`
               : detailPath;
 
             return (

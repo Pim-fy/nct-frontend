@@ -329,6 +329,13 @@
     grid-template-columns: 1fr;
   }
 
+  /* 모바일에서는 채팅 목록으로 돌아가 방을 선택하도록 대화 화면만 노출한다. */
+  .trade-chat-page--embedded
+  .trade-chat-layout--with-room-list
+  .trade-chat-rooms {
+    display: none;
+  }
+
   .trade-chat-rooms {
     max-height: 260px;
     overflow-y: auto;

@@ -4,7 +4,11 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { ChevronRight, MessageCircle } from 'lucide-react';
+import {
+  ChevronRight,
+  MessageCircle,
+  RefreshCw,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getTradeChatRooms } from '@api/tradeChatApi';
 import { toTradeChatRooms } from '@api/tradeChatAdapter';
@@ -24,26 +28,38 @@ const MyPageTradeChatList = ({
     [rooms],
   );
 
-  // 별도 채팅 목록 API를 만들지 않고 기존 본인 채팅방 조회 계약을 재사용한다.
-  const loadRooms = useCallback(async () => {
-    setIsLoading(true);
-    setError('');
+  // 별도 목록 API 없이 기존 본인 채팅방 조회 계약을 재사용한다.
+  const loadRooms = useCallback(async (showLoading = false) => {
+    if (showLoading) {
+      setIsLoading(true);
+      setError('');
+    }
 
     try {
       const response = await getTradeChatRooms({}, { preview });
 
       setRooms(toTradeChatRooms(response));
     } catch {
-      setError('채팅 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+      if (showLoading) {
+        setError('채팅 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+      }
     } finally {
-      setIsLoading(false);
+      if (showLoading) {
+        setIsLoading(false);
+      }
     }
   }, [preview]);
 
   useEffect(() => {
-    const requestTimer = window.setTimeout(loadRooms, 0);
+    const requestTimer = window.setTimeout(() => loadRooms(true), 0);
 
-    return () => window.clearTimeout(requestTimer);
+    // 실시간 소켓 계약 전에는 목록을 가볍게 다시 조회해 새 메시지·안 읽은 수를 갱신한다.
+    const refreshTimer = window.setInterval(() => loadRooms(), 10_000);
+
+    return () => {
+      window.clearTimeout(requestTimer);
+      window.clearInterval(refreshTimer);
+    };
   }, [loadRooms]);
 
   const openChatRoom = (tradeId) => {
@@ -71,9 +87,19 @@ const MyPageTradeChatList = ({
             진행 중인 직거래 채팅을 확인할 수 있습니다.
           </p>
         </div>
-        <span className="rounded-full bg-[#e8f0ff] px-3 py-1 text-[13px] font-bold text-[#0064ff]">
-          {activeRooms.length}개 진행 중
-        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="rounded-full bg-[#e8f0ff] px-3 py-1 text-[13px] font-bold text-[#0064ff]">
+            {activeRooms.length}개 진행 중
+          </span>
+          <button
+            aria-label="채팅 목록 새로고침"
+            className="flex size-9 items-center justify-center rounded-full border border-[#dbe4f0] text-[#4b5563] transition-colors hover:border-[#9fc2ff] hover:bg-[#f7faff]"
+            type="button"
+            onClick={() => loadRooms(true)}
+          >
+            <RefreshCw size={16} />
+          </button>
+        </div>
       </header>
 
       {isLoading && (
@@ -88,7 +114,7 @@ const MyPageTradeChatList = ({
           <button
             className="mt-3 rounded-[8px] border border-[#0064ff] px-3 py-2 text-[13px] font-bold text-[#0064ff]"
             type="button"
-            onClick={loadRooms}
+            onClick={() => loadRooms(true)}
           >
             다시 시도
           </button>

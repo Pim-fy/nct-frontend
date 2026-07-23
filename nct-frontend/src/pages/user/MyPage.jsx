@@ -17,9 +17,16 @@ import MyPageTradeChatList from "@components/mypage/MyPageTradeChatList";
 import TradeChat from "@pages/trade/TradeChat";
 import MyBidHistoryPage from "@pages/user/MyBidHistoryPage";
 import TradeHistory from "@pages/trade/TradeHistory";
+import MyProductList from "@components/product/MyProductList";
 import { useAuth } from "@hooks/useAuth";
 import { confirm } from "@utils/common";
 import { isProviderAccount, MYPAGE_MODE_EVENT } from "@utils/providerMode";
+
+const MYPAGE_SECTION_QUERY_VALUES = new Set([
+  "auction-bids",
+  "auction-sales",
+  "chat",
+]);
 
 export default function MyPage({
   initialSection = "home",
@@ -31,8 +38,8 @@ export default function MyPage({
   const [mode, setMode] = useState("general"); // 'general' | 'provider'
   const requestedSection = searchParams.get("section");
   const [activeSection, setActiveSection] = useState(
-    requestedSection === "trade-history"
-      ? "trade-history"
+    MYPAGE_SECTION_QUERY_VALUES.has(requestedSection)
+      ? requestedSection
       : initialSection,
   );
   const [providerAccount] = useState(isProviderAccount);
@@ -87,37 +94,40 @@ export default function MyPage({
             <MyPageDashboard
               user={user}
               onRequestProviderSwitch={handleProviderSwitchRequest}
-              onOpenTradeHistory={() => setActiveSection("trade-history")}
+              onOpenAuctionBids={() => setActiveSection("auction-bids")}
             />
           )}
           {activeSection === "home" && mode === "provider" && (
             <MyPageProviderDashboard user={user} onSwitchToGeneral={() => switchMode("general")} />
           )}
           {activeSection === "profile" && <MyPageProfileEdit user={user} />}
+          {activeSection === "auction-bids" && (
+            <TradeHistory
+              embedded
+              fixedRole="BUYER"
+              preview={previewTrades}
+              returnSection="auction-bids"
+            />
+          )}
+          {activeSection === "auction-sales" && <MyProductList />}
+          {/* 기존 경로로 진입한 경우에도 입찰 내역을 안전하게 표시한다. */}
           {activeSection === "auction-history" && <MyBidHistoryPage />}
           {/* 개발 환경에서는 거래내역과 동일한 미리보기 채팅 데이터를 사용한다. */}
           {activeSection === "chat" && (
             selectedChatTradeId ? (
               <TradeChat
                 embedded
-                preview={previewTrades || import.meta.env.DEV}
+                preview={previewTrades}
                 tradeId={selectedChatTradeId}
+                showRoomList
                 onBack={() => setSelectedChatTradeId("")}
               />
             ) : (
               <MyPageTradeChatList
-                preview={previewTrades || import.meta.env.DEV}
+              preview={previewTrades}
                 onOpenChatRoom={setSelectedChatTradeId}
               />
             )
-          )}
-          {activeSection === "trade-history" && (
-            <TradeHistory
-              embedded
-              // 개발 중에는 로그인한 마이페이지에서도 상태별 거래 UI를 검토한다.
-              // 운영 빌드는 실제 거래 API 결과만 사용한다.
-              preview={previewTrades || import.meta.env.DEV}
-            />
           )}
         </div>
       </div>

@@ -44,7 +44,6 @@ import Unauthorized   from '@pages/error/Unauthorized';
 // UserLayout (로그인 필요)
 // ──────────────────────────────────────────
 import MyPage from '@pages/user/MyPage';
-import TradeHistory from '@pages/trade/TradeHistory';
 import TradeDetailBuyer from '@pages/trade/TradeDetailBuyer';
 import TradeDetailSeller from '@pages/trade/TradeDetailSeller';
 import TradeChat from '@pages/trade/TradeChat';
@@ -138,7 +137,6 @@ const AppRoutes = () => {
       {/* 실제 거래 경로의 인증 정책과 분리된 개발용 화면 확인 경로 */}
       {isTradePreviewEnabled && (
         <>
-          <Route path="/trades/preview" element={<TradeHistory />} />
           <Route path="/trades/preview/:tradeId/chat" element={<TradeChat />} />
           <Route
             path="/trades/preview/:tradeId"
@@ -152,7 +150,7 @@ const AppRoutes = () => {
           <Route element={<UserLayout />}>
             <Route
               path="/user/mypage/preview/trades"
-              element={<MyPage initialSection="trade-history" previewTrades />}
+              element={<MyPage initialSection="auction-bids" previewTrades />}
             />
           </Route>
         </>
@@ -179,7 +177,6 @@ const AppRoutes = () => {
           {/* 경매 거래내역 — 내 입찰 내역 + 내 판매 내역 2탭 (담당자3 HSK, F-AUC-022) */}
           <Route path="/my-bids" element={<MyBidHistoryPage />} />
 
-          <Route path="/trades" element={<TradeHistory />} />
           <Route path="/trades/:tradeId/chat" element={<TradeChat />} />
           <Route path="/trades/:tradeId" element={<TradeDetailBuyer />} />
           <Route

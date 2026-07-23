@@ -73,11 +73,21 @@ const TradeDetailSeller = () => {
   // 마이페이지에서 진입한 상세는 브라우저 이력 대신 거래내역 탭으로 명확하게 복귀한다.
   const handleBackToList = () => {
     if (searchParams.get('from') === 'mypage') {
-      navigate('/user/mypage?section=trade-history');
+      const returnSection = searchParams.get('section');
+      const myPageSection = returnSection === 'auction-sales'
+        ? 'auction-sales'
+        : 'auction-sales';
+      const myPagePath = pathname.startsWith('/trades/preview')
+        ? `/user/mypage/preview/trades?verify=1&section=${myPageSection}`
+        : `/user/mypage?section=${myPageSection}`;
+
+      navigate(myPagePath);
       return;
     }
 
-    navigate(isPreview ? '/trades/preview' : '/trades');
+    navigate(isPreview
+      ? '/user/mypage/preview/trades?verify=1&section=auction-sales'
+      : '/user/mypage?section=auction-sales');
   };
 
   // URL의 거래 번호로 서버 상세를 조회해 새로고침해도 같은 거래를 표시한다.

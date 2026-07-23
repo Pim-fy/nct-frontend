@@ -2,9 +2,14 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
-import { useParams } from 'react-router-dom';
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+} from 'react-router-dom';
 import {
   getTradeChatMessages,
   getTradeChatRooms,
@@ -18,14 +23,18 @@ import {
 import '@assets/css/trade-chat.css';
 
 const MAX_MESSAGE_LENGTH = 500;
+const MESSAGE_REFRESH_INTERVAL = 5_000;
 
 const TradeChat = ({
   embedded = false,
   onBack,
   preview = false,
   tradeId: selectedTradeId,
+  showRoomList = !embedded,
 }) => {
   const { tradeId: routeTradeId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const tradeId = selectedTradeId ?? routeTradeId;
   const [rooms, setRooms] = useState([]);
   const [activeRoomId, setActiveRoomId] = useState('');
@@ -34,11 +43,27 @@ const TradeChat = ({
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const messageEndRef = useRef(null);
 
   const activeRoom = useMemo(
     () => rooms.find((room) => room.roomId === activeRoomId) ?? null,
     [activeRoomId, rooms],
   );
+
+  // 독립 상세 경로에서도 브라우저 이전 페이지가 아닌 마이페이지 채팅 목록으로 복귀한다.
+  const returnToChatList = () => {
+    if (onBack) {
+      onBack();
+      return;
+    }
+
+    const isPreviewPath = preview || location.pathname.startsWith('/trades/preview');
+    const chatListPath = isPreviewPath
+      ? '/user/mypage/preview/trades?verify=1&section=chat'
+      : '/user/mypage?section=chat';
+
+    navigate(chatListPath);
+  };
 
   // 거래 번호에 연결된 실제 채팅방과 메시지를 함께 조회해 첫 화면을 초기화한다.
   const loadChatRooms = useCallback(async () => {
@@ -46,10 +71,9 @@ const TradeChat = ({
     setError('');
 
     try {
-      const roomResponse = await getTradeChatRooms(
-        { tradeId },
-        { preview },
-      );
+      // 마이페이지의 넓은 화면에서는 목록과 대화를 함께 보여 주기 위해 전체 방을 조회한다.
+      const roomParams = showRoomList ? {} : { tradeId };
+      const roomResponse = await getTradeChatRooms(roomParams, { preview });
       const loadedRooms = toTradeChatRooms(roomResponse);
       const selectedRoom = loadedRooms.find(
         (room) => String(room.tradeId) === String(tradeId),
@@ -88,7 +112,7 @@ const TradeChat = ({
     } finally {
       setIsLoading(false);
     }
-  }, [preview, tradeId]);
+  }, [preview, showRoomList, tradeId]);
 
   // 방을 선택하면 서버가 상대방 메시지를 읽음 처리한 최신 목록을 다시 받아 온다.
   const selectChatRoom = useCallback(async (roomId) => {
@@ -120,6 +144,41 @@ const TradeChat = ({
 
     return () => window.clearTimeout(requestTimer);
   }, [loadChatRooms]);
+
+  useEffect(() => {
+    if (!activeRoomId) {
+      return undefined;
+    }
+
+    // WebSocket 계약 전까지 활성 채팅방만 짧은 주기로 다시 조회해 수신 메시지를 반영한다.
+    const refreshTimer = window.setInterval(async () => {
+      try {
+        const response = await getTradeChatMessages(activeRoomId, { preview });
+        const refreshedMessages = toTradeChatMessages(response);
+
+        setMessages((currentMessages) => {
+          const isSameMessages = currentMessages.length === refreshedMessages.length
+            && currentMessages.every((message, index) => (
+              message.messageId === refreshedMessages[index]?.messageId
+              && message.isRead === refreshedMessages[index]?.isRead
+            ));
+
+          return isSameMessages ? currentMessages : refreshedMessages;
+        });
+      } catch {
+        // 일시적인 조회 실패는 현재 대화를 유지하고 다음 주기에 재시도한다.
+      }
+    }, MESSAGE_REFRESH_INTERVAL);
+
+    return () => window.clearInterval(refreshTimer);
+  }, [activeRoomId, preview]);
+
+  useEffect(() => {
+    messageEndRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'end',
+    });
+  }, [messages]);
 
   // 전송 성공 응답만 메시지 목록에 반영해 화면과 저장된 메시지가 어긋나지 않게 한다.
   const sendMessage = async (event) => {
@@ -190,7 +249,7 @@ const TradeChat = ({
           <button
             className="btn btn-ghost"
             type="button"
-            onClick={onBack ?? (() => window.history.back())}
+            onClick={returnToChatList}
           >
             ← 채팅 목록
           </button>
@@ -213,11 +272,11 @@ const TradeChat = ({
 
         {!isLoading && !error && (
           <div
-            className={embedded
-              ? 'trade-chat-layout trade-chat-layout--conversation-only'
-              : 'trade-chat-layout'}
+            className={showRoomList
+              ? 'trade-chat-layout trade-chat-layout--with-room-list'
+              : 'trade-chat-layout trade-chat-layout--conversation-only'}
           >
-            {!embedded && (
+            {showRoomList && (
               <aside
                 className="trade-chat-card trade-chat-rooms"
                 aria-label="채팅방 목록"
@@ -295,6 +354,7 @@ const TradeChat = ({
                         </div>
                       );
                     })}
+                    <div ref={messageEndRef} />
                   </div>
 
                   <form className="trade-chat-composer" onSubmit={sendMessage}>

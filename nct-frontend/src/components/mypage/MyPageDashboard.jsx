@@ -135,7 +135,7 @@ function ListPanel({ title, items }) {
 export default function MyPageDashboard({
   user,
   onRequestProviderSwitch,
-  onOpenTradeHistory,
+  onOpenAuctionBids,
 }) {
   const navigate = useNavigate();
   const nickname = user?.nickname || "고객";
@@ -160,8 +160,8 @@ export default function MyPageDashboard({
       value: "21",
       unit: "건",
       meta: "입찰중 10건   ㅣ   진행중 9건   ㅣ   완료 2건",
-      // 경매 거래 카드의 + 버튼은 마이페이지 안의 거래내역 하위 메뉴를 연다.
-      onMore: onOpenTradeHistory,
+      // 경매 거래 카드의 + 버튼은 구매 거래가 표시되는 입찰 내역을 연다.
+      onMore: onOpenAuctionBids,
     },
     {
       key: "service",
