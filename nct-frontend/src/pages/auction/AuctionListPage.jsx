@@ -3,17 +3,18 @@ import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { RotateCcw, Search, SlidersHorizontal } from 'lucide-react';
 import { fetchAuctions } from '@api/auctionApi';
-import {
-  AUCTION_CATEGORIES,
-  AUCTION_STATUSES,
-  SORT_OPTIONS,
-  TRADE_METHODS,
-} from '@/constants/auctionOptions';
+import { getCategories } from '@api/categoryApi';
+import { fetchReferenceCodes } from '@api/referenceApi';
+import { SORT_OPTIONS } from '@/constants/auctionOptions';
 import AuctionCard from './components/AuctionCard';
 import '@assets/css/auction.css';
 
 const getSelectedValues = (searchParams, key) => searchParams.getAll(key);
 const DEFAULT_PAGE_SIZE = 12;
+const PRODUCT_CATEGORY_DOMAIN_CODE = 'CATC0001';
+const AUCTION_STATUS_GROUP_CODE = 'AUCG01';
+const TRADE_METHOD_GROUP_CODE = 'TRDG03';
+const LISTABLE_AUCTION_STATUS_CODES = new Set(['AUCC0001', 'AUCC0002']);
 
 const toggleValue = (values, value) => (
   values.includes(value)
@@ -43,6 +44,34 @@ const AuctionListPage = () => {
   const maxPrice = searchParams.get('maxPrice') || '';
   const instantBuyOnly = searchParams.get('instantBuyOnly') === 'true';
   const page = Number(searchParams.get('page') || 1);
+
+  const categoriesQuery = useQuery({
+    queryKey: ['auction-filter-categories', PRODUCT_CATEGORY_DOMAIN_CODE],
+    queryFn: () => getCategories(PRODUCT_CATEGORY_DOMAIN_CODE)
+      .then((response) => response.data.filter((category) => category.catParentSn !== null)),
+    staleTime: 5 * 60 * 1000,
+  });
+  const auctionStatusesQuery = useQuery({
+    queryKey: ['reference-codes', AUCTION_STATUS_GROUP_CODE],
+    queryFn: () => fetchReferenceCodes(AUCTION_STATUS_GROUP_CODE),
+    staleTime: 5 * 60 * 1000,
+  });
+  const tradeMethodsQuery = useQuery({
+    queryKey: ['reference-codes', TRADE_METHOD_GROUP_CODE],
+    queryFn: () => fetchReferenceCodes(TRADE_METHOD_GROUP_CODE),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const categoryOptions = categoriesQuery.data || [];
+  const auctionStatusOptions = auctionStatusesQuery.isSuccess
+    ? [
+      ...auctionStatusesQuery.data
+        .filter((status) => LISTABLE_AUCTION_STATUS_CODES.has(status.code))
+        .map((status) => ({ value: status.code, label: status.name })),
+      { value: 'endingSoon', label: '종료임박' },
+    ]
+    : [];
+  const tradeMethodOptions = tradeMethodsQuery.data || [];
 
   const queryParams = {
     keyword: searchParams.get('keyword') || '',
@@ -158,16 +187,25 @@ const AuctionListPage = () => {
               </button>
             </div>
 
-            <fieldset className="auction-filter-group">
+            <fieldset
+              className="auction-filter-group"
+              disabled={categoriesQuery.isLoading || categoriesQuery.isError}
+            >
               <legend>카테고리</legend>
-              {AUCTION_CATEGORIES.map((category) => (
-                <label key={category}>
+              {categoriesQuery.isLoading ? (
+                <p className="auction-filter-message">불러오는 중</p>
+              ) : categoriesQuery.isError ? (
+                <p className="auction-filter-message error">불러오지 못했습니다.</p>
+              ) : categoryOptions.length === 0 ? (
+                <p className="auction-filter-message">선택 가능한 항목이 없습니다.</p>
+              ) : categoryOptions.map((category) => (
+                <label key={category.catSn}>
                   <input
                     type="checkbox"
-                    checked={categoryDraft.includes(category)}
-                    onChange={() => setCategoryDraft((prev) => toggleValue(prev, category))}
+                    checked={categoryDraft.includes(category.catNm)}
+                    onChange={() => setCategoryDraft((prev) => toggleValue(prev, category.catNm))}
                   />
-                  {category}
+                  {category.catNm}
                 </label>
               ))}
             </fieldset>
@@ -191,9 +229,18 @@ const AuctionListPage = () => {
               </div>
             </fieldset>
 
-            <fieldset className="auction-filter-group">
+            <fieldset
+              className="auction-filter-group"
+              disabled={auctionStatusesQuery.isLoading || auctionStatusesQuery.isError}
+            >
               <legend>경매 상태</legend>
-              {AUCTION_STATUSES.map((status) => (
+              {auctionStatusesQuery.isLoading ? (
+                <p className="auction-filter-message">불러오는 중</p>
+              ) : auctionStatusesQuery.isError ? (
+                <p className="auction-filter-message error">불러오지 못했습니다.</p>
+              ) : auctionStatusOptions.length === 0 ? (
+                <p className="auction-filter-message">선택 가능한 항목이 없습니다.</p>
+              ) : auctionStatusOptions.map((status) => (
                 <label key={status.value}>
                   <input
                     type="checkbox"
@@ -205,19 +252,41 @@ const AuctionListPage = () => {
               ))}
             </fieldset>
 
-            <fieldset className="auction-filter-group">
+            <fieldset
+              className="auction-filter-group"
+              disabled={tradeMethodsQuery.isLoading || tradeMethodsQuery.isError}
+            >
               <legend>거래 방식</legend>
-              {TRADE_METHODS.map((method) => (
-                <label key={method.value}>
-                  <input
-                    name="tradeMethod"
-                    type="radio"
-                    checked={tradeMethodDraft === method.value}
-                    onChange={() => setTradeMethodDraft(method.value)}
-                  />
-                  {method.label}
-                </label>
-              ))}
+              {tradeMethodsQuery.isLoading ? (
+                <p className="auction-filter-message">불러오는 중</p>
+              ) : tradeMethodsQuery.isError ? (
+                <p className="auction-filter-message error">불러오지 못했습니다.</p>
+              ) : tradeMethodOptions.length === 0 ? (
+                <p className="auction-filter-message">선택 가능한 항목이 없습니다.</p>
+              ) : (
+                <>
+                  <label>
+                    <input
+                      name="tradeMethod"
+                      type="radio"
+                      checked={tradeMethodDraft === 'all'}
+                      onChange={() => setTradeMethodDraft('all')}
+                    />
+                    전체
+                  </label>
+                  {tradeMethodOptions.map((method) => (
+                    <label key={method.code}>
+                      <input
+                        name="tradeMethod"
+                        type="radio"
+                        checked={tradeMethodDraft === method.code}
+                        onChange={() => setTradeMethodDraft(method.code)}
+                      />
+                      {method.name}
+                    </label>
+                  ))}
+                </>
+              )}
             </fieldset>
 
             <fieldset className="auction-filter-group">

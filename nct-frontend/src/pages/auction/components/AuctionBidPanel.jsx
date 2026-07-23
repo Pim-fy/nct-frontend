@@ -6,6 +6,7 @@ const AuctionBidPanel = ({
   currentPrice,
   bidUnitPrice,
   remainingTime,
+  remainingTimeLabel,
   selectedTradeName,
   displayedBidAmount,
   holdAgreed,
@@ -58,6 +59,9 @@ const AuctionBidPanel = ({
           {auction.tradeMethodName && (
             <span className="deal-badge">{auction.tradeMethodName}</span>
           )}
+          {isCurrentHighestBidder && (
+            <span className="highest-bidder-badge" role="status">최고입찰자</span>
+          )}
         </div>
 
         <p className="label">현재 최고가</p>
@@ -65,8 +69,8 @@ const AuctionBidPanel = ({
         <p className="subcopy">
           시작가 {formatPrice(auction.startPrice)} · 즉시구매가 {formatPrice(auction.instantBuyPrice)}
         </p>
-        <p className="timer price-timer" id="countdown">
-          <span className="timer-label" id="countdownLabel">경매 종료까지 남은 시간</span>
+        <p className={`timer price-timer${isAuctionOpen ? '' : ' ended'}`} id="countdown">
+          <span className="timer-label" id="countdownLabel">{remainingTimeLabel}</span>
           <span className="timer-value mono" id="countdownValue">{remainingTime}</span>
         </p>
         <p className="small timer-small">마감 10분 이내 유효 입찰 시 자동 연장(1회)</p>
@@ -133,6 +137,7 @@ const AuctionBidPanel = ({
               className="btn btn-primary"
               id="bidBtn"
               type="button"
+              aria-busy={isBidPending}
               disabled={!isAuctionOpen || isCurrentHighestBidder || isBidPending || isBidPointInsufficient}
               onClick={onBidSubmit}
             >
@@ -148,6 +153,7 @@ const AuctionBidPanel = ({
               className="btn btn-outline"
               id="buyNowBtn"
               type="button"
+              aria-busy={isBuyNowPending}
               disabled={!isBuyNowAvailable || isBuyNowPending || isBuyNowPointInsufficient}
               onClick={onBuyNowOpen}
             >

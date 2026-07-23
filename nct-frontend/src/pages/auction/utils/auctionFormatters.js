@@ -1,5 +1,16 @@
 import { toImageUrl } from '@api/fileApi';
 
+const AUCTION_STATUS = {
+  READY: 'AUCC0001',
+  ACTIVE: 'AUCC0002',
+  ENDED: 'AUCC0003',
+  FAILED: 'AUCC0004',
+  CANCELLED: 'AUCC0005',
+  CANCELLATION_REQUESTED: 'AUCC0006',
+};
+
+const DETAIL_SECOND_THRESHOLD = 10 * 60;
+
 export const formatPrice = (value) => {
   const number = Number(value || 0);
   return `${number.toLocaleString('ko-KR')}원`;
@@ -19,12 +30,29 @@ export const createImageItems = (images = []) => images.map((image, index) => ({
   representative: image.representative,
 })).filter((image) => image.url);
 
-export const formatRemainingTime = (endDateTime, statusCode, statusName, now = Date.now()) => {
-  if (statusCode !== 'AUCC0002') return statusName || '준비';
-  if (!endDateTime) return '진행중';
+export const resolveAuctionResultLabel = (auction) => {
+  const statusCode = auction?.auctionStatusCode;
 
-  const diffMs = new Date(endDateTime).getTime() - now;
-  if (diffMs <= 0) return '종료 임박';
+  if (statusCode === AUCTION_STATUS.ENDED) {
+    const currentPrice = Number(auction.currentPrice || 0);
+    const instantBuyPrice = Number(auction.instantBuyPrice || 0);
+    return instantBuyPrice > 0 && currentPrice === instantBuyPrice
+      ? '즉시구매 완료'
+      : '낙찰';
+  }
+  if (statusCode === AUCTION_STATUS.FAILED) return '유찰';
+  if (statusCode === AUCTION_STATUS.CANCELLED) return '취소';
+  if (statusCode === AUCTION_STATUS.CANCELLATION_REQUESTED) return '취소 요청';
+  if (statusCode === AUCTION_STATUS.READY) return auction.auctionStatusName || '준비';
+  return null;
+};
+
+export const formatRemainingTime = (auction, now = Date.now()) => {
+  const resultLabel = resolveAuctionResultLabel(auction);
+  if (resultLabel) return resultLabel;
+  if (!auction?.endDateTime) return '-';
+
+  const diffMs = Math.max(new Date(auction.endDateTime).getTime() - now, 0);
 
   const totalSeconds = Math.floor(diffMs / 1000);
   const days = Math.floor(totalSeconds / 86400);
@@ -32,5 +60,11 @@ export const formatRemainingTime = (endDateTime, statusCode, statusName, now = D
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
 
-  return `D-${String(days).padStart(2, '0')} ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  if (totalSeconds <= DETAIL_SECOND_THRESHOLD) {
+    const totalMinutes = Math.floor(totalSeconds / 60);
+    return `${totalMinutes}분 ${seconds}초`;
+  }
+  if (days > 0) return `${days}일 ${hours}시간 ${minutes}분`;
+  if (hours > 0) return `${hours}시간 ${minutes}분`;
+  return `${minutes}분`;
 };
