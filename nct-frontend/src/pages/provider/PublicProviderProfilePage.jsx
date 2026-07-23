@@ -68,7 +68,7 @@ const PublicProviderProfilePage = () => {
         <Helmet><title>잘못된 제공자 주소 | 에누리컷</title></Helmet>
         <ContentState
           backLabel="서비스 목록으로 돌아가기"
-          backTo="/services?view=providers"
+          backTo="/service?view=providers"
           title="잘못된 제공자 주소입니다."
           tone="error"
         />
@@ -85,7 +85,7 @@ const PublicProviderProfilePage = () => {
         <ContentState
           actionLabel={providerQuery.error?.status === 404 ? undefined : '다시 불러오기'}
           backLabel="서비스 목록으로 돌아가기"
-          backTo="/services?view=providers"
+          backTo="/service?view=providers"
           description={providerQuery.error?.status === 404
             ? '존재하지 않거나 공개되지 않은 제공자일 수 있습니다.'
             : '잠시 후 다시 시도해 주세요.'}

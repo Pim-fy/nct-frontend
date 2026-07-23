@@ -27,7 +27,7 @@ const QuickActions = () => {
 
   const handleServiceCreate = () => {
     if (isAuthenticated) {
-      navigate('/services/create');
+      navigate('/service/create');
     } else {
       navigate('/login');
     }

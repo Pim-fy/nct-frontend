@@ -4,7 +4,7 @@
 // - 하단: 민감정보(채팅) 원문 제한 조회 패널 (F-OPS-014)
 //   사유·분쟁 건 번호 없이는 서버가 거절하고, 조회 성공 시 그 자체가 감사로그로 남아 표 맨 위에 나타난다
 import { useState } from 'react';
-import { Search, ShieldAlert } from 'lucide-react';
+import { Search, ShieldAlert, X } from 'lucide-react';
 import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
 import { useAuditLogs, useSensitiveView } from '@hooks/useAdminAudit';
 import './adminAuditPage.css';
@@ -21,10 +21,36 @@ const TYPE_OPTIONS = [
   { value: 'AUDC0007', label: '상태변경' },
 ];
 
+const auditDetails = (value) => {
+  const raw = value?.trim() || '-';
+  const match = raw.match(/^reason=(.*?); before=(.*?); after=(.*?); requestId=(.*)$/s);
+  if (match) {
+    return {
+      reason: match[1], before: match[2], after: match[3], requestId: match[4],
+    };
+  }
+
+  // 공지 변경 이력은 "공지 변경 사유=...; before=...; after=..." 형식으로 저장된다.
+  const noticeMatch = raw.match(/^(.*?사유)=(.*?); before=(.*?); after=(.*)$/s);
+  if (noticeMatch) {
+    return {
+      reason: `${noticeMatch[1]}=${noticeMatch[2]}`,
+      before: noticeMatch[3], after: noticeMatch[4], requestId: null,
+    };
+  }
+  return { reason: raw, before: null, after: null, requestId: null };
+};
+
+const reasonPreview = (reason) => {
+  const normalized = reason.replaceAll(/\s+/g, ' ').trim() || '-';
+  return normalized.length > 72 ? `${normalized.slice(0, 72)}…` : normalized;
+};
+
 const AdminAuditLogPage = () => {
   // 입력 중 값과 "조회 버튼을 누른 시점의 값"을 분리 — 타이핑할 때마다 서버를 찌르지 않기 위해
   const [form, setForm] = useState({ usrSn: '', typeCd: '', from: '', to: '' });
   const [filters, setFilters] = useState({});
+  const [selectedLog, setSelectedLog] = useState(null);
   const logsQuery = useAuditLogs(filters);
 
   // 민감정보 제한 조회 패널 상태
@@ -114,20 +140,52 @@ const AdminAuditLogPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {logs.map((log) => (
+                {logs.map((log) => {
+                  const details = auditDetails(log.reason);
+                  return (
                   <tr key={log.id}>
                     <td>{log.date}</td>
                     <td>{log.userName ? `${log.userName} (#${log.userSn})` : '시스템'}</td>
                     <td>{log.type}</td>
                     <td>{log.refType ? `${log.refType} #${log.refSn}` : '-'}</td>
                     <td>{log.ipAddr ?? '-'}</td>
-                    <td className="is-wrap">{log.reason ?? '-'}</td>
+                    <td className="is-wrap">
+                      <button
+                        className="admin-bjn-reason-preview"
+                        onClick={() => setSelectedLog(log)}
+                        title="사유 전체 보기"
+                        type="button"
+                      >
+                        {reasonPreview(details.reason)}
+                      </button>
+                    </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )
+      )}
+
+      {selectedLog && (
+        <div className="admin-bjn-reason-dialog" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setSelectedLog(null);
+        }} role="presentation">
+          <section aria-labelledby="audit-reason-title" aria-modal="true" role="dialog">
+            <div>
+              <h2 id="audit-reason-title">감사 사유 상세</h2>
+              <button aria-label="닫기" onClick={() => setSelectedLog(null)} type="button"><X aria-hidden="true" /></button>
+            </div>
+            <p>{selectedLog.type} · {selectedLog.date}</p>
+            <dl className="admin-bjn-reason-details">
+              <div><dt>사유</dt><dd>{auditDetails(selectedLog.reason).reason}</dd></div>
+              {auditDetails(selectedLog.reason).before && <div><dt>변경 전</dt><dd>{auditDetails(selectedLog.reason).before}</dd></div>}
+              {auditDetails(selectedLog.reason).after && <div><dt>변경 후</dt><dd>{auditDetails(selectedLog.reason).after}</dd></div>}
+              {auditDetails(selectedLog.reason).requestId && <div><dt>요청 ID</dt><dd>{auditDetails(selectedLog.reason).requestId}</dd></div>}
+            </dl>
+          </section>
+        </div>
       )}
 
       {/* 민감정보 원문 제한 조회 (F-OPS-014) */}
