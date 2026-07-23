@@ -50,7 +50,7 @@ const NAV_LINK_CLASS = "text-[20px] font-bold text-[#333333] tracking-[-0.02em] 
 // POINT/알림 수치 실연동 (담당자6 BJN, 2026-07-18) — 종전 더미 상수(DUMMY_POINT/NOTI_ITEMS) 제거.
 // 이 헤더는 비로그인 공개 페이지에서도 렌더링되므로, 두 훅 모두 { enabled: 로그인여부 }로
 // 로그인 상태일 때만 API를 호출한다 (무조건 호출하면 401→로그인 강제이동이 발생하기 때문).
-// 헤더 드롭다운에 보여줄 최근 안읽은 알림 최대 개수
+// 헤더 드롭다운에 보여줄 알림 최대 개수 (안읽은 알림 미리보기 · 과거 알림 목록 공통)
 const NOTI_PREVIEW_MAX = 5;
 
 const SiteHeader = () => {
@@ -66,6 +66,8 @@ const SiteHeader = () => {
   // 안읽은 알림: 배지 숫자와 드롭다운 목록의 공통 원천
   const unreadNotis = (notiQuery.data ?? []).filter((n) => !n.read);
   const notiCount = user ? unreadNotis.length : 0;
+  // 안읽은 알림이 없을 때 드롭다운에 대신 보여줄 과거(읽은) 알림
+  const pastNotis = (notiQuery.data ?? []).filter((n) => n.read).slice(0, NOTI_PREVIEW_MAX);
   // 잔액은 조회 전(로딩·비로그인)에는 0으로 표시 — 임의 기본값이 아니라 "아직 모름"의 화면 표기
   const pointBalance = balanceQuery.data ?? { total: 0, available: 0 };
   const [categoryOpen, setCategoryOpen] = useState(false);
@@ -260,9 +262,36 @@ const SiteHeader = () => {
                   </button>
                 </div>
                 <div className="my-3 h-px bg-[#e5e5e5]" />
-                {/* 알림 목록 — 안읽은 알림 최근 N건, 없으면 안내 문구 */}
+                {/* 알림 목록 — 안읽은 알림 최근 N건, 없으면 안내 문구 + 구분선 + 과거(읽은) 알림 */}
                 {unreadNotis.length === 0 ? (
-                  <p className="py-2 text-center text-[13px] text-[#969696]">새 알림이 없습니다.</p>
+                  <>
+                    <p className="py-2 text-center text-[13px] text-[#969696]">새 알림이 없습니다.</p>
+                    {pastNotis.length > 0 && (
+                      <>
+                        <div className="my-3 h-px bg-[#e5e5e5]" />
+                        <ul className="flex flex-col gap-3">
+                          {pastNotis.map((item) => (
+                            <li key={item.id}>
+                              <button
+                                type="button"
+                                className="flex w-full items-start gap-2 text-left"
+                                onClick={() => {
+                                  setSelectedNoti({ ...item, time: relativeTime(item.regDt) });
+                                  setNotiOpen(false);
+                                }}
+                              >
+                                <span className="mt-[6px] size-[6px] shrink-0 rounded-full bg-[#d9d9d9]" />
+                                <div className="min-w-0">
+                                  <p className="truncate text-[13px] text-[#333]">{item.title}</p>
+                                  <p className="text-[11px] text-[#969696]">{relativeTime(item.regDt)}</p>
+                                </div>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                  </>
                 ) : (
                   <ul className="flex flex-col gap-3">
                     {unreadNotis.slice(0, NOTI_PREVIEW_MAX).map((item) => (
