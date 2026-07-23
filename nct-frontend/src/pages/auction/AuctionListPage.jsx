@@ -1,7 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { RotateCcw, Search, SlidersHorizontal } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronUp,
+  RotateCcw,
+  Search,
+  SlidersHorizontal,
+} from 'lucide-react';
 import { fetchAuctions } from '@api/auctionApi';
 import { getCategories } from '@api/categoryApi';
 import { fetchReferenceCodes } from '@api/referenceApi';
@@ -14,7 +20,16 @@ const DEFAULT_PAGE_SIZE = 12;
 const PRODUCT_CATEGORY_DOMAIN_CODE = 'CATC0001';
 const AUCTION_STATUS_GROUP_CODE = 'AUCG01';
 const TRADE_METHOD_GROUP_CODE = 'TRDG03';
-const LISTABLE_AUCTION_STATUS_CODES = new Set(['AUCC0001', 'AUCC0002']);
+const COLLAPSED_CATEGORY_COUNT = 5;
+const AUCTION_STATUS_FILTERS = [
+  { code: 'AUCC0001', label: '진행 예정' },
+  { code: 'AUCC0002', label: '진행 중' },
+];
+const TRADE_METHOD_FILTERS = [
+  { code: 'TRDC0009', label: '배송' },
+  { code: 'TRDC0010', label: '직거래' },
+  { code: 'TRDC0020', label: '배송·직거래 모두 가능' },
+];
 
 const toggleValue = (values, value) => (
   values.includes(value)
@@ -25,6 +40,7 @@ const toggleValue = (values, value) => (
 const AuctionListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [filterOpen, setFilterOpen] = useState(false);
+  const [showAllCategories, setShowAllCategories] = useState(false);
   const [keywordDraft, setKeywordDraft] = useState(searchParams.get('keyword') || '');
   const [categoryDraft, setCategoryDraft] = useState(() => getSelectedValues(searchParams, 'category'));
   const [statusDraft, setStatusDraft] = useState(() => getSelectedValues(searchParams, 'status'));
@@ -35,6 +51,10 @@ const AuctionListPage = () => {
   const [instantBuyOnlyDraft, setInstantBuyOnlyDraft] = useState(
     searchParams.get('instantBuyOnly') === 'true',
   );
+  const [endingSoonOnlyDraft, setEndingSoonOnlyDraft] = useState(
+    searchParams.get('endingSoonOnly') === 'true',
+  );
+  const [previewQueryParams, setPreviewQueryParams] = useState(null);
 
   const selectedCategories = getSelectedValues(searchParams, 'category');
   const selectedStatuses = getSelectedValues(searchParams, 'status');
@@ -43,6 +63,7 @@ const AuctionListPage = () => {
   const minPrice = searchParams.get('minPrice') || '';
   const maxPrice = searchParams.get('maxPrice') || '';
   const instantBuyOnly = searchParams.get('instantBuyOnly') === 'true';
+  const endingSoonOnly = searchParams.get('endingSoonOnly') === 'true';
   const page = Number(searchParams.get('page') || 1);
 
   const categoriesQuery = useQuery({
@@ -63,15 +84,19 @@ const AuctionListPage = () => {
   });
 
   const categoryOptions = categoriesQuery.data || [];
-  const auctionStatusOptions = auctionStatusesQuery.isSuccess
-    ? [
-      ...auctionStatusesQuery.data
-        .filter((status) => LISTABLE_AUCTION_STATUS_CODES.has(status.code))
-        .map((status) => ({ value: status.code, label: status.name })),
-      { value: 'endingSoon', label: '종료임박' },
-    ]
-    : [];
-  const tradeMethodOptions = tradeMethodsQuery.data || [];
+  const visibleCategoryOptions = showAllCategories
+    ? categoryOptions
+    : categoryOptions.slice(0, COLLAPSED_CATEGORY_COUNT);
+  const availableAuctionStatusCodes = new Set(
+    auctionStatusesQuery.data?.map((status) => status.code) || [],
+  );
+  const auctionStatusOptions = AUCTION_STATUS_FILTERS
+    .filter((status) => availableAuctionStatusCodes.has(status.code));
+  const availableTradeMethodCodes = new Set(
+    tradeMethodsQuery.data?.map((method) => method.code) || [],
+  );
+  const tradeMethodOptions = TRADE_METHOD_FILTERS
+    .filter((method) => availableTradeMethodCodes.has(method.code));
 
   const queryParams = {
     keyword: searchParams.get('keyword') || '',
@@ -82,9 +107,47 @@ const AuctionListPage = () => {
     minPrice,
     maxPrice,
     instantBuyOnly: instantBuyOnly || undefined,
+    endingSoonOnly: endingSoonOnly || undefined,
     page,
     size: DEFAULT_PAGE_SIZE,
   };
+
+  useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      setPreviewQueryParams({
+        keyword: keywordDraft.trim(),
+        category: categoryDraft,
+        status: statusDraft,
+        tradeMethod: tradeMethodDraft,
+        sort: sortDraft,
+        minPrice: minPriceDraft,
+        maxPrice: maxPriceDraft,
+        instantBuyOnly: instantBuyOnlyDraft || undefined,
+        endingSoonOnly: endingSoonOnlyDraft || undefined,
+        page: 1,
+        size: 1,
+      });
+    }, 250);
+
+    return () => window.clearTimeout(timerId);
+  }, [
+    categoryDraft,
+    endingSoonOnlyDraft,
+    instantBuyOnlyDraft,
+    keywordDraft,
+    maxPriceDraft,
+    minPriceDraft,
+    sortDraft,
+    statusDraft,
+    tradeMethodDraft,
+  ]);
+
+  const filterPreviewQuery = useQuery({
+    queryKey: ['auction-filter-preview', previewQueryParams],
+    queryFn: () => fetchAuctions(previewQueryParams),
+    enabled: Boolean(previewQueryParams),
+    staleTime: 10 * 1000,
+  });
 
   const {
     data: auctionPage,
@@ -120,6 +183,7 @@ const AuctionListPage = () => {
     if (minPriceDraft) next.set('minPrice', minPriceDraft);
     if (maxPriceDraft) next.set('maxPrice', maxPriceDraft);
     if (instantBuyOnlyDraft) next.set('instantBuyOnly', 'true');
+    if (endingSoonOnlyDraft) next.set('endingSoonOnly', 'true');
     if (tradeMethodDraft && tradeMethodDraft !== 'all') next.set('tradeMethod', tradeMethodDraft);
     if (sortDraft && sortDraft !== 'deadline') next.set('sort', sortDraft);
 
@@ -139,6 +203,8 @@ const AuctionListPage = () => {
     setMinPriceDraft('');
     setMaxPriceDraft('');
     setInstantBuyOnlyDraft(false);
+    setEndingSoonOnlyDraft(false);
+    setShowAllCategories(false);
     setSearchParams(new URLSearchParams());
   };
 
@@ -170,14 +236,6 @@ const AuctionListPage = () => {
       </section>
 
       <main className="auction-container auction-main">
-        <div className="auction-page-title">
-          <div>
-            <h1>경매 상품 목록</h1>
-            <p>관심 있는 상품을 조건별로 빠르게 찾아보세요.</p>
-          </div>
-          <span>{totalElements.toLocaleString('ko-KR')}개 상품</span>
-        </div>
-
         <div className="auction-layout">
           <aside className={`auction-filter-panel ${filterOpen ? 'open' : ''}`}>
             <div className="auction-filter-head">
@@ -198,16 +256,30 @@ const AuctionListPage = () => {
                 <p className="auction-filter-message error">불러오지 못했습니다.</p>
               ) : categoryOptions.length === 0 ? (
                 <p className="auction-filter-message">선택 가능한 항목이 없습니다.</p>
-              ) : categoryOptions.map((category) => (
-                <label key={category.catSn}>
-                  <input
-                    type="checkbox"
-                    checked={categoryDraft.includes(category.catNm)}
-                    onChange={() => setCategoryDraft((prev) => toggleValue(prev, category.catNm))}
-                  />
-                  {category.catNm}
-                </label>
-              ))}
+              ) : (
+                <>
+                  {visibleCategoryOptions.map((category) => (
+                    <label key={category.catSn}>
+                      <input
+                        type="checkbox"
+                        checked={categoryDraft.includes(category.catNm)}
+                        onChange={() => setCategoryDraft((prev) => toggleValue(prev, category.catNm))}
+                      />
+                      {category.catNm}
+                    </label>
+                  ))}
+                  {categoryOptions.length > COLLAPSED_CATEGORY_COUNT && (
+                    <button
+                      className="auction-category-more"
+                      type="button"
+                      onClick={() => setShowAllCategories((prev) => !prev)}
+                    >
+                      {showAllCategories ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                      {showAllCategories ? '접기' : '더보기'}
+                    </button>
+                  )}
+                </>
+              )}
             </fieldset>
 
             <fieldset className="auction-filter-group">
@@ -217,14 +289,16 @@ const AuctionListPage = () => {
                   value={minPriceDraft}
                   onChange={(event) => handlePriceDraftChange(setMinPriceDraft, event.target.value)}
                   inputMode="numeric"
-                  placeholder="최소"
+                  placeholder="최소 금액"
+                  aria-label="최소 금액"
                 />
                 <span>~</span>
                 <input
                   value={maxPriceDraft}
                   onChange={(event) => handlePriceDraftChange(setMaxPriceDraft, event.target.value)}
                   inputMode="numeric"
-                  placeholder="최대"
+                  placeholder="최대 금액"
+                  aria-label="최대 금액"
                 />
               </div>
             </fieldset>
@@ -233,7 +307,7 @@ const AuctionListPage = () => {
               className="auction-filter-group"
               disabled={auctionStatusesQuery.isLoading || auctionStatusesQuery.isError}
             >
-              <legend>경매 상태</legend>
+              <legend>진행 상태</legend>
               {auctionStatusesQuery.isLoading ? (
                 <p className="auction-filter-message">불러오는 중</p>
               ) : auctionStatusesQuery.isError ? (
@@ -241,11 +315,11 @@ const AuctionListPage = () => {
               ) : auctionStatusOptions.length === 0 ? (
                 <p className="auction-filter-message">선택 가능한 항목이 없습니다.</p>
               ) : auctionStatusOptions.map((status) => (
-                <label key={status.value}>
+                <label key={status.code}>
                   <input
                     type="checkbox"
-                    checked={statusDraft.includes(status.value)}
-                    onChange={() => setStatusDraft((prev) => toggleValue(prev, status.value))}
+                    checked={statusDraft.includes(status.code)}
+                    onChange={() => setStatusDraft((prev) => toggleValue(prev, status.code))}
                   />
                   {status.label}
                 </label>
@@ -278,11 +352,11 @@ const AuctionListPage = () => {
                     <label key={method.code}>
                       <input
                         name="tradeMethod"
-                        type="radio"
-                        checked={tradeMethodDraft === method.code}
-                        onChange={() => setTradeMethodDraft(method.code)}
-                      />
-                      {method.name}
+                      type="radio"
+                      checked={tradeMethodDraft === method.code}
+                      onChange={() => setTradeMethodDraft(method.code)}
+                    />
+                      {method.label}
                     </label>
                   ))}
                 </>
@@ -290,7 +364,15 @@ const AuctionListPage = () => {
             </fieldset>
 
             <fieldset className="auction-filter-group">
-              <legend>구매 방식</legend>
+              <legend>추가 조건</legend>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={endingSoonOnlyDraft}
+                  onChange={(event) => setEndingSoonOnlyDraft(event.target.checked)}
+                />
+                마감 임박 상품만
+              </label>
               <label>
                 <input
                   type="checkbox"
@@ -313,8 +395,7 @@ const AuctionListPage = () => {
             </label>
 
             <button className="auction-filter-submit" type="button" onClick={handleFilterSearch}>
-              <Search size={16} />
-              검색
+              상품 {(filterPreviewQuery.data?.totalElements ?? totalElements).toLocaleString('ko-KR')}개 보기
             </button>
           </aside>
 
@@ -323,6 +404,9 @@ const AuctionListPage = () => {
               <SlidersHorizontal size={18} />
               필터 열기/닫기
             </button>
+            <div className="auction-list-count">
+              {totalElements.toLocaleString('ko-KR')}개 상품
+            </div>
 
             {isLoading ? (
               <div className="auction-empty">
