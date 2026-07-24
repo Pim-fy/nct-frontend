@@ -71,6 +71,17 @@ const PointWalletPage = ({ embedded = false } = {}) => {
   const { data: chargeOrders = [], isLoading: ordersLoading } = usePointChargeOrders();
   const { data: exchangeOrders = [], isLoading: exchangeLoading } = usePointExchangeOrders();
 
+  // 헤더 지갑 드롭다운의 충전/환전 버튼 → 바로 해당 모달을 열기 위한 진입 파라미터(?action=charge|exchange)
+  // 결제 리다이렉트용 ?charge=success|fail와는 다른 파라미터라 서로 안 겹친다
+  useEffect(() => {
+    const action = searchParams.get('action');
+    if (action !== 'charge' && action !== 'exchange') return;
+    setOpenModal(action);
+    const next = new URLSearchParams(searchParams);
+    next.delete('action');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
   // 결제 리다이렉트 처리 — 성공이면 서버 승인 호출, 실패면 사유 안내
   useEffect(() => {
     const chargeResult = searchParams.get('charge');

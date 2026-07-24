@@ -32,7 +32,7 @@ const GENERAL_MENU_ITEMS = [
   },
   { key: "wishlist", label: "관심 상품",   type: "todo" },
   { key: "chat",     label: "채팅",        type: "section" },
-  { key: "wallet",   label: "포인트 지갑", type: "route", to: "/user/point" },
+  { key: "wallet",   label: "포인트 지갑", type: "section" },
 ];
 
 const PROVIDER_MENU_ITEMS = [
