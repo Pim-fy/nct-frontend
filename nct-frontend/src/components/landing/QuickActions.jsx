@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
 import cursorIcon from '@assets/img/cursorIcon.png';
 import commentIcon from '@assets/img/commentIcon.png';
-import quickIcon from '@assets/img/icon_quick.png';
 import thumImg01 from '@assets/img/thum_img01.png';
 import thumImg02 from '@assets/img/thum_img02.png';
 import thumImg03 from '@assets/img/thum_img03.png';
@@ -82,26 +81,25 @@ const QuickActions = () => {
 
         {/* 최근 본 상품 — 항목이 있을 때만 표시 */}
         {recentItems.length > 0 && (
-          <div className="flex flex-col items-center gap-[5px] w-[65px] self-center bg-white/80 rounded-[10px] shadow-[0_8px_20px_rgba(0,0,0,0.12)] backdrop-blur-sm px-[5px] pt-[10px] pb-[12px]">
-            <div className="flex flex-col items-center gap-[4px]">
-              <img src={quickIcon} alt="" width="22" height="22" />
-              <span className="qi-label text-[#5f5e5a]">최근 본</span>
+          <div className="flex flex-col items-center gap-[5px] self-center bg-white/80 rounded-[5px] shadow-[0_5px_10px_rgba(0,0,0,0.12)] backdrop-blur-sm overflow-hidden mb-5">
+            <span className="qi-label w-full text-center text-white bg-[#444444] py-[5px] text-sm">최근본..</span>
+            <div className="flex flex-col items-center gap-[5px] px-[5px] pb-[8px]">
+              {recentItems.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => navigate(item.url)}
+                  title={item.title || '최근 본 상품'}
+                  className="w-[50px] h-[50px] rounded-[5px] overflow-hidden bg-[#f7f7f7] cursor-pointer p-0 shrink-0"
+                >
+                  <img
+                    src={item.image}
+                    alt={item.title || ''}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
             </div>
-            {recentItems.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => navigate(item.url)}
-                title={item.title || '최근 본 상품'}
-                className="text-[13px] w-[50px] h-[50px] rounded-[5px] overflow-hidden border border-[#e9e9e9] bg-[#ffffff] cursor-pointer p-0 shrink-0"
-              >
-                <img
-                  src={item.image}
-                  alt={item.title || ''}
-                  className="w-full h-full object-cover"
-                />
-              </button>
-            ))}
           </div>
         )}
 
