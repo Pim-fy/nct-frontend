@@ -69,7 +69,7 @@ export default function MyPageProfileEdit({ user }) {
             <button
               type="button"
               onClick={() => toast({ icon: "info", title: "프로필 사진 변경은 준비 중입니다." })}
-              className="h-[36px] px-4 rounded-full border border-[#d9d9d9] bg-white text-[#4e4e4e] text-[13px] flex items-center gap-2 cursor-pointer hover:bg-[#f5f5f5] transition-colors"
+              className="btn btn-ghost btn-sm"
             >
               <img src={assets.iconPhoto} alt="" className="size-[13px]" />
               프로필 사진 변경
@@ -101,7 +101,7 @@ export default function MyPageProfileEdit({ user }) {
                 <button
                   type="button"
                   onClick={() => toast({ icon: "info", title: "전화번호 수정은 준비 중입니다." })}
-                  className="h-[40px] px-4 rounded-[5px] border border-[#969696] bg-white text-[#4e4e4e] text-[13px] cursor-pointer hover:bg-[#f5f5f5] transition-colors whitespace-nowrap"
+                  className="btn btn-ghost btn-sm"
                 >
                   수정
                 </button>
@@ -153,7 +153,7 @@ export default function MyPageProfileEdit({ user }) {
               <button
                 type="button"
                 onClick={() => toast({ icon: "info", title: "주소검색 기능은 준비 중입니다." })}
-                className="h-[40px] px-4 rounded-[5px] bg-[#4e4e4e] text-white text-[13px] cursor-pointer hover:bg-[#3a3a3a] transition-colors whitespace-nowrap"
+                className="btn btn-dark btn-sm"
               >
                 주소검색
               </button>
@@ -176,14 +176,14 @@ export default function MyPageProfileEdit({ user }) {
               <button
                 type="button"
                 onClick={() => toast({ icon: "info", title: "환전계좌 수정은 준비 중입니다." })}
-                className="h-[28px] px-3 rounded-[5px] border border-[#969696] bg-white text-[#4e4e4e] text-[13px] cursor-pointer hover:bg-[#f5f5f5] transition-colors"
+                className="btn btn-ghost btn-sm"
               >
                 수정
               </button>
               <button
                 type="button"
                 onClick={() => toast({ icon: "info", title: "환전계좌 삭제는 준비 중입니다." })}
-                className="h-[28px] px-3 rounded-[5px] border border-[#e63946] bg-white text-[#e63946] text-[13px] cursor-pointer hover:bg-[#fdf1f2] transition-colors"
+                className="btn btn-danger btn-sm"
               >
                 삭제
               </button>
@@ -193,7 +193,7 @@ export default function MyPageProfileEdit({ user }) {
           <div className="flex justify-end pt-2">
             <button
               type="submit"
-              className="h-[40px] w-[100px] rounded-[5px] bg-[#0064ff] text-white text-[14px] font-bold cursor-pointer hover:bg-[#0048bf] transition-colors"
+              className="btn btn-primary"
             >
               저장
             </button>
@@ -227,11 +227,7 @@ export default function MyPageProfileEdit({ user }) {
                     onClick={() =>
                       toast({ icon: "info", title: "소셜 로그인 연동은 준비 중입니다." })
                     }
-                    className={`h-[28px] px-3 rounded-[5px] border text-[12px] cursor-pointer transition-colors ${
-                      social.state === "연동됨"
-                        ? "border-[#969696] bg-white text-[#4e4e4e] hover:bg-[#f5f5f5]"
-                        : "border-[#0064ff] bg-white text-[#0064ff] hover:bg-[#f0f6ff]"
-                    }`}
+                    className={social.state === "연동됨" ? "btn btn-ghost btn-sm" : "btn btn-outline btn-sm"}
                   >
                     {social.state}
                   </button>
