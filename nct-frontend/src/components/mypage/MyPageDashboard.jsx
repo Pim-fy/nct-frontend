@@ -146,7 +146,7 @@ export default function MyPageDashboard({
       value: "250,000",
       unit: "",
       meta: "거래가능 240,000   ㅣ   홀딩 10,000",
-      onMore: () => navigate("/user/point"),
+      onMore: () => navigate("/user/mypage?section=wallet"),
     },
     {
       key: "auction",

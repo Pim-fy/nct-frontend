@@ -453,14 +453,14 @@ const SiteHeader = () => {
                   <button
                     type="button"
                     className="h-[34px] flex-1 rounded-[6px] bg-primary text-[14px] font-bold text-white hover:bg-[#0048bf] transition-colors"
-                    onClick={() => { setPointOpen(false); navigate('/user/point?tab=charge'); }}
+                    onClick={() => { setPointOpen(false); navigate('/user/mypage?section=wallet&action=charge'); }}
                   >
                     충전
                   </button>
                   <button
                     type="button"
                     className="h-[34px] flex-1 rounded-[6px] bg-[#d9d9d9] text-[14px] font-bold text-[#4e4e4e] hover:bg-[#cfcfcf] transition-colors"
-                    onClick={() => { setPointOpen(false); navigate('/user/point?tab=exchange'); }}
+                    onClick={() => { setPointOpen(false); navigate('/user/mypage?section=wallet&action=exchange'); }}
                   >
                     환전
                   </button>
@@ -468,7 +468,7 @@ const SiteHeader = () => {
                 <button
                   type="button"
                   className="mt-2 h-[34px] w-full rounded-[6px] border border-primary text-[14px] font-bold text-primary hover:bg-[#f0f6ff] transition-colors"
-                  onClick={() => { setPointOpen(false); navigate('/user/point'); }}
+                  onClick={() => { setPointOpen(false); navigate('/user/mypage?section=wallet'); }}
                 >
                   포인트지갑 상세보기
                 </button>
