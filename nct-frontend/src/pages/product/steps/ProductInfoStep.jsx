@@ -5,7 +5,7 @@ import ProductImageUpload from '@components/product/ProductImageUpload';
 
 export default function ProductInfoStep({ form, set, categories, bannedKeywordError, images, onChange, tradeMethods, maxImages }) {
   return (
-    <div style={{ maxWidth: 720, margin: '0 auto' }}>
+    <div>
       <div className="field">
         <label>상품명 <span>{form.prdNm.length}/100</span></label>
         <input
@@ -23,20 +23,23 @@ export default function ProductInfoStep({ form, set, categories, bannedKeywordEr
         )}
       </div>
 
-      <div className="row" style={{ marginBottom: 14 }}>
-        {categories.map(cat => (
-          <button
-            key={cat.catSn}
-            type="button"
-            onClick={() => set('catSn', String(cat.catSn))}
-            className={`chip ${String(form.catSn) === String(cat.catSn) ? 'active' : ''}`}
-          >
-            {cat.catNm}
-          </button>
-        ))}
+      <div className="field">
+        <label>카테고리</label>
+        <div className="row" style={{ flexWrap: 'wrap' }}>
+          {categories.map(cat => (
+            <button
+              key={cat.catSn}
+              type="button"
+              onClick={() => set('catSn', String(cat.catSn))}
+              className={`chip ${String(form.catSn) === String(cat.catSn) ? 'active' : ''}`}
+            >
+              {cat.catNm}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="field deal-options" style={{ marginTop: 14 }}>
+      <div className="field deal-options">
         <label>거래 형태</label>
         <div className="row">
           {tradeMethods.map(({ value, label, Icon }) => (
@@ -58,14 +61,14 @@ export default function ProductInfoStep({ form, set, categories, bannedKeywordEr
         </div>
       </div>
 
-      <div className="field" style={{ marginTop: 14 }}>
+      <div className="field">
         <label>상품 설명 <span>{form.prdCn.length}/2000</span></label>
         <textarea
           className="input"
           value={form.prdCn}
           onChange={e => set('prdCn', e.target.value)}
           maxLength={2000}
-          rows={5}
+          rows={6}
         />
       </div>
 

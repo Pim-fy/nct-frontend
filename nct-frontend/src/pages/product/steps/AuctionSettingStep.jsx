@@ -8,7 +8,7 @@ export default function AuctionSettingStep({
   durationDays, bidUnits, onOpenCalendar,
 }) {
   return (
-    <div style={{ maxWidth: 720, margin: '0 auto' }}>
+    <div>
       <div className="grid grid-cols-2 gap-4">
         <div className="field">
           <label>시작가</label>
@@ -140,14 +140,6 @@ export default function AuctionSettingStep({
         </div>
       </div>
 
-      <div className="card" style={{ background: '#fafaf8', marginTop: 16 }}>
-        <h3 style={{ marginTop: 0 }}>미리보기</h3>
-        <h4 style={{ margin: 0 }}>{form.prdNm || '상품명 미입력'}</h4>
-        <p className="muted" style={{ marginTop: 4 }}>
-          시작가 {form.prdStartAmt ? Number(form.prdStartAmt).toLocaleString() + '원' : '—'}
-          {form.prdIbyAmt ? ` · 즉시구매 ${Number(form.prdIbyAmt).toLocaleString()}원` : ''}
-        </p>
-      </div>
     </div>
   );
 }

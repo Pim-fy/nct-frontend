@@ -166,7 +166,7 @@ table tr:last-child td { border-bottom: none; }
 .policy-agree { margin-top: 12px; padding: 12px 14px; border: 1px solid #f0efec; border-radius: 8px; background: #fff; }
 
 /* 소형 버튼(.btn-sm) — MyProductListPage 목록 행의 판매 관리·삭제 등 인라인 버튼 크기 축소 */
-.btn-sm { padding: 6px 10px; font-size: 13px; }
+.btn-sm { padding: 8px 14px; font-size: 15px; }
 
 /* 이력 목록 — MyProductListPage 판매 목록·ProductDetailSellerPage 경매 활동 이력 행 레이아웃
    썸네일(.history-thumb) + 제목·부가정보(.history-row-title) 가로 배치 */
@@ -176,7 +176,7 @@ table tr:last-child td { border-bottom: none; }
 .history-thumb { flex: 0 0 64px; width: 64px; height: 64px; border: 1px solid #f0efec; border-radius: 8px; background: #e5e4df; overflow: hidden; }
 .history-thumb img { width: 100%; height: 100%; display: block; object-fit: cover; }
 .history-row-title { display: grid; gap: 4px; min-width: 0; }
-.history-row-title h4 { margin: 0; font-size: 16px; }
+.history-row-title h4 { margin: 0; font-size: 20px; }
 .history-row-title p { margin: 0; }
 
 /* 워크스페이스 헤더 — 카드·섹션 내 제목(h3)+설명(p) 헤더 블록 레이아웃
@@ -206,6 +206,17 @@ table tr:last-child td { border-bottom: none; }
 .danger-note { border-color: #f3c7c7; background: #fcebeb; color: #a32d2d; }
 .seller-history { margin-top: 20px; border-top: 1px solid #f0efec; }
 .seller-history .list-row { display: flex; align-items: flex-start; padding: 11px 2px; border-bottom: 1px solid #f0efec; color: #5f5e5a; font-size: 14px; box-shadow: none; border-radius: 0; background: none; }
+@keyframes slideInFromRight {
+  from { transform: translateX(24px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes slideInFromLeft {
+  from { transform: translateX(-24px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+.slide-from-right { animation: slideInFromRight 0.22s ease; }
+.slide-from-left  { animation: slideInFromLeft  0.22s ease; }
+
 @media (max-width: 800px) {
   .seller-auction-layout { grid-template-columns: 1fr; }
   .seller-product { grid-template-columns: 96px minmax(0,1fr); gap: 14px; }

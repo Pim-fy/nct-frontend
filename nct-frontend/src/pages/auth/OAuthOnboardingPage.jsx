@@ -9,6 +9,8 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useConfig } from '@hooks/useConfig';
 import { completeOauthOnboarding, getOauthOnboardingPending } from '@api/authApi';
+import AuthPageContainer from '@components/auth/AuthPageContainer';
+import AuthCard from '@components/auth/AuthCard';
 import { SIGNUP_TERMS } from './signupTerms';
 
 const AGREEMENT_ITEMS = [
@@ -171,16 +173,16 @@ const OAuthOnboardingPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <AuthPageContainer>
         <p className="text-sm text-gray-500">불러오는 중입니다...</p>
-      </div>
+      </AuthPageContainer>
     );
   }
 
   if (loadError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="w-full max-w-100 bg-white rounded-2xl shadow-lg px-8 py-10 text-center">
+      <AuthPageContainer>
+        <AuthCard className="max-w-100 text-center">
           <div className="w-14 h-14 mx-auto rounded-full bg-red-50 flex items-center justify-center text-2xl mb-4">⚠️</div>
           <h2 className="text-base font-bold mb-2">온보딩 정보 없음</h2>
           <p className="text-sm text-gray-500 mb-8">{loadError}</p>
@@ -191,14 +193,14 @@ const OAuthOnboardingPage = () => {
           >
             로그인으로 돌아가기
           </button>
-        </div>
-      </div>
+        </AuthCard>
+      </AuthPageContainer>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-10">
-      <div className="w-full max-w-xl bg-white rounded-2xl shadow-lg px-8 py-10">
+    <AuthPageContainer>
+      <AuthCard className="max-w-xl">
         <h1 className="m-0 text-xl font-bold text-gray-900">
           {PROVIDER_LABELS[provider] ?? '소셜'} 계정으로 가입을 완료합니다
         </h1>
@@ -244,10 +246,10 @@ const OAuthOnboardingPage = () => {
           {submitting ? '가입 처리 중...' : '가입 완료'}
         </button>
         {submitMessage ? <p className="mt-2 text-xs text-red-600">{submitMessage}</p> : null}
-      </div>
+      </AuthCard>
 
       {selectedAgreement ? <AgreementModal agreement={selectedAgreement} onClose={() => setOpenAgreement(null)} /> : null}
-    </div>
+    </AuthPageContainer>
   );
 };
 

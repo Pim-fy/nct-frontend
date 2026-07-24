@@ -20,7 +20,7 @@ export const getProduct = (prdSn) =>
 
 /** 상품 상세 진입 조회수 증가 */
 export const increaseProductViewCount = (prdSn) =>
-  api.post(`/products/${prdSn}/view`).then(res => res.data);
+  api.post(`/products/${prdSn}/view`, null, { skipServerErrorRedirect: true }).then(res => res.data);
 
 /** 임시저장 상품 수정 및 등록 전환 */
 export const updateProduct = (prdSn, data) =>
@@ -41,3 +41,15 @@ export const postProductComment = (prdSn, data) =>
 /** 추가 공지 목록 조회 — 최신 4개, 비로그인 포함 (F-AUC-007) */
 export const fetchProductComments = (prdSn) =>
   api.get(`/products/${prdSn}/comments`).then(res => res.data);
+
+/** 구매자 문의 목록 조회 (F-AUC-012) */
+export const fetchProductInquiries = (prdSn) =>
+  api.get(`/products/${prdSn}/inquiries`).then(res => res.data);
+
+/** 구매자 문의 등록 (F-AUC-012) */
+export const postProductInquiry = (prdSn, data) =>
+  api.post(`/products/${prdSn}/inquiries`, data).then(res => res.data);
+
+/** 판매자 답변 등록 (F-AUC-012) */
+export const postInquiryReply = (prdSn, inquirySn, data) =>
+  api.post(`/products/${prdSn}/inquiries/${inquirySn}/reply`, data).then(res => res.data);

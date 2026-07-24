@@ -11,8 +11,6 @@ import {
   signup,
   verifySignupEmailVerification,
 } from '@api/authApi';
-import SiteHeader from '@layouts/user/headers/SiteHeader';
-import MainFooter from '@layouts/user/footers/MainFooter';
 import { SIGNUP_TERMS } from './signupTerms';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-[#e2e1dc] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-primary disabled:cursor-not-allowed disabled:bg-[#f8f8f6]';
@@ -609,10 +607,9 @@ const SignupPage = () => {
     || (verification.status === 'sent' && !verificationExpired && !resendAvailable);
 
   return (
-    <div className="flex min-h-screen flex-col bg-white text-[#1a1a18]">
-      <SiteHeader />
-
-      <main className="mx-auto w-[90%] max-w-[1800px] flex-1 py-7">
+    <>
+      {/* @ai_generated: 넓은 가입 그리드는 AuthLayout 본문 안에서 기존 폭과 배치를 유지한다. */}
+      <section className="mx-auto w-[90%] max-w-[1800px] flex-1 py-7 text-[#1a1a18]">
         {/* @ai_generated: 가입 동작은 입력 카드 전체의 바깥 우하단에 배치한다. */}
         <div className="mx-auto mb-4 mt-7 flex max-w-[1480px] flex-col gap-3 min-[769px]:flex-row min-[769px]:items-start min-[769px]:justify-between">
           <div className="flex flex-col gap-1.5">
@@ -877,7 +874,7 @@ const SignupPage = () => {
             </div>
           </>
         )}
-      </main>
+      </section>
 
       {addressSearchOpen ? (
         <div aria-modal="true" className="fixed inset-0 z-[200] flex items-center justify-center bg-black/35 p-4" role="dialog">
@@ -895,8 +892,7 @@ const SignupPage = () => {
 
       {selectedAgreement ? <AgreementModal agreement={selectedAgreement} onClose={() => setOpenAgreement(null)} /> : null}
 
-      <MainFooter />
-    </div>
+    </>
   );
 };
 
