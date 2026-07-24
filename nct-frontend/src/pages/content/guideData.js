@@ -58,7 +58,7 @@ export const GUIDE_FLOWS = [
     flowTitle: '포인트·환전 흐름',
     flowCopy: '충전과 홀딩·반환 내역을 지갑에서 확인하고, 정산 가능한 포인트만 환전을 요청합니다.',
     targetLabel: '포인트 지갑 화면',
-    targetRoute: '/user/point',
+    targetRoute: '/user/mypage?section=wallet',
     targetOwner: '담당자 6 포인트 지갑 화면 연결',
   },
 ];

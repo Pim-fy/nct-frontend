@@ -92,8 +92,8 @@ const PointChargeWidgetModal = ({ onClose }) => {
       await widgetsRef.current.requestPayment({
         orderId: orderRef.current.orderId,
         orderName: orderRef.current.orderName,
-        successUrl: `${window.location.origin}/user/point?charge=success`,
-        failUrl: `${window.location.origin}/user/point?charge=fail`,
+        successUrl: `${window.location.origin}/user/mypage?section=wallet&charge=success`,
+        failUrl: `${window.location.origin}/user/mypage?section=wallet&charge=fail`,
       });
       // 성공 시 리다이렉트되므로 이 아래로는 정상 흐름에서 내려오지 않는다
     } catch (err) {

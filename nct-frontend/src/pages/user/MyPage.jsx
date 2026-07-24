@@ -119,6 +119,7 @@ export default function MyPage({
             />
           )}
           {activeSection === "auction-sales" && <MyProductList />}
+          {activeSection === "wallet" && <PointWalletPage embedded />}
           {/* 기존 경로로 진입한 경우에도 입찰 내역을 안전하게 표시한다. */}
           {activeSection === "auction-history" && <MyBidHistoryPage />}
           {activeSection === "wallet" && <PointWalletPage embedded />}
