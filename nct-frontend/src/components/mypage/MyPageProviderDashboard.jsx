@@ -108,10 +108,10 @@ function StatCard({ color, icon, label, value, unit, meta }) {
       <button
         type="button"
         onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
-        className="absolute right-4 top-4 bg-transparent border-none cursor-pointer text-white text-[20px] font-bold leading-none "
+        className="absolute right-4 top-4 bg-transparent border-none cursor-pointer"
         aria-label={`${label} 더보기`}
       >
-        +
+        <img src={assets.iconMoreWhite} alt="" className="size-[20px] object-contain" />
       </button>
       <div className=" gap-3 p-2">
         <div className="flex items-start mb-3">
@@ -138,7 +138,7 @@ function TaskCard({ title, desc, action }) {
         <button
           type="button"
           onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
-          className="shrink-0 flex h-[28px] items-center gap-1.5 rounded-[5px] border border-[#4e4e4e] bg-white px-2.5 text-[14px] text-[#4e4e4e] cursor-pointer hover:bg-[#f5f5f5] transition-colors whitespace-nowrap"
+          className="btn btn-ghost btn-sm shrink-0"
         >
           <img src={action === "chat" ? assets.iconChat : assets.iconReport} alt="" className="size-[11px]" />
           {action === "chat" ? "채팅" : "견적"}
@@ -156,15 +156,15 @@ function CompactListPanel({ title, items }) {
         <button
           type="button"
           onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
-          className="bg-transparent border-none cursor-pointer text-[20px] font-bold leading-none text-[#3a3a3a]"
+          className="bg-transparent border-none cursor-pointer"
           aria-label={`${title} 더보기`}
         >
-          +
+          <img src={assets.iconMore} alt="" className="size-[20px] object-contain opacity-40" />
         </button>
       </div>
       <div className="divide-y divide-[#e5e5e5]">
         {items.map((item) => (
-          <div key={item.title} className="flex items-start gap-4 p-5">
+          <div key={item.title} className="flex items-center gap-4 p-5">
             <div className="size-[72px] shrink-0 rounded-[5px] border border-[#d9d9d9] overflow-hidden">
               <img alt={item.title} className="size-full object-cover" src={item.thumbnail} />
             </div>
@@ -183,7 +183,7 @@ function CompactListPanel({ title, items }) {
             <button
               type="button"
               onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
-              className="shrink-0 flex h-[28px] items-center gap-1 rounded-[5px] border border-[#969696] bg-white px-3 text-[#969696] cursor-pointer hover:bg-[#f5f5f5] transition-colors whitespace-nowrap"
+              className="btn btn-ghost btn-sm shrink-0"
             >
               더보기 ›
             </button>
@@ -216,7 +216,7 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral }) {
             <div className="flex gap-2 mt-2">
               <button
                 type="button"
-                className="h-[30px] px-3 rounded-full border border-[#d9d9d9] bg-white text-[#4e4e4e] text-[14px] cursor-pointer hover:bg-[#f5f5f5] transition-colors flex items-center gap-1.5"
+                className="btn btn-ghost btn-sm"
               >
                 <img src={assets.iconLogout} alt="" className="size-[12px]" />
                 로그아웃
@@ -224,7 +224,7 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral }) {
               <button
                 type="button"
                 onClick={onSwitchToGeneral}
-                className="h-[30px] px-3 rounded-full border border-[#d9d9d9] bg-white text-[#4e4e4e] text-[14px] cursor-pointer hover:bg-[#f5f5f5] transition-colors flex items-center gap-1.5"
+                className="btn btn-ghost btn-sm"
               >
                 <img src={assets.iconSwitch1} alt="" className="size-[10px]" />
                 일반 전환
@@ -234,7 +234,7 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral }) {
         </div>
 
         {/* 안읽은 알림 배너 */}
-        <div className="flex-1 min-w-0 min-h-[45px] rounded-[25px] border border-[rgba(0,100,255,0.28)] bg-white flex items-center px-4 gap-2 overflow-hidden">
+        <div className="ml-auto w-full md:w-[600px] md:flex-none min-h-[45px] rounded-[25px] border border-[rgba(0,100,255,0.28)] bg-white flex items-center px-4 gap-2 overflow-hidden">
           <span className="flex items-center justify-center size-[18px] rounded-full bg-[#0064ff] text-white text-[13px] font-bold shrink-0">
             3
           </span>
@@ -246,9 +246,9 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral }) {
           <button
             type="button"
             onClick={() => navigate("/user/notification")}
-            className="ml-auto bg-transparent border-none cursor-pointer font-bold text-[#404040] shrink-0"
+            className="ml-auto bg-transparent border-none cursor-pointer shrink-0"
           >
-            +
+            <img src={assets.iconMore} alt="" className="size-[14px] object-contain opacity-40" />
           </button>
         </div>
       </div>
@@ -286,14 +286,14 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral }) {
             <button
               type="button"
               onClick={() => navigate("/user/settlement")}
-              className="h-[38px] px-4 rounded-[5px] bg-primary text-white cursor-pointer hover:bg-[#0048bf] transition-colors"
+              className="btn btn-primary btn-sm"
             >
               정산관리
             </button>
             <button
               type="button"
               onClick={() => navigate("/user/settlement")}
-              className="h-[38px] px-4 rounded-[5px] border border-primary bg-white text-primary cursor-pointer hover:bg-[#f0f6ff] transition-colors"
+              className="btn btn-outline btn-sm"
             >
               정산 계좌 확인
             </button>

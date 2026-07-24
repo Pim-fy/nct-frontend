@@ -122,6 +122,7 @@ export default function MyPage({
           {activeSection === "wallet" && <PointWalletPage embedded />}
           {/* 기존 경로로 진입한 경우에도 입찰 내역을 안전하게 표시한다. */}
           {activeSection === "auction-history" && <MyBidHistoryPage />}
+          {activeSection === "wallet" && <PointWalletPage embedded />}
           {/* 개발 환경에서는 거래내역과 동일한 미리보기 채팅 데이터를 사용한다. */}
           {activeSection === "chat" && (
             selectedChatTradeId ? (

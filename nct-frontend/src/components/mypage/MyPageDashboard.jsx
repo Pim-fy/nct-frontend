@@ -11,19 +11,19 @@ import { assets } from "@components/mypage/assets";
 const TODAY_ITEMS = [
   {
     thumbnail: assets.thumb1,
-    badges: [{ label: "거래", color: "#0064ff" }, { label: "구매확정 대기", color: "#e63946" }],
+    badges: [{ label: "거래", cls: "badge-success" }, { label: "구매확정 대기", cls: "badge-teal" }],
     title: "[거래 구매확정] 다이슨 V11",
     meta: "거래 금액 148,000원 · 배송완료 후 3일째",
   },
   {
     thumbnail: assets.thumb2,
-    badges: [{ label: "서비스 요청", color: "#0064ff" }],
+    badges: [{ label: "서비스 요청", cls: "badge-success" }],
     title: "[견적비교] 성수동 원룸 이사 운반",
     meta: "청년이사·바로운반 · 새 견적 도착",
   },
   {
     thumbnail: assets.thumb3,
-    badges: [{ label: "거래", color: "#0064ff" }, { label: "구매확정 대기", color: "#e63946" }],
+    badges: [{ label: "거래", cls: "badge-success" }, { label: "구매확정 대기", cls: "badge-teal" }],
     title: "[거래 구매확정] 미니 보온 텀블러 세트",
     meta: "거래 금액 148,000원 · 배송완료 후 3일째",
   },
@@ -32,19 +32,19 @@ const TODAY_ITEMS = [
 const WISH_ITEMS = [
   {
     thumbnail: assets.thumb1,
-    badges: [{ label: "입찰 12회", color: "#0064ff" }, { label: "마감임박", color: "#e63946" }],
+    badges: [{ label: "입찰 12회", cls: "badge-success" }, { label: "마감임박", cls: "badge-urgent" }],
     title: "피씨오브플레이어 컴퓨터 게이밍 조립컴퓨터 올인...",
     meta: "현재가 612,000원 · 오늘 18:00 종료",
   },
   {
     thumbnail: assets.thumb2,
-    badges: [{ label: "입찰 3회", color: "#0064ff" }],
+    badges: [{ label: "입찰 3회", cls: "badge-success" }],
     title: "카본 패턴 1인용 게이밍 컴퓨터 철제책상 사무용책상...",
     meta: "현재가 32,000원 · 내입찰가 29,000원",
   },
   {
     thumbnail: assets.thumb3,
-    badges: [{ label: "입찰 1회", color: "#0064ff" }, { label: "마감임박", color: "#e63946" }],
+    badges: [{ label: "입찰 1회", cls: "badge-success" }, { label: "마감임박", cls: "badge-urgent" }],
     title: "PD 4포트 100W 멀티 충전기",
     meta: "현재가12,000원 · 내입찰가 9,000원 · 오늘 12:00 종료",
   },
@@ -58,10 +58,10 @@ function StatCard({ color, icon, label, value, unit, meta, onMore }) {
       <button
         type="button"
         onClick={onMore}
-        className="absolute right-4 top-4 bg-transparent border-none cursor-pointer text-white text-[20px] font-bold leading-none"
+        className="absolute right-4 top-4 bg-transparent border-none cursor-pointer"
         aria-label={`${label} 더보기`}
       >
-        +
+        <img src={assets.iconMoreWhite} alt="" className="size-[20px] object-contain" />
       </button>
       <div className="flex items-start gap-3 mb-3">
         <img src={icon} alt="" className="size-[40px] object-contain shrink-0 mt-0.5" />
@@ -91,10 +91,10 @@ function ListPanel({ title, items }) {
         <button
           type="button"
           onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
-          className="bg-transparent border-none cursor-pointer text-[#3a3a3a] text-[20px] font-bold leading-none shrink-0 ml-2"
+          className="bg-transparent border-none cursor-pointer shrink-0 ml-2"
           aria-label={`${title} 더보기`}
         >
-          +
+          <img src={assets.iconMore} alt="" className="size-[20px] object-contain opacity-40" />
         </button>
       </div>
       <div className="divide-y divide-[#e5e5e5]">
@@ -106,11 +106,7 @@ function ListPanel({ title, items }) {
             <div className="flex-1 min-w-0 ">
               <div className="flex flex-wrap gap-1.5 mb-1">
                 {item.badges.map((badge) => (
-                  <span
-                    key={badge.label}
-                    className="h-[22px] rounded-full border flex items-center px-2.5 text-[14px] whitespace-nowrap"
-                    style={{ borderColor: badge.color, color: badge.color }}
-                  >
+                  <span key={badge.label} className={`badge ${badge.cls}`}>
                     {badge.label}
                   </span>
                 ))}
@@ -121,7 +117,7 @@ function ListPanel({ title, items }) {
             <button
               type="button"
               onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
-              className="shrink-0 flex items-center gap-1 h-[28px] px-3 rounded-[5px] border border-[#969696] bg-white text-[#969696] text-[14px] font-medium cursor-pointer hover:bg-[#f5f5f5] transition-colors whitespace-nowrap"
+              className="btn btn-ghost btn-sm shrink-0"
             >
               더보기 ›
             </button>
@@ -150,7 +146,7 @@ export default function MyPageDashboard({
       value: "250,000",
       unit: "",
       meta: "거래가능 240,000   ㅣ   홀딩 10,000",
-      onMore: () => navigate("/user/point"),
+      onMore: () => navigate("/user/mypage?section=wallet"),
     },
     {
       key: "auction",
@@ -206,7 +202,7 @@ export default function MyPageDashboard({
             <div className="flex gap-2 mt-2">
               <button
                 type="button"
-                className="h-[30px] px-3 rounded-full border border-[#d9d9d9] bg-white text-[#4e4e4e] text-[14px] cursor-pointer hover:bg-[#f5f5f5] transition-colors flex items-center gap-1.5"
+                className="btn btn-ghost btn-sm"
               >
                 <img src={assets.iconLogout} alt="" className="size-[12px]" />
                 로그아웃
@@ -214,7 +210,7 @@ export default function MyPageDashboard({
               <button
                 type="button"
                 onClick={onRequestProviderSwitch}
-                className="h-[30px] px-3 rounded-full border border-[#d9d9d9] bg-white text-[#4e4e4e] text-[14px] cursor-pointer hover:bg-[#f5f5f5] transition-colors flex items-center gap-1.5"
+                className="btn btn-ghost btn-sm"
               >
                 <img src={assets.iconSwitch1} alt="" className="size-[10px]" />
                 제공자 전환
@@ -224,7 +220,7 @@ export default function MyPageDashboard({
         </div>
 
         {/* 안읽은 알림 배너 */}
-        <div className="flex-1 min-w-0  min-h-[45px] rounded-[25px] border border-[rgba(0,100,255,0.28)] bg-white flex items-center px-4 gap-2 overflow-hidden">
+        <div className="ml-auto w-full md:w-[600px] md:flex-none min-h-[45px] rounded-[25px] border border-[rgba(0,100,255,0.28)] bg-white flex items-center px-4 gap-2 overflow-hidden">
           <span className="flex items-center justify-center size-[18px] rounded-full bg-[#0064ff] text-white text-[13px] font-bold shrink-0">
             3
           </span>
@@ -240,9 +236,9 @@ export default function MyPageDashboard({
           <button
             type="button"
             onClick={() => navigate("/user/notification")}
-            className="ml-auto bg-transparent border-none cursor-pointer text-[#404040] text-[14px] font-bold shrink-0"
+            className="ml-auto bg-transparent border-none cursor-pointer shrink-0"
           >
-            +
+            <img src={assets.iconMore} alt="" className="size-[14px] object-contain opacity-40" />
           </button>
         </div>
       </div>
