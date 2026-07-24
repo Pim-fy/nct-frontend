@@ -92,36 +92,6 @@ function getBidDescription(item) {
   return parts.join(' · ');
 }
 
-// ─── 탭·칩 스타일 ─────────────────────────────────────────────────────────────
-
-function tabStyle(active) {
-  return {
-    padding: '9px 22px',
-    borderRadius: 100,
-    border: `1.5px solid ${active ? '#0064ff' : '#d1d0cc'}`,
-    background: active ? '#0064ff' : '#fff',
-    color: active ? '#fff' : '#5f5e5a',
-    fontWeight: active ? 700 : 500,
-    fontSize: 15,
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-    transition: 'all .15s ease',
-  };
-}
-
-function chipStyle(active) {
-  return {
-    padding: '4px 14px',
-    borderRadius: 100,
-    border: `1px solid ${active ? '#0064ff' : '#d1d0cc'}`,
-    background: active ? '#e5efff' : '#fff',
-    color: active ? '#0064ff' : '#5f5e5a',
-    fontWeight: active ? 700 : 400,
-    fontSize: 14,
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-  };
-}
 
 // ─── 내 입찰 내역 탭 ──────────────────────────────────────────────────────────
 
@@ -168,7 +138,7 @@ function BidHistoryTab() {
               key={f.value}
               type="button"
               onClick={() => handleFilterChange(f.value)}
-              style={chipStyle(statusFilter === f.value)}
+              className={`btn btn-sm ${statusFilter === f.value ? 'btn-primary' : 'btn-ghost'}`}
             >
               {f.label} {count}
             </button>

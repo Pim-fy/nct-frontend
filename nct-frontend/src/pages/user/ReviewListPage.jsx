@@ -31,6 +31,17 @@ const ITEM_ROW_HEIGHT = 235; // Figma 항목 간 간격 (491-256, 726-491, ... �
 const FIRST_ITEM_TOP = 256;
 const PAGE_SIZE = 10; // 작성한 리뷰 탭 - Figma 페이지네이션이 5페이지/12건 기준 10건/페이지로 설계됨
 
+const DEV_WRITABLE = import.meta.env.DEV ? [
+  { id: 1, thumbnail: null, title: "다이슨 V11 무선청소기", dealType: "goods",   partyLabel: "판매자", partyName: "이**",  completedDate: "2026-07-01" },
+  { id: 2, thumbnail: null, title: "성수동 원룸 이사 운반", dealType: "service", partyLabel: "제공자", partyName: "김**",  completedDate: "2026-07-10" },
+  { id: 3, thumbnail: null, title: "PD 4포트 100W 멀티 충전기", dealType: "goods", partyLabel: "판매자", partyName: "박**", completedDate: "2026-07-15" },
+] : [];
+
+const DEV_WRITTEN = import.meta.env.DEV ? [
+  { id: 10, thumbnail: null, title: "카본 패턴 게이밍 책상", dealType: "goods",   rating: 5, content: "배송도 빠르고 상태가 정말 좋았어요. 판매자분도 친절하셨습니다.", photos: [] },
+  { id: 11, thumbnail: null, title: "성수동 원룸 청소 서비스", dealType: "service", rating: 4, content: "꼼꼼하게 청소해주셨는데 시간이 조금 늦게 끝났어요.", photos: [] },
+] : [];
+
 export default function ReviewListPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -43,16 +54,16 @@ export default function ReviewListPage() {
 
   // WritableTradeItem.thumbnail은 지금은 항상 null이지만(PRODUCT_IMAGE 연동 전), 나중에 값이
   // 채워지면 다른 파일 응답과 동일하게 백엔드 상대 경로(/uploads/...)로 올 것이므로 미리 변환해둔다.
-  const writableItems = useMemo(
-    () => (writableQuery.data ?? []).map((item) => ({ ...item, thumbnail: toImageUrl(item.thumbnail) })),
-    [writableQuery.data],
-  );
+  const writableItems = useMemo(() => {
+    const real = (writableQuery.data ?? []).map((item) => ({ ...item, thumbnail: toImageUrl(item.thumbnail) }));
+    return real.length > 0 ? real : DEV_WRITABLE;
+  }, [writableQuery.data]);
   // WrittenReviewItemCard는 단일 thumbnail을 기대하는데, GET /reviews/me는 여러 장(photos)을
   // 다형성 첨부(FILE_ATTACH)로 내려준다 - 대표 이미지로 첫 장만 쓴다.
-  const writtenItems = useMemo(
-    () => (myReviewsQuery.data ?? []).map((item) => ({ ...item, thumbnail: toImageUrl(item.photos?.[0]) })),
-    [myReviewsQuery.data],
-  );
+  const writtenItems = useMemo(() => {
+    const real = (myReviewsQuery.data ?? []).map((item) => ({ ...item, thumbnail: toImageUrl(item.photos?.[0]) }));
+    return real.length > 0 ? real : DEV_WRITTEN;
+  }, [myReviewsQuery.data]);
 
   const isLoading = activeTab === "writable" ? writableQuery.isLoading : myReviewsQuery.isLoading;
   const isError = activeTab === "writable" ? writableQuery.isError : myReviewsQuery.isError;
@@ -183,7 +194,7 @@ export default function ReviewListPage() {
           <button
             type="button"
             onClick={() => refetchCurrent()}
-            className="rounded border border-[#d9d9d9] bg-white px-4 py-2 text-sm text-[#4e4e4e] hover:bg-[#f5f5f5]"
+            className="btn btn-ghost btn-sm"
           >
             다시 시도
           </button>
