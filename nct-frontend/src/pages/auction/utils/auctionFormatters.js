@@ -47,13 +47,13 @@ export const resolveAuctionResultLabel = (auction) => {
   return null;
 };
 
-export const formatRemainingTime = (auction, now = Date.now()) => {
-  const resultLabel = resolveAuctionResultLabel(auction);
-  if (resultLabel) return resultLabel;
-  if (!auction?.endDateTime) return '-';
+export const formatTimeUntil = (dateTime, now = Date.now()) => {
+  if (!dateTime) return '-';
 
-  const diffMs = Math.max(new Date(auction.endDateTime).getTime() - now, 0);
+  const targetTimestamp = new Date(dateTime).getTime();
+  if (!Number.isFinite(targetTimestamp)) return '-';
 
+  const diffMs = Math.max(targetTimestamp - now, 0);
   const totalSeconds = Math.floor(diffMs / 1000);
   const days = Math.floor(totalSeconds / 86400);
   const hours = Math.floor((totalSeconds % 86400) / 3600);
@@ -67,4 +67,10 @@ export const formatRemainingTime = (auction, now = Date.now()) => {
   if (days > 0) return `${days}일 ${hours}시간 ${minutes}분`;
   if (hours > 0) return `${hours}시간 ${minutes}분`;
   return `${minutes}분`;
+};
+
+export const formatRemainingTime = (auction, now = Date.now()) => {
+  const resultLabel = resolveAuctionResultLabel(auction);
+  if (resultLabel) return resultLabel;
+  return formatTimeUntil(auction?.endDateTime, now);
 };

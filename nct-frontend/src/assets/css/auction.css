@@ -798,14 +798,35 @@
   padding-top: 42px;
 }
 
-.auction-detail-page .owner-auction-state {
+.auction-detail-page .owner-auction-state,
+.auction-detail-page .auction-ready-state {
   min-height: 144px;
   padding-top: 42px;
   display: grid;
   place-items: center;
+}
+
+.auction-detail-page .owner-auction-state {
   color: var(--detail-primary-dark);
   font-size: 18px;
   font-weight: 700;
+}
+
+.auction-detail-page .auction-ready-state {
+  align-content: center;
+  gap: 8px;
+  color: var(--detail-text);
+  text-align: center;
+}
+
+.auction-detail-page .auction-ready-state strong {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.auction-detail-page .auction-ready-state span {
+  color: var(--detail-muted);
+  font-size: 14px;
 }
 
 .auction-detail-page .highest-bidder-badge {
@@ -1125,6 +1146,204 @@
 .auction-detail-page .info-card .detail-hint {
   margin-top: 12px;
   color: var(--detail-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.auction-detail-page .auction-inquiry-section {
+  margin-top: 44px;
+  border-top: 1px solid var(--detail-border);
+  padding-top: 32px;
+}
+
+.auction-detail-page .auction-inquiry-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.auction-detail-page .auction-inquiry-heading h2 {
+  margin: 0;
+  color: var(--detail-text);
+  font-size: 22px;
+  line-height: 1.35;
+}
+
+.auction-detail-page .auction-inquiry-heading p {
+  margin: 7px 0 0;
+  color: var(--detail-muted);
+  font-size: 14px;
+}
+
+.auction-detail-page .auction-inquiry-heading > strong {
+  color: var(--detail-primary-dark);
+  font-size: 16px;
+  white-space: nowrap;
+}
+
+.auction-detail-page .auction-inquiry-composer {
+  border: 1px solid var(--detail-border);
+  border-radius: 8px;
+  background: #f7f8fa;
+  padding: 18px;
+}
+
+.auction-detail-page .auction-inquiry-composer > label {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--detail-text);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.auction-detail-page .auction-inquiry-composer textarea {
+  width: 100%;
+  min-height: 112px;
+  resize: vertical;
+  border: 1px solid var(--detail-border-strong);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--detail-text);
+  padding: 13px 14px;
+  font: inherit;
+  line-height: 1.6;
+  outline: none;
+}
+
+.auction-detail-page .auction-inquiry-composer textarea:focus {
+  border-color: var(--detail-primary);
+  box-shadow: 0 0 0 3px var(--detail-primary-light);
+}
+
+.auction-detail-page .auction-inquiry-composer textarea:disabled {
+  background: #eeeeef;
+  color: #8a8a8a;
+  cursor: not-allowed;
+}
+
+.auction-detail-page .auction-inquiry-composer-footer {
+  min-height: 40px;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.auction-detail-page .auction-inquiry-composer-footer > span {
+  color: var(--detail-muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.auction-detail-page .auction-inquiry-submit,
+.auction-detail-page .auction-inquiry-error button {
+  min-height: 40px;
+  border: 1px solid var(--detail-primary);
+  border-radius: 8px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: var(--detail-primary);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auction-detail-page .auction-inquiry-submit:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.auction-detail-page .auction-inquiry-list {
+  margin-top: 24px;
+  display: grid;
+  gap: 12px;
+}
+
+.auction-detail-page .auction-inquiry-state {
+  min-height: 96px;
+  margin: 0;
+  border-top: 1px solid var(--detail-border);
+  border-bottom: 1px solid var(--detail-border);
+  display: grid;
+  place-items: center;
+  color: var(--detail-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+.auction-detail-page .auction-inquiry-error {
+  align-content: center;
+  gap: 10px;
+}
+
+.auction-detail-page .auction-inquiry-error p {
+  margin: 0;
+}
+
+.auction-detail-page .auction-inquiry-error button {
+  min-height: 36px;
+  background: #fff;
+  color: var(--detail-primary-dark);
+}
+
+.auction-detail-page .auction-inquiry-item {
+  border: 1px solid var(--detail-border);
+  border-radius: 8px;
+  background: #fff;
+  padding: 18px;
+}
+
+.auction-detail-page .auction-inquiry-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.auction-detail-page .auction-inquiry-meta strong {
+  color: var(--detail-text);
+  font-size: 14px;
+}
+
+.auction-detail-page .auction-inquiry-meta time {
+  color: var(--detail-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.auction-detail-page .auction-inquiry-item > p,
+.auction-detail-page .auction-inquiry-answer > p {
+  margin: 12px 0 0;
+  color: #353535;
+  font-size: 15px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.auction-detail-page .auction-inquiry-answer {
+  margin-top: 16px;
+  border-left: 3px solid #18a36b;
+  background: #f2faf6;
+  padding: 14px 16px;
+}
+
+.auction-detail-page .auction-inquiry-answer .auction-inquiry-meta strong {
+  color: #0b7049;
+}
+
+.auction-detail-page .auction-inquiry-waiting {
+  display: inline-flex;
+  margin-top: 14px;
+  color: var(--detail-muted);
   font-size: 13px;
   font-weight: 700;
 }
@@ -1478,6 +1697,34 @@
   .auction-detail-page .meta-stats,
   .auction-detail-page .bid-actions {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .auction-detail-page .auction-inquiry-section {
+    margin-top: 32px;
+    padding-top: 24px;
+  }
+
+  .auction-detail-page .auction-inquiry-heading {
+    gap: 12px;
+  }
+
+  .auction-detail-page .auction-inquiry-heading h2 {
+    font-size: 20px;
+  }
+
+  .auction-detail-page .auction-inquiry-composer {
+    padding: 14px;
+  }
+
+  .auction-detail-page .auction-inquiry-composer-footer,
+  .auction-detail-page .auction-inquiry-meta {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .auction-detail-page .auction-inquiry-submit {
+    width: 100%;
   }
 
 }

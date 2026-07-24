@@ -13,6 +13,7 @@ const AuctionBidPanel = ({
   isBidPending,
   isBuyNowPending,
   isAuctionOpen,
+  isAuctionReady,
   isOwnAuction,
   isCurrentHighestBidder,
   isBuyNowAvailable,
@@ -35,11 +36,11 @@ const AuctionBidPanel = ({
   const isBuyNowPointInsufficient = hasAvailablePoint && !isBuyNowPointSufficient;
   const pointBalanceLabel = !isAuthenticated
     ? '로그인 필요'
-    : (isPointBalanceLoading
-      ? '조회 중'
-      : (isPointBalanceError
-        ? '확인 불가'
-        : (hasAvailablePoint ? `${formatNumber(availablePoint)}P` : '-')));
+    : (hasAvailablePoint
+      ? `${formatNumber(availablePoint)}P`
+      : (isPointBalanceLoading
+        ? '조회 중'
+        : (isPointBalanceError ? '확인 불가' : '-')));
 
   return (
     <aside className="bid-card">
@@ -63,19 +64,28 @@ const AuctionBidPanel = ({
               <span className="highest-bidder-badge" role="status">최고입찰자</span>
             )}
           </div>
-          <p className="label">현재 최고가</p>
+          <p className="label">{isAuctionReady ? '경매 시작가' : '현재 최고가'}</p>
           <p className="price" id="currentPrice">{formatPrice(currentPrice)}</p>
           <p className="subcopy">
-            시작가 {formatPrice(auction.startPrice)} · 즉시구매가 {formatPrice(auction.instantBuyPrice)}
+            {isAuctionReady
+              ? `즉시구매가 ${formatPrice(auction.instantBuyPrice)}`
+              : `시작가 ${formatPrice(auction.startPrice)} · 즉시구매가 ${formatPrice(auction.instantBuyPrice)}`}
           </p>
-          <p className={`timer price-timer${isAuctionOpen ? '' : ' ended'}`} id="countdown">
+          <p className={`timer price-timer${isAuctionOpen || isAuctionReady ? '' : ' ended'}`} id="countdown">
             <span className="timer-label" id="countdownLabel">{remainingTimeLabel}</span>
             <span className="timer-value mono" id="countdownValue">{remainingTime}</span>
           </p>
-          <p className="small timer-small">마감 10분 이내 유효 입찰 시 자동 연장(1회)</p>
+          {isAuctionOpen && (
+            <p className="small timer-small">마감 10분 이내 유효 입찰 시 자동 연장(1회)</p>
+          )}
         </div>
 
-        {isOwnAuction ? (
+        {isAuctionReady ? (
+          <div className="auction-ready-state" role="status">
+            <strong>경매 시작 전입니다</strong>
+            <span>입찰과 즉시구매는 경매가 시작되면 이용할 수 있습니다.</span>
+          </div>
+        ) : isOwnAuction ? (
           <div className="owner-auction-state" role="status">본인 경매 상품</div>
         ) : (
           <div className="bid-controls">
