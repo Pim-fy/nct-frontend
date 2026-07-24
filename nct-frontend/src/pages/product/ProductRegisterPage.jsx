@@ -36,15 +36,15 @@ const BothIcon = () => (
 // ─── 상수 정의 ───────────────────────────────────────────────────────────────
 // 거래방식 옵션 · 경매 기간 선택지 · 입찰 단위 · 카테고리 도메인 코드 · 스텝 라벨
 const TRADE_METHODS = [
-  { value: 'TRDC0009', label: '배송만',    Icon: TruckIcon },
-  { value: 'TRDC0010', label: '직거래만',  Icon: PinIcon },
+  { value: 'TRDC0009', label: '배송',      Icon: TruckIcon },
+  { value: 'TRDC0010', label: '직거래',    Icon: PinIcon },
   { value: 'TRDC0020', label: '둘 다 가능', Icon: BothIcon },
 ];
 
 const DURATION_DAYS = [1, 3, 5, 7];
 const BID_UNITS = [500, 1000, 5000, 10000];
 const PRODUCT_DOMAIN_CD = 'CATC0001';
-const STEP_LABELS = ['상품정보', '경매설정', '등록확인'];
+const STEP_LABELS = ['상품 입력', '등록 확인'];
 const MAX_IMAGES = 5; // F-AUC-002 — 대표이미지 포함 최대 5장
 
 export default function ProductRegisterPage() {
@@ -108,6 +108,9 @@ export default function ProductRegisterPage() {
               prdStartAmt:    p.prdStartAmt != null ? String(p.prdStartAmt) : '',
               prdIbyAmt:      p.prdIbyAmt  != null ? String(p.prdIbyAmt)  : '',
             }));
+            if (p.imageList?.length > 0) {
+              setImages(p.imageList.map(img => ({ flSn: img.flSn, url: img.url })));
+            }
           })
           .catch(() => setError('기존 상품 정보를 불러오지 못했습니다.'))
       );
@@ -198,34 +201,30 @@ export default function ProductRegisterPage() {
   };
 
   // ─── 다음 스텝 이동 전 유효성 검사 ─────────────────────────────────────
-  // 스텝0: 상품명·카테고리·거래방식 필수 / 스텝1: 시작가·예약일시·정책동의 필수
+  // step 0: 상품정보 + 경매설정 모두 검사 후 등록확인(step 1)으로 이동
   const goNext = () => {
-    if (step === 0) {
-      if (!form.prdNm.trim() || !form.catSn || !form.prdTrdMethodCd) {
-        setError('상품명, 카테고리, 거래방식을 모두 입력해 주세요.');
-        return;
-      }
-      if (bannedKeywordError) {
-        setError(bannedKeywordError);
-        return;
-      }
+    if (!form.prdNm.trim() || !form.catSn || !form.prdTrdMethodCd) {
+      setError('상품명, 카테고리, 거래방식을 모두 입력해 주세요.');
+      return;
     }
-    if (step === 1) {
-      if (!form.prdStartAmt) {
-        setError('시작가를 입력해 주세요.');
-        return;
-      }
-      if (!form.startNow && !form.reserveDt) {
-        setError('예약 시작일시를 입력해 주세요.');
-        return;
-      }
-      if (!policyAgreed) {
-        setError('경매 정책을 확인하고 동의해 주세요.');
-        return;
-      }
+    if (bannedKeywordError) {
+      setError(bannedKeywordError);
+      return;
+    }
+    if (!form.prdStartAmt) {
+      setError('시작가를 입력해 주세요.');
+      return;
+    }
+    if (!form.startNow && !form.reserveDt) {
+      setError('예약 시작일시를 입력해 주세요.');
+      return;
+    }
+    if (!policyAgreed) {
+      setError('경매 정책을 확인하고 동의해 주세요.');
+      return;
     }
     setError('');
-    setStep(s => s + 1);
+    setStep(1);
   };
 
   // ─── 렌더링용 파생값 ─────────────────────────────────────────────────────
@@ -234,112 +233,115 @@ export default function ProductRegisterPage() {
   const endDt = calcEndDt();
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
+    <main className="container seller-page">
       <Breadcrumb items={[{ label: '홈', href: '/' }, { label: editPrdSn ? '경매 설정 완료' : '상품 등록' }]} />
       <div className="page-title"><div><h1>{editPrdSn ? '경매 설정 완료' : '상품 등록'}</h1></div></div>
 
-      <section className="card" style={{ maxWidth: 900, margin: '0 auto' }}>
-        {/* 스텝 인디케이터 */}
-        <div className="steps">
-          {STEP_LABELS.map((label, i) => (
-            <div
-              key={label}
-              className={`step ${i === step ? 'active' : i < step ? 'done' : ''}`}
-            >
-              {label}
-            </div>
-          ))}
-        </div>
-
-        <ErrorMessage message={error} />
-
-        {step === 0 && (
-          <ProductInfoStep
-            form={form}
-            set={set}
-            categories={categories}
-            bannedKeywordError={bannedKeywordError}
-            images={images}
-            onChange={setImages}
-            tradeMethods={TRADE_METHODS}
-            maxImages={MAX_IMAGES}
-          />
-        )}
-
-        {step === 1 && (
-          <AuctionSettingStep
-            form={form}
-            set={set}
-            policyAgreed={policyAgreed}
-            setPolicyAgreed={setPolicyAgreed}
-            customEndDt={customEndDt}
-            setCustomEndDt={setCustomEndDt}
-            endDt={endDt}
-            durationDays={DURATION_DAYS}
-            bidUnits={BID_UNITS}
-            onOpenCalendar={() => setCalendarOpen(true)}
-          />
-        )}
-
-        {step === 2 && (
-          <RegisterConfirmStep
-            form={form}
-            agreed={agreed}
-            setAgreed={setAgreed}
-            images={images}
-            selectedCat={selectedCat}
-            selectedTrade={selectedTrade}
-            endDt={endDt}
-          />
-        )}
-
-        {/* 하단 버튼 */}
-        <div className="row" style={{ justifyContent: 'space-between', marginTop: 24 }}>
-          <button
-            type="button"
-            onClick={() => step > 0 ? setStep(s => s - 1) : navigate(-1)}
-            disabled={step === 0 || loading}
-            className="btn btn-ghost"
-          >
-            이전
-          </button>
-
-          <div style={{ display: 'flex', gap: 8 }}>
-            {step >= 1 && (
-              <button
-                type="button"
-                onClick={() => handleSubmit('PRDC0001')}
-                disabled={loading}
-                className="btn btn-ghost"
-              >
-                임시저장
-              </button>
-            )}
-
-            {step < 2 ? (
-              <button
-                type="button"
-                onClick={goNext}
-                className="btn btn-primary"
-              >
-                다음
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  if (!agreed) { setError('등록 정보 확인 및 동의가 필요합니다.'); return; }
-                  handleSubmit('PRDC0002');
-                }}
-                disabled={loading}
-                className="btn btn-primary"
-              >
-                {loading ? '등록 중...' : '경매 등록'}
-              </button>
-            )}
+      {/* 스텝 인디케이터 */}
+      <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 20 }}>
+        <div style={{ background: '#eef2fb', padding: '14px 20px' }}>
+          <div className="steps" style={{ margin: 0 }}>
+            {STEP_LABELS.map((label, i) => (
+              <div key={label} className={`step ${i === step ? 'active' : i < step ? 'done' : ''}`}>
+                {label}
+              </div>
+            ))}
           </div>
         </div>
-      </section>
+        {step === 1 && (
+          <div style={{ padding: '20px' }}>
+            <RegisterConfirmStep
+              form={form}
+              agreed={agreed}
+              setAgreed={setAgreed}
+              images={images}
+              selectedCat={selectedCat}
+              selectedTrade={selectedTrade}
+              endDt={endDt}
+            />
+          </div>
+        )}
+      </div>
+
+      <ErrorMessage message={error} />
+
+      {/* step 0: 상품 정보 + 경매 설정 카드 나란히 */}
+      {step === 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'stretch' }}>
+          <section className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ background: '#eef2fb', padding: '14px 20px' }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>상품 정보</h3>
+            </div>
+            <div style={{ padding: '20px' }}>
+              <ProductInfoStep
+                form={form}
+                set={set}
+                categories={categories}
+                bannedKeywordError={bannedKeywordError}
+                images={images}
+                onChange={setImages}
+                tradeMethods={TRADE_METHODS}
+                maxImages={MAX_IMAGES}
+              />
+            </div>
+          </section>
+
+          <section className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ background: '#eef2fb', padding: '14px 20px' }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>경매 설정</h3>
+            </div>
+            <div style={{ padding: '20px' }}>
+              <AuctionSettingStep
+                form={form}
+                set={set}
+                policyAgreed={policyAgreed}
+                setPolicyAgreed={setPolicyAgreed}
+                customEndDt={customEndDt}
+                setCustomEndDt={setCustomEndDt}
+                endDt={endDt}
+                durationDays={DURATION_DAYS}
+                bidUnits={BID_UNITS}
+                onOpenCalendar={() => setCalendarOpen(true)}
+              />
+            </div>
+          </section>
+        </div>
+      )}
+
+      {/* 하단 버튼 */}
+      <div className="row" style={{ justifyContent: 'space-between', padding: '16px 0', marginTop: 16 }}>
+        {step > 0 ? (
+          <button type="button" onClick={() => setStep(0)} disabled={loading} className="btn btn-ghost">
+            이전
+          </button>
+        ) : (
+          <div />
+        )}
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button type="button" onClick={() => handleSubmit('PRDC0001')} disabled={loading} className="btn btn-ghost">
+            임시저장
+          </button>
+
+          {step < 1 ? (
+            <button type="button" onClick={goNext} className="btn btn-primary">
+              다음
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                if (!agreed) { setError('등록 정보 확인 및 동의가 필요합니다.'); return; }
+                handleSubmit('PRDC0002');
+              }}
+              disabled={loading}
+              className="btn btn-primary"
+            >
+              {loading ? '등록 중...' : '경매 등록'}
+            </button>
+          )}
+        </div>
+      </div>
 
       <AuctionCalendarModal
         open={calendarOpen}
@@ -347,6 +349,6 @@ export default function ProductRegisterPage() {
         onClose={() => setCalendarOpen(false)}
         onApply={handleCalendarApply}
       />
-    </div>
+    </main>
   );
 }

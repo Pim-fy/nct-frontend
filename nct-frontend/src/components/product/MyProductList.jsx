@@ -14,11 +14,15 @@ import ConfirmModal from '@components/common/ConfirmModal';
 // ─── 필터 ────────────────────────────────────────────────────────────────────
 
 const FILTERS = [
-  { value: null,       label: '전체' },
-  { value: 'DRAFT',    label: '임시저장' },
-  { value: 'ACTIVE',   label: '진행중' },
-  { value: 'WON',      label: '낙찰' },
-  { value: 'TRADING',  label: '거래중' },
+  { value: null,      label: '전체' },
+  { value: 'ACTIVE',  label: '진행중' },
+  { value: 'WON',     label: '낙찰' },
+  { value: 'TRADING', label: '거래중' },
+  { value: 'CLOSED',  label: '종료' },
+];
+
+const CLOSED_SUB_FILTERS = [
+  { value: '',         label: '전체 종료' },
   { value: 'DONE',     label: '완료' },
   { value: 'CANCELED', label: '취소' },
   { value: 'ENDED',    label: '유찰' },
@@ -84,7 +88,7 @@ function chipStyle(active) {
     background: active ? '#e5efff' : '#fff',
     color: active ? '#0064ff' : '#5f5e5a',
     fontWeight: active ? 700 : 400,
-    fontSize: 13,
+    fontSize: 14,
     cursor: 'pointer',
     fontFamily: 'inherit',
   };
@@ -94,16 +98,31 @@ function chipStyle(active) {
 
 export default function MyProductList() {
   const navigate = useNavigate();
-  const [filter, setFilter]   = useState(null);
-  const [page, setPage]       = useState(1);
-  const [toast, setToast]     = useState('');
+  const [filter, setFilter]       = useState(null);
+  const [subFilter, setSubFilter] = useState('');
+  const [draftOnly, setDraftOnly] = useState(false);
+  const [page, setPage]           = useState(1);
+  const [toast, setToast]         = useState('');
   const [confirmTarget, setConfirmTarget] = useState(null);
 
-  const { data, isLoading, isError, refetch } = useMyProducts(page, 10, filter);
+  const activeFilterType = draftOnly
+    ? 'DRAFT'
+    : filter === 'CLOSED' && subFilter
+    ? subFilter
+    : filter;
+
+  const { data, isLoading, isError, refetch } = useMyProducts(page, 10, activeFilterType);
   const list       = data?.list       ?? [];
   const totalPages = data?.totalPages ?? 1;
 
-  const handleFilterChange = (value) => { setFilter(value); setPage(1); };
+  const handleFilterChange = (value) => {
+    setFilter(value);
+    setSubFilter('');
+    setPage(1);
+  };
+
+  const handleSubFilterChange = (value) => { setSubFilter(value); setPage(1); };
+  const handleDraftToggle = () => { setDraftOnly(prev => !prev); setPage(1); };
 
   const handleDeleteConfirm = async () => {
     const { prdSn } = confirmTarget;
@@ -128,18 +147,45 @@ export default function MyProductList() {
 
   return (
     <>
-      {/* 필터 칩 */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-        {FILTERS.map((f) => (
-          <button
-            key={String(f.value)}
-            type="button"
-            onClick={() => handleFilterChange(f.value)}
-            style={chipStyle(filter === f.value)}
-          >
-            {f.label}
-          </button>
-        ))}
+      {/* 필터 행 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+        {/* 좌측: 필터 칩 */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', flex: 1 }}>
+          {FILTERS.map((f) => (
+            <button
+              key={String(f.value)}
+              type="button"
+              onClick={() => handleFilterChange(f.value)}
+              style={chipStyle(!draftOnly && filter === f.value)}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        {/* 우측: 종료 콤보박스 + 임시저장 토글 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: draftOnly ? '#0064ff' : '#5f5e5a', cursor: 'pointer', userSelect: 'none' }}>
+            <input
+              type="checkbox"
+              checked={draftOnly}
+              onChange={handleDraftToggle}
+              style={{ accentColor: '#0064ff', width: 15, height: 15, cursor: 'pointer' }}
+            />
+            임시저장만 보기
+          </label>
+          {filter === 'CLOSED' && !draftOnly && (
+            <select
+              value={subFilter}
+              onChange={e => handleSubFilterChange(e.target.value)}
+              style={{ fontSize: 13, padding: '4px 8px', borderRadius: 6, border: '1px solid #d1d0cc', cursor: 'pointer', fontFamily: 'inherit' }}
+            >
+              {CLOSED_SUB_FILTERS.map(s => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+          )}
+        </div>
       </div>
 
       {list.length === 0 ? (
@@ -179,18 +225,17 @@ export default function MyProductList() {
               return (
                 <div key={p.prdSn} className="list-row">
                   <div className="history-entry-main">
-                    <div style={{ flex: '0 0 80px', width: 80, height: 80, border: '1px solid #f0efec', borderRadius: 8, background: '#e5e4df', overflow: 'hidden' }}>
+                    <div style={{ flex: '0 0 120px', width: 120, height: 120, border: '1px solid #f0efec', borderRadius: 8, background: '#e5e4df', overflow: 'hidden' }}>
                       {p.prdImgUrl && (
                         <img src={toImageUrl(p.prdImgUrl)} alt={p.prdNm} style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }} />
                       )}
                     </div>
                     <div className="history-row-title">
                       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                        <span className="badge badge-goods">판매</span>
                         <span className={`badge ${badgeClass}`}>{badgeLabel}</span>
                       </div>
                       <h4>{p.prdNm}</h4>
-                      <p className="muted" style={{ fontSize: 13 }}>
+                      <p className="muted" style={{ fontSize: 15 }}>
                         시작가 {fmtPrice(p.prdStartAmt)}
                         {p.prdIbyAmt != null && ` · 즉시구매 ${fmtPrice(p.prdIbyAmt)}`}
                         {` · ${TRADE_LABEL[p.prdTrdMethodCd] ?? p.prdTrdMethodCd}`}
@@ -200,7 +245,12 @@ export default function MyProductList() {
                   </div>
 
                   <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                    {isActive && (
+                    {p.tradeSn && (
+                      <button type="button" onClick={() => navigate(`/trades/${p.tradeSn}/seller`)} className="btn btn-sm btn-primary">
+                        거래 관리
+                      </button>
+                    )}
+                    {!p.tradeSn && isActive && (
                       <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`)} className="btn btn-sm btn-primary">
                         판매 관리
                       </button>
@@ -210,12 +260,12 @@ export default function MyProductList() {
                         경매 설정
                       </button>
                     )}
-                    {isEnded && (
+                    {!p.tradeSn && isEnded && (
                       <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`)} className="btn btn-sm btn-ghost">
                         판매 기록
                       </button>
                     )}
-                    {(isDraft || isEnded) && (
+                    {(isDraft || isEnded) && !p.tradeSn && p.aucStatusCd !== 'AUCC0003' && (
                       <button type="button" onClick={() => setConfirmTarget({ prdSn: p.prdSn, prdNm: p.prdNm })} className="btn btn-sm btn-danger">
                         삭제
                       </button>

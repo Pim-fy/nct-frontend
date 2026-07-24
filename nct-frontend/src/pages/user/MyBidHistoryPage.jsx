@@ -117,7 +117,7 @@ function chipStyle(active) {
     background: active ? '#e5efff' : '#fff',
     color: active ? '#0064ff' : '#5f5e5a',
     fontWeight: active ? 700 : 400,
-    fontSize: 13,
+    fontSize: 14,
     cursor: 'pointer',
     fontFamily: 'inherit',
   };
@@ -192,7 +192,7 @@ function BidHistoryTab() {
                 <div key={item.bidSn} className="list-row">
                   {/* 썸네일 + 정보 */}
                   <div className="history-entry-main">
-                    <div style={{ flex: '0 0 80px', width: 80, height: 80, border: '1px solid #f0efec', borderRadius: 8, background: '#e5e4df', overflow: 'hidden' }}>
+                    <div style={{ flex: '0 0 88px', width: 88, height: 88, border: '1px solid #f0efec', borderRadius: 8, background: '#e5e4df', overflow: 'hidden' }}>
                       {item.thumbnailUrl
                         ? <img src={item.thumbnailUrl} alt={item.auctionTitle ?? `경매 #${item.aucSn}`} style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }} />
                         : null}
@@ -205,7 +205,7 @@ function BidHistoryTab() {
                         {isWon  && <span className="badge badge-teal">거래진행중</span>}
                       </div>
                       <h4>{item.auctionTitle ?? `경매 #${item.aucSn}`}</h4>
-                      <p className="muted" style={{ fontSize: 13 }}>{getBidDescription(item)}</p>
+                      <p className="muted" style={{ fontSize: 14 }}>{getBidDescription(item)}</p>
                     </div>
                   </div>
 

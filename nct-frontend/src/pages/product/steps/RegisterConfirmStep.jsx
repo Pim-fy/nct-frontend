@@ -2,10 +2,34 @@
 // Step 2: 등록 전 상품정보·경매조건 요약 확인 + 최종 동의
 // Props: form, agreed, setAgreed, images, selectedCat, selectedTrade, endDt
 export default function RegisterConfirmStep({ form, agreed, setAgreed, images, selectedCat, selectedTrade, endDt }) {
+  const thumb = images[0]?.url;
   return (
     <div>
-      <h3>등록 전 확인</h3>
-      <div className="grid-2" style={{ marginBottom: 20 }}>
+      <div className="card" style={{ background: '#fafaf8', marginBottom: 20 }}>
+        <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 600, color: '#5f5e5a' }}>미리보기</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <div style={{ width: 80, height: 80, borderRadius: 8, background: '#e5e4df', flexShrink: 0, overflow: 'hidden' }}>
+            {thumb
+              ? <img src={thumb} alt="대표이미지" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 28 }}>📦</span>
+            }
+          </div>
+          <div>
+            <h4 style={{ margin: '0 0 6px' }}>{form.prdNm || '상품명 미입력'}</h4>
+            <p className="muted" style={{ margin: '0 0 4px', fontSize: 13 }}>
+              {selectedCat?.catNm || '카테고리 미선택'} · {selectedTrade?.label || '—'}
+            </p>
+            <p className="muted" style={{ margin: '0 0 4px', fontSize: 14 }}>
+              시작가 {form.prdStartAmt ? Number(form.prdStartAmt).toLocaleString() + '원' : '—'}
+              {form.prdIbyAmt ? ` · 즉시구매 ${Number(form.prdIbyAmt).toLocaleString()}원` : ''}
+            </p>
+            <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+              종료 {endDt ? `${endDt.getFullYear()}.${endDt.getMonth()+1}.${endDt.getDate()} ${String(endDt.getHours()).padStart(2,'0')}:${String(endDt.getMinutes()).padStart(2,'0')}` : '—'}
+            </p>
+          </div>
+        </div>
+      </div>
+      <div className="grid-2" style={{ margin: '20px 0' }}>
         <div className="card">
           <h4>상품 정보 (PRODUCT)</h4>
           <table>
@@ -16,10 +40,7 @@ export default function RegisterConfirmStep({ form, agreed, setAgreed, images, s
                 ['거래 방식', selectedTrade?.label || '—'],
                 ['이미지', `${images.length}장 등록됨`],
               ].map(([k, v]) => (
-                <tr key={k}>
-                  <th>{k}</th>
-                  <td>{v}</td>
-                </tr>
+                <tr key={k}><th>{k}</th><td>{v}</td></tr>
               ))}
             </tbody>
           </table>
@@ -35,10 +56,7 @@ export default function RegisterConfirmStep({ form, agreed, setAgreed, images, s
                 ['경매 기간', `${form.durationDays}일`],
                 ['종료 예정', endDt ? endDt.toLocaleDateString('ko-KR') : '—'],
               ].map(([k, v]) => (
-                <tr key={k}>
-                  <th>{k}</th>
-                  <td>{v}</td>
-                </tr>
+                <tr key={k}><th>{k}</th><td>{v}</td></tr>
               ))}
             </tbody>
           </table>
