@@ -196,7 +196,7 @@ export default function MobileLandingSections() {
               onClick={() => scrollCarousel(auctionScrollRef, -1)}
               className="flex size-[32px] items-center justify-center"
             >
-              <img src={arrowDark} alt="이전" className="size-[32px] object-contain rotate-180" />
+              <img src={arrowDark} alt="이전" className="size-[20px] object-contain rotate-180" />
             </button>
             <button
               type="button"
@@ -204,7 +204,7 @@ export default function MobileLandingSections() {
               onClick={() => scrollCarousel(auctionScrollRef, 1)}
               className="flex size-[32px] items-center justify-center"
             >
-              <img src={arrowDark} alt="다음" className="size-[32px] object-contain" />
+              <img src={arrowDark} alt="다음" className="size-[20px] object-contain" />
             </button>
           </div>
         </div>
@@ -239,7 +239,7 @@ export default function MobileLandingSections() {
               onClick={() => scrollCarousel(serviceScrollRef, -1)}
               className="flex size-[32px] items-center justify-center"
             >
-              <img src={arrowWhite} alt="이전" className="size-[32px] object-contain rotate-180" />
+              <img src={arrowWhite} alt="이전" className="size-[20px] object-contain rotate-180" />
             </button>
             <button
               type="button"
@@ -247,7 +247,7 @@ export default function MobileLandingSections() {
               onClick={() => scrollCarousel(serviceScrollRef, 1)}
               className="flex size-[32px] items-center justify-center"
             >
-              <img src={arrowWhite} alt="다음" className="size-[32px] object-contain" />
+              <img src={arrowWhite} alt="다음" className="size-[20px] object-contain" />
             </button>
           </div>
         </div>
