@@ -130,41 +130,42 @@ export default function ReviewWritePage() {
     <div className="container mt-[50px] mb-[50px]">
       <h1 className="mb-5 text-2xl font-bold text-black">리뷰작성</h1>
 
-      <div className="rounded-2xl border border-[#e5e5e5] bg-white p-8">
+      <div className="rounded-2xl border border-[#e5e5e5] bg-white p-[15px] md:p-5 lg:p-8">
         {/* 상단 2열: 아이템 정보(좌) + 사진 첨부(우) / 모바일: 단일 열(사진은 별점 아래) */}
         <div className="flex flex-col md:flex-row gap-8">
           {/* 좌: 아이템 정보 + 안내 + 별점 */}
           <div className="flex flex-col flex-1">
-            <div className="flex gap-4">
+            {/* 모바일: 썸네일 위, 정보 아래 (세로+중앙) / 태블릿+: 가로 */}
+            <div className="flex flex-col items-center gap-4 md:flex-row md:items-start">
               <div className="size-[129px] shrink-0 overflow-hidden rounded-[10px] border border-[#d9d9d9]">
                 {resolvedItem.thumbnail && (
                   <img src={resolvedItem.thumbnail} alt={resolvedItem.title} className="size-full object-cover" />
                 )}
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 text-center md:text-left">
                 <span
                   className="mb-2 inline-block rounded border bg-white px-2.5 py-1 text-sm"
                   style={{ borderColor: dealTypeStyle.color, color: dealTypeStyle.color }}
                 >
                   {dealTypeStyle.label}
                 </span>
-                <h2 className="truncate text-xl font-bold text-black">{resolvedItem.title}</h2>
-                <p className="mt-1 text-[15px] text-[#4e4e4e]">
-                  <span className="font-bold">{resolvedItem.partyLabel}</span>{"  "}{resolvedItem.partyName}
-                </p>
-                <p className="text-[15px] text-[#4e4e4e]">
-                  <span className="font-bold">완료일</span>{"  "}{resolvedItem.completedDate}
-                </p>
+                <h2 className="text-xl font-bold text-black">{resolvedItem.title}</h2>
+                <div className="mt-1 flex flex-wrap gap-x-4 justify-center md:justify-start text-[15px] text-[#4e4e4e]">
+                  <p><span className="font-bold">{resolvedItem.partyLabel}</span>{"  "}{resolvedItem.partyName}</p>
+                  <p><span className="font-bold">완료일</span>{"  "}{resolvedItem.completedDate}</p>
+                </div>
               </div>
             </div>
 
-            <p className="mt-6 text-[15px] text-[#4e4e4e]">
+            <p className="mt-6 text-[15px] text-[#4e4e4e] text-center md:text-left">
               리뷰는 1거래 1회만 작성 가능하며 경매/서비스 거래 유형은 자동으로 구분됩니다.
             </p>
 
             <div className="mt-8">
-              <p className="mb-3 text-lg font-bold text-black">상품에 만족하셨나요?</p>
-              <StarRating value={rating} onChange={setRating} />
+              <p className="mb-3 text-lg font-bold text-black text-center md:text-left">상품에 만족하셨나요?</p>
+              <div className="flex justify-center md:justify-start">
+                <StarRating value={rating} onChange={setRating} />
+              </div>
             </div>
           </div>
 
@@ -191,9 +192,9 @@ export default function ReviewWritePage() {
             </div>
 
             {photos.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-3">
+              <div className="mt-4 flex gap-2">
                 {photos.map((p, index) => (
-                  <div key={p.previewUrl} className="relative size-[126px] shrink-0 overflow-hidden rounded-[10px] border border-[#d9d9d9]">
+                  <div key={p.previewUrl} className="relative flex-1 max-w-[126px] aspect-square overflow-hidden rounded-[10px] border border-[#d9d9d9]">
                     <img src={p.previewUrl} alt={`첨부 이미지 ${index + 1}`} className="size-full object-cover" />
                     <button
                       type="button"
