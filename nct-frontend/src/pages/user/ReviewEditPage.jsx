@@ -6,7 +6,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Camera, X } from "lucide-react";
+import { X } from "lucide-react";
+import cameraIcon from "@assets/img/camera.png";
 import StarRating from "@components/review/StarRating";
 import { updateReview } from "@api/reviewApi";
 import { toast } from "@utils/common";
@@ -50,7 +51,7 @@ export default function ReviewEditPage() {
         <button
           type="button"
           onClick={() => navigate("/user/reviews")}
-          className="mt-6 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-dark"
+          className="btn btn-primary mt-6"
         >
           리뷰작성 목록으로
         </button>
@@ -115,71 +116,80 @@ export default function ReviewEditPage() {
   };
 
   return (
-    <div className="mx-auto max-w-[1200px] px-4 py-10">
+    <div className="container mt-[50px] mb-[50px]">
       <h1 className="mb-5 text-2xl font-bold text-black">리뷰수정</h1>
 
-      <div className="rounded-2xl border border-[#e5e5e5] bg-white p-8">
-        {/* 리뷰 대상 정보 */}
-        <div className="flex gap-4">
-          <div className="size-[129px] shrink-0 overflow-hidden rounded-[10px] border border-[#d9d9d9]">
-            {item.thumbnail && (
-              <img src={item.thumbnail} alt={item.title} className="size-full object-cover" />
+      <div className="rounded-2xl border border-[#e5e5e5] bg-white p-[15px] md:p-5 lg:p-8">
+        {/* 상단 2열: 아이템 정보(좌) + 사진 첨부(우) / 모바일: 단일 열(사진은 별점 아래) */}
+        <div className="flex flex-col md:flex-row gap-8">
+          {/* 좌: 아이템 정보 + 별점 */}
+          <div className="flex flex-col flex-1">
+            {/* 모바일: 썸네일 위, 정보 아래 (세로+중앙) / 태블릿+: 가로 */}
+            <div className="flex flex-col items-center gap-4 md:flex-row md:items-start">
+              <div className="size-[129px] shrink-0 overflow-hidden rounded-[10px] border border-[#d9d9d9]">
+                {item.thumbnail && (
+                  <img src={item.thumbnail} alt={item.title} className="size-full object-cover" />
+                )}
+              </div>
+              <div className="min-w-0 text-center md:text-left">
+                <span
+                  className="mb-2 inline-block rounded border bg-white px-2.5 py-1 text-sm"
+                  style={{ borderColor: dealTypeStyle.color, color: dealTypeStyle.color }}
+                >
+                  {dealTypeStyle.label}
+                </span>
+                <h2 className="text-xl font-bold text-black">{item.title}</h2>
+              </div>
+            </div>
+
+            <div className="mt-8">
+              <p className="mb-3 text-lg font-bold text-black text-center md:text-left">상품에 만족하셨나요?</p>
+              <div className="flex justify-center md:justify-start">
+                <StarRating value={rating} onChange={setRating} />
+              </div>
+            </div>
+          </div>
+
+          {/* 우: 사진 첨부 */}
+          <div className="flex-1">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              hidden
+              onChange={handleFilesSelected}
+            />
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={existingPhotoCount + photos.length >= MAX_PHOTOS}
+                className="btn btn-ghost disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <img src={cameraIcon} alt="" className="size-[22px] object-contain" />
+                사진 첨부하기 ({existingPhotoCount + photos.length}/{MAX_PHOTOS}장, 기존 {existingPhotoCount}장 포함)
+              </button>
+            </div>
+
+            {photos.length > 0 && (
+              <div className="mt-4 flex gap-2">
+                {photos.map((p, index) => (
+                  <div key={p.previewUrl} className="relative flex-1 max-w-[126px] aspect-square overflow-hidden rounded-[10px] border border-[#d9d9d9]">
+                    <img src={p.previewUrl} alt={`첨부 이미지 ${index + 1}`} className="size-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePhoto(index)}
+                      aria-label="사진 삭제"
+                      className="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
-          <div className="min-w-0">
-            <span
-              className="mb-2 inline-block rounded border bg-white px-2.5 py-1 text-sm"
-              style={{ borderColor: dealTypeStyle.color, color: dealTypeStyle.color }}
-            >
-              {dealTypeStyle.label}
-            </span>
-            <h2 className="truncate text-xl font-bold text-black">{item.title}</h2>
-          </div>
-        </div>
-
-        {/* 별점 */}
-        <div className="mt-8">
-          <p className="mb-3 text-lg font-bold text-black">상품에 만족하셨나요?</p>
-          <StarRating value={rating} onChange={setRating} />
-        </div>
-
-        {/* 사진 첨부 */}
-        <div className="mt-8">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            hidden
-            onChange={handleFilesSelected}
-          />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={existingPhotoCount + photos.length >= MAX_PHOTOS}
-            className="flex w-full items-center justify-center gap-2 rounded border border-[#bcbcbc] bg-white py-4 text-lg font-bold text-black disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Camera size={22} />
-            사진 첨부하기 ({existingPhotoCount + photos.length}/{MAX_PHOTOS}장, 기존 {existingPhotoCount}장 포함)
-          </button>
-
-          {photos.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-3">
-              {photos.map((p, index) => (
-                <div key={p.previewUrl} className="relative size-[126px] shrink-0 overflow-hidden rounded-[10px] border border-[#d9d9d9]">
-                  <img src={p.previewUrl} alt={`첨부 이미지 ${index + 1}`} className="size-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => handleRemovePhoto(index)}
-                    aria-label="사진 삭제"
-                    className="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* 리뷰 내용 */}
@@ -204,7 +214,7 @@ export default function ReviewEditPage() {
             type="button"
             onClick={handleSubmit}
             disabled={submitting}
-            className="w-[200px] rounded bg-primary py-3 text-base font-bold text-white hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
+            className="btn btn-primary w-[200px] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting ? "수정 중..." : "수정 완료"}
           </button>

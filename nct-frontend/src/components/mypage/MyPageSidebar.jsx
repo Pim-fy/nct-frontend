@@ -32,7 +32,7 @@ const GENERAL_MENU_ITEMS = [
   },
   { key: "wishlist", label: "관심 상품",   type: "todo" },
   { key: "chat",     label: "채팅",        type: "section" },
-  { key: "wallet",   label: "포인트 지갑", type: "route", to: "/user/point" },
+  { key: "wallet",   label: "포인트 지갑", type: "section" },
 ];
 
 const PROVIDER_MENU_ITEMS = [
@@ -42,7 +42,7 @@ const PROVIDER_MENU_ITEMS = [
   { key: "service-trade",     label: "서비스 거래",   type: "todo" },
   { key: "settlement",        label: "정산 관리",     type: "route", to: "/user/settlement" },
   { key: "service-chat",      label: "서비스 채팅",   type: "todo" },
-  { key: "wallet",            label: "포인트 지갑",   type: "route", to: "/user/point" },
+  { key: "wallet",            label: "포인트 지갑",   type: "section" },
   { key: "approval-category", label: "승인 카테고리", type: "todo" },
 ];
 

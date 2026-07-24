@@ -19,6 +19,7 @@ import MyBidHistoryPage from "@pages/user/MyBidHistoryPage";
 import MyActiveAuctionPage from "@pages/user/MyActiveAuctionPage";
 import TradeHistory from "@pages/trade/TradeHistory";
 import MyProductList from "@components/product/MyProductList";
+import PointWalletPage from "@pages/user/point/PointWalletPage";
 import { useAuth } from "@hooks/useAuth";
 import { confirm } from "@utils/common";
 import { isProviderAccount, MYPAGE_MODE_EVENT } from "@utils/providerMode";
@@ -28,6 +29,7 @@ const MYPAGE_SECTION_QUERY_VALUES = new Set([
   "auction-bids",
   "auction-sales",
   "chat",
+  "wallet",
 ]);
 
 export default function MyPage({
@@ -117,8 +119,10 @@ export default function MyPage({
             />
           )}
           {activeSection === "auction-sales" && <MyProductList />}
+          {activeSection === "wallet" && <PointWalletPage embedded />}
           {/* 기존 경로로 진입한 경우에도 입찰 내역을 안전하게 표시한다. */}
           {activeSection === "auction-history" && <MyBidHistoryPage />}
+          {activeSection === "wallet" && <PointWalletPage embedded />}
           {/* 개발 환경에서는 거래내역과 동일한 미리보기 채팅 데이터를 사용한다. */}
           {activeSection === "chat" && (
             selectedChatTradeId ? (
