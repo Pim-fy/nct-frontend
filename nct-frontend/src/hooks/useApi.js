@@ -44,6 +44,8 @@ export const useApi = () => {
     fetchMe : ()      => execute(() => api.get('/auth/me')),
     login   : (creds) => execute(() => api.post('/auth/login', creds), false),
     logout  : ()      => execute(() => api.post('/auth/logout'), false),
+    // 모드 전환 (F-PROV-008): to = 'USER' | 'SERVICE'. 새 토큰은 서버가 쿠키로 내려줘서 별도 저장 불필요.
+    switchMode: (to)  => execute(() => api.post('/auth/mode', null, { params: { to } })),
     // ==========================================
 
     // 프로필 ===================================
