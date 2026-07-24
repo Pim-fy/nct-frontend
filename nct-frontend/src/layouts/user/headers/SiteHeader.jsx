@@ -198,7 +198,7 @@ const SiteHeader = () => {
           <nav ref={navRef} className="hidden md:flex items-center gap-8">
             <div
               className="relative"
-              onMouseEnter={() => setCategoryHovered(true)}
+              onMouseEnter={() => { if (!servicePinned && !customerPinned) setCategoryHovered(true); }}
               onMouseLeave={() => setCategoryHovered(false)}
             >
               <button
@@ -235,7 +235,7 @@ const SiteHeader = () => {
 
             <div
               className="relative"
-              onMouseEnter={() => setServiceHovered(true)}
+              onMouseEnter={() => { if (!categoryPinned && !customerPinned) setServiceHovered(true); }}
               onMouseLeave={() => setServiceHovered(false)}
             >
               <button
@@ -271,7 +271,7 @@ const SiteHeader = () => {
             </div>
             <div
               className="relative"
-              onMouseEnter={() => setCustomerHovered(true)}
+              onMouseEnter={() => { if (!categoryPinned && !servicePinned) setCustomerHovered(true); }}
               onMouseLeave={() => setCustomerHovered(false)}
             >
               <button
