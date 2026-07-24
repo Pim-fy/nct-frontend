@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { assets } from "./assets";
 import ArrowIcon from "./ArrowIcon";
+import arrowWhite from "@assets/img/arrowWhite.png";
 
 const SEARCH_TAGS = [
   { label: "#마감임박경매", left: 723, width: 112 },
@@ -152,8 +153,8 @@ export default function HeroSection() {
         </div>
 
         <div className="absolute contents left-[436px] top-[668px]">
-          <ArrowIcon direction="left" className="left-[436px] top-[668px]" barClassName="bg-white" onClick={goBannerPrev} />
-          <ArrowIcon direction="right" className="left-[1485px] top-[668px]" barClassName="bg-white" onClick={goBannerNext} />
+          <ArrowIcon direction="left" className="left-[436px] top-[668px]" imgSrc={arrowWhite} onClick={goBannerPrev} />
+          <ArrowIcon direction="right" className="left-[1485px] top-[668px]" imgSrc={arrowWhite} onClick={goBannerNext} />
         </div>
       </div>
     </section>
