@@ -23,10 +23,17 @@ export function useAuctionStream(auctionId) {
       queryClient.invalidateQueries({ queryKey: ['point', 'balance'] });
     };
 
+    eventSource.onopen = () => {
+      queryClient.refetchQueries({
+        queryKey: ['point', 'balance'],
+        type: 'active',
+      });
+    };
     eventSource.addEventListener('auction-updated', handleAuctionUpdated);
     eventSource.onerror = () => {};
 
     return () => {
+      eventSource.onopen = null;
       eventSource.removeEventListener('auction-updated', handleAuctionUpdated);
       eventSource.close();
     };
