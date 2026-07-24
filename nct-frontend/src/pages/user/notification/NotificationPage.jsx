@@ -76,7 +76,7 @@ const NotificationPage = () => {
     filter === '전체' ? DOMAINS : [FILTER_TO_DOMAIN[filter]];
 
   return (
-    <div className="max-w-[1200px] mx-auto px-4 py-10">
+    <div className="container" style={{ paddingTop: '25px', paddingBottom: '25px' }}>
       {/* 타이틀 */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 m-0">알림</h1>

@@ -14,11 +14,11 @@ export const markNotificationRead = (id) =>
 export const markAllNotificationsRead = () =>
   api.patch('/notification/read-all').then(res => res.data);
 
-/** 알림 수신 설정 조회 (F-COM-012) — data: { aucInapp, aucEmail, trdInapp, trdEmail, svcInapp, svcEmail }
- *  저장한 적 없는 회원은 서버가 기본값(전부 true)을 내려준다 */
+/** 알림 수신 설정 조회 (F-COM-012 세분화, 2026-07-24) — data: { events: [{eventCode, domain, label, inapp, email}, ...] }
+ *  저장한 적 없는 이벤트는 서버가 기본값(true)을 내려준다 */
 export const getNotificationSettings = () =>
   api.get('/notification/settings').then(res => res.data);
 
-/** 알림 수신 설정 저장 — 6개 값을 전부 보내는 전체 덮어쓰기 계약 */
+/** 알림 수신 설정 저장 — 이벤트 13개를 전부 보내는 전체 덮어쓰기 계약 */
 export const saveNotificationSettings = (settings) =>
   api.put('/notification/settings', settings).then(res => res.data);

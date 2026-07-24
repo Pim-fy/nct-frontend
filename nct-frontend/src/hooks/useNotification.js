@@ -42,7 +42,7 @@ export function useMarkAllRead() {
   });
 }
 
-/** 알림 수신 설정 조회 (F-COM-012) — data: { aucInapp, ..., svcEmail } (전부 boolean) */
+/** 알림 수신 설정 조회 (F-COM-012 세분화, 2026-07-24) — data: { events: [{eventCode, domain, label, inapp, email}, ...] } */
 export function useNotificationSettings() {
   return useQuery({
     queryKey: ['notification', 'settings'],
@@ -51,7 +51,7 @@ export function useNotificationSettings() {
   });
 }
 
-/** 알림 수신 설정 저장 — mutate({ aucInapp, ..., svcEmail }) */
+/** 알림 수신 설정 저장 — mutate({ events: [{eventCode, inapp, email}, ...] }) */
 export function useSaveNotificationSettings() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -53,8 +53,11 @@ const SUBMIT_ACTIONS = {
  * - 환전(F-PAY-012): 방식 확정(D-026, 2026-07-17)에 따라 실연동 — 신청 즉시 서버가 차감하고
  *   실제 입금은 관리자 수동 처리라 "며칠 내 지급 예정" 안내만 나간다. 계좌는 서버가
  *   회원의 등록 계좌를 직접 읽는다 (프론트는 금액만 보냄)
+ * - embedded=true면 마이페이지 사이드바 안에 끼워 넣어지는 것이라, 자체 최대너비·여백 없이
+ *   내용만 렌더한다(마이페이지 쪽 컨테이너 여백을 그대로 쓴다). 단독 라우트(/user/point)로
+ *   접근할 때만 자체 컨테이너를 갖는다 (2026-07-24, 팀전달_마이페이지_포인트지갑사이드바_수정요청)
  */
-const PointWalletPage = () => {
+const PointWalletPage = ({ embedded = false } = {}) => {
   const [openModal, setOpenModal] = useState(null); // null | 'charge' | 'exchange' | 'convert'
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -154,7 +157,10 @@ const PointWalletPage = () => {
   };
 
   return (
-    <div className="max-w-[1200px] mx-auto px-4 py-10">
+    <div
+      className={embedded ? undefined : 'container'}
+      style={embedded ? undefined : { paddingTop: '25px', paddingBottom: '25px' }}
+    >
       {/* 페이지 타이틀 + 액션 */}
       <div className="flex items-end justify-between gap-4 mb-6">
         <h1 className="text-3xl font-bold text-gray-900 m-0">포인트 지갑</h1>
