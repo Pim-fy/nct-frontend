@@ -59,10 +59,13 @@ export default function ReviewEditPage() {
   }
 
   const dealTypeStyle = DEAL_TYPE_STYLE[item.dealType] ?? DEAL_TYPE_STYLE.goods;
+  // 서버는 "기존 사진 + 이번에 추가하는 사진"을 합산해서 5장 제한을 검사한다(PUT은 추가만 되는 구조) —
+  // 프론트도 새로 고르는 사진 개수만 세면 안 되고 기존 사진 수를 같이 반영해야 한다.
+  const existingPhotoCount = item.photos?.length ?? 0;
 
   const handleFilesSelected = (e) => {
     const files = Array.from(e.target.files ?? []);
-    const remainingSlots = MAX_PHOTOS - photos.length;
+    const remainingSlots = MAX_PHOTOS - existingPhotoCount - photos.length;
     if (remainingSlots <= 0) return;
 
     const nextPhotos = files.slice(0, remainingSlots).map((file) => ({
@@ -153,11 +156,11 @@ export default function ReviewEditPage() {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={photos.length >= MAX_PHOTOS}
+            disabled={existingPhotoCount + photos.length >= MAX_PHOTOS}
             className="flex w-full items-center justify-center gap-2 rounded border border-[#bcbcbc] bg-white py-4 text-lg font-bold text-black disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Camera size={22} />
-            사진 첨부하기 (최대 5장)
+            사진 첨부하기 ({existingPhotoCount + photos.length}/{MAX_PHOTOS}장, 기존 {existingPhotoCount}장 포함)
           </button>
 
           {photos.length > 0 && (

@@ -6,9 +6,11 @@
 // - 여기서는 같은 데이터(카드 컴포넌트도 재사용)를 절대좌표 없이 진짜 반응형(세로 스택 +
 //   가로 스크롤 캐러셀)으로 다시 배치한다. 모바일 전용 디자인 시안은 따로 없어서
 //   "요즘 반응형 스타일"에 맞춰 통상적인 패턴(세로 스택, 스와이프 카드, 아이콘 가로 스크롤)으로 구성했다.
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
+import arrowDark from "@assets/img/arrowDark.png";
+import arrowWhite from "@assets/img/arrowWhite.png";
 import { assets } from "./assets";
 import AuctionCard from "./AuctionCard";
 import ServiceRequestCard from "./ServiceRequestCard";
@@ -22,6 +24,12 @@ export default function MobileLandingSections() {
   const navigate = useNavigate();
   const [keyword, setKeyword] = useState("");
   const [activeTab, setActiveTab] = useState("new");
+  const auctionScrollRef = useRef(null);
+  const serviceScrollRef = useRef(null);
+
+  const scrollCarousel = (ref, dir) => {
+    ref.current?.scrollBy({ left: dir * 311, behavior: "smooth" });
+  };
 
   const runSearch = (value) => {
     const trimmed = value.trim();
@@ -164,23 +172,46 @@ export default function MobileLandingSections() {
 
       {/* 경매 (탭 + 가로 스와이프 카드) */}
       <section>
-        <div className="mb-3 flex gap-2 px-4">
-          <button
-            type="button"
-            onClick={() => setActiveTab("new")}
-            className={`rounded-full px-4 py-2 text-[15px] font-bold transition-colors ${activeTab === "new" ? "bg-[#0064ff] text-white" : "bg-[#ebebeb] text-[#969696]"}`}
-          >
-            신규 경매
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("closing")}
-            className={`rounded-full px-4 py-2 text-[15px] font-bold transition-colors ${activeTab === "closing" ? "bg-[#0064ff] text-white" : "bg-[#ebebeb] text-[#969696]"}`}
-          >
-            마감임박 경매
-          </button>
+        <div className="mb-3 flex items-center justify-between px-4">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab("new")}
+              className={`rounded-full px-4 py-2 text-[15px] font-bold transition-colors ${activeTab === "new" ? "bg-[#0064ff] text-white" : "bg-[#ebebeb] text-[#969696]"}`}
+            >
+              신규 경매
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("closing")}
+              className={`rounded-full px-4 py-2 text-[15px] font-bold transition-colors ${activeTab === "closing" ? "bg-[#0064ff] text-white" : "bg-[#ebebeb] text-[#969696]"}`}
+            >
+              마감임박 경매
+            </button>
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              aria-label="이전"
+              onClick={() => scrollCarousel(auctionScrollRef, -1)}
+              className="flex size-[32px] items-center justify-center"
+            >
+              <img src={arrowDark} alt="이전" className="size-[20px] object-contain rotate-180" />
+            </button>
+            <button
+              type="button"
+              aria-label="다음"
+              onClick={() => scrollCarousel(auctionScrollRef, 1)}
+              className="flex size-[32px] items-center justify-center"
+            >
+              <img src={arrowDark} alt="다음" className="size-[20px] object-contain" />
+            </button>
+          </div>
         </div>
-        <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div
+          ref={auctionScrollRef}
+          className="flex snap-x snap-mandatory gap-4 overflow-x-auto pl-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [scroll-padding-left:16px]"
+        >
           {auctionItems.map((item) => (
             <div key={item.id} className="snap-start">
               <AuctionCard item={item} onClick={() => navigate(`/auction/${item.id}`)} />
@@ -196,11 +227,34 @@ export default function MobileLandingSections() {
 
       {/* 신규 서비스 요청 (가로 스와이프 카드) */}
       <section
-        className="relative overflow-hidden py-8"
+        className="relative overflow-hidden pt-8 pb-8"
         style={{ backgroundImage: `linear-gradient(rgba(0,0,0,0.45),rgba(0,0,0,0.45)), url(${assets.glennCarstensPeters})`, backgroundSize: "cover", backgroundPosition: "center" }}
       >
-        <h2 className="mb-3 px-4 text-[18px] font-bold text-white">신규 서비스 요청</h2>
-        <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="mb-3 flex items-center justify-between px-4">
+          <h2 className="text-[18px] font-bold text-white">신규 서비스 요청</h2>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              aria-label="이전"
+              onClick={() => scrollCarousel(serviceScrollRef, -1)}
+              className="flex size-[32px] items-center justify-center"
+            >
+              <img src={arrowWhite} alt="이전" className="size-[20px] object-contain rotate-180" />
+            </button>
+            <button
+              type="button"
+              aria-label="다음"
+              onClick={() => scrollCarousel(serviceScrollRef, 1)}
+              className="flex size-[32px] items-center justify-center"
+            >
+              <img src={arrowWhite} alt="다음" className="size-[20px] object-contain" />
+            </button>
+          </div>
+        </div>
+        <div
+          ref={serviceScrollRef}
+          className="flex snap-x snap-mandatory gap-4 overflow-x-auto pl-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [scroll-padding-left:16px]"
+        >
           {SERVICE_REQUEST_ITEMS.map((item) => (
             <div key={item.id} className="snap-start">
               <ServiceRequestCard item={item} onClick={() => navigate(`/service/${item.id}`)} />

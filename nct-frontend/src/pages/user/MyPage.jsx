@@ -36,7 +36,7 @@ export default function MyPage({
 }) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [mode, setMode] = useState("general"); // 'general' | 'provider'
   const requestedSection = searchParams.get("section");
   const [activeSection, setActiveSection] = useState(
@@ -50,7 +50,11 @@ export default function MyPage({
   // 메뉴를 옮기면 열려 있던 마이페이지 채팅 대화를 닫는다.
   const handleSelectSection = (section) => {
     setActiveSection(section);
-
+    if (MYPAGE_SECTION_QUERY_VALUES.has(section)) {
+      setSearchParams({ section });
+    } else {
+      setSearchParams({});
+    }
     if (section !== "chat") {
       setSelectedChatTradeId("");
     }

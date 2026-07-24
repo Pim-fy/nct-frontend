@@ -9,6 +9,7 @@ import {
   placeAuctionBid,
   removeAuctionFavorite,
 } from '@api/auctionApi';
+import { toImageUrl } from '@api/fileApi';
 import { useAuth } from '@hooks/useAuth';
 import { useAuctionStream } from '@hooks/useAuctionStream';
 import { useAuctionViewTracking } from '@hooks/useAuctionViewTracking';
@@ -30,6 +31,7 @@ import {
   parseAmount,
   resolveAuctionResultLabel,
 } from './utils/auctionFormatters';
+import { addRecentItem } from '@components/landing/QuickActions';
 import '@assets/css/auction.css';
 
 const AuctionDetailPage = () => {
@@ -145,6 +147,19 @@ const AuctionDetailPage = () => {
       applyFavoriteStatus(favoriteStatusQuery.data);
     }
   }, [applyFavoriteStatus, favoriteStatusQuery.data]);
+
+  useEffect(() => {
+    if (!auction) return;
+    const repImage = auction.images?.find((img) => img.representative) ?? auction.images?.[0];
+    const imageUrl = repImage?.path ? toImageUrl(repImage.path) : null;
+    if (!imageUrl) return;
+    addRecentItem({
+      id: auctionId,
+      image: imageUrl,
+      title: auction.title,
+      url: `/auction/${auctionId}`,
+    });
+  }, [auction, auctionId]);
 
   useEffect(() => {
     if (!toastMessage) return undefined;
