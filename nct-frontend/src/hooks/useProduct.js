@@ -6,10 +6,10 @@ import { useQuery } from '@tanstack/react-query';
 import { getMyProducts } from '../api/productApi';
 
 /** 내 판매 목록 (페이지네이션) — data: { list, page, size, total, totalPages } */
-export function useMyProducts(page = 1, size = 10) {
+export function useMyProducts(page = 1, size = 10, filterType = null) {
   return useQuery({
-    queryKey: ['products', 'my', page, size],
-    queryFn: () => getMyProducts(page, size),
+    queryKey: ['products', 'my', page, size, filterType],
+    queryFn: () => getMyProducts(page, size, filterType),
     select: (res) => res.data,
   });
 }

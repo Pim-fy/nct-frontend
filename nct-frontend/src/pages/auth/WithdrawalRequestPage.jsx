@@ -6,6 +6,8 @@
 import { useState } from 'react';
 import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { requestWithdrawal, confirmWithdrawal } from '@api/memberApi';
+import AuthPageContainer from '@components/auth/AuthPageContainer';
+import AuthCard from '@components/auth/AuthCard';
 
 export default function WithdrawalRequestPage() {
   const [searchParams] = useSearchParams();
@@ -54,8 +56,8 @@ function RequestForm() {
   const handleResend = () => handleSubmit();
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-110 bg-white rounded-2xl shadow-lg px-8 py-10">
+    <AuthPageContainer>
+      <AuthCard className="max-w-110">
         <h1 className="text-xl font-bold text-center mb-2">회원 탈퇴</h1>
         <p className="text-sm text-gray-500 text-center mb-8">
           정지된 계정은 로그인 없이 이메일 확인을 거쳐 탈퇴를 진행합니다.
@@ -138,8 +140,8 @@ function RequestForm() {
             ← 로그인으로 돌아가기
           </Link>
         </div>
-      </div>
-    </div>
+      </AuthCard>
+    </AuthPageContainer>
   );
 }
 
@@ -171,8 +173,8 @@ function ConfirmStep({ token }) {
 
   if (invalid) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-110 bg-white rounded-2xl shadow-lg px-8 py-10 text-center">
+      <AuthPageContainer>
+        <AuthCard className="max-w-110 text-center">
           <div className="w-14 h-14 mx-auto rounded-full bg-red-50 flex items-center justify-center text-2xl mb-4">⚠️</div>
           <h1 className="text-lg font-bold mb-2">링크가 유효하지 않습니다</h1>
           <p className="text-sm text-gray-500 mb-8">
@@ -184,15 +186,15 @@ function ConfirmStep({ token }) {
           >
             다시 요청하기
           </Link>
-        </div>
-      </div>
+        </AuthCard>
+      </AuthPageContainer>
     );
   }
 
   if (done) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-110 bg-white rounded-2xl shadow-lg px-8 py-10 text-center">
+      <AuthPageContainer>
+        <AuthCard className="max-w-110 text-center">
           <div className="w-14 h-14 mx-auto rounded-full bg-green-50 flex items-center justify-center text-2xl mb-4">✅</div>
           <h1 className="text-lg font-bold mb-2">탈퇴가 완료되었습니다</h1>
           <p className="text-sm text-gray-500 mb-8">그동안 이용해 주셔서 감사합니다.</p>
@@ -202,14 +204,14 @@ function ConfirmStep({ token }) {
           >
             로그인 화면으로
           </Link>
-        </div>
-      </div>
+        </AuthCard>
+      </AuthPageContainer>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-110 bg-white rounded-2xl shadow-lg px-8 py-10 text-center">
+    <AuthPageContainer>
+      <AuthCard className="max-w-110 text-center">
         <h1 className="text-xl font-bold mb-2">회원 탈퇴 확인</h1>
         <p className="text-sm text-gray-500 mb-8">
           아래 버튼을 누르면 계정 탈퇴가 즉시 진행되며 되돌릴 수 없습니다.
@@ -222,7 +224,7 @@ function ConfirmStep({ token }) {
         >
           {loading ? '처리 중...' : '탈퇴 확정하기'}
         </button>
-      </div>
-    </div>
+      </AuthCard>
+    </AuthPageContainer>
   );
 }

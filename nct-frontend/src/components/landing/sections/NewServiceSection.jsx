@@ -41,7 +41,7 @@ export default function NewServiceSection() {
       </div>
       <div className="absolute bg-[rgba(0,0,0,0.3)] h-[684px] left-0 top-[1903px] w-[1920px]" />
 
-      <p className="absolute font-['Noto_Sans_KR:Bold'] font-bold leading-[normal] left-[168px] text-[25px] text-white top-[1967px] tracking-[-2px] whitespace-nowrap">
+      <p className="absolute font-bold leading-[normal] left-[168px] text-[25px] text-white top-[1967px] tracking-[-2px] whitespace-nowrap">
         신규 서비스 요청
       </p>
 
@@ -58,7 +58,7 @@ export default function NewServiceSection() {
               style={{ width: VIEWPORT_WIDTH }}
             >
               {SERVICE_REQUEST_ITEMS.slice(p * PAGE_SIZE, p * PAGE_SIZE + PAGE_SIZE).map((item) => (
-                <ServiceRequestCard key={item.key} item={item} onClick={() => navigate(`/services/${item.id}`)} />
+                <ServiceRequestCard key={item.key} item={item} onClick={() => navigate(`/service/${item.id}`)} />
               ))}
             </div>
           ))}
@@ -68,7 +68,7 @@ export default function NewServiceSection() {
       <ArrowIcon direction="left" className="left-[111px] top-[2196px]" barClassName="bg-white" onClick={goPrev} disabled={page === 0} />
       <ArrowIcon direction="right" className="left-[1800px] top-[2196px]" barClassName="bg-white" onClick={goNext} disabled={page >= totalPages - 1} />
 
-      <MoreButton left={895} top={2439} variant="dark" onClick={() => navigate("/services")} />
+      <MoreButton left={895} top={2439} variant="dark" onClick={() => navigate("/service")} />
     </section>
   );
 }

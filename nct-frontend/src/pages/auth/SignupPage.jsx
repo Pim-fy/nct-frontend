@@ -3,6 +3,7 @@
 // 단일 가입 화면에서 약관·이메일 인증·최종 가입의 서버 상태를 순서대로 연결한다.
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import DaumPostcode from 'react-daum-postcode';
 import {
   checkLoginId,
   checkNickname,
@@ -31,12 +32,17 @@ const INITIAL_FORM = {
   passwordConfirm: '',
   email: '',
   telno: '',
+  address: '',
+  detailAddress: '',
+  zip: '',
+  bankName: '',
+  accountNo: '',
 };
 
 const INITIAL_AVAILABILITY = {
   checkedValue: '',
   state: 'idle',
-  message: '중복 확인 전',
+  message: '',
 };
 
 const INITIAL_VERIFICATION = {
@@ -151,6 +157,10 @@ const validateTelno = (value) => (
   TELNO_PATTERN.test(value.trim()) ? '' : '010-1234-5678 형식으로 입력해주세요.'
 );
 
+const validateOptionalLength = (value, maxLength, fieldName) => (
+  value.trim().length <= maxLength ? '' : `${fieldName}은 ${maxLength}자 이하로 입력해주세요.`
+);
+
 const responseMessage = (error, fallback) => error.response?.data?.message ?? fallback;
 
 const toFieldErrors = (error) => {
@@ -195,6 +205,7 @@ const SignupPage = () => {
   const [submission, setSubmission] = useState({ send: false, verify: false, signup: false });
   const [clockNow, setClockNow] = useState(() => Date.now());
   const [signupSucceeded, setSignupSucceeded] = useState(false);
+  const [addressSearchOpen, setAddressSearchOpen] = useState(false);
   // @ai_generated: 입력값·새 발송이 바뀌면 늦은 인증 API 응답을 무시한다.
   const availabilityRequestRef = useRef({ loginId: 0, nickname: 0 });
   const verificationRequestRef = useRef(0);
@@ -208,6 +219,27 @@ const SignupPage = () => {
     password: validatePassword,
     email: validateEmail,
     telno: validateTelno,
+    // @ai_generated: 선택 입력은 비워둘 수 있지만, 부분 저장으로 인한 불완전한 회원 데이터를 막는다.
+    address: (value) => {
+      const lengthError = validateOptionalLength(value, 200, '주소');
+      if (lengthError) return lengthError;
+      return value.trim() && !form.zip.trim() ? '주소 검색으로 우편번호를 함께 입력해주세요.' : '';
+    },
+    detailAddress: (value) => validateOptionalLength(value, 200, '상세주소'),
+    zip: (value) => {
+      if (value.trim() && !/^\d{5}$/.test(value.trim())) return '우편번호는 5자리 숫자여야 합니다.';
+      return value.trim() && !form.address.trim() ? '주소 검색으로 주소를 함께 입력해주세요.' : '';
+    },
+    bankName: (value) => {
+      const lengthError = validateOptionalLength(value, 100, '은행명');
+      if (lengthError) return lengthError;
+      return value.trim() && !form.accountNo.trim() ? '계좌번호를 함께 입력해주세요.' : '';
+    },
+    accountNo: (value) => {
+      const lengthError = validateOptionalLength(value, 50, '계좌번호');
+      if (lengthError) return lengthError;
+      return value.trim() && !form.bankName.trim() ? '은행명을 함께 입력해주세요.' : '';
+    },
     passwordConfirm: (value) => {
       if (!value) return '비밀번호 확인을 입력해주세요.';
       return form.password === value ? '' : '비밀번호가 일치하지 않습니다.';
@@ -276,6 +308,20 @@ const SignupPage = () => {
 
   const handleFieldBlur = (field) => () => {
     setTouched((previous) => ({ ...previous, [field]: true }));
+  };
+
+  // @ai_generated: 카카오 우편번호 선택값만 주소·우편번호에 반영하고, 상세주소는 사용자가 별도로 입력한다.
+  const handleAddressComplete = (data) => {
+    const address = data.roadAddress || data.jibunAddress || '';
+    const zip = data.zonecode || '';
+    if (!address || !zip) return;
+
+    setForm((previous) => ({ ...previous, address, zip }));
+    setTouched((previous) => ({ ...previous, address: true, zip: true }));
+    clearServerError('address');
+    clearServerError('zip');
+    setSignupMessage('');
+    setAddressSearchOpen(false);
   };
 
   const handleAgreementChange = (key) => (event) => {
@@ -510,6 +556,11 @@ const SignupPage = () => {
         nickname: form.nickname.trim(),
         email: form.email.trim().toLowerCase(),
         telno: form.telno.trim(),
+        address: form.address.trim(),
+        detailAddress: form.detailAddress.trim(),
+        zip: form.zip.trim(),
+        bankName: form.bankName.trim(),
+        accountNo: form.accountNo.trim(),
         agreements: AGREEMENT_ITEMS.map((agreement) => ({
           agreementTypeCode: agreement.code,
           agreed: agreements[agreement.key],
@@ -526,6 +577,9 @@ const SignupPage = () => {
 
   const renderAvailabilityMessage = (field) => {
     const status = currentAvailability(field);
+    // @ai_generated: 초기 안내와 Field가 이미 표시한 입력 오류는 중복해 렌더링하지 않는다.
+    if (status.state === 'idle' || (status.state === 'error' && fieldError(field))) return null;
+
     return (
       <span aria-live="polite" className={`min-h-5 text-xs ${AVAILABILITY_CLASS[status.state]}`}>
         {status.message}
@@ -553,17 +607,20 @@ const SignupPage = () => {
     || (verification.status === 'sent' && !verificationExpired && !resendAvailable);
 
   return (
-    <div className="flex min-h-screen flex-col bg-white text-[#1a1a18]">
-      <header className="flex h-15 items-center border-b border-[#f0efec] bg-white px-6">
-        <Link className="text-xl font-bold text-primary no-underline" to="/">
-          Ksteam
-        </Link>
-        <span className="ml-4 text-sm text-[#5f5e5a]">회원가입</span>
-      </header>
-
-      <main className="mx-auto w-[90%] max-w-[1800px] flex-1 py-7">
-        <div className="mb-4 mt-7">
-          <h1 className="m-0 text-[28px]">회원가입</h1>
+    <>
+      {/* @ai_generated: 넓은 가입 그리드는 AuthLayout 본문 안에서 기존 폭과 배치를 유지한다. */}
+      <section className="mx-auto w-[90%] max-w-[1800px] flex-1 py-7 text-[#1a1a18]">
+        {/* @ai_generated: 가입 동작은 입력 카드 전체의 바깥 우하단에 배치한다. */}
+        <div className="mx-auto mb-4 mt-7 flex max-w-[1480px] flex-col gap-3 min-[769px]:flex-row min-[769px]:items-start min-[769px]:justify-between">
+          <div className="flex flex-col gap-1.5">
+            <h1 className="m-0 text-[28px]">회원가입</h1>
+            {!signupSucceeded ? (
+              // @ai_generated: 가입 전 안내는 제목 바로 아래에 두고 상태 변화도 계속 알린다.
+              <p aria-live="polite" className={`m-0 text-left text-xs ${signupMessage ? 'text-[#a32d2d]' : 'text-[#888780]'}`}>
+                {signupMessage || (verifiedForCurrentEmail ? '가입 완료를 누르면 계정이 생성됩니다.' : '필수 약관 동의와 이메일 인증을 완료하면 가입할 수 있습니다.')}
+              </p>
+            ) : null}
+          </div>
         </div>
 
         {signupSucceeded ? (
@@ -575,15 +632,16 @@ const SignupPage = () => {
             </button>
           </section>
         ) : (
-          <section className="rounded-2xl border border-[#f0efec] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,.04),0_2px_8px_rgba(0,0,0,.06)]">
-            <div className="mx-auto grid max-w-[1120px] gap-10 min-[769px]:grid-cols-2">
-              <section aria-labelledby="agreement-title">
+          <>
+          <div className="mx-auto grid max-w-[1480px] gap-6">
+              {/* @ai_generated: 약관은 상단 전체폭, 입력 정보는 하단 동등한 2열 카드로 그룹화한다. */}
+              <section aria-labelledby="agreement-title" className="rounded-2xl border border-[#f0efec] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,.04),0_2px_8px_rgba(0,0,0,.06)]">
                 <h2 className="m-0 text-lg" id="agreement-title">약관 동의</h2>
                 <label className="mt-3.5 inline-flex items-center gap-2 text-sm text-[#1a1a18]">
                   <input checked={allAgreed} onChange={handleAllAgreements} type="checkbox" />
                   전체 동의
                 </label>
-                <div className="mt-3.5 grid gap-2.5">
+                <div className="mt-3.5 grid gap-2.5 lg:grid-cols-3">
                   {AGREEMENT_ITEMS.map((agreement) => (
                     <AgreementRow
                       agreement={agreement}
@@ -599,7 +657,9 @@ const SignupPage = () => {
                 </p>
               </section>
 
-              <section aria-labelledby="signup-info-title">
+              <div className="relative">
+                <div className="grid items-start gap-6 lg:grid-cols-2">
+              <section aria-labelledby="signup-info-title" className="rounded-2xl border border-[#f0efec] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,.04),0_2px_8px_rgba(0,0,0,.06)]">
                 <h2 className="m-0 text-lg" id="signup-info-title">기본 정보</h2>
                 <div className="mt-3.5 grid gap-3.5">
                   <Field error={fieldError('loginId')} label="아이디" required>
@@ -732,6 +792,15 @@ const SignupPage = () => {
                     ) : null}
                   </section>
 
+                </div>
+              </section>
+
+              <section aria-labelledby="additional-info-title" className="rounded-2xl border border-[#f0efec] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,.04),0_2px_8px_rgba(0,0,0,.06)]">
+                <div className="flex items-center gap-2">
+                  <h2 className="m-0 text-lg" id="additional-info-title">추가 정보</h2>
+                  <span className="rounded-full bg-[#f0f0ee] px-2 py-0.5 text-xs text-[#5f5e5a]">모두 선택</span>
+                </div>
+                <div className="mt-3.5 grid gap-3.5">
                   <Field error={fieldError('telno')} label="전화번호(선택)">
                     <input
                       className={INPUT_CLASS}
@@ -742,38 +811,88 @@ const SignupPage = () => {
                       value={form.telno}
                     />
                   </Field>
+
+                  <Field error={fieldError('address') || fieldError('zip')} label="주소(선택)">
+                    <div className="grid gap-2 min-[769px]:grid-cols-[minmax(0,1fr)_auto]">
+                      <input
+                        className={INPUT_CLASS}
+                        placeholder="주소 검색을 눌러주세요."
+                        readOnly
+                        value={form.address}
+                      />
+                      <button className={BUTTON_OUTLINE} onClick={() => setAddressSearchOpen(true)} type="button">
+                        주소 검색
+                      </button>
+                    </div>
+                    <input
+                      className={INPUT_CLASS}
+                      placeholder="우편번호"
+                      readOnly
+                      value={form.zip}
+                    />
+                  </Field>
+
+                  <Field error={fieldError('detailAddress')} label="상세주소(선택)">
+                    <input
+                      className={INPUT_CLASS}
+                      disabled={!form.address}
+                      onBlur={handleFieldBlur('detailAddress')}
+                      onChange={handleFieldChange('detailAddress')}
+                      placeholder={form.address ? '동·호수 등 상세주소' : '주소 검색 후 입력할 수 있습니다.'}
+                      value={form.detailAddress}
+                    />
+                  </Field>
+
+                  <Field error={fieldError('bankName')} label="은행명(선택)">
+                    <input
+                      className={INPUT_CLASS}
+                      onBlur={handleFieldBlur('bankName')}
+                      onChange={handleFieldChange('bankName')}
+                      placeholder="은행명을 자유롭게 입력해주세요."
+                      value={form.bankName}
+                    />
+                  </Field>
+
+                  <Field error={fieldError('accountNo')} label="계좌번호(선택)">
+                    <input
+                      className={INPUT_CLASS}
+                      onBlur={handleFieldBlur('accountNo')}
+                      onChange={handleFieldChange('accountNo')}
+                      placeholder="계좌번호를 입력해주세요."
+                      value={form.accountNo}
+                    />
+                  </Field>
                 </div>
               </section>
+              </div>
+                <div className="mt-6 flex justify-end lg:absolute lg:bottom-0 lg:right-0 lg:mt-0">
+                  <button className={BUTTON_PRIMARY} disabled={submission.signup} onClick={handleSignup} type="button">
+                    {submission.signup ? '가입 처리 중...' : '가입 완료'}
+                  </button>
+                </div>
+              </div>
             </div>
-
-            <div className="mt-7 flex flex-col items-end gap-2">
-              <button className={BUTTON_PRIMARY} disabled={submission.signup} onClick={handleSignup} type="button">
-                {submission.signup ? '가입 처리 중...' : '가입 완료'}
-              </button>
-              <p aria-live="polite" className={`m-0 text-xs ${signupMessage ? 'text-[#a32d2d]' : 'text-[#888780]'}`}>
-                {signupMessage || (verifiedForCurrentEmail ? '가입 완료를 누르면 계정이 생성됩니다.' : '필수 약관 동의와 이메일 인증을 완료하면 가입할 수 있습니다.')}
-              </p>
-            </div>
-          </section>
+          </>
         )}
-      </main>
+      </section>
+
+      {addressSearchOpen ? (
+        <div aria-modal="true" className="fixed inset-0 z-[200] flex items-center justify-center bg-black/35 p-4" role="dialog">
+          <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#f0efec] px-5 py-4">
+              <h2 className="m-0 text-lg">주소 검색</h2>
+              <button aria-label="주소 검색 닫기" className={BUTTON_GHOST} onClick={() => setAddressSearchOpen(false)} type="button">
+                닫기
+              </button>
+            </div>
+            <DaumPostcode autoClose={false} onComplete={handleAddressComplete} />
+          </div>
+        </div>
+      ) : null}
 
       {selectedAgreement ? <AgreementModal agreement={selectedAgreement} onClose={() => setOpenAgreement(null)} /> : null}
 
-      <footer className="mt-auto border-t-[40px] border-white bg-[#1a1a18] px-4 py-7 text-[#d3d1c7]">
-        <div className="mx-auto flex w-[90%] max-w-[1800px] flex-wrap items-center justify-between gap-3">
-          <Link aria-label="에누리컷 홈" className="inline-flex" to="/">
-          </Link>
-          <div className="flex flex-wrap items-center gap-3 text-[13px]">
-            <a className="hover:text-white" href="#소개">서비스 소개</a>
-            <a className="hover:text-white" href="#약관">이용약관</a>
-            <a className="hover:text-white" href="#개인정보">개인정보처리방침</a>
-            <a className="hover:text-white" href="#문의">문의</a>
-          </div>
-          <span className="text-[13px]">© 2026 에누리컷</span>
-        </div>
-      </footer>
-    </div>
+    </>
   );
 };
 

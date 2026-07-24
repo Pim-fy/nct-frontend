@@ -55,7 +55,7 @@ export default function MobileLandingSections() {
               <button
                 key={tag}
                 type="button"
-                onClick={() => { setKeyword(tag.replace(/^#/, "")); runSearch(tag.replace(/^#/, "")); }}
+                onClick={() => setKeyword(tag.replace(/^#/, ""))}
                 className="shrink-0 rounded-full bg-white/20 border border-white/40 px-3 py-1.5 text-[13px] text-white backdrop-blur-sm"
               >
                 {tag}
@@ -131,7 +131,7 @@ export default function MobileLandingSections() {
             <button
               key={item.label}
               type="button"
-              onClick={() => navigate("/services")}
+              onClick={() => navigate("/service")}
               className="flex shrink-0 flex-col items-center justify-center gap-2 rounded-2xl border border-[rgba(0,0,0,0.1)] bg-white p-4 size-[92px]"
             >
               <img src={item.image} alt="" className="h-[36px] w-[36px] object-contain" />
@@ -203,12 +203,12 @@ export default function MobileLandingSections() {
         <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {SERVICE_REQUEST_ITEMS.map((item) => (
             <div key={item.id} className="snap-start">
-              <ServiceRequestCard item={item} onClick={() => navigate(`/services/${item.id}`)} />
+              <ServiceRequestCard item={item} onClick={() => navigate(`/service/${item.id}`)} />
             </div>
           ))}
         </div>
         <div className="mt-2 flex justify-center">
-          <button type="button" onClick={() => navigate("/services")} className="rounded-full border border-white/40 px-5 py-2 text-[13px] text-white">
+          <button type="button" onClick={() => navigate("/service")} className="rounded-full border border-white/40 px-5 py-2 text-[13px] text-white">
             더보기 ›
           </button>
         </div>

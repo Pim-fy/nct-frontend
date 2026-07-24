@@ -54,7 +54,7 @@ const NOTICES = ["입찰가가 갱신되었습니다.", "관심 상품 마감 10
 
 function StatCard({ color, icon, label, value, unit, meta, onMore }) {
   return (
-    <div className="relative rounded-[10px] text-white p-5 mb-5 mt-5" style={{ backgroundColor: color }}>
+    <div className="relative rounded-[10px] text-white p-5 md:mb-5 md:mt-5" style={{ backgroundColor: color }}>
       <button
         type="button"
         onClick={onMore}
@@ -132,7 +132,11 @@ function ListPanel({ title, items }) {
   );
 }
 
-export default function MyPageDashboard({ user, onRequestProviderSwitch }) {
+export default function MyPageDashboard({
+  user,
+  onRequestProviderSwitch,
+  onOpenAuctionBids,
+}) {
   const navigate = useNavigate();
   const nickname = user?.nickname || "고객";
   const email = user?.email || "";
@@ -156,7 +160,8 @@ export default function MyPageDashboard({ user, onRequestProviderSwitch }) {
       value: "21",
       unit: "건",
       meta: "입찰중 10건   ㅣ   진행중 9건   ㅣ   완료 2건",
-      onMore: () => navigate("/my-bids"),
+      // 경매 거래 카드의 + 버튼은 구매 거래가 표시되는 입찰 내역을 연다.
+      onMore: onOpenAuctionBids,
     },
     {
       key: "service",

@@ -1,12 +1,11 @@
 // src/pages/user/MyBidHistoryPage.jsx
-// 경매 거래내역 (마이페이지 사이드바 "경매 거래내역") — 내 입찰 내역 / 내 판매 내역 두 탭
-// 디자인 기준: 2026-07-20 사용자 제공 스크린샷
+// 마이페이지 사이드바 "상품 입찰 내역" 섹션 — 내 입찰 내역 전용
+// 판매 내역은 MyProductList 컴포넌트로 분리 (마이페이지 "상품 판매 내역" 사이드바 항목)
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Pagination from '@components/common/Pagination';
 import { toImageUrl } from '@api/fileApi';
 import { useMyBidHistory } from '@hooks/useBid';
-import { useMyProducts } from '@hooks/useProduct';
 
 const BID_STATUS_META = {
   HIGHEST:  { label: '최고입찰', badge: 'badge-primary' },
@@ -24,16 +23,7 @@ const BID_STATUS_FILTERS = [
   { value: 'CANCELED', label: '취소' },
 ];
 
-// PRDC0001=임시저장, PRDC0002=경매 진행중, PRDC0003=종료, PRDC0004=삭제
-const PRODUCT_STATUS_META = {
-  PRDC0001: { label: '임시저장', badge: 'badge-outline-gray' },
-  PRDC0002: { label: '진행중',   badge: 'badge-outline-orange' },
-  PRDC0003: { label: '완료',     badge: 'badge-outline-gray' },
-  PRDC0004: { label: '삭제',     badge: 'badge-danger' },
-};
-
-const BID_PAGE_SIZE  = 10;
-const SALE_PAGE_SIZE = 10;
+const BID_PAGE_SIZE = 10;
 
 // ─── 날짜 헬퍼 ───────────────────────────────────────────────────────────────
 
@@ -127,7 +117,7 @@ function chipStyle(active) {
     background: active ? '#e5efff' : '#fff',
     color: active ? '#0064ff' : '#5f5e5a',
     fontWeight: active ? 700 : 400,
-    fontSize: 13,
+    fontSize: 14,
     cursor: 'pointer',
     fontFamily: 'inherit',
   };
@@ -202,7 +192,7 @@ function BidHistoryTab() {
                 <div key={item.bidSn} className="list-row">
                   {/* 썸네일 + 정보 */}
                   <div className="history-entry-main">
-                    <div style={{ flex: '0 0 80px', width: 80, height: 80, border: '1px solid #f0efec', borderRadius: 8, background: '#e5e4df', overflow: 'hidden' }}>
+                    <div style={{ flex: '0 0 88px', width: 88, height: 88, border: '1px solid #f0efec', borderRadius: 8, background: '#e5e4df', overflow: 'hidden' }}>
                       {item.thumbnailUrl
                         ? <img src={item.thumbnailUrl} alt={item.auctionTitle ?? `경매 #${item.aucSn}`} style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }} />
                         : null}
@@ -215,7 +205,7 @@ function BidHistoryTab() {
                         {isWon  && <span className="badge badge-teal">거래진행중</span>}
                       </div>
                       <h4>{item.auctionTitle ?? `경매 #${item.aucSn}`}</h4>
-                      <p className="muted" style={{ fontSize: 13 }}>{getBidDescription(item)}</p>
+                      <p className="muted" style={{ fontSize: 14 }}>{getBidDescription(item)}</p>
                     </div>
                   </div>
 
@@ -252,127 +242,18 @@ function BidHistoryTab() {
   );
 }
 
-// ─── 내 판매 내역 탭 ──────────────────────────────────────────────────────────
-
-function SalesHistoryTab() {
-  const navigate = useNavigate();
-  const [page, setPage]   = useState(1);
-  const { data, isLoading, isError, refetch } = useMyProducts(page, SALE_PAGE_SIZE);
-
-  const list       = data?.list       ?? [];
-  const totalPages = data?.totalPages ?? 1;
-
-  const handleManage = (prdSn) => navigate(`/product/${prdSn}/seller`);
-
-  if (isLoading) return <p className="muted" style={{ textAlign: 'center', padding: '40px 0' }}>불러오는 중...</p>;
-  if (isError) {
-    return (
-      <div style={{ textAlign: 'center', padding: '40px 0' }}>
-        <p className="mb-2" style={{ color: '#a32d2d' }}>판매 내역을 불러오지 못했습니다.</p>
-        <button type="button" onClick={() => refetch()} className="btn btn-outline">다시 시도</button>
-      </div>
-    );
-  }
-  if (list.length === 0) {
-    return (
-      <div style={{ textAlign: 'center', padding: '64px 0' }}>
-        <p className="muted">등록한 판매 내역이 없습니다.</p>
-        <button type="button" onClick={() => navigate('/product/register')} className="btn btn-primary" style={{ marginTop: 16 }}>
-          경매 등록하기
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <div className="history-list">
-        {list.map((p) => {
-          const statusMeta = PRODUCT_STATUS_META[p.prdStatusCd] ?? { label: p.prdStatusCd, badge: 'badge-gray' };
-          const isActive   = p.prdStatusCd === 'PRDC0002';
-          const isDraft    = p.prdStatusCd === 'PRDC0001';
-          const isDone     = p.prdStatusCd === 'PRDC0003';
-
-          return (
-            <div key={p.prdSn} className="list-row">
-              <div className="history-entry-main">
-                <div style={{ flex: '0 0 80px', width: 80, height: 80, border: '1px solid #f0efec', borderRadius: 8, background: '#e5e4df', overflow: 'hidden' }}>
-                  {p.prdImgUrl && <img src={toImageUrl(p.prdImgUrl)} alt={p.prdNm} style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }} />}
-                </div>
-                <div className="history-row-title">
-                  <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                    <span className={`badge ${statusMeta.badge}`}>{statusMeta.label}</span>
-                  </div>
-                  <h4>{p.prdNm}</h4>
-                  <p className="muted" style={{ fontSize: 13 }}>
-                    시작가 {fmtPrice(p.prdStartAmt)}
-                    {p.prdIbyAmt != null && ` · 즉시구매 ${fmtPrice(p.prdIbyAmt)}`}
-                    {p.prdRegDt && ` · ${fmtDate(p.prdRegDt)}`}
-                  </p>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                {isActive && (
-                  <>
-                    <button type="button" onClick={() => handleManage(p.prdSn)} className="btn btn-sm btn-primary">판매관리</button>
-                    <button type="button" onClick={() => handleManage(p.prdSn)} className="btn btn-sm btn-danger">취소 요청</button>
-                  </>
-                )}
-                {isDone && (
-                  <button type="button" onClick={() => handleManage(p.prdSn)} className="btn btn-sm btn-ghost">판매기록</button>
-                )}
-                {isDraft && (
-                  <button type="button" onClick={() => handleManage(p.prdSn)} className="btn btn-sm btn-ghost">경매 설정</button>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <div className="pagination">
-        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-      </div>
-    </>
-  );
-}
-
 // ─── 페이지 루트 ──────────────────────────────────────────────────────────────
 
 export default function MyBidHistoryPage() {
-  const [activeTab, setActiveTab] = useState('bids');
-  const { data: bids }      = useMyBidHistory();
-  const { data: salesPage } = useMyProducts(1, SALE_PAGE_SIZE);
-
-  const tabs = [
-    { key: 'bids',  label: '내 입찰 내역', count: bids?.length ?? 0 },
-    { key: 'sales', label: '내 판매 내역', count: salesPage?.total ?? 0 },
-  ];
-
   return (
-    <div className="absolute contents left-[448px] top-[167px]">
+    <div>
       <div className="page-title">
         <div>
-          <h1>경매 거래내역</h1>
-          <p className="muted">참여한 입찰과 등록한 판매 내역을 확인합니다.</p>
+          <h1>상품 입찰 내역</h1>
+          <p className="muted">참여한 입찰 내역을 확인합니다.</p>
         </div>
       </div>
-
-      {/* 탭 — pill 스타일 */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setActiveTab(tab.key)}
-            style={tabStyle(activeTab === tab.key)}
-          >
-            {tab.label} {tab.count}
-          </button>
-        ))}
-      </div>
-
-      {activeTab === 'bids' ? <BidHistoryTab /> : <SalesHistoryTab />}
+      <BidHistoryTab />
     </div>
   );
 }

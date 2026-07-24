@@ -22,7 +22,7 @@ export const GUIDE_FLOWS = [
     flowTitle: '서비스 요청 흐름',
     flowCopy: '서비스 요청을 공개하고 견적을 비교한 뒤 한 명의 제공자를 선택해 거래를 시작합니다.',
     targetLabel: '서비스 탐색 화면',
-    targetRoute: '/services',
+    targetRoute: '/service',
     targetOwner: '담당자 7 임시 화면',
   },
   {

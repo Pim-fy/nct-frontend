@@ -14,6 +14,8 @@ import {
 } from '@hooks/useAdminNotices';
 import './adminContentPages.css';
 
+const FAQ_TYPE_CODE = 'NTCC0008';
+
 const EMPTY_FORM = {
   typeCode: '',
   statusCode: 'NTCC0005',
@@ -21,6 +23,7 @@ const EMPTY_FORM = {
   content: '',
   postingStartAt: '',
   postingEndAt: '',
+  permanentPosting: true,
   expectedUpdatedAt: null,
   expectedRevision: null,
   pinned: false,
@@ -43,9 +46,10 @@ const formFromNotice = (notice) => ({
   content: notice.content,
   postingStartAt: toDateTimeInput(notice.postingStartAt),
   postingEndAt: toDateTimeInput(notice.postingEndAt),
+  permanentPosting: !notice.postingEndAt,
   expectedUpdatedAt: notice.updatedAt,
   expectedRevision: notice.revisionToken,
-  pinned: notice.pinned,
+  pinned: notice.typeCode === FAQ_TYPE_CODE ? false : notice.pinned,
   changeReason: '',
 });
 
@@ -75,18 +79,32 @@ const AdminNoticeFormPage = () => {
 
   const changeField = (event) => {
     const { name, value, checked, type } = event.target;
-    setDraft((current) => ({
-      ...(current ?? initialForm),
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+    setDraft((current) => {
+      const next = {
+        ...(current ?? initialForm),
+        [name]: type === 'checkbox' ? checked : value,
+      };
+
+      // 담당자 7 | F-OPS-023: 영구 게시를 선택하면 종료일을 비워 공개 필터가 계속 통과하도록 한다.
+      if (name === 'permanentPosting' && checked) {
+        next.postingEndAt = '';
+      }
+      if (name === 'typeCode' && value === FAQ_TYPE_CODE) {
+        next.pinned = false;
+      }
+      return next;
+    });
     setFeedback('');
   };
 
-  const payload = () => ({
-    ...form,
-    postingStartAt: form.postingStartAt || null,
-    postingEndAt: form.postingEndAt || null,
-  });
+  const payload = () => {
+    const { permanentPosting, ...noticeForm } = form;
+    return {
+      ...noticeForm,
+      postingStartAt: form.postingStartAt || null,
+      postingEndAt: permanentPosting ? null : form.postingEndAt || null,
+    };
+  };
 
   /** 담당자 7 | F-OPS-023: 저장 성공 시 신규 공지는 관리 목록으로, 실패 시 현재 입력 화면에 남깁니다. */
   const submit = async (event) => {
@@ -147,6 +165,7 @@ const AdminNoticeFormPage = () => {
 
   const notice = noticeQuery.data;
   const fieldsDisabled = !isEditing || isPending;
+  const isFaq = form.typeCode === FAQ_TYPE_CODE;
   const previewTitle = form.title.trim() || '공지 제목을 입력해 주세요';
   return (
     <div className="admin-content-page">
@@ -213,11 +232,24 @@ const AdminNoticeFormPage = () => {
             />
           </label>
           <label>
-            <span>게시 종료일시</span>
+            <span className="admin-notice-form__end-label">
+              게시 종료일시
+              <span className="admin-notice-form__permanent-posting">
+                <input
+                  checked={form.permanentPosting}
+                  disabled={fieldsDisabled}
+                  name="permanentPosting"
+                  onChange={changeField}
+                  type="checkbox"
+                />
+                종료일 없음
+              </span>
+            </span>
             <input
-              disabled={fieldsDisabled}
+              disabled={fieldsDisabled || form.permanentPosting}
               name="postingEndAt"
               onChange={changeField}
+              required={!form.permanentPosting}
               type="datetime-local"
               value={form.postingEndAt}
             />
@@ -250,12 +282,12 @@ const AdminNoticeFormPage = () => {
         <label className="admin-notice-form__check">
           <input
             checked={form.pinned}
-            disabled={fieldsDisabled}
+            disabled={fieldsDisabled || isFaq}
             name="pinned"
             onChange={changeField}
             type="checkbox"
           />
-          중요 공지로 등록
+          중요 공지로 등록{isFaq && ' (FAQ는 선택 불가)'}
         </label>
 
         <section className="admin-notice-form__audit">
