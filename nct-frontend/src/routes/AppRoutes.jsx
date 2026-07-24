@@ -15,6 +15,7 @@ import ProtectedRoute from './ProtectedRoute';
 import LandingLayout from '@layouts/LandingLayout';
 import UserLayout    from '@layouts/UserLayout';
 import AdminLayout   from '@layouts/AdminLayout';
+import AuthLayout    from '@layouts/AuthLayout';
 
 // ──────────────────────────────────────────
 // 공개 페이지
@@ -104,16 +105,18 @@ const AppRoutes = () => {
         <Route path="/landing" element={<LandingPage />} />
       </Route>
 
-      {/* ────────────────────────────────
-          공개 독립 페이지 (레이아웃 없음)
-      ──────────────────────────────── */}
-      <Route path="/login"           element={<LoginPage />} />
-      <Route path="/login/signup"    element={<SignupPage />} />
-      <Route path="/find-email"      element={<FindEmailPage />} />
-      <Route path="/reset-password"  element={<ResetPasswordPage />} />
-      <Route path="/withdrawal"      element={<WithdrawalRequestPage />} />
+      {/* @ai_generated: 입력형 인증 화면은 공통 헤더·푸터를 AuthLayout에서 한 번만 조립한다. */}
+      <Route element={<AuthLayout />}>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/login/signup" element={<SignupPage />} />
+        <Route path="/find-email" element={<FindEmailPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/withdrawal" element={<WithdrawalRequestPage />} />
+        <Route path="/oauth/onboarding" element={<OAuthOnboardingPage />} />
+      </Route>
+
+      {/* OAuth 콜백은 결과 처리 후 즉시 이동하는 경로이므로 레이아웃을 적용하지 않는다. */}
       <Route path="/oauth/redirect"  element={<OAuthRedirectHandler />} />
-      <Route path="/oauth/onboarding" element={<OAuthOnboardingPage />} />
       <Route path="/unauthorized"    element={<Unauthorized />} />
       <Route path="/403"             element={<Unauthorized />} />
       <Route path="/404"             element={<NotFoundPage />} />

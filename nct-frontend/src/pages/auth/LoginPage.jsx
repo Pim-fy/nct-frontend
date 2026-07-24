@@ -4,8 +4,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@hooks/useAuth';
 import BrandLogo from '@components/common/BrandLogo';
-import SiteHeader from '@layouts/user/headers/SiteHeader';
-import MainFooter from '@layouts/user/footers/MainFooter';
+import AuthPageContainer from '@components/auth/AuthPageContainer';
+import AuthCard from '@components/auth/AuthCard';
 
 // ── 소셜 로그인 버튼 데이터 ──────────────────────────────
 const SOCIAL_PROVIDERS = [
@@ -117,12 +117,11 @@ export default function LoginPage() {
 
   // ── 렌더 ─────────────────────────────────────────────
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
-      <SiteHeader />
-      <main className="flex flex-1 items-center justify-center px-4 py-10">
-        <div className="w-full max-w-110 bg-white rounded-2xl shadow-lg px-8 py-10">
+    <>
+      <AuthPageContainer>
+        <AuthCard className="max-w-110">
 
-        {/* @ai_generated: 로그인 화면은 헤더 없이 카드 중앙 로고만 표시한다. */}
+        {/* @ai_generated: 공통 헤더와 별개로 카드 중앙 브랜드 로고를 유지한다. */}
         <div className="text-center mb-8">
           <Link aria-label="에누리컷 홈" className="inline-flex" to="/">
             <BrandLogo className="brand-logo--auth" />
@@ -254,8 +253,8 @@ export default function LoginPage() {
           </div>
         </div>
 
-        </div>
-      </main>
+        </AuthCard>
+      </AuthPageContainer>
 
       {/* 정지 계정 안내 모달 (F-AUTH-011) */}
       {suspendedLoginId && (
@@ -285,7 +284,6 @@ export default function LoginPage() {
           </div>
         </div>
       )}
-      <MainFooter />
-    </div>
+    </>
   );
 }
