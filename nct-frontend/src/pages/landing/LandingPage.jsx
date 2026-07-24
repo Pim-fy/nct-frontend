@@ -45,7 +45,6 @@ const LandingPage = () => {
         <MobileLandingSections />
       </div>
 
-      {/* 플로팅 퀵 액션은 이제 SiteHeader가 모든 페이지 공용으로 렌더링한다. */}
     </>
   );
 };
