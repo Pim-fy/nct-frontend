@@ -19,6 +19,8 @@ import cursorIcon from '@assets/img/cursorIcon.png';
 import commentIcon from '@assets/img/commentIcon.png';
 import iconChat from '@assets/img/icon_chat.png';
 import iconReport from '@assets/img/icon_report.png';
+import iconMore from '@assets/img/icon_more.png';
+import iconMoreWhite from '@assets/img/icon_more_white.png';
 
 export const assets = {
   thumb1: reviewItem1,
@@ -38,4 +40,6 @@ export const assets = {
   commentIcon,
   iconChat,
   iconReport,
+  iconMore,
+  iconMoreWhite,
 };

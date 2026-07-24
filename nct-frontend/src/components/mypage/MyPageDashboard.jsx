@@ -58,10 +58,10 @@ function StatCard({ color, icon, label, value, unit, meta, onMore }) {
       <button
         type="button"
         onClick={onMore}
-        className="absolute right-4 top-4 bg-transparent border-none cursor-pointer text-white text-[20px] font-bold leading-none"
+        className="absolute right-4 top-4 bg-transparent border-none cursor-pointer"
         aria-label={`${label} 더보기`}
       >
-        +
+        <img src={assets.iconMoreWhite} alt="" className="size-[20px] object-contain" />
       </button>
       <div className="flex items-start gap-3 mb-3">
         <img src={icon} alt="" className="size-[40px] object-contain shrink-0 mt-0.5" />
@@ -91,10 +91,10 @@ function ListPanel({ title, items }) {
         <button
           type="button"
           onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
-          className="bg-transparent border-none cursor-pointer text-[#3a3a3a] text-[20px] font-bold leading-none shrink-0 ml-2"
+          className="bg-transparent border-none cursor-pointer shrink-0 ml-2"
           aria-label={`${title} 더보기`}
         >
-          +
+          <img src={assets.iconMore} alt="" className="size-[20px] object-contain opacity-40" />
         </button>
       </div>
       <div className="divide-y divide-[#e5e5e5]">
@@ -220,7 +220,7 @@ export default function MyPageDashboard({
         </div>
 
         {/* 안읽은 알림 배너 */}
-        <div className="flex-1 min-w-0  min-h-[45px] rounded-[25px] border border-[rgba(0,100,255,0.28)] bg-white flex items-center px-4 gap-2 overflow-hidden">
+        <div className="ml-auto w-full md:w-[600px] md:flex-none min-h-[45px] rounded-[25px] border border-[rgba(0,100,255,0.28)] bg-white flex items-center px-4 gap-2 overflow-hidden">
           <span className="flex items-center justify-center size-[18px] rounded-full bg-[#0064ff] text-white text-[13px] font-bold shrink-0">
             3
           </span>
@@ -236,9 +236,9 @@ export default function MyPageDashboard({
           <button
             type="button"
             onClick={() => navigate("/user/notification")}
-            className="ml-auto bg-transparent border-none cursor-pointer text-[#404040] text-[14px] font-bold shrink-0"
+            className="ml-auto bg-transparent border-none cursor-pointer shrink-0"
           >
-            +
+            <img src={assets.iconMore} alt="" className="size-[14px] object-contain opacity-40" />
           </button>
         </div>
       </div>

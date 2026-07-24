@@ -22,28 +22,34 @@ body { font-family: 'Pretendard', 'Noto Sans KR', 'Malgun Gothic', sans-serif !i
      .btn-danger:  빨간 버튼 (삭제·취소 요청 등 위험 동작)
 =========================== */
 .btn {
-  border-radius: 8px;
-  padding: 10px 20px;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 500;
-  text-decoration: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border: 1px solid transparent;
-  transition: background 0.15s ease, color 0.15s ease;
+  border: none;
+  border-radius: 8px;
+  height: 45px;
+  padding: 0 28px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  line-height: 1;
+  transition: background 0.15s, opacity 0.15s;
 }
+.btn:hover { opacity: .88; }
+.btn-sm { height: 40px; padding: 0 14px; font-size: 15px; border-radius: 5px; }
+.btn-xl { border-radius: 10px; padding: 15px 36px; font-size: 17px; font-weight: 700; }
 
-.btn-primary {  background: var(--color-primary, #0064ff);  color: #fff;  border: none;}
-.btn-primary:hover {  background: var(--color-primary-dark, #0048bf);}
-.btn-outline {  background: transparent;  color: var(--color-primary, #0064ff);  border: 1px solid var(--color-primary, #0064ff);}
-.btn-ghost {  background: transparent;  color: #5f5e5a;  border: 1px solid #e2e1dc;}
-.btn-danger {  background: #a32d2d;  color: #fff;  border: none;}
-.btn-dark {  background: #4a4a4a;  color: #fff;  border: none;}
-.btn-dark:hover {  background: #3a3a3a;}
+.btn-primary  { background: var(--color-primary, #0064ff); color: #fff; }
+.btn-primary:hover { background: var(--color-primary-dark, #0048bf); opacity: 1; }
+.btn-outline  { background: transparent; color: var(--color-primary, #0064ff); border: 1.5px solid var(--color-primary, #0064ff); }
+.btn-ghost    { background: transparent; color: #5f5e5a; border: 1.5px solid #d5d5d3; }
+.btn-danger   { background: #E63946; color: #fff; }
+.btn-dark     { background: #4A4A4A; color: #fff; }
+.btn-dark:hover { background: #3a3a3a; opacity: 1; }
+.btn-green    { background: #3DAA7A; color: #fff; }
 
 /* ===========================
    공통 배지 — ui-preview.html 기준 (pill 형태, 상태별 색 구분)
