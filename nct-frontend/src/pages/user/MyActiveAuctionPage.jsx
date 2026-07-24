@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { ChevronRight, Gavel, RefreshCw } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { toImageUrl } from '@api/fileApi';
 import Pagination from '@components/common/Pagination';
 import useCountdown from '@hooks/useCountdown';
@@ -76,8 +76,12 @@ const toLatestActiveAuctions = (items = []) => {
 
 export default function MyActiveAuctionPage() {
   const navigate = useNavigate();
-  const [statusFilter, setStatusFilter] = useState('ALL');
-  const [page, setPage] = useState(1);
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const rawFilter = searchParams.get('filter');
+  const statusFilter = FILTERS.some((f) => f.value === rawFilter) ? rawFilter : 'ALL';
+  const page = Math.max(1, Number(searchParams.get('page')) || 1);
   const {
     data,
     isLoading,
@@ -105,8 +109,20 @@ export default function MyActiveAuctionPage() {
   );
 
   const handleFilterChange = (nextFilter) => {
-    setStatusFilter(nextFilter);
-    setPage(1);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('filter', nextFilter);
+      next.set('page', '1');
+      return next;
+    });
+  };
+
+  const handlePageChange = (nextPage) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('page', String(nextPage));
+      return next;
+    });
   };
 
   if (isLoading) {
@@ -230,7 +246,7 @@ export default function MyActiveAuctionPage() {
                   <button
                     className="my-active-auction-item__action"
                     type="button"
-                    onClick={() => navigate(`/auction/${item.aucSn}`)}
+                    onClick={() => navigate(`/auction/${item.aucSn}`, { state: { from: location.pathname + location.search } })}
                   >
                     경매 상세
                     <ChevronRight size={17} />
@@ -239,7 +255,7 @@ export default function MyActiveAuctionPage() {
               );
             })}
           </div>
-          <Pagination page={currentPage} totalPages={totalPages} onPageChange={setPage} />
+          <Pagination page={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
         </>
       )}
     </section>

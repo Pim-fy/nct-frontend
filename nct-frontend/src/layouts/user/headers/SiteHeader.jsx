@@ -70,18 +70,30 @@ const SiteHeader = () => {
   const pastNotis = (notiQuery.data ?? []).filter((n) => n.read).slice(0, NOTI_PREVIEW_MAX);
   // 잔액은 조회 전(로딩·비로그인)에는 0으로 표시 — 임의 기본값이 아니라 "아직 모름"의 화면 표기
   const pointBalance = balanceQuery.data ?? { total: 0, available: 0 };
-  const [categoryOpen, setCategoryOpen] = useState(false);
-  const [serviceMenuOpen, setServiceMenuOpen] = useState(false);
+  const [categoryPinned, setCategoryPinned] = useState(false);
+  const [categoryHovered, setCategoryHovered] = useState(false);
+  const categoryOpen = categoryPinned || categoryHovered;
+
+  const [servicePinned, setServicePinned] = useState(false);
+  const [serviceHovered, setServiceHovered] = useState(false);
+  const serviceMenuOpen = servicePinned || serviceHovered;
+
+  const [customerPinned, setCustomerPinned] = useState(false);
+  const [customerHovered, setCustomerHovered] = useState(false);
+  const customerOpen = customerPinned || customerHovered;
+
   const [notiOpen, setNotiOpen] = useState(false);
   const [pointOpen, setPointOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileAuctionOpen, setMobileAuctionOpen] = useState(false);
   const [mobileServiceOpen, setMobileServiceOpen] = useState(false);
+  const [mobileCustomerOpen, setMobileCustomerOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [noticeIndex, setNoticeIndex] = useState(0);
 
   const utilRef = useRef(null);
+  const navRef = useRef(null);
 
   // 스크롤이 임계값을 넘으면(= 상단 NoticeStrip이 화면 밖으로 나가면) 헤더 중앙에 롤링 티커를 보여준다.
   useEffect(() => {
@@ -91,7 +103,7 @@ const SiteHeader = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 롤링 티커 자동 전환 (스크롤로 보이는 동안에만 굳이 돌릴 필요 없지만, 인덱스는 계속 유지해도 무해하다)
+  // 롤링 티커 자동 전환
   useEffect(() => {
     const timer = setInterval(() => {
       setNoticeIndex((i) => (i + 1) % SITE_NOTICES.length);
@@ -99,13 +111,21 @@ const SiteHeader = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // 바깥을 클릭하면 열려 있던 팝업(알림/포인트/마이페이지)을 모두 닫는다.
+  // 바깥을 클릭하면 열려 있던 팝업과 nav 드롭다운을 닫는다.
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (utilRef.current && !utilRef.current.contains(e.target)) {
         setNotiOpen(false);
         setPointOpen(false);
         setProfileOpen(false);
+      }
+      if (navRef.current && !navRef.current.contains(e.target)) {
+        setCategoryPinned(false);
+        setCategoryHovered(false);
+        setServicePinned(false);
+        setServiceHovered(false);
+        setCustomerPinned(false);
+        setCustomerHovered(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -118,6 +138,33 @@ const SiteHeader = () => {
     return () => { document.body.style.overflow = ''; };
   }, [mobileMenuOpen]);
 
+  // 클릭 시 동작:
+  // - 이미 pin 고정 상태 → pin + hover 모두 초기화해서 완전히 닫기
+  // - 닫혀 있거나 hover로만 열린 상태 → pin 고정 (hover는 유지, 마우스 떠나도 열림 유지)
+  const pinNav = (which) => {
+    const wasPinned =
+      which === 'auction' ? categoryPinned
+      : which === 'service' ? servicePinned
+      : customerPinned;
+
+    // 다른 메뉴 닫기
+    if (which !== 'auction') { setCategoryPinned(false); setCategoryHovered(false); }
+    if (which !== 'service') { setServicePinned(false); setServiceHovered(false); }
+    if (which !== 'customer') { setCustomerPinned(false); setCustomerHovered(false); }
+
+    if (wasPinned) {
+      // pin 고정 상태에서 클릭 → hover도 초기화해서 완전히 닫기
+      if (which === 'auction') { setCategoryPinned(false); setCategoryHovered(false); }
+      if (which === 'service') { setServicePinned(false); setServiceHovered(false); }
+      if (which === 'customer') { setCustomerPinned(false); setCustomerHovered(false); }
+    } else {
+      // 닫혀 있거나 hover로만 열린 상태 → pin 고정 (hover는 그대로 유지)
+      if (which === 'auction') setCategoryPinned(true);
+      if (which === 'service') setServicePinned(true);
+      if (which === 'customer') setCustomerPinned(true);
+    }
+  };
+
   // 한 팝업을 열면 나머지는 닫는다.
   const openOnly = (which) => {
     setNotiOpen(which === 'noti' ? (v) => !v : false);
@@ -129,6 +176,7 @@ const SiteHeader = () => {
     setMobileMenuOpen(false);
     setMobileAuctionOpen(false);
     setMobileServiceOpen(false);
+    setMobileCustomerOpen(false);
   };
 
   const nickname = user?.nickname || '홍길동';
@@ -147,28 +195,35 @@ const SiteHeader = () => {
           </Link>
 
           {/* 메뉴 (데스크톱) */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav ref={navRef} className="hidden md:flex items-center gap-8">
             <div
               className="relative"
-              onMouseEnter={() => setCategoryOpen(true)}
-              onMouseLeave={() => setCategoryOpen(false)}
+              onMouseEnter={() => { if (!servicePinned && !customerPinned) setCategoryHovered(true); }}
+              onMouseLeave={() => setCategoryHovered(false)}
             >
-              <Link to="/auction" className={NAV_LINK_CLASS}>
+              <button
+                type="button"
+                className={`text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${categoryPinned ? 'text-primary' : 'text-[#333333]'}`}
+                onClick={() => pinNav('auction')}
+              >
                 경매
-              </Link>
+              </button>
               {categoryOpen && (
-                // top-full(간격 0) + pt-[14px]로 "보이는 간격"만 안쪽 패딩으로 만든다.
-                // 예전처럼 바깥에 실제 14px 여백을 두면 그 사이를 지나갈 때 마우스가
-                // 래퍼 밖으로 나가버려(hover 대상이 없는 빈 공간) 드롭다운이 닫혀버렸다.
                 <div className="absolute left-0 top-full w-[161px] pt-[14px] z-50">
                   <div className="rounded-[5px] border border-[#4e4e4e] bg-white py-1 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)]">
-                    {AUCTION_CATEGORIES.map((label, i) => (
+                    <Link
+                      to="/auction"
+                      className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
+                      onClick={() => setCategoryPinned(false)}
+                    >
+                      전체보기
+                    </Link>
+                    {AUCTION_CATEGORIES.map((label) => (
                       <Link
                         key={label}
                         to={`/auction?category=${encodeURIComponent(label)}`}
-                        className={`flex items-center justify-between px-4 py-[7px] text-[16px] font-medium hover:bg-[#f9fafb] ${
-                          i === 0 ? 'bg-[#f9fafb] font-bold text-primary' : 'text-black'
-                        }`}
+                        className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
+                        onClick={() => setCategoryPinned(false)}
                       >
                         {label}
                       </Link>
@@ -180,22 +235,32 @@ const SiteHeader = () => {
 
             <div
               className="relative"
-              onMouseEnter={() => setServiceMenuOpen(true)}
-              onMouseLeave={() => setServiceMenuOpen(false)}
+              onMouseEnter={() => { if (!categoryPinned && !customerPinned) setServiceHovered(true); }}
+              onMouseLeave={() => setServiceHovered(false)}
             >
-              <Link to="/service" className={NAV_LINK_CLASS}>
+              <button
+                type="button"
+                className={`text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${servicePinned ? 'text-primary' : 'text-[#333333]'}`}
+                onClick={() => pinNav('service')}
+              >
                 서비스
-              </Link>
+              </button>
               {serviceMenuOpen && (
                 <div className="absolute left-0 top-full w-[161px] pt-[14px] z-50">
                   <div className="rounded-[5px] border border-[#4e4e4e] bg-white py-1 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)]">
-                    {SERVICE_CATEGORIES.map((label, i) => (
+                    <Link
+                      to="/service"
+                      className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
+                      onClick={() => setServicePinned(false)}
+                    >
+                      전체보기
+                    </Link>
+                    {SERVICE_CATEGORIES.map((label) => (
                       <Link
                         key={label}
                         to={`/service?category=${encodeURIComponent(label)}`}
-                        className={`flex items-center justify-between px-4 py-[7px] text-[16px] font-medium hover:bg-[#f9fafb] ${
-                          i === 0 ? 'bg-[#f9fafb] font-bold text-primary' : 'text-black'
-                        }`}
+                        className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
+                        onClick={() => setServicePinned(false)}
                       >
                         {label}
                       </Link>
@@ -204,17 +269,46 @@ const SiteHeader = () => {
                 </div>
               )}
             </div>
-
-            <details className="relative">
-              <summary className={`${NAV_LINK_CLASS} cursor-pointer list-none`}>
+            <div
+              className="relative"
+              onMouseEnter={() => { if (!categoryPinned && !servicePinned) setCustomerHovered(true); }}
+              onMouseLeave={() => setCustomerHovered(false)}
+            >
+              <button
+                type="button"
+                className={`text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${customerPinned ? 'text-primary' : 'text-[#333333]'}`}
+                onClick={() => pinNav('customer')}
+              >
                 고객센터
-              </summary>
-              <div className="absolute left-0 top-[calc(100%+12px)] z-50 grid min-w-40 gap-1 rounded-lg border border-[#e5e5e5] bg-white p-2 shadow-lg">
-                <Link className="rounded-md px-3 py-2 text-[15px] font-medium hover:bg-[#f3f5fa]" to="/customersupport/notice">공지사항</Link>
-                <Link className="rounded-md px-3 py-2 text-[15px] font-medium hover:bg-[#f3f5fa]" to="/guide">이용가이드</Link>
-                <Link className="rounded-md px-3 py-2 text-[15px] font-medium hover:bg-[#f3f5fa]" to="/customersupport/faq">FAQ</Link>
-              </div>
-            </details>
+              </button>
+              {customerOpen && (
+                <div className="absolute left-0 top-full w-[161px] pt-[14px] z-50">
+                  <div className="rounded-[5px] border border-[#4e4e4e] bg-white py-1 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)]">
+                    <Link
+                      to="/customersupport/notice"
+                      className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
+                      onClick={() => setCustomerPinned(false)}
+                    >
+                      공지사항
+                    </Link>
+                    <Link
+                      to="/guide"
+                      className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
+                      onClick={() => setCustomerPinned(false)}
+                    >
+                      이용가이드
+                    </Link>
+                    <Link
+                      to="/customersupport/faq"
+                      className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
+                      onClick={() => setCustomerPinned(false)}
+                    >
+                      FAQ
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
           </nav>
         </div>
 
@@ -408,6 +502,15 @@ const SiteHeader = () => {
                 <div className="my-3 h-px bg-[#e5e5e5]" />
                 {/* 액션 */}
                 <div className="flex flex-col gap-2">
+                  {user && (
+                    <button
+                      type="button"
+                      className="h-[36px] rounded-[6px] border bg-[#f3f5fa] text-[14px] font-medium text-[#333333] hover:bg-[#e9edf5] transition-colors"
+                      onClick={() => { setProfileOpen(false); navigate('/user/mypage'); }}
+                    >
+                      마이페이지 상세보기
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="h-[36px] rounded-[6px] bg-primary text-[14px] font-medium text-white hover:bg-[#0048bf] transition-colors"
@@ -441,15 +544,7 @@ const SiteHeader = () => {
                       로그인
                     </button>
                   )}
-                  {user && (
-                    <button
-                      type="button"
-                      className="h-[36px] rounded-[6px] bg-[#f3f5fa] text-[14px] font-medium text-[#4e4e4e] hover:bg-[#e9edf5] transition-colors"
-                      onClick={() => { setProfileOpen(false); navigate('/user/mypage'); }}
-                    >
-                      마이페이지 상세보기
-                    </button>
-                  )}
+                  
                 </div>
               </div>
             )}
@@ -591,13 +686,22 @@ const SiteHeader = () => {
               )}
             </div>
 
-            <div className="border-b border-[#f0f0f0] py-4">
-              <p className="mb-2 text-[20px] font-bold text-[#333333]">고객센터</p>
-              <div className="flex flex-col gap-1 pl-2">
-                <Link to="/customersupport/notice" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>공지사항</Link>
-                <Link to="/guide" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>이용가이드</Link>
-                <Link to="/customersupport/faq" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>FAQ</Link>
-              </div>
+            <div className="border-b border-[#f0f0f0]">
+              <button
+                type="button"
+                className="flex w-full items-center justify-between py-4 text-[20px] font-bold text-[#333333]"
+                onClick={() => setMobileCustomerOpen((v) => !v)}
+              >
+                고객센터
+                <ChevronRight size={20} className={`transition-transform ${mobileCustomerOpen ? 'rotate-90' : ''}`} />
+              </button>
+              {mobileCustomerOpen && (
+                <div className="flex flex-col gap-1 pb-3 pl-2">
+                  <Link to="/customersupport/notice" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>공지사항</Link>
+                  <Link to="/guide" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>이용가이드</Link>
+                  <Link to="/customersupport/faq" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>FAQ</Link>
+                </div>
+              )}
             </div>
 
             {!user && (

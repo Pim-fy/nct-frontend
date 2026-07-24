@@ -11,8 +11,7 @@ const LandingLayout = () => {
         {/* 헤더 */}
         <SiteHeader />
 
-        {/* 콘텐츠 — 모바일에서 하단 퀵바(60px)에 가리지 않도록 pb-16 추가 */}
-        <main style={{ flex: 1 }} className="pb-16 md:pb-0">
+        <main style={{ flex: 1 }}>
           <Outlet />
         </main>
         

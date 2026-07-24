@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { assets } from "./assets";
 import ArrowIcon from "./ArrowIcon";
+import arrowWhite from "@assets/img/arrowWhite.png";
 import MoreButton from "./MoreButton";
 import ServiceRequestCard from "./ServiceRequestCard";
 
@@ -65,8 +66,8 @@ export default function NewServiceSection() {
         </div>
       </div>
 
-      <ArrowIcon direction="left" className="left-[111px] top-[2196px]" barClassName="bg-white" onClick={goPrev} disabled={page === 0} />
-      <ArrowIcon direction="right" className="left-[1800px] top-[2196px]" barClassName="bg-white" onClick={goNext} disabled={page >= totalPages - 1} />
+      <ArrowIcon direction="left" className="left-[111px] top-[2196px]" imgSrc={arrowWhite} onClick={goPrev} disabled={page === 0} />
+      <ArrowIcon direction="right" className="left-[1800px] top-[2196px]" imgSrc={arrowWhite} onClick={goNext} disabled={page >= totalPages - 1} />
 
       <MoreButton left={895} top={2439} variant="dark" onClick={() => navigate("/service")} />
     </section>

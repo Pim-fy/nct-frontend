@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { assets } from "./assets";
 import ArrowIcon from "./ArrowIcon";
+import arrowDark from "@assets/img/arrowDark.png";
 import MoreButton from "./MoreButton";
 import AuctionCard from "./AuctionCard";
 
@@ -99,8 +100,8 @@ export default function AuctionSection() {
         </div>
       </div>
 
-      <ArrowIcon direction="left" className="left-[111px] top-[1541px]" barClassName="bg-[#434343]" onClick={goPrev} disabled={slideIndex === 0} />
-      <ArrowIcon direction="right" className="left-[1800px] top-[1541px]" barClassName="bg-[#434343]" onClick={goNext} disabled={slideIndex >= maxIndex} />
+      <ArrowIcon direction="left" className="left-[111px] top-[1541px]" imgSrc={arrowDark} onClick={goPrev} disabled={slideIndex === 0} />
+      <ArrowIcon direction="right" className="left-[1800px] top-[1541px]" imgSrc={arrowDark} onClick={goNext} disabled={slideIndex >= maxIndex} />
 
       <MoreButton left={895} top={1774} variant="light" onClick={() => navigate("/auction")} />
     </section>
