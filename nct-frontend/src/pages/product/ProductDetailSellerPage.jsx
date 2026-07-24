@@ -4,8 +4,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toImageUrl } from '@api/fileApi';
-import { getProduct, postProductComment, fetchProductComments } from '@api/productApi';
-import { getAuctionStatus, requestAuctionCancel } from '@api/auctionApi';
+import { getProduct, postProductComment, fetchProductComments, fetchProductInquiries, postInquiryReply } from '@api/productApi';
+import { getAuctionStatus, requestAuctionCancel, fetchAuctionFavoriteStatus } from '@api/auctionApi';
 import { TRADE_LABEL, STATUS_LABEL, STATUS_BADGE } from '@/constants/productConstants';
 import useCountdown from '@hooks/useCountdown';
 import Breadcrumb from '@components/common/Breadcrumb';
@@ -16,12 +16,18 @@ import ConfirmModal from '@components/common/ConfirmModal';
 
 const CANCEL_REASONS = ['상품 상태 변경', '상품 정보 오류', '판매 진행 불가', '기타'];
 
-// 더미 문의 데이터 — API 연동 전 UI 확인용
-const DUMMY_INQUIRIES = [
-  { inquirySn: 1, usrNm: '구매자A', content: '이 상품 상태는 어떤가요? 사진상으로는 깨끗해 보이는데 실제로도 흠집이 없는지 확인하고 싶습니다.', regDt: '2026.07.22', reply: null },
-  { inquirySn: 2, usrNm: '구매자B', content: '직거래 가능한가요?', regDt: '2026.07.23', reply: '네, 직거래 가능합니다. 서울 강남 쪽에서 가능합니다.' },
-  { inquirySn: 3, usrNm: '구매자C', content: '박스 포함인가요?', regDt: '2026.07.24', reply: null },
-];
+function groupInquiries(rawList) {
+  const replies = rawList.filter(r => r.prdCmtTypeCd === 'PRDC0007');
+  return rawList
+    .filter(r => r.prdCmtTypeCd === 'PRDC0006')
+    .map(q => ({
+      inquirySn: q.prdCmtSn,
+      usrNm: q.usrNm,
+      content: q.prdCmtCn,
+      regDt: new Date(q.prdCmtRegDt).toLocaleDateString('ko-KR'),
+      reply: replies.find(r => r.prdCmtParentSn === q.prdCmtSn)?.prdCmtCn ?? null,
+    }));
+}
 
 export default function ProductDetailSellerPage() {
   const { prdSn } = useParams();
@@ -46,13 +52,15 @@ export default function ProductDetailSellerPage() {
   })();
 
   // 상품 수정 이력 (F-AUC-007)
+  const [favoriteCount, setFavoriteCount] = useState(null);
+
   const [comments, setComments]         = useState([]);
   const [cmtTtl, setCmtTtl]             = useState('');
   const [cmtCn, setCmtCn]               = useState('');
   const [cmtSubmitting, setCmtSubmitting] = useState(false);
 
   // 구매자 문의 슬라이더
-  const [inquiries]                     = useState(DUMMY_INQUIRIES);
+  const [inquiries, setInquiries]       = useState([]);
   const [inquiryIdx, setInquiryIdx]     = useState(0);
   const [slideDir, setSlideDir]         = useState('right');
   const [replyInput, setReplyInput]     = useState('');
@@ -72,9 +80,20 @@ export default function ProductDetailSellerPage() {
       .then(res => {
         const p = res.data;
         setProduct(p);
-        const sideLoads = [fetchProductComments(prdSn).then(r => setComments(r.data)).catch(() => {})];
+        const sideLoads = [
+          fetchProductComments(prdSn).then(r => setComments(r.data)).catch(() => {}),
+          fetchProductInquiries(prdSn).then(r => setInquiries(groupInquiries(r.data))).catch(() => {}),
+        ];
         if (p.prdStatusCd !== 'PRDC0001') {
-          sideLoads.push(getAuctionStatus(prdSn).then(auc => setAuctionStatus(auc)).catch(() => {}));
+          sideLoads.push(
+            getAuctionStatus(prdSn)
+              .then(auc => {
+                setAuctionStatus(auc);
+                return fetchAuctionFavoriteStatus(auc.aucSn);
+              })
+              .then(fav => setFavoriteCount(fav.favoriteCount))
+              .catch(() => {})
+          );
         }
         return Promise.all(sideLoads);
       })
@@ -119,14 +138,22 @@ export default function ProductDetailSellerPage() {
     }
   };
 
-  // 답변 등록 — API 연동 전 더미
   const handleReplySubmit = async () => {
     if (!replyInput.trim()) { alert('답변 내용을 입력해 주세요.'); return; }
+    const inquirySn = inquiries[inquiryIdx]?.inquirySn;
+    if (!inquirySn) return;
     setReplySubmitting(true);
-    setTimeout(() => {
-      setToast('답변이 등록되었습니다. (API 연동 전)');
+    try {
+      await postInquiryReply(prdSn, inquirySn, { cn: replyInput.trim() });
+      const updated = await fetchProductInquiries(prdSn);
+      setInquiries(groupInquiries(updated.data));
+      setReplyInput('');
+      setToast('답변이 등록되었습니다.');
+    } catch {
+      setToast('답변 등록에 실패했습니다.');
+    } finally {
       setReplySubmitting(false);
-    }, 500);
+    }
   };
 
   const closeCancel = () => { setCancelOpen(false); setCancelReason(''); };
@@ -167,11 +194,11 @@ export default function ProductDetailSellerPage() {
   return (
     <main className="container seller-page">
       <div style={{ marginTop: 24 }}>
-        <Breadcrumb items={[{ label: '홈', href: '/' }, { label: '상품 판매 내역' }, { label: '상품 상세' }]} />
+        <Breadcrumb items={[{ label: '홈', href: '/' }, { label: '상품 판매 내역', href: '/user/mypage?section=auction-sales' }, { label: '상품 상세' }]} />
       </div>
 
       <div className="seller-auction-head" style={{ marginBottom: 16 }}>
-        <button className="btn btn-ghost" style={{ marginLeft: 'auto' }} onClick={() => navigate('/product/me')}>← 내 판매 내역</button>
+        <button className="btn btn-ghost" style={{ marginLeft: 'auto' }} onClick={() => navigate('/user/mypage?section=auction-sales')}>← 내 판매 내역</button>
       </div>
 
       {/* 2컬럼 레이아웃 */}
@@ -213,7 +240,7 @@ export default function ProductDetailSellerPage() {
 
           <div className="seller-metrics">
             <div className="seller-metric"><span>입찰 현황</span><strong>{auctionStatus ? `${auctionStatus.bidCount}건` : '—'}</strong></div>
-            <div className="seller-metric"><span>관심 인원</span><strong>—</strong></div>
+            <div className="seller-metric"><span>관심 인원</span><strong>{favoriteCount != null ? `${favoriteCount}명` : '—'}</strong></div>
             <div className="seller-metric">
               <span>남은 시간</span>
               <strong>{remainTime || '—'}</strong>

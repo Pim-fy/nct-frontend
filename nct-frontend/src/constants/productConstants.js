@@ -9,14 +9,6 @@ export const TRADE_STATUS_LABEL = {
   TRDC0008: '거래 취소',
 };
 
-export const TRADE_STATUS_BADGE = {
-  TRDC0003: 'badge-warning',
-  TRDC0004: 'badge-success',
-  TRDC0005: 'badge-warning',
-  TRDC0006: 'badge-gray',
-  TRDC0007: 'badge-danger',
-  TRDC0008: 'badge-danger',
-};
 
 export const TRADE_LABEL = {
   TRDC0009: '배송만',

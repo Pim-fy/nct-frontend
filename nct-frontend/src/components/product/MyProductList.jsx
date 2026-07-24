@@ -245,7 +245,12 @@ export default function MyProductList() {
                   </div>
 
                   <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                    {isActive && (
+                    {p.tradeSn && (
+                      <button type="button" onClick={() => navigate(`/trades/${p.tradeSn}/seller`)} className="btn btn-sm btn-primary">
+                        거래 관리
+                      </button>
+                    )}
+                    {!p.tradeSn && isActive && (
                       <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`)} className="btn btn-sm btn-primary">
                         판매 관리
                       </button>
@@ -255,7 +260,7 @@ export default function MyProductList() {
                         경매 설정
                       </button>
                     )}
-                    {isEnded && (
+                    {!p.tradeSn && isEnded && (
                       <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`)} className="btn btn-sm btn-ghost">
                         판매 기록
                       </button>
