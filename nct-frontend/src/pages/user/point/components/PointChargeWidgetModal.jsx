@@ -10,7 +10,9 @@ import { loadTossPayments, ANONYMOUS } from '@tosspayments/tosspayments-sdk';
 import { requestPointCharge, getChargeLimits } from '../../../../api/pointApi';
 import { QUICK_AMOUNTS } from './quickAmounts';
 
-const PointChargeWidgetModal = ({ onClose }) => {
+// infoRow: 모달 상단에 보여줄 현재 잔액 안내 { label, value } — PointAmountModal과 같은 방식.
+// 잔액 조회는 호출하는 쪽(헤더·지갑 페이지)이 이미 하고 있어서 여기서 다시 조회하지 않고 받아서 표시만 한다
+const PointChargeWidgetModal = ({ infoRow, onClose }) => {
   const [amount, setAmount] = useState('');
   const [step, setStep] = useState('amount'); // 'amount' | 'widget'
   const [loading, setLoading] = useState(false);
@@ -123,6 +125,14 @@ const PointChargeWidgetModal = ({ onClose }) => {
 
         {error && (
           <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4">{error}</p>
+        )}
+
+        {/* 현재 잔액 안내 — 환전 모달(PointAmountModal)의 infoRow와 같은 마크업으로 통일 */}
+        {infoRow && (
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-gray-500 text-sm">{infoRow.label}</span>
+            <strong className="text-indigo-700 text-lg">{infoRow.value}</strong>
+          </div>
         )}
 
         {step === 'amount' && (

@@ -130,6 +130,25 @@ export const useAuth = () => {
   // ==========================================
 
   /**
+   * 3.5 모드 전환 Mutation (F-PROV-008) =======
+   * 일반(USER) ↔ 제공자(SERVICE) 전환. 백엔드가 USR_ROLE_CD를 실제로 바꾸고
+   * 새 역할이 담긴 액세스 토큰을 HttpOnly 쿠키로 다시 내려준다(프론트 저장 불필요).
+   * 응답 바디는 로그인과 같은 형태라 로그인 성공 처리와 동일하게 유저 캐시를 갱신한다.
+   * 제공자 권한이 없거나 제재 중이면 서버가 에러를 던짐 → 호출부에서 catch해 안내.
+  */
+  const switchModeMutation = useMutation({
+    mutationFn: async (to) => {                 // to: 'USER' | 'SERVICE'
+      const res = await apiTool.switchMode(to);
+      return res.data;                          // 로그인과 동일 — data 안이 진짜 유저 정보.
+    },
+    onSuccess: (userData) => {
+      setConfig('user', userData);                            // 전역 상태 갱신.
+      queryClient.setQueryData(['auth', 'user'], userData);   // 쿼리 캐시 갱신 → isProvider가 즉시 반영됨.
+    },
+  });
+  // ==========================================
+
+  /**
    * 4. 로컬 강제 로그아웃 ====================
    * 회원탈퇴 등 특수 케이스
   */
@@ -157,6 +176,9 @@ export const useAuth = () => {
     // mutate를 쓰지 않은 이유는 결과를 Promise로 반환하지 않아 await로 완료 대기 불가.
     login          : loginMutation.mutateAsync,
     logout         : logoutMutation.mutateAsync,
+    // 모드 전환 (F-PROV-008). user.role은 백엔드 로그인/전환 응답에 포함된 필드.
+    switchMode     : switchModeMutation.mutateAsync,
+    isProvider     : user?.role === 'ROLE_SERVICE',
     localLogout,      // 함수 그대로 노출. 서버 요 청 없이 로컬 상태만 강제 초기화 하는 함수.
   };
   // ==========================================

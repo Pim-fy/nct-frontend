@@ -9,15 +9,19 @@
 // - 모바일(md 미만)에서는 경매/서비스/공지사항 메뉴를 숨기고 햄버거 토글로 전체 화면 메뉴를 연다.
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Menu, X, ChevronRight } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { useAuth } from '@hooks/useAuth';
 import { useMarkRead, useNotifications } from '@hooks/useNotification';
 import { useNotificationStream } from '@hooks/useNotificationStream';
 import { usePointBalance } from '@hooks/usePoint';
 import relativeTime from '@utils/relativeTime';
-import { isProviderAccount, requestMypageMode } from '@utils/providerMode';
+import { requestPointExchange } from '@api/pointApi';
 import QuickActions from '@components/landing/QuickActions';
 import NotificationDetailModal from '@pages/user/notification/components/NotificationDetailModal';
+import PointChargeWidgetModal from '@pages/user/point/components/PointChargeWidgetModal';
+import PointAmountModal from '@pages/user/point/components/PointAmountModal';
 import logoImg from '@assets/img/logo.png';
 import bellIcon from '@assets/img/bellIcon.png';
 import walletIcon from '@assets/img/walletIcon.png';
@@ -54,8 +58,11 @@ const NAV_LINK_CLASS = "text-[20px] font-bold text-[#333333] tracking-[-0.02em] 
 const NOTI_PREVIEW_MAX = 5;
 
 const SiteHeader = () => {
-  const { user, logout } = useAuth();
+  // isProvider·switchMode: 제공자 모드전환 실연동 (F-PROV-008, 담당자6 BJN, 2026-07-24)
+  // — 종전 localStorage 가짜 플래그(@utils/providerMode) 대신 서버가 내려준 실제 역할 기준.
+  const { user, logout, isProvider, switchMode } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // 알림·포인트 실데이터 — 로그인 상태일 때만 호출 (비로그인 401 방지)
   const notiQuery = useNotifications({ enabled: !!user });
@@ -63,6 +70,10 @@ const SiteHeader = () => {
   const markReadMutation = useMarkRead();
   const [selectedNoti, setSelectedNoti] = useState(null); // 클릭한 알림 상세 팝업
   const balanceQuery = usePointBalance({ enabled: !!user });
+  // 헤더 POINT 드롭다운의 충전/환전 버튼 → 마이페이지로 이동하지 않고 이 자리에서 바로 모달을 띄운다
+  // (종전엔 /user/mypage?section=wallet&action=... 로 이동시켜 페이지 도착 후 모달을 열었으나,
+  // 사용자 요청으로 페이지 이동 없이 헤더에서 바로 처리하도록 변경, 2026-07-24)
+  const [pointModal, setPointModal] = useState(null); // null | 'charge' | 'exchange'
   // 안읽은 알림: 배지 숫자와 드롭다운 목록의 공통 원천
   const unreadNotis = (notiQuery.data ?? []).filter((n) => !n.read);
   const notiCount = user ? unreadNotis.length : 0;
@@ -172,6 +183,39 @@ const SiteHeader = () => {
     setProfileOpen(which === 'profile' ? (v) => !v : false);
   };
 
+  // 헤더 POINT 드롭다운의 환전 모달 제출 — PointWalletPage의 submitAmount('exchange')와 같은 로직
+  // (검증 → API 호출 → 포인트 캐시 갱신 → 결과 안내). 충전은 결제위젯이 자체 API를 처리하므로 별도 핸들러가 없다.
+  const submitHeaderExchange = (amount) => {
+    if (!Number.isInteger(amount) || amount <= 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: '금액을 확인해 주세요',
+        text: '환전 금액은 1P 이상의 정수만 가능합니다.',
+        confirmButtonColor: '#0064ff',
+      });
+      return;
+    }
+    setPointModal(null);
+    requestPointExchange(amount)
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ['point'] });
+        Swal.fire({
+          icon: 'success',
+          title: '환전 신청 완료',
+          text: '신청 금액이 차감되었고, 등록하신 계좌로 며칠 내 지급될 예정입니다.',
+          confirmButtonColor: '#0064ff',
+        });
+      })
+      .catch((err) => {
+        Swal.fire({
+          icon: 'error',
+          title: '환전 신청 실패',
+          text: err?.response?.data?.message ?? '처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
+          confirmButtonColor: '#0064ff',
+        });
+      });
+  };
+
   const closeMobileMenu = () => {
     setMobileMenuOpen(false);
     setMobileAuctionOpen(false);
@@ -180,8 +224,6 @@ const SiteHeader = () => {
   };
 
   const nickname = user?.nickname || '홍길동';
-  // TODO: 실제 회원 역할 API가 붙으면 user.role 등으로 대체 (지금은 @utils/providerMode 의 로컬 플래그).
-  const isProvider = isProviderAccount();
   const memberLabel = isProvider ? '제공자' : (user?.roleLabel || '일반회원');
 
   return (
@@ -453,14 +495,14 @@ const SiteHeader = () => {
                   <button
                     type="button"
                     className="h-[34px] flex-1 rounded-[6px] bg-primary text-[14px] font-bold text-white hover:bg-[#0048bf] transition-colors"
-                    onClick={() => { setPointOpen(false); navigate('/user/mypage?section=wallet&action=charge'); }}
+                    onClick={() => { setPointOpen(false); setPointModal('charge'); }}
                   >
                     충전
                   </button>
                   <button
                     type="button"
                     className="h-[34px] flex-1 rounded-[6px] bg-[#d9d9d9] text-[14px] font-bold text-[#4e4e4e] hover:bg-[#cfcfcf] transition-colors"
-                    onClick={() => { setPointOpen(false); navigate('/user/mypage?section=wallet&action=exchange'); }}
+                    onClick={() => { setPointOpen(false); setPointModal('exchange'); }}
                   >
                     환전
                   </button>
@@ -514,11 +556,11 @@ const SiteHeader = () => {
                   <button
                     type="button"
                     className="h-[36px] rounded-[6px] bg-primary text-[14px] font-medium text-white hover:bg-[#0048bf] transition-colors"
-                    onClick={() => {
+                    onClick={async () => {
                       setProfileOpen(false);
                       if (isProvider) {
-                        // 이미 제공자 권한이 있으면 일반모드 마이페이지로 전환한다.
-                        requestMypageMode('general');
+                        // 제공자 상태면 서버에 실제 역할 전환을 요청한 뒤 마이페이지로 이동한다 (F-PROV-008).
+                        await switchMode('USER');
                         navigate('/user/mypage');
                       } else {
                         navigate('/provider/apply');
@@ -598,10 +640,11 @@ const SiteHeader = () => {
                   <button
                     type="button"
                     className="flex-1 h-[40px] rounded-[8px] border border-primary text-[14px] font-medium text-primary"
-                    onClick={() => {
+                    onClick={async () => {
                       closeMobileMenu();
                       if (isProvider) {
-                        requestMypageMode('general');
+                        // 서버에 실제 역할 전환 요청 (F-PROV-008) — 데스크톱 드롭다운과 동일 동작.
+                        await switchMode('USER');
                         navigate('/user/mypage');
                       } else {
                         navigate('/provider/apply');
@@ -729,6 +772,21 @@ const SiteHeader = () => {
     {/* 퀵메뉴(경매등록/서비스요청 등)를 헤더 컴포넌트에 포함시켜 모든 페이지에서 우측에 고정 노출한다. */}
     <QuickActions />
     <NotificationDetailModal item={selectedNoti} onClose={() => setSelectedNoti(null)} />
+    {pointModal === 'charge' && (
+      <PointChargeWidgetModal
+        infoRow={{ label: '사용가능 포인트', value: `${(pointBalance.available ?? 0).toLocaleString()} P` }}
+        onClose={() => setPointModal(null)}
+      />
+    )}
+    {pointModal === 'exchange' && (
+      <PointAmountModal
+        title="환전 신청"
+        submitLabel="환전"
+        infoRow={{ label: '환전 가능 포인트', value: `${(pointBalance.exchangeable ?? 0).toLocaleString()} P` }}
+        onSubmit={submitHeaderExchange}
+        onClose={() => setPointModal(null)}
+      />
+    )}
     </>
   );
 };
