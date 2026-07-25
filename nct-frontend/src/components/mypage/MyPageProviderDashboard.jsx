@@ -202,7 +202,7 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral }) {
   return (
     <div className="space-y-5">
       {/* 프로필 헤더 + 알림 배너 */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 lg:grid lg:grid-cols-4 lg:gap-3 lg:items-end">
         <div className="flex items-center gap-3 shrink-0">
           <div className="size-[64px] rounded-full overflow-hidden bg-[#e6f0ff] shrink-0">
             <img src={assets.profile} alt="" className="size-full object-cover" />
@@ -234,11 +234,11 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral }) {
         </div>
 
         {/* 안읽은 알림 배너 */}
-        <div className="ml-auto w-full md:w-[600px] md:flex-none min-h-[45px] rounded-[25px] border border-[rgba(0,100,255,0.28)] bg-white flex items-center px-4 gap-2 overflow-hidden">
+        <div className="ml-auto w-full md:w-[600px] md:flex-none lg:col-span-3 lg:ml-0 lg:w-full min-h-[45px] rounded-[25px] border border-[rgba(0,100,255,0.28)] bg-white flex items-center px-4 gap-2 overflow-hidden">
           <span className="flex items-center justify-center size-[18px] rounded-full bg-[#0064ff] text-white text-[13px] font-bold shrink-0">
             3
           </span>
-          <span className="font-bold text-[16px] text-[#404040] shrink-0">안읽은 알림</span>
+          <span className="font-bold text-[16px] text-[#404040] shrink-0 mr-4">안읽은 알림</span>
           <span className="hidden sm:flex items-center gap-1 text-[14px] text-[#404040] ml-2 truncate">
             <span className="text-[7px]">▶</span>
             입찰가가 갱신되었습니다.
