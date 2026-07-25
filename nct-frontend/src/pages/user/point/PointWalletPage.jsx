@@ -218,7 +218,10 @@ const PointWalletPage = ({ embedded = false } = {}) => {
       )}
 
       {openModal === 'charge' && (
-        <PointChargeWidgetModal onClose={() => setOpenModal(null)} />
+        <PointChargeWidgetModal
+          infoRow={{ label: '사용가능 포인트', value: `${(balance.available ?? 0).toLocaleString()} P` }}
+          onClose={() => setOpenModal(null)}
+        />
       )}
       {openModal === 'exchange' && (
         <PointAmountModal
