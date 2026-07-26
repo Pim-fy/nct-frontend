@@ -111,7 +111,7 @@ const AuctionBidPanel = ({
             <div className={`bid-point-balance${isBidPointInsufficient ? ' insufficient' : ''}`}>
               <span>사용 가능 포인트</span>
               <strong>{pointBalanceLabel}</strong>
-              {isAuthenticated && <Link to="/user/point?tab=charge">충전</Link>}
+              {isAuthenticated && <Link to="/user/point?action=charge">충전</Link>}
             </div>
           </div>
         )}
