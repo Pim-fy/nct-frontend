@@ -8,7 +8,7 @@
 //    (/product/register, /product/me, /product/:prdSn/seller) 도 최종 통합 시
 //    황희준에게 전달해 ProtectedRoute 구조에 맞게 정리 필요.
 // ─────────────────────────────────────────────────────────────────────────────
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 
 // Layouts
