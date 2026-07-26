@@ -12,6 +12,7 @@ import {
   verifySignupEmailVerification,
 } from '@api/authApi';
 import { SIGNUP_TERMS } from './signupTerms';
+import { formatPhoneNumber, isValidPhoneNumber, toPhoneDigits } from '@utils/phoneNumber';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-[#e2e1dc] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-primary disabled:cursor-not-allowed disabled:bg-[#f8f8f6]';
 const BUTTON_OUTLINE = 'shrink-0 rounded-lg border border-primary px-4 py-2.5 text-sm font-medium text-primary transition hover:bg-primary-light disabled:cursor-not-allowed disabled:opacity-50';
@@ -22,7 +23,6 @@ const LOGIN_ID_PATTERN = /^[A-Za-z0-9._-]{4,50}$/;
 // @ai_generated: 로그인 ID 안내가 실제 정규식의 최소·최대 길이와 항상 일치하도록 유지한다.
 const LOGIN_ID_GUIDE = '영문·숫자·. _ - 조합으로 4~50자';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const TELNO_PATTERN = /^$|^01[016789]-\d{3,4}-\d{4}$/;
 const VERIFICATION_CODE_PATTERN = /^\d{6}$/;
 
 const INITIAL_FORM = {
@@ -154,7 +154,7 @@ const validateEmail = (value) => {
 };
 
 const validateTelno = (value) => (
-  TELNO_PATTERN.test(value.trim()) ? '' : '010-1234-5678 형식으로 입력해주세요.'
+  !value.trim() || isValidPhoneNumber(value) ? '' : '0으로 시작하는 11자리 숫자를 입력해주세요.'
 );
 
 const validateOptionalLength = (value, maxLength, fieldName) => (
@@ -280,7 +280,8 @@ const SignupPage = () => {
   };
 
   const handleFieldChange = (field) => (event) => {
-    const value = event.target.value;
+    // @ai_generated: 전화번호는 표시값만 하이픈을 포함하고 저장·전송 값은 숫자로 정규화한다.
+    const value = field === 'telno' ? formatPhoneNumber(event.target.value) : event.target.value;
     setForm((previous) => ({ ...previous, [field]: value }));
     clearServerError(field);
     setSignupMessage('');
@@ -555,7 +556,7 @@ const SignupPage = () => {
         password: form.password,
         nickname: form.nickname.trim(),
         email: form.email.trim().toLowerCase(),
-        telno: form.telno.trim(),
+        telno: toPhoneDigits(form.telno),
         address: form.address.trim(),
         detailAddress: form.detailAddress.trim(),
         zip: form.zip.trim(),
