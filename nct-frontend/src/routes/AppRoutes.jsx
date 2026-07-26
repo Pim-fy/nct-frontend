@@ -169,7 +169,7 @@ const AppRoutes = () => {
       >
         <Route element={<UserLayout />}>
           <Route path="/user/mypage" element={<MyPage />} />
-          <Route path="/user/point" element={<PointWalletPage />} />
+          <Route path="/user/point" element={<Navigate to="/user/mypage?section=wallet" replace />} />
           <Route path="/user/notification" element={<NotificationPage />} />
           <Route
             path="/user/notification/settings"
