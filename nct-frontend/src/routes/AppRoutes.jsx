@@ -8,7 +8,7 @@
 //    (/product/register, /product/me, /product/:prdSn/seller) 도 최종 통합 시
 //    황희준에게 전달해 ProtectedRoute 구조에 맞게 정리 필요.
 // ─────────────────────────────────────────────────────────────────────────────
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 
 // Layouts
@@ -57,7 +57,6 @@ import ServiceListPage from '@pages/service/ServiceListPage';
 import PublicProviderProfilePage from '@pages/provider/PublicProviderProfilePage';
 import ProviderApplyPage from '@pages/provider/ProviderApplyPage';
 import ProviderApplicationStatusPage from '@pages/provider/ProviderApplicationStatusPage';
-import PointWalletPage from '@pages/user/point/PointWalletPage';
 import NotificationPage from '@pages/user/notification/NotificationPage';
 import NotificationSettingsPage from '@pages/user/notification/NotificationSettingsPage';
 import SettlementListPage from '@pages/user/settlement/SettlementListPage';
@@ -72,6 +71,15 @@ import MyBidHistoryPage from '@pages/user/MyBidHistoryPage';
 import ProductRegisterPage from '@pages/product/ProductRegisterPage';
 import MyProductListPage from '@pages/product/MyProductListPage';
 import ProductDetailSellerPage from '@pages/product/ProductDetailSellerPage';
+
+// 기존 지갑 주소를 유지하되, 결제 결과·모달 제어용 query string도 함께 전달한다.
+const PointWalletRedirect = () => {
+  const { search } = useLocation();
+  const params = new URLSearchParams(search);
+  params.set('section', 'wallet');
+
+  return <Navigate to={`/user/mypage?${params.toString()}`} replace />;
+};
 
 // ──────────────────────────────────────────
 // Admin 페이지
@@ -161,6 +169,24 @@ const AppRoutes = () => {
         </>
       )}
 
+      {/* @ai_generated: 두 현재 역할이 함께 쓰는 마이페이지 셸 경로. */}
+      <Route
+        element={(
+          <ProtectedRoute allowedRoles={['ROLE_USER', 'ROLE_SERVICE']} />
+        )}
+      >
+        <Route element={<UserLayout />}>
+          <Route path="/user/mypage" element={<MyPage />} />
+          <Route path="/user/point" element={<PointWalletRedirect />} />
+          <Route path="/user/notification" element={<NotificationPage />} />
+          <Route
+            path="/user/notification/settings"
+            element={<NotificationSettingsPage />}
+          />
+          <Route path="/user/settlement" element={<SettlementListPage />} />
+        </Route>
+      </Route>
+
       {/* @ai_generated CHG-032: 아래는 일반회원 전용 기능이므로 ROLE_USER 현재 모드만 접근한다. */}
       <Route
         element={(
@@ -168,14 +194,6 @@ const AppRoutes = () => {
         )}
       >
         <Route element={<UserLayout />}>
-          <Route path="/user/mypage" element={<MyPage />} />
-          <Route path="/user/point" element={<Navigate to="/user/mypage?section=wallet" replace />} />
-          <Route path="/user/notification" element={<NotificationPage />} />
-          <Route
-            path="/user/notification/settings"
-            element={<NotificationSettingsPage />}
-          />
-          <Route path="/user/settlement" element={<SettlementListPage />} />
           <Route path="/user/reviews" element={<ReviewListPage />} />
           <Route path="/user/reviews/write/:id" element={<ReviewWritePage />} />
           <Route path="/user/reviews/edit/:id" element={<ReviewEditPage />} />
