@@ -10,6 +10,7 @@ import { getCategories } from '@api/categoryApi';
 import { fetchBannedKeywords, registerProduct, updateProduct, getProduct } from '@api/productApi';
 import { uploadImage } from '@api/fileApi';
 import ErrorMessage from '@components/common/ErrorMessage';
+import AlertModal from '@components/common/AlertModal';
 import ProductInfoStep from './steps/ProductInfoStep';
 import AuctionSettingStep from './steps/AuctionSettingStep';
 import RegisterConfirmStep from './steps/RegisterConfirmStep';
@@ -76,7 +77,7 @@ export default function ProductRegisterPage() {
   const [bannedKeywords, setBannedKeywords] = useState([]);
   const [bannedKeywordError, setBannedKeywordError] = useState('');
   const [submitted, setSubmitted] = useState(false);
-  const [errorTick, setErrorTick] = useState(0); // 동일한 에러 메시지라도 재클릭 시 다시 스크롤시키기 위한 트리거
+  const [alertMsg, setAlertMsg] = useState(''); // 화면 중앙 알림 모달(AlertModal) — 유효성 검사 안내용
   const errorRef = useRef(null);
   // 상품설명 속 이미지(blobUrl -> File, 아직 업로드 안 됨) — RichTextEditor가 직접 채워넣고,
   // 여기 부모가 갖고 있어야 스텝 전환으로 RichTextEditor가 언마운트돼도 파일이 사라지지 않는다.
@@ -170,7 +171,7 @@ export default function ProductRegisterPage() {
     if (error && errorRef.current) {
       errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }, [error, errorTick]);
+  }, [error]);
 
   // 즉시시작/예약 전환 시 날짜 범위 초기화
   useEffect(() => {
@@ -274,12 +275,17 @@ export default function ProductRegisterPage() {
   const validateStep0 = (requirePolicyAgreed = true) => {
     setSubmitted(true);
     const fail = (msg) => {
-      setError(msg);
-      setErrorTick(t => t + 1); // 동일 메시지 재클릭 시에도 스크롤이 다시 일어나도록
+      setAlertMsg(msg);
       return false;
     };
-    if (!form.prdNm.trim() || !form.catSn || !form.prdTrdMethodCd) {
-      return fail('상품명, 카테고리, 거래 형태를 모두 입력해 주세요.');
+    if (!form.prdNm.trim()) {
+      return fail('상품명을 입력해 주세요.');
+    }
+    if (!form.catSn) {
+      return fail('카테고리를 선택해 주세요.');
+    }
+    if (!form.prdTrdMethodCd) {
+      return fail('거래 형태를 선택해 주세요.');
     }
     if (bannedKeywordError) {
       return fail(bannedKeywordError);
@@ -428,14 +434,12 @@ export default function ProductRegisterPage() {
               type="button"
               onClick={() => {
                 if (!agreed) {
-                  setError('등록 정보 확인 및 동의가 필요합니다.');
-                  setErrorTick(t => t + 1);
+                  setAlertMsg('등록 정보 확인 및 본문수정이 불가능함에 동의가 필요합니다.');
                   return;
                 }
                 const finalEndDt = calcEndDt();
                 if (finalEndDt && finalEndDt.getTime() <= Date.now()) {
-                  setError('경매 종료 시각이 이미 지났습니다. 이전 단계에서 경매 기간을 다시 확인해 주세요.');
-                  setErrorTick(t => t + 1);
+                  setAlertMsg('경매 종료 시각이 이미 지났습니다. 이전 단계에서 경매 기간을 다시 확인해 주세요.');
                   return;
                 }
                 handleSubmit('PRDC0002');
@@ -448,6 +452,8 @@ export default function ProductRegisterPage() {
           )}
         </div>
       </div>
+
+      <AlertModal open={!!alertMsg} message={alertMsg} onClose={() => setAlertMsg('')} />
 
     </main>
   );
