@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { AlertTriangle, Search, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, Search } from 'lucide-react';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
 import {
@@ -59,23 +59,10 @@ const OperationsIntegrationPreview = () => {
 
       <header className="operations-preview__header">
         <div>
-          <p className="operations-preview__eyebrow">담당자 7 · F-OPS-013</p>
           <h1>민감정보 탐지 이벤트</h1>
-          <p>민감정보 탐지로 생성된 신고·리스크 이벤트를 실제 서버 목록으로 조회합니다.</p>
         </div>
         <AdminStatusBadge tone="info">읽기 전용</AdminStatusBadge>
       </header>
-
-      <section className="operations-preview__notice" aria-label="조회 범위">
-        <ShieldCheck size={20} aria-hidden="true" />
-        <div>
-          <strong>관리자 전용 조회 화면입니다.</strong>
-          <span>
-            이 화면은 위험 이벤트를 수정하지 않습니다. 신고 처리와 제재 처리는 제공 계약이
-            준비된 뒤 별도 화면으로 연결합니다.
-          </span>
-        </div>
-      </section>
 
       <section className="operations-summary" aria-label="위험 이벤트 유형별 건수">
         {summaryQuery.isLoading ? (

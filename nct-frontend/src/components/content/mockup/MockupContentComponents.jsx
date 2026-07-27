@@ -27,12 +27,10 @@ export const MockupContentPageShell = ({ children, className = '' }) => (
   </div>
 );
 
-export const MockupContentPageHeader = ({ eyebrow, title, description, action }) => (
+export const MockupContentPageHeader = ({ title, action }) => (
   <header className="mockup-content-page-header">
     <div>
-      {eyebrow && <span>{eyebrow}</span>}
       <h1>{title}</h1>
-      {description && <p>{description}</p>}
     </div>
     {action && <div className="mockup-content-page-header__action">{action}</div>}
   </header>
