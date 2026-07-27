@@ -7,7 +7,6 @@ import {
   ContentState,
 } from '@components/content/ContentUi';
 import {
-  IntegrationNotice,
   PortfolioModal,
   ProviderProfile,
   ProviderReportModal,
@@ -149,15 +148,7 @@ const PublicProviderProfilePage = () => {
   return (
     <ContentPageShell className="provider-public-page">
       <Helmet><title>{provider.name} 제공자 프로필 | 에누리컷</title></Helmet>
-      <ContentPageHeader
-        description="승인 카테고리, 활동 지역, 리뷰와 포트폴리오를 확인하세요."
-        eyebrow="F-COM-015 · 공개 제공자 정보"
-        title="제공자 프로필"
-      />
-
-      <IntegrationNotice>
-        프로필은 가명 임시 자료이며 신고 입력은 저장되지 않습니다. 담당자2·5 API가 오면 조회·신고 함수만 교체합니다.
-      </IntegrationNotice>
+      <ContentPageHeader title="제공자 프로필" />
 
       <ProviderProfile
         activeTab={activeTab}

@@ -17,7 +17,7 @@
 }
 
 .admin-summary-card {
-  min-height: 202px;
+  min-height: 132px;
   padding: 18px;
   border-top: 4px solid #98a2b3;
 }
@@ -78,7 +78,7 @@
 }
 
 .admin-dashboard-card {
-  min-height: 290px;
+  min-height: 180px;
   padding: 21px;
 }
 

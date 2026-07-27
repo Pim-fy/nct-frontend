@@ -8,7 +8,6 @@ import {
 } from '@components/content/ContentUi';
 import {
   DiscoveryTabs,
-  IntegrationNotice,
   ProviderGrid,
   ServiceEmptyState,
   ServiceFilterPanel,
@@ -81,15 +80,7 @@ const ServiceListPage = () => {
   return (
     <ContentPageShell className="service-discovery-page">
       <Helmet><title>서비스 찾기 | 에누리컷</title></Helmet>
-      <ContentPageHeader
-        description="서비스 요청과 승인된 제공자를 키워드·카테고리·지역·예산으로 찾아보세요."
-        eyebrow="F-COM-002 · 서비스 탐색"
-        title="서비스 찾기"
-      />
-
-      <IntegrationNotice>
-        현재는 가명 임시 자료입니다. 담당자1의 서비스 요청 API와 담당자2의 제공자 API가 오면 데이터 함수만 교체합니다.
-      </IntegrationNotice>
+      <ContentPageHeader title="서비스 찾기" />
 
       <ServiceSearchBar
         keyword={filters.keyword}
