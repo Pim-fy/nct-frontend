@@ -1,7 +1,7 @@
 // src/pages/product/steps/RegisterConfirmStep.jsx
 // Step 2: 등록 전 상품정보·경매조건 요약 확인 + 최종 동의
-// Props: form, agreed, setAgreed, images, selectedCat, selectedTrade, endDt, maxImages
-export default function RegisterConfirmStep({ form, agreed, setAgreed, images, selectedCat, selectedTrade, endDt, maxImages = 5 }) {
+// Props: form, agreed, setAgreed, images, selectedCat, selectedTrade, endDt, maxImages, auctionRange
+export default function RegisterConfirmStep({ form, agreed, setAgreed, images, selectedCat, selectedTrade, endDt, maxImages = 5, auctionRange }) {
   const thumb = images[0]?.url;
   return (
     <div>
@@ -37,7 +37,7 @@ export default function RegisterConfirmStep({ form, agreed, setAgreed, images, s
                   ['시작가', form.prdStartAmt ? Number(form.prdStartAmt).toLocaleString() + '원' : '—'],
                   ['즉시구매가', form.prdIbyAmt ? Number(form.prdIbyAmt).toLocaleString() + '원' : '미설정'],
                   ['입찰 단위', form.bidUnit ? form.bidUnit.toLocaleString() + '원' : '—'],
-                  ['시작 시점', form.startNow ? '즉시 시작' : (form.reserveDt ? new Date(form.reserveDt).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—')],
+                  ['시작 시점', form.startNow ? '즉시 시작' : (auctionRange?.start ? new Date(`${auctionRange.start}T${auctionRange.startTime || '00:00'}:00`).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—')],
                 ].map(([k, v]) => (
                   <div key={k} style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
                     <span style={{ fontSize: 15, color: '#888780', fontWeight: 600, flexShrink: 0 }}>{k}</span>
@@ -106,7 +106,7 @@ export default function RegisterConfirmStep({ form, agreed, setAgreed, images, s
                 ['시작가', form.prdStartAmt ? Number(form.prdStartAmt).toLocaleString() + '원' : '—'],
                 ['즉시구매가', form.prdIbyAmt ? Number(form.prdIbyAmt).toLocaleString() + '원' : '미설정'],
                 ['입찰 단위', form.bidUnit.toLocaleString() + '원'],
-                ['경매 기간', `${form.durationDays}일`],
+                ['경매 기간', auctionRange?.start && auctionRange?.end ? `${auctionRange.start} ~ ${auctionRange.end}` : '—'],
                 ['종료 예정', endDt ? endDt.toLocaleDateString('ko-KR') : '—'],
               ].map(([k, v], i, arr) => (
                 <tr key={k}><th style={{ background: '#eef2fb', borderBottom: i === arr.length - 1 ? 'none' : '1px solid #d8d6cf', borderRight: '1px solid #d8d6cf' }}>{k}</th><td style={{ borderLeft: '1px solid #d8d6cf' }}>{v}</td></tr>

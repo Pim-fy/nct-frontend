@@ -2,6 +2,7 @@
 // Step 0: 상품명·카테고리·거래형태·설명·이미지 입력
 // Props: form, set, categories, bannedKeywordError, images, onChange, tradeMethods, maxImages
 import ProductImageUpload from '@components/product/ProductImageUpload';
+import RichTextEditor from '@components/product/RichTextEditor';
 
 export default function ProductInfoStep({ form, set, categories, bannedKeywordError, images, onChange, tradeMethods, maxImages }) {
   return (
@@ -62,14 +63,8 @@ export default function ProductInfoStep({ form, set, categories, bannedKeywordEr
       </div>
 
       <div className="field" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-        <label>상품 설명 <span>{form.prdCn.length}/2000</span></label>
-        <textarea
-          className="input"
-          value={form.prdCn}
-          onChange={e => set('prdCn', e.target.value)}
-          maxLength={2000}
-          style={{ resize: 'none', overflowY: 'auto', flex: 1, minHeight: 200 }}
-        />
+        <label>상품 설명</label>
+        <RichTextEditor value={form.prdCn} onChange={html => set('prdCn', html)} />
       </div>
 
       {/* 이미지 업로드 (F-AUC-002) — 선택 즉시 업로드, 첫 장이 대표이미지 */}

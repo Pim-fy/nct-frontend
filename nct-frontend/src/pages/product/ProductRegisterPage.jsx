@@ -64,6 +64,8 @@ export default function ProductRegisterPage() {
   const [submitted, setSubmitted] = useState(false);
   const [errorTick, setErrorTick] = useState(0); // 동일한 에러 메시지라도 재클릭 시 다시 스크롤시키기 위한 트리거
   const errorRef = useRef(null);
+  // 임시저장 draft 복원 시 startNow 변경으로 경매기간 초기화 효과가 복원값을 덮어쓰지 않도록 막는 플래그
+  const suppressRangeResetRef = useRef(false);
 
   // ─── 폼 입력값 ───────────────────────────────────────────────────────────
   const [form, setForm] = useState({
@@ -73,9 +75,7 @@ export default function ProductRegisterPage() {
     prdTrdMethodCd: 'TRDC0009',
     prdStartAmt: '',
     prdIbyAmt: '',
-    durationDays: 3,
     startNow: true,
-    reserveDt: '',
     bidUnit: 1000,
   });
 
@@ -106,7 +106,27 @@ export default function ProductRegisterPage() {
               prdTrdMethodCd: p.prdTrdMethodCd ?? 'TRDC0009',
               prdStartAmt:    p.prdStartAmt != null ? String(p.prdStartAmt) : '',
               prdIbyAmt:      p.prdIbyAmt  != null ? String(p.prdIbyAmt)  : '',
+              bidUnit:        p.prdDraftBidUnit != null ? Number(p.prdDraftBidUnit) : prev.bidUnit,
+              // 임시저장 시 경매기간을 저장해뒀다면 예약 모드로 복원 (즉시시작은 항상 당일 고정이라 재개 시 다시 고르면 됨)
+              startNow:       p.prdDraftStartDt || p.prdDraftEndDt ? false : prev.startNow,
             }));
+            if (p.prdDraftStartDt || p.prdDraftEndDt) {
+              suppressRangeResetRef.current = true;
+              const splitDt = (iso) => {
+                if (!iso) return { date: '', time: '' };
+                const [date, time] = iso.split('T');
+                return { date, time: time ? time.slice(0, 5) : '' };
+              };
+              const start = splitDt(p.prdDraftStartDt);
+              const end = splitDt(p.prdDraftEndDt);
+              setAuctionRange(prev => ({
+                ...prev,
+                start: start.date,
+                end: end.date,
+                startTime: start.time || prev.startTime,
+                endTime: end.time || prev.endTime,
+              }));
+            }
             if (p.imageList?.length > 0) {
               setImages(p.imageList.map(img => ({ flSn: img.flSn, url: img.url })));
             }
@@ -127,6 +147,10 @@ export default function ProductRegisterPage() {
 
   // 즉시시작/예약 전환 시 날짜 범위 초기화
   useEffect(() => {
+    if (suppressRangeResetRef.current) {
+      suppressRangeResetRef.current = false;
+      return;
+    }
     if (form.startNow) {
       const now = new Date();
       const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
@@ -170,7 +194,6 @@ export default function ProductRegisterPage() {
     try {
       const endDt = calcEndDt();
       const startDt = form.startNow ? new Date() : (auctionRange.start ? new Date(`${auctionRange.start}T${auctionRange.startTime || '00:00'}:00`) : new Date());
-      const isDraft = statusCd === 'PRDC0001';
       const payload = {
         catSn:          Number(form.catSn),
         prdNm:          form.prdNm.trim(),
@@ -181,9 +204,10 @@ export default function ProductRegisterPage() {
         prdStatusCd:    statusCd,
         // 수정 모드에서 새 이미지를 업로드하지 않으면 null → 백엔드에서 기존 이미지 유지
         flSnList:       images.length > 0 ? images.map(img => img.flSn) : null,
-        aucStartDt:     isDraft ? null : startDt.toISOString(),
-        aucEndDt:       isDraft || !endDt ? null : endDt.toISOString(),
-        bidUnit:        isDraft ? null : form.bidUnit,
+        // 임시저장이어도 값은 그대로 보낸다 — 백엔드가 prdStatusCd로 판단해 draft 보존 컬럼/AUCTION 중 알맞은 곳에 저장
+        aucStartDt:     startDt.toISOString(),
+        aucEndDt:       endDt ? endDt.toISOString() : null,
+        bidUnit:        form.bidUnit,
       };
       const result = editPrdSn
         ? await updateProduct(editPrdSn, payload)
@@ -282,6 +306,7 @@ export default function ProductRegisterPage() {
                 selectedTrade={selectedTrade}
                 endDt={endDt}
                 maxImages={MAX_IMAGES}
+                auctionRange={auctionRange}
               />
             </div>
           </>

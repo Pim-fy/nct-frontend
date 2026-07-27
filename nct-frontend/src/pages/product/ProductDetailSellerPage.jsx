@@ -3,6 +3,7 @@
 // 라우트: /product/:prdSn/seller
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import DOMPurify from 'dompurify';
 import { toImageUrl } from '@api/fileApi';
 import { getProduct, postProductComment, fetchProductComments, fetchProductInquiries, postInquiryReply } from '@api/productApi';
 import { getAuctionStatus, requestAuctionCancel, fetchAuctionFavoriteStatus } from '@api/auctionApi';
@@ -280,7 +281,11 @@ export default function ProductDetailSellerPage() {
           {product.prdCn && (
             <div style={{ marginTop: 18, borderTop: '1px solid #f0efec', paddingTop: 16 }}>
               <p style={{ margin: '0 0 8px', fontSize: 14, color: '#5f5e5a', fontWeight: 600 }}>상품 설명</p>
-              <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7, whiteSpace: 'pre-wrap', color: '#1a1a18', overflow: 'hidden', maxHeight: descOpen ? 'none' : 72 }}>{product.prdCn}</p>
+              <div
+                className="rich-text-editor-body"
+                style={{ fontSize: 16, lineHeight: 1.7, color: '#1a1a18', overflow: 'hidden', maxHeight: descOpen ? 'none' : 72, padding: 0 }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.prdCn, { ALLOWED_TAGS: ['p', 'br', 'b', 'strong', 'i', 'em', 'u', 'ul', 'ol', 'li', 'img', 'div', 'span'], ALLOWED_ATTR: ['src', 'style'] }) }}
+              />
             </div>
           )}
 

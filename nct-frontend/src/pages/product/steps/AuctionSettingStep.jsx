@@ -41,7 +41,7 @@ export default function AuctionSettingStep({
           </div>
         </div>
         <div className="field">
-          <label>즉시구매가 <span style={{ fontWeight: 500, color: '#888780' }}>(십 단위 자동절삭)</span></label>
+          <label>즉시구매가 <span style={{ fontWeight: 500, color: '#888780' }}>(백 단위 자동절삭)</span></label>
           <input
             className="input no-spinner"
             type="number"
@@ -50,11 +50,11 @@ export default function AuctionSettingStep({
             onWheel={e => e.target.blur()}
             onBlur={e => {
               if (!e.target.value) return;
-              const rounded = Math.floor(Number(e.target.value) / 10) * 10;
+              const rounded = Math.floor(Number(e.target.value) / 100) * 100;
               set('prdIbyAmt', String(rounded));
             }}
             min={0}
-            step={10}
+            step={100}
             placeholder="입력 시 즉시구매 가능"
           />
         </div>
@@ -80,7 +80,7 @@ export default function AuctionSettingStep({
         <label>시작 시점</label>
         <div className="row">
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 16, cursor: 'pointer' }}>
-            <input type="radio" checked={form.startNow} onChange={() => { set('startNow', true); set('reserveDt', ''); }} />
+            <input type="radio" checked={form.startNow} onChange={() => set('startNow', true)} />
             즉시 시작
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 16, cursor: 'pointer' }}>

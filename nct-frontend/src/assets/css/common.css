@@ -157,10 +157,6 @@ table tr:last-child td { border-bottom: none; }
 .calendar-icon-btn svg { width: 18px; height: 18px; display: block; }
 .calendar-icon-btn:hover { border-color: #0064ff; color: #0064ff; background: #e5efff; }
 
-/* 경매등록 스케줄 패널 — ProductRegisterPage step1 예약 시작일시 입력 영역
-   startNow=false 선택 시 이 패널이 표시되어 reserveDt를 입력 */
-.schedule-panel { border: 1px solid #f0efec; border-radius: 8px; padding: 14px; background: #fafaf8; margin-top: 8px; }
-
 /* 정책 동의 체크박스 래퍼 — ProductRegisterPage step1 경매 정책 동의,
    step2 최종 등록 동의 체크박스 영역 */
 .policy-agree { margin-top: 12px; padding: 12px 14px; border: 1px solid #f0efec; border-radius: 8px; background: #fff; }

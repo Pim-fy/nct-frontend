@@ -256,7 +256,7 @@ export default function DateRangePicker({
       </div>
 
       {/* 2개월 달력 */}
-      <div style={{ display: 'flex', padding: '12px 16px 16px', gap: 16 }}>
+      <div style={{ display: 'flex', padding: '28px 16px 44px', gap: 16 }}>
         {renderMonth(leftYear, leftMonth)}
         <div style={{ width: 1, background: '#e5e7eb', flexShrink: 0 }} />
         {renderMonth(rightYear, rightMonth)}
@@ -282,10 +282,10 @@ export default function DateRangePicker({
       </div>
 
       {/* 시간 선택 — 예약 모드에서만 보이지만, 즉시시작에서도 같은 공간을 차지하도록 visibility로 숨김 */}
-      <div style={{ borderTop: '1px solid #e5e7eb', padding: '10px 16px 14px', visibility: showTime ? 'visible' : 'hidden' }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: '#6b7280', display: 'block', marginBottom: 6 }}>시작 시간</span>
+      <div style={{ borderTop: '1px solid #e5e7eb', padding: '4px 16px 6px', visibility: showTime ? 'visible' : 'hidden' }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: '#6b7280', display: 'block', marginBottom: 3 }}>시작 시간</span>
         <TimeRow value={startTimeValue} onChange={onStartTimeChange} />
-        <span style={{ fontSize: 14, color: '#9ca3af', display: 'block', marginTop: 8 }}>종료 시간은 시작 시간과 동일하게 적용됩니다</span>
+        <span style={{ fontSize: 14, color: '#9ca3af', display: 'block', marginTop: 4 }}>종료 시간은 시작 시간과 동일하게 적용됩니다</span>
       </div>
     </div>
   );
