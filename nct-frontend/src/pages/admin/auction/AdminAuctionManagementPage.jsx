@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Search } from 'lucide-react';
+import { decideAdminAuctionCancellation, fetchAdminAuctions } from '@api/adminAuctionApi';
 import AdminModal from '@components/admin/AdminModal';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
@@ -9,265 +11,176 @@ import PageMeta from '@components/admin/PageMeta';
 import '../audit/adminAuditPage.css';
 import './adminAuctionManagementPage.css';
 
-/**
- * 담당자 7 · F-OPS-003, F-OPS-004: 관리자 상품·경매 조회와 판매자 취소 요청 심사 화면입니다.
- * 임시 이유: 상품·경매·거래를 묶는 관리자 조회 API와 담당자 4의 취소 처리 API가 아직 제공되지 않아
- * SAMPLE_ROWS로 화면 흐름만 확인합니다. API가 준비되면 TanStack Query 결과와 mutation으로 교체합니다.
- */
-const SAMPLE_ROWS = [
-  {
-    id: 'AUC-104',
-    product: '캠핑 의자 세트',
-    seller: '김민수',
-    productStatus: '판매중',
-    auctionStatus: '진행중',
-    auctionStatusCode: 'AUCC0002',
-    bidStatus: '입찰 4건',
-    tradeStatus: '-',
-    date: '2026-07-19',
-  },
-  {
-    id: 'AUC-103',
-    product: '태블릿 11인치',
-    seller: '이서연',
-    productStatus: '낙찰',
-    auctionStatus: '종료',
-    auctionStatusCode: 'AUCC0003',
-    bidStatus: '입찰 7건',
-    tradeStatus: '거래대기',
-    date: '2026-07-18',
-  },
-  {
-    id: 'AUC-102',
-    tradeSn: 102,
-    product: '원목 책상',
-    seller: '박준호',
-    productStatus: '거래중',
-    auctionStatus: '취소요청',
-    auctionStatusCode: 'AUCC0006',
-    bidStatus: '입찰 2건',
-    tradeStatus: '거래중',
-    date: '2026-07-17',
-    cancellation: {
-      requestedAt: '2026-07-18 10:30',
-      reason: '낙찰자와 배송 일정 조율이 어려워 거래 취소를 요청합니다.',
-      previousAuctionStatus: '종료',
-      previousAuctionStatusCode: 'AUCC0003',
-    },
-  },
-];
+// 담당자 7 · F-OPS-003/004: 관리자 경매 운영 조회와 판매자 취소 승인 화면입니다.
+const tone = (statusCode) => {
+  if (statusCode === 'AUCC0006') return 'danger';
+  if (statusCode === 'AUCC0005') return 'danger';
+  if (statusCode === 'AUCC0003') return 'neutral';
+  if (statusCode === 'AUCC0002') return 'info';
+  return 'neutral';
+};
 
-const tone = (value) => ({
-  진행중: 'info',
-  낙찰: 'warning',
-  거래중: 'info',
-  판매완료: 'success',
-  완료: 'success',
-  거래대기: 'warning',
-  배송중: 'info',
-  종료: 'neutral',
-  취소요청: 'danger',
-  취소: 'danger',
-})[value] ?? 'neutral';
+const formatDate = (value) => (value ? String(value).replace('T', ' ').slice(0, 16) : '-');
+
+const INITIAL_FILTERS = {
+  keyword: '',
+  auctionStatusCode: '',
+  tradeStatusCode: '',
+  cancellationPending: '',
+  registeredFrom: '',
+  registeredTo: '',
+};
 
 const AdminAuctionManagementPage = () => {
-  const [auctions, setAuctions] = useState(SAMPLE_ROWS);
-  const [keyword, setKeyword] = useState('');
+  const [filterForm, setFilterForm] = useState(INITIAL_FILTERS);
+  const [filters, setFilters] = useState(INITIAL_FILTERS);
+  const [filterError, setFilterError] = useState('');
   const [selected, setSelected] = useState(null);
   const [reviewReason, setReviewReason] = useState('');
   const [feedback, setFeedback] = useState('');
-  const rows = useMemo(() => {
-    const query = keyword.trim().toLowerCase();
-    return query
-      ? auctions.filter((row) => `${row.id} ${row.product} ${row.seller}`.toLowerCase().includes(query))
-      : auctions;
-  }, [auctions, keyword]);
 
-  const openDetail = (row) => {
-    setSelected(row);
-    setReviewReason('');
-  };
+  const auctionsQuery = useQuery({
+    queryKey: ['admin-auctions', filters],
+    queryFn: () => fetchAdminAuctions({
+      keyword: filters.keyword || undefined,
+      auctionStatusCode: filters.auctionStatusCode || undefined,
+      tradeStatusCode: filters.tradeStatusCode || undefined,
+      cancellationPending: filters.cancellationPending === ''
+        ? undefined
+        : filters.cancellationPending === 'PENDING',
+      registeredFrom: filters.registeredFrom || undefined,
+      registeredTo: filters.registeredTo || undefined,
+      page: 1,
+      size: 50,
+    }),
+  });
+  const decisionMutation = useMutation({
+    mutationFn: decideAdminAuctionCancellation,
+    onSuccess: (_, variables) => {
+      setFeedback(`경매 #${variables.auctionId} 취소 요청을 ${variables.decision === 'APPROVED' ? '승인' : '반려'}했습니다.`);
+      setSelected(null);
+      setReviewReason('');
+      auctionsQuery.refetch();
+    },
+  });
 
-  const decideCancellation = (decision) => {
-    const reason = reviewReason.trim();
-    if (!reason || !selected?.cancellation) return;
-
-    /**
-     * 담당자 7 · F-OPS-004 임시 어댑터: 담당자 4의 실제 API가 준비되기 전 화면 상태만 갱신합니다.
-     * 교체 대상: tradeSn, decision, reason을 서버에 전달하는 mutation. 서버는 관리자 권한·현재 상태·중복 요청·감사 기록을 검증해야 합니다.
-     */
-    const approved = decision === 'approve';
-    setAuctions((current) => current.map((row) => (
-      row.id === selected.id
-        ? {
-          ...row,
-          auctionStatus: approved ? '취소' : row.cancellation.previousAuctionStatus,
-          auctionStatusCode: approved ? 'AUCC0005' : row.cancellation.previousAuctionStatusCode,
-          tradeStatus: approved ? '취소' : '거래중',
-          cancellation: {
-            ...row.cancellation,
-            decision: approved ? '승인' : '반려',
-            reviewReason: reason,
-          },
-        }
-        : row
-    )));
-    setFeedback(`${selected.id} 취소 요청을 ${approved ? '승인' : '반려'}했습니다. 현재는 화면 확인용 임시 처리입니다.`);
-    setSelected(null);
-  };
-
-  const columns = [
-    ...['id', 'product', 'seller', 'productStatus', 'auctionStatus', 'bidStatus', 'tradeStatus', 'date'].map((key) => ({
-      key,
-      label: ({
-        id: '경매 번호',
-        product: '상품명',
-        seller: '판매자',
-        productStatus: '상품',
-        auctionStatus: '경매',
-        bidStatus: '입찰',
-        tradeStatus: '거래',
-        date: '등록일',
-      })[key],
-      render: key.endsWith('Status')
-        ? (value) => <AdminStatusBadge tone={tone(value)}>{value}</AdminStatusBadge>
-        : undefined,
-    })),
+  const rows = auctionsQuery.data?.items ?? [];
+  const columns = useMemo(() => [
+    { key: 'auctionId', label: '경매 번호', render: (value) => `#${value}` },
+    { key: 'productName', label: '상품명' },
+    { key: 'sellerName', label: '판매자' },
+    { key: 'auctionStatusName', label: '경매', render: (value, row) => <AdminStatusBadge tone={tone(row.auctionStatusCode)}>{value ?? row.auctionStatusCode}</AdminStatusBadge> },
+    { key: 'bidCount', label: '입찰', render: (value) => `${value ?? 0}건` },
+    { key: 'tradeStatusName', label: '거래', render: (value, row) => value ?? row.tradeStatusCode ?? '-' },
+    { key: 'registeredAt', label: '등록일', render: formatDate },
     {
-      key: 'manage',
-      label: '관리',
-      render: (_, row) => (
-        <button
-          className="btn btn-outline"
-          onClick={(event) => {
-            event.stopPropagation();
-            openDetail(row);
-          }}
-          type="button"
-        >
-          {row.cancellation?.decision ? '처리 결과' : row.cancellation ? '취소 심사' : '상세보기'}
+      key: 'manage', label: '관리', render: (_, row) => (
+        <button className="btn btn-outline" onClick={(event) => { event.stopPropagation(); setSelected(row); setReviewReason(''); }} type="button">
+          {row.cancelRequestId ? '취소 심사' : '상세 보기'}
         </button>
       ),
     },
-  ];
+  ], []);
+
+  const decide = (decision) => {
+    const reason = reviewReason.trim();
+    if (!selected?.cancelRequestId || !reason || decisionMutation.isPending) return;
+    decisionMutation.mutate({ auctionId: selected.auctionId, decision, reason });
+  };
+
+  const submitSearch = (event) => {
+    event.preventDefault();
+    if (filterForm.registeredFrom && filterForm.registeredTo
+      && filterForm.registeredFrom > filterForm.registeredTo) {
+      setFilterError('등록 시작일은 종료일보다 늦을 수 없습니다.');
+      return;
+    }
+    setFilterError('');
+    setFilters({ ...filterForm, keyword: filterForm.keyword.trim() });
+  };
+
+  const resetFilters = () => {
+    setFilterError('');
+    setFilterForm(INITIAL_FILTERS);
+    setFilters(INITIAL_FILTERS);
+  };
 
   return (
     <div className="admin-bjn-page admin-auction-page">
       <PageMeta title="상품·경매 조회" />
-      <MockupAdminPageHeader
-        description="상품, 경매, 입찰, 거래 상태와 판매자 취소 요청을 한 화면에서 확인합니다. 현재는 API 연결 전 임시 데이터입니다."
-        eyebrow="담당자 7 · F-OPS-003 / F-OPS-004"
-        title="상품·경매 조회"
-      />
-
-      <form className="admin-bjn-filters" onSubmit={(event) => event.preventDefault()}>
-        <label>
-          검색
-          <input
-            onChange={(event) => setKeyword(event.target.value)}
-            placeholder="상품명 · 판매자 · 경매번호"
-            value={keyword}
-          />
+      <MockupAdminPageHeader title="상품·경매 조회" />
+      <form className="admin-bjn-filters admin-auction-filters" onSubmit={submitSearch}>
+        <label>경매 상태
+          <select onChange={(event) => setFilterForm({ ...filterForm, auctionStatusCode: event.target.value })} value={filterForm.auctionStatusCode}>
+            <option value="">전체</option>
+            <option value="AUCC0001">진행 예정</option>
+            <option value="AUCC0002">진행 중</option>
+            <option value="AUCC0003">종료</option>
+            <option value="AUCC0004">유찰</option>
+            <option value="AUCC0005">취소</option>
+            <option value="AUCC0006">취소 요청</option>
+          </select>
         </label>
-        <button type="submit">
-          <Search aria-hidden="true" />
-          조회
-        </button>
+        <label>거래 상태
+          <select onChange={(event) => setFilterForm({ ...filterForm, tradeStatusCode: event.target.value })} value={filterForm.tradeStatusCode}>
+            <option value="">전체</option>
+            <option value="TRDC0003">진행중</option>
+            <option value="TRDC0004">배송/직거래중</option>
+            <option value="TRDC0005">상대확인대기</option>
+            <option value="TRDC0006">완료</option>
+            <option value="TRDC0007">보류</option>
+            <option value="TRDC0008">취소</option>
+          </select>
+        </label>
+        <label>취소 요청
+          <select onChange={(event) => setFilterForm({ ...filterForm, cancellationPending: event.target.value })} value={filterForm.cancellationPending}>
+            <option value="">전체</option>
+            <option value="PENDING">처리 대기</option>
+            <option value="NONE">처리 대기 없음</option>
+          </select>
+        </label>
+        <label>등록 시작일<input onChange={(event) => setFilterForm({ ...filterForm, registeredFrom: event.target.value })} type="date" value={filterForm.registeredFrom} /></label>
+        <label>등록 종료일<input onChange={(event) => setFilterForm({ ...filterForm, registeredTo: event.target.value })} type="date" value={filterForm.registeredTo} /></label>
+        <label className="admin-auction-filters__search">검색<input onChange={(event) => setFilterForm({ ...filterForm, keyword: event.target.value })} placeholder="상품명·판매자·경매 번호" value={filterForm.keyword} /></label>
+        <button type="submit"><Search aria-hidden="true" />조회</button>
+        {Object.values(filters).some(Boolean) && <button className="admin-auction-filters__reset" onClick={resetFilters} type="button">초기화</button>}
       </form>
-
-      {feedback && (
-        <p className="admin-auction-page__feedback" role="status">{feedback}</p>
+      {filterError && <p className="admin-auction-page__filter-error" role="alert">{filterError}</p>}
+      {feedback && <p className="admin-auction-page__feedback" role="status">{feedback}</p>}
+      {auctionsQuery.isLoading && <div className="admin-bjn-state">경매 목록을 불러오는 중입니다.</div>}
+      {auctionsQuery.isError && <div className="admin-bjn-state is-error">경매 목록을 불러오지 못했습니다. <button className="btn btn-outline" onClick={() => auctionsQuery.refetch()} type="button">다시 시도</button></div>}
+      {!auctionsQuery.isLoading && !auctionsQuery.isError && (
+        <AdminSectionCard action={<span>총 {auctionsQuery.data?.totalItems ?? 0}건</span>} title="경매·거래 목록">
+          <div className="admin-bjn-table-scroll"><AdminTable columns={columns} data={rows} onRowClick={(row) => { setSelected(row); setReviewReason(''); }} /></div>
+        </AdminSectionCard>
       )}
-
-      <AdminSectionCard
-        action={<span>총 {rows.length}건</span>}
-        description="상품·경매·거래 상태를 선택하면 상세와 취소 심사를 확인할 수 있습니다."
-        title="경매·거래 목록"
-      >
-        <div className="admin-bjn-table-scroll">
-          <AdminTable columns={columns} data={rows} onRowClick={openDetail} />
-        </div>
-      </AdminSectionCard>
-
       {selected && (
-        <AdminModal
-          onClose={() => setSelected(null)}
-          title={selected.cancellation ? '판매자 취소 요청 심사' : '상품·경매 상세'}
-        >
-          {selected.cancellation ? (
-            <section className="admin-auction-cancellation">
-              <h3>{selected.product}</h3>
-              <dl>
-                <dt>경매 번호</dt>
-                <dd>{selected.id}</dd>
-
-                <dt>거래 번호</dt>
-                <dd>{selected.tradeSn ?? '-'}</dd>
-
-                <dt>판매자</dt>
-                <dd>{selected.seller}</dd>
-
-                <dt>현재 경매 상태</dt>
-                <dd>{selected.auctionStatus} ({selected.auctionStatusCode})</dd>
-
-                <dt>요청 일시</dt>
-                <dd>{selected.cancellation.requestedAt}</dd>
-
-                <dt>판매자 사유</dt>
-                <dd>{selected.cancellation.reason}</dd>
-              </dl>
-
-              {selected.cancellation.decision ? (
-                <p className="admin-auction-cancellation__result">
-                  처리 결과: <strong>{selected.cancellation.decision}</strong>
-                  <br />
-                  관리자 사유: {selected.cancellation.reviewReason}
+        <AdminModal onClose={() => !decisionMutation.isPending && setSelected(null)} title={selected.cancelRequestId ? '판매자 취소 요청 심사' : '상품·경매 상세'}>
+          <section className="admin-auction-cancellation">
+            <h3>{selected.productName}</h3>
+            <dl>
+              <dt>경매 번호</dt><dd>#{selected.auctionId}</dd>
+              <dt>판매자</dt><dd>{selected.sellerName}</dd>
+              <dt>경매 상태</dt><dd>{selected.auctionStatusName ?? selected.auctionStatusCode}</dd>
+              <dt>입찰 수</dt><dd>{selected.bidCount ?? 0}건</dd>
+              <dt>거래 상태</dt><dd>{selected.tradeStatusName ?? selected.tradeStatusCode ?? '-'}</dd>
+              <dt>등록일</dt><dd>{formatDate(selected.registeredAt)}</dd>
+              {selected.cancelRequestId && <><dt>요청 일시</dt><dd>{formatDate(selected.cancelRequestedAt)}</dd><dt>판매자 사유</dt><dd>{selected.cancelReason}</dd></>}
+            </dl>
+            {selected.cancelRequestId && <>
+              <label>관리자 처리 사유<textarea disabled={decisionMutation.isPending} onChange={(event) => setReviewReason(event.target.value)} placeholder="승인 또는 반려 사유를 입력하세요." value={reviewReason} /></label>
+              {!reviewReason.trim() && (
+                <p className="admin-auction-cancellation__validation" role="alert">
+                  처리 사유를 입력해야 승인 또는 반려할 수 있습니다.
                 </p>
-              ) : (
-                <>
-                  <label>
-                    관리자 처리 사유
-                    <textarea
-                      onChange={(event) => setReviewReason(event.target.value)}
-                      placeholder="승인 또는 반려 사유를 입력하세요."
-                      value={reviewReason}
-                    />
-                  </label>
-                  <p className="admin-auction-cancellation__notice">
-                    승인·반려 모두 사유가 필요합니다. 실제 서버 연동 후에는 처리 결과를
-                    되돌릴 수 없으므로 확인 후 처리합니다.
-                  </p>
-                  <div className="admin-auction-cancellation__actions">
-                    <button
-                      className="btn btn-outline"
-                      disabled={!reviewReason.trim()}
-                      onClick={() => decideCancellation('reject')}
-                      type="button"
-                    >
-                      반려
-                    </button>
-                    <button
-                      className="btn btn-primary"
-                      disabled={!reviewReason.trim()}
-                      onClick={() => decideCancellation('approve')}
-                      type="button"
-                    >
-                      취소 승인
-                    </button>
-                  </div>
-                </>
               )}
-            </section>
-          ) : (
-            <section className="admin-bjn-panel">
-              <h2>{selected.product}</h2>
-              <p>경매 번호 {selected.id} · 판매자 {selected.seller} · 등록일 {selected.date}</p>
-              <p>
-                상품 {selected.productStatus} / 경매 {selected.auctionStatus}
-                {' '}({selected.auctionStatusCode}) / {selected.bidStatus} / 거래 {selected.tradeStatus}
-              </p>
-            </section>
-          )}
+              {decisionMutation.isError && <p className="admin-bjn-state is-error">처리에 실패했습니다. 이미 처리된 요청인지 확인해 주세요.</p>}
+              <div className="admin-auction-cancellation__actions">
+                <button className="btn btn-outline" disabled={!reviewReason.trim() || decisionMutation.isPending} onClick={() => decide('REJECTED')} type="button">반려</button>
+                <button className="btn btn-primary" disabled={!reviewReason.trim() || decisionMutation.isPending} onClick={() => decide('APPROVED')} type="button">{decisionMutation.isPending ? '처리 중…' : '취소 승인'}</button>
+              </div>
+            </>}
+          </section>
         </AdminModal>
       )}
     </div>

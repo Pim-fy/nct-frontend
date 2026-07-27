@@ -89,7 +89,7 @@ a.list-row:hover {
   background: #fff;
   border-radius: 8px;
   padding: 6px 12px;
-  font-size: 13px;
+  font-size: 15px;
   cursor: pointer;
 }
 .chip.active {
@@ -129,7 +129,7 @@ a.list-row:hover {
 /* 스텝 인디케이터 — ProductRegisterPage 3단계 진행 표시
    .active = 현재 단계(파란 밑줄), .done = 완료 단계(연한 파랑) */
 .steps { display: flex; gap: 0; margin-bottom: 32px; }
-.step { flex: 1; padding: 12px; text-align: center; border-bottom: 3px solid #f0efec; color: #888780; font-size: 14px; font-weight: 500; }
+.step { flex: 1; padding: 12px; text-align: center; border-bottom: 3px solid #f0efec; color: #888780; font-size: 18px; font-weight: 500; }
 .step.active { border-bottom-color: #0064ff; color: #0064ff; font-weight: 700; }
 .step.done { border-bottom-color: #e5efff; color: #5f5e5a; }
 
@@ -141,7 +141,7 @@ a.list-row:hover {
    .card 안에서는 이중 테두리 방지를 위해 border·shadow 제거 */
 table { width: 100%; border-collapse: separate; border-spacing: 0; background: #fff; border: 1px solid #f0efec; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.06); }
 .card table { box-shadow: none; border: none; }
-th, td { border-bottom: 1px solid #f0efec; padding: 12px 10px; text-align: left; font-size: 14px; vertical-align: top; }
+th, td { border-bottom: 1px solid #f0efec; padding: 12px 10px; text-align: left; font-size: 16px; vertical-align: top; }
 th { color: #5f5e5a; background: #fafaf8; font-weight: 700; }
 table tr:last-child td { border-bottom: none; }
 
@@ -156,10 +156,6 @@ table tr:last-child td { border-bottom: none; }
 .calendar-icon-btn { width: 43px; min-height: 34px; padding: 6px 12px; display: inline-flex; align-items: center; justify-content: center; color: #5f5e5a; }
 .calendar-icon-btn svg { width: 18px; height: 18px; display: block; }
 .calendar-icon-btn:hover { border-color: #0064ff; color: #0064ff; background: #e5efff; }
-
-/* 경매등록 스케줄 패널 — ProductRegisterPage step1 예약 시작일시 입력 영역
-   startNow=false 선택 시 이 패널이 표시되어 reserveDt를 입력 */
-.schedule-panel { border: 1px solid #f0efec; border-radius: 8px; padding: 14px; background: #fafaf8; margin-top: 8px; }
 
 /* 정책 동의 체크박스 래퍼 — ProductRegisterPage step1 경매 정책 동의,
    step2 최종 등록 동의 체크박스 영역 */
@@ -226,8 +222,8 @@ table tr:last-child td { border-bottom: none; }
 /* 폼 필드 — label + input/select/textarea를 세로로 묶는 래퍼
    경매 취소 모달·ProductRegisterPage 폼 요소 정렬에 공통 사용 */
 .field { display: grid; gap: 6px; margin-bottom: 14px; }
-.field > label { color: #1a1a18; font-size: 15px; font-weight: 700; }
-.field > label span, .field > label .muted { color: #5f5e5a; font-size: 13px; font-weight: 500; }
+.field > label { color: #1a1a18; font-size: 17px; font-weight: 700; }
+.field > label span, .field > label .muted { color: #5f5e5a; font-size: 15px; font-weight: 500; }
 
 /* 거래 형태 선택 버튼 — ProductRegisterPage step0 배송만·직거래만·둘 다 선택
    .checked 클래스로 선택 상태 강조, 아이콘(.trade-icon)도 파랑으로 변경 */

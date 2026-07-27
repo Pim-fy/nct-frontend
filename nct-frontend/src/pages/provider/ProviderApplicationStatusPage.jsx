@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import PageMeta from '@components/admin/PageMeta';
 import { ContentPageHeader, ContentPageShell, ContentState } from '@components/content/ContentUi';
 import { useMyProviderApplications } from '@hooks/useProviderApplications';
+import { formatDate } from '@utils/common';
 import './providerApplyPage.css';
 
 const statusLabel = (item) => ({
@@ -84,8 +85,10 @@ const ProviderApplicationStatusPage = () => {
           <dt>신청 카테고리</dt>
           <dd>{latest.categoryName}</dd>
 
+          {/* 서버가 내려주는 ISO 형식(2026-07-24T22:07:26)이 그대로 노출되던 것을
+              공용 날짜 포맷(YYYY-MM-DD)으로 교체 (담당자6 BJN, 2026-07-24) */}
           <dt>신청일</dt>
-          <dd>{latest.requestedAt ?? '-'}</dd>
+          <dd>{latest.requestedAt ? formatDate(latest.requestedAt) : '-'}</dd>
         </dl>
 
         {latest.statusCode === 'PRVC0004' && (

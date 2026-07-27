@@ -78,8 +78,17 @@ body { font-family: 'Pretendard', 'Noto Sans KR', 'Malgun Gothic', sans-serif !i
    입력 폼 — 모든 <input>·<select>·<textarea>에 적용
    포커스 시 파란 테두리로 활성 상태 표시
 =========================== */
-.input { border: 1px solid #e2e1dc; border-radius: 5px; min-height: 40px; padding: 0 12px; width: 100%; box-sizing: border-box; font-family: inherit; background: #fff;}
+.input { border: 1px solid #e2e1dc; border-radius: 5px; min-height: 40px; padding: 0 12px; width: 100%; box-sizing: border-box; font-family: inherit; font-size: 16px; background: #fff;}
 .input:focus { border-color: var(--color-primary, #0064ff); outline: none;}
+
+/* 숫자 input의 증감 스피너(위/아래 화살표) 제거 — 순수 타이핑만 허용 */
+.no-spinner::-webkit-outer-spin-button,
+.no-spinner::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0;}
+.no-spinner { -moz-appearance: textfield;}
+
+/* 상품 설명 리치텍스트 에디터 — 빈 상태 placeholder, 삽입 이미지 반응형 */
+.rich-text-editor-body:empty:before { content: attr(data-placeholder); color: #b0aea8;}
+.rich-text-editor-body img { max-width: 100%; border-radius: 6px; margin: 6px 0; display: block;}
 
 /* ===========================
    페이지네이션 컨테이너 — MyProductListPage 하단 페이지 버튼을 중앙 정렬

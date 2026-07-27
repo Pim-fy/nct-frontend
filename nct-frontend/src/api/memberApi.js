@@ -3,9 +3,25 @@
 // `api`(Axios 인스턴스)를 사용해 /api/member/** 호출.
 import api from './axios';
 
-/** 프로필 기본 정보 수정 (닉네임·프로필사진·연락이메일·계좌번호) */
+/** 프로필 기본 정보 상세 조회 (ISS-022 - 마이페이지 초기값 표시용) */
+export const getProfile = () =>
+  api.get('/member/me').then(res => res.data);
+
+/** 프로필 기본 정보 수정 (닉네임·프로필사진·연락이메일·계좌번호·전화번호·주소) */
 export const updateProfile = (payload) =>
   api.patch('/member/me', payload).then(res => res.data);
+
+/** 로그인 상태 비밀번호 변경 (ISS-022 - 현재 비밀번호 재확인 필요) */
+export const changePassword = (payload) =>
+  api.patch('/member/me/password', payload).then(res => res.data);
+
+/** 마이페이지 소셜 연동 목록 조회 (F-AUTH-016) */
+export const getOauthLinks = () =>
+  api.get('/member/oauth-links').then(res => res.data);
+
+/** 마이페이지 소셜 연동 해제 (F-AUTH-016) */
+export const unlinkOauth = (provider) =>
+  api.delete(`/member/oauth-links/${provider}`).then(res => res.data);
 
 /** 회원 탈퇴 - 활성 계정(로그인 상태 + 현재 비밀번호 재확인) */
 export const withdrawActive = (currentPassword) =>
