@@ -20,14 +20,14 @@ jobs:
         with:
           node-version: 24
           cache: 'yarn'
+          cache-dependency-path: ./nct-frontend/yarn.lock
 
       - name: Install Dependencies
+        working-directory: ./nct-frontend
         run: |
           if [ -f yarn.lock ]; then
-            cd ./nct-frontend
             yarn install --frozen-lockfile
           else
-            cd ./nct-frontend
             npm ci
           fi
 
@@ -36,17 +36,16 @@ jobs:
           echo "${{ secrets.ENV_FILE }}" > .env.production
 
       - name: Vite Build with Yarn
+        working-directory: ./nct-frontend
         run: |
           if [ -f yarn.lock ]; then
-            cd ./nct-frontend
             yarn build
           else
-            cd ./nct-frontend
             npm run build
           fi
 
       - name: Archive dist
-        run: tar -czf dist.tar.gz -C dist .
+        run: tar -czf dist.tar.gz -C ./nct-frontend/dist .
 
       - name: Upload artifact (for debugging / history)
         uses: actions/upload-artifact@v4
