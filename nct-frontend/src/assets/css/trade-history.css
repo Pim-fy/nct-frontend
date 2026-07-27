@@ -20,7 +20,7 @@
 }
 
 .trade-history-page__header {
-  margin-bottom: 20px;
+  margin-bottom: 28px;
 }
 
 .trade-history-page__eyebrow {
@@ -34,7 +34,7 @@
 .trade-history-page h1 {
   margin: 0;
   color: #171b26;
-  font-size: 32px;
+  font-size: 30px;
   font-weight: 800;
   letter-spacing: -1.2px;
 }
@@ -88,13 +88,68 @@
 }
 
 .trade-history-panel {
-  padding: 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
 }
 
 .trade-history-tabs {
   display: flex;
   gap: 6px;
   padding-bottom: 18px;
+}
+
+/* 구매 거래 목록은 참조 시안처럼 상태별 탭을 한 줄로 두어 빠르게 전환한다. */
+.trade-history-buyer-filters {
+  display: flex;
+  gap: 26px;
+  overflow-x: auto;
+  border-bottom: 1px solid #e5e7eb;
+  scrollbar-width: none;
+}
+
+.trade-history-buyer-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.trade-history-buyer-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #555;
+  cursor: pointer;
+  padding: 0 0 13px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.trade-history-buyer-filter span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: #565b64;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.trade-history-buyer-filter--active {
+  border-bottom-color: #1466f5;
+  color: #1466f5;
+}
+
+.trade-history-buyer-filter--active span {
+  background: #1466f5;
 }
 
 .trade-history-tab {
@@ -124,8 +179,11 @@
   display: grid;
   grid-template-columns: 1fr 180px;
   gap: 12px;
-  padding: 18px 12px 12px;
-  border-top: 1px solid #eef1f6;
+  padding: 18px 0 4px;
+}
+
+.trade-history-page--embedded .trade-history-filters {
+  grid-template-columns: minmax(0, 420px);
 }
 
 .trade-history-search,
@@ -148,8 +206,8 @@
 
 .trade-history-list {
   display: grid;
-  gap: 12px;
-  margin-top: 18px;
+  gap: 16px;
+  margin-top: 20px;
 }
 
 .trade-history-item {
@@ -173,19 +231,20 @@
 .trade-history-item article {
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 16px;
+  gap: 24px;
+  min-height: 144px;
+  padding: 24px;
 }
 
 .trade-history-item__image {
   display: flex;
-  width: 74px;
-  min-width: 74px;
-  height: 74px;
+  width: 104px;
+  min-width: 104px;
+  height: 104px;
   align-items: center;
   justify-content: center;
   border: 1px solid #dce6ff;
-  border-radius: 12px;
+  border-radius: 10px;
   background: #f2f6ff;
   color: #4b6cae;
   font-size: 12px;
@@ -199,16 +258,16 @@
 
 .trade-history-item__type {
   display: inline-block;
-  margin-top: 8px;
+  margin-top: 7px;
   color: #7b8595;
   font-size: 12px;
   font-weight: 700;
 }
 
 .trade-history-item h2 {
-  margin: 0 0 6px;
-  color: #252b3a;
-  font-size: 16px;
+  margin: 8px 0 7px;
+  color: #151923;
+  font-size: 18px;
 }
 
 .trade-history-item p {
@@ -220,44 +279,61 @@
 .trade-history-item__action {
   display: flex;
   align-items: center;
-  justify-items: end;
-  gap: 14px;
+  justify-content: flex-end;
+  min-width: 104px;
+}
+
+.trade-history-item__detail-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 96px;
+  height: 46px;
+  border-radius: 6px;
+  background: #1466f5;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.trade-history-item__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .trade-history-status {
+  display: inline-flex;
+  align-items: center;
   padding: 5px 10px;
-  border-radius: 999px;
+  border: 1px solid currentColor;
+  border-radius: 5px;
+  background: #fff;
   font-size: 12px;
   font-weight: 800;
 }
 
 .trade-history-status--progress {
-  background: #e8f0fe;
   color: #1a56a4;
 }
 
 .trade-history-status--pending {
-  background: #faeeda;
   color: #ba7517;
 }
 
 .trade-history-status--complete {
-  background: #e7f8f0;
   color: #137c4b;
 }
 
 .trade-history-status--action {
-  background: #fff0d9;
   color: #b54708;
 }
 
 .trade-history-status--problem {
-  background: #fcebeb;
   color: #a32d2d;
 }
 
 .trade-history-status--canceled {
-  background: #f2f4f7;
   color: #667085;
 }
 
@@ -285,10 +361,15 @@
   .trade-history-page { padding: 28px 0 56px; }
   .trade-history-page h1 { font-size: 27px; }
   .trade-history-summary { align-items: flex-start; flex-direction: column; gap: 4px; }
-  .trade-history-filters { grid-template-columns: 1fr; }
-  .trade-history-item article { align-items: flex-start; flex-wrap: wrap; }
+  .trade-history-buyer-filters { gap: 18px; }
+  .trade-history-filters,
+  .trade-history-page--embedded .trade-history-filters { grid-template-columns: 1fr; }
+  .trade-history-item article { align-items: flex-start; flex-wrap: wrap; gap: 16px; padding: 18px; }
+  .trade-history-item__image { width: 76px; min-width: 76px; height: 76px; }
   .trade-history-item__action {
     width: 100%;
     justify-content: space-between;
   }
+
+  .trade-history-item__detail-button { width: 100%; }
 }
