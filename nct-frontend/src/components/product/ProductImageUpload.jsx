@@ -8,7 +8,21 @@ import { deleteImage, toImageUrl, uploadImage } from '@api/fileApi';
 export default function ProductImageUpload({ images, onChange, maxImages = 5 }) {
   const [imageUploading, setImageUploading] = useState(false);
   const [error, setError] = useState('');
+  const [pickMode, setPickMode] = useState(false); // 대표이미지 지정 모드 — 활성화 중 사진 클릭 시 대표로 변경
   const fileInputRef = useRef(null);
+
+  // 선택한 사진을 배열 맨 앞으로 이동 — index 0이 대표이미지(백엔드 전송 시 flSnList의 첫 항목)
+  const setAsRepresentative = (flSn) => {
+    onChange(prev => {
+      const idx = prev.findIndex(img => img.flSn === flSn);
+      if (idx <= 0) return prev;
+      const next = [...prev];
+      const [picked] = next.splice(idx, 1);
+      next.unshift(picked);
+      return next;
+    });
+    setPickMode(false);
+  };
 
   const handleFilesSelected = async (fileList) => {
     const files = Array.from(fileList).slice(0, maxImages - images.length);
@@ -43,7 +57,7 @@ export default function ProductImageUpload({ images, onChange, maxImages = 5 }) 
   return (
     <div
       className="card"
-      style={{ borderStyle: 'dashed' }}
+      style={{ borderStyle: 'dashed', minHeight: 220, display: 'flex', flexDirection: 'column' }}
       onDragOver={e => e.preventDefault()}
       onDrop={e => { e.preventDefault(); handleFilesSelected(e.dataTransfer.files); }}
     >
@@ -51,17 +65,28 @@ export default function ProductImageUpload({ images, onChange, maxImages = 5 }) 
         <div>
           <strong>상품 사진</strong>
           <p className="muted small" style={{ margin: '4px 0 0' }}>
-            드래그앤드롭 또는 파일 선택 · 최대 {maxImages}장 ({images.length}/{maxImages})
+            {pickMode ? '대표로 지정할 사진을 선택하세요' : `드래그앤드롭 또는 파일 선택 · 최대 ${maxImages}장 (${images.length}/${maxImages})`}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={imageUploading || images.length >= maxImages}
-          className="btn btn-ghost"
-        >
-          {imageUploading ? '업로드 중...' : '파일 선택'}
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => setPickMode(v => !v)}
+            disabled={images.length === 0}
+            className="btn btn-ghost"
+            style={pickMode ? { background: '#0064ff', color: '#fff', borderColor: '#0064ff' } : undefined}
+          >
+            대표이미지로 지정
+          </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={imageUploading || images.length >= maxImages}
+            className="btn btn-ghost"
+          >
+            {imageUploading ? '업로드 중...' : '사진등록'}
+          </button>
+        </div>
         <input
           ref={fileInputRef}
           type="file"
@@ -73,33 +98,44 @@ export default function ProductImageUpload({ images, onChange, maxImages = 5 }) 
       </div>
 
       {error && (
-        <p style={{ color: 'var(--color-danger, #e53e3e)', fontSize: 13, marginTop: 8 }}>{error}</p>
+        <p style={{ color: 'var(--color-danger, #e53e3e)', fontSize: 15, marginTop: 8 }}>{error}</p>
       )}
 
-      {images.length > 0 && (
-        <div className="row" style={{ gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-          {images.map((img, i) => (
-            <div key={img.flSn} style={{ position: 'relative' }}>
-              <img
-                src={toImageUrl(img.url)}
-                alt={`상품 사진 ${i + 1}`}
-                style={{ width: 88, height: 88, objectFit: 'cover', borderRadius: 8, border: i === 0 ? '2px solid #0064ff' : '1px solid #eee' }}
-              />
-              {i === 0 && (
-                <span className="badge badge-blue" style={{ position: 'absolute', top: 4, left: 4, fontSize: 11 }}>대표</span>
-              )}
-              <button
-                type="button"
-                onClick={() => removeImage(img.flSn)}
-                title="삭제"
-                style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', border: 'none', background: '#111', color: '#fff', cursor: 'pointer', fontSize: 12, lineHeight: '20px', padding: 0 }}
-              >
-                ×
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${maxImages}, 1fr)`, gridAutoRows: '1fr', gap: 8, marginTop: 12, flex: 1 }}>
+        {images.map((img, i) => (
+          <div
+            key={img.flSn}
+            onClick={() => pickMode && setAsRepresentative(img.flSn)}
+            style={{ position: 'relative', cursor: pickMode && i !== 0 ? 'pointer' : 'default' }}
+          >
+            <img
+              src={toImageUrl(img.url)}
+              alt={`상품 사진 ${i + 1}`}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8, border: i === 0 ? '2px solid #0064ff' : pickMode ? '2px dashed #0064ff' : '1px solid #eee' }}
+            />
+            {i === 0 && (
+              <span className="badge badge-blue" style={{ position: 'absolute', top: 4, left: 4, fontSize: 13 }}>대표</span>
+            )}
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); removeImage(img.flSn); }}
+              title="삭제"
+              style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', border: 'none', background: '#111', color: '#fff', cursor: 'pointer', fontSize: 14, lineHeight: '20px', padding: 0 }}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+        {Array.from({ length: maxImages - images.length }, (_, i) => (
+          <div
+            key={`empty-${i}`}
+            onClick={() => !imageUploading && fileInputRef.current?.click()}
+            style={{ width: '100%', height: '100%', borderRadius: 8, border: '1px dashed #d8d6cf', background: '#fafaf8', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: imageUploading ? 'default' : 'pointer' }}
+          >
+            <span style={{ fontSize: 24, color: '#c7c5bd' }}>+</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
