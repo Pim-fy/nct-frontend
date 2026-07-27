@@ -20,14 +20,13 @@ jobs:
         with:
           node-version: 24
           cache: 'yarn'
+          cache-dependency-path: ./nct-frontend/yarn.lock
 
       - name: Install Dependencies
         run: |
           if [ -f yarn.lock ]; then
-            cd ./nct-frontend
             yarn install --frozen-lockfile
           else
-            cd ./nct-frontend
             npm ci
           fi
 
@@ -38,10 +37,8 @@ jobs:
       - name: Vite Build with Yarn
         run: |
           if [ -f yarn.lock ]; then
-            cd ./nct-frontend
             yarn build
           else
-            cd ./nct-frontend
             npm run build
           fi
 
