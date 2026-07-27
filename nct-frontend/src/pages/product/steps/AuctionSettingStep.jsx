@@ -1,98 +1,66 @@
 // src/pages/product/steps/AuctionSettingStep.jsx
 // Step 1: 시작가·기간·시작시점·입찰단위·경매정책 동의
-// Props: form, set, policyAgreed, setPolicyAgreed, customEndDt, setCustomEndDt,
-//        endDt, durationDays, bidUnits, onOpenCalendar
+// Props: form, set, policyAgreed, setPolicyAgreed, auctionRange, setAuctionRange,
+//        endDt, bidUnits, submitted
+import { useState } from 'react';
+import DateRangePicker from '@components/product/DateRangePicker';
+
 export default function AuctionSettingStep({
   form, set, policyAgreed, setPolicyAgreed,
-  customEndDt, setCustomEndDt, endDt,
-  durationDays, bidUnits, onOpenCalendar,
+  auctionRange, setAuctionRange, endDt,
+  bidUnits, submitted,
 }) {
+  const [startAmtTouched, setStartAmtTouched] = useState(false);
+  const startAmtInvalid = !!form.prdStartAmt && Number(form.prdStartAmt) % form.bidUnit !== 0;
+
   return (
     <div>
       <div className="grid grid-cols-2 gap-4">
         <div className="field">
           <label>시작가</label>
-          <input
-            className="input"
-            type="number"
-            value={form.prdStartAmt}
-            onChange={e => set('prdStartAmt', e.target.value)}
-            min={0}
-            placeholder="0"
-          />
+          <div style={{ position: 'relative' }}>
+            <input
+              className="input no-spinner"
+              type="number"
+              value={form.prdStartAmt}
+              onChange={e => set('prdStartAmt', e.target.value)}
+              onWheel={e => e.target.blur()}
+              onBlur={() => setStartAmtTouched(true)}
+              min={0}
+              step={form.bidUnit}
+              placeholder="0"
+            />
+            {submitted && !form.prdStartAmt && (
+              <span style={{ position: 'absolute', top: '100%', left: 0, fontSize: 17, fontWeight: 700, color: '#c0392b', whiteSpace: 'nowrap' }}>시작가 입력은 필수입니다</span>
+            )}
+            {(submitted || startAmtTouched) && startAmtInvalid && (
+              <span style={{ position: 'absolute', top: '100%', left: 0, fontSize: 17, fontWeight: 700, color: '#c0392b', whiteSpace: 'nowrap' }}>
+                입찰 단위({form.bidUnit.toLocaleString()}원)의 배수로 입력해 주세요
+              </span>
+            )}
+          </div>
         </div>
         <div className="field">
-          <label>즉시구매가</label>
+          <label>즉시구매가 <span style={{ fontWeight: 500, color: '#888780' }}>(백 단위 자동절삭)</span></label>
           <input
-            className="input"
+            className="input no-spinner"
             type="number"
             value={form.prdIbyAmt}
             onChange={e => set('prdIbyAmt', e.target.value)}
+            onWheel={e => e.target.blur()}
+            onBlur={e => {
+              if (!e.target.value) return;
+              const rounded = Math.floor(Number(e.target.value) / 100) * 100;
+              set('prdIbyAmt', String(rounded));
+            }}
             min={0}
+            step={100}
             placeholder="입력 시 즉시구매 가능"
           />
         </div>
       </div>
 
-      <div className="field">
-        <label>경매 기간</label>
-        <div className="row" style={{ gap: 8 }}>
-          {durationDays.map(d => (
-            <button
-              key={d}
-              type="button"
-              onClick={() => { set('durationDays', d); setCustomEndDt(''); }}
-              className={`chip ${form.durationDays === d && !customEndDt ? 'active' : ''}`}
-            >
-              {d}일
-            </button>
-          ))}
-          <button
-            type="button"
-            onClick={onOpenCalendar}
-            title="종료일시 직접 설정"
-            className={`chip calendar-icon-btn ${customEndDt ? 'active' : ''}`}
-          >
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <div className="field">
-        <label>시작 시점</label>
-        <div className="row">
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, cursor: 'pointer' }}>
-            <input
-              type="radio"
-              checked={form.startNow}
-              onChange={() => { set('startNow', true); set('reserveDt', ''); }}
-            />
-            즉시 시작
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, cursor: 'pointer' }}>
-            <input
-              type="radio"
-              checked={!form.startNow}
-              onChange={() => set('startNow', false)}
-            />
-            예약
-          </label>
-        </div>
-        {!form.startNow && (
-          <div className="schedule-panel">
-            <input
-              className="input"
-              type="datetime-local"
-              value={form.reserveDt}
-              onChange={e => set('reserveDt', e.target.value)}
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="field">
+      <div className="field" style={{ marginTop: 10 }}>
         <label>입찰 단위 <span>(최소 입찰 증가액)</span></label>
         <div className="row" style={{ gap: 8, marginTop: 8 }}>
           {bidUnits.map(u => (
@@ -109,8 +77,57 @@ export default function AuctionSettingStep({
       </div>
 
       <div className="field">
+        <label>시작 시점</label>
+        <div className="row">
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 16, cursor: 'pointer' }}>
+            <input type="radio" checked={form.startNow} onChange={() => set('startNow', true)} />
+            즉시 시작
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 16, cursor: 'pointer' }}>
+            <input type="radio" checked={!form.startNow} onChange={() => set('startNow', false)} />
+            예약
+          </label>
+        </div>
+      </div>
+
+      <div className="field">
+        <label>경매 기간</label>
+        <div style={{ position: 'relative' }}>
+        <DateRangePicker
+          key={form.startNow ? 'instant' : 'reserve'}
+          startDate={auctionRange.start}
+          endDate={auctionRange.end}
+          onChange={({ start, end }) => setAuctionRange(prev => ({ ...prev, start: start ?? '', end: end ?? '' }))}
+          fixedStart={form.startNow}
+          maxDurationDays={14}
+          maxNavDate={(() => {
+            const pad2 = n => String(n).padStart(2, '0');
+            const now = new Date();
+            if (form.startNow) {
+              // 즉시시작: 종료일 선택 범위가 최대 2주이므로 탐색도 그만큼만 허용
+              const d = new Date(now);
+              d.setDate(d.getDate() + 14);
+              return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+            }
+            // 예약: 오늘 기준 2개월까지 탐색 가능 (실제 종료일은 시작일+14일로 제한)
+            let m = now.getMonth() + 2; let y = now.getFullYear();
+            if (m > 11) { m -= 12; y++; }
+            const last = new Date(y, m + 1, 0).getDate();
+            return `${y}-${pad2(m+1)}-${pad2(last)}`;
+          })()}
+          showTime={!form.startNow}
+          startTimeValue={auctionRange.startTime}
+          onStartTimeChange={val => setAuctionRange(prev => ({ ...prev, startTime: val, endTime: val }))}
+        />
+        {submitted && !auctionRange.end && (
+          <span style={{ position: 'absolute', top: '100%', left: 0, fontSize: 15, fontWeight: 700, color: '#c0392b', whiteSpace: 'nowrap' }}>경매 기간을 지정해 주세요</span>
+        )}
+        </div>
+      </div>
+
+      <div className="field" style={{ marginTop: 32 }}>
         <label>종료 예정일시</label>
-        <p className="mono" style={{ fontSize: 15, color: '#0064ff' }}>
+        <p className="mono" style={{ fontSize: 17, color: '#0064ff' }}>
           {endDt
             ? endDt.toLocaleString('ko-KR', {
                 year: 'numeric', month: '2-digit', day: '2-digit',
@@ -122,7 +139,7 @@ export default function AuctionSettingStep({
 
       <div className="card" style={{ background: '#e5efff', border: 'none', marginTop: 16 }}>
         <h4 style={{ marginTop: 0, color: '#0048bf' }}>경매 정책 안내</h4>
-        <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 2 }}>
+        <ul style={{ margin: 0, paddingLeft: 18, fontSize: 16, lineHeight: 2 }}>
           <li>마감 10분 이내 유효 입찰 시 잔여 시간이 10분으로 자동 연장됩니다 (1회)</li>
           <li>경매 시작 후 상품 설명, 가격, 기간은 수정할 수 없습니다</li>
           <li>즉시구매가는 최고 입찰가보다 반드시 높아야 합니다</li>
