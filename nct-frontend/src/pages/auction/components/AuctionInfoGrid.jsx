@@ -1,34 +1,59 @@
-const AuctionInfoGrid = ({ auction, sellerSummary, onInfoOpen }) => (
-  <section className="info-grid">
-    <div
-      className="info-card"
-      role="button"
-      tabIndex={0}
-      data-detail-key="product"
-      onClick={() => onInfoOpen('product')}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') onInfoOpen('product');
-      }}
+import TempComment from './TempComment';
+
+const SELLER_INFO_ITEM_CLASS = 'grid min-h-[72px] content-center gap-1 border-b border-[#eceef1] py-3 last:border-b-0 md:grid-cols-[140px_minmax(0,1fr)] md:items-center md:gap-6';
+
+const AuctionInfoGrid = ({
+  auction,
+  selectedTradeName,
+  productSectionId,
+  sellerSectionId,
+}) => (
+  <>
+    <section
+      className="scroll-mt-[136px] border-b border-[#e2e5ea] py-10 md:scroll-mt-[82px] md:py-14"
+      id={productSectionId}
+      aria-labelledby={`${productSectionId}-title`}
     >
-      <h2>상품 설명</h2>
-      <p>{auction.content || '등록된 상품 설명이 없습니다.'}</p>
-      <p className="detail-hint">상세 정보 보기</p>
-    </div>
-    <div
-      className="info-card"
-      role="button"
-      tabIndex={0}
-      data-detail-key="seller"
-      onClick={() => onInfoOpen('seller')}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') onInfoOpen('seller');
-      }}
+      <header className="mb-7">
+        <h2
+          className="m-0 text-[24px] leading-tight font-bold text-[#1d1d1f] md:text-[28px]"
+          id={`${productSectionId}-title`}
+        >
+          상품 설명
+        </h2>
+      </header>
+
+      <TempComment content={auction.content} />
+    </section>
+
+    <section
+      className="scroll-mt-[136px] border-b border-[#e2e5ea] py-10 md:scroll-mt-[82px] md:py-14"
+      id={sellerSectionId}
+      aria-labelledby={`${sellerSectionId}-title`}
     >
-      <h2>판매자 정보</h2>
-      <p>{sellerSummary}</p>
-      <p className="detail-hint">상세 정보 보기</p>
-    </div>
-  </section>
+      <header className="mb-7">
+        <h2
+          className="m-0 text-[24px] leading-tight font-bold text-[#1d1d1f] md:text-[28px]"
+          id={`${sellerSectionId}-title`}
+        >
+          판매자 정보
+        </h2>
+      </header>
+
+      <dl className="m-0 border-y border-[#e2e5ea]">
+        <div className={SELLER_INFO_ITEM_CLASS}>
+          <dt className="text-sm font-bold text-[#666]">판매자</dt>
+          <dd className="m-0 text-[15px] font-semibold text-[#1d1d1f]">
+            {auction.sellerName || '판매자'}
+          </dd>
+        </div>
+        <div className={SELLER_INFO_ITEM_CLASS}>
+          <dt className="text-sm font-bold text-[#666]">거래 방식</dt>
+          <dd className="m-0 text-[15px] text-[#1d1d1f]">{selectedTradeName}</dd>
+        </div>
+      </dl>
+    </section>
+  </>
 );
 
 export default AuctionInfoGrid;

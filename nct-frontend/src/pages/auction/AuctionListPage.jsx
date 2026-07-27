@@ -1,9 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import {
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
+  ChevronsLeft,
+  ChevronsRight,
   RotateCcw,
   Search,
   SlidersHorizontal,
@@ -13,7 +17,6 @@ import { getCategories } from '@api/categoryApi';
 import { fetchReferenceCodes } from '@api/referenceApi';
 import { SORT_OPTIONS } from '@/constants/auctionOptions';
 import AuctionCard from './components/AuctionCard';
-import '@assets/css/auction.css';
 
 const getSelectedValues = (searchParams, key) => searchParams.getAll(key);
 const DEFAULT_PAGE_SIZE = 12;
@@ -30,6 +33,23 @@ const TRADE_METHOD_FILTERS = [
   { code: 'TRDC0010', label: '직거래' },
   { code: 'TRDC0020', label: '배송·직거래 모두 가능' },
 ];
+const FILTER_GROUP_CLASS = 'm-0 grid gap-2 border-0 p-0 disabled:opacity-60';
+const FILTER_OPTION_CLASS = 'flex cursor-pointer items-center gap-2 text-sm text-[#5f5e5a]';
+const FILTER_MESSAGE_CLASS = 'm-0 min-h-5 text-[13px] leading-5 text-[#5f5e5a]';
+const FILTER_INPUT_CLASS = 'min-h-10 w-full rounded-lg border border-[#e2e1dc] bg-white px-3 text-sm text-[#1a1a18] outline-none transition-colors focus:border-primary';
+const PAGINATION_BUTTON_CLASS = 'min-h-10 rounded-lg border border-[#e2e1dc] bg-white px-3.5 text-sm font-semibold text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-45';
+const PAGINATION_WINDOW_SIZE = 5;
+
+const getPaginationItems = (currentPage, totalPages) => {
+  const halfWindow = Math.floor(PAGINATION_WINDOW_SIZE / 2);
+  const windowSize = Math.min(PAGINATION_WINDOW_SIZE, totalPages);
+  const maxWindowStart = totalPages - windowSize + 1;
+  const windowStart = Math.min(
+    Math.max(currentPage - halfWindow, 1),
+    maxWindowStart,
+  );
+  return Array.from({ length: windowSize }, (_, index) => windowStart + index);
+};
 
 const toggleValue = (values, value) => (
   values.includes(value)
@@ -39,6 +59,7 @@ const toggleValue = (values, value) => (
 
 const AuctionListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const shouldScrollAfterPageChangeRef = useRef(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [keywordDraft, setKeywordDraft] = useState(searchParams.get('keyword') || '');
@@ -156,12 +177,24 @@ const AuctionListPage = () => {
   } = useQuery({
     queryKey: ['auctions', queryParams],
     queryFn: () => fetchAuctions(queryParams),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 
   const auctionItems = auctionPage?.items || [];
   const totalElements = auctionPage?.totalElements || 0;
   const totalPages = auctionPage?.totalPages || 0;
+  const paginationItems = getPaginationItems(page, totalPages);
+
+  useEffect(() => {
+    if (!shouldScrollAfterPageChangeRef.current) return undefined;
+
+    shouldScrollAfterPageChangeRef.current = false;
+    const animationFrameId = window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    return () => window.cancelAnimationFrame(animationFrameId);
+  }, [page]);
 
   const handleSearch = (event) => {
     event.preventDefault();
@@ -209,58 +242,77 @@ const AuctionListPage = () => {
   };
 
   const goToPage = (nextPage) => {
+    if (nextPage === page) return;
+
     const next = new URLSearchParams(searchParams);
     if (nextPage <= 1) next.delete('page');
     else next.set('page', String(nextPage));
+    shouldScrollAfterPageChangeRef.current = true;
     setSearchParams(next);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
-    <div className="auction-page">
-      <section className="auction-search-band">
-        <div className="auction-container">
-          <form className="auction-search-box" onSubmit={handleSearch}>
+    <div className="min-h-full bg-white text-[#1a1a18]">
+      <section className="bg-white py-[22px]">
+        <div className="mx-auto w-[90%] max-w-[1600px] max-md:w-full max-md:px-4">
+          <form
+            className="mx-auto grid w-full max-w-[560px] grid-cols-[minmax(0,1fr)_56px] overflow-hidden rounded-lg border-[3px] border-primary bg-white"
+            onSubmit={handleSearch}
+          >
             <input
+              className="min-h-12 min-w-0 border-0 px-[18px] text-[15px] text-[#1a1a18] outline-none"
               type="search"
               value={keywordDraft}
               onChange={(event) => setKeywordDraft(event.target.value)}
               placeholder="검색어를 입력하세요"
               aria-label="경매 검색어"
             />
-            <button type="submit" aria-label="검색">
+            <button
+              className="inline-flex cursor-pointer items-center justify-center border-0 bg-primary text-white transition-colors hover:bg-primary-dark"
+              type="submit"
+              aria-label="검색"
+            >
               <Search size={24} strokeWidth={2.4} />
             </button>
           </form>
         </div>
       </section>
 
-      <main className="auction-container auction-main">
-        <div className="auction-layout">
-          <aside className={`auction-filter-panel ${filterOpen ? 'open' : ''}`}>
-            <div className="auction-filter-head">
-              <h2>필터</h2>
-              <button type="button" onClick={clearFilters} title="필터 초기화" aria-label="필터 초기화">
+      <main className="mx-auto w-[90%] max-w-[1600px] py-7 pb-[52px] max-md:w-full max-md:px-4">
+        <div className="flex items-start gap-6 max-md:block">
+          <aside
+            className={`${filterOpen ? 'grid' : 'hidden'} static mb-3.5 w-full gap-[18px] rounded-lg border border-[#f0efec] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)] md:sticky md:top-20 md:mb-0 md:grid md:w-[280px] md:flex-[0_0_280px]`}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="m-0 text-lg font-bold">필터</h2>
+              <button
+                className="inline-flex size-[34px] cursor-pointer items-center justify-center rounded-lg border border-[#e2e1dc] bg-white text-[#5f5e5a] transition-colors hover:border-primary hover:bg-primary-light hover:text-primary"
+                type="button"
+                onClick={clearFilters}
+                title="필터 초기화"
+                aria-label="필터 초기화"
+              >
                 <RotateCcw size={16} />
               </button>
             </div>
 
             <fieldset
-              className="auction-filter-group"
+              className={FILTER_GROUP_CLASS}
               disabled={categoriesQuery.isLoading || categoriesQuery.isError}
             >
-              <legend>카테고리</legend>
+              <legend className="mb-0.5 block text-sm font-extrabold text-[#1a1a18]">카테고리</legend>
               {categoriesQuery.isLoading ? (
-                <p className="auction-filter-message">불러오는 중</p>
+                <p className={FILTER_MESSAGE_CLASS}>불러오는 중</p>
               ) : categoriesQuery.isError ? (
-                <p className="auction-filter-message error">불러오지 못했습니다.</p>
+                <p className={`${FILTER_MESSAGE_CLASS} text-[#b42318]`}>불러오지 못했습니다.</p>
               ) : categoryOptions.length === 0 ? (
-                <p className="auction-filter-message">선택 가능한 항목이 없습니다.</p>
+                <p className={FILTER_MESSAGE_CLASS}>선택 가능한 항목이 없습니다.</p>
               ) : (
                 <>
                   {visibleCategoryOptions.map((category) => (
-                    <label key={category.catSn}>
+                    <label className={FILTER_OPTION_CLASS} key={category.catSn}>
                       <input
+                        className="accent-primary"
                         type="checkbox"
                         checked={categoryDraft.includes(category.catNm)}
                         onChange={() => setCategoryDraft((prev) => toggleValue(prev, category.catNm))}
@@ -270,7 +322,7 @@ const AuctionListPage = () => {
                   ))}
                   {categoryOptions.length > COLLAPSED_CATEGORY_COUNT && (
                     <button
-                      className="auction-category-more"
+                      className="inline-flex min-h-7 w-fit cursor-pointer items-center gap-1 border-0 bg-transparent text-[13px] font-bold text-primary transition-colors hover:text-primary-dark"
                       type="button"
                       onClick={() => setShowAllCategories((prev) => !prev)}
                     >
@@ -282,18 +334,20 @@ const AuctionListPage = () => {
               )}
             </fieldset>
 
-            <fieldset className="auction-filter-group">
-              <legend>가격 범위</legend>
-              <div className="auction-price-range">
+            <fieldset className={FILTER_GROUP_CLASS}>
+              <legend className="mb-0.5 block text-sm font-extrabold text-[#1a1a18]">가격 범위</legend>
+              <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
                 <input
+                  className={FILTER_INPUT_CLASS}
                   value={minPriceDraft}
                   onChange={(event) => handlePriceDraftChange(setMinPriceDraft, event.target.value)}
                   inputMode="numeric"
                   placeholder="최소 금액"
                   aria-label="최소 금액"
                 />
-                <span>~</span>
+                <span className="text-[#5f5e5a]">~</span>
                 <input
+                  className={FILTER_INPUT_CLASS}
                   value={maxPriceDraft}
                   onChange={(event) => handlePriceDraftChange(setMaxPriceDraft, event.target.value)}
                   inputMode="numeric"
@@ -304,19 +358,20 @@ const AuctionListPage = () => {
             </fieldset>
 
             <fieldset
-              className="auction-filter-group"
+              className={FILTER_GROUP_CLASS}
               disabled={auctionStatusesQuery.isLoading || auctionStatusesQuery.isError}
             >
-              <legend>진행 상태</legend>
+              <legend className="mb-0.5 block text-sm font-extrabold text-[#1a1a18]">진행 상태</legend>
               {auctionStatusesQuery.isLoading ? (
-                <p className="auction-filter-message">불러오는 중</p>
+                <p className={FILTER_MESSAGE_CLASS}>불러오는 중</p>
               ) : auctionStatusesQuery.isError ? (
-                <p className="auction-filter-message error">불러오지 못했습니다.</p>
+                <p className={`${FILTER_MESSAGE_CLASS} text-[#b42318]`}>불러오지 못했습니다.</p>
               ) : auctionStatusOptions.length === 0 ? (
-                <p className="auction-filter-message">선택 가능한 항목이 없습니다.</p>
+                <p className={FILTER_MESSAGE_CLASS}>선택 가능한 항목이 없습니다.</p>
               ) : auctionStatusOptions.map((status) => (
-                <label key={status.code}>
+                <label className={FILTER_OPTION_CLASS} key={status.code}>
                   <input
+                    className="accent-primary"
                     type="checkbox"
                     checked={statusDraft.includes(status.code)}
                     onChange={() => setStatusDraft((prev) => toggleValue(prev, status.code))}
@@ -327,20 +382,21 @@ const AuctionListPage = () => {
             </fieldset>
 
             <fieldset
-              className="auction-filter-group"
+              className={FILTER_GROUP_CLASS}
               disabled={tradeMethodsQuery.isLoading || tradeMethodsQuery.isError}
             >
-              <legend>거래 방식</legend>
+              <legend className="mb-0.5 block text-sm font-extrabold text-[#1a1a18]">거래 방식</legend>
               {tradeMethodsQuery.isLoading ? (
-                <p className="auction-filter-message">불러오는 중</p>
+                <p className={FILTER_MESSAGE_CLASS}>불러오는 중</p>
               ) : tradeMethodsQuery.isError ? (
-                <p className="auction-filter-message error">불러오지 못했습니다.</p>
+                <p className={`${FILTER_MESSAGE_CLASS} text-[#b42318]`}>불러오지 못했습니다.</p>
               ) : tradeMethodOptions.length === 0 ? (
-                <p className="auction-filter-message">선택 가능한 항목이 없습니다.</p>
+                <p className={FILTER_MESSAGE_CLASS}>선택 가능한 항목이 없습니다.</p>
               ) : (
                 <>
-                  <label>
+                  <label className={FILTER_OPTION_CLASS}>
                     <input
+                      className="accent-primary"
                       name="tradeMethod"
                       type="radio"
                       checked={tradeMethodDraft === 'all'}
@@ -349,13 +405,14 @@ const AuctionListPage = () => {
                     전체
                   </label>
                   {tradeMethodOptions.map((method) => (
-                    <label key={method.code}>
+                    <label className={FILTER_OPTION_CLASS} key={method.code}>
                       <input
+                        className="accent-primary"
                         name="tradeMethod"
-                      type="radio"
-                      checked={tradeMethodDraft === method.code}
-                      onChange={() => setTradeMethodDraft(method.code)}
-                    />
+                        type="radio"
+                        checked={tradeMethodDraft === method.code}
+                        onChange={() => setTradeMethodDraft(method.code)}
+                      />
                       {method.label}
                     </label>
                   ))}
@@ -363,18 +420,20 @@ const AuctionListPage = () => {
               )}
             </fieldset>
 
-            <fieldset className="auction-filter-group">
-              <legend>추가 조건</legend>
-              <label>
+            <fieldset className={FILTER_GROUP_CLASS}>
+              <legend className="mb-0.5 block text-sm font-extrabold text-[#1a1a18]">추가 조건</legend>
+              <label className={FILTER_OPTION_CLASS}>
                 <input
+                  className="accent-primary"
                   type="checkbox"
                   checked={endingSoonOnlyDraft}
                   onChange={(event) => setEndingSoonOnlyDraft(event.target.checked)}
                 />
                 마감 임박 상품만
               </label>
-              <label>
+              <label className={FILTER_OPTION_CLASS}>
                 <input
+                  className="accent-primary"
                   type="checkbox"
                   checked={instantBuyOnlyDraft}
                   onChange={(event) => setInstantBuyOnlyDraft(event.target.checked)}
@@ -383,9 +442,13 @@ const AuctionListPage = () => {
               </label>
             </fieldset>
 
-            <label className="auction-sort-field">
-              <span>정렬</span>
-              <select value={sortDraft} onChange={(event) => setSortDraft(event.target.value)}>
+            <label className="grid gap-2">
+              <span className="mb-0.5 block text-sm font-extrabold text-[#1a1a18]">정렬</span>
+              <select
+                className={FILTER_INPUT_CLASS}
+                value={sortDraft}
+                onChange={(event) => setSortDraft(event.target.value)}
+              >
                 {SORT_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -394,60 +457,111 @@ const AuctionListPage = () => {
               </select>
             </label>
 
-            <button className="auction-filter-submit" type="button" onClick={handleFilterSearch}>
+            <button
+              className="inline-flex min-h-[46px] cursor-pointer items-center justify-center rounded-lg border border-primary bg-primary px-3 text-sm font-bold text-white transition-colors hover:border-primary-dark hover:bg-primary-dark"
+              type="button"
+              onClick={handleFilterSearch}
+            >
               상품 {(filterPreviewQuery.data?.totalElements ?? totalElements).toLocaleString('ko-KR')}개 보기
             </button>
           </aside>
 
-          <section className="auction-content">
-            <button className="auction-filter-toggle" type="button" onClick={() => setFilterOpen((prev) => !prev)}>
+          <section className="min-w-0 flex-1">
+            <button
+              className="mb-3 hidden min-h-[42px] w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-primary bg-white font-bold text-primary max-md:inline-flex max-md:sticky max-md:top-0 max-md:z-10"
+              type="button"
+              onClick={() => setFilterOpen((prev) => !prev)}
+            >
               <SlidersHorizontal size={18} />
               필터 열기/닫기
             </button>
-            <div className="auction-list-count">
+            <div className="mb-[18px] text-left text-sm font-extrabold text-primary-dark max-md:mt-0.5 max-md:mb-3.5">
               {totalElements.toLocaleString('ko-KR')}개 상품
             </div>
 
             {isLoading ? (
-              <div className="auction-empty">
+              <div className="grid min-h-[340px] place-content-center justify-items-center gap-2.5 rounded-lg border border-[#f0efec] bg-[#f8f8f6] p-7 text-center">
                 <strong>경매 상품을 불러오는 중입니다.</strong>
               </div>
             ) : isError ? (
-              <div className="auction-empty">
+              <div className="grid min-h-[340px] place-content-center justify-items-center gap-2.5 rounded-lg border border-[#f0efec] bg-[#f8f8f6] p-7 text-center">
                 <strong>경매 상품을 불러오지 못했습니다.</strong>
-                <p>잠시 후 다시 시도해 주세요.</p>
+                <p className="m-0 text-[#5f5e5a]">잠시 후 다시 시도해 주세요.</p>
               </div>
             ) : auctionItems.length > 0 ? (
-              <div className="auction-grid">
+              <div className="grid grid-cols-3 gap-[45px] max-xl:grid-cols-2 max-xl:gap-6 max-md:grid-cols-1 max-md:gap-[18px]">
                 {auctionItems.map((item) => (
                   <AuctionCard key={item.auctionId} item={item} />
                 ))}
               </div>
             ) : (
-              <div className="auction-empty">
-                <strong>등록된 경매 상품이 없습니다.</strong>
-                <p>새 경매가 올라오면 이곳에 표시됩니다.</p>
-                <button type="button" onClick={clearFilters}>필터 초기화</button>
+              <div className="grid min-h-[340px] place-content-center justify-items-center gap-2.5 rounded-lg border border-[#f0efec] bg-[#f8f8f6] p-7 text-center">
+                <strong className="text-lg">등록된 경매 상품이 없습니다.</strong>
+                <p className="m-0 text-[#5f5e5a]">새 경매가 올라오면 이곳에 표시됩니다.</p>
+                <button
+                  className="min-h-10 cursor-pointer rounded-lg border border-primary bg-primary px-3.5 text-sm font-semibold text-white"
+                  type="button"
+                  onClick={clearFilters}
+                >
+                  필터 초기화
+                </button>
               </div>
             )}
 
             {totalPages > 1 && (
-              <div className="auction-pagination" aria-label="경매 목록 페이지">
-                <button type="button" disabled={page <= 1} onClick={() => goToPage(page - 1)}>
-                  이전
+              <div className="mt-6 flex flex-wrap justify-center gap-2" aria-label="경매 목록 페이지">
+                <button
+                  className={PAGINATION_BUTTON_CLASS}
+                  type="button"
+                  title="첫 페이지"
+                  aria-label="첫 페이지로 이동"
+                  disabled={page <= 1}
+                  onClick={() => goToPage(1)}
+                >
+                  <ChevronsLeft size={17} aria-hidden="true" />
                 </button>
-                {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
+                <button
+                  className={PAGINATION_BUTTON_CLASS}
+                  type="button"
+                  title="이전 페이지"
+                  aria-label="이전 페이지로 이동"
+                  disabled={page <= 1}
+                  onClick={() => goToPage(page - 1)}
+                >
+                  <ChevronLeft size={17} aria-hidden="true" />
+                </button>
+                {paginationItems.map((pageNumber) => (
                   <button
                     key={pageNumber}
                     type="button"
-                    className={pageNumber === page ? 'active' : ''}
+                    aria-current={pageNumber === page ? 'page' : undefined}
+                    className={pageNumber === page
+                      ? 'min-h-10 rounded-lg border border-primary bg-primary px-3.5 text-sm font-semibold text-white'
+                      : PAGINATION_BUTTON_CLASS}
                     onClick={() => goToPage(pageNumber)}
                   >
                     {pageNumber}
                   </button>
                 ))}
-                <button type="button" disabled={page >= totalPages} onClick={() => goToPage(page + 1)}>
-                  다음
+                <button
+                  className={PAGINATION_BUTTON_CLASS}
+                  type="button"
+                  title="다음 페이지"
+                  aria-label="다음 페이지로 이동"
+                  disabled={page >= totalPages}
+                  onClick={() => goToPage(page + 1)}
+                >
+                  <ChevronRight size={17} aria-hidden="true" />
+                </button>
+                <button
+                  className={PAGINATION_BUTTON_CLASS}
+                  type="button"
+                  title="마지막 페이지"
+                  aria-label="마지막 페이지로 이동"
+                  disabled={page >= totalPages}
+                  onClick={() => goToPage(totalPages)}
+                >
+                  <ChevronsRight size={17} aria-hidden="true" />
                 </button>
               </div>
             )}
