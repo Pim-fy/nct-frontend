@@ -2,10 +2,11 @@
 // Step 0: 상품명·카테고리·거래형태·설명·이미지 입력
 // Props: form, set, categories, bannedKeywordError, images, onChange, tradeMethods, maxImages
 import ProductImageUpload from '@components/product/ProductImageUpload';
+import RichTextEditor from '@components/product/RichTextEditor';
 
 export default function ProductInfoStep({ form, set, categories, bannedKeywordError, images, onChange, tradeMethods, maxImages }) {
   return (
-    <div>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <div className="field">
         <label>상품명 <span>{form.prdNm.length}/100</span></label>
         <input
@@ -17,7 +18,7 @@ export default function ProductInfoStep({ form, set, categories, bannedKeywordEr
           placeholder="다이슨 V11 청소기"
         />
         {bannedKeywordError && (
-          <p className="field-error" style={{ color: 'var(--color-danger, #e53e3e)', fontSize: 13, marginTop: 4 }}>
+          <p className="field-error" style={{ color: '#c0392b', fontSize: 17, fontWeight: 700, marginTop: 4 }}>
             {bannedKeywordError}
           </p>
         )}
@@ -61,15 +62,9 @@ export default function ProductInfoStep({ form, set, categories, bannedKeywordEr
         </div>
       </div>
 
-      <div className="field">
-        <label>상품 설명 <span>{form.prdCn.length}/2000</span></label>
-        <textarea
-          className="input"
-          value={form.prdCn}
-          onChange={e => set('prdCn', e.target.value)}
-          maxLength={2000}
-          rows={6}
-        />
+      <div className="field" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        <label>상품 설명</label>
+        <RichTextEditor value={form.prdCn} onChange={html => set('prdCn', html)} />
       </div>
 
       {/* 이미지 업로드 (F-AUC-002) — 선택 즉시 업로드, 첫 장이 대표이미지 */}

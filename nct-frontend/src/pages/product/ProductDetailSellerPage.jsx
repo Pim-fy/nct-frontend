@@ -3,12 +3,12 @@
 // 라우트: /product/:prdSn/seller
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import DOMPurify from 'dompurify';
 import { toImageUrl } from '@api/fileApi';
 import { getProduct, postProductComment, fetchProductComments, fetchProductInquiries, postInquiryReply } from '@api/productApi';
 import { getAuctionStatus, requestAuctionCancel, fetchAuctionFavoriteStatus } from '@api/auctionApi';
 import { TRADE_LABEL, STATUS_LABEL, STATUS_BADGE } from '@/constants/productConstants';
 import useCountdown from '@hooks/useCountdown';
-import Breadcrumb from '@components/common/Breadcrumb';
 import ErrorMessage from '@components/common/ErrorMessage';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
 import Toast from '@components/common/Toast';
@@ -37,6 +37,7 @@ export default function ProductDetailSellerPage() {
   const [auctionStatus, setAuctionStatus] = useState(null);
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState('');
+  const [imgIdx, setImgIdx]             = useState(0); // 상품 이미지 슬라이드 현재 인덱스
 
   const now = useCountdown(!!auctionStatus?.aucEndDt);
   const remainTime = (() => {
@@ -193,11 +194,7 @@ export default function ProductDetailSellerPage() {
 
   return (
     <main className="container seller-page">
-      <div style={{ marginTop: 24 }}>
-        <Breadcrumb items={[{ label: '홈', href: '/' }, { label: '상품 판매 내역', href: '/user/mypage?section=auction-sales' }, { label: '상품 상세' }]} />
-      </div>
-
-      <div className="seller-auction-head" style={{ marginBottom: 16 }}>
+      <div className="seller-auction-head" style={{ marginBottom: 16, marginTop: 24 }}>
         <button className="btn btn-ghost" style={{ marginLeft: 'auto' }} onClick={() => navigate('/user/mypage?section=auction-sales')}>← 내 판매 내역</button>
       </div>
 
@@ -211,11 +208,39 @@ export default function ProductDetailSellerPage() {
           </div>
           <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', flex: 1 }}>
           <div className="seller-product" style={{ alignItems: 'flex-start' }}>
-            <div className="seller-product-img">
-              {product.prdImgUrl && (
-                <img src={toImageUrl(product.prdImgUrl)} alt={product.prdNm} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} />
-              )}
-            </div>
+            {(() => {
+              const images = product.imageList?.length > 0 ? product.imageList : (product.prdImgUrl ? [{ url: product.prdImgUrl }] : []);
+              const hasMultiple = images.length > 1;
+              const current = images[imgIdx];
+              return (
+                <div className="seller-product-img" style={{ position: 'relative' }}>
+                  {current && (
+                    <img src={toImageUrl(current.url)} alt={product.prdNm} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} />
+                  )}
+                  {imgIdx === 0 && current && (
+                    <span style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,100,255,0.82)', color: '#fff', fontSize: 11, fontWeight: 700, textAlign: 'center', padding: '3px 0', borderBottomLeftRadius: 8, borderBottomRightRadius: 8 }}>대표이미지</span>
+                  )}
+                  {hasMultiple && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setImgIdx(i => (i - 1 + images.length) % images.length)}
+                        style={{ position: 'absolute', top: '50%', left: 4, transform: 'translateY(-50%)', width: 24, height: 24, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.45)', color: '#fff', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        ‹
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setImgIdx(i => (i + 1) % images.length)}
+                        style={{ position: 'absolute', top: '50%', right: 4, transform: 'translateY(-50%)', width: 24, height: 24, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.45)', color: '#fff', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        ›
+                      </button>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
             <div>
               <div className="seller-status-row" style={{ justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -256,7 +281,11 @@ export default function ProductDetailSellerPage() {
           {product.prdCn && (
             <div style={{ marginTop: 18, borderTop: '1px solid #f0efec', paddingTop: 16 }}>
               <p style={{ margin: '0 0 8px', fontSize: 14, color: '#5f5e5a', fontWeight: 600 }}>상품 설명</p>
-              <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7, whiteSpace: 'pre-wrap', color: '#1a1a18', overflow: 'hidden', maxHeight: descOpen ? 'none' : 72 }}>{product.prdCn}</p>
+              <div
+                className="rich-text-editor-body"
+                style={{ fontSize: 16, lineHeight: 1.7, color: '#1a1a18', overflow: 'hidden', maxHeight: descOpen ? 'none' : 72, padding: 0 }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.prdCn, { ALLOWED_TAGS: ['p', 'br', 'b', 'strong', 'i', 'em', 'u', 'ul', 'ol', 'li', 'img', 'div', 'span'], ALLOWED_ATTR: ['src', 'style'] }) }}
+              />
             </div>
           )}
 
@@ -297,7 +326,7 @@ export default function ProductDetailSellerPage() {
                   </>
                 )}
                 {isEnded && <button className="btn btn-outline" onClick={() => auctionStatus?.aucSn && navigate(`/auction/${auctionStatus.aucSn}`)}>종료 화면 보기</button>}
-                {isDraft && <button className="btn btn-primary" onClick={() => navigate('/product/register', { state: { prdSn: Number(prdSn) } })}>경매 설정 완료하기</button>}
+                {isDraft && <button className="btn btn-primary" onClick={() => navigate('/product/register', { state: { prdSn: Number(prdSn) } })}>상품 등록 재개</button>}
               </div>
               <div className={noticeClass} style={{ marginTop: 16 }}>{noticeText}</div>
             </div>

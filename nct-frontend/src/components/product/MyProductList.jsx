@@ -82,15 +82,17 @@ function fmtDate(d) {
 
 function chipStyle(active) {
   return {
-    padding: '4px 14px',
-    borderRadius: 100,
-    border: `1px solid ${active ? '#0064ff' : '#d1d0cc'}`,
-    background: active ? '#e5efff' : '#fff',
-    color: active ? '#0064ff' : '#5f5e5a',
-    fontWeight: active ? 700 : 400,
-    fontSize: 14,
+    minHeight: 38,
+    padding: '0 14px',
+    borderRadius: 8,
+    border: `1px solid ${active ? '#155eef' : '#dce2ed'}`,
+    background: active ? '#155eef' : '#fff',
+    color: active ? '#fff' : '#526079',
+    fontWeight: 700,
+    fontSize: 13,
     cursor: 'pointer',
     fontFamily: 'inherit',
+    whiteSpace: 'nowrap',
   };
 }
 
@@ -148,7 +150,7 @@ export default function MyProductList() {
   return (
     <>
       {/* 필터 행 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
         {/* 좌측: 필터 칩 */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', flex: 1 }}>
           {FILTERS.map((f) => (
@@ -163,29 +165,31 @@ export default function MyProductList() {
           ))}
         </div>
 
-        {/* 우측: 종료 콤보박스 + 임시저장 토글 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: draftOnly ? '#0064ff' : '#5f5e5a', cursor: 'pointer', userSelect: 'none' }}>
-            <input
-              type="checkbox"
-              checked={draftOnly}
-              onChange={handleDraftToggle}
-              style={{ accentColor: '#0064ff', width: 15, height: 15, cursor: 'pointer' }}
-            />
-            임시저장만 보기
-          </label>
-          {filter === 'CLOSED' && !draftOnly && (
-            <select
-              value={subFilter}
-              onChange={e => handleSubFilterChange(e.target.value)}
-              style={{ fontSize: 13, padding: '4px 8px', borderRadius: 6, border: '1px solid #d1d0cc', cursor: 'pointer', fontFamily: 'inherit' }}
-            >
-              {CLOSED_SUB_FILTERS.map(s => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
-          )}
-        </div>
+        {/* 우측: 종료 콤보박스 */}
+        {filter === 'CLOSED' && !draftOnly && (
+          <select
+            value={subFilter}
+            onChange={e => handleSubFilterChange(e.target.value)}
+            style={{ fontSize: 13, padding: '4px 8px', borderRadius: 6, border: '1px solid #d1d0cc', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}
+          >
+            {CLOSED_SUB_FILTERS.map(s => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      {/* 필터 박스 아래: 임시저장만 보기 토글 */}
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 5, width: 'fit-content', fontSize: 13, color: draftOnly ? '#0064ff' : '#5f5e5a', cursor: 'pointer', userSelect: 'none' }}>
+          <input
+            type="checkbox"
+            checked={draftOnly}
+            onChange={handleDraftToggle}
+            style={{ accentColor: '#0064ff', width: 15, height: 15, cursor: 'pointer' }}
+          />
+          임시저장만 보기
+        </label>
       </div>
 
       {list.length === 0 ? (

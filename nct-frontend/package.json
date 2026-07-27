@@ -16,6 +16,7 @@
     "@tosspayments/tosspayments-sdk": "^2.7.1",
     "aos": "^2.3.4",
     "axios": "^1.15.1",
+    "dompurify": "^3.4.12",
     "lucide-react": "^1.14.0",
     "react": "^19.2.5",
     "react-daum-postcode": "^4.0.0",
