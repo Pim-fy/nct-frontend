@@ -1,0 +1,262 @@
+/* src/assets/css/common.css */
+/* ─────────────────────────────────────────────────────────────────────────────
+   판매자 화면 공통 CSS — 목업(UI목업_v3) 기반으로 추출한 클래스 모음
+   App.css 의 전역 스타일(버튼·배지·카드)을 보완하며,
+   상품 등록 · 경매 활동 내역 · 판매자 경매 상세 화면에서 공유합니다.
+───────────────────────────────────────────────────────────────────────────── */
+
+/* ===========================
+   공통 유틸리티
+   — 텍스트 흐림(.muted)·소형(.small)·모노스페이스(.mono)
+     flex 행(.row), 세로 목록(.list), 카드형 목록 행(.list-row)
+=========================== */
+.muted { color: #5f5e5a; }
+.small { font-size: 13px; }
+.mono { font-family: 'Noto Sans Mono', monospace; }
+
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.list { display: grid; gap: 12px; }
+
+.list-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  border: 1px solid #f0efec;
+  border-radius: 16px;
+  background: #fff;
+  padding: 16px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.06);
+}
+
+a.list-row {
+  transition: box-shadow .15s ease, transform .15s ease;
+  text-decoration: none;
+  color: inherit;
+}
+
+a.list-row:hover {
+  box-shadow: 0 6px 18px rgba(0,0,0,.10);
+  transform: translateY(-2px);
+}
+
+/* 이미지 플레이스홀더 — 상품 대표 이미지 미등록 시 표시하는 회색 빈 박스
+   FILES 연계(담당자6 백종남) 완료 후 <img> 태그로 교체 */
+.img-placeholder {
+  background: #e5e4df;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2em;
+  border-radius: 8px;
+  min-height: 130px;
+  color: #5f5e5a;
+  overflow: hidden;
+}
+
+.img-placeholder img {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  display: block;
+  object-fit: cover;
+}
+
+/* 탭 — 화면 전환·필터 탭, .active 클래스로 선택 강조
+   MyProductListPage 상태별 필터, ProductRegisterPage 스텝 이동 등에 사용 */
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 16px; }
+.tab {
+  border: 1px solid #e2e1dc;
+  background: #fff;
+  color: #5f5e5a;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.tab.active { background: var(--color-primary, #0064ff); color: #fff; border-color: var(--color-primary, #0064ff); }
+
+/* 칩 — 복수 선택 항목 버튼, .active 클래스로 선택 상태 표시
+   ProductRegisterPage 카테고리 선택 칩에 사용 */
+.chip {
+  border: 1px solid #e2e1dc;
+  background: #fff;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.chip.active {
+  background: var(--color-primary, #0064ff);
+  color: #fff;
+  border-color: var(--color-primary, #0064ff);
+}
+
+/* 토스트 — 하단 중앙 고정 알림, JS에서 display 토글로 짧은 성공·실패 메시지 표시 */
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  background: #1a1a18;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 8px;
+  display: none;
+  z-index: 300;
+  font-size: 14px;
+}
+
+/* 스크롤 숨김 — 가로 스크롤이 생기는 칩·탭 목록에서 스크롤바만 감춰 깔끔하게 유지 */
+.scrollbar-hide {
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* 페이지 타이틀 — 각 페이지 상단 제목(h1)과 우측 액션 버튼을 가로로 배치하는 행 */
+.page-title { margin: 28px 0 18px; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.page-title h1 { margin: 0; font-size: 28px; letter-spacing: 0; }
+.page-title p { margin: 6px 0 0; color: #5f5e5a; }
+
+/* 스텝 인디케이터 — ProductRegisterPage 3단계 진행 표시
+   .active = 현재 단계(파란 밑줄), .done = 완료 단계(연한 파랑) */
+.steps { display: flex; gap: 0; margin-bottom: 32px; }
+.step { flex: 1; padding: 12px; text-align: center; border-bottom: 3px solid #f0efec; color: #888780; font-size: 14px; font-weight: 500; }
+.step.active { border-bottom-color: #0064ff; color: #0064ff; font-weight: 700; }
+.step.done { border-bottom-color: #e5efff; color: #5f5e5a; }
+
+/* 2·3컬럼 그리드 — ProductRegisterPage step2 등록확인 카드 나열에 사용 */
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+
+/* 테이블 — 기본 테이블 스타일 (둥근 테두리·그림자)
+   .card 안에서는 이중 테두리 방지를 위해 border·shadow 제거 */
+table { width: 100%; border-collapse: separate; border-spacing: 0; background: #fff; border: 1px solid #f0efec; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.06); }
+.card table { box-shadow: none; border: none; }
+th, td { border-bottom: 1px solid #f0efec; padding: 12px 10px; text-align: left; font-size: 14px; vertical-align: top; }
+th { color: #5f5e5a; background: #fafaf8; font-weight: 700; }
+table tr:last-child td { border-bottom: none; }
+
+/* 오버레이 모달 — .open 클래스 토글로 표시/숨김 (display:none → flex)
+   배경 클릭 시 닫히도록 onClick에서 e.target 비교 처리 */
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,.36); display: none; align-items: center; justify-content: center; padding: 24px; z-index: 200; }
+.modal.open { display: flex; }
+.modal-box { width: min(560px, 100%); background: #fff; border-radius: 16px; padding: 22px; box-shadow: 0 20px 80px rgba(0,0,0,.25); }
+
+/* 캘린더 아이콘 버튼 — ProductRegisterPage 날짜 입력 옆 아이콘 버튼
+   클릭 시 캘린더 모달(setCalendarOpen)을 열어 종료일시 직접 설정 */
+.calendar-icon-btn { width: 43px; min-height: 34px; padding: 6px 12px; display: inline-flex; align-items: center; justify-content: center; color: #5f5e5a; }
+.calendar-icon-btn svg { width: 18px; height: 18px; display: block; }
+.calendar-icon-btn:hover { border-color: #0064ff; color: #0064ff; background: #e5efff; }
+
+/* 경매등록 스케줄 패널 — ProductRegisterPage step1 예약 시작일시 입력 영역
+   startNow=false 선택 시 이 패널이 표시되어 reserveDt를 입력 */
+.schedule-panel { border: 1px solid #f0efec; border-radius: 8px; padding: 14px; background: #fafaf8; margin-top: 8px; }
+
+/* 정책 동의 체크박스 래퍼 — ProductRegisterPage step1 경매 정책 동의,
+   step2 최종 등록 동의 체크박스 영역 */
+.policy-agree { margin-top: 12px; padding: 12px 14px; border: 1px solid #f0efec; border-radius: 8px; background: #fff; }
+
+/* 소형 버튼(.btn-sm) — MyProductListPage 목록 행의 판매 관리·삭제 등 인라인 버튼 크기 축소 */
+.btn-sm { padding: 8px 14px; font-size: 15px; }
+
+/* 이력 목록 — MyProductListPage 판매 목록·ProductDetailSellerPage 경매 활동 이력 행 레이아웃
+   썸네일(.history-thumb) + 제목·부가정보(.history-row-title) 가로 배치 */
+.history-toolbar { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 12px; }
+.history-list { display: grid; gap: 12px; }
+.history-entry-main { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.history-thumb { flex: 0 0 64px; width: 64px; height: 64px; border: 1px solid #f0efec; border-radius: 8px; background: #e5e4df; overflow: hidden; }
+.history-thumb img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.history-row-title { display: grid; gap: 4px; min-width: 0; }
+.history-row-title h4 { margin: 0; font-size: 20px; }
+.history-row-title p { margin: 0; }
+
+/* 워크스페이스 헤더 — 카드·섹션 내 제목(h3)+설명(p) 헤더 블록 레이아웃
+   우측에 액션 버튼을 배치할 때 flex justify-between으로 처리 */
+.workspace-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 20px; }
+.workspace-head h3 { margin: 0; font-size: 22px; }
+.workspace-head p { margin: 6px 0 0; color: #5f5e5a; }
+
+/* 판매자 경매 상세 (ProductDetailSellerPage 전용)
+   .seller-auction-layout: 왼쪽(상품정보·메트릭·이력) 2fr / 오른쪽(관리 패널) 1fr
+   .seller-metrics: 입찰현황·관심인원·종료정보 3칸 카드
+   .notice/.danger-note: 하단 안내 박스 (진행중=파랑, 귀책 확정 시 빨강으로 교체 예정) */
+.seller-auction-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 24px; }
+.seller-auction-head h1 { font-size: 28px; line-height: 1.35; margin: 0 0 6px; }
+.seller-auction-layout { display: grid; grid-template-columns: minmax(0,2fr) minmax(300px,1fr); gap: 20px; align-items: start; }
+.seller-product { display: grid; grid-template-columns: 180px minmax(0,1fr); gap: 20px; align-items: center; }
+.seller-product-img { width: 180px; height: 180px; border: 1px solid #f0efec; border-radius: 8px; background: #e5e4df; flex-shrink: 0; }
+.seller-status-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.seller-price { font-size: 24px; font-weight: 700; color: #0048bf; margin: 10px 0; line-height: 1.35; }
+.seller-metrics { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; margin-top: 18px; }
+.seller-metric { min-height: 76px; padding: 14px; border: 1px solid #f0efec; border-radius: 8px; background: #fafaf8; }
+.seller-metric span { display: block; color: #5f5e5a; font-size: 12px; }
+.seller-metric strong { display: block; margin-top: 5px; font-size: 16px; line-height: 1.45; }
+.seller-action-list { display: grid; gap: 10px; }
+.seller-action-list .btn { width: 100%; min-height: 42px; }
+.notice { border: 1px solid #c9ddff; border-radius: 8px; background: #f3f7ff; color: #5f5e5a; padding: 14px; font-size: 13px; line-height: 1.6; box-shadow: none; }
+.danger-note { border-color: #f3c7c7; background: #fcebeb; color: #a32d2d; }
+.seller-history { margin-top: 20px; border-top: 1px solid #f0efec; }
+.seller-history .list-row { display: flex; align-items: flex-start; padding: 11px 2px; border-bottom: 1px solid #f0efec; color: #5f5e5a; font-size: 14px; box-shadow: none; border-radius: 0; background: none; }
+@keyframes slideInFromRight {
+  from { transform: translateX(24px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes slideInFromLeft {
+  from { transform: translateX(-24px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+.slide-from-right { animation: slideInFromRight 0.22s ease; }
+.slide-from-left  { animation: slideInFromLeft  0.22s ease; }
+
+@media (max-width: 800px) {
+  .seller-auction-layout { grid-template-columns: 1fr; }
+  .seller-product { grid-template-columns: 96px minmax(0,1fr); gap: 14px; }
+  .seller-product-img { width: 96px; height: 96px; }
+}
+
+/* 폼 필드 — label + input/select/textarea를 세로로 묶는 래퍼
+   경매 취소 모달·ProductRegisterPage 폼 요소 정렬에 공통 사용 */
+.field { display: grid; gap: 6px; margin-bottom: 14px; }
+.field > label { color: #1a1a18; font-size: 15px; font-weight: 700; }
+.field > label span, .field > label .muted { color: #5f5e5a; font-size: 13px; font-weight: 500; }
+
+/* 거래 형태 선택 버튼 — ProductRegisterPage step0 배송만·직거래만·둘 다 선택
+   .checked 클래스로 선택 상태 강조, 아이콘(.trade-icon)도 파랑으로 변경 */
+.deal-options .line-option {
+  min-width: 150px;
+  border: 1px solid #e2e1dc;
+  border-radius: 8px;
+  padding: 10px 14px;
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  color: #1a1a18;
+}
+.deal-options .line-option.checked {
+  border-color: #0064ff;
+  background: #e5efff;
+  color: #0048bf;
+}
+.deal-options .trade-icon {
+  width: 18px;
+  height: 18px;
+  color: #5f5e5a;
+  flex: 0 0 auto;
+}
+.deal-options .line-option.checked .trade-icon {
+  color: #0048bf;
+}

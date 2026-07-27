@@ -1,0 +1,55 @@
+// src/api/productApi.js
+// ─────────────────────────────────────────────────────────────────────────────
+// 상품 API — 상품 등록 · 내 판매 목록 조회 · 상품 상세 조회 · 상품 삭제
+//             금지 키워드 · 추가 공지(코멘트)
+//             ProductRegisterPage / MyProductListPage / ProductDetailSellerPage 에서 사용
+// ─────────────────────────────────────────────────────────────────────────────
+import api from './axios';
+
+/** 상품 등록 */
+export const registerProduct = (data) =>
+  api.post('/products', data).then(res => res.data);
+
+/** 내 판매 목록 — filterType: DRAFT | ACTIVE | WON | TRADING | DONE | CANCELED | ENDED | null(전체) */
+export const getMyProducts = (page = 1, size = 10, filterType = null) =>
+  api.get('/products/me', { params: { page, size, ...(filterType ? { filterType } : {}) } }).then(res => res.data);
+
+/** 상품 상세 조회 */
+export const getProduct = (prdSn) =>
+  api.get(`/products/${prdSn}`).then(res => res.data);
+
+/** 상품 상세 진입 조회수 증가 */
+export const increaseProductViewCount = (prdSn) =>
+  api.post(`/products/${prdSn}/view`, null, { skipServerErrorRedirect: true }).then(res => res.data);
+
+/** 임시저장 상품 수정 및 등록 전환 */
+export const updateProduct = (prdSn, data) =>
+  api.put(`/products/${prdSn}`, data).then(res => res.data);
+
+/** 상품 삭제 */
+export const deleteProduct = (prdSn) =>
+  api.delete(`/products/${prdSn}`).then(res => res.data);
+
+/** 금지 키워드 목록 조회 (F-AUC-004) */
+export const fetchBannedKeywords = () =>
+  api.get('/products/banned-keywords').then(res => res.data);
+
+/** 추가 공지 등록 — 판매자 전용 (F-AUC-007) */
+export const postProductComment = (prdSn, data) =>
+  api.post(`/products/${prdSn}/comments`, data).then(res => res.data);
+
+/** 추가 공지 목록 조회 — 최신 4개, 비로그인 포함 (F-AUC-007) */
+export const fetchProductComments = (prdSn) =>
+  api.get(`/products/${prdSn}/comments`).then(res => res.data);
+
+/** 구매자 문의 목록 조회 (F-AUC-012) */
+export const fetchProductInquiries = (prdSn) =>
+  api.get(`/products/${prdSn}/inquiries`).then(res => res.data);
+
+/** 구매자 문의 등록 (F-AUC-012) */
+export const postProductInquiry = (prdSn, data) =>
+  api.post(`/products/${prdSn}/inquiries`, data).then(res => res.data);
+
+/** 판매자 답변 등록 (F-AUC-012) */
+export const postInquiryReply = (prdSn, inquirySn, data) =>
+  api.post(`/products/${prdSn}/inquiries/${inquirySn}/reply`, data).then(res => res.data);

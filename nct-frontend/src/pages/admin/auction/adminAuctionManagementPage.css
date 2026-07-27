@@ -1,0 +1,14 @@
+/* 담당자 7 · F-OPS-003: 상품명은 긴 경우가 많아 관리자 표에서 별도 폭을 확보합니다. */
+.admin-auction-page .admin-table th:nth-child(2),
+.admin-auction-page .admin-table td:nth-child(2) { min-width: 280px; }
+.admin-auction-page__feedback { margin: 12px 0; color: #176b45; font-size: 14px; }
+.admin-auction-cancellation { padding: 20px; }
+.admin-auction-cancellation h3 { margin: 0 0 16px; color: #1f274c; }
+.admin-auction-cancellation dl { display: grid; grid-template-columns: 110px 1fr; gap: 10px 16px; margin: 0; }
+.admin-auction-cancellation dt { color: #68718d; }
+.admin-auction-cancellation dd { margin: 0; color: #26304f; word-break: keep-all; }
+.admin-auction-cancellation label { display: grid; gap: 8px; margin-top: 20px; color: #37415f; font-weight: 600; }
+.admin-auction-cancellation textarea { min-height: 88px; resize: vertical; padding: 10px; border: 1px solid #d8ddeb; border-radius: 8px; font: inherit; }
+.admin-auction-cancellation__notice { margin: 10px 0 0; color: #68718d; font-size: 13px; line-height: 1.55; }
+.admin-auction-cancellation__actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+.admin-auction-cancellation__result { margin: 20px 0 0; padding: 12px; border-radius: 8px; background: #f3f5fa; color: #3d4665; line-height: 1.6; }

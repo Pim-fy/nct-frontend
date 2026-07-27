@@ -1,0 +1,131 @@
+/* 담당자 7 · F-PROV-002/003: 복수 카테고리 신청에서 카테고리와 서류 묶음을 구분해 보이게 하는 보조 스타일입니다. */
+.provider-status-preview dl > div {
+  display: contents;
+}
+
+.provider-apply-category-grid button {
+  display: grid;
+  gap: 5px;
+  align-content: center;
+}
+
+.provider-apply-category-grid button small {
+  color: #888780;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.provider-apply-category-grid button.active small {
+  color: #0048bf;
+}
+
+.provider-apply-category-grid button:disabled {
+  cursor: not-allowed;
+  opacity: .56;
+}
+
+.provider-apply-file-group {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid #e2e1dc;
+  border-radius: 10px;
+}
+
+.provider-apply-file-group + .provider-apply-file-group {
+  margin-top: 8px;
+}
+
+.provider-apply-file-group strong {
+  color: #1a1a18;
+  font-size: 14px;
+}
+
+.provider-apply-file-group p {
+  background: #fafaf8;
+}
+
+.provider-apply-upload {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid #e2e1dc;
+  border-radius: 8px;
+  background: #fafaf8;
+  color: #5f5e5a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.provider-apply-upload span {
+  color: #1a1a18;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.provider-apply-upload input {
+  padding: 0;
+  border: 0;
+  font-size: 12px;
+}
+
+.provider-apply-account {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.provider-apply-account > div,
+.provider-apply-account .provider-apply-demo-note {
+  grid-column: 1 / -1;
+}
+
+.provider-apply-account strong {
+  display: block;
+  color: #1a1a18;
+  font-size: 16px;
+}
+
+.provider-apply-account p {
+  margin: 4px 0 0;
+  color: #5f5e5a;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.provider-apply-account label {
+  display: grid;
+  gap: 7px;
+  color: #5f5e5a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.provider-apply-account input {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #e2e1dc;
+  border-radius: 8px;
+  color: #1a1a18;
+  font: inherit;
+}
+
+.provider-apply-account input:focus {
+  border-color: #0064ff;
+  outline: none;
+}
+
+@media (max-width: 650px) {
+  .provider-status-preview dl > div {
+    display: block;
+  }
+
+  .provider-status-preview dl > div + div {
+    border-top: 1px solid #f0efec;
+  }
+
+  .provider-status-preview dl dt,
+  .provider-status-preview dl dd {
+    border-bottom: 0;
+  }
+}
