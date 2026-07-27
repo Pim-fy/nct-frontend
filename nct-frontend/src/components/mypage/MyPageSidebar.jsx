@@ -17,7 +17,7 @@ const GENERAL_MENU_ITEMS = [
     type: "accordion",
     children: [
       { key: "active-auctions", label: "진행중인 경매",  type: "section" },
-      { key: "auction-bids",    label: "상품 거래 내역", type: "section" },
+      { key: "auction-bids",    label: "상품 구매 내역", type: "section" },
       { key: "auction-sales",   label: "상품 판매 내역", type: "section" },
     ],
   },
