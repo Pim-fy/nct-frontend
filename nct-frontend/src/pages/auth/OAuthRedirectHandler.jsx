@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useApi } from '@hooks/useApi';
 import { useConfig } from '@hooks/useConfig';
+import { toast } from '@utils/common';
 
 // 레드팀 Q4 반영: 이 키들은 백엔드 OAuth2ErrorCode(nct-backend/.../handler/OAuth2ErrorCode.java)와
 // 고정 계약이다 - ErrorCode enum과 무관하게 별도 상수로 분리돼 있으니, 값을 바꿀 때는 반드시
@@ -25,6 +26,16 @@ const OAUTH_ERROR_MESSAGES = {
   OAUTH_LOGIN_FAILED: '소셜 로그인 처리 중 오류가 발생했습니다.',
 };
 
+// 마이페이지 소셜 연동(F-AUTH-016) 콜백 전용 코드 - OAuth2LinkFailureHandler(백엔드)와의 고정 계약.
+// 연동은 로그인 중인 사용자의 부가 동작이라 실패해도 /login이 아니라 마이페이지로 돌려보낸다.
+const LINK_ERROR_MESSAGES = {
+  LINK_AUTH_REQUIRED: '로그인이 만료되어 연동할 수 없습니다. 다시 로그인 후 시도해주세요.',
+  ALREADY_LINKED_ELSEWHERE: '이미 다른 계정에 연동된 소셜 계정입니다.',
+  ALREADY_LINKED_SELF: '이미 연동된 소셜 계정입니다.',
+};
+const MYPAGE_LINK_RETURN_KEY = 'mypageLinkReturn';
+const MYPAGE_LINK_RETURN_FALLBACK = '/user/mypage?section=profile';
+
 const OAuthRedirectHandler = () => {
   const navigate  = useNavigate();
   const apiTool   = useApi();
@@ -40,8 +51,26 @@ const OAuthRedirectHandler = () => {
   // @ai_generated: 작업단위5(F-AUTH-004 온보딩, ISS-009) - 미연동 신규 사용자는 실패가 아니라
   // 온보딩 화면으로 보낸다(OAuth2FailureHandler가 붙인 onboardingRequired 파라미터).
   const onboardingRequired = new URLSearchParams(window.location.search).get('onboardingRequired') === 'true';
+  // F-AUTH-016: 마이페이지 소셜 연동 콜백(OAuth2LinkSuccessHandler/FailureHandler)은 로그인
+  // 콜백과 쿼리 파라미터가 달라 위 두 분기와 겹치지 않는다. 연동은 이미 로그인된 사용자의
+  // 부가 동작이라 토큰 재발급이 없으므로 fetchMe 없이 결과만 안내하고 마이페이지로 돌려보낸다.
+  const linkParams = new URLSearchParams(window.location.search);
+  const linkSuccess = linkParams.get('linkSuccess') === 'true';
+  const linkError = linkParams.get('linkError');
 
   useEffect(() => {
+    if (linkSuccess || linkError) {
+      const returnTo = sessionStorage.getItem(MYPAGE_LINK_RETURN_KEY) || MYPAGE_LINK_RETURN_FALLBACK;
+      sessionStorage.removeItem(MYPAGE_LINK_RETURN_KEY);
+      if (linkSuccess) {
+        toast({ icon: 'success', title: '소셜 계정 연동이 완료되었습니다.' });
+      } else {
+        toast({ icon: 'error', title: LINK_ERROR_MESSAGES[linkError] ?? '소셜 계정 연동에 실패했습니다.' });
+      }
+      navigate(returnTo, { replace: true });
+      return;
+    }
+
     if (onboardingRequired) {
       navigate('/oauth/onboarding', { replace: true });
       return;

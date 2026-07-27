@@ -29,6 +29,7 @@ const MYPAGE_SECTION_QUERY_VALUES = new Set([
   "auction-sales",
   "chat",
   "wallet",
+  "profile",
 ]);
 
 export default function MyPage({
