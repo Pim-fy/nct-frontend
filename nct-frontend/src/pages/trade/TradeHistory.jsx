@@ -63,6 +63,16 @@ const tabs = [
   { value: 'SELLER', label: '판매 내역' },
 ];
 
+// 마이페이지 경매 거래 내역은 구매자 역할로 고정되므로, 거래 상태만 빠르게 골라본다.
+const buyerStatusFilters = [
+  { value: 'ALL', label: '전체' },
+  { value: 'IN_PROGRESS', label: '진행 중' },
+  { value: 'DELIVERING', label: '배송·직거래 중' },
+  { value: 'WAITING_CONFIRMATION', label: '확인 대기' },
+  { value: 'COMPLETED', label: '완료' },
+  { value: 'CANCELED', label: '취소' },
+];
+
 // 사용자가 입력한 공백 차이로 동일한 상품을 놓치지 않도록 검색용 문자열을 통일한다.
 const normalizeSearchText = (value) => String(value ?? '')
   .toLowerCase()
@@ -183,6 +193,19 @@ const TradeHistory = ({
     }).length;
   }, [allTradeItems, fixedRole]);
 
+  // 상태 버튼의 건수는 검색어와 무관한 전체 구매 거래를 기준으로 표시한다.
+  const buyerStatusCounts = useMemo(() => {
+    const buyerTrades = allTradeItems.filter((trade) => trade.type === 'BUYER');
+
+    return buyerStatusFilters.reduce((counts, filter) => {
+      counts[filter.value] = filter.value === 'ALL'
+        ? buyerTrades.length
+        : buyerTrades.filter((trade) => trade.status === filter.value).length;
+
+      return counts;
+    }, {});
+  }, [allTradeItems]);
+
   // 요약 영역은 조건과 관계없이 로그인한 사용자의 전체 거래를 기준으로 표시한다.
   const loadAllTradeItems = useCallback(async () => {
     try {
@@ -274,8 +297,8 @@ const TradeHistory = ({
       >
         <header className="trade-history-page__header">
           <div>
-            <p className="trade-history-page__eyebrow">MY TRANSACTIONS</p>
-            <h1>{fixedRole === 'BUYER' ? '상품 입찰 내역' : '거래 내역'}</h1>
+            <p className="trade-history-page__eyebrow">MY AUCTION</p>
+            <h1>{fixedRole === 'BUYER' ? '상품 구매 내역' : '거래 내역'}</h1>
             <p>
               {fixedRole === 'BUYER'
                 ? '낙찰 또는 즉시구매 후 생성된 구매 거래를 확인하세요.'
@@ -284,7 +307,7 @@ const TradeHistory = ({
           </div>
         </header>
 
-        {!isLoading && !loadError && (
+        {!fixedRole && !isLoading && !loadError && (
           <section className="trade-history-summary" aria-label="진행 중 거래 요약">
             <div>
               <span>진행 중 거래</span>
@@ -318,9 +341,31 @@ const TradeHistory = ({
             </div>
           )}
 
+          {fixedRole === 'BUYER' && (
+            <div className="trade-history-buyer-filters" role="tablist">
+              {buyerStatusFilters.map((filter) => (
+                <button
+                  className={`trade-history-buyer-filter ${
+                    statusFilter === filter.value
+                      ? 'trade-history-buyer-filter--active'
+                      : ''
+                  }`}
+                  type="button"
+                  role="tab"
+                  aria-selected={statusFilter === filter.value}
+                  key={filter.value}
+                  onClick={() => setStatusFilter(filter.value)}
+                >
+                  {filter.label}
+                  <span>{buyerStatusCounts[filter.value] ?? 0}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="trade-history-filters">
             <label className="trade-history-search">
-              <span className="trade-history-search__label">거래 검색</span>
+              <span className="trade-history-search__label">상품 구매 검색</span>
               <input
                 className="input"
                 value={keyword}
@@ -328,21 +373,23 @@ const TradeHistory = ({
                 placeholder="상품명, 상대방, 거래번호 검색"
               />
             </label>
-            <label className="trade-history-select">
-              <span className="trade-history-search__label">거래 상태</span>
-              <select
-                className="input"
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
-              >
-                <option value="ALL">전체 상태</option>
-                <option value="DELIVERING">배송중</option>
-                <option value="WAITING_CONFIRMATION">상대 확인 대기</option>
-                <option value="COMPLETED">거래 완료</option>
-                <option value="ON_HOLD">거래 보류</option>
-                <option value="CANCELED">거래 취소</option>
-              </select>
-            </label>
+            {!fixedRole && (
+              <label className="trade-history-select">
+                <span className="trade-history-search__label">거래 상태</span>
+                <select
+                  className="input"
+                  value={statusFilter}
+                  onChange={(event) => setStatusFilter(event.target.value)}
+                >
+                  <option value="ALL">전체 상태</option>
+                  <option value="DELIVERING">배송중</option>
+                  <option value="WAITING_CONFIRMATION">상대 확인 대기</option>
+                  <option value="COMPLETED">거래 완료</option>
+                  <option value="ON_HOLD">거래 보류</option>
+                  <option value="CANCELED">거래 취소</option>
+                </select>
+              </label>
+            )}
           </div>
         </section>
 
@@ -388,18 +435,20 @@ const TradeHistory = ({
                 <article>
                   <div className="trade-history-item__image">상품 이미지</div>
                   <div className="trade-history-item__body">
+                    <div className="trade-history-item__badges">
+                      <span className={`trade-history-status ${status.className}`}>
+                        {status.label}
+                      </span>
+                    </div>
                     <h2>{trade.productName}</h2>
-                    <p>{trade.counterpart} · {trade.amount} · {trade.date}</p>
+                    <p>{trade.amount} · {trade.date}</p>
                     <span className="trade-history-item__type">
-                      {trade.type === 'SELLER' ? '판매' : '구매'} · 거래번호 {trade.id}
+                      {trade.type === 'SELLER' ? '판매자' : '구매자'} 거래 · {trade.counterpart}
                     </span>
                   </div>
                   <div className="trade-history-item__action">
-                    <span className={`trade-history-status ${status.className}`}>
-                      {status.label}
-                    </span>
-                    <span className="trade-history-item__arrow" aria-hidden="true">
-                      →
+                    <span className="trade-history-item__detail-button">
+                      거래 상세
                     </span>
                   </div>
                 </article>
