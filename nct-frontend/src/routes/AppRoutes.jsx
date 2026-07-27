@@ -57,6 +57,7 @@ import ServiceListPage from '@pages/service/ServiceListPage';
 import PublicProviderProfilePage from '@pages/provider/PublicProviderProfilePage';
 import ProviderApplyPage from '@pages/provider/ProviderApplyPage';
 import ProviderApplicationStatusPage from '@pages/provider/ProviderApplicationStatusPage';
+import ProviderProfilePage from '@pages/provider/ProviderProfilePage';
 import NotificationPage from '@pages/user/notification/NotificationPage';
 import NotificationSettingsPage from '@pages/user/notification/NotificationSettingsPage';
 import SettlementListPage from '@pages/user/settlement/SettlementListPage';
@@ -238,6 +239,12 @@ const AppRoutes = () => {
           <Route path="notifications" element={<AdminNotificationPage />} />
           {/* 담당자7 · F-OPS-013 민감정보 탐지 이벤트 읽기 전용 확인 화면 */}
           <Route path="operations-preview" element={<OperationsIntegrationPreview />} />
+        </Route>
+      </Route>
+
+      <Route element={<ProtectedRoute allowedRoles={['ROLE_SERVICE']} />}>
+        <Route element={<UserLayout />}>
+          <Route path="/provider/profile" element={<ProviderProfilePage />} />
         </Route>
       </Route>
 
