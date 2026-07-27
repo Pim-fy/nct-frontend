@@ -72,6 +72,11 @@ import ProductRegisterPage from '@pages/product/ProductRegisterPage';
 import MyProductListPage from '@pages/product/MyProductListPage';
 import ProductDetailSellerPage from '@pages/product/ProductDetailSellerPage';
 
+// F-SVC-001~004: 서비스 요청서 작성/임시저장 폼
+import ServiceRequestFormPage from '@pages/service/ServiceRequestFormPage';
+// F-SVC-003~004: 서비스 요청서 상세 조회/관리
+import ServiceRequestDetailPage from '@pages/service/ServiceRequestDetailPage';
+
 // 기존 지갑 주소를 유지하되, 결제 결과·모달 제어용 query string도 함께 전달한다.
 const PointWalletRedirect = () => {
   const { search } = useLocation();
@@ -215,6 +220,10 @@ const AppRoutes = () => {
           <Route path="/product/register"        element={<ProductRegisterPage />} />
           <Route path="/product/me"              element={<MyProductListPage />} />
           <Route path="/product/:prdSn/seller"   element={<ProductDetailSellerPage />} />
+
+          {/* 서비스 - 로그인 필요 */}
+          {/* 담당자 2 · F-SVC-001~004: 서비스 요청서 작성/임시저장 폼. 라우트 소유자에게 전달 필요. */}
+          <Route path="/service-requests/new" element={<ServiceRequestFormPage />} />
         </Route>
       </Route>
 

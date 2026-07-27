@@ -35,22 +35,44 @@ function toH24str(ampm, h12, m) {
   return `${pad(h24)}:${pad(m)}`;
 }
 
-function TimeRow({ value, onChange: onChangeProp }) {
+// minTime("HH:mm")이 있으면 그 시각 이전(당일 이미 지난 시각)은 선택지에서 비활성화한다.
+function TimeRow({ value, onChange: onChangeProp, minTime }) {
   const pad = n => String(n).padStart(2, '0');
   const { isPm, hour12, min } = parseTime(value);
   const emit = (ampm, h, m) => onChangeProp && onChangeProp(toH24str(ampm, h, m));
   const ampm = isPm ? 'pm' : 'am';
+
+  const minH24 = minTime ? Number(minTime.split(':')[0]) : null;
+  const minMin = minTime ? Number(minTime.split(':')[1]) : null;
+  const h24For = (ampmVal, h12) => (ampmVal === 'am' ? (h12 === 12 ? 0 : h12) : (h12 === 12 ? 12 : h12 + 12));
+  const isHourDisabled = (ampmVal, h12) => {
+    if (minH24 == null) return false;
+    return h24For(ampmVal, h12) < minH24;
+  };
+  const isAmpmDisabled = (ampmVal) => {
+    if (minH24 == null) return false;
+    for (let h = 1; h <= 12; h++) { if (!isHourDisabled(ampmVal, h)) return false; }
+    return true;
+  };
+  const isMinDisabled = (m) => {
+    if (minH24 == null) return false;
+    const h24 = h24For(ampm, hour12);
+    if (h24 < minH24) return true;
+    if (h24 === minH24) return m < minMin;
+    return false;
+  };
+
   return (
     <div style={{ display: 'flex', gap: 6 }}>
       <select className="input" value={ampm} onChange={e => emit(e.target.value, hour12, min)} style={{ padding: '5px 8px', fontSize: 15 }}>
-        <option value="am">오전</option>
-        <option value="pm">오후</option>
+        <option value="am" disabled={isAmpmDisabled('am')}>오전</option>
+        <option value="pm" disabled={isAmpmDisabled('pm')}>오후</option>
       </select>
       <select className="input" value={hour12} onChange={e => emit(ampm, Number(e.target.value), min)} style={{ padding: '5px 8px', fontSize: 15 }}>
-        {Array.from({ length: 12 }, (_, i) => <option key={i+1} value={i+1}>{i+1}시</option>)}
+        {Array.from({ length: 12 }, (_, i) => <option key={i+1} value={i+1} disabled={isHourDisabled(ampm, i+1)}>{i+1}시</option>)}
       </select>
       <select className="input" value={min} onChange={e => emit(ampm, hour12, Number(e.target.value))} style={{ padding: '5px 8px', fontSize: 15 }}>
-        {MINS.map(m => <option key={m} value={m}>{pad(m)}분</option>)}
+        {MINS.map(m => <option key={m} value={m} disabled={isMinDisabled(m)}>{pad(m)}분</option>)}
       </select>
     </div>
   );
@@ -59,6 +81,7 @@ function TimeRow({ value, onChange: onChangeProp }) {
 export default function DateRangePicker({
   startDate, endDate, onChange, maxNavDate, maxDurationDays, fixedStart,
   showTime, startTimeValue, endTimeValue, onStartTimeChange, onEndTimeChange,
+  timeLabel = '시작 시간', timeHint = '종료 시간은 시작 시간과 동일하게 적용됩니다', minTime,
 }) {
   const now = new Date();
   const todayStr = toStr(now.getFullYear(), now.getMonth(), now.getDate());
@@ -106,10 +129,15 @@ export default function DateRangePicker({
   function handleClick(dateStr) {
     if (dateStr < todayStr) return;
     if (effectiveMaxNavDate && dateStr > effectiveMaxNavDate) return;
-    if (locked) return; // 범위 선택 완료 → 클릭 차단
     if (fixedStart) {
       if (durationLimit && dateStr > durationLimit) return;
       onChange({ start: todayStr, end: dateStr });
+      return;
+    }
+    if (locked) {
+      // 범위 선택이 끝난 뒤 달력을 다시 클릭하면 "다시 선택" 버튼 없이 바로 새 시작일부터 재선택
+      onChange({ start: dateStr, end: null });
+      setPhase('end');
       return;
     }
     if (phase === 'start') {
@@ -122,15 +150,6 @@ export default function DateRangePicker({
       onChange({ start, end });
       setPhase('start');
     }
-  }
-
-  function handleReset() {
-    if (fixedStart) {
-      onChange({ start: todayStr, end: null });
-      return;
-    }
-    onChange({ start: null, end: null });
-    setPhase('start');
   }
 
   function getEffectiveEnd() {
@@ -207,9 +226,8 @@ export default function DateRangePicker({
             const isOverNav = effectiveMaxNavDate && dateStr > effectiveMaxNavDate;
             // 시작일이 정해진 뒤(또는 고정 시작)에는 시작일+N일까지만 종료일 선택 가능
             const isOverDuration = durationLimit && dateStr > durationLimit;
-            // locked(시작·종료 모두 선택): 선택 범위 밖 날짜 비활성화
-            const outOfRange = locked && !(dateStr >= startDate && dateStr <= endDate);
-            const disabled = isPast || isOverNav || isOverDuration || outOfRange;
+            // locked(시작·종료 모두 선택) 상태에서도 클릭을 막지 않는다 — 다시 클릭하면 바로 재선택 시작
+            const disabled = isPast || isOverNav || isOverDuration;
             const dow = new Date(year, month, d).getDay();
             const isToday = dateStr === todayStr;
             const { bg, spanBg, color, fw } = getCellStyle(dateStr, dow);
@@ -262,8 +280,8 @@ export default function DateRangePicker({
         {renderMonth(rightYear, rightMonth)}
       </div>
 
-      {/* 선택 상태 + 다시 선택 버튼 */}
-      <div style={{ borderTop: '1px solid #e5e7eb', padding: '8px 16px', fontSize: 15, color: '#6b7280', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      {/* 선택 상태 */}
+      <div style={{ borderTop: '1px solid #e5e7eb', padding: '8px 16px', fontSize: 15, color: '#6b7280' }}>
         <span>
           {fixedStart
             ? (!endDate && <span>종료일을 선택하세요</span>)
@@ -274,18 +292,13 @@ export default function DateRangePicker({
                 : <span>시작일을 선택하세요</span>
           }
         </span>
-        {((fixedStart && !!endDate) || (!fixedStart && !!startDate)) && (
-          <button type="button" onClick={handleReset} style={{ fontSize: 14, color: '#6b7280', background: 'none', border: '1px solid #d1d5db', borderRadius: 5, padding: '3px 8px', cursor: 'pointer' }}>
-            다시 선택
-          </button>
-        )}
       </div>
 
-      {/* 시간 선택 — 예약 모드에서만 보이지만, 즉시시작에서도 같은 공간을 차지하도록 visibility로 숨김 */}
+      {/* 시간 선택 — 필요 없는 모드에서도 같은 공간을 차지하도록 visibility로 숨김 */}
       <div style={{ borderTop: '1px solid #e5e7eb', padding: '4px 16px 6px', visibility: showTime ? 'visible' : 'hidden' }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: '#6b7280', display: 'block', marginBottom: 3 }}>시작 시간</span>
-        <TimeRow value={startTimeValue} onChange={onStartTimeChange} />
-        <span style={{ fontSize: 14, color: '#9ca3af', display: 'block', marginTop: 4 }}>종료 시간은 시작 시간과 동일하게 적용됩니다</span>
+        <span style={{ fontSize: 14, fontWeight: 600, color: '#6b7280', display: 'block', marginBottom: 3 }}>{timeLabel}</span>
+        <TimeRow value={startTimeValue} onChange={onStartTimeChange} minTime={minTime} />
+        <span style={{ fontSize: 14, color: '#9ca3af', display: 'block', marginTop: 4 }}>{timeHint}</span>
       </div>
     </div>
   );

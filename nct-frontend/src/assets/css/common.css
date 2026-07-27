@@ -98,6 +98,29 @@ a.list-row:hover {
   border-color: var(--color-primary, #0064ff);
 }
 
+/* 위저드 옵션 카드 — 서비스 요청서 카테고리별 단계 선택(아이콘+라벨+부제), .active로 선택 강조
+   ServiceRequestFormPage 카테고리·단계별 선택 그리드에 사용 (F-SVC-001~002) */
+.wizard-option-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.wizard-option-grid.big { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+.wizard-option {
+  border: 1px solid #e2e1dc;
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  text-align: left;
+  display: grid;
+  gap: 2px;
+}
+.wizard-option:hover { border-color: var(--color-primary, #0064ff); }
+.wizard-option.active { border-color: var(--color-primary, #0064ff); background: #e5efff; }
+.wizard-option.active .wizard-option-label { color: var(--color-primary-dark, #0048bf); font-weight: 700; }
+.wizard-option-icon { font-size: 26px; line-height: 1.2; }
+.wizard-option-label { font-weight: 500; }
+.wizard-option-sub { font-size: 12px; color: #888780; }
+
 /* 토스트 — 하단 중앙 고정 알림, JS에서 display 토글로 짧은 성공·실패 메시지 표시 */
 #toast {
   position: fixed;

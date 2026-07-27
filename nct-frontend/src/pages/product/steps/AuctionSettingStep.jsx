@@ -2,8 +2,22 @@
 // Step 1: 시작가·기간·시작시점·입찰단위·경매정책 동의
 // Props: form, set, policyAgreed, setPolicyAgreed, auctionRange, setAuctionRange,
 //        endDt, bidUnits, submitted
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import DateRangePicker from '@components/product/DateRangePicker';
+
+// 등록 시각(현재) 기준 최소 1시간 이후를 10분 단위로 올림한 "HH:mm" 문자열
+// — 당일 즉시시작 종료 시간의 최소 기준(최소 1시간 진행 보장).
+// Date 객체로 시:분을 더하면 자정을 넘길 때 날짜가 넘어가버려 "0시"가 되므로,
+// 분 단위 숫자로만 계산해 자정을 넘기면 24 이상으로 남겨둔다 — 그러면 TimeRow가
+// 오늘 시간 옵션을 전부 비활성화해서 "오늘은 더 이상 즉시시작 종료 시간을 고를 수 없음"을 표현한다.
+function minEndTimeToday() {
+  const now = new Date();
+  const totalMin = now.getHours() * 60 + now.getMinutes() + 60;
+  let h = Math.floor(totalMin / 60);
+  let m = Math.ceil((totalMin % 60) / 10) * 10;
+  if (m === 60) { m = 0; h += 1; }
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
 
 export default function AuctionSettingStep({
   form, set, policyAgreed, setPolicyAgreed,
@@ -12,6 +26,19 @@ export default function AuctionSettingStep({
 }) {
   const [startAmtTouched, setStartAmtTouched] = useState(false);
   const startAmtInvalid = !!form.prdStartAmt && Number(form.prdStartAmt) % form.bidUnit !== 0;
+  // 즉시시작 + 종료일이 당일이면 "등록 시각과 동일한 시:분"으로 자동 계산할 수 없어(이미 지난 시각이 됨) 직접 시간을 받아야 함
+  const isSameDayInstant = form.startNow && !!auctionRange.end && auctionRange.end === auctionRange.start;
+
+  // 당일 즉시시작으로 전환되는 순간, 이미 지난 시각이 기본값으로 남아있으면 현재 이후 시각으로 보정
+  useEffect(() => {
+    if (!isSameDayInstant) return;
+    const min = minEndTimeToday();
+    const current = auctionRange.startTime || '09:00';
+    if (current < min) {
+      setAuctionRange(prev => ({ ...prev, startTime: min, endTime: min }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSameDayInstant]);
 
   return (
     <div>
@@ -115,9 +142,12 @@ export default function AuctionSettingStep({
             const last = new Date(y, m + 1, 0).getDate();
             return `${y}-${pad2(m+1)}-${pad2(last)}`;
           })()}
-          showTime={!form.startNow}
+          showTime={!form.startNow || isSameDayInstant}
           startTimeValue={auctionRange.startTime}
           onStartTimeChange={val => setAuctionRange(prev => ({ ...prev, startTime: val, endTime: val }))}
+          timeLabel={isSameDayInstant ? '종료 시간' : '시작 시간'}
+          timeHint={isSameDayInstant ? '오늘 등록과 동시에 시작해서 이 시간에 종료됩니다' : '종료 시간은 시작 시간과 동일하게 적용됩니다'}
+          minTime={isSameDayInstant ? minEndTimeToday() : undefined}
         />
         {submitted && !auctionRange.end && (
           <span style={{ position: 'absolute', top: '100%', left: 0, fontSize: 15, fontWeight: 700, color: '#c0392b', whiteSpace: 'nowrap' }}>경매 기간을 지정해 주세요</span>
