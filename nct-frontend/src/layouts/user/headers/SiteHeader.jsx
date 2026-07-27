@@ -9,13 +9,19 @@
 // - 모바일(md 미만)에서는 경매/서비스/공지사항 메뉴를 숨기고 햄버거 토글로 전체 화면 메뉴를 연다.
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Menu, X, ChevronRight } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { useAuth } from '@hooks/useAuth';
-import { useNotifications } from '@hooks/useNotification';
+import { useMarkRead, useNotifications } from '@hooks/useNotification';
 import { useNotificationStream } from '@hooks/useNotificationStream';
 import { usePointBalance } from '@hooks/usePoint';
 import relativeTime from '@utils/relativeTime';
-import { isProviderAccount, requestMypageMode } from '@utils/providerMode';
+import { requestPointExchange } from '@api/pointApi';
+import QuickActions from '@components/landing/QuickActions';
+import NotificationDetailModal from '@pages/user/notification/components/NotificationDetailModal';
+import PointChargeWidgetModal from '@pages/user/point/components/PointChargeWidgetModal';
+import PointAmountModal from '@pages/user/point/components/PointAmountModal';
 import logoImg from '@assets/img/logo.png';
 import bellIcon from '@assets/img/bellIcon.png';
 import walletIcon from '@assets/img/walletIcon.png';
@@ -48,34 +54,57 @@ const NAV_LINK_CLASS = "text-[20px] font-bold text-[#333333] tracking-[-0.02em] 
 // POINT/알림 수치 실연동 (담당자6 BJN, 2026-07-18) — 종전 더미 상수(DUMMY_POINT/NOTI_ITEMS) 제거.
 // 이 헤더는 비로그인 공개 페이지에서도 렌더링되므로, 두 훅 모두 { enabled: 로그인여부 }로
 // 로그인 상태일 때만 API를 호출한다 (무조건 호출하면 401→로그인 강제이동이 발생하기 때문).
-// 헤더 드롭다운에 보여줄 최근 안읽은 알림 최대 개수
+// 헤더 드롭다운에 보여줄 알림 최대 개수 (안읽은 알림 미리보기 · 과거 알림 목록 공통)
 const NOTI_PREVIEW_MAX = 5;
 
 const SiteHeader = () => {
-  const { user, logout } = useAuth();
+  // isProvider·switchMode: 제공자 모드전환 실연동 (F-PROV-008, 담당자6 BJN, 2026-07-24)
+  // — 종전 localStorage 가짜 플래그(@utils/providerMode) 대신 서버가 내려준 실제 역할 기준.
+  const { user, logout, isProvider, switchMode } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // 알림·포인트 실데이터 — 로그인 상태일 때만 호출 (비로그인 401 방지)
   const notiQuery = useNotifications({ enabled: !!user });
   useNotificationStream(!!user); // 실시간 push 구독 — 새 알림 오면 notiQuery를 자동 invalidate
+  const markReadMutation = useMarkRead();
+  const [selectedNoti, setSelectedNoti] = useState(null); // 클릭한 알림 상세 팝업
   const balanceQuery = usePointBalance({ enabled: !!user });
+  // 헤더 POINT 드롭다운의 충전/환전 버튼 → 마이페이지로 이동하지 않고 이 자리에서 바로 모달을 띄운다
+  // (종전엔 /user/mypage?section=wallet&action=... 로 이동시켜 페이지 도착 후 모달을 열었으나,
+  // 사용자 요청으로 페이지 이동 없이 헤더에서 바로 처리하도록 변경, 2026-07-24)
+  const [pointModal, setPointModal] = useState(null); // null | 'charge' | 'exchange'
   // 안읽은 알림: 배지 숫자와 드롭다운 목록의 공통 원천
   const unreadNotis = (notiQuery.data ?? []).filter((n) => !n.read);
   const notiCount = user ? unreadNotis.length : 0;
+  // 안읽은 알림이 없을 때 드롭다운에 대신 보여줄 과거(읽은) 알림
+  const pastNotis = (notiQuery.data ?? []).filter((n) => n.read).slice(0, NOTI_PREVIEW_MAX);
   // 잔액은 조회 전(로딩·비로그인)에는 0으로 표시 — 임의 기본값이 아니라 "아직 모름"의 화면 표기
   const pointBalance = balanceQuery.data ?? { total: 0, available: 0 };
-  const [categoryOpen, setCategoryOpen] = useState(false);
-  const [serviceMenuOpen, setServiceMenuOpen] = useState(false);
+  const [categoryPinned, setCategoryPinned] = useState(false);
+  const [categoryHovered, setCategoryHovered] = useState(false);
+  const categoryOpen = categoryPinned || categoryHovered;
+
+  const [servicePinned, setServicePinned] = useState(false);
+  const [serviceHovered, setServiceHovered] = useState(false);
+  const serviceMenuOpen = servicePinned || serviceHovered;
+
+  const [customerPinned, setCustomerPinned] = useState(false);
+  const [customerHovered, setCustomerHovered] = useState(false);
+  const customerOpen = customerPinned || customerHovered;
+
   const [notiOpen, setNotiOpen] = useState(false);
   const [pointOpen, setPointOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileAuctionOpen, setMobileAuctionOpen] = useState(false);
   const [mobileServiceOpen, setMobileServiceOpen] = useState(false);
+  const [mobileCustomerOpen, setMobileCustomerOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [noticeIndex, setNoticeIndex] = useState(0);
 
   const utilRef = useRef(null);
+  const navRef = useRef(null);
 
   // 스크롤이 임계값을 넘으면(= 상단 NoticeStrip이 화면 밖으로 나가면) 헤더 중앙에 롤링 티커를 보여준다.
   useEffect(() => {
@@ -85,7 +114,7 @@ const SiteHeader = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 롤링 티커 자동 전환 (스크롤로 보이는 동안에만 굳이 돌릴 필요 없지만, 인덱스는 계속 유지해도 무해하다)
+  // 롤링 티커 자동 전환
   useEffect(() => {
     const timer = setInterval(() => {
       setNoticeIndex((i) => (i + 1) % SITE_NOTICES.length);
@@ -93,13 +122,21 @@ const SiteHeader = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // 바깥을 클릭하면 열려 있던 팝업(알림/포인트/마이페이지)을 모두 닫는다.
+  // 바깥을 클릭하면 열려 있던 팝업과 nav 드롭다운을 닫는다.
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (utilRef.current && !utilRef.current.contains(e.target)) {
         setNotiOpen(false);
         setPointOpen(false);
         setProfileOpen(false);
+      }
+      if (navRef.current && !navRef.current.contains(e.target)) {
+        setCategoryPinned(false);
+        setCategoryHovered(false);
+        setServicePinned(false);
+        setServiceHovered(false);
+        setCustomerPinned(false);
+        setCustomerHovered(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -112,6 +149,33 @@ const SiteHeader = () => {
     return () => { document.body.style.overflow = ''; };
   }, [mobileMenuOpen]);
 
+  // 클릭 시 동작:
+  // - 이미 pin 고정 상태 → pin + hover 모두 초기화해서 완전히 닫기
+  // - 닫혀 있거나 hover로만 열린 상태 → pin 고정 (hover는 유지, 마우스 떠나도 열림 유지)
+  const pinNav = (which) => {
+    const wasPinned =
+      which === 'auction' ? categoryPinned
+      : which === 'service' ? servicePinned
+      : customerPinned;
+
+    // 다른 메뉴 닫기
+    if (which !== 'auction') { setCategoryPinned(false); setCategoryHovered(false); }
+    if (which !== 'service') { setServicePinned(false); setServiceHovered(false); }
+    if (which !== 'customer') { setCustomerPinned(false); setCustomerHovered(false); }
+
+    if (wasPinned) {
+      // pin 고정 상태에서 클릭 → hover도 초기화해서 완전히 닫기
+      if (which === 'auction') { setCategoryPinned(false); setCategoryHovered(false); }
+      if (which === 'service') { setServicePinned(false); setServiceHovered(false); }
+      if (which === 'customer') { setCustomerPinned(false); setCustomerHovered(false); }
+    } else {
+      // 닫혀 있거나 hover로만 열린 상태 → pin 고정 (hover는 그대로 유지)
+      if (which === 'auction') setCategoryPinned(true);
+      if (which === 'service') setServicePinned(true);
+      if (which === 'customer') setCustomerPinned(true);
+    }
+  };
+
   // 한 팝업을 열면 나머지는 닫는다.
   const openOnly = (which) => {
     setNotiOpen(which === 'noti' ? (v) => !v : false);
@@ -119,15 +183,47 @@ const SiteHeader = () => {
     setProfileOpen(which === 'profile' ? (v) => !v : false);
   };
 
+  // 헤더 POINT 드롭다운의 환전 모달 제출 — PointWalletPage의 submitAmount('exchange')와 같은 로직
+  // (검증 → API 호출 → 포인트 캐시 갱신 → 결과 안내). 충전은 결제위젯이 자체 API를 처리하므로 별도 핸들러가 없다.
+  const submitHeaderExchange = (amount) => {
+    if (!Number.isInteger(amount) || amount <= 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: '금액을 확인해 주세요',
+        text: '환전 금액은 1P 이상의 정수만 가능합니다.',
+        confirmButtonColor: '#0064ff',
+      });
+      return;
+    }
+    setPointModal(null);
+    requestPointExchange(amount)
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ['point'] });
+        Swal.fire({
+          icon: 'success',
+          title: '환전 신청 완료',
+          text: '신청 금액이 차감되었고, 등록하신 계좌로 며칠 내 지급될 예정입니다.',
+          confirmButtonColor: '#0064ff',
+        });
+      })
+      .catch((err) => {
+        Swal.fire({
+          icon: 'error',
+          title: '환전 신청 실패',
+          text: err?.response?.data?.message ?? '처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
+          confirmButtonColor: '#0064ff',
+        });
+      });
+  };
+
   const closeMobileMenu = () => {
     setMobileMenuOpen(false);
     setMobileAuctionOpen(false);
     setMobileServiceOpen(false);
+    setMobileCustomerOpen(false);
   };
 
   const nickname = user?.nickname || '홍길동';
-  // TODO: 실제 회원 역할 API가 붙으면 user.role 등으로 대체 (지금은 @utils/providerMode 의 로컬 플래그).
-  const isProvider = isProviderAccount();
   const memberLabel = isProvider ? '제공자' : (user?.roleLabel || '일반회원');
 
   return (
@@ -141,28 +237,35 @@ const SiteHeader = () => {
           </Link>
 
           {/* 메뉴 (데스크톱) */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav ref={navRef} className="hidden md:flex items-center gap-8">
             <div
               className="relative"
-              onMouseEnter={() => setCategoryOpen(true)}
-              onMouseLeave={() => setCategoryOpen(false)}
+              onMouseEnter={() => { if (!servicePinned && !customerPinned) setCategoryHovered(true); }}
+              onMouseLeave={() => setCategoryHovered(false)}
             >
-              <Link to="/auction" className={NAV_LINK_CLASS}>
+              <button
+                type="button"
+                className={`text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${categoryPinned ? 'text-primary' : 'text-[#333333]'}`}
+                onClick={() => pinNav('auction')}
+              >
                 경매
-              </Link>
+              </button>
               {categoryOpen && (
-                // top-full(간격 0) + pt-[14px]로 "보이는 간격"만 안쪽 패딩으로 만든다.
-                // 예전처럼 바깥에 실제 14px 여백을 두면 그 사이를 지나갈 때 마우스가
-                // 래퍼 밖으로 나가버려(hover 대상이 없는 빈 공간) 드롭다운이 닫혀버렸다.
                 <div className="absolute left-0 top-full w-[161px] pt-[14px] z-50">
                   <div className="rounded-[5px] border border-[#4e4e4e] bg-white py-1 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)]">
-                    {AUCTION_CATEGORIES.map((label, i) => (
+                    <Link
+                      to="/auction"
+                      className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
+                      onClick={() => setCategoryPinned(false)}
+                    >
+                      전체보기
+                    </Link>
+                    {AUCTION_CATEGORIES.map((label) => (
                       <Link
                         key={label}
                         to={`/auction?category=${encodeURIComponent(label)}`}
-                        className={`flex items-center justify-between px-4 py-[7px] text-[16px] font-medium hover:bg-[#f9fafb] ${
-                          i === 0 ? 'bg-[#f9fafb] font-bold text-primary' : 'text-black'
-                        }`}
+                        className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
+                        onClick={() => setCategoryPinned(false)}
                       >
                         {label}
                       </Link>
@@ -174,22 +277,32 @@ const SiteHeader = () => {
 
             <div
               className="relative"
-              onMouseEnter={() => setServiceMenuOpen(true)}
-              onMouseLeave={() => setServiceMenuOpen(false)}
+              onMouseEnter={() => { if (!categoryPinned && !customerPinned) setServiceHovered(true); }}
+              onMouseLeave={() => setServiceHovered(false)}
             >
-              <Link to="/service" className={NAV_LINK_CLASS}>
+              <button
+                type="button"
+                className={`text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${servicePinned ? 'text-primary' : 'text-[#333333]'}`}
+                onClick={() => pinNav('service')}
+              >
                 서비스
-              </Link>
+              </button>
               {serviceMenuOpen && (
                 <div className="absolute left-0 top-full w-[161px] pt-[14px] z-50">
                   <div className="rounded-[5px] border border-[#4e4e4e] bg-white py-1 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)]">
-                    {SERVICE_CATEGORIES.map((label, i) => (
+                    <Link
+                      to="/service"
+                      className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
+                      onClick={() => setServicePinned(false)}
+                    >
+                      전체보기
+                    </Link>
+                    {SERVICE_CATEGORIES.map((label) => (
                       <Link
                         key={label}
                         to={`/service?category=${encodeURIComponent(label)}`}
-                        className={`flex items-center justify-between px-4 py-[7px] text-[16px] font-medium hover:bg-[#f9fafb] ${
-                          i === 0 ? 'bg-[#f9fafb] font-bold text-primary' : 'text-black'
-                        }`}
+                        className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
+                        onClick={() => setServicePinned(false)}
                       >
                         {label}
                       </Link>
@@ -198,17 +311,46 @@ const SiteHeader = () => {
                 </div>
               )}
             </div>
-
-            <details className="relative">
-              <summary className={`${NAV_LINK_CLASS} cursor-pointer list-none`}>
+            <div
+              className="relative"
+              onMouseEnter={() => { if (!categoryPinned && !servicePinned) setCustomerHovered(true); }}
+              onMouseLeave={() => setCustomerHovered(false)}
+            >
+              <button
+                type="button"
+                className={`text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${customerPinned ? 'text-primary' : 'text-[#333333]'}`}
+                onClick={() => pinNav('customer')}
+              >
                 고객센터
-              </summary>
-              <div className="absolute left-0 top-[calc(100%+12px)] z-50 grid min-w-40 gap-1 rounded-lg border border-[#e5e5e5] bg-white p-2 shadow-lg">
-                <Link className="rounded-md px-3 py-2 text-[15px] font-medium hover:bg-[#f3f5fa]" to="/customersupport/notice">공지사항</Link>
-                <Link className="rounded-md px-3 py-2 text-[15px] font-medium hover:bg-[#f3f5fa]" to="/guide">이용가이드</Link>
-                <Link className="rounded-md px-3 py-2 text-[15px] font-medium hover:bg-[#f3f5fa]" to="/customersupport/faq">FAQ</Link>
-              </div>
-            </details>
+              </button>
+              {customerOpen && (
+                <div className="absolute left-0 top-full w-[161px] pt-[14px] z-50">
+                  <div className="rounded-[5px] border border-[#4e4e4e] bg-white py-1 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)]">
+                    <Link
+                      to="/customersupport/notice"
+                      className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
+                      onClick={() => setCustomerPinned(false)}
+                    >
+                      공지사항
+                    </Link>
+                    <Link
+                      to="/guide"
+                      className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
+                      onClick={() => setCustomerPinned(false)}
+                    >
+                      이용가이드
+                    </Link>
+                    <Link
+                      to="/customersupport/faq"
+                      className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
+                      onClick={() => setCustomerPinned(false)}
+                    >
+                      FAQ
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
           </nav>
         </div>
 
@@ -256,19 +398,56 @@ const SiteHeader = () => {
                     <span className="text-[12px] text-[#0064ff]">{notiCount}</span>
                   </span>
                 </div>
-                <div className="my-2 h-px bg-[#e5e5e5]" />
-                {/* 알림 목록 — 안읽은 알림 최근 N건, 없으면 안내 문구 */}
+                <div className="my-3 h-px bg-[#e5e5e5]" />
+                {/* 알림 목록 — 안읽은 알림 최근 N건, 없으면 안내 문구 + 구분선 + 과거(읽은) 알림 */}
                 {unreadNotis.length === 0 ? (
-                  <p className="py-2 text-center text-[13px] text-[#969696]">새 알림이 없습니다.</p>
+                  <>
+                    <p className="py-2 text-center text-[13px] text-[#969696]">새 알림이 없습니다.</p>
+                    {pastNotis.length > 0 && (
+                      <>
+                        <div className="my-3 h-px bg-[#e5e5e5]" />
+                        <ul className="flex flex-col gap-3">
+                          {pastNotis.map((item) => (
+                            <li key={item.id}>
+                              <button
+                                type="button"
+                                className="flex w-full items-start gap-2 text-left"
+                                onClick={() => {
+                                  setSelectedNoti({ ...item, time: relativeTime(item.regDt) });
+                                  setNotiOpen(false);
+                                }}
+                              >
+                                <span className="mt-[6px] size-[6px] shrink-0 rounded-full bg-[#d9d9d9]" />
+                                <div className="min-w-0">
+                                  <p className="truncate text-[13px] text-[#333]">{item.title}</p>
+                                  <p className="text-[11px] text-[#969696]">{relativeTime(item.regDt)}</p>
+                                </div>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                  </>
                 ) : (
                   <ul className="flex flex-col gap-1.5">
                     {unreadNotis.slice(0, NOTI_PREVIEW_MAX).map((item) => (
-                      <li key={item.id} className="flex items-start gap-2">
-                        <span className="mt-[6px] size-[6px] shrink-0 rounded-full bg-primary" />
-                        <div className="min-w-0">
-                          <p className="truncate text-[13px] text-[#333]">{item.title}</p>
-                          <p className="text-[11px] text-[#969696]">{relativeTime(item.regDt)}</p>
-                        </div>
+                      <li key={item.id}>
+                        <button
+                          type="button"
+                          className="flex w-full items-start gap-2 text-left"
+                          onClick={() => {
+                            markReadMutation.mutate(item.id);
+                            setSelectedNoti({ ...item, time: relativeTime(item.regDt) });
+                            setNotiOpen(false);
+                          }}
+                        >
+                          <span className="mt-[6px] size-[6px] shrink-0 rounded-full bg-primary" />
+                          <div className="min-w-0">
+                            <p className="truncate text-[13px] text-[#333]">{item.title}</p>
+                            <p className="text-[11px] text-[#969696]">{relativeTime(item.regDt)}</p>
+                          </div>
+                        </button>
                       </li>
                     ))}
                   </ul>
@@ -316,14 +495,14 @@ const SiteHeader = () => {
                   <button
                     type="button"
                     className="h-[34px] flex-1 rounded-[6px] bg-primary text-[14px] font-bold text-white hover:bg-[#0048bf] transition-colors"
-                    onClick={() => { setPointOpen(false); navigate('/user/point?tab=charge'); }}
+                    onClick={() => { setPointOpen(false); setPointModal('charge'); }}
                   >
                     충전
                   </button>
                   <button
                     type="button"
                     className="h-[34px] flex-1 rounded-[6px] bg-[#d9d9d9] text-[14px] font-bold text-[#4e4e4e] hover:bg-[#cfcfcf] transition-colors"
-                    onClick={() => { setPointOpen(false); navigate('/user/point?tab=exchange'); }}
+                    onClick={() => { setPointOpen(false); setPointModal('exchange'); }}
                   >
                     환전
                   </button>
@@ -331,7 +510,7 @@ const SiteHeader = () => {
                 <button
                   type="button"
                   className="mt-2 h-[34px] w-full rounded-[6px] border border-primary text-[14px] font-bold text-primary hover:bg-[#f0f6ff] transition-colors"
-                  onClick={() => { setPointOpen(false); navigate('/user/point'); }}
+                  onClick={() => { setPointOpen(false); navigate('/user/mypage?section=wallet'); }}
                 >
                   포인트지갑 상세보기
                 </button>
@@ -365,14 +544,23 @@ const SiteHeader = () => {
                 <div className="my-3 h-px bg-[#e5e5e5]" />
                 {/* 액션 */}
                 <div className="flex flex-col gap-2">
+                  {user && (
+                    <button
+                      type="button"
+                      className="h-[36px] rounded-[6px] border bg-[#f3f5fa] text-[14px] font-medium text-[#333333] hover:bg-[#e9edf5] transition-colors"
+                      onClick={() => { setProfileOpen(false); navigate('/user/mypage'); }}
+                    >
+                      마이페이지 상세보기
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="h-[36px] rounded-[6px] bg-primary text-[14px] font-medium text-white hover:bg-[#0048bf] transition-colors"
-                    onClick={() => {
+                    onClick={async () => {
                       setProfileOpen(false);
                       if (isProvider) {
-                        // 이미 제공자 권한이 있으면 일반모드 마이페이지로 전환한다.
-                        requestMypageMode('general');
+                        // 제공자 상태면 서버에 실제 역할 전환을 요청한 뒤 마이페이지로 이동한다 (F-PROV-008).
+                        await switchMode('USER');
                         navigate('/user/mypage');
                       } else {
                         navigate('/provider/apply');
@@ -398,15 +586,7 @@ const SiteHeader = () => {
                       로그인
                     </button>
                   )}
-                  {user && (
-                    <button
-                      type="button"
-                      className="h-[36px] rounded-[6px] bg-[#f3f5fa] text-[14px] font-medium text-[#4e4e4e] hover:bg-[#e9edf5] transition-colors"
-                      onClick={() => { setProfileOpen(false); navigate('/user/mypage'); }}
-                    >
-                      마이페이지 상세보기
-                    </button>
-                  )}
+                  
                 </div>
               </div>
             )}
@@ -460,10 +640,11 @@ const SiteHeader = () => {
                   <button
                     type="button"
                     className="flex-1 h-[40px] rounded-[8px] border border-primary text-[14px] font-medium text-primary"
-                    onClick={() => {
+                    onClick={async () => {
                       closeMobileMenu();
                       if (isProvider) {
-                        requestMypageMode('general');
+                        // 서버에 실제 역할 전환 요청 (F-PROV-008) — 데스크톱 드롭다운과 동일 동작.
+                        await switchMode('USER');
                         navigate('/user/mypage');
                       } else {
                         navigate('/provider/apply');
@@ -548,13 +729,22 @@ const SiteHeader = () => {
               )}
             </div>
 
-            <div className="border-b border-[#f0f0f0] py-4">
-              <p className="mb-2 text-[20px] font-bold text-[#333333]">고객센터</p>
-              <div className="flex flex-col gap-1 pl-2">
-                <Link to="/customersupport/notice" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>공지사항</Link>
-                <Link to="/guide" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>이용가이드</Link>
-                <Link to="/customersupport/faq" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>FAQ</Link>
-              </div>
+            <div className="border-b border-[#f0f0f0]">
+              <button
+                type="button"
+                className="flex w-full items-center justify-between py-4 text-[20px] font-bold text-[#333333]"
+                onClick={() => setMobileCustomerOpen((v) => !v)}
+              >
+                고객센터
+                <ChevronRight size={20} className={`transition-transform ${mobileCustomerOpen ? 'rotate-90' : ''}`} />
+              </button>
+              {mobileCustomerOpen && (
+                <div className="flex flex-col gap-1 pb-3 pl-2">
+                  <Link to="/customersupport/notice" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>공지사항</Link>
+                  <Link to="/guide" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>이용가이드</Link>
+                  <Link to="/customersupport/faq" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>FAQ</Link>
+                </div>
+              )}
             </div>
 
             {!user && (
@@ -579,6 +769,24 @@ const SiteHeader = () => {
         </div>
       )}
     </header>
+    {/* 퀵메뉴(경매등록/서비스요청 등)를 헤더 컴포넌트에 포함시켜 모든 페이지에서 우측에 고정 노출한다. */}
+    <QuickActions />
+    <NotificationDetailModal item={selectedNoti} onClose={() => setSelectedNoti(null)} />
+    {pointModal === 'charge' && (
+      <PointChargeWidgetModal
+        infoRow={{ label: '사용가능 포인트', value: `${(pointBalance.available ?? 0).toLocaleString()} P` }}
+        onClose={() => setPointModal(null)}
+      />
+    )}
+    {pointModal === 'exchange' && (
+      <PointAmountModal
+        title="환전 신청"
+        submitLabel="환전"
+        infoRow={{ label: '환전 가능 포인트', value: `${(pointBalance.exchangeable ?? 0).toLocaleString()} P` }}
+        onSubmit={submitHeaderExchange}
+        onClose={() => setPointModal(null)}
+      />
+    )}
     </>
   );
 };

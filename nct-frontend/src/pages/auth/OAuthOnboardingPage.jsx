@@ -12,6 +12,7 @@ import { completeOauthOnboarding, getOauthOnboardingPending } from '@api/authApi
 import AuthPageContainer from '@components/auth/AuthPageContainer';
 import AuthCard from '@components/auth/AuthCard';
 import { SIGNUP_TERMS } from './signupTerms';
+import { formatPhoneNumber, isValidPhoneNumber, toPhoneDigits } from '@utils/phoneNumber';
 
 const AGREEMENT_ITEMS = [
   { key: 'terms', code: 'AGRC0001', label: '서비스이용약관', required: true },
@@ -85,6 +86,8 @@ const OAuthOnboardingPage = () => {
   const [provider, setProvider] = useState('');
   const [nickname, setNickname] = useState('');
   const [nicknameError, setNicknameError] = useState('');
+  const [optionalInfo, setOptionalInfo] = useState({ telno: '', address: '', detailAddress: '', bankName: '', accountNo: '' });
+  const [optionalInfoError, setOptionalInfoError] = useState('');
   const [agreements, setAgreements] = useState({ terms: false, privacy: false, marketing: false });
   const [openAgreement, setOpenAgreement] = useState(null);
   const [agreementMessage, setAgreementMessage] = useState('');
@@ -122,6 +125,13 @@ const OAuthOnboardingPage = () => {
     setSubmitMessage('');
   };
 
+  // @ai_generated: OAuth 온보딩 선택정보는 로컬 가입과 같은 전화번호·계좌 입력 계약을 사용한다.
+  const handleOptionalInfoChange = (field) => (event) => {
+    const value = field === 'telno' ? formatPhoneNumber(event.target.value) : event.target.value;
+    setOptionalInfo((previous) => ({ ...previous, [field]: value }));
+    setOptionalInfoError('');
+  };
+
   const handleSubmit = async () => {
     setSubmitMessage('');
     setAgreementMessage('');
@@ -137,6 +147,15 @@ const OAuthOnboardingPage = () => {
     }
     setNicknameError('');
 
+    if (optionalInfo.telno && !isValidPhoneNumber(optionalInfo.telno)) {
+      setOptionalInfoError('전화번호는 0으로 시작하는 11자리 숫자를 입력해주세요.');
+      return;
+    }
+    if (Boolean(optionalInfo.bankName.trim()) !== Boolean(optionalInfo.accountNo.trim())) {
+      setOptionalInfoError('은행명과 계좌번호는 함께 입력해주세요.');
+      return;
+    }
+
     if (!requiredAgreed) {
       setAgreementMessage('서비스이용약관과 개인정보처리방침에 모두 동의해야 가입할 수 있습니다.');
       return;
@@ -146,6 +165,11 @@ const OAuthOnboardingPage = () => {
     try {
       const response = await completeOauthOnboarding({
         nickname: trimmedNickname,
+        telno: toPhoneDigits(optionalInfo.telno),
+        address: optionalInfo.address.trim(),
+        detailAddress: optionalInfo.detailAddress.trim(),
+        bankName: optionalInfo.bankName.trim(),
+        accountNo: optionalInfo.accountNo.trim(),
         agreements: AGREEMENT_ITEMS.map((agreement) => ({
           agreementTypeCode: agreement.code,
           agreed: agreements[agreement.key],
@@ -200,53 +224,94 @@ const OAuthOnboardingPage = () => {
 
   return (
     <AuthPageContainer>
-      <AuthCard className="max-w-xl">
-        <h1 className="m-0 text-xl font-bold text-gray-900">
-          {PROVIDER_LABELS[provider] ?? '소셜'} 계정으로 가입을 완료합니다
-        </h1>
-        <p className="mt-2 text-sm text-gray-500">닉네임을 확인하고 약관에 동의하면 가입이 완료됩니다.</p>
+      <section className="mx-auto w-full max-w-[1480px] py-7 text-[#1a1a18]">
+        <header className="mb-4 flex flex-col gap-1.5">
+          <h1 className="m-0 text-[28px]">{PROVIDER_LABELS[provider] ?? '소셜'} 계정으로 가입을 완료합니다</h1>
+          <p className="m-0 text-xs text-[#888780]">닉네임과 선택 정보를 입력하고 약관에 동의하면 가입이 완료됩니다.</p>
+        </header>
 
-        <div className="mt-7">
-          <label className="text-sm font-medium text-gray-700">닉네임</label>
-          <input
-            type="text"
-            value={nickname}
-            onChange={(event) => { setNickname(event.target.value); setNicknameError(''); }}
-            className="mt-1.5 w-full h-12 px-4 rounded-lg border border-gray-300 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-          />
-          {nicknameError ? <p className="mt-1.5 text-xs text-red-600">{nicknameError}</p> : null}
-        </div>
+        <div className="grid gap-6">
+          <section aria-labelledby="agreement-title" className="rounded-2xl border border-[#f0efec] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,.04),0_2px_8px_rgba(0,0,0,.06)]">
+            <h2 className="m-0 text-lg" id="agreement-title">약관 동의</h2>
+            <label className="mt-3.5 inline-flex items-center gap-2 text-sm text-[#1a1a18]">
+              <input checked={allAgreed} onChange={handleAllAgreements} type="checkbox" />
+              전체 동의
+            </label>
+            <div className="mt-3.5 grid gap-2.5 lg:grid-cols-3">
+              {AGREEMENT_ITEMS.map((agreement) => (
+                <AgreementRow
+                  agreement={agreement}
+                  checked={agreements[agreement.key]}
+                  key={agreement.key}
+                  onChange={handleAgreementChange(agreement.key)}
+                  onOpen={() => setOpenAgreement(agreement.key)}
+                />
+              ))}
+            </div>
+            {agreementMessage ? <p aria-live="polite" className="mt-3 text-xs text-red-600">{agreementMessage}</p> : null}
+          </section>
 
-        <div className="mt-7">
-          <h2 className="m-0 text-base font-semibold text-gray-900">약관 동의</h2>
-          <label className="mt-3 inline-flex items-center gap-2 text-sm text-gray-900">
-            <input checked={allAgreed} onChange={handleAllAgreements} type="checkbox" />
-            전체 동의
-          </label>
-          <div className="mt-3 grid gap-2">
-            {AGREEMENT_ITEMS.map((agreement) => (
-              <AgreementRow
-                agreement={agreement}
-                checked={agreements[agreement.key]}
-                key={agreement.key}
-                onChange={handleAgreementChange(agreement.key)}
-                onOpen={() => setOpenAgreement(agreement.key)}
-              />
-            ))}
+          <div>
+            <div className="grid items-start gap-6 lg:grid-cols-2">
+              <section aria-labelledby="basic-info-title" className="rounded-2xl border border-[#f0efec] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,.04),0_2px_8px_rgba(0,0,0,.06)]">
+                <h2 className="m-0 text-lg" id="basic-info-title">기본 정보</h2>
+                <div className="mt-3.5 rounded-lg border border-[#e2e1dc] bg-[#fafaf8] px-4 py-3">
+                  <p className="m-0 text-sm font-medium text-[#1a1a18]">{PROVIDER_LABELS[provider] ?? '소셜'} 계정으로 본인 확인이 완료되었습니다.</p>
+                  <p className="mt-1 text-xs text-[#888780]">소셜 계정 정보는 가입 완료 후 변경할 수 없습니다.</p>
+                </div>
+                <div className="mt-3.5">
+                  <label className="text-sm font-medium text-gray-700" htmlFor="oauth-nickname">닉네임 <span className="text-[#a32d2d]">*</span></label>
+                  <input
+                    id="oauth-nickname"
+                    type="text"
+                    value={nickname}
+                    onChange={(event) => { setNickname(event.target.value); setNicknameError(''); }}
+                    className="mt-1.5 h-12 w-full rounded-lg border border-gray-300 px-4 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                  {nicknameError ? <p className="mt-1.5 text-xs text-red-600">{nicknameError}</p> : null}
+                </div>
+              </section>
+
+              <section aria-labelledby="additional-info-title" className="rounded-2xl border border-[#f0efec] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,.04),0_2px_8px_rgba(0,0,0,.06)]">
+                <div className="flex items-center gap-2">
+                  <h2 className="m-0 text-lg" id="additional-info-title">추가 정보</h2>
+                  <span className="rounded-full bg-[#f0f0ee] px-2 py-0.5 text-xs text-[#5f5e5a]">모두 선택</span>
+                </div>
+                <div className="mt-3.5 grid gap-3.5">
+                  <label className="text-sm text-gray-700" htmlFor="oauth-telno">전화번호
+                    <input id="oauth-telno" type="tel" value={optionalInfo.telno} onChange={handleOptionalInfoChange('telno')} placeholder="010-1234-5678" className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />
+                  </label>
+                  <label className="text-sm text-gray-700" htmlFor="oauth-address">주소
+                    <input id="oauth-address" value={optionalInfo.address} onChange={handleOptionalInfoChange('address')} maxLength={200} className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />
+                  </label>
+                  <label className="text-sm text-gray-700" htmlFor="oauth-detail-address">상세주소
+                    <input id="oauth-detail-address" value={optionalInfo.detailAddress} onChange={handleOptionalInfoChange('detailAddress')} maxLength={200} className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />
+                  </label>
+                  <label className="text-sm text-gray-700" htmlFor="oauth-bank-name">은행명
+                    <input id="oauth-bank-name" value={optionalInfo.bankName} onChange={handleOptionalInfoChange('bankName')} maxLength={100} className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />
+                  </label>
+                  <label className="text-sm text-gray-700" htmlFor="oauth-account-no">계좌번호
+                    <input id="oauth-account-no" value={optionalInfo.accountNo} onChange={handleOptionalInfoChange('accountNo')} maxLength={50} className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />
+                  </label>
+                </div>
+                {optionalInfoError ? <p aria-live="polite" className="mt-2 text-xs text-red-600">{optionalInfoError}</p> : null}
+              </section>
+            </div>
+
+            <div className="mt-6 flex flex-col items-stretch gap-2 sm:items-end">
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="h-12 w-full rounded-lg bg-blue-600 px-8 text-base font-bold text-white transition-all duration-150 hover:bg-blue-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+              >
+                {submitting ? '가입 처리 중...' : '가입 완료'}
+              </button>
+              {submitMessage ? <p aria-live="polite" className="text-xs text-red-600">{submitMessage}</p> : null}
+            </div>
           </div>
-          {agreementMessage ? <p className="mt-2 text-xs text-red-600">{agreementMessage}</p> : null}
         </div>
-
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={submitting}
-          className="mt-8 w-full h-12 rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-base font-bold transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          {submitting ? '가입 처리 중...' : '가입 완료'}
-        </button>
-        {submitMessage ? <p className="mt-2 text-xs text-red-600">{submitMessage}</p> : null}
-      </AuthCard>
+      </section>
 
       {selectedAgreement ? <AgreementModal agreement={selectedAgreement} onClose={() => setOpenAgreement(null)} /> : null}
     </AuthPageContainer>

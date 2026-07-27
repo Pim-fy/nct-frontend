@@ -9,6 +9,7 @@ import {
   placeAuctionBid,
   removeAuctionFavorite,
 } from '@api/auctionApi';
+import { toImageUrl } from '@api/fileApi';
 import { useAuth } from '@hooks/useAuth';
 import { useAuctionStream } from '@hooks/useAuctionStream';
 import { useAuctionViewTracking } from '@hooks/useAuctionViewTracking';
@@ -19,15 +20,18 @@ import AuctionBuyNowModal from './components/AuctionBuyNowModal';
 import AuctionDetailModal from './components/AuctionDetailModal';
 import AuctionImageGallery, { AuctionPreviewRail } from './components/AuctionImageGallery';
 import AuctionInfoGrid from './components/AuctionInfoGrid';
+import AuctionInquirySection from './components/AuctionInquirySection';
 import AuctionToast from './components/AuctionToast';
 import {
   createImageItems,
   formatNumber,
   formatPrice,
   formatRemainingTime,
+  formatTimeUntil,
   parseAmount,
   resolveAuctionResultLabel,
 } from './utils/auctionFormatters';
+import { addRecentItem } from '@components/landing/QuickActions';
 import '@assets/css/auction.css';
 
 const AuctionDetailPage = () => {
@@ -61,8 +65,12 @@ const AuctionDetailPage = () => {
   const isOwnAuction = authenticatedUserId != null
     && auction?.sellerId != null
     && String(authenticatedUserId) === String(auction.sellerId);
+  const isAuctionActiveStatus = auction?.auctionStatusCode === 'AUCC0002';
   const pointBalanceQuery = usePointBalance({
-    enabled: Boolean(isAuthenticated && auction && !isOwnAuction),
+    enabled: Boolean(isAuthenticated && auction && !isOwnAuction && isAuctionActiveStatus),
+    retry: 3,
+    refetchOnReconnect: true,
+    refetchOnWindowFocus: true,
   });
   const favoriteStatusQuery = useQuery({
     queryKey: ['auctionFavoriteStatus', auctionId],
@@ -76,7 +84,10 @@ const AuctionDetailPage = () => {
   });
   useAuctionStream(auctionId);
   useAuctionViewTracking(auctionId, auction?.productId);
-  const now = useCountdown(Boolean(auction?.endDateTime && auction?.auctionStatusCode === 'AUCC0002'));
+  const now = useCountdown(Boolean(
+    (auction?.auctionStatusCode === 'AUCC0001' && auction?.startDateTime)
+    || (auction?.auctionStatusCode === 'AUCC0002' && auction?.endDateTime),
+  ));
 
   const showToast = (message) => setToastMessage(message);
   const getErrorMessage = (error) => error?.response?.data?.message || '요청 처리 중 오류가 발생했습니다';
@@ -138,6 +149,19 @@ const AuctionDetailPage = () => {
   }, [applyFavoriteStatus, favoriteStatusQuery.data]);
 
   useEffect(() => {
+    if (!auction) return;
+    const repImage = auction.images?.find((img) => img.representative) ?? auction.images?.[0];
+    const imageUrl = repImage?.path ? toImageUrl(repImage.path) : null;
+    if (!imageUrl) return;
+    addRecentItem({
+      id: auctionId,
+      image: imageUrl,
+      title: auction.title,
+      url: `/auction/${auctionId}`,
+    });
+  }, [auction, auctionId]);
+
+  useEffect(() => {
     if (!toastMessage) return undefined;
     const timerId = window.setTimeout(() => setToastMessage(''), 1800);
     return () => window.clearTimeout(timerId);
@@ -180,11 +204,20 @@ const AuctionDetailPage = () => {
   const currentPrice = Number(auction.currentPrice || auction.startPrice || 0);
   const bidUnitPrice = Number(auction.bidUnitPrice || 1000);
   const minimumBidPrice = currentPrice + bidUnitPrice;
-  const auctionResultLabel = resolveAuctionResultLabel(auction);
-  const remainingTime = formatRemainingTime(auction, now);
-  const remainingTimeLabel = auctionResultLabel
-    ? '경매 결과'
-    : '경매 종료까지 남은 시간';
+  const isAuctionReady = auction.auctionStatusCode === 'AUCC0001';
+  const auctionResultLabel = isAuctionReady ? null : resolveAuctionResultLabel(auction);
+  const auctionStartTimestamp = auction.startDateTime
+    ? new Date(auction.startDateTime).getTime()
+    : null;
+  const isAuctionStartDue = isAuctionReady
+    && Number.isFinite(auctionStartTimestamp)
+    && auctionStartTimestamp <= now;
+  const remainingTime = isAuctionReady
+    ? (isAuctionStartDue ? '시작 처리 중' : formatTimeUntil(auction.startDateTime, now))
+    : formatRemainingTime(auction, now);
+  const remainingTimeLabel = isAuctionReady
+    ? (isAuctionStartDue ? '경매 상태' : '경매 시작까지 남은 시간')
+    : (auctionResultLabel ? '경매 결과' : '경매 종료까지 남은 시간');
   const auctionEndTimestamp = auction.endDateTime
     ? new Date(auction.endDateTime).getTime()
     : null;
@@ -352,6 +385,7 @@ const AuctionDetailPage = () => {
               isBidPending={bidMutation.isPending}
               isBuyNowPending={buyNowMutation.isPending}
               isAuctionOpen={isAuctionOpen}
+              isAuctionReady={isAuctionReady}
               isOwnAuction={isOwnAuction}
               isCurrentHighestBidder={isCurrentHighestBidder}
               isBuyNowAvailable={isBuyNowAvailable}
@@ -382,6 +416,14 @@ const AuctionDetailPage = () => {
             auction={auction}
             sellerSummary={sellerSummary}
             onInfoOpen={setDetailModalKey}
+          />
+
+          <AuctionInquirySection
+            productId={auction.productId}
+            isAuthenticated={isAuthenticated}
+            isOwnAuction={isOwnAuction}
+            onLoginRequired={() => navigate('/login', { state: { from: location } })}
+            onToast={showToast}
           />
         </div>
       </main>
