@@ -5,7 +5,7 @@ import ProductImageUpload from '@components/product/ProductImageUpload';
 
 export default function ProductInfoStep({ form, set, categories, bannedKeywordError, images, onChange, tradeMethods, maxImages }) {
   return (
-    <div>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <div className="field">
         <label>상품명 <span>{form.prdNm.length}/100</span></label>
         <input
@@ -17,7 +17,7 @@ export default function ProductInfoStep({ form, set, categories, bannedKeywordEr
           placeholder="다이슨 V11 청소기"
         />
         {bannedKeywordError && (
-          <p className="field-error" style={{ color: 'var(--color-danger, #e53e3e)', fontSize: 13, marginTop: 4 }}>
+          <p className="field-error" style={{ color: '#c0392b', fontSize: 17, fontWeight: 700, marginTop: 4 }}>
             {bannedKeywordError}
           </p>
         )}
@@ -61,14 +61,14 @@ export default function ProductInfoStep({ form, set, categories, bannedKeywordEr
         </div>
       </div>
 
-      <div className="field">
+      <div className="field" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         <label>상품 설명 <span>{form.prdCn.length}/2000</span></label>
         <textarea
           className="input"
           value={form.prdCn}
           onChange={e => set('prdCn', e.target.value)}
           maxLength={2000}
-          rows={6}
+          style={{ resize: 'none', overflowY: 'auto', flex: 1, minHeight: 200 }}
         />
       </div>
 

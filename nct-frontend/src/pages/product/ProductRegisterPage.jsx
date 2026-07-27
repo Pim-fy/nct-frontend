@@ -3,14 +3,12 @@
 // 목업: 07_product_register_seller.html 기반
 // 라우트: /product/register
 // 단계: 0(상품정보) → 1(경매설정) → 2(등록확인)
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { getCategories } from '@api/categoryApi';
 import { fetchBannedKeywords, registerProduct, updateProduct, getProduct } from '@api/productApi';
-import Breadcrumb from '@components/common/Breadcrumb';
 import ErrorMessage from '@components/common/ErrorMessage';
-import AuctionCalendarModal from '@components/product/AuctionCalendarModal';
 import ProductInfoStep from './steps/ProductInfoStep';
 import AuctionSettingStep from './steps/AuctionSettingStep';
 import RegisterConfirmStep from './steps/RegisterConfirmStep';
@@ -41,8 +39,7 @@ const TRADE_METHODS = [
   { value: 'TRDC0020', label: '둘 다 가능', Icon: BothIcon },
 ];
 
-const DURATION_DAYS = [1, 3, 5, 7];
-const BID_UNITS = [500, 1000, 5000, 10000];
+const BID_UNITS = [500, 1000, 5000, 10000, 50000, 100000];
 const PRODUCT_DOMAIN_CD = 'CATC0001';
 const STEP_LABELS = ['상품 입력', '등록 확인'];
 const MAX_IMAGES = 5; // F-AUC-002 — 대표이미지 포함 최대 5장
@@ -60,11 +57,13 @@ export default function ProductRegisterPage() {
   const [error, setError] = useState('');
   const [policyAgreed, setPolicyAgreed] = useState(false); // 스텝1 경매 정책 동의
   const [agreed, setAgreed] = useState(false);             // 스텝2 최종 등록 동의
-  const [customEndDt, setCustomEndDt] = useState('');      // 캘린더 모달로 설정한 종료일시
-  const [calendarOpen, setCalendarOpen] = useState(false); // 캘린더 모달 열림 여부
+  const [auctionRange, setAuctionRange] = useState({ start: '', end: '', startTime: '09:00', endTime: '09:00' }); // 경매 기간 범위
   const [images, setImages] = useState([]);                // 업로드 완료된 이미지 [{ flSn, url }] — 첫 번째가 대표
   const [bannedKeywords, setBannedKeywords] = useState([]);
   const [bannedKeywordError, setBannedKeywordError] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const [errorTick, setErrorTick] = useState(0); // 동일한 에러 메시지라도 재클릭 시 다시 스크롤시키기 위한 트리거
+  const errorRef = useRef(null);
 
   // ─── 폼 입력값 ───────────────────────────────────────────────────────────
   const [form, setForm] = useState({
@@ -121,6 +120,23 @@ export default function ProductRegisterPage() {
   }, []);
 
   useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [error, errorTick]);
+
+  // 즉시시작/예약 전환 시 날짜 범위 초기화
+  useEffect(() => {
+    if (form.startNow) {
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+      setAuctionRange(prev => ({ ...prev, start: todayStr, end: '' }));
+    } else {
+      setAuctionRange(prev => ({ ...prev, start: '', end: '' }));
+    }
+  }, [form.startNow]);
+
+  useEffect(() => {
     if (!form.prdNm || bannedKeywords.length === 0) {
       setBannedKeywordError('');
       return;
@@ -135,32 +151,15 @@ export default function ProductRegisterPage() {
   // ─── 종료일시 계산 ───────────────────────────────────────────────────────
   // 캘린더 직접 설정 > 예약 시작일 + 기간 > 즉시 시작 + 기간 순으로 우선 적용
   const calcEndDt = () => {
-    if (customEndDt) return new Date(customEndDt);
-    const startDt = form.startNow ? new Date() : (form.reserveDt ? new Date(form.reserveDt) : null);
-    if (!startDt) return null;
-    const endDt = new Date(startDt);
-    endDt.setDate(endDt.getDate() + form.durationDays);
-    return endDt;
-  };
-
-  // ─── 캘린더 모달 적용 ────────────────────────────────────────────────────
-  // 유효성 검사 후 form 반영. 시작이 현재보다 1분 이상 뒤면 예약 시작으로 전환
-  const handleCalendarApply = (startStr, endStr) => {
-    if (!startStr || !endStr) return;
-    const start = new Date(startStr);
-    const end = new Date(endStr);
-    if (end <= start) {
-      setError('종료 시간은 시작 시간보다 뒤여야 합니다.');
-      return;
+    if (!auctionRange.end) return null;
+    if (form.startNow) {
+      // 즉시시작: 종료 시각을 현재(등록) 시각의 HH:mm으로 고정
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      return new Date(`${auctionRange.end}T${hh}:${mm}:00`);
     }
-    const now = new Date();
-    if (start.getTime() - now.getTime() > 60000) {
-      set('startNow', false);
-      set('reserveDt', startStr);
-    }
-    setCustomEndDt(endStr);
-    setCalendarOpen(false);
-    setError('');
+    return new Date(`${auctionRange.end}T${auctionRange.startTime || '09:00'}:00`);
   };
 
   // ─── 등록 / 임시저장 제출 ────────────────────────────────────────────────
@@ -170,7 +169,7 @@ export default function ProductRegisterPage() {
     setLoading(true);
     try {
       const endDt = calcEndDt();
-      const startDt = form.startNow ? new Date() : (form.reserveDt ? new Date(form.reserveDt) : new Date());
+      const startDt = form.startNow ? new Date() : (auctionRange.start ? new Date(`${auctionRange.start}T${auctionRange.startTime || '00:00'}:00`) : new Date());
       const isDraft = statusCd === 'PRDC0001';
       const payload = {
         catSn:          Number(form.catSn),
@@ -200,31 +199,45 @@ export default function ProductRegisterPage() {
     }
   };
 
+  // ─── 상품정보 + 경매설정 유효성 검사 ────────────────────────────────────
+  // goNext(다음)와 임시저장 모두 동일한 검사·알림을 사용
+  // requirePolicyAgreed: 임시저장은 아직 경매를 확정하는 게 아니므로 정책 동의를 요구하지 않음
+  const validateStep0 = (requirePolicyAgreed = true) => {
+    setSubmitted(true);
+    const fail = (msg) => {
+      setError(msg);
+      setErrorTick(t => t + 1); // 동일 메시지 재클릭 시에도 스크롤이 다시 일어나도록
+      return false;
+    };
+    if (!form.prdNm.trim() || !form.catSn || !form.prdTrdMethodCd) {
+      return fail('상품명, 카테고리, 거래 형태를 모두 입력해 주세요.');
+    }
+    if (bannedKeywordError) {
+      return fail(bannedKeywordError);
+    }
+    if (!form.prdStartAmt) {
+      return fail('시작가를 입력해 주세요.');
+    }
+    if (!auctionRange.end) {
+      return fail('경매 기간을 지정해 주세요.');
+    }
+    if (Number(form.prdStartAmt) % form.bidUnit !== 0) {
+      return fail(`시작가는 입찰 단위(${form.bidUnit.toLocaleString()}원)의 배수로 입력해 주세요.`);
+    }
+    if (form.prdIbyAmt && Number(form.prdIbyAmt) % form.bidUnit !== 0) {
+      return fail(`즉시구매가는 입찰 단위(${form.bidUnit.toLocaleString()}원)의 배수로 입력해 주세요.`);
+    }
+    if (requirePolicyAgreed && !policyAgreed) {
+      return fail('경매 정책을 확인하고 동의해 주세요.');
+    }
+    setError('');
+    return true;
+  };
+
   // ─── 다음 스텝 이동 전 유효성 검사 ─────────────────────────────────────
   // step 0: 상품정보 + 경매설정 모두 검사 후 등록확인(step 1)으로 이동
   const goNext = () => {
-    if (!form.prdNm.trim() || !form.catSn || !form.prdTrdMethodCd) {
-      setError('상품명, 카테고리, 거래방식을 모두 입력해 주세요.');
-      return;
-    }
-    if (bannedKeywordError) {
-      setError(bannedKeywordError);
-      return;
-    }
-    if (!form.prdStartAmt) {
-      setError('시작가를 입력해 주세요.');
-      return;
-    }
-    if (!form.startNow && !form.reserveDt) {
-      setError('예약 시작일시를 입력해 주세요.');
-      return;
-    }
-    if (!policyAgreed) {
-      setError('경매 정책을 확인하고 동의해 주세요.');
-      return;
-    }
-    setError('');
-    setStep(1);
+    if (validateStep0()) setStep(1);
   };
 
   // ─── 렌더링용 파생값 ─────────────────────────────────────────────────────
@@ -234,8 +247,7 @@ export default function ProductRegisterPage() {
 
   return (
     <main className="container seller-page">
-      <Breadcrumb items={[{ label: '홈', href: '/' }, { label: editPrdSn ? '경매 설정 완료' : '상품 등록' }]} />
-      <div className="page-title"><div><h1>{editPrdSn ? '경매 설정 완료' : '상품 등록'}</h1></div></div>
+<div className="page-title"><div><h1>{editPrdSn ? '경매 설정 완료' : '상품 등록'}</h1></div></div>
 
       {/* 스텝 인디케이터 */}
       <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 20 }}>
@@ -243,36 +255,50 @@ export default function ProductRegisterPage() {
           <div className="steps" style={{ margin: 0 }}>
             {STEP_LABELS.map((label, i) => (
               <div key={label} className={`step ${i === step ? 'active' : i < step ? 'done' : ''}`}>
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  width: 22, height: 22, borderRadius: '50%',
+                  border: '1.5px solid currentColor',
+                  fontSize: 14, fontWeight: 700, marginRight: 8, flexShrink: 0,
+                }}>{i + 1}</span>
                 {label}
               </div>
             ))}
           </div>
         </div>
+
         {step === 1 && (
-          <div style={{ padding: '20px' }}>
-            <RegisterConfirmStep
-              form={form}
-              agreed={agreed}
-              setAgreed={setAgreed}
-              images={images}
-              selectedCat={selectedCat}
-              selectedTrade={selectedTrade}
-              endDt={endDt}
-            />
-          </div>
+          <>
+            <div ref={errorRef}>
+              <ErrorMessage message={error} />
+            </div>
+            <div style={{ padding: '20px' }}>
+              <RegisterConfirmStep
+                form={form}
+                agreed={agreed}
+                setAgreed={setAgreed}
+                images={images}
+                selectedCat={selectedCat}
+                selectedTrade={selectedTrade}
+                endDt={endDt}
+                maxImages={MAX_IMAGES}
+              />
+            </div>
+          </>
         )}
       </div>
 
-      <ErrorMessage message={error} />
+      {/* step 0: 상품입력 탭 — 기존과 동일하게 스텝 카드 바깥에 알림 표시 */}
+      {step === 0 && <div ref={errorRef}><ErrorMessage message={error} /></div>}
 
       {/* step 0: 상품 정보 + 경매 설정 카드 나란히 */}
       {step === 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'stretch' }}>
-          <section className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <section className="card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             <div style={{ background: '#eef2fb', padding: '14px 20px' }}>
-              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>상품 정보</h3>
+              <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>상품 정보</h3>
             </div>
-            <div style={{ padding: '20px' }}>
+            <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
               <ProductInfoStep
                 form={form}
                 set={set}
@@ -288,7 +314,7 @@ export default function ProductRegisterPage() {
 
           <section className="card" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ background: '#eef2fb', padding: '14px 20px' }}>
-              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>경매 설정</h3>
+              <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>경매 설정</h3>
             </div>
             <div style={{ padding: '20px' }}>
               <AuctionSettingStep
@@ -296,12 +322,11 @@ export default function ProductRegisterPage() {
                 set={set}
                 policyAgreed={policyAgreed}
                 setPolicyAgreed={setPolicyAgreed}
-                customEndDt={customEndDt}
-                setCustomEndDt={setCustomEndDt}
+                auctionRange={auctionRange}
+                setAuctionRange={setAuctionRange}
                 endDt={endDt}
-                durationDays={DURATION_DAYS}
                 bidUnits={BID_UNITS}
-                onOpenCalendar={() => setCalendarOpen(true)}
+                submitted={submitted}
               />
             </div>
           </section>
@@ -311,7 +336,7 @@ export default function ProductRegisterPage() {
       {/* 하단 버튼 */}
       <div className="row" style={{ justifyContent: 'space-between', padding: '16px 0', marginTop: 16 }}>
         {step > 0 ? (
-          <button type="button" onClick={() => setStep(0)} disabled={loading} className="btn btn-ghost">
+          <button type="button" onClick={() => { setStep(0); setSubmitted(false); }} disabled={loading} className="btn btn-ghost">
             이전
           </button>
         ) : (
@@ -319,7 +344,7 @@ export default function ProductRegisterPage() {
         )}
 
         <div style={{ display: 'flex', gap: 8 }}>
-          <button type="button" onClick={() => handleSubmit('PRDC0001')} disabled={loading} className="btn btn-ghost">
+          <button type="button" onClick={() => { if (validateStep0(false)) handleSubmit('PRDC0001'); }} disabled={loading} className="btn btn-ghost">
             임시저장
           </button>
 
@@ -331,7 +356,11 @@ export default function ProductRegisterPage() {
             <button
               type="button"
               onClick={() => {
-                if (!agreed) { setError('등록 정보 확인 및 동의가 필요합니다.'); return; }
+                if (!agreed) {
+                  setError('등록 정보 확인 및 동의가 필요합니다.');
+                  setErrorTick(t => t + 1);
+                  return;
+                }
                 handleSubmit('PRDC0002');
               }}
               disabled={loading}
@@ -343,12 +372,6 @@ export default function ProductRegisterPage() {
         </div>
       </div>
 
-      <AuctionCalendarModal
-        open={calendarOpen}
-        durationDays={form.durationDays}
-        onClose={() => setCalendarOpen(false)}
-        onApply={handleCalendarApply}
-      />
     </main>
   );
 }
