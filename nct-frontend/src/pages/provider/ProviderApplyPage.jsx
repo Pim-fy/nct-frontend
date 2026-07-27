@@ -137,7 +137,6 @@ const ProviderApplyPage = () => {
       <PageMeta title="제공자 권한 신청" />
       <ContentPageHeader
         description="여러 서비스 카테고리를 함께 선택할 수 있으며, 제출 뒤에는 카테고리별로 따로 심사됩니다."
-        eyebrow="담당자 7 · F-PROV-002/003/006/007"
         title="제공자 권한 신청"
       />
 
