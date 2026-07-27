@@ -298,7 +298,7 @@ const TradeHistory = ({
         <header className="trade-history-page__header">
           <div>
             <p className="trade-history-page__eyebrow">MY AUCTION</p>
-            <h1>{fixedRole === 'BUYER' ? '상품 거래 내역' : '거래 내역'}</h1>
+            <h1>{fixedRole === 'BUYER' ? '상품 구매 내역' : '거래 내역'}</h1>
             <p>
               {fixedRole === 'BUYER'
                 ? '낙찰 또는 즉시구매 후 생성된 구매 거래를 확인하세요.'
@@ -365,7 +365,7 @@ const TradeHistory = ({
 
           <div className="trade-history-filters">
             <label className="trade-history-search">
-              <span className="trade-history-search__label">상품 거래 검색</span>
+              <span className="trade-history-search__label">상품 구매 검색</span>
               <input
                 className="input"
                 value={keyword}
