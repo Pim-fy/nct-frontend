@@ -131,7 +131,6 @@ const AdminProviderApprovalPage = () => {
       <MockupAdminPageHeader
         action={<MockupAdminStatusBadge tone="success">실제 API 연결</MockupAdminStatusBadge>}
         description="신청 내용을 확인한 뒤 승인 또는 반려합니다. 목록과 처리 결과는 백엔드 상태를 다시 조회합니다."
-        eyebrow="담당자 7 · F-PROV-002/003/007"
         title="제공자 심사"
       />
 
