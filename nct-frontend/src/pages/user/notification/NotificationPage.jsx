@@ -39,7 +39,9 @@ const toViewItem = (n) => ({
   title: n.title,
   content: n.content,                                    // 상세 팝업 본문
   time: relativeTime(n.regDt),                           // "방금 전 / N분 전" 상대 표기
-  ref: n.refSn != null ? '관련 링크' : null,             // 참조 대상 페이지 라우팅은 해당 화면 구현 후
+  ref: n.refSn != null ? '관련 링크' : null,             // 목록의 작은 배지 표시용
+  refTypeCd: n.refTypeCd,                                // 상세 팝업의 "이동" 버튼 경로 계산용
+  refSn: n.refSn,
   read: n.read,
 });
 

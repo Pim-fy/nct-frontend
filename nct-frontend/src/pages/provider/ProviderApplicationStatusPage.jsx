@@ -90,9 +90,9 @@ const ProviderApplicationStatusPage = () => {
           <dd>{latest.requestedAt ? formatDate(latest.requestedAt) : '-'}</dd>
         </dl>
 
-        {latest.statusCode === 'PRVC0004' && (
-          <Link className="btn btn-primary" to="/provider/apply">보완 후 다시 신청</Link>
-        )}
+        <Link className="btn btn-primary" to="/provider/apply">
+          {latest.statusCode === 'PRVC0004' ? '보완 후 다시 신청' : '다른 카테고리 신청하기'}
+        </Link>
       </section>
 
       {data.length > 1 && (
