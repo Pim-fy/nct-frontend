@@ -18,6 +18,12 @@ import { getCategories } from '@api/categoryApi';
 import { fetchReferenceCodes } from '@api/referenceApi';
 import { AuctionCardSkeleton, SkeletonBlock } from '@components/skeleton/AuctionSkeletons';
 import { SORT_OPTIONS } from '@/constants/auctionOptions';
+import {
+  addAuctionSearchHistory,
+  clearAuctionSearchHistory,
+  getAuctionSearchHistory,
+  removeAuctionSearchHistory,
+} from '@utils/auctionSearchHistory';
 import AuctionCard from './components/AuctionCard';
 
 const getSelectedValues = (searchParams, key) => searchParams.getAll(key);
@@ -76,6 +82,8 @@ const AuctionListPage = () => {
   const shouldScrollAfterPageChangeRef = useRef(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [isSearchDocked, setIsSearchDocked] = useState(false);
+  const [searchHistoryOpen, setSearchHistoryOpen] = useState(false);
+  const [searchHistory, setSearchHistory] = useState(() => getAuctionSearchHistory());
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [keywordDraft, setKeywordDraft] = useState(searchParams.get('keyword') || '');
   const [categoryDraft, setCategoryDraft] = useState(() => getSelectedValues(searchParams, 'category'));
@@ -92,6 +100,7 @@ const AuctionListPage = () => {
   );
   const [previewQueryParams, setPreviewQueryParams] = useState(null);
   const searchParamsKey = searchParams.toString();
+  const searchContainerRef = useRef(null);
 
   useEffect(() => {
     const animationFrameId = window.requestAnimationFrame(() => {
@@ -116,6 +125,16 @@ const AuctionListPage = () => {
     handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const handlePointerDown = (event) => {
+      if (searchContainerRef.current?.contains(event.target)) return;
+      setSearchHistoryOpen(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
   }, []);
 
   useEffect(() => {
@@ -256,9 +275,9 @@ const AuctionListPage = () => {
     return () => window.cancelAnimationFrame(animationFrameId);
   }, [page]);
 
-  const createSearchParamsFromDraft = () => {
+  const createSearchParamsFromDraft = (keywordValue = keywordDraft) => {
     const next = new URLSearchParams();
-    const keyword = keywordDraft.trim();
+    const keyword = keywordValue.trim();
 
     if (keyword) next.set('keyword', keyword);
     categoryDraft.forEach((category) => next.append('category', category));
@@ -275,7 +294,25 @@ const AuctionListPage = () => {
 
   const handleSearch = (event) => {
     event.preventDefault();
-    setSearchParams(createSearchParamsFromDraft(), { replace: false });
+    const keyword = keywordDraft.trim();
+    if (keyword) setSearchHistory(addAuctionSearchHistory(keyword));
+    setSearchHistoryOpen(false);
+    setSearchParams(createSearchParamsFromDraft(keyword), { replace: false });
+  };
+
+  const handleRecentSearch = (term) => {
+    setKeywordDraft(term);
+    setSearchHistory(addAuctionSearchHistory(term));
+    setSearchHistoryOpen(false);
+    setSearchParams(createSearchParamsFromDraft(term), { replace: false });
+  };
+
+  const handleRemoveRecentSearch = (term) => {
+    setSearchHistory(removeAuctionSearchHistory(term));
+  };
+
+  const handleClearRecentSearches = () => {
+    setSearchHistory(clearAuctionSearchHistory());
   };
 
   const handleFilterSearch = () => {
@@ -321,30 +358,91 @@ const AuctionListPage = () => {
             ? 'fixed inset-x-0 top-0 z-[120] flex h-[82px] items-center bg-white px-4 shadow-[0_5px_12px_rgba(0,0,0,0.14)] md:pointer-events-none md:bg-transparent md:px-0 md:shadow-none'
             : 'mx-auto flex h-full w-full max-w-[1600px] items-center px-4 lg:px-6'}
         >
-          <form
-            className={`mx-auto grid w-full grid-cols-[minmax(0,1fr)_56px] overflow-hidden rounded-lg border-[3px] border-primary bg-white ${
+          <div
+            ref={searchContainerRef}
+            className={`relative mx-auto w-full ${
               isSearchDocked
                 ? 'max-w-[560px] md:pointer-events-auto md:w-[min(38vw,560px)]'
                 : 'max-w-[560px]'
             }`}
-            onSubmit={handleSearch}
           >
-            <input
-              className="min-h-12 min-w-0 border-0 px-[18px] text-base leading-[1.5] text-[#1a1a18] outline-none"
-              type="search"
-              value={keywordDraft}
-              onChange={(event) => setKeywordDraft(event.target.value)}
-              placeholder="검색어를 입력하세요"
-              aria-label="경매 검색어"
-            />
-            <button
-              className="inline-flex cursor-pointer items-center justify-center border-0 bg-primary text-white transition-colors hover:bg-primary-dark"
-              type="submit"
-              aria-label="검색"
+            <form
+              className="grid w-full grid-cols-[minmax(0,1fr)_56px] overflow-hidden rounded-lg border-[3px] border-primary bg-white"
+              onSubmit={handleSearch}
             >
-              <Search size={24} strokeWidth={2.4} />
-            </button>
-          </form>
+              <input
+                className="min-h-12 min-w-0 border-0 px-[18px] text-base leading-[1.5] text-[#1a1a18] outline-none"
+                type="search"
+                value={keywordDraft}
+                onChange={(event) => setKeywordDraft(event.target.value)}
+                onFocus={() => setSearchHistoryOpen(true)}
+                onClick={() => setSearchHistoryOpen(true)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') setSearchHistoryOpen(false);
+                }}
+                placeholder="검색어를 입력하세요"
+                aria-label="경매 검색어"
+                aria-controls="auction-search-history"
+                aria-expanded={searchHistoryOpen}
+                autoComplete="off"
+              />
+              <button
+                className="inline-flex cursor-pointer items-center justify-center border-0 bg-primary text-white transition-colors hover:bg-primary-dark"
+                type="submit"
+                aria-label="검색"
+              >
+                <Search size={24} strokeWidth={2.4} />
+              </button>
+            </form>
+
+            {searchHistoryOpen && (
+              <div
+                id="auction-search-history"
+                className="absolute inset-x-0 top-[calc(100%+8px)] z-[140] overflow-hidden rounded-lg border border-[#e2e1dc] bg-white shadow-[0_10px_24px_rgba(0,0,0,0.14)]"
+              >
+                <div className="flex min-h-11 items-center justify-between border-b border-[#f0efec] px-4">
+                  <strong className="text-sm leading-[1.5] text-[#1a1a18]">최근 검색어</strong>
+                  {searchHistory.length > 0 && (
+                    <button
+                      className="cursor-pointer border-0 bg-transparent text-sm leading-[1.5] text-[#777] hover:text-primary"
+                      type="button"
+                      onClick={handleClearRecentSearches}
+                    >
+                      전체 삭제
+                    </button>
+                  )}
+                </div>
+
+                {searchHistory.length > 0 ? (
+                  <ul className="m-0 list-none p-2">
+                    {searchHistory.map((term) => (
+                      <li className="flex min-h-10 items-center rounded-md hover:bg-[#f7f8fa]" key={term}>
+                        <button
+                          className="min-w-0 flex-1 cursor-pointer overflow-hidden border-0 bg-transparent px-3 text-left text-base leading-[1.5] text-ellipsis whitespace-nowrap text-[#333]"
+                          type="button"
+                          onClick={() => handleRecentSearch(term)}
+                        >
+                          {term}
+                        </button>
+                        <button
+                          className="mr-1 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-[#999] hover:bg-white hover:text-[#333]"
+                          type="button"
+                          onClick={() => handleRemoveRecentSearch(term)}
+                          aria-label={`${term} 검색 기록 삭제`}
+                        >
+                          <X size={16} aria-hidden="true" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="m-0 px-4 py-5 text-center text-sm leading-[1.5] text-[#777]">
+                    최근 검색어가 없습니다.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
