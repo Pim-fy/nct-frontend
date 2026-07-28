@@ -22,6 +22,7 @@ import MyProductList from "@components/product/MyProductList";
 import PointWalletPage from "@pages/user/point/PointWalletPage";
 import MyReportListPage from "@pages/user/report/MyReportListPage";
 import { useAuth } from "@hooks/useAuth";
+import { useMyProviderApplications } from "@hooks/useProviderApplications";
 import { confirm } from "@utils/common";
 
 const MYPAGE_SECTION_QUERY_VALUES = new Set([
@@ -41,6 +42,10 @@ export default function MyPage({
   // 예전에는 localStorage 가짜 플래그(providerMode.js)로 화면만 바꿨는데,
   // 백엔드 모드전환 API(F-PROV-008)와 실연동하면서 역할값 하나로 판단하도록 교체(2026-07-24).
   const { user, isProvider, switchMode } = useAuth();
+  const { data: myProviderApps = [] } = useMyProviderApplications({
+    enabled: !!user && !isProvider,
+  });
+  const isProviderApproved = myProviderApps.some((app) => app.statusCode === 'PRVC0003');
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedSection = searchParams.get("section");
@@ -102,6 +107,7 @@ export default function MyPage({
           {activeSection === "home" && !isProvider && (
             <MyPageDashboard
               user={user}
+              isProviderApproved={isProviderApproved}
               onRequestProviderSwitch={handleProviderSwitchRequest}
               onOpenAuctionBids={() => setActiveSection("auction-bids")}
             />
