@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { getCategories } from '@api/categoryApi';
@@ -43,6 +43,7 @@ const ProviderApplyPage = () => {
   });
   const [uploadedFiles, setUploadedFiles] = useState({});
   const [uploadingKey, setUploadingKey] = useState('');
+  const uploadedFilesRef = useRef({});
   const applicationsQuery = useMyProviderApplications();
   const submitMutation = useSubmitProviderApplication();
   const categoriesQuery = useQuery({
@@ -60,6 +61,16 @@ const ProviderApplyPage = () => {
     [applications],
   );
   const unavailable = (category) => ['심사 대기', '승인됨'].includes(states[category.catSn]);
+
+  useEffect(() => {
+    uploadedFilesRef.current = uploadedFiles;
+  }, [uploadedFiles]);
+
+  useEffect(() => () => {
+    Object.values(uploadedFilesRef.current).forEach(({ previewUrl }) => {
+      if (previewUrl?.startsWith('blob:')) URL.revokeObjectURL(previewUrl);
+    });
+  }, []);
 
   const toggleCategory = (category) => {
     if (unavailable(category)) return;
@@ -85,15 +96,21 @@ const ProviderApplyPage = () => {
     try {
       const response = await uploadImage(file, 'provider');
       const uploaded = response.data;
-      setUploadedFiles((current) => ({
-        ...current,
-        [key]: {
-          categorySn: category.catSn,
-          fileTypeCode: document.code,
-          flSn: uploaded.flSn,
-          fileName: file.name,
-        },
-      }));
+      setUploadedFiles((current) => {
+        const previousPreviewUrl = current[key]?.previewUrl;
+        if (previousPreviewUrl?.startsWith('blob:')) URL.revokeObjectURL(previousPreviewUrl);
+        return {
+          ...current,
+          [key]: {
+            categorySn: category.catSn,
+            fileTypeCode: document.code,
+            flSn: uploaded.flSn,
+            fileName: file.name,
+            // 제공자 서류는 공개 URL로 열리지 않으므로, 선택한 브라우저에서만 볼 수 있는 로컬 미리보기다.
+            previewUrl: URL.createObjectURL(file),
+          },
+        };
+      });
     } catch (uploadError) {
       setError(errorMessage(uploadError, '서류 파일 업로드 중 오류가 발생했습니다.'));
     } finally {
@@ -258,16 +275,19 @@ const ProviderApplyPage = () => {
                 {DOCUMENTS.map((document) => {
                   const key = fileKey(category.catSn, document.code);
                   const uploaded = uploadedFiles[key];
-                  const uploadLabel = uploaded
-                    ? uploaded.fileName
-                    : uploadingKey === key
-                      ? '업로드 중...'
-                      : '이미지 파일 선택';
+                  const uploadLabel = uploadingKey === key
+                    ? '업로드 중...'
+                    : uploaded?.fileName ?? '이미지 파일 선택';
 
                   return (
-                    <label className="provider-apply-upload" key={document.code}>
-                      {document.label}
-                      <span>{uploadLabel}</span>
+                    <label className={`provider-apply-upload${uploaded ? ' is-uploaded' : ''}`} key={document.code}>
+                      <strong>{document.label}</strong>
+                      {uploaded?.previewUrl ? (
+                        <img alt={`${document.label} 미리보기`} src={uploaded.previewUrl} />
+                      ) : (
+                        <span className="provider-apply-upload__placeholder">{uploadingKey === key ? '업로드 중...' : '이미지 선택'}</span>
+                      )}
+                      <span className="provider-apply-upload__name">{uploadLabel}</span>
                       <input
                         accept="image/*"
                         disabled={uploadingKey === key || submitMutation.isPending}

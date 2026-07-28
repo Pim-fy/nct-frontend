@@ -130,6 +130,7 @@ function ListPanel({ title, items }) {
 
 export default function MyPageDashboard({
   user,
+  isProviderApproved,
   onRequestProviderSwitch,
   onOpenAuctionBids,
 }) {
@@ -213,7 +214,7 @@ export default function MyPageDashboard({
                 className="btn btn-ghost btn-sm"
               >
                 <img src={assets.iconSwitch1} alt="" className="size-[10px]" />
-                제공자 전환
+                {isProviderApproved ? '제공자 전환' : '제공자 신청'}
               </button>
             </div>
           </div>

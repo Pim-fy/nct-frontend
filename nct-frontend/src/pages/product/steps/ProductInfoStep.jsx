@@ -1,10 +1,10 @@
 // src/pages/product/steps/ProductInfoStep.jsx
 // Step 0: 상품명·카테고리·거래형태·설명·이미지 입력
-// Props: form, set, categories, bannedKeywordError, images, onChange, tradeMethods, maxImages
+// Props: form, set, categories, bannedKeywordError, images, onChange, tradeMethods, maxImages, pendingDescFilesMap
 import ProductImageUpload from '@components/product/ProductImageUpload';
 import RichTextEditor from '@components/product/RichTextEditor';
 
-export default function ProductInfoStep({ form, set, categories, bannedKeywordError, images, onChange, tradeMethods, maxImages }) {
+export default function ProductInfoStep({ form, set, categories, bannedKeywordError, images, onChange, tradeMethods, maxImages, pendingDescFilesMap }) {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <div className="field">
@@ -64,10 +64,10 @@ export default function ProductInfoStep({ form, set, categories, bannedKeywordEr
 
       <div className="field" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         <label>상품 설명</label>
-        <RichTextEditor value={form.prdCn} onChange={html => set('prdCn', html)} />
+        <RichTextEditor value={form.prdCn} onChange={html => set('prdCn', html)} pendingFilesMap={pendingDescFilesMap} />
       </div>
 
-      {/* 이미지 업로드 (F-AUC-002) — 선택 즉시 업로드, 첫 장이 대표이미지 */}
+      {/* 이미지 업로드 (F-AUC-002) — 선택 시엔 로컬 미리보기만, 첫 장이 대표이미지 */}
       <ProductImageUpload images={images} onChange={onChange} maxImages={maxImages} />
     </div>
   );

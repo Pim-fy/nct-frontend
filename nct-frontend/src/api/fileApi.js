@@ -39,6 +39,7 @@ export const getDeliveryProofBlob = (deliveryId, fileId) => api.get(
 /** 서버가 내려준 경로를 화면에 그릴 수 있는 절대 URL로 변환. 이미 절대 URL이면 그대로 반환 */
 export const toImageUrl = (path) => {
   if (!path) return null;
-  if (path.startsWith('http')) return path;
+  // blob: — 저장 전 로컬 미리보기(아직 업로드되지 않은 이미지)는 그대로 사용
+  if (path.startsWith('http') || path.startsWith('blob:')) return path;
   return `${BACKEND_URL}${path}`;
 };
