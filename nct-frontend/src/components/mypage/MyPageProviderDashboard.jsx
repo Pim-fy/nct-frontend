@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useMyProviderProfile } from '@hooks/useProviderProfile';
+import { useMyPortfolios, useMyProviderProfile } from '@hooks/useProviderProfile';
 import { useNotifications } from '@hooks/useNotification';
 import { usePointBalance } from '@hooks/usePoint';
 import { assets } from '@components/mypage/assets';
@@ -10,6 +10,7 @@ import { assets } from '@components/mypage/assets';
 export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpenSection }) {
   const navigate = useNavigate();
   const profileQuery = useMyProviderProfile();
+  const portfoliosQuery = useMyPortfolios();
   const notificationsQuery = useNotifications();
   const pointBalanceQuery = usePointBalance();
 
@@ -145,7 +146,11 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpe
           <div className="mt-6 flex flex-col gap-4 border-t border-[#edf0f4] pt-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-bold text-[#27364b]">포트폴리오</p>
-              <p className="mt-1 text-sm text-[#6b7788]">대표 작업 이미지와 설명을 등록해 공개 프로필에 보여주세요.</p>
+              <p className="mt-1 text-sm text-[#6b7788]">
+                {portfoliosQuery.isLoading
+                  ? '등록한 포트폴리오를 확인하는 중입니다.'
+                  : `등록 ${portfoliosQuery.data?.length ?? 0}건 · 대표 작업 이미지와 설명을 공개 프로필에 보여주세요.`}
+              </p>
             </div>
             <button
               type="button"
