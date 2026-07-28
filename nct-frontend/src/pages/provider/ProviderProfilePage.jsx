@@ -6,26 +6,31 @@ import { useMyProviderProfile, useUpdateMyProviderProfile } from '@hooks/useProv
 const fieldClass = 'w-full rounded-md border border-[#d9d9d9] px-3 py-2 text-sm text-[#404040] focus:border-[#0064ff] focus:outline-none';
 
 /** 담당자 7 · F-PROV-004: 승인된 제공자가 소개와 가능 지역을 직접 관리하는 화면이다. */
-export default function ProviderProfilePage() {
+export default function ProviderProfilePage({ embedded = false } = {}) {
   const navigate = useNavigate();
   const profileQuery = useMyProviderProfile();
+  const statusClass = embedded
+    ? 'w-full py-12 text-center'
+    : 'mx-auto max-w-3xl px-4 py-12 text-center';
 
-  if (profileQuery.isLoading) return <div className="mx-auto max-w-3xl px-4 py-12 text-center text-[#666]">프로필을 불러오는 중입니다.</div>;
+  if (profileQuery.isLoading) return <div className={`${statusClass} text-[#666]`}>프로필을 불러오는 중입니다.</div>;
   if (profileQuery.isError) return (
-    <div className="mx-auto max-w-3xl px-4 py-12 text-center">
+    <div className={statusClass}>
       <p className="text-[#d9363e]">제공자 프로필을 불러올 수 없습니다.</p>
       <button type="button" className="btn btn-outline mt-4" onClick={() => profileQuery.refetch()}>다시 시도</button>
     </div>
   );
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8">
+    <main className={embedded ? "w-full" : "mx-auto max-w-3xl px-4 py-8"}>
       <div className="mb-6 flex items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-[#252525]">제공자 프로필 관리</h1>
           <p className="mt-1 text-sm text-[#666]">공개 프로필에 표시할 소개와 가능 지역을 관리합니다.</p>
         </div>
-        <button type="button" className="btn btn-ghost" onClick={() => navigate('/user/mypage')}>마이페이지</button>
+        {!embedded && (
+          <button type="button" className="btn btn-outline" onClick={() => navigate('/user/mypage')}>대시보드</button>
+        )}
       </div>
       <div className="space-y-6">
         <ProviderProfileForm key={profileQuery.data.userSn} profile={profileQuery.data} />

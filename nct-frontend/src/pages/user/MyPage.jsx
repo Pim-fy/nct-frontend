@@ -13,13 +13,16 @@ import MyPageSidebar from "@components/mypage/MyPageSidebar";
 import MyPageDashboard from "@components/mypage/MyPageDashboard";
 import MyPageProfileEdit from "@components/mypage/MyPageProfileEdit";
 import MyPageProviderDashboard from "@components/mypage/MyPageProviderDashboard";
+import ProviderEmbeddedSection from "@components/mypage/ProviderEmbeddedSection";
 import MyPageTradeChatList from "@components/mypage/MyPageTradeChatList";
+import ProviderProfilePage from "@pages/provider/ProviderProfilePage";
 import TradeChat from "@pages/trade/TradeChat";
 import MyBidHistoryPage from "@pages/user/MyBidHistoryPage";
 import MyActiveAuctionPage from "@pages/user/MyActiveAuctionPage";
 import TradeHistory from "@pages/trade/TradeHistory";
 import MyProductList from "@components/product/MyProductList";
 import PointWalletPage from "@pages/user/point/PointWalletPage";
+import SettlementListPage from "@pages/user/settlement/SettlementListPage";
 import { useAuth } from "@hooks/useAuth";
 import { confirm } from "@utils/common";
 
@@ -30,6 +33,11 @@ const MYPAGE_SECTION_QUERY_VALUES = new Set([
   "chat",
   "wallet",
   "profile",
+  "quote",
+  "service-trade",
+  "settlement",
+  "service-chat",
+  "approval-category",
 ]);
 
 export default function MyPage({
@@ -70,6 +78,7 @@ export default function MyPage({
     try {
       await switchMode("SERVICE");
       setActiveSection("home");
+      setSearchParams({});
     } catch {
       const ok = await confirm({
         title: "제공자 신청이 필요합니다",
@@ -86,6 +95,7 @@ export default function MyPage({
   const handleSwitchToGeneral = async () => {
     await switchMode("USER");
     setActiveSection("home");
+    setSearchParams({});
   };
 
   return (
@@ -106,9 +116,46 @@ export default function MyPage({
             />
           )}
           {activeSection === "home" && isProvider && (
-            <MyPageProviderDashboard user={user} onSwitchToGeneral={handleSwitchToGeneral} />
+            <MyPageProviderDashboard
+              user={user}
+              onSwitchToGeneral={handleSwitchToGeneral}
+              onOpenSection={handleSelectSection}
+            />
           )}
-          {activeSection === "profile" && <MyPageProfileEdit user={user} />}
+          {activeSection === "profile" && (
+            isProvider
+              ? <ProviderProfilePage embedded />
+              : <MyPageProfileEdit user={user} />
+          )}
+          {isProvider && activeSection === "quote" && (
+            <ProviderEmbeddedSection
+              title="견적"
+              description="제출한 견적과 현재 처리 상태를 확인합니다."
+              emptyText="아직 표시할 견적 내역이 없습니다."
+            />
+          )}
+          {isProvider && activeSection === "service-trade" && (
+            <ProviderEmbeddedSection
+              title="서비스 거래"
+              description="진행 중이거나 완료된 서비스 거래를 확인합니다."
+              emptyText="아직 표시할 서비스 거래 내역이 없습니다."
+            />
+          )}
+          {isProvider && activeSection === "settlement" && <SettlementListPage embedded />}
+          {isProvider && activeSection === "service-chat" && (
+            <ProviderEmbeddedSection
+              title="서비스 채팅"
+              description="서비스 요청자와 나눈 채팅방을 확인합니다."
+              emptyText="아직 표시할 서비스 채팅이 없습니다."
+            />
+          )}
+          {isProvider && activeSection === "approval-category" && (
+            <ProviderEmbeddedSection
+              title="승인 카테고리"
+              description="견적을 제출할 수 있도록 승인된 서비스 분야를 확인합니다."
+              emptyText="표시할 승인 카테고리가 없습니다."
+            />
+          )}
           {activeSection === "active-auctions" && <MyActiveAuctionPage />}
           {activeSection === "auction-bids" && (
             <TradeHistory
