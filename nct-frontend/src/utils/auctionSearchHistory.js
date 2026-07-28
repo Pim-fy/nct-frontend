@@ -66,9 +66,3 @@ export const removeAuctionSearchHistory = (term) => {
   storage.setItem(AUCTION_SEARCH_HISTORY_KEY, JSON.stringify(updatedHistory));
   return updatedHistory;
 };
-
-export const clearAuctionSearchHistory = () => {
-  const storage = getLocalStorage();
-  if (storage) storage.removeItem(AUCTION_SEARCH_HISTORY_KEY);
-  return [];
-};
