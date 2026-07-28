@@ -190,7 +190,14 @@ const TradeDetailBuyer = ({
     };
   }, [trade?.deliveryId, trade?.deliveryProofFiles]);
 
-  const currentStatus = trade?.method === 'OFFLINE' && trade?.status === 'DELIVERING'
+  const hasMeetingSchedule = Boolean(
+    trade?.meetingDate && trade.meetingDate !== '-'
+    && trade?.meetingTime && trade.meetingTime !== '-'
+    && trade?.meetingPlace && trade.meetingPlace !== '-',
+  );
+  // 이전에 일정만 저장된 거래도 구매자에게는 실제 진행 상태를 우선 보여준다.
+  const currentStatus = trade?.method === 'OFFLINE'
+    && (trade?.status === 'DELIVERING' || hasMeetingSchedule)
     ? {
       ...statusInfo.DELIVERING,
       label: '직거래 중',
@@ -208,11 +215,6 @@ const TradeDetailBuyer = ({
       ['CONFIRM_PENDING', 'WAITING_CONFIRMATION'].includes(trade?.status)
       && trade?.completionRequestedBy === 'SELLER'
     )
-  );
-  const hasMeetingSchedule = (
-    trade?.meetingDate !== '-'
-    && trade?.meetingTime !== '-'
-    && trade?.meetingPlace !== '-'
   );
   // 직거래는 판매자 일정이 확정된 뒤에만 실제 만남과 완료 확인이 가능하다.
   const isOfflineSchedulePending = (
