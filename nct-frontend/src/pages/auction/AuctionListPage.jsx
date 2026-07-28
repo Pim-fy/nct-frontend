@@ -8,6 +8,7 @@ import {
   ChevronUp,
   ChevronsLeft,
   ChevronsRight,
+  History,
   RotateCcw,
   Search,
   SlidersHorizontal,
@@ -20,7 +21,6 @@ import { AuctionCardSkeleton, SkeletonBlock } from '@components/skeleton/Auction
 import { SORT_OPTIONS } from '@/constants/auctionOptions';
 import {
   addAuctionSearchHistory,
-  clearAuctionSearchHistory,
   getAuctionSearchHistory,
   removeAuctionSearchHistory,
 } from '@utils/auctionSearchHistory';
@@ -101,6 +101,7 @@ const AuctionListPage = () => {
   const [previewQueryParams, setPreviewQueryParams] = useState(null);
   const searchParamsKey = searchParams.toString();
   const searchContainerRef = useRef(null);
+  const showSearchHistory = searchHistoryOpen && searchHistory.length > 0;
 
   useEffect(() => {
     const animationFrameId = window.requestAnimationFrame(() => {
@@ -311,10 +312,6 @@ const AuctionListPage = () => {
     setSearchHistory(removeAuctionSearchHistory(term));
   };
 
-  const handleClearRecentSearches = () => {
-    setSearchHistory(clearAuctionSearchHistory());
-  };
-
   const handleFilterSearch = () => {
     const next = createSearchParamsFromDraft();
 
@@ -367,7 +364,11 @@ const AuctionListPage = () => {
             }`}
           >
             <form
-              className="grid w-full grid-cols-[minmax(0,1fr)_56px] overflow-hidden rounded-lg border-[3px] border-primary bg-white"
+              className={`grid w-full grid-cols-[minmax(0,1fr)_56px] overflow-hidden border-[3px] border-primary bg-white ${
+                showSearchHistory
+                  ? 'rounded-t-lg rounded-b-none border-b-transparent'
+                  : 'rounded-lg'
+              }`}
               onSubmit={handleSearch}
             >
               <input
@@ -383,7 +384,7 @@ const AuctionListPage = () => {
                 placeholder="검색어를 입력하세요"
                 aria-label="경매 검색어"
                 aria-controls="auction-search-history"
-                aria-expanded={searchHistoryOpen}
+                aria-expanded={showSearchHistory}
                 autoComplete="off"
               />
               <button
@@ -395,51 +396,36 @@ const AuctionListPage = () => {
               </button>
             </form>
 
-            {searchHistoryOpen && (
+            {showSearchHistory && (
               <div
                 id="auction-search-history"
-                className="absolute inset-x-0 top-[calc(100%+8px)] z-[140] overflow-hidden rounded-lg border border-[#e2e1dc] bg-white shadow-[0_10px_24px_rgba(0,0,0,0.14)]"
+                className="absolute inset-x-0 top-[calc(100%-3px)] z-[140] overflow-hidden rounded-b-lg border-[3px] border-t-0 border-primary bg-white shadow-[0_12px_24px_rgba(0,0,0,0.14)]"
               >
-                <div className="flex min-h-11 items-center justify-between border-b border-[#f0efec] px-4">
-                  <strong className="text-sm leading-[1.5] text-[#1a1a18]">최근 검색어</strong>
-                  {searchHistory.length > 0 && (
-                    <button
-                      className="cursor-pointer border-0 bg-transparent text-sm leading-[1.5] text-[#777] hover:text-primary"
-                      type="button"
-                      onClick={handleClearRecentSearches}
-                    >
-                      전체 삭제
-                    </button>
-                  )}
-                </div>
-
-                {searchHistory.length > 0 ? (
-                  <ul className="m-0 list-none p-2">
-                    {searchHistory.map((term) => (
-                      <li className="flex min-h-10 items-center rounded-md hover:bg-[#f7f8fa]" key={term}>
-                        <button
-                          className="min-w-0 flex-1 cursor-pointer overflow-hidden border-0 bg-transparent px-3 text-left text-base leading-[1.5] text-ellipsis whitespace-nowrap text-[#333]"
-                          type="button"
-                          onClick={() => handleRecentSearch(term)}
-                        >
+                <div className="mx-4 border-t border-[#e2e1dc]" />
+                <ul className="m-0 list-none p-0">
+                  {searchHistory.map((term) => (
+                    <li className="flex min-h-11 items-center hover:bg-[#f7f8fa]" key={term}>
+                      <button
+                        className="flex min-w-0 flex-1 cursor-pointer items-center self-stretch overflow-hidden border-0 bg-transparent text-left text-base leading-[1.5] text-[#333]"
+                        type="button"
+                        onClick={() => handleRecentSearch(term)}
+                      >
+                        <History className="ml-3 shrink-0 text-[#777]" size={17} aria-hidden="true" />
+                        <span className="min-w-0 overflow-hidden px-3 text-ellipsis whitespace-nowrap">
                           {term}
-                        </button>
-                        <button
-                          className="mr-1 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-[#999] hover:bg-white hover:text-[#333]"
-                          type="button"
-                          onClick={() => handleRemoveRecentSearch(term)}
-                          aria-label={`${term} 검색 기록 삭제`}
-                        >
-                          <X size={16} aria-hidden="true" />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="m-0 px-4 py-5 text-center text-sm leading-[1.5] text-[#777]">
-                    최근 검색어가 없습니다.
-                  </p>
-                )}
+                        </span>
+                      </button>
+                      <button
+                        className="mr-1 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-[#999] hover:bg-white hover:text-[#333]"
+                        type="button"
+                        onClick={() => handleRemoveRecentSearch(term)}
+                        aria-label={`${term} 검색 기록 삭제`}
+                      >
+                        <X size={16} aria-hidden="true" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>
