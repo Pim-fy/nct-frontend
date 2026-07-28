@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { Heart } from 'lucide-react';
 import { formatNumber, formatPrice } from '../utils/auctionFormatters';
 
@@ -37,6 +36,7 @@ const AuctionBidPanel = ({
   onBidSubmit,
   onBuyNowOpen,
   onFavoriteToggle,
+  onChargeClick,
 }) => {
   const isBidPointInsufficient = hasAvailablePoint && !isBidPointSufficient;
   const isBuyNowPointInsufficient = hasAvailablePoint && !isBuyNowPointSufficient;
@@ -201,12 +201,13 @@ const AuctionBidPanel = ({
                 {pointBalanceLabel}
               </strong>
               {isAuthenticated && (
-                <Link
+                <button
                   className="font-bold text-primary-dark underline underline-offset-3"
-                  to="/user/point?action=charge"
+                  type="button"
+                  onClick={onChargeClick}
                 >
                   충전
-                </Link>
+                </button>
               )}
             </div>
           </div>

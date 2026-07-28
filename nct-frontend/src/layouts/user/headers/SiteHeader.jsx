@@ -13,6 +13,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Menu, X, ChevronRight } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useAuth } from '@hooks/useAuth';
+import { useMyProviderApplications } from '@hooks/useProviderApplications';
 import { useMarkRead, useNotifications } from '@hooks/useNotification';
 import { useNotificationStream } from '@hooks/useNotificationStream';
 import { usePointBalance } from '@hooks/usePoint';
@@ -64,6 +65,12 @@ const SiteHeader = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const queryClient = useQueryClient();
+
+  // 제공자 승인 여부 — 일반모드 로그인 상태일 때만 호출 (비로그인·이미 제공자 모드면 불필요)
+  const { data: myProviderApps = [] } = useMyProviderApplications({
+    enabled: !!user && !isProvider,
+  });
+  const isProviderApproved = myProviderApps.some((app) => app.statusCode === 'PRVC0003');
 
   // 알림·포인트 실데이터 — 로그인 상태일 때만 호출 (비로그인 401 방지)
   const notiQuery = useNotifications({ enabled: !!user });
@@ -423,36 +430,9 @@ const SiteHeader = () => {
                   </span>
                 </div>
                 <div className="my-3 h-px bg-[#e5e5e5]" />
-                {/* 알림 목록 — 안읽은 알림 최근 N건, 없으면 안내 문구 + 구분선 + 과거(읽은) 알림 */}
+                {/* 안읽은 알림 */}
                 {unreadNotis.length === 0 ? (
-                  <>
-                    <p className="py-2 text-center text-[13px] text-[#969696]">새 알림이 없습니다.</p>
-                    {pastNotis.length > 0 && (
-                      <>
-                        <div className="my-3 h-px bg-[#e5e5e5]" />
-                        <ul className="flex flex-col gap-3">
-                          {pastNotis.map((item) => (
-                            <li key={item.id}>
-                              <button
-                                type="button"
-                                className="flex w-full items-start gap-2 text-left"
-                                onClick={() => {
-                                  setSelectedNoti({ ...item, time: relativeTime(item.regDt) });
-                                  setNotiOpen(false);
-                                }}
-                              >
-                                <span className="mt-[6px] size-[6px] shrink-0 rounded-full bg-[#d9d9d9]" />
-                                <div className="min-w-0">
-                                  <p className="truncate text-[13px] text-[#333]">{item.title}</p>
-                                  <p className="text-[11px] text-[#969696]">{relativeTime(item.regDt)}</p>
-                                </div>
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      </>
-                    )}
-                  </>
+                  <p className="py-2 text-center text-[13px] text-[#969696]">새 알림이 없습니다.</p>
                 ) : (
                   <ul className="flex flex-col gap-1.5">
                     {unreadNotis.slice(0, NOTI_PREVIEW_MAX).map((item) => (
@@ -475,6 +455,32 @@ const SiteHeader = () => {
                       </li>
                     ))}
                   </ul>
+                )}
+                {/* 과거(읽은) 알림 — 안읽은 알림 유무와 관계없이 항상 표시 */}
+                {pastNotis.length > 0 && (
+                  <>
+                    <div className="my-3 h-px bg-[#e5e5e5]" />
+                    <ul className="flex flex-col gap-3">
+                      {pastNotis.map((item) => (
+                        <li key={item.id}>
+                          <button
+                            type="button"
+                            className="flex w-full items-start gap-2 text-left"
+                            onClick={() => {
+                              setSelectedNoti({ ...item, time: relativeTime(item.regDt) });
+                              setNotiOpen(false);
+                            }}
+                          >
+                            <span className="mt-[6px] size-[6px] shrink-0 rounded-full bg-[#d9d9d9]" />
+                            <div className="min-w-0">
+                              <p className="truncate text-[13px] text-[#333]">{item.title}</p>
+                              <p className="text-[11px] text-[#969696]">{relativeTime(item.regDt)}</p>
+                            </div>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
                 )}
                 {/* 전체보기 */}
                 <button
@@ -587,11 +593,16 @@ const SiteHeader = () => {
                         await switchMode('USER');
                         navigate('/user/mypage');
                       } else {
-                        navigate('/provider/apply');
+                        try {
+                          await switchMode('SERVICE');
+                          navigate('/user/mypage');
+                        } catch {
+                          navigate('/provider/apply');
+                        }
                       }
                     }}
                   >
-                    {isProvider ? '일반모드 변경' : '제공자 신청'}
+                    {isProvider ? '일반모드 변경' : isProviderApproved ? '제공자 전환' : '제공자 신청'}
                   </button>
                   {user ? (
                     <button
@@ -671,11 +682,16 @@ const SiteHeader = () => {
                         await switchMode('USER');
                         navigate('/user/mypage');
                       } else {
-                        navigate('/provider/apply');
+                        try {
+                          await switchMode('SERVICE');
+                          navigate('/user/mypage');
+                        } catch {
+                          navigate('/provider/apply');
+                        }
                       }
                     }}
                   >
-                    {isProvider ? '일반모드 변경' : '제공자전환'}
+                    {isProvider ? '일반모드 변경' : isProviderApproved ? '제공자 전환' : '제공자 신청'}
                   </button>
                   <button
                     type="button"

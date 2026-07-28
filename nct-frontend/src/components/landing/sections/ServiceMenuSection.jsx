@@ -99,7 +99,7 @@ export default function ServiceMenuSection() {
           <div key={item.label} className="absolute contents" style={{ left: item.left, top: 1090 }}>
             <button
               type="button"
-              onClick={() => navigate(`/services?category=${encodeURIComponent(item.category)}`)}
+              onClick={() => navigate(`/service?category=${encodeURIComponent(item.category)}`)}
               className="absolute cursor-pointer bg-white border border-[rgba(0,0,0,0.1)] border-solid rounded-[20px] size-[150px] hover:shadow-md transition-shadow"
               style={{ left: item.left, top: 1015 }}
             />

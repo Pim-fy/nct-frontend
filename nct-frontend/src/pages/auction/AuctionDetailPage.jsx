@@ -15,6 +15,7 @@ import { useAuctionViewTracking } from '@hooks/useAuctionViewTracking';
 import useCountdown from '@hooks/useCountdown';
 import { usePointBalance } from '@hooks/usePoint';
 import { AuctionDetailSkeleton } from '@components/skeleton/AuctionSkeletons';
+import PointChargeWidgetModal from '@pages/user/point/components/PointChargeWidgetModal';
 import AuctionBidPanel from './components/AuctionBidPanel';
 import AuctionBuyNowModal from './components/AuctionBuyNowModal';
 import AuctionImageGallery, { AuctionPreviewRail } from './components/AuctionImageGallery';
@@ -62,6 +63,9 @@ const AuctionDetailPage = () => {
   );
   const [isDetailNavigationStuck, setIsDetailNavigationStuck] = useState(false);
   const [isBuyNowOpen, setIsBuyNowOpen] = useState(false);
+  // 입찰 패널의 "충전" 클릭 시 마이페이지로 이동하지 않고 이 자리에서 바로 모달을 띄운다
+  // (헤더 POINT 드롭다운과 같은 방식, 사용자 요청으로 변경 2026-07-28 — 이동하면 입력 중인 입찰 금액이 날아감)
+  const [isChargeModalOpen, setIsChargeModalOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
   const [imageNavigationCommand, setImageNavigationCommand] = useState(null);
   const requestedImageIndexRef = useRef(null);
@@ -569,6 +573,7 @@ const AuctionDetailPage = () => {
               onBidSubmit={handleBidSubmit}
               onBuyNowOpen={handleBuyNowOpen}
               onFavoriteToggle={handleFavoriteToggle}
+              onChargeClick={() => setIsChargeModalOpen(true)}
             />
           </section>
         </div>
@@ -653,6 +658,12 @@ const AuctionDetailPage = () => {
         onConfirm={handleBuyNowConfirm}
       />
       <AuctionToast message={toastMessage} />
+      {isChargeModalOpen && (
+        <PointChargeWidgetModal
+          infoRow={{ label: '사용 가능 포인트', value: `${(hasAvailablePoint ? availablePoint : 0).toLocaleString()} P` }}
+          onClose={() => setIsChargeModalOpen(false)}
+        />
+      )}
     </>
   );
 };
