@@ -68,7 +68,12 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
   // activeSection이 accordion child로 변경되면 해당 accordion 자동으로 열기
   useEffect(() => {
     const parent = getParentAccordion(activeSection);
-    if (parent) setOpenAccordion(parent);
+    if (!parent) return undefined;
+
+    const animationFrameId = window.requestAnimationFrame(() => {
+      setOpenAccordion(parent);
+    });
+    return () => window.cancelAnimationFrame(animationFrameId);
   }, [activeSection]);
 
   const handleClick = (item) => {
