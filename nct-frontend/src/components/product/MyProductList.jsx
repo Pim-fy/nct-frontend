@@ -99,7 +99,7 @@ function chipStyle(active) {
 
 // ─── 컴포넌트 ─────────────────────────────────────────────────────────────────
 
-export default function MyProductList() {
+export default function MyProductList({ onOpenTradeDetail }) {
   const navigate = useNavigate();
   const [filter, setFilter]       = useState(null);
   const [subFilter, setSubFilter] = useState('');
@@ -232,7 +232,18 @@ export default function MyProductList() {
 
                   <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                     {p.tradeSn && (
-                      <button type="button" onClick={() => navigate(`/trades/${p.tradeSn}/seller`)} className="btn btn-sm btn-primary">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onOpenTradeDetail) {
+                            onOpenTradeDetail(p.tradeSn);
+                            return;
+                          }
+
+                          navigate(`/trades/${p.tradeSn}/seller`);
+                        }}
+                        className="btn btn-sm btn-primary"
+                      >
                         거래 관리
                       </button>
                     )}

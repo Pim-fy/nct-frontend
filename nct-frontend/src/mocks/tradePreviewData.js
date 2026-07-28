@@ -214,6 +214,13 @@ export const updateTradePreviewDetail = (tradeId, changes) => {
     && trade.meetingDate
     && trade.meetingTime
     && trade.meetingPlace;
+  const isOfflineScheduleUpdated = isOfflineScheduleSaved
+    && [
+      'meetingDate',
+      'meetingTime',
+      'meetingPlace',
+      'meetingAddress',
+    ].some((field) => Object.hasOwn(changes, field));
 
   // 일정 저장 성공 시에만 직거래 채팅방을 만든다.
   // 백엔드 saveMyOfflineSchedule()도 같은 순서와 트랜잭션으로 처리한다.
@@ -241,9 +248,20 @@ export const updateTradePreviewDetail = (tradeId, changes) => {
     });
   }
 
-  if (isOfflineScheduleSaved) {
+  if (isOfflineScheduleUpdated) {
     // 일정이 확정되면 미리보기 거래를 직거래 진행 상태로 전환한다.
     trade.tradeStatus = 'IN_PROGRESS';
+  }
+
+  if (trade.tradeStatus === 'COMPLETED') {
+    const chatRoom = tradeChatPreviewRooms.find(
+      (room) => String(room.tradeId) === String(tradeId),
+    );
+
+    // 실제 서버의 거래 완료 처리처럼 미리보기 채팅방도 읽기 전용으로 닫는다.
+    if (chatRoom) {
+      chatRoom.roomStatus = 'CLOSED';
+    }
   }
 
   return { ...trade };

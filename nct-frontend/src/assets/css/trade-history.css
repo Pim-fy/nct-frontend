@@ -217,6 +217,14 @@
   transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
 }
 
+button.trade-history-item {
+  width: 100%;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
 .trade-history-item:hover {
   border-color: #c9d9ff;
   box-shadow: 0 12px 28px rgba(20, 38, 79, .09);

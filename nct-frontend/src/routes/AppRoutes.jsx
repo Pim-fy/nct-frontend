@@ -225,6 +225,7 @@ const AppRoutes = () => {
           {/* 서비스 - 로그인 필요 */}
           {/* 담당자 2 · F-SVC-001~004: 서비스 요청서 작성/임시저장 폼. 라우트 소유자에게 전달 필요. */}
           <Route path="/service-requests/new" element={<ServiceRequestFormPage />} />
+          <Route path="/service-requests/:svcReqSn" element={<ServiceRequestDetailPage />} />
         </Route>
       </Route>
 
