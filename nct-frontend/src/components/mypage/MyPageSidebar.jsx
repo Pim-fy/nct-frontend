@@ -30,7 +30,7 @@ const GENERAL_MENU_ITEMS = [
       { key: "service-sales", label: "서비스 판매 내역", type: "todo" },
     ],
   },
-  { key: "wishlist", label: "관심 상품",   type: "todo" },
+  { key: "wishlist", label: "관심 상품",   type: "section" },
   { key: "chat",     label: "채팅",        type: "section" },
   { key: "wallet",   label: "포인트 지갑", type: "section" },
 ];
@@ -68,7 +68,12 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
   // activeSection이 accordion child로 변경되면 해당 accordion 자동으로 열기
   useEffect(() => {
     const parent = getParentAccordion(activeSection);
-    if (parent) setOpenAccordion(parent);
+    if (!parent) return undefined;
+
+    const animationFrameId = window.requestAnimationFrame(() => {
+      setOpenAccordion(parent);
+    });
+    return () => window.cancelAnimationFrame(animationFrameId);
   }, [activeSection]);
 
   const handleClick = (item) => {

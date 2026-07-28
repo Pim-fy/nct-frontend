@@ -13,70 +13,74 @@ const formatSellerReviewCount = (reviewCount) => {
   return `${Number(reviewCount).toLocaleString('ko-KR')}개`;
 };
 
-const AuctionInfoGrid = ({
-  auction,
-  selectedTradeName,
-  productSectionId,
-  sellerSectionId,
-}) => (
-  <>
-    <section
-      className="scroll-mt-[136px] border-b border-[#e2e5ea] py-10 md:scroll-mt-[82px] md:py-14"
-      id={productSectionId}
-      aria-labelledby={`${productSectionId}-title`}
-    >
-      <header className="mb-7">
-        <h2
-          className="m-0 text-[24px] leading-tight font-bold text-[#1d1d1f] md:text-[28px]"
-          id={`${productSectionId}-title`}
-        >
-          상품 설명
-        </h2>
-      </header>
+export const AuctionProductDescriptionSection = ({ auction, sectionId }) => (
+  <section
+    className="scroll-mt-[136px] border-b border-[#e2e5ea] py-10 md:scroll-mt-[82px] md:py-14"
+    id={sectionId}
+    aria-labelledby={`${sectionId}-title`}
+  >
+    <header className="mb-7">
+      <h2
+        className="m-0 text-2xl leading-[1.3] font-bold text-[#1d1d1f] md:text-[28px]"
+        id={`${sectionId}-title`}
+      >
+        상품 설명
+      </h2>
+    </header>
 
-      <TempComment content={auction.content} />
-    </section>
-
-    <section
-      className="scroll-mt-[136px] border-b border-[#e2e5ea] py-10 md:scroll-mt-[82px] md:py-14"
-      id={sellerSectionId}
-      aria-labelledby={`${sellerSectionId}-title`}
-    >
-      <header className="mb-7">
-        <h2
-          className="m-0 text-[24px] leading-tight font-bold text-[#1d1d1f] md:text-[28px]"
-          id={`${sellerSectionId}-title`}
-        >
-          판매자 정보
-        </h2>
-      </header>
-
-      <dl className="m-0 border-y border-[#e2e5ea]">
-        <div className={SELLER_INFO_ITEM_CLASS}>
-          <dt className="text-sm font-bold text-[#666]">판매자</dt>
-          <dd className="m-0 text-[15px] font-semibold text-[#1d1d1f]">
-            {auction.sellerName || '판매자'}
-          </dd>
-        </div>
-        <div className={SELLER_INFO_ITEM_CLASS}>
-          <dt className="text-sm font-bold text-[#666]">평점</dt>
-          <dd className="m-0 text-[15px] text-[#1d1d1f]">
-            {formatSellerRating(auction.sellerRating, auction.sellerReviewCount)}
-          </dd>
-        </div>
-        <div className={SELLER_INFO_ITEM_CLASS}>
-          <dt className="text-sm font-bold text-[#666]">받은 리뷰</dt>
-          <dd className="m-0 text-[15px] text-[#1d1d1f]">
-            {formatSellerReviewCount(auction.sellerReviewCount)}
-          </dd>
-        </div>
-        <div className={SELLER_INFO_ITEM_CLASS}>
-          <dt className="text-sm font-bold text-[#666]">거래 방식</dt>
-          <dd className="m-0 text-[15px] text-[#1d1d1f]">{selectedTradeName}</dd>
-        </div>
-      </dl>
-    </section>
-  </>
+    <TempComment content={auction.content} />
+  </section>
 );
 
-export default AuctionInfoGrid;
+export const AuctionSellerInformationSection = ({
+  auction,
+  selectedTradeName,
+  sectionId,
+  children,
+}) => (
+  <section
+    className="scroll-mt-[136px] py-10 md:scroll-mt-[82px] md:py-14"
+    id={sectionId}
+    aria-labelledby={`${sectionId}-title`}
+  >
+    <header className="mb-7">
+      <h2
+        className="m-0 text-2xl leading-[1.3] font-bold text-[#1d1d1f] md:text-[28px]"
+        id={`${sectionId}-title`}
+      >
+        판매자 정보
+      </h2>
+    </header>
+
+    <dl className="m-0 border-y border-[#e2e5ea]">
+      <div className={SELLER_INFO_ITEM_CLASS}>
+        <dt className="text-sm leading-[1.5] font-bold text-[#666]">판매자</dt>
+        <dd className="m-0 text-base leading-[1.6] font-semibold text-[#1d1d1f]">
+          {auction.sellerName || '판매자'}
+        </dd>
+      </div>
+      <div className={SELLER_INFO_ITEM_CLASS}>
+        <dt className="text-sm leading-[1.5] font-bold text-[#666]">평점</dt>
+        <dd className="m-0 text-base leading-[1.6] text-[#1d1d1f]">
+          {formatSellerRating(auction.sellerRating, auction.sellerReviewCount)}
+        </dd>
+      </div>
+      <div className={SELLER_INFO_ITEM_CLASS}>
+        <dt className="text-sm leading-[1.5] font-bold text-[#666]">받은 리뷰</dt>
+        <dd className="m-0 text-base leading-[1.6] text-[#1d1d1f]">
+          {formatSellerReviewCount(auction.sellerReviewCount)}
+        </dd>
+      </div>
+      <div className={SELLER_INFO_ITEM_CLASS}>
+        <dt className="text-sm leading-[1.5] font-bold text-[#666]">거래 방식</dt>
+        <dd className="m-0 text-base leading-[1.6] text-[#1d1d1f]">{selectedTradeName}</dd>
+      </div>
+      {children && (
+        <div className="border-b border-[#eceef1] py-4 last:border-b-0">
+          <dt className="sr-only">판매자가 등록한 경매 상품</dt>
+          <dd className="m-0">{children}</dd>
+        </div>
+      )}
+    </dl>
+  </section>
+);

@@ -16,6 +16,7 @@ import MyPageProviderDashboard from "@components/mypage/MyPageProviderDashboard"
 import TradeChat from "@pages/trade/TradeChat";
 import MyBidHistoryPage from "@pages/user/MyBidHistoryPage";
 import MyActiveAuctionPage from "@pages/user/MyActiveAuctionPage";
+import AuctionFavoritesPage from "@pages/auction/AuctionFavoritesPage";
 import TradeHistory from "@pages/trade/TradeHistory";
 import TradeDetailBuyer from "@pages/trade/TradeDetailBuyer";
 import TradeDetailSeller from "@pages/trade/TradeDetailSeller";
@@ -30,6 +31,7 @@ const MYPAGE_SECTION_QUERY_VALUES = new Set([
   "active-auctions",
   "auction-bids",
   "auction-sales",
+  "wishlist",
   "chat",
   "wallet",
   "profile",
@@ -181,6 +183,7 @@ export default function MyPage({
               <MyProductList onOpenTradeDetail={handleOpenSalesTradeDetail} />
             )
           )}
+          {activeSection === "wishlist" && <AuctionFavoritesPage />}
           {activeSection === "wallet" && <PointWalletPage embedded />}
           {/* 기존 경로로 진입한 경우에도 입찰 내역을 안전하게 표시한다. */}
           {activeSection === "auction-history" && <MyBidHistoryPage />}
