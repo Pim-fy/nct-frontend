@@ -75,7 +75,7 @@ const AdminAuctionManagementPage = () => {
     { key: 'registeredAt', label: '등록일', render: formatDate },
     {
       key: 'manage', label: '관리', render: (_, row) => (
-        <button className="btn btn-outline" onClick={(event) => { event.stopPropagation(); setSelected(row); setReviewReason(''); }} type="button">
+        <button className={row.cancelRequestId ? 'btn btn-danger' : 'btn btn-outline'} onClick={(event) => { event.stopPropagation(); setSelected(row); setReviewReason(''); }} type="button">
           {row.cancelRequestId ? '취소 심사' : '상세 보기'}
         </button>
       ),
