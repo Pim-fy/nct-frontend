@@ -116,6 +116,8 @@ export const toTradeDetail = (response) => {
     price: formatAmount(trade.price ?? trade.amount ?? trade.tradeAmount),
     method: trade.tradeMethod ?? trade.method ?? null,
     status: normalizeTradeStatus(trade.tradeStatus ?? trade.status),
+    // 확인 대기 상태에서 첫 완료 확인을 누른 역할을 받아 상대방에게만 두 번째 확인 버튼을 노출한다.
+    completionRequestedBy: trade.completionRequestedBy ?? null,
     counterpart: trade.counterpartNickname ?? trade.counterpart ?? '-',
     counterpartUserId: trade.counterpartUserId ?? trade.counterpartUsrSn ?? null,
     rating: trade.counterpartRating ?? trade.rating ?? '-',
