@@ -89,19 +89,23 @@ export const getTradeListItems = (response) => {
  * 서버 거래 DTO를 거래내역 화면에 필요한 표시 데이터로 변환한다.
  * 기존 화면의 필드명은 유지하고, 서버 DTO 의존성은 이 파일에만 둔다.
  */
-export const toTradeHistoryItem = (trade) => ({
-  id: trade.tradeId ?? trade.id,
-  type: trade.userRole ?? trade.role ?? trade.type,
-  productName: trade.productName ?? trade.itemName ?? '-',
-  counterpart: trade.counterpartNickname ?? trade.counterpart ?? '-',
-  amount: formatAmount(trade.price ?? trade.amount ?? trade.tradeAmount),
-  date: formatDate(trade.createdAt ?? trade.tradedAt ?? trade.tradeDate),
-  method: trade.tradeMethod ?? trade.method,
-  status: normalizeTradeStatus(trade.tradeStatus ?? trade.status),
-  meetingDate: trade.meetingDate ?? null,
-  meetingTime: trade.meetingTime ?? null,
-  meetingPlace: trade.meetingPlace ?? null,
-});
+export const toTradeHistoryItem = (trade) => {
+  const meetingDateTime = splitMeetingDateTime(trade.meetingDateTime);
+
+  return {
+    id: trade.tradeId ?? trade.id,
+    type: trade.userRole ?? trade.role ?? trade.type,
+    productName: trade.productName ?? trade.itemName ?? '-',
+    counterpart: trade.counterpartNickname ?? trade.counterpart ?? '-',
+    amount: formatAmount(trade.price ?? trade.amount ?? trade.tradeAmount),
+    date: formatDate(trade.createdAt ?? trade.tradedAt ?? trade.tradeDate),
+    method: trade.tradeMethod ?? trade.method,
+    status: normalizeTradeStatus(trade.tradeStatus ?? trade.status),
+    meetingDate: trade.meetingDate ?? (meetingDateTime.date === '-' ? null : meetingDateTime.date),
+    meetingTime: trade.meetingTime ?? (meetingDateTime.time === '-' ? null : meetingDateTime.time),
+    meetingPlace: trade.meetingPlace ?? null,
+  };
+};
 
 /**
  * 서버 거래 DTO를 구매자·판매자 상세 화면에서 공통으로 사용할 데이터로 변환한다.

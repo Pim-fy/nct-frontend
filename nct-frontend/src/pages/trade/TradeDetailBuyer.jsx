@@ -73,8 +73,14 @@ const unknownStatus = {
   className: 'trade-status--pending',
 };
 
-const TradeDetailBuyer = () => {
-  const { tradeId } = useParams();
+const TradeDetailBuyer = ({
+  embedded = false,
+  tradeId: selectedTradeId,
+  onBack,
+  onOpenChat,
+}) => {
+  const { tradeId: routeTradeId } = useParams();
+  const tradeId = selectedTradeId ?? routeTradeId;
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -89,11 +95,16 @@ const TradeDetailBuyer = () => {
   const [isCompletionResultOpen, setIsCompletionResultOpen] = useState(false);
   const isPreview = pathname.startsWith('/trades/preview');
   const chatPath = isPreview
-    ? `/trades/preview/${tradeId}/chat`
-    : `/trades/${tradeId}/chat`;
+    ? `/trades/preview/${tradeId}/chat?from=buyer`
+    : `/trades/${tradeId}/chat?from=buyer`;
 
   // 마이페이지에서 진입한 상세는 브라우저 이력 대신 거래내역 탭으로 명확하게 복귀한다.
   const handleBackToList = () => {
+    if (embedded && onBack) {
+      onBack();
+      return;
+    }
+
     if (searchParams.get('from') === 'mypage') {
       const returnSection = searchParams.get('section');
       const myPageSection = returnSection === 'auction-bids'
@@ -179,7 +190,13 @@ const TradeDetailBuyer = () => {
     };
   }, [trade?.deliveryId, trade?.deliveryProofFiles]);
 
-  const currentStatus = statusInfo[trade?.status] ?? unknownStatus;
+  const currentStatus = trade?.method === 'OFFLINE' && trade?.status === 'DELIVERING'
+    ? {
+      ...statusInfo.DELIVERING,
+      label: '직거래 중',
+      description: '판매자가 제안한 일정과 장소에서 직거래를 진행해 주세요.',
+    }
+    : statusInfo[trade?.status] ?? unknownStatus;
   const selectedDeliveryProof = selectedDeliveryProofIndex === null
     ? null
     : deliveryProofUrls[selectedDeliveryProofIndex] ?? null;
@@ -397,11 +414,19 @@ const TradeDetailBuyer = () => {
             </div>
             {hasMeetingSchedule && (
               <div className="trade-detail-actions">
-                <Link className="btn btn-outline" to={chatPath}>
-                  {trade.status === 'COMPLETED'
-                    ? '거래 채팅 기록 보기'
-                    : '거래 채팅'}
-                </Link>
+                {onOpenChat ? (
+                  <button
+                    className="btn btn-outline"
+                    type="button"
+                    onClick={() => onOpenChat(tradeId)}
+                  >
+                    {trade.status === 'COMPLETED' ? '거래 채팅 기록 보기' : '거래 채팅'}
+                  </button>
+                ) : (
+                  <Link className="btn btn-outline" to={chatPath}>
+                    {trade.status === 'COMPLETED' ? '거래 채팅 기록 보기' : '거래 채팅'}
+                  </Link>
+                )}
               </div>
             )}
           </section>

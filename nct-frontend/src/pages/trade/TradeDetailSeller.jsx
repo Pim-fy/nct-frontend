@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useState,
 } from 'react';
 import {
@@ -35,6 +36,22 @@ const getTodayDate = () => {
   return `${year}-${month}-${day}`;
 };
 
+// time 입력은 분 단위이므로 현재 분은 이미 지날 수 있어 다음 분부터 제안한다.
+const getNextAvailableTime = () => {
+  const now = new Date();
+  now.setSeconds(0, 0);
+  now.setMinutes(now.getMinutes() + 1);
+
+  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+};
+
+const MEETING_TIME_SLOTS = Array.from({ length: 48 }, (_, index) => {
+  const hour = String(Math.floor(index / 2)).padStart(2, '0');
+  const minute = index % 2 === 0 ? '00' : '30';
+
+  return `${hour}:${minute}`;
+});
+
 const MAX_SHIPPING_PROOF_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_SHIPPING_PROOF_FILES = 5;
 const SHIPPING_PROOF_IMAGE_TYPES = [
@@ -43,8 +60,14 @@ const SHIPPING_PROOF_IMAGE_TYPES = [
   'image/webp',
 ];
 
-const TradeDetailSeller = () => {
-  const { tradeId } = useParams();
+const TradeDetailSeller = ({
+  embedded = false,
+  tradeId: selectedTradeId,
+  onBack,
+  onOpenChat,
+}) => {
+  const { tradeId: routeTradeId } = useParams();
+  const tradeId = selectedTradeId ?? routeTradeId;
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -65,7 +88,16 @@ const TradeDetailSeller = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [timeRefreshSignal, setTimeRefreshSignal] = useState(0);
+  const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
   const todayDate = getTodayDate();
+  const availableMeetingTimes = useMemo(() => {
+    const minimumTime = meetingDate === todayDate
+      ? getNextAvailableTime()
+      : '00:00';
+
+    return MEETING_TIME_SLOTS.filter((time) => time >= minimumTime);
+  }, [meetingDate, timeRefreshSignal, todayDate]);
   const isPreview = pathname.startsWith('/trades/preview');
   const offlineTradeStatusLabel = (() => {
     if (!meetingProposed) {
@@ -103,11 +135,16 @@ const TradeDetailSeller = () => {
       )
     );
   const chatPath = isPreview
-    ? `/trades/preview/${tradeId}/chat`
-    : `/trades/${tradeId}/chat`;
+    ? `/trades/preview/${tradeId}/chat?from=seller`
+    : `/trades/${tradeId}/chat?from=seller`;
 
   // 마이페이지에서 진입한 상세는 브라우저 이력 대신 거래내역 탭으로 명확하게 복귀한다.
   const handleBackToList = () => {
+    if (embedded && onBack) {
+      onBack();
+      return;
+    }
+
     if (searchParams.get('from') === 'mypage') {
       const returnSection = searchParams.get('section');
       const myPageSection = returnSection === 'auction-sales'
@@ -316,6 +353,11 @@ const TradeDetailSeller = () => {
       return;
     }
 
+    if (new Date(`${meetingDate}T${meetingTime}`) <= new Date()) {
+      setError('거래 시간은 현재 시간 이후로 선택해 주세요.');
+      return;
+    }
+
     setError('');
     setIsSubmitting(true);
 
@@ -343,6 +385,15 @@ const TradeDetailSeller = () => {
       setIsSubmitting(false);
     }
   };
+
+  // 오늘 화면을 오래 열어 둔 경우에도 과거 시간대가 남지 않게 목록을 분 단위로 갱신한다.
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setTimeRefreshSignal((current) => current + 1);
+    }, 60_000);
+
+    return () => window.clearInterval(timer);
+  }, []);
 
   if (isLoading || loadError || !trade) {
     return (
@@ -438,11 +489,19 @@ const TradeDetailSeller = () => {
                 시간 또는 장소 조율이 필요하면 거래 채팅에서 상대방과 협의해 주세요.
               </p>
               <div className="trade-detail-actions">
-                <Link className="btn btn-outline" to={chatPath}>
-                  {trade.status === 'COMPLETED'
-                    ? '거래 채팅 기록 보기'
-                    : '거래 채팅'}
-                </Link>
+                {onOpenChat ? (
+                  <button
+                    className="btn btn-outline"
+                    type="button"
+                    onClick={() => onOpenChat(tradeId)}
+                  >
+                    {trade.status === 'COMPLETED' ? '거래 채팅 기록 보기' : '거래 채팅'}
+                  </button>
+                ) : (
+                  <Link className="btn btn-outline" to={chatPath}>
+                    {trade.status === 'COMPLETED' ? '거래 채팅 기록 보기' : '거래 채팅'}
+                  </Link>
+                )}
               </div>
             </section>
           ) : (
@@ -462,20 +521,61 @@ const TradeDetailSeller = () => {
                     type="date"
                     value={meetingDate}
                     min={todayDate}
-                    onChange={(event) => setMeetingDate(event.target.value)}
+                    onChange={(event) => {
+                      const nextDate = event.target.value;
+                      setMeetingDate(nextDate);
+                      setIsTimePickerOpen(false);
+                      if (nextDate === todayDate && meetingTime < getNextAvailableTime()) {
+                        setMeetingTime('');
+                      }
+                    }}
                     disabled={isSubmitting}
                   />
                 </label>
-                <label className="trade-form-field">
-                  거래 시간
-                  <input
-                    className="input"
-                    type="time"
-                    value={meetingTime}
-                    onChange={(event) => setMeetingTime(event.target.value)}
-                    disabled={isSubmitting}
-                  />
-                </label>
+                <fieldset className="trade-form-field trade-time-slots-field">
+                  <legend>거래 시간</legend>
+                  <button
+                    aria-expanded={isTimePickerOpen}
+                    className="trade-time-picker-trigger"
+                    type="button"
+                    disabled={!meetingDate || isSubmitting}
+                    onClick={() => setIsTimePickerOpen((isOpen) => !isOpen)}
+                  >
+                    <span>{meetingTime || '시간 선택'}</span>
+                    <span aria-hidden="true">⌄</span>
+                  </button>
+                  {!meetingDate && (
+                    <p className="trade-time-slots__hint">
+                      먼저 거래 날짜를 선택해 주세요.
+                    </p>
+                  )}
+                  {meetingDate && isTimePickerOpen && (
+                    <div className="trade-time-picker" role="dialog" aria-label="거래 시간 선택">
+                      <p>가능한 시간을 선택해 주세요.</p>
+                      <div className="trade-time-slots" role="radiogroup" aria-label="거래 시간">
+                        {availableMeetingTimes.map((time) => (
+                          <button
+                            aria-checked={meetingTime === time}
+                            className={meetingTime === time
+                              ? 'trade-time-slot trade-time-slot--selected'
+                              : 'trade-time-slot'}
+                            key={time}
+                            role="radio"
+                            type="button"
+                            disabled={isSubmitting}
+                            onClick={() => {
+                              setError('');
+                              setMeetingTime(time);
+                              setIsTimePickerOpen(false);
+                            }}
+                          >
+                            {time}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </fieldset>
               </div>
               <label className="trade-form-field">
                 거래 장소

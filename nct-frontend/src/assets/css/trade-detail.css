@@ -1,7 +1,7 @@
 .trade-detail-page {
   min-height: 100%;
   padding: 48px 0 80px;
-  background: linear-gradient(180deg, #f4f7ff 0, #f8f9fb 340px, #fff 340px);
+  background: #fff;
 }
 
 .trade-detail-page .container {
@@ -415,6 +415,108 @@
   font-size: 12px;
   font-weight: 500;
   text-align: right;
+}
+
+.trade-time-slots-field {
+  position: relative;
+  min-width: 0;
+  margin: 16px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.trade-time-slots-field legend {
+  margin-bottom: 8px;
+  color: #475467;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.trade-time-slots__hint {
+  margin: 8px 0 0;
+  color: #8b95a7;
+  font-size: 13px;
+}
+
+.trade-time-picker-trigger {
+  display: flex;
+  width: 100%;
+  min-height: 46px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  border: 1px solid #dce2ed;
+  border-radius: 10px;
+  background: #fff;
+  color: #252b3a;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 500;
+}
+
+.trade-time-picker-trigger:hover:not(:disabled),
+.trade-time-picker-trigger[aria-expanded="true"] {
+  border-color: #155eef;
+  box-shadow: 0 0 0 4px rgba(21, 94, 239, .12);
+}
+
+.trade-time-picker-trigger:disabled {
+  background: #f8fafc;
+  color: #98a2b3;
+  cursor: not-allowed;
+}
+
+.trade-time-picker {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  right: 0;
+  left: 0;
+  padding: 14px;
+  border: 1px solid #dce2ed;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(20, 38, 79, .16);
+}
+
+.trade-time-picker > p {
+  margin: 0 0 10px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.trade-time-slots {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  max-height: 192px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.trade-time-slot {
+  min-height: 38px;
+  border: 1px solid #dce2ed;
+  border-radius: 9px;
+  background: #fff;
+  color: #526079;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.trade-time-slot:hover:not(:disabled),
+.trade-time-slot--selected {
+  border-color: #155eef;
+  background: #e9f0ff;
+  color: #155eef;
+}
+
+.trade-time-slot:disabled {
+  cursor: not-allowed;
+  opacity: .55;
 }
 
 .trade-form-error { margin: 12px 0 0; color: #a32d2d; font-size: 13px; }
