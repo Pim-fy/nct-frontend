@@ -57,6 +57,7 @@ import ServiceListPage from '@pages/service/ServiceListPage';
 import PublicProviderProfilePage from '@pages/provider/PublicProviderProfilePage';
 import ProviderApplyPage from '@pages/provider/ProviderApplyPage';
 import ProviderApplicationStatusPage from '@pages/provider/ProviderApplicationStatusPage';
+import ProviderProfilePage from '@pages/provider/ProviderProfilePage';
 import NotificationPage from '@pages/user/notification/NotificationPage';
 import NotificationSettingsPage from '@pages/user/notification/NotificationSettingsPage';
 import SettlementListPage from '@pages/user/settlement/SettlementListPage';
@@ -71,6 +72,11 @@ import MyBidHistoryPage from '@pages/user/MyBidHistoryPage';
 import ProductRegisterPage from '@pages/product/ProductRegisterPage';
 import MyProductListPage from '@pages/product/MyProductListPage';
 import ProductDetailSellerPage from '@pages/product/ProductDetailSellerPage';
+
+// F-SVC-001~004: 서비스 요청서 작성/임시저장 폼
+import ServiceRequestFormPage from '@pages/service/ServiceRequestFormPage';
+// F-SVC-003~004: 서비스 요청서 상세 조회/관리
+import ServiceRequestDetailPage from '@pages/service/ServiceRequestDetailPage';
 
 // 기존 지갑 주소를 유지하되, 결제 결과·모달 제어용 query string도 함께 전달한다.
 const PointWalletRedirect = () => {
@@ -215,6 +221,11 @@ const AppRoutes = () => {
           <Route path="/product/register"        element={<ProductRegisterPage />} />
           <Route path="/product/me"              element={<MyProductListPage />} />
           <Route path="/product/:prdSn/seller"   element={<ProductDetailSellerPage />} />
+
+          {/* 서비스 - 로그인 필요 */}
+          {/* 담당자 2 · F-SVC-001~004: 서비스 요청서 작성/임시저장 폼. 라우트 소유자에게 전달 필요. */}
+          <Route path="/service-requests/new" element={<ServiceRequestFormPage />} />
+          <Route path="/service-requests/:svcReqSn" element={<ServiceRequestDetailPage />} />
         </Route>
       </Route>
 
@@ -238,6 +249,12 @@ const AppRoutes = () => {
           <Route path="notifications" element={<AdminNotificationPage />} />
           {/* 담당자7 · F-OPS-013 민감정보 탐지 이벤트 읽기 전용 확인 화면 */}
           <Route path="operations-preview" element={<OperationsIntegrationPreview />} />
+        </Route>
+      </Route>
+
+      <Route element={<ProtectedRoute allowedRoles={['ROLE_SERVICE']} />}>
+        <Route element={<UserLayout />}>
+          <Route path="/provider/profile" element={<ProviderProfilePage />} />
         </Route>
       </Route>
 

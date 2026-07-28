@@ -21,27 +21,27 @@ import './MockupAdminSidebar.css';
 // route가 없는 다른 담당자 화면은 클릭을 막아 미완성 경로에서 404가 나지 않게 합니다.
 const MENU_SECTIONS = [
   [
-    { label: '대시보드', icon: LayoutDashboard, to: '/admin', owner: '담당자 7' },
-    { label: '알림', icon: Bell, to: '/admin/notifications', owner: '담당자 6' },
+    { label: '대시보드', icon: LayoutDashboard, to: '/admin' },
+    { label: '알림', icon: Bell, to: '/admin/notifications' },
   ],
   [
-    { label: '회원 관리', icon: Users, owner: '담당자 1' },
-    { label: '제공자 심사', icon: ClipboardCheck, to: '/admin/provider-applications', owner: '담당자 7', note: '임시 목록' },
+    { label: '회원 관리', icon: Users },
+    { label: '제공자 심사', icon: ClipboardCheck, to: '/admin/provider-applications' },
   ],
-  [{ label: '경매 관리', icon: Gavel, to: '/admin/auctions', owner: '담당자 7', note: '임시 조회 목록' }],
+  [{ label: '경매 관리', icon: Gavel, to: '/admin/auctions' }],
   [
-    { label: '서비스 요청 관리', icon: BriefcaseBusiness, to: '/admin/services', owner: '담당자 7', note: '임시 목록' },
-    { label: '카테고리 관리', icon: Grid2X2, to: '/admin/categories', owner: '담당자 7' },
+    { label: '서비스 요청 관리', icon: BriefcaseBusiness, to: '/admin/services' },
+    { label: '카테고리 관리', icon: Grid2X2, to: '/admin/categories' },
   ],
-  [{ label: '환전 관리', icon: WalletCards, owner: '담당자 5' }],
+  [{ label: '환전 관리', icon: WalletCards }],
   [
-    { label: '공지 관리', icon: Megaphone, to: '/admin/notices', owner: '담당자 7' },
-    { label: '이용가이드 관리', icon: BookOpenCheck, to: '/admin/guides', owner: '담당자 7', note: '정적 콘텐츠' },
+    { label: '공지 관리', icon: Megaphone, to: '/admin/notices' },
+    { label: '이용가이드 관리', icon: BookOpenCheck, to: '/admin/guides' },
   ],
-  [{ label: '신고·거래 문제 처리', icon: Siren, owner: '담당자 4' }],
+  [{ label: '신고·거래 문제 처리', icon: Siren }],
   [
-    { label: '감사 로그', icon: ScrollText, to: '/admin/audit-logs', owner: '담당자 6' },
-    { label: '시스템 설정', icon: Settings, to: '/admin/system-settings', owner: '담당자 7·6', note: '1단계 최소 설정 / 3단계 인수' },
+    { label: '감사 로그', icon: ScrollText, to: '/admin/audit-logs' },
+    { label: '시스템 설정', icon: Settings, to: '/admin/system-settings' },
   ],
 ];
 
@@ -54,7 +54,7 @@ const MockupAdminSidebar = ({ collapsed = false, id, onNavigate }) => (
     <nav className="mockup-admin-nav" aria-label="관리자 화면 목록">
       {MENU_SECTIONS.map((section, sectionIndex) => (
         <div className="mockup-admin-nav__section" key={`admin-menu-${sectionIndex}`}>
-          {section.map(({ label, icon: Icon, to, owner, note }) => (
+          {section.map(({ label, icon: Icon, to }) => (
             to ? (
               <NavLink
                 className={({ isActive }) => `mockup-admin-nav__item${isActive ? ' is-active' : ''}`}
@@ -65,7 +65,7 @@ const MockupAdminSidebar = ({ collapsed = false, id, onNavigate }) => (
                 to={to}
               >
                 {createElement(Icon, { 'aria-hidden': true })}
-                <span><strong>{label}</strong><small>{owner}</small></span>
+                <span><strong>{label}</strong></span>
               </NavLink>
             ) : (
               <div
@@ -75,7 +75,7 @@ const MockupAdminSidebar = ({ collapsed = false, id, onNavigate }) => (
                 title={collapsed ? label : undefined}
               >
                 {createElement(Icon, { 'aria-hidden': true })}
-                <span><strong>{label}</strong><small>{note ?? `${owner} 연결 대기`}</small></span>
+                <span><strong>{label}</strong></span>
               </div>
             )
           ))}
@@ -90,7 +90,7 @@ const MockupAdminSidebar = ({ collapsed = false, id, onNavigate }) => (
           to="/admin/operations-preview"
         >
           <Siren aria-hidden="true" />
-          <span><strong>민감정보 탐지 이벤트</strong><small>담당자 7 · F-OPS-013</small></span>
+          <span><strong>민감정보 탐지 이벤트</strong></span>
         </NavLink>
       </div>
     </nav>
