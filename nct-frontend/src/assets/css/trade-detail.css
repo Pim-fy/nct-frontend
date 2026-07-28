@@ -73,6 +73,7 @@
 
 .trade-address-grid {
   gap: 12px;
+  align-items: start;
 }
 
 .trade-detail-card {
@@ -731,13 +732,18 @@
 }
 
 .trade-image-modal {
-  width: min(820px, 100%);
+  display: flex;
+  width: min(560px, 100%);
+  height: min(620px, calc(100dvh - 48px));
+  flex-direction: column;
+  box-sizing: border-box;
 }
 
 .trade-image-modal img {
   display: block;
   width: 100%;
-  max-height: calc(100dvh - 180px);
+  min-height: 0;
+  flex: 1 1 auto;
   border-radius: 12px;
   object-fit: contain;
 }
