@@ -13,6 +13,7 @@ const AuctionBidPanel = ({
   selectedTradeName,
   displayedBidAmount,
   holdAgreed,
+  requiresHoldConsent,
   isBidPending,
   isBuyNowPending,
   isAuctionOpen,
@@ -40,8 +41,11 @@ const AuctionBidPanel = ({
   const isBidPointInsufficient = hasAvailablePoint && !isBidPointSufficient;
   const isBuyNowPointInsufficient = hasAvailablePoint && !isBuyNowPointSufficient;
   const showBidAmountUnitError = hasBidAmountSelection && !isBidAmountUnitValid;
+  const favoriteButtonStateClass = !isAuthenticated || isOwnAuction
+    ? 'cursor-not-allowed opacity-45'
+    : (isFavoritePending ? 'cursor-wait opacity-55' : 'cursor-pointer');
   const pointBalanceLabel = !isAuthenticated
-    ? '로그인 필요'
+    ? '-'
     : (hasAvailablePoint
       ? `${formatNumber(availablePoint)}P`
       : (isPointBalanceLoading
@@ -51,14 +55,17 @@ const AuctionBidPanel = ({
   return (
     <aside className="relative grid min-h-[498px] content-start gap-[18px] rounded-lg border border-[#e8e8e8] bg-white px-[38px] pt-[30px] pb-[34px] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)] max-lg:min-h-0 max-lg:px-[22px] max-lg:py-7">
       <button
-        className={`absolute top-[34px] right-[38px] inline-flex min-h-6 cursor-pointer items-center gap-1 rounded-full border px-3 py-0.5 text-[13px] font-bold transition-colors disabled:cursor-wait disabled:opacity-55 max-lg:top-7 max-lg:right-[22px] max-sm:static max-sm:mt-3 max-sm:w-fit ${
+        className={`absolute top-[34px] right-[38px] inline-flex min-h-6 items-center gap-1 rounded-full border px-3 py-0.5 text-[13px] font-bold transition-colors max-lg:top-7 max-lg:right-[22px] max-sm:static max-sm:mt-3 max-sm:w-fit ${favoriteButtonStateClass} ${
           auction.favorite
             ? 'border-[#f6c6d2] bg-[#fff0f4] text-[#c0184a]'
             : 'border-[#dadada] bg-white text-[#666]'
         }`}
         type="button"
         aria-pressed={Boolean(auction.favorite)}
-        disabled={isFavoritePending}
+        disabled={!isAuthenticated || isOwnAuction || isFavoritePending}
+        title={isOwnAuction
+          ? '본인 경매 상품은 관심 상품으로 등록할 수 없습니다'
+          : (!isAuthenticated ? '로그인 후 관심 상품을 등록할 수 있습니다' : undefined)}
         onClick={onFavoriteToggle}
       >
         <Heart
@@ -218,18 +225,21 @@ const AuctionBidPanel = ({
         </div>
 
         {!isOwnAuction && (
-          <>
-            <label className="flex items-center justify-center gap-2 text-sm text-[#666] lg:col-span-2">
-              <input
-                className="size-4 accent-primary"
-                id="holdAgree"
-                type="checkbox"
-                checked={holdAgreed}
-                disabled={!isAuctionOpen}
-                onChange={(event) => onHoldAgreedChange(event.target.checked)}
-              /> 포인트 홀딩에 동의합니다
-            </label>
-            <div className="grid grid-cols-2 justify-center gap-1.5 lg:col-span-2 lg:grid-cols-[190px_190px]">
+          isAuthenticated ? (
+            <>
+              {requiresHoldConsent && (
+                <label className="flex items-center justify-center gap-2 text-sm text-[#666] lg:col-span-2">
+                  <input
+                    className="size-4 accent-primary"
+                    id="holdAgree"
+                    type="checkbox"
+                    checked={holdAgreed}
+                    disabled={!isAuctionOpen}
+                    onChange={(event) => onHoldAgreedChange(event.target.checked)}
+                  /> 포인트 홀딩에 동의합니다
+                </label>
+              )}
+              <div className="grid grid-cols-2 justify-center gap-1.5 lg:col-span-2 lg:grid-cols-[190px_190px]">
               <button
                 className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-primary text-[15px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-55 aria-busy:cursor-progress"
                 id="bidBtn"
@@ -268,8 +278,13 @@ const AuctionBidPanel = ({
                       ? `즉시구매 ${formatPrice(auction.instantBuyPrice)}`
                       : '즉시구매 불가'))}
               </button>
-            </div>
-          </>
+              </div>
+            </>
+          ) : (
+            <p className="m-0 text-center text-sm font-bold text-[#666] lg:col-span-2" role="status">
+              로그인이 필요한 서비스입니다.
+            </p>
+          )
         )}
       </div>
     </aside>

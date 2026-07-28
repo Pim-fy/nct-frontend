@@ -9,7 +9,7 @@ const NotificationDetailModal = ({ item, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6"
+      className="fixed inset-x-0 top-[82px] bottom-0 z-[180] flex items-center justify-center bg-black/40 p-6"
       onClick={onClose}
     >
       <div
