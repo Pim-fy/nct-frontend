@@ -6,6 +6,7 @@ const AuctionBuyNowModal = ({
   auction,
   selectedTradeName,
   holdAgreed,
+  requiresHoldConsent,
   isPending,
   isBuyNowAvailable,
   onClose,
@@ -15,7 +16,7 @@ const AuctionBuyNowModal = ({
 
   return (
     <div
-      className="fixed inset-0 z-[88] flex items-center justify-center bg-[#1d1d1f]/55 p-7"
+      className="fixed inset-x-0 top-[82px] bottom-0 z-[180] flex items-center justify-center bg-[#1d1d1f]/55 p-7"
       id="buyNowModal"
     >
       <div
@@ -47,9 +48,11 @@ const AuctionBuyNowModal = ({
             <li className="grid grid-cols-[112px_1fr] gap-3 border-b border-[#e8e8e8] py-2.5 max-sm:grid-cols-[96px_1fr]">
               <strong className="text-[#1d1d1f]">거래 방식</strong><span>{selectedTradeName}</span>
             </li>
-            <li className="grid grid-cols-[112px_1fr] gap-3 py-2.5 max-sm:grid-cols-[96px_1fr]">
-              <strong className="text-[#1d1d1f]">포인트 홀딩</strong><span>{holdAgreed ? '동의 완료' : '동의 필요'}</span>
-            </li>
+            {requiresHoldConsent && (
+              <li className="grid grid-cols-[112px_1fr] gap-3 py-2.5 max-sm:grid-cols-[96px_1fr]">
+                <strong className="text-[#1d1d1f]">포인트 홀딩</strong><span>{holdAgreed ? '동의 완료' : '동의 필요'}</span>
+              </li>
+            )}
           </ul>
           <div className="grid grid-cols-2 gap-1.5">
             <button
