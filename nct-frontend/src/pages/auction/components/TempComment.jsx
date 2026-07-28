@@ -20,11 +20,11 @@ const TempComment = ({ content = '' }) => {
     >
       {sanitizedContent.trim() ? (
         <div
-          className="min-w-0 whitespace-pre-wrap break-words text-[15px] leading-[1.8] text-[#1d1d1f] [&_div]:my-3 [&_img]:my-5 [&_img]:block [&_img]:h-auto [&_img]:max-w-full [&_img]:object-contain [&_li]:my-1 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-3 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6"
+          className="min-w-0 whitespace-pre-wrap break-words text-base leading-[1.75] text-[#1d1d1f] [&_div]:my-3 [&_img]:my-5 [&_img]:block [&_img]:h-auto [&_img]:max-w-full [&_img]:object-contain [&_li]:my-1 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-3 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6"
           dangerouslySetInnerHTML={{ __html: sanitizedContent }}
         />
       ) : (
-        <p className="m-0 text-[15px] text-[#777]">등록된 상품 설명이 없습니다.</p>
+        <p className="m-0 text-base leading-[1.6] text-[#777]">등록된 상품 설명이 없습니다.</p>
       )}
     </div>
   );
