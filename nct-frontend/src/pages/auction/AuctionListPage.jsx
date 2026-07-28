@@ -59,6 +59,18 @@ const toggleValue = (values, value) => (
     : [...values, value]
 );
 
+const createDraftFromSearchParams = (searchParams) => ({
+  keyword: searchParams.get('keyword') || '',
+  categories: getSelectedValues(searchParams, 'category'),
+  statuses: getSelectedValues(searchParams, 'status'),
+  tradeMethod: searchParams.get('tradeMethod') || 'all',
+  sort: searchParams.get('sort') || 'deadline',
+  minPrice: searchParams.get('minPrice') || '',
+  maxPrice: searchParams.get('maxPrice') || '',
+  instantBuyOnly: searchParams.get('instantBuyOnly') === 'true',
+  endingSoonOnly: searchParams.get('endingSoonOnly') === 'true',
+});
+
 const AuctionListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const shouldScrollAfterPageChangeRef = useRef(false);
@@ -79,6 +91,24 @@ const AuctionListPage = () => {
     searchParams.get('endingSoonOnly') === 'true',
   );
   const [previewQueryParams, setPreviewQueryParams] = useState(null);
+  const searchParamsKey = searchParams.toString();
+
+  useEffect(() => {
+    const animationFrameId = window.requestAnimationFrame(() => {
+      const nextDraft = createDraftFromSearchParams(new URLSearchParams(searchParamsKey));
+      setKeywordDraft(nextDraft.keyword);
+      setCategoryDraft(nextDraft.categories);
+      setStatusDraft(nextDraft.statuses);
+      setTradeMethodDraft(nextDraft.tradeMethod);
+      setSortDraft(nextDraft.sort);
+      setMinPriceDraft(nextDraft.minPrice);
+      setMaxPriceDraft(nextDraft.maxPrice);
+      setInstantBuyOnlyDraft(nextDraft.instantBuyOnly);
+      setEndingSoonOnlyDraft(nextDraft.endingSoonOnly);
+    });
+
+    return () => window.cancelAnimationFrame(animationFrameId);
+  }, [searchParamsKey]);
 
   useEffect(() => {
     const handleScroll = () => setIsSearchDocked(window.scrollY > 48);
@@ -226,17 +256,7 @@ const AuctionListPage = () => {
     return () => window.cancelAnimationFrame(animationFrameId);
   }, [page]);
 
-  const handleSearch = (event) => {
-    event.preventDefault();
-    const next = new URLSearchParams(searchParams);
-    const keyword = keywordDraft.trim();
-    if (keyword) next.set('keyword', keyword);
-    else next.delete('keyword');
-    next.delete('page');
-    setSearchParams(next);
-  };
-
-  const handleFilterSearch = () => {
+  const createSearchParamsFromDraft = () => {
     const next = new URLSearchParams();
     const keyword = keywordDraft.trim();
 
@@ -250,7 +270,18 @@ const AuctionListPage = () => {
     if (tradeMethodDraft && tradeMethodDraft !== 'all') next.set('tradeMethod', tradeMethodDraft);
     if (sortDraft && sortDraft !== 'deadline') next.set('sort', sortDraft);
 
-    setSearchParams(next);
+    return next;
+  };
+
+  const handleSearch = (event) => {
+    event.preventDefault();
+    setSearchParams(createSearchParamsFromDraft(), { replace: false });
+  };
+
+  const handleFilterSearch = () => {
+    const next = createSearchParamsFromDraft();
+
+    setSearchParams(next, { replace: false });
     setFilterOpen(false);
   };
 
