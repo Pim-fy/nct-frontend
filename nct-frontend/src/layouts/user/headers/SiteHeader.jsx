@@ -49,9 +49,6 @@ const AUCTION_CATEGORIES = [
 // 설치와 수리는 하나의 카테고리(설치·수리)이므로 헤더에서도 분리하지 않는다.
 const SERVICE_CATEGORIES = ['이사', '청소', '레슨', '설치·수리', '인테리어'];
 
-// 헤더 메뉴 기본 텍스트 색상(#333333) - 마우스오버 시에만 primary 파랑으로 바뀐다.
-const NAV_LINK_CLASS = "text-[20px] font-bold text-[#333333] tracking-[-0.02em] hover:text-primary transition-colors";
-
 // POINT/알림 수치 실연동 (담당자6 BJN, 2026-07-18) — 종전 더미 상수(DUMMY_POINT/NOTI_ITEMS) 제거.
 // 이 헤더는 비로그인 공개 페이지에서도 렌더링되므로, 두 훅 모두 { enabled: 로그인여부 }로
 // 로그인 상태일 때만 API를 호출한다 (무조건 호출하면 401→로그인 강제이동이 발생하기 때문).
@@ -89,17 +86,14 @@ const SiteHeader = () => {
   const pastNotis = (notiQuery.data ?? []).filter((n) => n.read).slice(0, NOTI_PREVIEW_MAX);
   // 잔액은 조회 전(로딩·비로그인)에는 0으로 표시 — 임의 기본값이 아니라 "아직 모름"의 화면 표기
   const pointBalance = balanceQuery.data ?? { total: 0, available: 0 };
-  const [categoryPinned, setCategoryPinned] = useState(false);
   const [categoryHovered, setCategoryHovered] = useState(false);
-  const categoryOpen = categoryPinned || categoryHovered;
+  const categoryOpen = categoryHovered;
 
-  const [servicePinned, setServicePinned] = useState(false);
   const [serviceHovered, setServiceHovered] = useState(false);
-  const serviceMenuOpen = servicePinned || serviceHovered;
+  const serviceMenuOpen = serviceHovered;
 
-  const [customerPinned, setCustomerPinned] = useState(false);
   const [customerHovered, setCustomerHovered] = useState(false);
-  const customerOpen = customerPinned || customerHovered;
+  const customerOpen = customerHovered;
 
   const [notiOpen, setNotiOpen] = useState(false);
   const [pointOpen, setPointOpen] = useState(false);
@@ -142,11 +136,8 @@ const SiteHeader = () => {
         setProfileOpen(false);
       }
       if (navRef.current && !navRef.current.contains(e.target)) {
-        setCategoryPinned(false);
         setCategoryHovered(false);
-        setServicePinned(false);
         setServiceHovered(false);
-        setCustomerPinned(false);
         setCustomerHovered(false);
       }
     };
@@ -175,33 +166,6 @@ const SiteHeader = () => {
       document.body.style.paddingRight = previousPaddingRight;
     };
   }, [mobileMenuOpen]);
-
-  // 클릭 시 동작:
-  // - 이미 pin 고정 상태 → pin + hover 모두 초기화해서 완전히 닫기
-  // - 닫혀 있거나 hover로만 열린 상태 → pin 고정 (hover는 유지, 마우스 떠나도 열림 유지)
-  const pinNav = (which) => {
-    const wasPinned =
-      which === 'auction' ? categoryPinned
-      : which === 'service' ? servicePinned
-      : customerPinned;
-
-    // 다른 메뉴 닫기
-    if (which !== 'auction') { setCategoryPinned(false); setCategoryHovered(false); }
-    if (which !== 'service') { setServicePinned(false); setServiceHovered(false); }
-    if (which !== 'customer') { setCustomerPinned(false); setCustomerHovered(false); }
-
-    if (wasPinned) {
-      // pin 고정 상태에서 클릭 → hover도 초기화해서 완전히 닫기
-      if (which === 'auction') { setCategoryPinned(false); setCategoryHovered(false); }
-      if (which === 'service') { setServicePinned(false); setServiceHovered(false); }
-      if (which === 'customer') { setCustomerPinned(false); setCustomerHovered(false); }
-    } else {
-      // 닫혀 있거나 hover로만 열린 상태 → pin 고정 (hover는 그대로 유지)
-      if (which === 'auction') setCategoryPinned(true);
-      if (which === 'service') setServicePinned(true);
-      if (which === 'customer') setCustomerPinned(true);
-    }
-  };
 
   // 한 팝업을 열면 나머지는 닫는다.
   const openOnly = (which) => {
@@ -271,23 +235,27 @@ const SiteHeader = () => {
           <nav ref={navRef} className="hidden md:flex items-center gap-8">
             <div
               className="relative"
-              onMouseEnter={() => { if (!servicePinned && !customerPinned) setCategoryHovered(true); }}
+              onMouseEnter={() => {
+                setCategoryHovered(true);
+                setServiceHovered(false);
+                setCustomerHovered(false);
+              }}
               onMouseLeave={() => setCategoryHovered(false)}
             >
-              <button
-                type="button"
-                className={`text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${categoryPinned ? 'text-primary' : 'text-[#333333]'}`}
-                onClick={() => pinNav('auction')}
+              <Link
+                to="/auction"
+                className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${categoryOpen ? 'text-primary' : 'text-[#333333]'}`}
+                onClick={() => setCategoryHovered(false)}
               >
                 경매
-              </button>
+              </Link>
               {categoryOpen && (
                 <div className="absolute left-0 top-full w-[161px] pt-[14px] z-50">
                   <div className="rounded-[5px] border border-[#4e4e4e] bg-white py-1 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)]">
                     <Link
                       to="/auction"
                       className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
-                      onClick={() => setCategoryPinned(false)}
+                      onClick={() => setCategoryHovered(false)}
                     >
                       전체보기
                     </Link>
@@ -296,7 +264,7 @@ const SiteHeader = () => {
                         key={label}
                         to={`/auction?category=${encodeURIComponent(label)}`}
                         className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
-                        onClick={() => setCategoryPinned(false)}
+                        onClick={() => setCategoryHovered(false)}
                       >
                         {label}
                       </Link>
@@ -308,23 +276,27 @@ const SiteHeader = () => {
 
             <div
               className="relative"
-              onMouseEnter={() => { if (!categoryPinned && !customerPinned) setServiceHovered(true); }}
+              onMouseEnter={() => {
+                setCategoryHovered(false);
+                setServiceHovered(true);
+                setCustomerHovered(false);
+              }}
               onMouseLeave={() => setServiceHovered(false)}
             >
-              <button
-                type="button"
-                className={`text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${servicePinned ? 'text-primary' : 'text-[#333333]'}`}
-                onClick={() => pinNav('service')}
+              <Link
+                to="/service"
+                className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${serviceMenuOpen ? 'text-primary' : 'text-[#333333]'}`}
+                onClick={() => setServiceHovered(false)}
               >
                 서비스
-              </button>
+              </Link>
               {serviceMenuOpen && (
                 <div className="absolute left-0 top-full w-[161px] pt-[14px] z-50">
                   <div className="rounded-[5px] border border-[#4e4e4e] bg-white py-1 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)]">
                     <Link
                       to="/service"
                       className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
-                      onClick={() => setServicePinned(false)}
+                      onClick={() => setServiceHovered(false)}
                     >
                       전체보기
                     </Link>
@@ -333,7 +305,7 @@ const SiteHeader = () => {
                         key={label}
                         to={`/service?category=${encodeURIComponent(label)}`}
                         className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
-                        onClick={() => setServicePinned(false)}
+                        onClick={() => setServiceHovered(false)}
                       >
                         {label}
                       </Link>
@@ -344,37 +316,41 @@ const SiteHeader = () => {
             </div>
             <div
               className="relative"
-              onMouseEnter={() => { if (!categoryPinned && !servicePinned) setCustomerHovered(true); }}
+              onMouseEnter={() => {
+                setCategoryHovered(false);
+                setServiceHovered(false);
+                setCustomerHovered(true);
+              }}
               onMouseLeave={() => setCustomerHovered(false)}
             >
-              <button
-                type="button"
-                className={`text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${customerPinned ? 'text-primary' : 'text-[#333333]'}`}
-                onClick={() => pinNav('customer')}
+              <Link
+                to="/customersupport/notice"
+                className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${customerOpen ? 'text-primary' : 'text-[#333333]'}`}
+                onClick={() => setCustomerHovered(false)}
               >
-                고객센터
-              </button>
+                공지사항
+              </Link>
               {customerOpen && (
                 <div className="absolute left-0 top-full w-[161px] pt-[14px] z-50">
                   <div className="rounded-[5px] border border-[#4e4e4e] bg-white py-1 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)]">
                     <Link
                       to="/customersupport/notice"
                       className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
-                      onClick={() => setCustomerPinned(false)}
+                      onClick={() => setCustomerHovered(false)}
                     >
                       공지사항
                     </Link>
                     <Link
                       to="/guide"
                       className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
-                      onClick={() => setCustomerPinned(false)}
+                      onClick={() => setCustomerHovered(false)}
                     >
                       이용가이드
                     </Link>
                     <Link
                       to="/customersupport/faq"
                       className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
-                      onClick={() => setCustomerPinned(false)}
+                      onClick={() => setCustomerHovered(false)}
                     >
                       FAQ
                     </Link>
