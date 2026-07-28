@@ -69,7 +69,6 @@ const ProviderApplicationStatusPage = () => {
       <PageMeta title="제공자 신청 상태" />
       <ContentPageHeader
         description="카테고리별 제공자 권한 신청 결과를 백엔드 데이터 기준으로 보여줍니다."
-        eyebrow="담당자 7 · F-PROV-012/014"
         title="제공자 신청 상태"
       />
 
@@ -91,9 +90,9 @@ const ProviderApplicationStatusPage = () => {
           <dd>{latest.requestedAt ? formatDate(latest.requestedAt) : '-'}</dd>
         </dl>
 
-        {latest.statusCode === 'PRVC0004' && (
-          <Link className="btn btn-primary" to="/provider/apply">보완 후 다시 신청</Link>
-        )}
+        <Link className="btn btn-primary" to="/provider/apply">
+          {latest.statusCode === 'PRVC0004' ? '보완 후 다시 신청' : '다른 카테고리 신청하기'}
+        </Link>
       </section>
 
       {data.length > 1 && (

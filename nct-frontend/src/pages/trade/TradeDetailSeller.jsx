@@ -14,6 +14,7 @@ import Toast from '@components/common/Toast';
 import {
   getTradeDetail,
   proposeTradeOfflineSchedule,
+  requestTradeCompletion,
   submitTradeDeliveryProof,
 } from '@api/tradeApi';
 import {
@@ -54,6 +55,8 @@ const TradeDetailSeller = () => {
   const [shippingProofFiles, setShippingProofFiles] = useState([]);
   const [isUploadingProof, setIsUploadingProof] = useState(false);
   const [shippingProofError, setShippingProofError] = useState('');
+  const [completionAgreed, setCompletionAgreed] = useState(false);
+  const [isCompletionSubmitting, setIsCompletionSubmitting] = useState(false);
   const [meetingDate, setMeetingDate] = useState('');
   const [meetingTime, setMeetingTime] = useState('');
   const [meetingPlace, setMeetingPlace] = useState('');
@@ -64,8 +67,41 @@ const TradeDetailSeller = () => {
   const [notice, setNotice] = useState('');
   const todayDate = getTodayDate();
   const isPreview = pathname.startsWith('/trades/preview');
-  const isOfflineTradeInProgress = meetingProposed
-    && trade?.status === 'IN_PROGRESS';
+  const offlineTradeStatusLabel = (() => {
+    if (!meetingProposed) {
+      return '일정 제안 대기';
+    }
+
+    if (trade?.status === 'COMPLETED') {
+      return '거래 완료';
+    }
+
+    if (['CONFIRM_PENDING', 'WAITING_CONFIRMATION'].includes(trade?.status)) {
+      return '구매자 확인 대기';
+    }
+
+    return '직거래 진행 중';
+  })();
+  // 발송 인증 뒤에는 판매자·구매자가 각각 한 번씩 완료 확인을 진행한다.
+  const isDeliveryProofSubmitted = [
+    'DELIVERING',
+    'CONFIRM_PENDING',
+    'WAITING_CONFIRMATION',
+    'COMPLETED',
+  ].includes(trade?.status);
+  // 배송 인증 또는 직거래 일정 저장 뒤, 판매자는 첫 확인을 시작하거나 구매자 요청에 응답할 수 있다.
+  const isSellerCompletionReady = (
+    (trade?.method === 'DELIVERY' && isDeliveryProofSubmitted)
+    || (trade?.method === 'OFFLINE' && meetingProposed)
+  );
+  const canRequestSellerCompletion = isSellerCompletionReady
+    && (
+      ['IN_PROGRESS', 'DELIVERING'].includes(trade?.status)
+      || (
+        ['CONFIRM_PENDING', 'WAITING_CONFIRMATION'].includes(trade?.status)
+        && trade?.completionRequestedBy === 'BUYER'
+      )
+    );
   const chatPath = isPreview
     ? `/trades/preview/${tradeId}/chat`
     : `/trades/${tradeId}/chat`;
@@ -151,11 +187,22 @@ const TradeDetailSeller = () => {
     setIsUploadingProof(true);
 
     try {
-      const uploadedFiles = await Promise.all(selectedFiles.map(async (file) => ({
-        ...(await uploadDeliveryProof(file)),
-        name: file.name,
-        previewUrl: URL.createObjectURL(file),
-      })));
+      const uploadedFiles = await Promise.all(selectedFiles.map(async (file) => {
+        const uploadResponse = await uploadDeliveryProof(file);
+        // 파일 API는 공통 응답 래퍼의 data 안에 flSn을 담아 반환한다.
+        // 실제 파일 번호를 보관해야 삭제와 발송 인증 제출에 같은 파일을 사용할 수 있다.
+        const uploadedFile = uploadResponse.data ?? uploadResponse;
+
+        if (!uploadedFile.flSn) {
+          throw new Error('업로드한 인증 사진 번호를 확인하지 못했습니다.');
+        }
+
+        return {
+          ...uploadedFile,
+          name: file.name,
+          previewUrl: URL.createObjectURL(file),
+        };
+      }));
 
       setShippingProofFiles((currentFiles) => [
         ...currentFiles,
@@ -222,6 +269,35 @@ const TradeDetailSeller = () => {
       );
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // 판매자·구매자의 두 번째 완료 확인이 모두 끝나면 서버가 거래 완료와 정산 대기를 함께 처리한다.
+  const requestSellerCompletion = async () => {
+    if (!completionAgreed || !canRequestSellerCompletion) {
+      return;
+    }
+
+    setIsCompletionSubmitting(true);
+
+    try {
+      const response = await requestTradeCompletion(tradeId, 'SELLER');
+      const updatedTrade = toTradeDetail(response);
+
+      setTrade(updatedTrade);
+      setCompletionAgreed(false);
+      setNotice(
+        updatedTrade.status === 'COMPLETED'
+          ? '구매자와 판매자의 완료 확인이 모두 끝나 거래가 완료되었습니다.'
+          : '거래 완료 확인을 보냈습니다. 구매자의 확인을 기다려 주세요.',
+      );
+    } catch (completionError) {
+      setNotice(
+        completionError.response?.data?.message
+          ?? '거래 완료 확인에 실패했습니다. 다시 시도해 주세요.',
+      );
+    } finally {
+      setIsCompletionSubmitting(false);
     }
   };
 
@@ -311,12 +387,18 @@ const TradeDetailSeller = () => {
               일정 제안
             </li>
             <li className={meetingProposed
+              && trade.status !== 'COMPLETED'
               ? 'trade-progress__item trade-progress__item--active'
               : 'trade-progress__item'}
             >
-              직거래 진행
+              구매자 확인 대기
             </li>
-            <li className="trade-progress__item">거래 완료</li>
+            <li className={trade.status === 'COMPLETED'
+              ? 'trade-progress__item trade-progress__item--active'
+              : 'trade-progress__item'}
+            >
+              거래 완료
+            </li>
           </ol>
 
           <div className="trade-detail-grid">
@@ -333,9 +415,7 @@ const TradeDetailSeller = () => {
                 </div>
               </div>
               <p className="trade-detail-card__muted">
-                거래 상태: {isOfflineTradeInProgress
-                  ? '직거래 진행 중'
-                  : '일정 제안 대기'}
+                거래 상태: {offlineTradeStatusLabel}
               </p>
             </section>
             <section className="trade-detail-card">
@@ -359,7 +439,9 @@ const TradeDetailSeller = () => {
               </p>
               <div className="trade-detail-actions">
                 <Link className="btn btn-outline" to={chatPath}>
-                  거래 채팅
+                  {trade.status === 'COMPLETED'
+                    ? '거래 채팅 기록 보기'
+                    : '거래 채팅'}
                 </Link>
               </div>
             </section>
@@ -430,6 +512,50 @@ const TradeDetailSeller = () => {
               </button>
             </form>
           )}
+
+          {meetingProposed && (
+            <section className="trade-detail-card trade-complete-card">
+              <h2>거래 완료 확인</h2>
+              <div className="trade-auto-complete">
+                <strong>
+                  {trade.status === 'COMPLETED'
+                    ? '거래 완료'
+                    : '구매자 확인 대기'}
+                </strong>
+                <p>
+                  {trade.autoCompleteAt !== '-'
+                    ? `${trade.autoCompleteAt}까지 양쪽 확인이 완료되지 않으면 자동 완료됩니다.`
+                    : '거래가 완료되었다면 구매자와 서로 완료 확인을 진행해 주세요.'}
+                </p>
+              </div>
+              {canRequestSellerCompletion && (
+                <>
+                  <label className="trade-complete-card__check">
+                    <input
+                      type="checkbox"
+                      checked={completionAgreed}
+                      onChange={(event) => setCompletionAgreed(event.target.checked)}
+                      disabled={isCompletionSubmitting}
+                    />
+                    거래가 완료되었음을 확인합니다
+                  </label>
+                  <p className="trade-detail-card__muted">
+                    확인 요청 이후에는 구매자의 확인 또는 무이의 기간 경과가 필요합니다.
+                  </p>
+                  <div className="trade-detail-actions">
+                    <button
+                      className="btn btn-primary"
+                      type="button"
+                      disabled={!completionAgreed || isCompletionSubmitting}
+                      onClick={requestSellerCompletion}
+                    >
+                      {isCompletionSubmitting ? '확인 중...' : '거래 완료 확인'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </section>
+          )}
         </div>
         {notice && <Toast message={notice} onClose={() => setNotice('')} />}
       </div>
@@ -475,11 +601,24 @@ const TradeDetailSeller = () => {
         </header>
 
         <ol className="trade-progress" aria-label="거래 진행 단계">
-          <li className="trade-progress__item trade-progress__item--active">
+          <li className={isDeliveryProofSubmitted
+            ? 'trade-progress__item'
+            : 'trade-progress__item trade-progress__item--active'}
+          >
             배송 등록
           </li>
-          <li className="trade-progress__item">구매자 확인 대기</li>
-          <li className="trade-progress__item">완료</li>
+          <li className={isDeliveryProofSubmitted && trade.status !== 'COMPLETED'
+            ? 'trade-progress__item trade-progress__item--active'
+            : 'trade-progress__item'}
+          >
+            구매자 확인 대기
+          </li>
+          <li className={trade.status === 'COMPLETED'
+            ? 'trade-progress__item trade-progress__item--active'
+            : 'trade-progress__item'}
+          >
+            완료
+          </li>
         </ol>
 
         <div className="trade-detail-grid">
@@ -539,86 +678,133 @@ const TradeDetailSeller = () => {
           </p>
         </section>
 
-        <section className="trade-detail-card trade-seller-section">
-          <h2>발송 인증 등록</h2>
-          <p className="trade-notice">
-            발송한 상품과 포장 상태가 보이도록 사진을 최대 5장 등록하고, 배송 메모를 작성해 주세요.
-          </p>
+        {isDeliveryProofSubmitted ? (
+          <section className="trade-detail-card trade-complete-card">
+            <h2>거래 완료 확인</h2>
+            <div className="trade-auto-complete">
+              <strong>
+                {trade.status === 'COMPLETED'
+                  ? '거래 완료'
+                  : '구매자 확인 대기'}
+              </strong>
+              <p>
+                {trade.autoCompleteAt !== '-'
+                  ? `${trade.autoCompleteAt}까지 양쪽 확인이 완료되지 않으면 자동 완료됩니다.`
+                  : '거래가 완료되었다면 구매자와 서로 완료 확인을 진행해 주세요.'}
+              </p>
+            </div>
+            {trade.deliveryMessage !== '-' && (
+              <p className="trade-detail-card__muted">
+                배송 메모: {trade.deliveryMessage}
+              </p>
+            )}
+            {canRequestSellerCompletion && (
+              <>
+                <label className="trade-complete-card__check">
+                  <input
+                    type="checkbox"
+                    checked={completionAgreed}
+                    onChange={(event) => setCompletionAgreed(event.target.checked)}
+                    disabled={isCompletionSubmitting}
+                  />
+                  거래가 완료되었음을 확인합니다
+                </label>
+                <p className="trade-detail-card__muted">
+                  확인 요청 이후에는 구매자의 확인 또는 무이의 기간 경과가 필요합니다.
+                </p>
+                <div className="trade-detail-actions">
+                  <button
+                    className="btn btn-primary"
+                    type="button"
+                    disabled={!completionAgreed || isCompletionSubmitting}
+                    onClick={requestSellerCompletion}
+                  >
+                    {isCompletionSubmitting ? '확인 중...' : '거래 완료 확인'}
+                  </button>
+                </div>
+              </>
+            )}
+          </section>
+        ) : (
+          <section className="trade-detail-card trade-seller-section">
+            <h2>발송 인증 등록</h2>
+            <p className="trade-notice">
+              발송한 상품과 포장 상태가 보이도록 사진을 최대 5장 등록하고, 배송 메모를 작성해 주세요.
+            </p>
 
-          <div className="trade-proof-upload-area">
-            <label className="trade-proof-upload" htmlFor={`shipping-proof-${trade.id}`}>
-              <input
-                id={`shipping-proof-${trade.id}`}
-                className="trade-proof-upload__input"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                multiple
-                onChange={handleShippingProofChange}
-                disabled={isUploadingProof || isSubmitting}
+            <div className="trade-proof-upload-area">
+              <div className="trade-proof-upload-box">
+                <label className="trade-proof-upload" htmlFor={`shipping-proof-${trade.id}`}>
+                  <input
+                    id={`shipping-proof-${trade.id}`}
+                    className="trade-proof-upload__input"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    multiple
+                    onChange={handleShippingProofChange}
+                    disabled={isUploadingProof || isSubmitting}
+                  />
+                  <span className="trade-proof-upload__icon" aria-hidden="true">
+                    ↑
+                  </span>
+                  <strong>발송 인증 사진 선택</strong>
+                  <span>JPG, PNG, WEBP · 장당 최대 10MB · 최대 5장</span>
+                </label>
+
+                {shippingProofFiles.length > 0 && (
+                  <ul className="trade-proof-thumbnail-list" aria-label="업로드한 발송 인증 사진">
+                    {shippingProofFiles.map((file, index) => (
+                      <li key={file.flSn}>
+                        <img src={file.previewUrl} alt={`발송 인증 사진 ${index + 1}`} />
+                        <button
+                          type="button"
+                          onClick={() => removeShippingProof(file)}
+                          disabled={isSubmitting}
+                          aria-label={`발송 인증 사진 ${index + 1} 삭제`}
+                        >
+                          ×
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {isUploadingProof && <p className="trade-proof-upload__filename">사진을 업로드하는 중입니다.</p>}
+            </div>
+
+            <label className="trade-form-field">
+              배송 메모
+              <textarea
+                className="input trade-form-field__textarea trade-delivery-memo"
+                value={shippingMemo}
+                onChange={(event) => setShippingMemo(event.target.value)}
+                placeholder="예: 7월 20일 오후에 발송했습니다. 포장 상태는 사진으로 확인해 주세요."
+                maxLength={500}
               />
-              <span className="trade-proof-upload__icon" aria-hidden="true">
-                ↑
+              <span className="trade-form-field__count">
+                {shippingMemo.length.toLocaleString()} / 500
               </span>
-              <strong>발송 인증 사진 선택</strong>
-              <span>JPG, PNG, WEBP · 장당 최대 10MB · 최대 5장</span>
             </label>
 
-            {isUploadingProof && <p className="trade-proof-upload__filename">사진을 업로드하는 중입니다.</p>}
-            {shippingProofFiles.length > 0 && (
-              <ul className="trade-proof-list" aria-label="업로드한 발송 인증 사진">
-                {shippingProofFiles.map((file, index) => (
-                  <li className="trade-proof-list__item" key={file.flSn}>
-                    <img src={file.previewUrl} alt={`발송 인증 사진 ${index + 1}`} />
-                    <div>
-                      <strong>{file.name}</strong>
-                      <span>업로드 완료</span>
-                    </div>
-                    <button
-                      className="btn btn-ghost"
-                      type="button"
-                      onClick={() => removeShippingProof(file)}
-                      disabled={isSubmitting}
-                    >
-                      삭제
-                    </button>
-                  </li>
-                ))}
-              </ul>
+            {shippingProofError && (
+              <p className="trade-form-error" role="alert">
+                {shippingProofError}
+              </p>
             )}
-          </div>
 
-          <label className="trade-form-field">
-            배송 메모
-            <textarea
-              className="input trade-form-field__textarea"
-              value={shippingMemo}
-              onChange={(event) => setShippingMemo(event.target.value)}
-              placeholder="예: 7월 20일 오후에 발송했습니다. 포장 상태는 사진으로 확인해 주세요."
-              maxLength={4000}
-            />
-            <span className="trade-form-field__count">
-              {shippingMemo.length.toLocaleString()} / 4,000
-            </span>
-          </label>
-
-          {shippingProofError && (
-            <p className="trade-form-error" role="alert">
-              {shippingProofError}
-            </p>
-          )}
-
-          <button
-            className="btn btn-primary"
-            type="button"
-            onClick={submitDeliveryProof}
-            disabled={isUploadingProof || isSubmitting || trade.status !== 'IN_PROGRESS'}
-          >
-            {isSubmitting ? '발송 인증 등록 중...' : '발송 인증 등록하기'}
-          </button>
-          {trade.status !== 'IN_PROGRESS' && (
-            <p className="trade-warning">이미 발송 처리된 거래는 발송 인증을 다시 등록할 수 없습니다.</p>
-          )}
-        </section>
+            <div className="trade-proof-submit-actions">
+              <button
+                className="btn btn-primary"
+                type="button"
+                onClick={submitDeliveryProof}
+                disabled={isUploadingProof || isSubmitting}
+              >
+                {isSubmitting ? '발송 인증 등록 중...' : '발송 인증 등록하기'}
+              </button>
+            </div>
+          </section>
+        )}
       </div>
       {notice && <Toast message={notice} onClose={() => setNotice('')} />}
     </div>

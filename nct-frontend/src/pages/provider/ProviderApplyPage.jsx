@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getCategories } from '@api/categoryApi';
 import { uploadImage } from '@api/fileApi';
+import { getProfile } from '@api/memberApi';
 import PageMeta from '@components/admin/PageMeta';
 import { ContentPageHeader, ContentPageShell } from '@components/content/ContentUi';
 import { useMyProviderApplications, useSubmitProviderApplication } from '@hooks/useProviderApplications';
@@ -36,11 +37,6 @@ const ProviderApplyPage = () => {
   const [step, setStep] = useState(0);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [error, setError] = useState('');
-  const [settlementAccount, setSettlementAccount] = useState({
-    bankName: '',
-    accountNo: '',
-    accountHolder: '',
-  });
   const [uploadedFiles, setUploadedFiles] = useState({});
   const [uploadingKey, setUploadingKey] = useState('');
   const uploadedFilesRef = useRef({});
@@ -51,6 +47,13 @@ const ProviderApplyPage = () => {
     queryFn: () => getCategories(SERVICE_DOMAIN_CD)
       .then((response) => response.data.filter((category) => category.catParentSn !== null)),
   });
+  // 정산 계좌는 신청서마다 따로 받지 않고 회원 프로필(마이페이지 환전계좌)을 그대로 쓴다 —
+  // 제공자는 본인 실명으로 가입하므로 프로필 계좌가 곧 본인 명의 정산 계좌다 (사용자 결정, 2026-07-28).
+  const profileQuery = useQuery({
+    queryKey: ['member', 'profile'],
+    queryFn: () => getProfile().then((res) => res.data),
+  });
+  const hasSettlementAccount = Boolean(profileQuery.data?.bankName && profileQuery.data?.accountNo);
 
   const applications = useMemo(() => applicationsQuery.data ?? [], [applicationsQuery.data]);
   const states = useMemo(
@@ -81,10 +84,6 @@ const ProviderApplyPage = () => {
         ? current.filter((item) => item.catSn !== category.catSn)
         : [...current, category];
     });
-  };
-
-  const changeSettlementAccount = (field) => (event) => {
-    setSettlementAccount((current) => ({ ...current, [field]: event.target.value }));
   };
 
   const fileKey = (categorySn, fileTypeCode) => `${categorySn}:${fileTypeCode}`;
@@ -154,7 +153,6 @@ const ProviderApplyPage = () => {
       <PageMeta title="제공자 권한 신청" />
       <ContentPageHeader
         description="여러 서비스 카테고리를 함께 선택할 수 있으며, 제출 뒤에는 카테고리별로 따로 심사됩니다."
-        eyebrow="담당자 7 · F-PROV-002/003/006/007"
         title="제공자 권한 신청"
       />
 
@@ -231,40 +229,27 @@ const ProviderApplyPage = () => {
           <div className="provider-apply-account">
             <div>
               <strong>정산 계좌 정보</strong>
-              <p>서비스 완료 후 정산·환전 안내에 사용할 계좌 정보입니다.</p>
+              <p>서비스 완료 후 정산·환전 안내에 사용할 계좌 정보입니다. 마이페이지에 등록된 계좌를 그대로 사용합니다.</p>
             </div>
 
-            {/* 담당자 7 · F-PROV-002/003 임시 UI: 계좌 저장 API가 아직 없어서 화면 입력만 받습니다.
-                최종 교체 대상: USERS.USR_BANK_NM / USR_ACNT_NO 저장 API가 확정되면 이 값을 저장 요청에 연결합니다. */}
-            <label>
-              은행명
-              <input
-                onChange={changeSettlementAccount('bankName')}
-                placeholder="예: 국민은행"
-                value={settlementAccount.bankName}
-              />
-            </label>
-            <label>
-              계좌번호
-              <input
-                inputMode="numeric"
-                onChange={changeSettlementAccount('accountNo')}
-                placeholder="숫자만 입력"
-                value={settlementAccount.accountNo}
-              />
-            </label>
-            <label>
-              예금주
-              <input
-                onChange={changeSettlementAccount('accountHolder')}
-                placeholder="본인 명의 예금주"
-                value={settlementAccount.accountHolder}
-              />
-            </label>
-            <p className="provider-apply-demo-note">
-              현재는 계좌 저장 API 대기 상태라 신청 제출값에는 포함하지 않습니다.
-              API가 확정되면 이 단계에서 저장/검증을 연결합니다.
-            </p>
+            {profileQuery.isLoading && (
+              <p className="provider-apply-demo-note">등록된 계좌 정보를 불러오는 중입니다.</p>
+            )}
+
+            {!profileQuery.isLoading && hasSettlementAccount && (
+              <p className="provider-apply-demo-note">
+                {profileQuery.data.bankName} {profileQuery.data.accountNo} 계좌로 정산됩니다.
+                계좌를 바꾸시려면 <Link className="provider-apply-inline-link" to="/user/mypage?section=profile">마이페이지</Link>에서 먼저 수정해 주세요.
+              </p>
+            )}
+
+            {!profileQuery.isLoading && !hasSettlementAccount && (
+              <p className="provider-apply-error">
+                정산 계좌가 아직 등록되지 않았습니다.
+                {' '}
+                <Link className="provider-apply-inline-link" to="/user/mypage?section=profile">마이페이지</Link>에서 계좌를 먼저 등록해 주세요.
+              </p>
+            )}
           </div>
         )}
 
@@ -318,7 +303,9 @@ const ProviderApplyPage = () => {
           </button>
           <button
             className="btn btn-primary"
-            disabled={submitMutation.isPending || (step === 0 && categoriesQuery.isLoading)}
+            disabled={submitMutation.isPending
+              || (step === 0 && categoriesQuery.isLoading)
+              || (step === 1 && (profileQuery.isLoading || !hasSettlementAccount))}
             onClick={next}
             type="button"
           >
