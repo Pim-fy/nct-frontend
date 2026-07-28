@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { Truck, UserRound } from 'lucide-react';
 import { toImageUrl } from '@api/fileApi';
 import useCountdown from '@hooks/useCountdown';
 import { formatPrice, resolveAuctionResultLabel } from '../utils/auctionFormatters';
@@ -38,7 +39,7 @@ const AuctionCard = ({ item }) => {
 
   return (
     <Link
-      className="flex min-h-[410px] flex-col overflow-hidden rounded-lg border border-[#f0efec] bg-white p-5 text-inherit no-underline shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)] transition duration-150 hover:-translate-y-0.5 hover:shadow-[0_6px_18px_rgba(0,0,0,0.1)] max-md:min-h-0"
+      className="flex min-h-[410px] w-full min-w-0 flex-col overflow-hidden rounded-lg border border-[#f0efec] bg-white p-5 text-base leading-[1.6] text-inherit no-underline shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)] transition duration-150 hover:-translate-y-0.5 hover:shadow-[0_6px_18px_rgba(0,0,0,0.1)] max-md:min-h-0"
       to={`/auction/${item.auctionId}`}
       state={{ from: returnPath }}
     >
@@ -46,32 +47,48 @@ const AuctionCard = ({ item }) => {
         {imageUrl ? (
           <img className="block size-full object-cover" src={imageUrl} alt={item.title} />
         ) : (
-          <span className="inline-flex size-24 items-center justify-center rounded-full bg-white/60 text-[15px] font-extrabold">
+          <span className="inline-flex size-24 items-center justify-center rounded-full bg-white/60 text-[15px] leading-[1.5] font-extrabold">
             {item.categoryName || '경매'}
           </span>
         )}
       </div>
-      <div className="mt-3 flex items-start justify-between gap-3">
-        <strong className="min-w-0 overflow-hidden text-base leading-[1.35] font-bold text-[#1a1a18] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+      <div className="mt-3 flex items-start justify-between gap-3 max-sm:flex-col max-sm:gap-1.5">
+        <strong className="min-w-0 overflow-hidden text-lg leading-[1.4] font-bold text-[#1a1a18] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
           {item.title}
         </strong>
-        <span className="shrink-0 rounded-lg bg-[#f0f0ee] px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap text-[#5f5e5a]">
+        <span className="shrink-0 rounded-lg bg-[#f0f0ee] px-2.5 py-0.5 text-[13px] leading-[1.5] font-semibold whitespace-nowrap text-[#5f5e5a]">
           {item.categoryName}
         </span>
       </div>
-      <div className="mt-2 text-xl font-extrabold text-primary-dark">
+      <div className="mt-2 text-2xl leading-[1.3] font-extrabold text-primary-dark">
         {formatPrice(item.currentPrice)}
       </div>
-      <div className="mt-1 mb-3.5 flex items-center gap-2.5 text-[13px] text-[#5f5e5a]">
-        <span>{item.sellerName}</span>
-        <span>{item.tradeMethodName}</span>
-      </div>
-      <div className="mt-auto flex items-center justify-between gap-3 border-t border-[#f0efec] pt-3.5 max-md:flex-col max-md:items-start">
-        <span className="text-[13px] font-semibold text-[#5f5e5a]">
+      <dl className="mt-2 mb-3.5 grid grid-cols-2 gap-2 text-sm leading-[1.5] text-[#5f5e5a]">
+        <div className="min-w-0 rounded-lg bg-[#f8f8f6] px-2.5 py-2">
+          <dt className="mb-1 flex items-center gap-1 text-xs leading-[1.5] font-bold text-[#85847f]">
+            <UserRound size={13} aria-hidden="true" />
+            판매자
+          </dt>
+          <dd className="m-0 truncate font-semibold text-[#3f3f3c]">
+            {item.sellerName || '정보 없음'}
+          </dd>
+        </div>
+        <div className="min-w-0 rounded-lg bg-[#f8f8f6] px-2.5 py-2">
+          <dt className="mb-1 flex items-center gap-1 text-xs leading-[1.5] font-bold text-[#85847f]">
+            <Truck size={13} aria-hidden="true" />
+            거래 방식
+          </dt>
+          <dd className="m-0 truncate font-semibold text-[#3f3f3c]">
+            {item.tradeMethodName || '정보 없음'}
+          </dd>
+        </div>
+      </dl>
+      <div className="mt-auto flex items-center justify-between gap-3 border-t border-[#f0efec] pt-3.5 max-sm:flex-col max-sm:items-stretch">
+        <span className="text-sm leading-[1.5] font-semibold text-[#5f5e5a]">
           입찰 {item.bidCount ?? 0}회
         </span>
         <strong
-          className={`inline-flex min-h-9 w-44 max-w-full items-center justify-center rounded-lg border px-3 text-center text-sm leading-none font-bold whitespace-nowrap tabular-nums ${
+          className={`inline-flex min-h-9 w-44 max-w-full items-center justify-center rounded-lg border px-3 text-center text-sm leading-[1.4] font-bold whitespace-nowrap tabular-nums max-md:w-auto max-md:min-w-[152px] max-sm:w-full max-sm:min-w-0 max-sm:px-2 max-sm:text-[13px] max-sm:whitespace-normal ${
             isTimeExpired
               ? 'border-[#d8d8d8] bg-[#f1f1f1] text-[#7a7a7a]'
               : 'border-[#c9ddff] bg-primary-light text-primary-dark'

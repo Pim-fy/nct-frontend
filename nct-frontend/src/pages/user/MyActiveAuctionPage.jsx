@@ -3,6 +3,7 @@ import { ChevronRight, Gavel, RefreshCw } from 'lucide-react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { toImageUrl } from '@api/fileApi';
 import Pagination from '@components/common/Pagination';
+import { MyActiveAuctionSkeleton } from '@components/skeleton/AuctionSkeletons';
 import useCountdown from '@hooks/useCountdown';
 import { useMyBidHistory } from '@hooks/useBid';
 import '@assets/css/my-active-auctions.css';
@@ -129,10 +130,12 @@ export default function MyActiveAuctionPage() {
     return (
       <section className="my-active-auctions" aria-busy="true">
         <header className="my-active-auctions__header">
-          <p>MY AUCTIONS</p>
-          <h1>진행중인 경매</h1>
+          <div>
+            <h1>진행중인 경매</h1>
+            <span>현재 참여 중인 경매와 내 입찰 상태를 확인하세요.</span>
+          </div>
         </header>
-        <div className="my-active-auctions__state">진행 중인 경매를 불러오는 중입니다.</div>
+        <MyActiveAuctionSkeleton />
       </section>
     );
   }
@@ -141,7 +144,6 @@ export default function MyActiveAuctionPage() {
     return (
       <section className="my-active-auctions">
         <header className="my-active-auctions__header">
-          <p>MY AUCTIONS</p>
           <h1>진행중인 경매</h1>
         </header>
         <div className="my-active-auctions__state my-active-auctions__state--error">
@@ -159,7 +161,6 @@ export default function MyActiveAuctionPage() {
     <section className="my-active-auctions">
       <header className="my-active-auctions__header">
         <div>
-          <p>MY AUCTIONS</p>
           <h1>진행중인 경매</h1>
           <span>현재 참여 중인 경매와 내 입찰 상태를 확인하세요.</span>
         </div>

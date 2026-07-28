@@ -1,6 +1,8 @@
 .my-active-auctions {
   width: 100%;
   color: #1f2937;
+  font-size: 16px;
+  line-height: 1.6;
 }
 
 .my-active-auctions__header {
@@ -11,19 +13,11 @@
   margin-bottom: 24px;
 }
 
-.my-active-auctions__header p {
-  margin: 0 0 6px;
-  color: #155eef;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0;
-}
-
 .my-active-auctions__header h1 {
   margin: 0;
   color: #171b26;
-  font-size: 30px;
-  line-height: 1.3;
+  font-size: 32px;
+  line-height: 1.25;
   letter-spacing: 0;
 }
 
@@ -31,7 +25,8 @@
   display: block;
   margin-top: 8px;
   color: #667085;
-  font-size: 14px;
+  font-size: 16px;
+  line-height: 1.6;
 }
 
 .my-active-auctions__summary {
@@ -57,13 +52,15 @@
 
 .my-active-auctions__summary span {
   color: #667085;
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 1.5;
   font-weight: 700;
 }
 
 .my-active-auctions__summary strong {
   color: #155eef;
   font-size: 24px;
+  line-height: 1.3;
   font-weight: 800;
 }
 
@@ -82,7 +79,8 @@
   background: #fff;
   color: #526079;
   font: inherit;
-  font-size: 13px;
+  font-size: 15px;
+  line-height: 1.4;
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
@@ -101,7 +99,8 @@
 .my-active-auctions__filters button span {
   margin-left: 6px;
   color: inherit;
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .my-active-auctions__list {
@@ -163,7 +162,7 @@
   min-height: 25px;
   padding: 4px 9px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
   line-height: 1.35;
 }
@@ -186,7 +185,7 @@
 .my-active-auction-item h2 {
   margin: 0;
   color: #252b3a;
-  font-size: 17px;
+  font-size: 18px;
   line-height: 1.4;
   letter-spacing: 0;
   overflow: hidden;
@@ -197,7 +196,8 @@
 .my-active-auction-item__body > p {
   margin: 5px 0 10px;
   color: #7b8595;
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .my-active-auction-item dl {
@@ -214,13 +214,15 @@
 
 .my-active-auction-item dt {
   color: #7b8595;
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .my-active-auction-item dd {
   margin: 0;
   color: #344054;
-  font-size: 14px;
+  font-size: 16px;
+  line-height: 1.5;
   font-weight: 800;
 }
 
@@ -233,7 +235,8 @@
   background: #fff;
   color: #155eef;
   font: inherit;
-  font-size: 13px;
+  font-size: 15px;
+  line-height: 1.4;
   font-weight: 800;
   display: inline-flex;
   align-items: center;
@@ -268,7 +271,8 @@
 
 .my-active-auctions__state p {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .my-active-auctions__state--error {
@@ -281,7 +285,7 @@
 
 @media (max-width: 720px) {
   .my-active-auctions__header h1 {
-    font-size: 25px;
+    font-size: 28px;
   }
 
   .my-active-auctions__summary {
