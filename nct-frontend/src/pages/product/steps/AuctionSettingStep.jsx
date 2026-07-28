@@ -19,6 +19,23 @@ function minEndTimeToday() {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
+// 현재 시각을 10분 단위로 올림한 "HH:mm" — 예약 시작일을 오늘로 고를 때 이미 지난 시간을
+// 시작 시각으로 선택하지 못하게 막는 최소 기준. 즉시시작 종료 시간과 달리 최소 1시간 여유는
+// 필요 없어(그냥 시작 시각일 뿐) minEndTimeToday()의 +60분 없이 "지금 이후"만 보장한다.
+function minStartTimeToday() {
+  const now = new Date();
+  const totalMin = now.getHours() * 60 + now.getMinutes();
+  let h = Math.floor(totalMin / 60);
+  let m = Math.ceil((totalMin % 60) / 10) * 10;
+  if (m === 60) { m = 0; h += 1; }
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+function todayStr() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
 export default function AuctionSettingStep({
   form, set, policyAgreed, setPolicyAgreed,
   auctionRange, setAuctionRange, endDt,
@@ -28,6 +45,8 @@ export default function AuctionSettingStep({
   const startAmtInvalid = !!form.prdStartAmt && Number(form.prdStartAmt) % form.bidUnit !== 0;
   // 즉시시작 + 종료일이 당일이면 "등록 시각과 동일한 시:분"으로 자동 계산할 수 없어(이미 지난 시각이 됨) 직접 시간을 받아야 함
   const isSameDayInstant = form.startNow && !!auctionRange.end && auctionRange.end === auctionRange.start;
+  // 예약 + 시작일이 오늘이면 이미 지난 시각을 시작 시각으로 고르지 못하게 막아야 함
+  const isSameDayReserve = !form.startNow && auctionRange.start === todayStr();
 
   // 당일 즉시시작으로 전환되는 순간, 이미 지난 시각이 기본값으로 남아있으면 현재 이후 시각으로 보정
   useEffect(() => {
@@ -39,6 +58,17 @@ export default function AuctionSettingStep({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSameDayInstant]);
+
+  // 예약 시작일이 오늘로 바뀌는 순간에도 동일하게 보정
+  useEffect(() => {
+    if (!isSameDayReserve) return;
+    const min = minStartTimeToday();
+    const current = auctionRange.startTime || '09:00';
+    if (current < min) {
+      setAuctionRange(prev => ({ ...prev, startTime: min, endTime: min }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSameDayReserve]);
 
   return (
     <div>
@@ -147,7 +177,7 @@ export default function AuctionSettingStep({
           onStartTimeChange={val => setAuctionRange(prev => ({ ...prev, startTime: val, endTime: val }))}
           timeLabel={isSameDayInstant ? '종료 시간' : '시작 시간'}
           timeHint={isSameDayInstant ? '오늘 등록과 동시에 시작해서 이 시간에 종료됩니다' : '종료 시간은 시작 시간과 동일하게 적용됩니다'}
-          minTime={isSameDayInstant ? minEndTimeToday() : undefined}
+          minTime={isSameDayInstant ? minEndTimeToday() : isSameDayReserve ? minStartTimeToday() : undefined}
         />
         {submitted && !auctionRange.end && (
           <span style={{ position: 'absolute', top: '100%', left: 0, fontSize: 15, fontWeight: 700, color: '#c0392b', whiteSpace: 'nowrap' }}>경매 기간을 지정해 주세요</span>

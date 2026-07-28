@@ -15,6 +15,7 @@ import ConfirmModal from '@components/common/ConfirmModal';
 
 const FILTERS = [
   { value: null,      label: '전체' },
+  { value: 'DRAFT',   label: '임시저장' },
   { value: 'ACTIVE',  label: '진행중' },
   { value: 'WON',     label: '낙찰' },
   { value: 'TRADING', label: '거래중' },
@@ -45,7 +46,7 @@ const AUC_STATUS_BADGE = {
   AUCC0003: 'badge-outline-gray',
   AUCC0004: 'badge-outline-gray',
   AUCC0005: 'badge-danger',
-  AUCC0006: 'badge-outline-orange',
+  AUCC0006: 'badge-danger', // 취소요청도 취소(AUCC0005)와 같은 색으로 — 둘 다 위험/주의 상태
 };
 
 const TRADE_BADGE = {
@@ -102,16 +103,11 @@ export default function MyProductList() {
   const navigate = useNavigate();
   const [filter, setFilter]       = useState(null);
   const [subFilter, setSubFilter] = useState('');
-  const [draftOnly, setDraftOnly] = useState(false);
   const [page, setPage]           = useState(1);
   const [toast, setToast]         = useState('');
   const [confirmTarget, setConfirmTarget] = useState(null);
 
-  const activeFilterType = draftOnly
-    ? 'DRAFT'
-    : filter === 'CLOSED' && subFilter
-    ? subFilter
-    : filter;
+  const activeFilterType = filter === 'CLOSED' && subFilter ? subFilter : filter;
 
   const { data, isLoading, isError, refetch } = useMyProducts(page, 10, activeFilterType);
   const list       = data?.list       ?? [];
@@ -124,7 +120,6 @@ export default function MyProductList() {
   };
 
   const handleSubFilterChange = (value) => { setSubFilter(value); setPage(1); };
-  const handleDraftToggle = () => { setDraftOnly(prev => !prev); setPage(1); };
 
   const handleDeleteConfirm = async () => {
     const { prdSn } = confirmTarget;
@@ -158,7 +153,7 @@ export default function MyProductList() {
               key={String(f.value)}
               type="button"
               onClick={() => handleFilterChange(f.value)}
-              style={chipStyle(!draftOnly && filter === f.value)}
+              style={chipStyle(filter === f.value)}
             >
               {f.label}
             </button>
@@ -166,7 +161,7 @@ export default function MyProductList() {
         </div>
 
         {/* 우측: 종료 콤보박스 */}
-        {filter === 'CLOSED' && !draftOnly && (
+        {filter === 'CLOSED' && (
           <select
             value={subFilter}
             onChange={e => handleSubFilterChange(e.target.value)}
@@ -177,19 +172,6 @@ export default function MyProductList() {
             ))}
           </select>
         )}
-      </div>
-
-      {/* 필터 박스 아래: 임시저장만 보기 토글 */}
-      <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 5, width: 'fit-content', fontSize: 13, color: draftOnly ? '#0064ff' : '#5f5e5a', cursor: 'pointer', userSelect: 'none' }}>
-          <input
-            type="checkbox"
-            checked={draftOnly}
-            onChange={handleDraftToggle}
-            style={{ accentColor: '#0064ff', width: 15, height: 15, cursor: 'pointer' }}
-          />
-          임시저장만 보기
-        </label>
       </div>
 
       {list.length === 0 ? (
@@ -254,14 +236,19 @@ export default function MyProductList() {
                         거래 관리
                       </button>
                     )}
-                    {!p.tradeSn && isActive && (
+                    {!p.tradeSn && isActive && p.aucStatusCd === 'AUCC0005' && (
+                      <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`)} className="btn btn-sm btn-ghost">
+                        취소 상품 보기
+                      </button>
+                    )}
+                    {!p.tradeSn && isActive && p.aucStatusCd !== 'AUCC0005' && (
                       <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`)} className="btn btn-sm btn-primary">
                         판매 관리
                       </button>
                     )}
                     {isDraft && (
-                      <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`)} className="btn btn-sm btn-ghost">
-                        경매 설정
+                      <button type="button" onClick={() => navigate('/product/register', { state: { prdSn: p.prdSn } })} className="btn btn-sm btn-ghost">
+                        등록재개
                       </button>
                     )}
                     {!p.tradeSn && isEnded && (

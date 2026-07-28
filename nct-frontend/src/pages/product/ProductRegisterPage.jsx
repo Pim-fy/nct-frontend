@@ -4,7 +4,7 @@
 // 라우트: /product/register
 // 단계: 0(상품정보) → 1(경매설정) → 2(등록확인)
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useNavigationType } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { getCategories } from '@api/categoryApi';
 import { fetchBannedKeywords, registerProduct, updateProduct, getProduct } from '@api/productApi';
@@ -56,12 +56,15 @@ const MAX_IMAGES = 5; // F-AUC-002 — 대표이미지 포함 최대 5장
 export default function ProductRegisterPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const navigationType = useNavigationType(); // 'POP'(뒤로/앞으로가기) | 'PUSH'(링크·버튼으로 새로 진입) | 'REPLACE'
   const queryClient = useQueryClient();
   const editPrdSn = location.state?.prdSn ?? null; // 임시저장 수정 모드
   const draftKey = editPrdSn ?? 'new'; // 뒤로가기로 돌아왔을 때 지금 이 진입과 같은 draft인지 구분하는 키
   // 렌더 중(첫 마운트) 한 번만 평가 — 아래 동기화 effect가 draftCache를 다시 써버리기 전에
   // "이번 마운트가 캐시에서 복원된 것인지"를 고정해둬야 서버 재조회 여부를 정확히 판단할 수 있다.
-  const hasCachedDraft = draftCache?.key === draftKey;
+  // navigationType이 'POP'(진짜 뒤로가기)일 때만 캐시를 쓴다 — 그래야 "메인페이지 갔다가 경매등록
+  // 버튼을 새로 클릭"(PUSH)했을 때는 이전 미완성 내용이 아니라 항상 빈 폼으로 시작한다.
+  const hasCachedDraft = navigationType === 'POP' && draftCache?.key === draftKey;
 
   // ─── UI 상태 ─────────────────────────────────────────────────────────────
   const [step, setStep] = useState(() => hasCachedDraft ? draftCache.step : 0);
@@ -158,6 +161,24 @@ export default function ProductRegisterPage() {
             if (p.imageList?.length > 0) {
               setImages(p.imageList.map(img => ({ id: img.flSn, flSn: img.flSn, url: img.url, file: null })));
             }
+
+            // 상품입력 탭 필수값이 저장 시점에 이미 다 채워져 있었고 경매정책 동의까지 돼 있었다면,
+            // 재개했을 때 다시 처음부터 채우게 하지 않고 바로 등록확인 탭을 보여준다.
+            const bidUnit = p.prdDraftBidUnit != null ? Number(p.prdDraftBidUnit) : 1000;
+            const stepZeroComplete =
+              !!p.prdNm?.trim() &&
+              p.catSn != null &&
+              !!p.prdTrdMethodCd &&
+              p.prdStartAmt != null &&
+              p.prdDraftEndDt != null &&
+              Number(p.prdStartAmt) % bidUnit === 0 &&
+              (p.prdIbyAmt == null || Number(p.prdIbyAmt) % bidUnit === 0) &&
+              p.prdDraftPolicyAgreedYn === 'Y';
+
+            if (stepZeroComplete) {
+              setPolicyAgreed(true);
+              setStep(1);
+            }
           })
           .catch(() => setError('기존 상품 정보를 불러오지 못했습니다.'))
       );
@@ -237,6 +258,12 @@ export default function ProductRegisterPage() {
       setImages(uploadedImages); // 실패 후 재시도 시 중복 업로드되지 않도록 반영
 
       const endDt = calcEndDt();
+      // 업로드에 걸린 시간만큼 시각이 흘렀을 수 있어, 실제 전송 직전(업로드 완료 후)에 다시 한번 검증한다.
+      // 클릭 시점에만 검사하면 업로드하는 몇 초 사이에 종료 시각이 지나버려 서버에서 거부될 수 있었다.
+      if (statusCd === 'PRDC0002' && endDt && endDt.getTime() <= Date.now()) {
+        setAlertMsg('경매 종료 시각이 이미 지났습니다. 이전 단계에서 경매 기간을 다시 확인해 주세요.');
+        return;
+      }
       const startDt = form.startNow ? new Date() : (auctionRange.start ? new Date(`${auctionRange.start}T${auctionRange.startTime || '00:00'}:00`) : new Date());
       const payload = {
         catSn:          Number(form.catSn),
@@ -252,6 +279,8 @@ export default function ProductRegisterPage() {
         aucStartDt:     startDt.toISOString(),
         aucEndDt:       endDt ? endDt.toISOString() : null,
         bidUnit:        form.bidUnit,
+        // 임시저장일 때만 의미 있음 — 재개 시 등록확인 탭으로 바로 이동할지 판단하는 값
+        policyAgreed:   policyAgreed,
       };
       const result = editPrdSn
         ? await updateProduct(editPrdSn, payload)
@@ -260,7 +289,8 @@ export default function ProductRegisterPage() {
       queryClient.invalidateQueries({ queryKey: ['products', 'my'] });
       submittedRef.current = true;
       draftCache = null; // DB에 반영됐으니 임시 캐시는 정리 — 다음 진입은 "재개" 흐름(서버 재조회)이 담당
-      navigate(`/product/${prdSn}/seller`);
+      // 임시저장은 판매내역 목록으로, 실제 경매 등록은 방금 만든 상품 상세로 이동
+      navigate(statusCd === 'PRDC0001' ? '/user/mypage?section=auction-sales' : `/product/${prdSn}/seller`);
     } catch (err) {
       const msg = err.response?.data?.message;
       setError(msg || (editPrdSn ? '상품 수정에 실패했습니다.' : '상품 등록에 실패했습니다.'));
@@ -437,11 +467,8 @@ export default function ProductRegisterPage() {
                   setAlertMsg('등록 정보 확인 및 본문수정이 불가능함에 동의가 필요합니다.');
                   return;
                 }
-                const finalEndDt = calcEndDt();
-                if (finalEndDt && finalEndDt.getTime() <= Date.now()) {
-                  setAlertMsg('경매 종료 시각이 이미 지났습니다. 이전 단계에서 경매 기간을 다시 확인해 주세요.');
-                  return;
-                }
+                // 종료 시각이 지났는지 검사는 이미지 업로드가 끝난 뒤(handleSubmit 내부)에서 한다 —
+                // 여기서 미리 검사해봤자 업로드하는 동안 시간이 흘러 의미가 없다.
                 handleSubmit('PRDC0002');
               }}
               disabled={loading}

@@ -62,9 +62,11 @@ const QuickActions = () => {
     }
   };
 
+  // 담당자 2 · F-SVC-001~004: 서비스 요청서 작성 진입점. 다른 화면에서 이 폼으로 진입하는
+  // 경로가 추가되더라도 이 라우트('/service-requests/new')는 그대로 유지된다.
   const handleServiceCreate = () => {
     if (isAuthenticated) {
-      navigate('/service/create');
+      navigate('/service-requests/new');
     } else {
       navigate('/login');
     }

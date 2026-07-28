@@ -1,32 +1,42 @@
 // src/pages/product/ProductDetailSellerPage.jsx
 // 판매자 경매 상세 페이지 — 등록한 상품의 경매 현황 및 상태별 관리 화면
 // 라우트: /product/:prdSn/seller
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import { toImageUrl } from '@api/fileApi';
-import { getProduct, postProductComment, fetchProductComments, fetchProductInquiries, postInquiryReply } from '@api/productApi';
+import { getProduct, postProductComment, fetchProductComments, fetchProductInquiries, postInquiryReply, updateInquiryReply } from '@api/productApi';
 import { getAuctionStatus, requestAuctionCancel, fetchAuctionFavoriteStatus } from '@api/auctionApi';
 import { TRADE_LABEL, STATUS_LABEL, STATUS_BADGE } from '@/constants/productConstants';
 import useCountdown from '@hooks/useCountdown';
 import ErrorMessage from '@components/common/ErrorMessage';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
 import Toast from '@components/common/Toast';
+import AlertModal from '@components/common/AlertModal';
 import ConfirmModal from '@components/common/ConfirmModal';
+import Pagination from '@components/common/Pagination';
 
 const CANCEL_REASONS = ['상품 상태 변경', '상품 정보 오류', '판매 진행 불가', '기타'];
+const COMMENTS_PAGE_SIZE = 3;
+const INQUIRIES_PAGE_SIZE = 4;
+// 답변 등록 후 수정 가능한 시간 — 백엔드 ProductService.REPLY_EDIT_WINDOW_MINUTES와 동일해야 함
+const REPLY_EDIT_WINDOW_MS = 10 * 60 * 1000;
 
 function groupInquiries(rawList) {
   const replies = rawList.filter(r => r.prdCmtTypeCd === 'PRDC0007');
   return rawList
     .filter(r => r.prdCmtTypeCd === 'PRDC0006')
-    .map(q => ({
-      inquirySn: q.prdCmtSn,
-      usrNm: q.usrNm,
-      content: q.prdCmtCn,
-      regDt: new Date(q.prdCmtRegDt).toLocaleDateString('ko-KR'),
-      reply: replies.find(r => r.prdCmtParentSn === q.prdCmtSn)?.prdCmtCn ?? null,
-    }));
+    .map(q => {
+      const replyRow = replies.find(r => r.prdCmtParentSn === q.prdCmtSn);
+      return {
+        inquirySn: q.prdCmtSn,
+        usrNm: q.usrNm,
+        content: q.prdCmtCn,
+        regDt: new Date(q.prdCmtRegDt).toLocaleDateString('ko-KR'),
+        reply: replyRow?.prdCmtCn ?? null,
+        replyRegDt: replyRow?.prdCmtRegDt ?? null,
+      };
+    });
 }
 
 export default function ProductDetailSellerPage() {
@@ -56,24 +66,44 @@ export default function ProductDetailSellerPage() {
   const [favoriteCount, setFavoriteCount] = useState(null);
 
   const [comments, setComments]         = useState([]);
+  const [commentsPage, setCommentsPage] = useState(1);
   const [cmtTtl, setCmtTtl]             = useState('');
   const [cmtCn, setCmtCn]               = useState('');
   const [cmtSubmitting, setCmtSubmitting] = useState(false);
 
-  // 구매자 문의 슬라이더
+  // 구매자 문의 — 리스트 형식, 문의마다 독립적으로 답변 입력/수정 상태를 가짐
   const [inquiries, setInquiries]       = useState([]);
-  const [inquiryIdx, setInquiryIdx]     = useState(0);
-  const [slideDir, setSlideDir]         = useState('right');
-  const [replyInput, setReplyInput]     = useState('');
+  const [inquiriesPage, setInquiriesPage] = useState(1);
+  const [expandedSn, setExpandedSn]     = useState(null); // 클릭해서 펼친 문의 inquirySn — 펼쳤을 때만 답변/신고 UI 표시
+  const [replyDrafts, setReplyDrafts]   = useState({}); // { [inquirySn]: 답변 입력중인 텍스트 }
+  const [editingSn, setEditingSn]       = useState(null); // 현재 답변 수정 중인 inquirySn
+  const [editDrafts, setEditDrafts]     = useState({}); // { [inquirySn]: 수정 중인 텍스트 }
   const [replySubmitting, setReplySubmitting] = useState(false);
   const [reportOpen, setReportOpen]           = useState(false);
-  const [descOpen, setDescOpen]               = useState(false);
+  const [reportTargetSn, setReportTargetSn]   = useState(null); // 신고 대상 inquirySn
+  // 답변 수정 가능 시간(10분) 판단용 — 1초마다 갱신해 시간이 지나면 수정 버튼이 실시간으로 사라지게 함
+  const replyClock = useCountdown(true);
 
   // 취소 요청 모달 (F-AUC-008)
   const [cancelOpen, setCancelOpen]     = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelSubmitting, setCancelSubmitting] = useState(false);
   const [toast, setToast]               = useState('');
+  const [alertMsg, setAlertMsg]         = useState(''); // 화면 중앙 알림 모달 — 취소 요청 완료 안내용
+
+  const leftCardRef  = useRef(null);
+  const rightColRef  = useRef(null);
+
+  useLayoutEffect(() => {
+    const sync = () => {
+      if (!leftCardRef.current || !rightColRef.current) return;
+      leftCardRef.current.style.height = `${rightColRef.current.offsetHeight}px`;
+    };
+    sync();
+    const ro = new ResizeObserver(sync);
+    if (rightColRef.current) ro.observe(rightColRef.current);
+    return () => ro.disconnect();
+  }, [loading, product, comments, inquiries, auctionStatus, favoriteCount]);
 
   useEffect(() => {
     setLoading(true);
@@ -102,16 +132,13 @@ export default function ProductDetailSellerPage() {
       .finally(() => setLoading(false));
   }, [prdSn]);
 
-  // 슬라이더 이동 시 답변 입력 초기화
-  useEffect(() => { setReplyInput(''); }, [inquiryIdx]);
-
   const handleCancelSubmit = async () => {
-    if (!cancelReason) { alert('취소 사유를 선택해 주세요.'); return; }
+    if (!cancelReason) { setAlertMsg('취소 사유를 선택해 주세요.'); return; }
     if (!auctionStatus?.aucSn) { setToast('경매 정보를 불러오지 못했습니다.'); return; }
     setCancelSubmitting(true);
     try {
       await requestAuctionCancel(auctionStatus.aucSn, { reason: cancelReason });
-      setToast('취소 요청이 접수되었습니다.');
+      setAlertMsg('취소 요청이 완료되었습니다.');
       setCancelOpen(false);
       setCancelReason('');
       getAuctionStatus(prdSn).then(auc => setAuctionStatus(auc)).catch(() => {});
@@ -129,6 +156,7 @@ export default function ProductDetailSellerPage() {
       await postProductComment(prdSn, { ttl: cmtTtl.trim(), cn: cmtCn.trim() || null });
       const updated = await fetchProductComments(prdSn);
       setComments(updated.data);
+      setCommentsPage(1); // 최신순 정렬이라 새 항목은 1페이지에 보임
       setCmtTtl('');
       setCmtCn('');
       setToast('수정 이력이 등록되었습니다.');
@@ -139,19 +167,35 @@ export default function ProductDetailSellerPage() {
     }
   };
 
-  const handleReplySubmit = async () => {
-    if (!replyInput.trim()) { alert('답변 내용을 입력해 주세요.'); return; }
-    const inquirySn = inquiries[inquiryIdx]?.inquirySn;
-    if (!inquirySn) return;
+  const handleReplySubmit = async (inquirySn) => {
+    const text = (replyDrafts[inquirySn] || '').trim();
+    if (!text) { setAlertMsg('답변 내용을 입력해 주세요.'); return; }
     setReplySubmitting(true);
     try {
-      await postInquiryReply(prdSn, inquirySn, { cn: replyInput.trim() });
+      await postInquiryReply(prdSn, inquirySn, { cn: text });
       const updated = await fetchProductInquiries(prdSn);
       setInquiries(groupInquiries(updated.data));
-      setReplyInput('');
+      setReplyDrafts(prev => { const next = { ...prev }; delete next[inquirySn]; return next; });
       setToast('답변이 등록되었습니다.');
     } catch {
       setToast('답변 등록에 실패했습니다.');
+    } finally {
+      setReplySubmitting(false);
+    }
+  };
+
+  const handleReplyEditSubmit = async (inquirySn) => {
+    const text = (editDrafts[inquirySn] || '').trim();
+    if (!text) { setAlertMsg('답변 내용을 입력해 주세요.'); return; }
+    setReplySubmitting(true);
+    try {
+      await updateInquiryReply(prdSn, inquirySn, { cn: text });
+      const updated = await fetchProductInquiries(prdSn);
+      setInquiries(groupInquiries(updated.data));
+      setEditingSn(null);
+      setToast('답변이 수정되었습니다.');
+    } catch {
+      setToast('답변 수정에 실패했습니다. 등록 후 10분이 지났을 수 있습니다.');
     } finally {
       setReplySubmitting(false);
     }
@@ -172,6 +216,7 @@ export default function ProductDetailSellerPage() {
   const isEnded         = product.prdStatusCd === 'PRDC0003';
   const isDraft         = product.prdStatusCd === 'PRDC0001';
   const isCancelPending = isActive && auctionStatus?.aucStatusCd === 'AUCC0006';
+  const isCancelled     = auctionStatus?.aucStatusCd === 'AUCC0005'; // 관리자 승인으로 취소 확정된 경매
 
   const priceLabel = isActive ? '현재가' : '시작가';
   const priceAmt   = isActive && auctionStatus?.aucCurAmt != null ? auctionStatus.aucCurAmt : product.prdStartAmt;
@@ -189,24 +234,37 @@ export default function ProductDetailSellerPage() {
     : isEnded   ? '유찰 건은 거래와 정산이 생성되지 않습니다.'
     : '임시저장 상품은 경매 설정 완료 후 공개됩니다.';
 
-  const currentInquiry = inquiries[inquiryIdx];
-  const hasReply       = !!currentInquiry?.reply;
-
   return (
     <main className="container seller-page">
       <div className="seller-auction-head" style={{ marginBottom: 16, marginTop: 24 }}>
         <button className="btn btn-ghost" style={{ marginLeft: 'auto' }} onClick={() => navigate('/user/mypage?section=auction-sales')}>← 내 판매 내역</button>
       </div>
 
-      {/* 2컬럼 레이아웃 */}
-      <div className="seller-auction-layout" style={{ alignItems: 'stretch' }}>
+      {/* 취소 확정된 상품(AUCC0005)은 아래 내용 전체를 블러 처리하고 안내만 보여준다 */}
+      <div style={{ position: 'relative' }}>
+      {isCancelled && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#c0392b" strokeWidth="1.7" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="5.5" y1="5.5" x2="18.5" y2="18.5" />
+          </svg>
+          <p style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#1a1a18' }}>해당 상품은 취소된 상품입니다.</p>
+          <p style={{ margin: 0, fontSize: 15, color: '#5f5e5a' }}>본 게시글은 1일 후 자동 삭제됩니다.</p>
+        </div>
+      )}
+      <div style={isCancelled ? { filter: 'blur(6px)', pointerEvents: 'none', userSelect: 'none' } : undefined}>
 
-        {/* 왼쪽: 상품 정보 */}
-        <section className="card" style={{ display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
+      {/* 2컬럼 레이아웃 — flex-start: 왼쪽 상품설명이 더보기로 늘어나도 오른쪽 카드들은 그대로 둠 */}
+      <div className="seller-auction-layout" style={{ alignItems: 'flex-start', marginBottom: 48 }}>
+
+        {/* 왼쪽: 상품 정보 — 오른쪽 컬럼 높이만큼 고정, 남는 공간은 그냥 여백으로 남는다 */}
+        {/* minHeight:0이 핵심 — 없으면 안의 콘텐츠(이미지 등) 크기가 그리드 행 높이 계산에 반영돼서
+            오른쪽보다 더 길어져 버린다. 이 값이 있어야 stretch가 오른쪽 높이에 정확히 맞춰준다 */}
+        <section ref={leftCardRef} className="card" style={{ display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
           <div style={{ background: '#eef2fb', padding: '14px 20px' }}>
             <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>상품 상세내용</h3>
           </div>
-          <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+          <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
           <div className="seller-product" style={{ alignItems: 'flex-start' }}>
             {(() => {
               const images = product.imageList?.length > 0 ? product.imageList : (product.prdImgUrl ? [{ url: product.prdImgUrl }] : []);
@@ -248,8 +306,7 @@ export default function ProductDetailSellerPage() {
                   <span className="badge badge-goods">판매</span>
                 </div>
                 <p className="muted small" style={{ margin: 0 }}>
-                  {auctionStatus ? `AUC-${auctionStatus.aucSn}` : `PRD-${product.prdSn}`}
-                  {product.prdRegDt && ` · ${new Date(product.prdRegDt).toLocaleDateString('ko-KR')} 등록`}
+                  {product.prdRegDt && `${new Date(product.prdRegDt).toLocaleDateString('ko-KR')} 등록`}
                 </p>
               </div>
               <h2 style={{ fontSize: 22, lineHeight: 1.4, margin: '8px 0 0' }}>{product.prdNm}</h2>
@@ -279,25 +336,14 @@ export default function ProductDetailSellerPage() {
           </div>
 
           {product.prdCn && (
-            <div style={{ marginTop: 18, borderTop: '1px solid #f0efec', paddingTop: 16 }}>
-              <p style={{ margin: '0 0 8px', fontSize: 14, color: '#5f5e5a', fontWeight: 600 }}>상품 설명</p>
+            <div style={{ marginTop: 18, borderTop: '1px solid #f0efec', paddingTop: 16, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+              <p style={{ margin: '0 0 8px', fontSize: 14, color: '#5f5e5a', fontWeight: 600, flexShrink: 0 }}>상품 설명</p>
+              {/* 남는 공간을 전부 채우고, 넘치는 내용은 스크롤 */}
               <div
                 className="rich-text-editor-body"
-                style={{ fontSize: 16, lineHeight: 1.7, color: '#1a1a18', overflow: 'hidden', maxHeight: descOpen ? 'none' : 72, padding: 0 }}
+                style={{ fontSize: 16, lineHeight: 1.7, color: '#1a1a18', flex: 1, minHeight: 0, overflowY: 'auto', padding: 0 }}
                 dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.prdCn, { ALLOWED_TAGS: ['p', 'br', 'b', 'strong', 'i', 'em', 'u', 'ul', 'ol', 'li', 'img', 'div', 'span'], ALLOWED_ATTR: ['src', 'style'] }) }}
               />
-            </div>
-          )}
-
-          {product.prdCn && (
-            <div style={{ textAlign: 'center', marginTop: 'auto', paddingTop: 16 }}>
-              <button
-                type="button"
-                onClick={() => setDescOpen(v => !v)}
-                style={{ fontSize: 13, color: '#5f5e5a', background: '#fff', border: '1px solid #e2e1dc', borderRadius: 8, padding: '6px 24px', cursor: 'pointer' }}
-              >
-                {descOpen ? '접기 ▲' : '더보기 ▼'}
-              </button>
             </div>
           )}
 
@@ -305,8 +351,8 @@ export default function ProductDetailSellerPage() {
 
         </section>
 
-        {/* 오른쪽: 상태별 관리 + 상품 수정 이력 */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* 오른쪽: 상태별 관리 + 상품 수정 이력 — 이 컬럼의 실제 높이를 재서 왼쪽 박스 높이로 그대로 사용 */}
+        <div ref={rightColRef} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <aside className="card" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ background: '#eef2fb', padding: '14px 20px' }}>
               <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>상태별 관리</h3>
@@ -332,32 +378,34 @@ export default function ProductDetailSellerPage() {
             </div>
           </aside>
 
-          {/* 상품 수정 이력 (F-AUC-007, 축소) */}
-          <aside className="card" style={{ flex: 1, padding: 0, overflow: 'hidden' }}>
+          {/* 상품 변경사항 추가 (F-AUC-007) — 사이즈 고정, 왼쪽 컬럼 높이에 맞춰 늘어나지 않음 */}
+          <aside className="card" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ background: '#eef2fb', padding: '14px 20px' }}>
-              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>상품 내용 수정</h3>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>상품 변경 사항 추가</h3>
             </div>
             <div style={{ padding: '16px 20px' }}>
               {isActive && (
                 <div style={{ marginBottom: 8 }}>
                   <input
                     type="text"
-                    maxLength={200}
+                    maxLength={30}
                     placeholder="제목 (필수)"
                     value={cmtTtl}
                     onChange={e => setCmtTtl(e.target.value)}
-                    style={{ width: '100%', marginBottom: 8, fontSize: 16 }}
+                    style={{ width: '100%', fontSize: 16 }}
                   />
+                  <p style={{ margin: '2px 0 6px', fontSize: 12, color: cmtTtl.length >= 30 ? '#c0392b' : '#969696', textAlign: 'right' }}>{cmtTtl.length}/30</p>
                   <hr style={{ border: 'none', borderTop: '1px solid #f0efec', margin: '0 0 8px' }} />
                   <textarea
                     rows={3}
-                    maxLength={4000}
+                    maxLength={100}
                     placeholder="내용 (선택)"
                     value={cmtCn}
                     onChange={e => setCmtCn(e.target.value)}
                     style={{ width: '100%', fontSize: 16, resize: 'none', overflowY: 'auto' }}
                   />
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
+                  <p style={{ margin: '2px 0 4px', fontSize: 12, color: cmtCn.length >= 100 ? '#c0392b' : '#969696', textAlign: 'right' }}>{cmtCn.length}/100</p>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 2 }}>
                     <button className="btn btn-primary btn-sm" onClick={handleCommentSubmit} disabled={cmtSubmitting}>
                       {cmtSubmitting ? '등록 중...' : '등록'}
                     </button>
@@ -366,142 +414,178 @@ export default function ProductDetailSellerPage() {
               )}
             </div>
           </aside>
+
+          {/* 수정 내역 — 상품 변경사항 추가 바로 아래, 고정 위치 */}
+          <aside className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ background: '#eef2fb', padding: '14px 20px' }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>변경 내역</h3>
+            </div>
+            <div style={{ padding: '6px 20px', minHeight: 140, display: 'flex', flexDirection: 'column' }}>
+              {comments.length === 0 ? (
+                <p className="muted" style={{ fontSize: 14 }}>등록된 수정 내역이 없습니다.</p>
+              ) : (
+                <>
+                  <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
+                    {comments
+                      .slice((commentsPage - 1) * COMMENTS_PAGE_SIZE, commentsPage * COMMENTS_PAGE_SIZE)
+                      .map((c, i) => (
+                        <li key={c.prdCmtSn} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, paddingBottom: 4, borderBottom: '1px solid #f0efec' }}>
+                          <div style={{ flexShrink: 0, width: 28, height: 28, borderRadius: '50%', background: '#0064ff', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700 }}>
+                            {(commentsPage - 1) * COMMENTS_PAGE_SIZE + i + 1}
+                          </div>
+                          <div style={{ minWidth: 0 }}>
+                            <p style={{ margin: '0 0 2px', fontWeight: 600, fontSize: 16 }}>{c.prdCmtTtl}</p>
+                            {c.prdCmtCn && <p style={{ margin: '0 0 4px', fontSize: 14, color: '#5f5e5a', whiteSpace: 'pre-wrap' }}>{c.prdCmtCn}</p>}
+                            <p className="muted small" style={{ margin: 0, fontSize: 13 }}>{new Date(c.prdCmtRegDt).toLocaleDateString('ko-KR')}</p>
+                          </div>
+                        </li>
+                      ))}
+                  </ul>
+                  <div style={{ margin: '-16px 0' }}>
+                    <Pagination
+                      page={commentsPage}
+                      totalPages={Math.ceil(comments.length / COMMENTS_PAGE_SIZE)}
+                      onPageChange={setCommentsPage}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          </aside>
+
+          {/* 구매자 문의 — 리스트 형식, 문의마다 답변 1회 + 등록 후 10분 이내 수정 가능 */}
+          <aside className="card" style={{ padding: 0, overflow: 'hidden', height: 800 }}>
+            <div style={{ background: '#eef2fb', padding: '14px 20px' }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>구매자 문의</h3>
+            </div>
+            <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', flex: 1, overflowY: 'auto' }}>
+              {inquiries.length === 0 ? (
+                <p className="muted" style={{ fontSize: 14 }}>등록된 문의가 없습니다.</p>
+              ) : (
+                <>
+                <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 14, flex: 1 }}>
+                  {inquiries
+                    .slice((inquiriesPage - 1) * INQUIRIES_PAGE_SIZE, inquiriesPage * INQUIRIES_PAGE_SIZE)
+                    .map(inq => {
+                    const hasReply = !!inq.reply;
+                    const withinEditWindow = hasReply && !!inq.replyRegDt
+                      && (replyClock - new Date(inq.replyRegDt).getTime() < REPLY_EDIT_WINDOW_MS);
+                    const isEditing = editingSn === inq.inquirySn;
+                    const isExpanded = expandedSn === inq.inquirySn;
+
+                    return (
+                      <li key={inq.inquirySn} style={{ border: '1px solid #f0efec', borderRadius: 10, padding: '14px 16px' }}>
+                        {/* 클릭해서 펼치기/접기 — 펼쳐야 답변 작성·조회·신고 UI가 나온다 */}
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setExpandedSn(prev => prev === inq.inquirySn ? null : inq.inquirySn)}
+                          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setExpandedSn(prev => prev === inq.inquirySn ? null : inq.inquirySn); }}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+                            <p style={{ margin: '0 0 4px', fontSize: 13, color: '#969696' }}>{inq.usrNm} · {inq.regDt}</p>
+                            <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 600, color: hasReply ? '#0064ff' : '#c0392b' }}>
+                              {hasReply ? '답변완료' : '미답변'}
+                            </span>
+                          </div>
+                          <p style={{ margin: isExpanded ? '0 0 10px' : 0, fontSize: 15, lineHeight: 1.6 }}>{inq.content}</p>
+                        </div>
+
+                        {isExpanded && (hasReply ? (
+                          isEditing ? (
+                            <div>
+                              <textarea
+                                rows={2}
+                                value={editDrafts[inq.inquirySn] ?? inq.reply}
+                                onChange={e => setEditDrafts(prev => ({ ...prev, [inq.inquirySn]: e.target.value }))}
+                                style={{ width: '100%', fontSize: 14, resize: 'none', borderRadius: 6, border: '1px solid #d1d0cc', padding: '8px 10px' }}
+                              />
+                              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginTop: 6 }}>
+                                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditingSn(null)}>취소</button>
+                                <button type="button" className="btn btn-primary btn-sm" onClick={() => handleReplyEditSubmit(inq.inquirySn)} disabled={replySubmitting}>
+                                  {replySubmitting ? '저장 중...' : '저장'}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ background: '#f8f8f6', borderRadius: 8, padding: '10px 12px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                                <div style={{ minWidth: 0 }}>
+                                  <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 600, color: '#0064ff' }}>판매자 답변</p>
+                                  <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6 }}>{inq.reply}</p>
+                                </div>
+                                {withinEditWindow && (
+                                  <button
+                                    type="button"
+                                    className="btn btn-ghost btn-sm"
+                                    style={{ flexShrink: 0, fontSize: 12 }}
+                                    onClick={() => {
+                                      setEditingSn(inq.inquirySn);
+                                      setEditDrafts(prev => ({ ...prev, [inq.inquirySn]: inq.reply }));
+                                    }}
+                                  >
+                                    수정
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        ) : (
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <textarea
+                              rows={2}
+                              placeholder="답변 내용을 입력해 주세요"
+                              value={replyDrafts[inq.inquirySn] ?? ''}
+                              onChange={e => setReplyDrafts(prev => ({ ...prev, [inq.inquirySn]: e.target.value }))}
+                              style={{ flex: 1, fontSize: 14, resize: 'none', borderRadius: 6, border: '1px solid #d1d0cc', padding: '8px 10px' }}
+                            />
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+                              <button
+                                type="button"
+                                className="btn btn-outline btn-sm"
+                                onClick={() => { setReportTargetSn(inq.inquirySn); setReportOpen(true); }}
+                                style={{ color: '#a32d2d', borderColor: '#e8a0a0', background: '#fcebeb', fontSize: 12 }}
+                              >
+                                신고
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-primary btn-sm"
+                                onClick={() => handleReplySubmit(inq.inquirySn)}
+                                disabled={replySubmitting}
+                              >
+                                {replySubmitting ? '등록 중...' : '답변 등록'}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </li>
+                    );
+                  })}
+                </ul>
+                <Pagination
+                  page={inquiriesPage}
+                  totalPages={Math.ceil(inquiries.length / INQUIRIES_PAGE_SIZE)}
+                  onPageChange={setInquiriesPage}
+                />
+                </>
+              )}
+            </div>
+          </aside>
         </div>
       </div>
 
-      {/* 하단: 구매자 문의 + 수정 내역 */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,2fr) minmax(280px,1fr)', gap: 20, marginTop: 24, marginBottom: 48 }}>
-
-      {/* 구매자 문의 */}
-      <section className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ background: '#eef2fb', padding: '14px 20px' }}>
-          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>구매자 문의</h3>
-        </div>
-        <div style={{ padding: '16px 20px' }}>
-        {inquiries.length === 0 ? (
-          <p className="muted" style={{ padding: '12px 2px', fontSize: 15 }}>등록된 문의가 없습니다.</p>
-        ) : (
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              {/* 왼쪽 화살표 */}
-              <button
-                type="button"
-                onClick={() => { setSlideDir('right'); setInquiryIdx(i => i - 1); }}
-                disabled={inquiryIdx === 0}
-                style={{ flexShrink: 0, width: 40, height: 40, borderRadius: '50%', border: '1px solid #d1d0cc', background: '#fff', fontSize: 22, cursor: inquiryIdx === 0 ? 'not-allowed' : 'pointer', opacity: inquiryIdx === 0 ? 0.3 : 1 }}
-              >
-                ‹
-              </button>
-
-              {/* 문의 카드 */}
-              <div
-                key={inquiryIdx}
-                className={slideDir === 'left' ? 'slide-from-left' : 'slide-from-right'}
-                style={{ flex: 1, border: '1px solid #f0efec', borderRadius: 12, padding: '22px 24px', minHeight: 260 }}
-              >
-                {/* 문의 내용 */}
-                <div style={{ marginBottom: 18 }}>
-                  <p style={{ margin: '0 0 6px', fontSize: 14, color: '#969696' }}>
-                    {currentInquiry.usrNm} · {currentInquiry.regDt}
-                  </p>
-                  <p style={{ margin: 0, fontSize: 18, lineHeight: 1.65 }}>{currentInquiry.content}</p>
-                </div>
-
-                <hr style={{ border: 'none', borderTop: '1px solid #f0efec', margin: '0 0 18px' }} />
-
-                {/* 답변 영역 — 1:1 제한: 이미 답변된 경우 읽기 전용 */}
-                {hasReply ? (
-                  <div style={{ background: '#f8f8f6', borderRadius: 8, padding: '14px 16px' }}>
-                    <p style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 600, color: '#0064ff' }}>판매자 답변</p>
-                    <p style={{ margin: 0, fontSize: 17, lineHeight: 1.65 }}>{currentInquiry.reply}</p>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <textarea
-                      rows={3}
-                      placeholder="답변 내용을 입력해 주세요"
-                      value={replyInput}
-                      onChange={e => setReplyInput(e.target.value)}
-                      style={{ flex: 1, fontSize: 17, resize: 'none', borderRadius: 8, border: '1px solid #d1d0cc', padding: '10px 14px' }}
-                    />
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
-                      <button
-                        type="button"
-                        className="btn btn-outline btn-sm"
-                        onClick={() => setReportOpen(true)}
-                        style={{ color: '#a32d2d', borderColor: '#e8a0a0', background: '#fcebeb' }}
-                      >
-                        신고
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={handleReplySubmit}
-                        disabled={replySubmitting}
-                        style={{ marginTop: 'auto' }}
-                      >
-                        {replySubmitting ? '등록 중...' : '답변 등록'}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* 오른쪽 화살표 */}
-              <button
-                type="button"
-                onClick={() => { setSlideDir('left'); setInquiryIdx(i => i + 1); }}
-                disabled={inquiryIdx === inquiries.length - 1}
-                style={{ flexShrink: 0, width: 40, height: 40, borderRadius: '50%', border: '1px solid #d1d0cc', background: '#fff', fontSize: 22, cursor: inquiryIdx === inquiries.length - 1 ? 'not-allowed' : 'pointer', opacity: inquiryIdx === inquiries.length - 1 ? 0.3 : 1 }}
-              >
-                ›
-              </button>
-            </div>
-
-            <p className="muted small" style={{ textAlign: 'center', marginTop: 12, fontSize: 14 }}>
-              {inquiryIdx + 1} / {inquiries.length}
-            </p>
-          </>
-        )}
-        </div>
-      </section>
-
-      {/* 수정 내역 */}
-      <aside className="card" style={{ minHeight: 260, padding: 0, overflow: 'hidden' }}>
-        <div style={{ background: '#eef2fb', padding: '14px 20px' }}>
-          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>수정 내역</h3>
-        </div>
-        <div style={{ padding: '16px 20px' }}>
-          {comments.length === 0 ? (
-            <p className="muted" style={{ fontSize: 14 }}>등록된 수정 내역이 없습니다.</p>
-          ) : (
-            <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 360, overflowY: 'auto' }}>
-              {comments.map((c, i) => (
-                <li key={c.prdCmtSn} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, paddingBottom: 12, borderBottom: '1px solid #f0efec' }}>
-                  <div style={{ flexShrink: 0, width: 28, height: 28, borderRadius: '50%', background: '#0064ff', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700 }}>
-                    {i + 1}
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <p style={{ margin: '0 0 2px', fontWeight: 600, fontSize: 16 }}>{c.prdCmtTtl}</p>
-                    {c.prdCmtCn && <p style={{ margin: '0 0 4px', fontSize: 14, color: '#5f5e5a', whiteSpace: 'pre-wrap' }}>{c.prdCmtCn}</p>}
-                    <p className="muted small" style={{ margin: 0, fontSize: 13 }}>{new Date(c.prdCmtRegDt).toLocaleDateString('ko-KR')}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </aside>
-
-      </div>{/* /하단 grid */}
+      </div>{/* /blur wrapper */}
+      </div>{/* /취소 안내 오버레이 wrapper */}
 
       <ConfirmModal
         open={reportOpen}
         message="해당 구매자 문의를 신고하시겠습니까?"
-        subMessage="※ 욕설 및 할인 요청 등 불필요한 문의내용이 포함되어 있을때 신고해주세요."
+        subMessage={`"${inquiries.find(i => i.inquirySn === reportTargetSn)?.content ?? ''}" — 욕설 및 할인 요청 등 불필요한 문의내용이 포함되어 있을때 신고해주세요.`}
         confirmLabel="신고하기"
-        onConfirm={() => { setReportOpen(false); setToast('신고가 접수되었습니다.'); }}
-        onCancel={() => setReportOpen(false)}
+        onConfirm={() => { setReportOpen(false); setReportTargetSn(null); setToast('신고가 접수되었습니다.'); }}
+        onCancel={() => { setReportOpen(false); setReportTargetSn(null); }}
       />
 
       {/* 경매 취소 요청 모달 (F-AUC-008) */}
@@ -531,6 +615,7 @@ export default function ProductDetailSellerPage() {
       </div>
 
       {toast && <Toast message={toast} onClose={() => setToast('')} />}
+      <AlertModal open={!!alertMsg} message={alertMsg} onClose={() => setAlertMsg('')} />
     </main>
   );
 }

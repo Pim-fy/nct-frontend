@@ -8,6 +8,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { getCategories } from '@api/categoryApi';
 import { registerServiceRequest, updateServiceRequest, getServiceRequest } from '@api/serviceRequestApi';
 import ErrorMessage from '@components/common/ErrorMessage';
+import AlertModal from '@components/common/AlertModal';
 import { WIZARD_STEPS, CATEGORY_NEXT_STEP, CATEGORY_META } from './serviceRequestWizardSteps';
 
 const SERVICE_DOMAIN_CD = 'CATC0002';
@@ -109,8 +110,8 @@ export default function ServiceRequestFormPage() {
 
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [errorTick, setErrorTick] = useState(0);
+  const [error, setError] = useState(''); // 카테고리·기존 요청서 로딩 실패 등 페이지 상단 배너용
+  const [alertMsg, setAlertMsg] = useState(''); // 유효성 검증·제출 실패 등 화면 중앙 알림 모달(AlertModal)용
   const [submitted, setSubmitted] = useState(false);
   const errorRef = useRef(null);
 
@@ -206,7 +207,7 @@ export default function ServiceRequestFormPage() {
     if (error && errorRef.current) {
       errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }, [error, errorTick]);
+  }, [error]);
 
   // 새 단계 카드가 추가될 때만 그 위치로 스크롤 (매 렌더마다 스크롤되면 입력 중 커서가 튐)
   useEffect(() => {
@@ -282,8 +283,7 @@ export default function ServiceRequestFormPage() {
     const step = WIZARD_STEPS[stepId];
     const text = (freeTextDraft[`${stepId}:${ETC}`] || '').trim();
     if (!text) {
-      setError('기타 내용을 입력해 주세요.');
-      setErrorTick(t => t + 1);
+      setAlertMsg('기타 내용을 입력해 주세요.');
       return;
     }
     const option = step.options.find(o => o.label === ETC);
@@ -305,13 +305,11 @@ export default function ServiceRequestFormPage() {
     const step = WIZARD_STEPS[stepId];
     const picked = stepDraft[stepId] || [];
     if (picked.length === 0) {
-      setError('한 개 이상 선택해 주세요.');
-      setErrorTick(t => t + 1);
+      setAlertMsg('한 개 이상 선택해 주세요.');
       return;
     }
     if (picked.includes(ETC) && !(freeTextDraft[`${stepId}:${ETC}`] || '').trim()) {
-      setError('기타 내용을 입력해 주세요.');
-      setErrorTick(t => t + 1);
+      setAlertMsg('기타 내용을 입력해 주세요.');
       return;
     }
     const kept = truncateAfter(stepId);
@@ -329,22 +327,19 @@ export default function ServiceRequestFormPage() {
     const values = stepDraft[stepId] || {};
     const missingRequired = step.fields.find(f => f.required && !(values[f.key] || '').toString().trim());
     if (missingRequired) {
-      setError(`${missingRequired.key}을(를) 입력해 주세요.`);
-      setErrorTick(t => t + 1);
+      setAlertMsg(`${missingRequired.key}을(를) 입력해 주세요.`);
       return;
     }
     const missingDigit = step.fields.find(f => f.requireDigit && !/\d/.test((values[f.key] || '').toString()));
     if (missingDigit) {
-      setError(`${missingDigit.key}에 숫자를 포함해 입력해 주세요.`);
-      setErrorTick(t => t + 1);
+      setAlertMsg(`${missingDigit.key}에 숫자를 포함해 입력해 주세요.`);
       return;
     }
     const etcFieldMissingText = step.fields.some(
       f => f.type === 'choice' && values[f.key] === ETC && !(freeTextDraft[`${stepId}:${f.key}`] || '').trim()
     );
     if (etcFieldMissingText) {
-      setError('기타 내용을 입력해 주세요.');
-      setErrorTick(t => t + 1);
+      setAlertMsg('기타 내용을 입력해 주세요.');
       return;
     }
     const vals = step.fields
@@ -366,11 +361,9 @@ export default function ServiceRequestFormPage() {
   const validateBasic = () => {
     setSubmitted(true);
     if (!title.trim() || !selectedCategory) {
-      setError('요청 제목과 카테고리를 모두 입력해 주세요.');
-      setErrorTick(t => t + 1);
+      setAlertMsg('요청 제목과 카테고리를 모두 입력해 주세요.');
       return false;
     }
-    setError('');
     return true;
   };
 
@@ -397,7 +390,6 @@ export default function ServiceRequestFormPage() {
   };
 
   const submit = async (statusCd) => {
-    setError('');
     setLoading(true);
     try {
       const payload = buildPayload(statusCd);
@@ -408,8 +400,7 @@ export default function ServiceRequestFormPage() {
       navigate(`/service-requests/${svcReqSn}`);
     } catch (err) {
       const msg = err.response?.data?.message;
-      setError(msg || (editSvcReqSn ? '요청서 수정에 실패했습니다.' : '요청서 등록에 실패했습니다.'));
-      setErrorTick(t => t + 1);
+      setAlertMsg(msg || (editSvcReqSn ? '요청서 수정에 실패했습니다.' : '요청서 등록에 실패했습니다.'));
     } finally {
       setLoading(false);
     }
@@ -419,8 +410,7 @@ export default function ServiceRequestFormPage() {
   const handlePublish = () => {
     if (!validateBasic()) return;
     if (!isComplete) {
-      setError('모든 단계를 마쳐야 요청서를 공개할 수 있어요. 진행 중이라면 임시저장을 이용해 주세요.');
-      setErrorTick(t => t + 1);
+      setAlertMsg('모든 단계를 마쳐야 요청서를 공개할 수 있어요. 진행 중이라면 임시저장을 이용해 주세요.');
       return;
     }
     submit('SVCC0002');
@@ -643,6 +633,8 @@ export default function ServiceRequestFormPage() {
           </button>
         </div>
       </div>
+
+      <AlertModal open={!!alertMsg} message={alertMsg} onClose={() => setAlertMsg('')} />
     </main>
   );
 }
