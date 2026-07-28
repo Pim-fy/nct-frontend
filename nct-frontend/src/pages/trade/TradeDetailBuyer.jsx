@@ -35,14 +35,14 @@ const statusInfo = {
     className: 'trade-status--progress',
   },
   CONFIRM_PENDING: {
-    label: '상대 확인 대기',
-    description: '완료 확인 요청을 보냈습니다. 상대방 확인 또는 무이의 5일 경과 후 거래가 완료됩니다.',
+    label: '판매자 확인 대기',
+    description: '판매자의 완료 확인 또는 무이의 기간 경과 후 거래가 완료됩니다.',
     step: 1,
     className: 'trade-status--pending',
   },
   WAITING_CONFIRMATION: {
-    label: '상대 확인 대기',
-    description: '완료 확인 요청을 보냈습니다. 상대방 확인 또는 무이의 5일 경과 후 거래가 완료됩니다.',
+    label: '판매자 확인 대기',
+    description: '판매자의 완료 확인 또는 무이의 기간 경과 후 거래가 완료됩니다.',
     step: 1,
     className: 'trade-status--pending',
   },
@@ -85,6 +85,8 @@ const TradeDetailBuyer = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notice, setNotice] = useState('');
   const [deliveryProofUrls, setDeliveryProofUrls] = useState([]);
+  const [selectedDeliveryProofIndex, setSelectedDeliveryProofIndex] = useState(null);
+  const [isCompletionResultOpen, setIsCompletionResultOpen] = useState(false);
   const isPreview = pathname.startsWith('/trades/preview');
   const chatPath = isPreview
     ? `/trades/preview/${tradeId}/chat`
@@ -139,6 +141,7 @@ const TradeDetailBuyer = () => {
   useEffect(() => {
     if (!trade?.deliveryId || !trade.deliveryProofFiles.length) {
       setDeliveryProofUrls([]);
+      setSelectedDeliveryProofIndex(null);
       return undefined;
     }
 
@@ -177,7 +180,18 @@ const TradeDetailBuyer = () => {
   }, [trade?.deliveryId, trade?.deliveryProofFiles]);
 
   const currentStatus = statusInfo[trade?.status] ?? unknownStatus;
+  const selectedDeliveryProof = selectedDeliveryProofIndex === null
+    ? null
+    : deliveryProofUrls[selectedDeliveryProofIndex] ?? null;
   const isInProgress = currentStatus.step === 0;
+  // 구매자는 진행 중 첫 확인을 시작하거나, 판매자가 먼저 요청한 확인에 응답할 수 있다.
+  const canRequestBuyerCompletion = (
+    isInProgress
+    || (
+      ['CONFIRM_PENDING', 'WAITING_CONFIRMATION'].includes(trade?.status)
+      && trade?.completionRequestedBy === 'SELLER'
+    )
+  );
   const hasMeetingSchedule = (
     trade?.meetingDate !== '-'
     && trade?.meetingTime !== '-'
@@ -189,9 +203,9 @@ const TradeDetailBuyer = () => {
     && !hasMeetingSchedule
   );
 
-  // 거래 완료 동의와 진행 중 상태가 모두 충족될 때만 완료 요청을 허용한다.
+  // 거래 완료 동의와 본인 확인 순서가 모두 충족될 때만 완료 요청을 허용한다.
   const canRequestCompletion = () => {
-    if (!isInProgress) {
+    if (!canRequestBuyerCompletion) {
       return false;
     }
 
@@ -207,12 +221,18 @@ const TradeDetailBuyer = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await requestTradeCompletion(tradeId);
+      const response = await requestTradeCompletion(tradeId, 'BUYER');
+      const updatedTrade = toTradeDetail(response);
 
       // 서버가 계산한 자동완료 시각까지 다시 반영해 브라우저 시간과 어긋나지 않게 한다.
-      setTrade(toTradeDetail(response));
+      setTrade(updatedTrade);
       setCompletionAgreed(false);
-      setNotice('거래 완료 확인 요청을 보냈습니다.');
+      setIsCompletionResultOpen(true);
+      setNotice(
+        updatedTrade.status === 'COMPLETED'
+          ? '판매자와 구매자의 완료 확인이 모두 끝나 거래가 완료되었습니다.'
+          : '거래 완료 확인을 보냈습니다. 판매자의 확인을 기다려 주세요.',
+      );
     } catch {
       setNotice('거래 완료 확인 요청에 실패했습니다. 다시 시도해 주세요.');
     } finally {
@@ -257,7 +277,7 @@ const TradeDetailBuyer = () => {
         </header>
 
         <ol className="trade-progress" aria-label="거래 진행 단계">
-          {['배송·직거래중', '상대 확인 대기', '완료'].map((step, index) => (
+          {['배송·직거래중', '판매자 확인 대기', '완료'].map((step, index) => (
             <li
               className={`trade-progress__item ${
                 currentStatus.step === index ? 'trade-progress__item--active' : ''
@@ -311,11 +331,17 @@ const TradeDetailBuyer = () => {
                   <strong>판매자 발송 인증사진</strong>
                   <div>
                     {deliveryProofUrls.map((file, index) => (
-                      <img
+                      <button
+                        className="trade-delivery-proof-gallery__item"
                         key={file.fileId}
-                        src={file.objectUrl}
-                        alt={`판매자 발송 인증 사진 ${index + 1}`}
-                      />
+                        type="button"
+                        onClick={() => setSelectedDeliveryProofIndex(index)}
+                      >
+                        <img
+                          src={file.objectUrl}
+                          alt={`판매자 발송 인증 사진 ${index + 1} 크게 보기`}
+                        />
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -372,7 +398,9 @@ const TradeDetailBuyer = () => {
             {hasMeetingSchedule && (
               <div className="trade-detail-actions">
                 <Link className="btn btn-outline" to={chatPath}>
-                  거래 채팅
+                  {trade.status === 'COMPLETED'
+                    ? '거래 채팅 기록 보기'
+                    : '거래 채팅'}
                 </Link>
               </div>
             )}
@@ -384,17 +412,19 @@ const TradeDetailBuyer = () => {
             <h2>거래 완료 확인</h2>
             <div className="trade-auto-complete">
               <strong>
-                {isInProgress ? '완료 확인 요청 전' : currentStatus.label}
+                {trade.status === 'COMPLETED'
+                  ? '거래 완료'
+                  : '판매자 확인 대기'}
               </strong>
               <p>
                 {trade.autoCompleteAt !== '-'
-                  ? `${trade.autoCompleteAt} 이후 상대 확인이나 거래 문제 접수가 없으면 자동 완료됩니다.`
-                  : '거래가 완료되었다면 상대방에게 완료 확인을 요청할 수 있습니다.'}
+                  ? `${trade.autoCompleteAt}까지 양쪽 확인이 완료되지 않으면 자동 완료됩니다.`
+                  : '거래가 완료되었다면 판매자와 서로 완료 확인을 진행해 주세요.'}
               </p>
             </div>
 
-            {/* 완료 요청 전 단계에서만 구매자의 완료 동의를 받는다. */}
-            {isInProgress && (
+            {/* 첫 요청 또는 판매자 요청에 대한 응답일 때만 구매자의 완료 동의를 받는다. */}
+            {canRequestBuyerCompletion && (
               <>
                 <label className="trade-complete-card__check">
                   <input
@@ -411,7 +441,7 @@ const TradeDetailBuyer = () => {
             )}
 
             <div className="trade-detail-actions">
-              {isInProgress && (
+              {canRequestBuyerCompletion && (
                 <button
                   className="btn btn-primary"
                   type="button"
@@ -425,6 +455,98 @@ const TradeDetailBuyer = () => {
           </section>
         )}
       </div>
+
+      {selectedDeliveryProof && (
+        <div
+          className="trade-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label="발송 인증 사진 크게 보기"
+        >
+          <div className="trade-modal__content trade-image-modal">
+            <div className="trade-modal__header">
+              <h2>발송 인증 사진</h2>
+              <button
+                className="trade-modal__close"
+                type="button"
+                onClick={() => setSelectedDeliveryProofIndex(null)}
+                aria-label="사진 크게 보기 닫기"
+              >
+                ×
+              </button>
+            </div>
+            <img
+              src={selectedDeliveryProof.objectUrl}
+              alt="판매자 발송 인증 사진 크게 보기"
+            />
+            {deliveryProofUrls.length > 1 && (
+              <div className="trade-image-modal__navigation">
+                <button
+                  className="btn btn-outline"
+                  type="button"
+                  onClick={() => setSelectedDeliveryProofIndex((currentIndex) => (
+                    currentIndex === 0
+                      ? deliveryProofUrls.length - 1
+                      : currentIndex - 1
+                  ))}
+                >
+                  ← 이전 사진
+                </button>
+                <span>
+                  {selectedDeliveryProofIndex + 1} / {deliveryProofUrls.length}
+                </span>
+                <button
+                  className="btn btn-outline"
+                  type="button"
+                  onClick={() => setSelectedDeliveryProofIndex((currentIndex) => (
+                    currentIndex === deliveryProofUrls.length - 1
+                      ? 0
+                      : currentIndex + 1
+                  ))}
+                >
+                  다음 사진 →
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {isCompletionResultOpen && (
+        <div
+          className="trade-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label="거래 완료 확인 요청 안내"
+        >
+          <div className="trade-modal__content">
+            <div className="trade-modal__header">
+              <h2>완료 확인 요청을 보냈습니다</h2>
+              <button
+                className="trade-modal__close"
+                type="button"
+                onClick={() => setIsCompletionResultOpen(false)}
+                aria-label="완료 확인 요청 안내 닫기"
+              >
+                ×
+              </button>
+            </div>
+            <p>
+              판매자 확인 또는 무이의 기간 경과 후 거래가 완료됩니다.
+              현재 거래 상태는 판매자 확인 대기입니다.
+            </p>
+            <div className="trade-modal__actions">
+              <button
+                className="btn btn-primary"
+                type="button"
+                onClick={() => setIsCompletionResultOpen(false)}
+              >
+                거래 상세에서 확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {notice && <Toast message={notice} onClose={() => setNotice('')} />}
     </div>
