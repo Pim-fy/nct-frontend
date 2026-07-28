@@ -90,6 +90,14 @@ export default function ProductRegisterPage() {
   const suppressRangeResetRef = useRef(hasCachedDraft);
   // 제출 성공 후에는 캐시 동기화 effect가 다시 draftCache를 채우지 않도록 막는 플래그
   const submittedRef = useRef(false);
+  const imgSectionRef = useRef(null);
+  const prdNmRef = useRef(null);
+  const catRef = useRef(null);
+  const tradeRef = useRef(null);
+  const startAmtRef = useRef(null);
+  const ibyAmtRef = useRef(null);
+  const auctionRangeRef = useRef(null);
+  const policyRef = useRef(null);
 
   // ─── 폼 입력값 ───────────────────────────────────────────────────────────
   const [form, setForm] = useState(() => hasCachedDraft ? draftCache.form : {
@@ -162,22 +170,8 @@ export default function ProductRegisterPage() {
               setImages(p.imageList.map(img => ({ id: img.flSn, flSn: img.flSn, url: img.url, file: null })));
             }
 
-            // 상품입력 탭 필수값이 저장 시점에 이미 다 채워져 있었고 경매정책 동의까지 돼 있었다면,
-            // 재개했을 때 다시 처음부터 채우게 하지 않고 바로 등록확인 탭을 보여준다.
-            const bidUnit = p.prdDraftBidUnit != null ? Number(p.prdDraftBidUnit) : 1000;
-            const stepZeroComplete =
-              !!p.prdNm?.trim() &&
-              p.catSn != null &&
-              !!p.prdTrdMethodCd &&
-              p.prdStartAmt != null &&
-              p.prdDraftEndDt != null &&
-              Number(p.prdStartAmt) % bidUnit === 0 &&
-              (p.prdIbyAmt == null || Number(p.prdIbyAmt) % bidUnit === 0) &&
-              p.prdDraftPolicyAgreedYn === 'Y';
-
-            if (stepZeroComplete) {
+            if (p.prdDraftPolicyAgreedYn === 'Y') {
               setPolicyAgreed(true);
-              setStep(1);
             }
           })
           .catch(() => setError('기존 상품 정보를 불러오지 못했습니다.'))
@@ -187,6 +181,8 @@ export default function ProductRegisterPage() {
     Promise.all(loads);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => { window.scrollTo(0, 0); }, []);
 
   useEffect(() => {
     if (error && errorRef.current) {
@@ -309,30 +305,43 @@ export default function ProductRegisterPage() {
       return false;
     };
     if (!form.prdNm.trim()) {
+      prdNmRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail('상품명을 입력해 주세요.');
     }
     if (!form.catSn) {
+      catRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail('카테고리를 선택해 주세요.');
     }
     if (!form.prdTrdMethodCd) {
+      tradeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail('거래 형태를 선택해 주세요.');
     }
     if (bannedKeywordError) {
+      prdNmRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail(bannedKeywordError);
     }
+    if (images.length === 0) {
+      imgSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return fail('상품 사진을 1개 이상 등록해 주세요.');
+    }
     if (!form.prdStartAmt) {
+      startAmtRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail('시작가를 입력해 주세요.');
     }
     if (!auctionRange.end) {
+      auctionRangeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail('경매 기간을 지정해 주세요.');
     }
     if (Number(form.prdStartAmt) % form.bidUnit !== 0) {
+      startAmtRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail(`시작가는 입찰 단위(${form.bidUnit.toLocaleString()}원)의 배수로 입력해 주세요.`);
     }
     if (form.prdIbyAmt && Number(form.prdIbyAmt) % form.bidUnit !== 0) {
+      ibyAmtRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail(`즉시구매가는 입찰 단위(${form.bidUnit.toLocaleString()}원)의 배수로 입력해 주세요.`);
     }
     if (requirePolicyAgreed && !policyAgreed) {
+      policyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail('경매 정책을 확인하고 동의해 주세요.');
     }
     setError('');
@@ -415,6 +424,11 @@ export default function ProductRegisterPage() {
                 tradeMethods={TRADE_METHODS}
                 maxImages={MAX_IMAGES}
                 pendingDescFilesMap={pendingDescFilesMap}
+                submitted={submitted}
+                imgSectionRef={imgSectionRef}
+                prdNmRef={prdNmRef}
+                catRef={catRef}
+                tradeRef={tradeRef}
               />
             </div>
           </section>
@@ -434,6 +448,10 @@ export default function ProductRegisterPage() {
                 endDt={endDt}
                 bidUnits={BID_UNITS}
                 submitted={submitted}
+                startAmtRef={startAmtRef}
+                ibyAmtRef={ibyAmtRef}
+                auctionRangeRef={auctionRangeRef}
+                policyRef={policyRef}
               />
             </div>
           </section>

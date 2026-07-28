@@ -40,6 +40,7 @@ export default function AuctionSettingStep({
   form, set, policyAgreed, setPolicyAgreed,
   auctionRange, setAuctionRange, endDt,
   bidUnits, submitted,
+  startAmtRef, ibyAmtRef, auctionRangeRef, policyRef,
 }) {
   const [startAmtTouched, setStartAmtTouched] = useState(false);
   const startAmtInvalid = !!form.prdStartAmt && Number(form.prdStartAmt) % form.bidUnit !== 0;
@@ -73,7 +74,7 @@ export default function AuctionSettingStep({
   return (
     <div>
       <div className="grid grid-cols-2 gap-4">
-        <div className="field">
+        <div className="field" ref={startAmtRef}>
           <label>시작가</label>
           <div style={{ position: 'relative' }}>
             <input
@@ -97,7 +98,7 @@ export default function AuctionSettingStep({
             )}
           </div>
         </div>
-        <div className="field">
+        <div className="field" ref={ibyAmtRef}>
           <label>즉시구매가 <span style={{ fontWeight: 500, color: '#888780' }}>(백 단위 자동절삭)</span></label>
           <input
             className="input no-spinner"
@@ -147,7 +148,7 @@ export default function AuctionSettingStep({
         </div>
       </div>
 
-      <div className="field">
+      <div className="field" ref={auctionRangeRef}>
         <label>경매 기간</label>
         <div style={{ position: 'relative' }}>
         <DateRangePicker
@@ -197,7 +198,7 @@ export default function AuctionSettingStep({
         </p>
       </div>
 
-      <div className="card" style={{ background: '#e5efff', border: 'none', marginTop: 16 }}>
+      <div className="card" ref={policyRef} style={{ background: '#e5efff', border: 'none', marginTop: 16 }}>
         <h4 style={{ marginTop: 0, color: '#0048bf' }}>경매 정책 안내</h4>
         <ul style={{ margin: 0, paddingLeft: 18, fontSize: 16, lineHeight: 2 }}>
           <li>마감 10분 이내 유효 입찰 시 잔여 시간이 10분으로 자동 연장됩니다 (1회)</li>

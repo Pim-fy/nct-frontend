@@ -17,7 +17,6 @@ import ConfirmModal from '@components/common/ConfirmModal';
 import Pagination from '@components/common/Pagination';
 
 const CANCEL_REASONS = ['상품 상태 변경', '상품 정보 오류', '판매 진행 불가', '기타'];
-const COMMENTS_PAGE_SIZE = 3;
 const INQUIRIES_PAGE_SIZE = 4;
 // 답변 등록 후 수정 가능한 시간 — 백엔드 ProductService.REPLY_EDIT_WINDOW_MINUTES와 동일해야 함
 const REPLY_EDIT_WINDOW_MS = 10 * 60 * 1000;
@@ -66,7 +65,6 @@ export default function ProductDetailSellerPage() {
   const [favoriteCount, setFavoriteCount] = useState(null);
 
   const [comments, setComments]         = useState([]);
-  const [commentsPage, setCommentsPage] = useState(1);
   const [cmtTtl, setCmtTtl]             = useState('');
   const [cmtCn, setCmtCn]               = useState('');
   const [cmtSubmitting, setCmtSubmitting] = useState(false);
@@ -384,7 +382,10 @@ export default function ProductDetailSellerPage() {
               <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>상품 변경 사항 추가</h3>
             </div>
             <div style={{ padding: '16px 20px' }}>
-              {isActive && (
+              {isActive && comments.length >= 3 && (
+                <p className="muted" style={{ fontSize: 14, margin: 0 }}>변경 내역은 최대 3개까지 등록할 수 있습니다.</p>
+              )}
+              {isActive && comments.length < 3 && (
                 <div style={{ marginBottom: 8 }}>
                   <input
                     type="text"
@@ -424,31 +425,20 @@ export default function ProductDetailSellerPage() {
               {comments.length === 0 ? (
                 <p className="muted" style={{ fontSize: 14 }}>등록된 수정 내역이 없습니다.</p>
               ) : (
-                <>
-                  <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
-                    {comments
-                      .slice((commentsPage - 1) * COMMENTS_PAGE_SIZE, commentsPage * COMMENTS_PAGE_SIZE)
-                      .map((c, i) => (
-                        <li key={c.prdCmtSn} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, paddingBottom: 4, borderBottom: '1px solid #f0efec' }}>
-                          <div style={{ flexShrink: 0, width: 28, height: 28, borderRadius: '50%', background: '#0064ff', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700 }}>
-                            {(commentsPage - 1) * COMMENTS_PAGE_SIZE + i + 1}
-                          </div>
-                          <div style={{ minWidth: 0 }}>
-                            <p style={{ margin: '0 0 2px', fontWeight: 600, fontSize: 16 }}>{c.prdCmtTtl}</p>
-                            {c.prdCmtCn && <p style={{ margin: '0 0 4px', fontSize: 14, color: '#5f5e5a', whiteSpace: 'pre-wrap' }}>{c.prdCmtCn}</p>}
-                            <p className="muted small" style={{ margin: 0, fontSize: 13 }}>{new Date(c.prdCmtRegDt).toLocaleDateString('ko-KR')}</p>
-                          </div>
-                        </li>
-                      ))}
+                <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {comments.map((c, i) => (
+                      <li key={c.prdCmtSn} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, paddingBottom: 4, borderBottom: '1px solid #f0efec' }}>
+                        <div style={{ flexShrink: 0, width: 28, height: 28, borderRadius: '50%', background: '#0064ff', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700 }}>
+                          {i + 1}
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ margin: '0 0 2px', fontWeight: 600, fontSize: 16 }}>{c.prdCmtTtl}</p>
+                          {c.prdCmtCn && <p style={{ margin: '0 0 4px', fontSize: 14, color: '#5f5e5a', whiteSpace: 'pre-wrap' }}>{c.prdCmtCn}</p>}
+                          <p className="muted small" style={{ margin: 0, fontSize: 13 }}>{new Date(c.prdCmtRegDt).toLocaleDateString('ko-KR')}</p>
+                        </div>
+                      </li>
+                    ))}
                   </ul>
-                  <div style={{ margin: '-16px 0' }}>
-                    <Pagination
-                      page={commentsPage}
-                      totalPages={Math.ceil(comments.length / COMMENTS_PAGE_SIZE)}
-                      onPageChange={setCommentsPage}
-                    />
-                  </div>
-                </>
               )}
             </div>
           </aside>

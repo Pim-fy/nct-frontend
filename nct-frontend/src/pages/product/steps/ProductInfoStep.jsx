@@ -4,10 +4,10 @@
 import ProductImageUpload from '@components/product/ProductImageUpload';
 import RichTextEditor from '@components/product/RichTextEditor';
 
-export default function ProductInfoStep({ form, set, categories, bannedKeywordError, images, onChange, tradeMethods, maxImages, pendingDescFilesMap }) {
+export default function ProductInfoStep({ form, set, categories, bannedKeywordError, images, onChange, tradeMethods, maxImages, pendingDescFilesMap, submitted, imgSectionRef, prdNmRef, catRef, tradeRef }) {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      <div className="field">
+      <div className="field" ref={prdNmRef}>
         <label>상품명 <span>{form.prdNm.length}/100</span></label>
         <input
           className="input"
@@ -24,7 +24,7 @@ export default function ProductInfoStep({ form, set, categories, bannedKeywordEr
         )}
       </div>
 
-      <div className="field">
+      <div className="field" ref={catRef}>
         <label>카테고리</label>
         <div className="row" style={{ flexWrap: 'wrap' }}>
           {categories.map(cat => (
@@ -40,7 +40,7 @@ export default function ProductInfoStep({ form, set, categories, bannedKeywordEr
         </div>
       </div>
 
-      <div className="field deal-options">
+      <div className="field deal-options" ref={tradeRef}>
         <label>거래 형태</label>
         <div className="row">
           {tradeMethods.map(({ value, label, Icon }) => (
@@ -68,7 +68,13 @@ export default function ProductInfoStep({ form, set, categories, bannedKeywordEr
       </div>
 
       {/* 이미지 업로드 (F-AUC-002) — 선택 시엔 로컬 미리보기만, 첫 장이 대표이미지 */}
-      <ProductImageUpload images={images} onChange={onChange} maxImages={maxImages} />
+      <div ref={imgSectionRef}>
+        <label>상품 사진 <span style={{ color: '#c0392b' }}>*</span></label>
+        <ProductImageUpload images={images} onChange={onChange} maxImages={maxImages} />
+        {submitted && images.length === 0 && (
+          <p style={{ margin: '4px 0 0', fontSize: 15, fontWeight: 700, color: '#c0392b' }}>상품 사진을 1개 이상 등록해 주세요.</p>
+        )}
+      </div>
     </div>
   );
 }
