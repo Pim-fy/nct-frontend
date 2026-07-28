@@ -30,7 +30,7 @@ const GENERAL_MENU_ITEMS = [
       { key: "service-sales", label: "서비스 판매 내역", type: "todo" },
     ],
   },
-  { key: "wishlist", label: "관심 상품",   type: "todo" },
+  { key: "wishlist", label: "관심 상품",   type: "section" },
   { key: "chat",     label: "채팅",        type: "section" },
   { key: "wallet",   label: "포인트 지갑", type: "section" },
 ];

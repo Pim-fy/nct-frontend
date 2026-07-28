@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft } from 'lucide-react';
 import {
   addAuctionFavorite,
   buyNowAuction,
@@ -10,18 +9,22 @@ import {
   placeAuctionBid,
   removeAuctionFavorite,
 } from '@api/auctionApi';
-import { toImageUrl } from '@api/fileApi';
 import { useAuth } from '@hooks/useAuth';
 import { useAuctionStream } from '@hooks/useAuctionStream';
 import { useAuctionViewTracking } from '@hooks/useAuctionViewTracking';
 import useCountdown from '@hooks/useCountdown';
 import { usePointBalance } from '@hooks/usePoint';
+import { AuctionDetailSkeleton } from '@components/skeleton/AuctionSkeletons';
 import AuctionBidPanel from './components/AuctionBidPanel';
 import AuctionBuyNowModal from './components/AuctionBuyNowModal';
 import AuctionImageGallery, { AuctionPreviewRail } from './components/AuctionImageGallery';
-import AuctionInfoGrid from './components/AuctionInfoGrid';
+import {
+  AuctionProductDescriptionSection,
+  AuctionSellerInformationSection,
+} from './components/AuctionInfoGrid';
 import AuctionInquirySection from './components/AuctionInquirySection';
 import AuctionProductUpdateSection from './components/AuctionProductUpdateSection';
+import AuctionSellerHistory from './components/AuctionSellerHistory';
 import AuctionToast from './components/AuctionToast';
 import {
   createImageItems,
@@ -32,16 +35,16 @@ import {
   parseAmount,
   resolveAuctionResultLabel,
 } from './utils/auctionFormatters';
-import { addRecentItem } from '@components/landing/QuickActions';
+import { addRecentAuction } from '@utils/recentAuctions';
 
-const DETAIL_PAGE_CLASS = 'bg-white pb-14 text-[#1d1d1f]';
-const DETAIL_CONTAINER_CLASS = 'mx-auto w-[calc(100%_-_52px)] max-w-[1600px] max-lg:w-[calc(100%_-_32px)] max-sm:w-[calc(100%_-_24px)]';
+const DETAIL_PAGE_CLASS = 'bg-white pb-14 text-base leading-[1.6] text-[#1d1d1f]';
+const DETAIL_CONTAINER_CLASS = 'mx-auto w-full max-w-[1600px] px-4 lg:px-6';
 const DETAIL_EMPTY_CLASS = 'grid min-h-[340px] place-content-center justify-items-center gap-2.5 rounded-lg border border-[#e8e8e8] bg-[#f8f8f6] p-7 text-center';
 const DETAIL_SECTION_ITEMS = [
   { id: 'auction-product-description', label: '상품설명' },
-  { id: 'auction-seller-information', label: '판매자 정보' },
+  { id: 'auction-product-updates', label: '변경 내역' },
   { id: 'auction-product-inquiries', label: '상품문의' },
-  { id: 'auction-product-updates', label: '수정 내역' },
+  { id: 'auction-seller-information', label: '판매자 정보' },
 ];
 
 const AuctionDetailPage = () => {
@@ -63,6 +66,7 @@ const AuctionDetailPage = () => {
   const [imageNavigationCommand, setImageNavigationCommand] = useState(null);
   const requestedImageIndexRef = useRef(null);
   const imageNavigationIdRef = useRef(0);
+  const trackedRecentAuctionIdRef = useRef(null);
   const requestedDetailSectionIdRef = useRef(null);
   const detailSectionUnlockTimerRef = useRef(null);
   const detailNavigationRef = useRef(null);
@@ -73,6 +77,10 @@ const AuctionDetailPage = () => {
     ? requestedReturnPath
     : '/auction';
   const returnLabel = returnPath === '/auction' ? '경매 목록' : '이전 목록';
+
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [auctionId]);
 
   const detailQueryKey = useMemo(
     () => ['auctionDetail', auctionId, authenticatedUserId ?? 'anonymous'],
@@ -163,6 +171,7 @@ const AuctionDetailPage = () => {
       : addAuctionFavorite(auctionId)),
     onSuccess: (status) => {
       applyFavoriteStatus(status);
+      queryClient.invalidateQueries({ queryKey: ['auctionFavorites'] });
       showToast(status.favorite ? '관심 상품에 추가되었습니다' : '관심 상품에서 해제되었습니다');
     },
     onError: (error) => showToast(getErrorMessage(error)),
@@ -176,15 +185,18 @@ const AuctionDetailPage = () => {
 
   useEffect(() => {
     if (!auction) return;
-    const repImage = auction.images?.find((img) => img.representative) ?? auction.images?.[0];
-    const imageUrl = repImage?.path ? toImageUrl(repImage.path) : null;
-    if (!imageUrl) return;
-    addRecentItem({
-      id: auctionId,
-      image: imageUrl,
+    const resolvedAuctionId = String(auction.auctionId ?? auctionId);
+    if (trackedRecentAuctionIdRef.current === resolvedAuctionId) return;
+
+    const repImage = auction.images?.find(
+      (image) => image.representative === 'Y' || image.representative === true,
+    ) ?? auction.images?.[0];
+    addRecentAuction({
+      auctionId: resolvedAuctionId,
+      imagePath: repImage?.path ?? null,
       title: auction.title,
-      url: `/auction/${auctionId}`,
     });
+    trackedRecentAuctionIdRef.current = resolvedAuctionId;
   }, [auction, auctionId]);
 
   useEffect(() => {
@@ -277,15 +289,7 @@ const AuctionDetailPage = () => {
   }, [auction?.productId]);
 
   if (isAuthLoading || isLoading) {
-    return (
-      <main className={DETAIL_PAGE_CLASS}>
-        <div className={DETAIL_CONTAINER_CLASS}>
-          <div className={DETAIL_EMPTY_CLASS}>
-            <strong className="text-lg">경매 상세 정보를 불러오는 중입니다.</strong>
-          </div>
-        </div>
-      </main>
-    );
+    return <AuctionDetailSkeleton />;
   }
 
   if (isError || !auction) {
@@ -293,7 +297,7 @@ const AuctionDetailPage = () => {
       <main className={DETAIL_PAGE_CLASS}>
         <div className={DETAIL_CONTAINER_CLASS}>
           <div className={DETAIL_EMPTY_CLASS}>
-            <strong className="text-lg">경매 상세 정보를 불러오지 못했습니다.</strong>
+            <strong className="text-xl leading-[1.4]">경매 상세 정보를 불러오지 못했습니다.</strong>
             <Link className="inline-flex items-center gap-1.5 font-extrabold text-primary no-underline" to={returnPath}>
               {returnLabel}으로 돌아가기
             </Link>
@@ -515,18 +519,7 @@ const AuctionDetailPage = () => {
     <>
       <main className={DETAIL_PAGE_CLASS}>
         <div className={DETAIL_CONTAINER_CLASS}>
-          <Link
-            className="mt-[34px] inline-flex w-fit items-center gap-1.5 text-sm font-bold text-[#666] no-underline transition-colors hover:text-primary-dark"
-            to={returnPath}
-          >
-            <ChevronLeft size={18} aria-hidden="true" />
-            {returnLabel}
-          </Link>
-          <h1 className="mt-[18px] mb-3.5 text-[30px] leading-tight font-bold text-[#1d1d1f] max-lg:mt-4 max-lg:text-[26px] max-sm:text-[22px]">
-            {auction.title}
-          </h1>
-
-          <section className="grid items-stretch gap-2 lg:grid-cols-[minmax(360px,0.78fr)_minmax(560px,1.22fr)]">
+          <section className="mt-[34px] grid items-stretch gap-2 lg:grid-cols-[minmax(360px,0.78fr)_minmax(560px,1.22fr)] max-lg:mt-4">
             <div className="grid min-h-[498px] min-w-0 grid-rows-[minmax(0,1fr)_auto] gap-2 max-lg:min-h-0">
               <AuctionImageGallery
                 auction={auction}
@@ -594,7 +587,7 @@ const AuctionDetailPage = () => {
               const isActive = activeDetailSectionId === id;
               return (
                 <button
-                  className={`relative inline-flex h-full cursor-pointer items-center justify-center border-x-0 border-t-0 border-b-[3px] bg-white px-2 text-sm font-bold transition-colors md:text-base ${
+                  className={`relative inline-flex h-full cursor-pointer items-center justify-center border-x-0 border-t-0 border-b-[3px] bg-white px-2 text-center text-sm leading-[1.4] font-bold break-keep whitespace-normal transition-colors md:text-base ${
                     isActive
                       ? 'border-b-primary text-primary'
                       : 'border-b-transparent text-[#666] hover:text-[#1d1d1f]'
@@ -612,11 +605,15 @@ const AuctionDetailPage = () => {
         </nav>
 
         <div className={DETAIL_CONTAINER_CLASS}>
-          <AuctionInfoGrid
+          <AuctionProductDescriptionSection
             auction={auction}
-            selectedTradeName={selectedTradeName}
-            productSectionId={DETAIL_SECTION_ITEMS[0].id}
-            sellerSectionId={DETAIL_SECTION_ITEMS[1].id}
+            sectionId={DETAIL_SECTION_ITEMS[0].id}
+          />
+
+          <AuctionProductUpdateSection
+            key={`updates-${auction.productId}`}
+            sectionId={DETAIL_SECTION_ITEMS[1].id}
+            updates={auction.productUpdates}
           />
 
           <AuctionInquirySection
@@ -629,11 +626,18 @@ const AuctionDetailPage = () => {
             onToast={showToast}
           />
 
-          <AuctionProductUpdateSection
-            key={`updates-${auction.productId}`}
+          <AuctionSellerInformationSection
+            auction={auction}
+            selectedTradeName={selectedTradeName}
             sectionId={DETAIL_SECTION_ITEMS[3].id}
-            updates={auction.productUpdates}
-          />
+          >
+            <AuctionSellerHistory
+              key={`seller-history-${auction.sellerId}`}
+              currentAuctionId={auctionId}
+              sellerId={auction.sellerId}
+              sellerName={auction.sellerName}
+            />
+          </AuctionSellerInformationSection>
         </div>
       </main>
 

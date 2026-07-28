@@ -22,6 +22,14 @@ export const fetchAuctionDetail = async (auctionId) => {
   return response.data.data;
 };
 
+export const fetchSellerAuctionHistory = async (sellerId, params = {}) => (
+  fetchAuctions({
+    ...params,
+    sellerId,
+    includeHistory: true,
+  })
+);
+
 export const placeAuctionBid = async (auctionId, payload) => {
   const response = await api.post(`/auctions/${auctionId}/bids`, payload);
   return response.data.data;

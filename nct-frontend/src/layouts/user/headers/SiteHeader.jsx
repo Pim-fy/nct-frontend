@@ -8,7 +8,7 @@
 //   시맨틱 Tailwind + 실제 상태관리 방식을 따른다. 바깥 클릭 시 자동으로 닫힌다.
 // - 모바일(md 미만)에서는 경매/서비스/공지사항 메뉴를 숨기고 햄버거 토글로 전체 화면 메뉴를 연다.
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Menu, X, ChevronRight } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -62,6 +62,7 @@ const SiteHeader = () => {
   // — 종전 localStorage 가짜 플래그(@utils/providerMode) 대신 서버가 내려준 실제 역할 기준.
   const { user, logout, isProvider, switchMode } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const queryClient = useQueryClient();
 
   // 알림·포인트 실데이터 — 로그인 상태일 때만 호출 (비로그인 401 방지)
@@ -102,6 +103,9 @@ const SiteHeader = () => {
   const [mobileCustomerOpen, setMobileCustomerOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [noticeIndex, setNoticeIndex] = useState(0);
+  const hideMobileHeaderForAuctionSearch = pathname === '/auction'
+    && scrolled
+    && !mobileMenuOpen;
 
   const utilRef = useRef(null);
   const navRef = useRef(null);
@@ -145,8 +149,24 @@ const SiteHeader = () => {
 
   // 모바일 전체화면 메뉴가 열려있는 동안 배경 스크롤을 막는다.
   useEffect(() => {
-    document.body.style.overflow = mobileMenuOpen ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
+    if (!mobileMenuOpen) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    const previousPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    const currentPaddingRight = Number.parseFloat(
+      window.getComputedStyle(document.body).paddingRight,
+    ) || 0;
+
+    document.body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${currentPaddingRight + scrollbarWidth}px`;
+    }
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.body.style.paddingRight = previousPaddingRight;
+    };
   }, [mobileMenuOpen]);
 
   // 클릭 시 동작:
@@ -228,7 +248,11 @@ const SiteHeader = () => {
 
   return (
     <>
-    <header className="sticky top-0 z-[100] h-[82px] bg-white shadow-[0px_5px_10px_0px_rgba(0,0,0,0.2)]">
+    <header className={`sticky top-0 z-[100] h-[82px] bg-white shadow-[0px_5px_10px_0px_rgba(0,0,0,0.2)] ${
+      hideMobileHeaderForAuctionSearch
+        ? 'max-md:-translate-y-full max-md:transition-transform max-md:duration-200'
+        : 'max-md:translate-y-0 max-md:transition-none'
+    }`}>
       <div className="container relative flex h-full items-center justify-between gap-8">
         {/* 로고 + 메뉴 - 디자인 시안처럼 로고 바로 우측에 붙여 왼쪽에 묶어둔다 */}
         <div className="flex items-center gap-10">
@@ -595,32 +619,32 @@ const SiteHeader = () => {
           {/* 모바일 전용 햄버거 토글 */}
           <button
             type="button"
-            aria-label="전체 메뉴 열기"
+            aria-label={mobileMenuOpen ? '전체 메뉴 닫기' : '전체 메뉴 열기'}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-site-menu"
             className="flex md:hidden size-[39px] items-center justify-center rounded-full bg-[#f3f5fa]"
-            onClick={() => setMobileMenuOpen(true)}
+            onClick={() => {
+              setNotiOpen(false);
+              setPointOpen(false);
+              setProfileOpen(false);
+              if (mobileMenuOpen) {
+                closeMobileMenu();
+              } else {
+                setMobileMenuOpen(true);
+              }
+            }}
           >
-            <Menu size={20} />
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       </div>
 
       {/* 모바일 전체화면 메뉴 */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-[200] flex flex-col bg-white md:hidden">
-          <div className="flex h-[82px] shrink-0 items-center justify-between border-b border-[#f0f0f0] px-4">
-            <Link to="/" className="flex items-center" onClick={closeMobileMenu}>
-              <img src={logoImg} alt="에누리컷" className="h-[48px] w-auto" />
-            </Link>
-            <button
-              type="button"
-              aria-label="메뉴 닫기"
-              className="flex size-[39px] items-center justify-center rounded-full bg-[#f3f5fa]"
-              onClick={closeMobileMenu}
-            >
-              <X size={20} />
-            </button>
-          </div>
-
+        <div
+          id="mobile-site-menu"
+          className="fixed left-0 top-[82px] z-[200] flex h-[calc(100dvh-82px)] w-screen flex-col border-t border-[#f0f0f0] bg-white md:hidden"
+        >
           <nav className="flex-1 overflow-y-auto px-4 py-2">
             {/* 로그인 상태: 유저 정보 패널 */}
             {user && (
