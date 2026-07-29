@@ -27,9 +27,11 @@ const NoticeListSkeleton = () => (
         <span />
         <span />
         <span />
+        <span />
       </div>
       {Array.from({ length: 6 }).map((_, index) => (
         <div className="public-notice-skeleton__row" key={index}>
+          <span />
           <span />
           <span />
           <span />
