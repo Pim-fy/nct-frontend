@@ -1,138 +1,207 @@
-// src/pages/admin/Dashboard.jsx
-//
-// F-OPS-010 관리자 운영 대시보드의 첫 화면입니다.
-// 아직 다른 담당자의 실제 집계 API가 준비되지 않았으므로 가짜 숫자를 보여 주지 않고,
-// 어떤 데이터가 연결됐고 무엇을 기다리는지 관리자와 개발자가 함께 확인하도록 구성합니다.
-// 각 계약이 준비되면 아래 카드의 상태와 값만 실제 API 응답으로 교체하면 됩니다.
-
 import { createElement } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  BookOpenCheck,
-  CircleDashed,
-  Clock3,
+  BriefcaseBusiness,
+  ClipboardCheck,
+  Gavel,
+  Handshake,
   Megaphone,
+  RefreshCw,
+  Scale,
   ShieldAlert,
+  Users,
+  WalletCards,
 } from 'lucide-react';
 import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
-import MockupAdminStatusBadge from '@components/admin/mockup/MockupAdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
+import { useAdminDashboardSummary } from '@hooks/useAdminDashboard';
 import './Dashboard.css';
 
 const SUMMARY_ITEMS = [
   {
-    label: '사용자·거래 현황',
-    status: '연결 대기',
-    tone: 'neutral',
-    icon: CircleDashed,
+    key: 'activeUserCount',
+    label: '활성 사용자',
+    description: '현재 이용 가능한 회원',
+    icon: Users,
+    tone: 'blue',
+    unit: '명',
   },
   {
-    label: '신고·리스크 이벤트',
-    status: '부분 연결',
-    tone: 'warning',
+    key: 'totalTradeCount',
+    label: '전체 거래',
+    description: '생성된 거래 누적 건수',
+    icon: Handshake,
+    tone: 'indigo',
+  },
+  {
+    key: 'activeDisputeCount',
+    label: '진행 중 거래 문제',
+    description: '접수 또는 처리 중',
+    icon: Scale,
+    tone: 'orange',
+  },
+  {
+    key: 'incompleteSettlementCount',
+    label: '미완료 정산',
+    description: '대기 또는 보류 상태',
+    icon: WalletCards,
+    tone: 'purple',
+  },
+  {
+    key: 'unprocessedRiskEventCount',
+    label: '미처리 위험 이벤트',
+    description: '운영 확인이 필요한 이벤트',
     icon: ShieldAlert,
-  },
-  {
-    label: '공지·이용가이드',
-    status: '관리 연결',
-    tone: 'primary',
-    icon: Megaphone,
-  },
-  {
-    label: '핵심 E2E',
-    status: '검증 전',
-    tone: 'danger',
-    icon: Clock3,
+    tone: 'red',
   },
 ];
 
-const CONTRACT_ROWS = [
-  { name: '회원·계정 상태', state: '연결 대기' },
-  { name: '경매·입찰·낙찰', state: '연결 대기' },
-  { name: '거래·채팅·리뷰', state: '연결 대기' },
-  { name: '분쟁·정산 상태', state: '연결 대기' },
-  { name: '위험 이벤트', state: '미리보기 연결' },
+const SHORTCUTS = [
+  { label: '제공자 심사', to: '/admin/provider-applications', icon: ClipboardCheck },
+  { label: '경매 관리', to: '/admin/auctions', icon: Gavel },
+  { label: '서비스 요청 관리', to: '/admin/services', icon: BriefcaseBusiness },
+  { label: '공지 관리', to: '/admin/notices', icon: Megaphone },
 ];
 
-const Dashboard = () => (
-  <div className="admin-dashboard">
-    <PageMeta title="관리자 대시보드" />
-    <MockupAdminPageHeader title="관리자 대시보드" />
+const formatCount = (value) =>
+  value == null ? '-' : Number(value).toLocaleString('ko-KR');
 
-    <section className="admin-dashboard__summary" aria-label="관리자 주요 기능 연결 현황">
-      {SUMMARY_ITEMS.map(({ label, status, tone, icon: Icon }) => (
-        <article className={`card admin-summary-card admin-summary-card--${tone}`} key={label}>
-          <div className="admin-summary-card__top">
-            <span className="admin-summary-card__icon">{createElement(Icon, { 'aria-hidden': true })}</span>
-            <MockupAdminStatusBadge tone={tone === 'primary' ? 'info' : tone}>{status}</MockupAdminStatusBadge>
-          </div>
-          <h2>{label}</h2>
-        </article>
-      ))}
-    </section>
+/**
+ * 담당자 7 · F-OPS-010: 실제 운영 집계와 관리자 메뉴를 보여 주는 대시보드입니다.
+ */
+const Dashboard = () => {
+  const summaryQuery = useAdminDashboardSummary();
+  const summary = summaryQuery.data ?? {};
 
-    <section className="admin-dashboard__grid">
-      <article className="card admin-dashboard-card">
-        <div className="admin-dashboard-card__heading">
+  return (
+    <div className="admin-dashboard">
+      <PageMeta title="관리자 대시보드" />
+      <MockupAdminPageHeader
+        action={(
+          <button
+            className="admin-dashboard__refresh"
+            disabled={summaryQuery.isFetching}
+            onClick={() => summaryQuery.refetch()}
+            type="button"
+          >
+            <RefreshCw aria-hidden="true" />
+            새로고침
+          </button>
+        )}
+        title="관리자 대시보드"
+      />
+
+      {summaryQuery.isError ? (
+        <section className="admin-dashboard__error" role="alert">
           <div>
-            <h2>운영 현황</h2>
+            <strong>운영 현황을 불러오지 못했습니다.</strong>
+            <span>잠시 후 다시 시도해 주세요.</span>
           </div>
-          <span className="admin-dashboard-card__tag">실제값 연동 전</span>
-        </div>
-
-        <div className="admin-contract-list">
-          {CONTRACT_ROWS.map(({ name, state }) => (
-            <div className="admin-contract-row" key={name}>
+          <button onClick={() => summaryQuery.refetch()} type="button">다시 시도</button>
+        </section>
+      ) : (
+        <section className="admin-dashboard__summary" aria-label="주요 운영 현황">
+          {SUMMARY_ITEMS.map(({ key, label, description, icon: Icon, tone, unit = '건' }) => (
+            <article className={`admin-summary-card admin-summary-card--${tone}`} key={key}>
+              <span className="admin-summary-card__icon">
+                {createElement(Icon, { 'aria-hidden': true })}
+              </span>
               <div>
-                <strong>{name}</strong>
+                <span>{label}</span>
+                {summaryQuery.isLoading ? (
+                  <span className="admin-summary-card__skeleton" aria-label={`${label} 불러오는 중`} />
+                ) : (
+                  <strong>
+                    {formatCount(summary[key])}
+                    {summary[key] != null && <small>{unit}</small>}
+                  </strong>
+                )}
+                <p>{description}</p>
               </div>
-              <MockupAdminStatusBadge tone={state === '미리보기 연결' ? 'warning' : 'neutral'}>{state}</MockupAdminStatusBadge>
-            </div>
+            </article>
           ))}
-        </div>
-      </article>
+        </section>
+      )}
 
-      <article className="card admin-dashboard-card admin-dashboard-card--risk">
-        <div className="admin-dashboard-card__heading">
-          <div>
-            <h2>신고·위험 이벤트</h2>
-          </div>
-          <ShieldAlert aria-hidden="true" />
-        </div>
-        <Link className="admin-dashboard-card__action" to="/admin/operations-preview">
-          민감정보 탐지 이벤트 열기
-        </Link>
-      </article>
+      <section className="admin-dashboard__content">
+        {!summaryQuery.isError && (
+          <article className="admin-dashboard-panel">
+            <div className="admin-dashboard-panel__heading">
+              <div>
+                <h2>조치 필요 현황</h2>
+                <p>현재 확인이 필요한 운영 항목입니다.</p>
+              </div>
+            </div>
 
-      <article className="card admin-dashboard-card admin-dashboard-card--content">
-        <div className="admin-dashboard-card__heading">
-          <div>
-            <h2>공지·이용가이드</h2>
-          </div>
-          <Megaphone aria-hidden="true" />
-        </div>
-        <div className="admin-content-readiness">
-          <div>
-            <Megaphone aria-hidden="true" />
-            <span><strong>공지사항</strong></span>
-          </div>
-          <div>
-            <BookOpenCheck aria-hidden="true" />
-            <span><strong>이용가이드</strong></span>
-          </div>
-        </div>
-      </article>
+            <div className="admin-dashboard-actions">
+              <div className="admin-dashboard-action">
+                <span className="admin-dashboard-action__icon admin-dashboard-action__icon--orange">
+                  <Scale aria-hidden="true" />
+                </span>
+                <div>
+                  <strong>진행 중 거래 문제</strong>
+                  <span>
+                    {summaryQuery.isLoading
+                      ? '불러오는 중'
+                      : summary.activeDisputeCount == null
+                        ? '-'
+                        : `접수·처리 중 ${formatCount(summary.activeDisputeCount)}건`}
+                  </span>
+                </div>
+              </div>
+              <div className="admin-dashboard-action">
+                <span className="admin-dashboard-action__icon admin-dashboard-action__icon--purple">
+                  <WalletCards aria-hidden="true" />
+                </span>
+                <div>
+                  <strong>미완료 정산</strong>
+                  <span>
+                    {summaryQuery.isLoading
+                      ? '불러오는 중'
+                      : summary.incompleteSettlementCount == null
+                        ? '-'
+                        : `대기·보류 ${formatCount(summary.incompleteSettlementCount)}건`}
+                  </span>
+                </div>
+              </div>
+              <div className="admin-dashboard-action">
+                <span className="admin-dashboard-action__icon admin-dashboard-action__icon--red">
+                  <ShieldAlert aria-hidden="true" />
+                </span>
+                <div>
+                  <strong>미처리 위험 이벤트</strong>
+                  <span>
+                    {summaryQuery.isLoading
+                      ? '불러오는 중'
+                      : `${formatCount(summary.unprocessedRiskEventCount)}건`}
+                  </span>
+                </div>
+                <Link to="/admin/operations-preview">확인</Link>
+              </div>
+            </div>
+          </article>
+        )}
 
-      <article className="card admin-dashboard-card">
-        <div className="admin-dashboard-card__heading">
-          <div>
-            <h2>관리자 메뉴</h2>
+        <article className="admin-dashboard-panel">
+          <div className="admin-dashboard-panel__heading">
+            <div>
+              <h2>운영 바로가기</h2>
+              <p>자주 사용하는 관리 화면으로 이동합니다.</p>
+            </div>
           </div>
-          <MockupAdminStatusBadge tone="info">13개 메뉴</MockupAdminStatusBadge>
-        </div>
-      </article>
-    </section>
-  </div>
-);
+
+          <div className="admin-dashboard-shortcuts">
+            {SHORTCUTS.map(({ label, to, icon: Icon }) => (
+              <Link key={to} to={to}>
+                {createElement(Icon, { 'aria-hidden': true })}
+                <span>{label}</span>
+              </Link>
+            ))}
+          </div>
+        </article>
+      </section>
+    </div>
+  );
+};
 
 export default Dashboard;

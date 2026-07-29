@@ -1,7 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  createPortfolio,
+  deletePortfolio,
+  fetchMyPortfolios,
   fetchMyProviderProfile,
+  fetchPublicPortfolios,
   fetchPublicProviderProfile,
+  updatePortfolio,
   updateMyProviderProfile,
 } from '@api/providerProfileApi';
 
@@ -9,6 +14,11 @@ import {
 export const providerProfileKeys = {
   mine: ['provider-profile', 'mine'],
   public: (providerUserSn) => ['provider-profile', 'public', providerUserSn],
+  portfolios: {
+    all: ['provider-portfolio'],
+    mine: ['provider-portfolio', 'mine'],
+    public: (providerUserSn) => ['provider-portfolio', 'public', providerUserSn],
+  },
 };
 
 export const useMyProviderProfile = () => useQuery({
@@ -32,3 +42,37 @@ export const usePublicProviderProfile = (providerUserSn) => useQuery({
   queryFn: () => fetchPublicProviderProfile(providerUserSn),
   enabled: Number.isSafeInteger(providerUserSn) && providerUserSn > 0,
 });
+
+export const useMyPortfolios = () => useQuery({
+  queryKey: providerProfileKeys.portfolios.mine,
+  queryFn: fetchMyPortfolios,
+});
+
+export const usePublicPortfolios = (providerUserSn) => useQuery({
+  queryKey: providerProfileKeys.portfolios.public(providerUserSn),
+  queryFn: () => fetchPublicPortfolios(providerUserSn),
+  enabled: Number.isSafeInteger(providerUserSn) && providerUserSn > 0,
+});
+
+const usePortfolioMutation = (mutationFn) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: () => queryClient.invalidateQueries({
+      queryKey: providerProfileKeys.portfolios.all,
+    }),
+  });
+};
+
+export const useCreatePortfolio = () => usePortfolioMutation(createPortfolio);
+export const useUpdatePortfolio = () => usePortfolioMutation(updatePortfolio);
+
+export const useDeletePortfolio = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deletePortfolio,
+    onSuccess: () => queryClient.invalidateQueries({
+      queryKey: providerProfileKeys.portfolios.all,
+    }),
+  });
+};

@@ -78,18 +78,19 @@ const PublicProviderProfilePage = () => {
   if (providerQuery.isLoading) return <ViewSkeleton />;
 
   if (providerQuery.isError) {
+    const errorStatus = providerQuery.error?.response?.status ?? providerQuery.error?.status;
     return (
       <ContentPageShell>
         <Helmet><title>제공자 조회 오류 | 에누리컷</title></Helmet>
         <ContentState
-          actionLabel={providerQuery.error?.status === 404 ? undefined : '다시 불러오기'}
+          actionLabel={errorStatus === 404 ? undefined : '다시 불러오기'}
           backLabel="서비스 목록으로 돌아가기"
           backTo="/service?view=providers"
-          description={providerQuery.error?.status === 404
+          description={errorStatus === 404
             ? '존재하지 않거나 공개되지 않은 제공자일 수 있습니다.'
             : '잠시 후 다시 시도해 주세요.'}
-          onAction={providerQuery.error?.status === 404 ? undefined : () => providerQuery.refetch()}
-          title={providerQuery.error?.status === 404 ? '제공자를 찾을 수 없습니다.' : '제공자 프로필을 불러오지 못했습니다.'}
+          onAction={errorStatus === 404 ? undefined : () => providerQuery.refetch()}
+          title={errorStatus === 404 ? '제공자를 찾을 수 없습니다.' : '제공자 프로필을 불러오지 못했습니다.'}
           tone="error"
         />
       </ContentPageShell>
