@@ -202,6 +202,7 @@
 .provider-public-content { border: 1px solid #e2e1dc; border-radius: 20px; background: #fff; box-shadow: 0 8px 24px rgba(0, 0, 0, .05); }
 .provider-public-card { position: relative; padding: 28px; }
 .provider-public-avatar { width: 92px; height: 92px; margin-bottom: 18px; }
+.provider-public-avatar img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
 .provider-report-button { position: absolute; top: 20px; right: 20px; display: inline-flex; align-items: center; gap: 5px; border: 1px solid #d54a4a; border-radius: 9px; background: #fff; padding: 7px 10px; color: #a32d2d; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
 .provider-report-button svg { width: 15px; }
 .provider-public-name { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -228,6 +229,7 @@
 .provider-portfolio-grid > button { display: grid; justify-items: start; gap: 7px; border: 1px solid #e2e1dc; border-radius: 16px; background: #fff; padding: 18px; color: inherit; text-align: left; cursor: pointer; }
 .provider-portfolio-grid > button:hover { border-color: var(--color-primary, #0064ff); }
 .provider-portfolio-grid > button > span { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 12px; background: #edf4ff; color: #174ea6; }
+.provider-portfolio-thumbnail { width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; object-fit: cover; }
 .provider-portfolio-grid p { margin: 0; color: #5f5e5a; line-height: 1.55; }
 .provider-portfolio-grid small { color: #174ea6; }
 .provider-panel-empty { padding: 60px 20px; color: #77756f; text-align: center; }
@@ -252,6 +254,7 @@
 .service-modal__actions button:disabled { opacity: .55; cursor: wait; }
 .provider-portfolio-placeholder { display: flex; align-items: center; justify-content: center; height: 240px; margin: 20px 0; border-radius: 16px; background: linear-gradient(145deg, #edf4ff, #f4edff); color: #42629b; }
 .provider-portfolio-placeholder svg { width: 64px; height: 64px; }
+.provider-portfolio-modal-image { width: 100%; max-height: 420px; margin: 20px 0; border-radius: 16px; object-fit: contain; background: #f5f6f8; }
 
 @media (max-width: 960px) {
   .service-discovery-layout,

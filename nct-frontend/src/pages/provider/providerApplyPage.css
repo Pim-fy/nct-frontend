@@ -1,5 +1,7 @@
+/* AuctionDetailPage/MyPage와 같은 넓은 폭 기준 — 공용 .content-page(1320px)보다 이 화면은
+   더 넓게 써야 헤더·다른 주요 화면들과 여백이 맞는다 (사용자 확인, 2026-07-28) */
 .provider-apply-page {
-  max-width: 900px;
+  width: min(1600px, calc(100% - 52px));
 }
 
 .provider-apply-card,
@@ -129,6 +131,12 @@
 .provider-apply-demo-note {
   color: #5f5e5a;
   font-size: 13px;
+}
+
+.provider-apply-inline-link {
+  color: #0064ff;
+  font-weight: 700;
+  text-decoration: underline;
 }
 
 .provider-apply-actions {

@@ -35,23 +35,23 @@ const AuctionProductUpdateSection = ({ sectionId, updates: updateItems }) => {
 
   return (
     <section
-      className="scroll-mt-[136px] py-10 md:scroll-mt-[82px] md:py-14"
+      className="scroll-mt-[136px] border-b border-[#e2e5ea] py-10 md:scroll-mt-[82px] md:py-14"
       id={sectionId}
       aria-labelledby={`${sectionId}-title`}
     >
       <header className="mb-7 flex items-center justify-between gap-4">
         <h2
-          className="m-0 text-[24px] leading-tight font-bold text-[#1d1d1f] md:text-[28px]"
+          className="m-0 text-2xl leading-[1.3] font-bold text-[#1d1d1f] md:text-[28px]"
           id={`${sectionId}-title`}
         >
-          상품 수정 내역
+          변경 내역
         </h2>
-        <strong className="text-base whitespace-nowrap text-primary-dark">{updates.length}건</strong>
+        <strong className="text-base leading-[1.4] whitespace-nowrap text-primary-dark">{updates.length}건</strong>
       </header>
 
       {updates.length === 0 && (
-        <p className="m-0 grid min-h-28 place-items-center border-y border-[#e2e5ea] px-4 py-8 text-center text-[15px] text-[#777]">
-          등록된 수정 내역이 없습니다.
+        <p className="m-0 grid min-h-28 place-items-center border-y border-[#e2e5ea] px-4 py-8 text-center text-[15px] leading-[1.6] text-[#777]">
+          등록된 변경 내역이 없습니다.
         </p>
       )}
 
@@ -67,16 +67,16 @@ const AuctionProductUpdateSection = ({ sectionId, updates: updateItems }) => {
               </span>
               <div className="min-w-0">
                 <div className="flex items-start justify-between gap-4 max-sm:flex-col max-sm:gap-1">
-                  <strong className="text-base leading-6 text-[#1d1d1f]">{update.title}</strong>
+                  <strong className="text-base leading-[1.5] text-[#1d1d1f]">{update.title}</strong>
                   <time
-                    className="text-xs leading-6 whitespace-nowrap text-[#777]"
+                    className="text-[13px] leading-[1.5] whitespace-nowrap text-[#777]"
                     dateTime={update.registeredAt}
                   >
                     {formatUpdatedAt(update.registeredAt)}
                   </time>
                 </div>
                 {update.content && (
-                  <p className="mt-2 mb-0 whitespace-pre-wrap text-[15px] leading-[1.65] text-[#555] [overflow-wrap:anywhere]">
+                  <p className="mt-2 mb-0 whitespace-pre-wrap text-base leading-[1.65] text-[#555] [overflow-wrap:anywhere]">
                     {update.content}
                   </p>
                 )}

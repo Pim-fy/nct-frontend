@@ -26,7 +26,7 @@ const AuctionBuyNowModal = ({
         aria-labelledby="buyNowModalTitle"
       >
         <div className="flex items-center justify-between gap-4 border-b border-[#e8e8e8] px-6 pt-[22px] pb-4">
-          <h2 className="m-0 text-xl font-bold" id="buyNowModalTitle">즉시구매 확인</h2>
+          <h2 className="m-0 text-2xl leading-[1.3] font-bold" id="buyNowModalTitle">즉시구매 확인</h2>
           <button
             className="inline-flex size-[38px] cursor-pointer items-center justify-center rounded-full border border-[#dadada] bg-white text-[#1d1d1f]"
             type="button"
@@ -56,14 +56,14 @@ const AuctionBuyNowModal = ({
           </ul>
           <div className="grid grid-cols-2 gap-1.5">
             <button
-              className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-white text-[15px] font-bold text-primary"
+              className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-white text-base leading-[1.4] font-bold text-primary"
               type="button"
               onClick={onClose}
             >
               취소
             </button>
             <button
-              className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-primary text-[15px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-55"
+              className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-primary text-base leading-[1.4] font-bold text-white disabled:cursor-not-allowed disabled:opacity-55"
               id="buyNowConfirmBtn"
               type="button"
               disabled={!isBuyNowAvailable || isPending}

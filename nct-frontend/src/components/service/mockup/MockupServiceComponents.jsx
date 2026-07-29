@@ -12,6 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { toImageUrl } from '@api/fileApi';
 import './mockupServicePages.css';
 
 export const MockupIntegrationNotice = ({ children }) => (
@@ -207,7 +208,11 @@ export const MockupProviderProfile = ({
   <div className="provider-public-layout">
     <aside className="provider-public-card">
       <button className="provider-report-button" onClick={onOpenReport} type="button"><Flag aria-hidden="true" />신고</button>
-      <div className="provider-public-avatar" aria-hidden="true">{provider.name.slice(0, 1)}</div>
+      <div className="provider-public-avatar" aria-hidden="true">
+        {provider.profileImageUrl
+          ? <img src={toImageUrl(provider.profileImageUrl)} alt="" />
+          : provider.name.slice(0, 1)}
+      </div>
       <div className="provider-public-name">
         <h1>{provider.name}</h1>
         {provider.verified && <span><BadgeCheck aria-hidden="true" />승인</span>}
@@ -216,7 +221,11 @@ export const MockupProviderProfile = ({
       <div className="provider-public-tags">
         {provider.categories.map((category) => <span key={category}>{category}</span>)}
       </div>
-      <p className="provider-public-stats">{provider.regions.join(', ')} · 완료 {provider.completedCount}건 · 응답률 {provider.responseRate}%</p>
+      <p className="provider-public-stats">
+        {provider.regions.join(', ')}
+        {provider.completedCount != null && ` · 완료 ${provider.completedCount}건`}
+        {provider.responseRate != null && ` · 응답률 ${provider.responseRate}%`}
+      </p>
       <section>
         <h2>소개</h2>
         <p>{provider.intro}</p>
@@ -245,9 +254,11 @@ export const MockupProviderProfile = ({
         <div className="provider-portfolio-grid" role="tabpanel">
           {provider.portfolios.length > 0 ? provider.portfolios.map((portfolio) => (
             <button key={portfolio.id} onClick={() => onOpenPortfolio(portfolio)} type="button">
-              <span><BriefcaseBusiness aria-hidden="true" /></span>
+              {portfolio.imageUrl
+                ? <img src={toImageUrl(portfolio.imageUrl)} alt="" className="provider-portfolio-thumbnail" />
+                : <span><BriefcaseBusiness aria-hidden="true" /></span>}
               <strong>{portfolio.title}</strong>
-              <small>{portfolio.category}</small>
+              {portfolio.category && <small>{portfolio.category}</small>}
               <p>{portfolio.description}</p>
             </button>
           )) : <p className="provider-panel-empty">등록된 포트폴리오가 없습니다.</p>}
@@ -316,10 +327,12 @@ export const MockupPortfolioModal = ({ closeButtonRef, onClose, portfolio }) => 
   }}>
     <section aria-labelledby="portfolio-title" aria-modal="true" className="service-modal__panel service-modal__panel--portfolio" role="dialog">
       <div className="service-modal__heading">
-        <div><span>{portfolio.category}</span><h2 id="portfolio-title">{portfolio.title}</h2></div>
+        <div>{portfolio.category && <span>{portfolio.category}</span>}<h2 id="portfolio-title">{portfolio.title}</h2></div>
         <button aria-label="포트폴리오 창 닫기" onClick={onClose} ref={closeButtonRef} type="button"><X aria-hidden="true" /></button>
       </div>
-      <div className="provider-portfolio-placeholder"><BriefcaseBusiness aria-hidden="true" /></div>
+      {portfolio.imageUrl
+        ? <img src={toImageUrl(portfolio.imageUrl)} alt="" className="provider-portfolio-modal-image" />
+        : <div className="provider-portfolio-placeholder"><BriefcaseBusiness aria-hidden="true" /></div>}
       <p>{portfolio.description}</p>
     </section>
   </div>

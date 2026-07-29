@@ -74,14 +74,31 @@ export const proposeTradeOfflineSchedule = async (tradeId, payload) => {
 };
 
 /**
- * 구매자의 거래 완료 확인 요청을 전송한다.
- * 실제 완료 여부와 무이의 기간은 서버가 상태 전이 규칙으로 판단한다.
+ * 거래 당사자의 완료 확인을 전송한다.
+ * 첫 확인은 상대방 대기를 시작하고, 두 번째 확인은 서버에서 거래 완료로 전환한다.
  */
-export const requestTradeCompletion = async (tradeId) => {
+export const requestTradeCompletion = async (tradeId, requesterRole) => {
   // 개발용 화면도 실제 응답과 같은 상세 객체를 돌려줘 화면 갱신 흐름을 함께 검증한다.
   if (shouldUseTradePreview()) {
+    const currentTrade = getTradePreviewDetail(tradeId);
+    const currentStatus = currentTrade.tradeStatus;
+    const firstRequester = currentTrade.completionRequestedBy;
+
+    // 미리보기에서도 서로 다른 두 당사자가 확인해야 완료되는 실제 흐름을 재현한다.
+    if (
+      ['CONFIRM_PENDING', 'WAITING_CONFIRMATION'].includes(currentStatus)
+      && firstRequester
+      && firstRequester !== requesterRole
+    ) {
+      return updateTradePreviewDetail(tradeId, {
+        tradeStatus: 'COMPLETED',
+        completionRequestedBy: null,
+      });
+    }
+
     return updateTradePreviewDetail(tradeId, {
       tradeStatus: 'CONFIRM_PENDING',
+      completionRequestedBy: requesterRole,
     });
   }
 

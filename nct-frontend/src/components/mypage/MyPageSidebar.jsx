@@ -46,6 +46,12 @@ const PROVIDER_MENU_ITEMS = [
   { key: "wallet",            label: "포인트 지갑",   type: "section" },
   { key: "approval-category", label: "승인 카테고리", type: "todo" },
   { key: "review",            label: "내 리뷰",       type: "section" },
+  { key: "quote",             label: "견적",          type: "section" },
+  { key: "service-trade",     label: "서비스 거래",   type: "section" },
+  { key: "settlement",        label: "정산 관리",     type: "section" },
+  { key: "service-chat",      label: "서비스 채팅",   type: "section" },
+  { key: "wallet",            label: "포인트 지갑",   type: "section" },
+  { key: "approval-category", label: "승인 카테고리", type: "section" },
 ];
 
 // 아코디언 key → 포함되는 child key 목록
@@ -70,7 +76,12 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
   // activeSection이 accordion child로 변경되면 해당 accordion 자동으로 열기
   useEffect(() => {
     const parent = getParentAccordion(activeSection);
-    if (parent) setOpenAccordion(parent);
+    if (!parent) return undefined;
+
+    const animationFrameId = window.requestAnimationFrame(() => {
+      setOpenAccordion(parent);
+    });
+    return () => window.cancelAnimationFrame(animationFrameId);
   }, [activeSection]);
 
   const handleClick = (item) => {
@@ -93,7 +104,7 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
   );
 
   return (
-    <nav className="lg:w-[210px] lg:shrink-0">
+    <nav className="lg:sticky lg:top-[102px] lg:self-start lg:w-[210px] lg:shrink-0">
       {/* 타이틀 (데스크톱) */}
       <h2 className="hidden lg:block font-bold text-[25px] text-black mb-5 px-2">
         마이페이지

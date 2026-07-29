@@ -6,12 +6,13 @@ import {
   fetchMyFavoriteAuctions,
   removeAuctionFavorite,
 } from '@api/auctionApi';
+import { AuctionCardSkeleton } from '@components/skeleton/AuctionSkeletons';
 import AuctionCard from './components/AuctionCard';
 import AuctionToast from './components/AuctionToast';
 
 const PAGE_SIZE = 12;
 const MAX_VISIBLE_PAGES = 5;
-const PAGINATION_BUTTON_CLASS = 'min-h-10 rounded-lg border border-[#e2e1dc] bg-white px-3.5 text-sm font-semibold text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-45';
+const PAGINATION_BUTTON_CLASS = 'min-h-10 rounded-lg border border-[#e2e1dc] bg-white px-3.5 text-base leading-[1.4] font-semibold text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-45';
 const EMPTY_STATE_CLASS = 'grid min-h-[340px] place-content-center justify-items-center gap-2.5 rounded-lg border border-[#f0efec] bg-[#f8f8f6] p-7 text-center';
 
 const getPageNumber = (searchParams) => {
@@ -45,6 +46,7 @@ const AuctionFavoritesPage = () => {
     queryKey: ['auctionFavorites', page, PAGE_SIZE],
     queryFn: () => fetchMyFavoriteAuctions({ page, size: PAGE_SIZE }),
     placeholderData: (previousData) => previousData,
+    refetchOnMount: 'always',
   });
 
   const favoriteItems = favoritePage?.items || [];
@@ -90,30 +92,36 @@ const AuctionFavoritesPage = () => {
   }, [toastMessage]);
 
   return (
-    <div className="min-h-full bg-white text-[#1a1a18]">
-      <main className="mx-auto min-h-[calc(100vh-180px)] w-[90%] max-w-[1800px] py-7 pb-[52px] max-md:w-full max-md:px-4">
-        <div className="mb-[18px] flex items-end justify-between gap-4 max-md:block">
+    <div className="min-w-0 bg-white text-base leading-[1.6] text-[#1a1a18]">
+      <main className="min-h-[520px] w-full pb-8">
+        <div className="mb-7 flex items-end justify-between gap-4 border-b border-[#e5e9f0] pb-5 max-md:block">
           <div>
-            <h1 className="m-0 text-[28px] leading-tight font-bold">관심 경매</h1>
+            <h1 className="m-0 text-[32px] leading-[1.25] font-bold max-sm:text-[28px]">관심 상품</h1>
             <p className="mt-1.5 mb-0 text-[#5f5e5a]">관심 등록한 경매를 한곳에서 확인하세요.</p>
           </div>
           {!isLoading && !isError && (
-            <span className="text-sm font-extrabold whitespace-nowrap text-primary-dark max-md:mt-2 max-md:inline-block">
+            <span className="text-base leading-[1.4] font-extrabold whitespace-nowrap text-primary-dark max-md:mt-2 max-md:inline-block">
               {totalElements.toLocaleString('ko-KR')}개 상품
             </span>
           )}
         </div>
 
         {isLoading ? (
-          <div className={EMPTY_STATE_CLASS}>
-            <strong className="text-lg">관심 경매를 불러오는 중입니다.</strong>
+          <div
+            className="grid w-full grid-cols-2 gap-6 max-md:grid-cols-1 max-md:gap-[18px]"
+            aria-busy="true"
+            aria-label="관심 경매를 불러오는 중"
+          >
+            {Array.from({ length: 4 }).map((_, index) => (
+              <AuctionCardSkeleton key={index} />
+            ))}
           </div>
         ) : isError ? (
           <div className={EMPTY_STATE_CLASS}>
-            <strong className="text-lg">관심 경매를 불러오지 못했습니다.</strong>
+            <strong className="text-xl leading-[1.4]">관심 경매를 불러오지 못했습니다.</strong>
             <p className="m-0 text-[#5f5e5a]">잠시 후 다시 시도해 주세요.</p>
             <button
-              className="inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-lg border border-primary bg-primary px-3.5 text-sm font-semibold text-white"
+              className="inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-lg border border-primary bg-primary px-3.5 text-base leading-[1.4] font-semibold text-white"
               type="button"
               onClick={() => refetch()}
             >
@@ -122,7 +130,7 @@ const AuctionFavoritesPage = () => {
             </button>
           </div>
         ) : favoriteItems.length > 0 ? (
-          <div className="grid w-full grid-cols-3 gap-[45px] max-xl:grid-cols-2 max-xl:gap-6 max-md:grid-cols-1 max-md:gap-[18px]">
+          <div className="grid w-full grid-cols-2 gap-6 max-md:grid-cols-1 max-md:gap-[18px]">
             {favoriteItems.map((item) => {
               return (
                 <div className="relative min-w-0" key={item.auctionId}>
@@ -143,10 +151,10 @@ const AuctionFavoritesPage = () => {
           </div>
         ) : (
           <div className={EMPTY_STATE_CLASS}>
-            <strong className="text-lg">관심 등록한 경매가 없습니다.</strong>
+            <strong className="text-xl leading-[1.4]">관심 등록한 경매가 없습니다.</strong>
             <p className="m-0 text-[#5f5e5a]">경매를 둘러보고 관심 있는 상품을 저장해 보세요.</p>
             <Link
-              className="mt-[18px] inline-flex min-h-[42px] items-center justify-center rounded-lg bg-[#1d1d1f] px-[18px] text-sm font-bold text-white no-underline"
+              className="mt-[18px] inline-flex min-h-[42px] items-center justify-center rounded-lg bg-[#1d1d1f] px-[18px] text-base leading-[1.4] font-bold text-white no-underline"
               to="/auction"
             >
               경매 둘러보기
@@ -169,7 +177,7 @@ const AuctionFavoritesPage = () => {
                 key={pageNumber}
                 type="button"
                 className={pageNumber === page
-                  ? 'min-h-10 rounded-lg border border-primary bg-primary px-3.5 text-sm font-semibold text-white'
+                  ? 'min-h-10 rounded-lg border border-primary bg-primary px-3.5 text-base leading-[1.4] font-semibold text-white'
                   : PAGINATION_BUTTON_CLASS}
                 onClick={() => goToPage(pageNumber)}
               >

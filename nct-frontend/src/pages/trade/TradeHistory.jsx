@@ -5,6 +5,7 @@ import {
   useState,
 } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import Pagination from '@components/common/Pagination';
 import { getTradeHistory } from '@api/tradeApi';
 import {
   getTradeListItems,
@@ -73,6 +74,8 @@ const buyerStatusFilters = [
   { value: 'CANCELED', label: '취소' },
 ];
 
+const TRADES_PER_PAGE = 10;
+
 // 사용자가 입력한 공백 차이로 동일한 상품을 놓치지 않도록 검색용 문자열을 통일한다.
 const normalizeSearchText = (value) => String(value ?? '')
   .toLowerCase()
@@ -98,7 +101,7 @@ const getStatusInfo = (trade) => {
 
       if (hasMeetingSchedule) {
         return {
-          label: '직거래 진행 중',
+          label: '직거래 중',
           className: 'trade-history-status--progress',
         };
       }
@@ -137,6 +140,7 @@ const TradeHistory = ({
   fixedRole = null,
   preview = false,
   returnSection = 'trade-history',
+  onOpenTradeDetail = null,
 }) => {
   const { pathname } = useLocation();
   const [allTradeItems, setAllTradeItems] = useState([]);
@@ -144,6 +148,7 @@ const TradeHistory = ({
   const [activeTab, setActiveTab] = useState(fixedRole ?? 'ALL');
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
@@ -157,6 +162,11 @@ const TradeHistory = ({
       setActiveTab(fixedRole);
     }
   }, [fixedRole]);
+
+  // 검색·상태·역할 조건이 바뀌면 새 결과의 첫 페이지부터 보여준다.
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, keyword, statusFilter]);
 
   // 탭별 건수와 진행 중 건수는 필터와 무관한 전체 목록으로 계산한다.
   const tradeCounts = useMemo(() => {
@@ -285,6 +295,20 @@ const TradeHistory = ({
       return firstPriority - secondPriority;
     });
   }, [filteredTradeItems, keyword]);
+
+  const totalPages = Math.ceil(visibleTrades.length / TRADES_PER_PAGE);
+  const paginatedTrades = useMemo(() => {
+    const startIndex = (currentPage - 1) * TRADES_PER_PAGE;
+
+    return visibleTrades.slice(startIndex, startIndex + TRADES_PER_PAGE);
+  }, [currentPage, visibleTrades]);
+
+  // 삭제·상태 변경 등으로 마지막 페이지가 사라지면 존재하는 마지막 페이지로 이동한다.
+  useEffect(() => {
+    if (totalPages > 0 && currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   return (
     <div className={embedded
@@ -420,15 +444,45 @@ const TradeHistory = ({
             </div>
           )}
 
-          {!isLoading && !loadError && visibleTrades.map((trade) => {
+          {!isLoading && !loadError && paginatedTrades.map((trade) => {
             const status = getStatusInfo(trade);
             const detailPath = trade.type === 'SELLER'
               ? `${tradeBasePath}/${trade.id}/seller`
               : `${tradeBasePath}/${trade.id}`;
-            // 마이페이지 안에서 연 상세는 목록 버튼도 진입한 메뉴로 되돌린다.
+            // 마이페이지는 라우트 이동 대신 상위 화면이 상세 컴포넌트를 열 수 있다.
             const detailTarget = embedded
               ? `${detailPath}?from=mypage&section=${returnSection}`
               : detailPath;
+
+            if (onOpenTradeDetail) {
+              return (
+                <button
+                  className="trade-history-item"
+                  key={trade.id}
+                  type="button"
+                  onClick={() => onOpenTradeDetail(trade.id)}
+                >
+                  <article>
+                    <div className="trade-history-item__image">상품 이미지</div>
+                    <div className="trade-history-item__body">
+                      <div className="trade-history-item__badges">
+                        <span className={`trade-history-status ${status.className}`}>
+                          {status.label}
+                        </span>
+                      </div>
+                      <h2>{trade.productName}</h2>
+                      <p>{trade.amount} · {trade.date}</p>
+                      <span className="trade-history-item__type">
+                        {trade.type === 'SELLER' ? '판매자' : '구매자'} 거래 · {trade.counterpart}
+                      </span>
+                    </div>
+                    <div className="trade-history-item__action">
+                      <span className="trade-history-item__detail-button">거래 상세</span>
+                    </div>
+                  </article>
+                </button>
+              );
+            }
 
             return (
               <Link className="trade-history-item" key={trade.id} to={detailTarget}>
@@ -456,6 +510,16 @@ const TradeHistory = ({
             );
           })}
         </section>
+
+        {!isLoading && !loadError && (
+          <div className="trade-history-pagination">
+            <Pagination
+              page={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          </div>
+        )}
       </main>
     </div>
   );

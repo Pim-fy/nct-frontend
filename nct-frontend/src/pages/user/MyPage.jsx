@@ -7,23 +7,28 @@
 // - 절대좌표(ScaledStage) 방식 → 반응형 Flex 레이아웃으로 전환.
 //   사이드바: 데스크톱(lg+) 좌측 고정 컬럼 / 모바일 상단 가로 스크롤 탭.
 //   콘텐츠: 우측 flex-1 영역.
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import MyPageSidebar from "@components/mypage/MyPageSidebar";
 import MyPageDashboard from "@components/mypage/MyPageDashboard";
 import MyPageProfileEdit from "@components/mypage/MyPageProfileEdit";
 import MyPageProviderDashboard from "@components/mypage/MyPageProviderDashboard";
+import ProviderEmbeddedSection from "@components/mypage/ProviderEmbeddedSection";
 import MyPageTradeChatList from "@components/mypage/MyPageTradeChatList";
+import ProviderProfilePage from "@pages/provider/ProviderProfilePage";
 import TradeChat from "@pages/trade/TradeChat";
 import MyBidHistoryPage from "@pages/user/MyBidHistoryPage";
 import MyActiveAuctionPage from "@pages/user/MyActiveAuctionPage";
+import AuctionFavoritesPage from "@pages/auction/AuctionFavoritesPage";
 import TradeHistory from "@pages/trade/TradeHistory";
+import TradeDetailBuyer from "@pages/trade/TradeDetailBuyer";
+import TradeDetailSeller from "@pages/trade/TradeDetailSeller";
 import MyProductList from "@components/product/MyProductList";
 import PointWalletPage from "@pages/user/point/PointWalletPage";
+import SettlementListPage from "@pages/user/settlement/SettlementListPage";
 import MyReportListPage from "@pages/user/report/MyReportListPage";
 import MyQuoteListPage from "@pages/provider/MyQuoteListPage";
 import ReviewListPage from "@pages/user/ReviewListPage";
-import AuctionFavoritesPage from "@pages/auction/AuctionFavoritesPage";
 import { useAuth } from "@hooks/useAuth";
 import { useMyProviderApplications } from "@hooks/useProviderApplications";
 import { confirm } from "@utils/common";
@@ -32,12 +37,16 @@ const MYPAGE_SECTION_QUERY_VALUES = new Set([
   "active-auctions",
   "auction-bids",
   "auction-sales",
+  "wishlist",
   "chat",
   "wallet",
   "profile",
   "quote",
   "review",
-  "wishlist",
+  "service-trade",
+  "settlement",
+  "service-chat",
+  "approval-category",
 ]);
 
 export default function MyPage({
@@ -61,6 +70,24 @@ export default function MyPage({
       : initialSection,
   );
   const [selectedChatTradeId, setSelectedChatTradeId] = useState("");
+  const [selectedPurchaseTradeId, setSelectedPurchaseTradeId] = useState("");
+  const [selectedSalesTradeId, setSelectedSalesTradeId] = useState("");
+  const [chatReturnSection, setChatReturnSection] = useState("");
+
+  // 목록에서 상세를 열 때 이전 목록의 스크롤 위치가 남지 않도록 렌더링 뒤 본문 최상단으로 이동한다.
+  const handleOpenPurchaseTradeDetail = (tradeId) => {
+    setSelectedPurchaseTradeId(tradeId);
+  };
+
+  const handleOpenSalesTradeDetail = (tradeId) => {
+    setSelectedSalesTradeId(tradeId);
+  };
+
+  useEffect(() => {
+    if (selectedPurchaseTradeId || selectedSalesTradeId) {
+      window.scrollTo(0, 0);
+    }
+  }, [selectedPurchaseTradeId, selectedSalesTradeId]);
 
   // 메뉴를 옮기면 열려 있던 마이페이지 채팅 대화를 닫는다.
   const handleSelectSection = (section) => {
@@ -72,6 +99,13 @@ export default function MyPage({
     }
     if (section !== "chat") {
       setSelectedChatTradeId("");
+      setChatReturnSection("");
+    }
+    if (section !== "auction-bids") {
+      setSelectedPurchaseTradeId("");
+    }
+    if (section !== "auction-sales") {
+      setSelectedSalesTradeId("");
     }
   };
 
@@ -82,6 +116,7 @@ export default function MyPage({
     try {
       await switchMode("SERVICE");
       setActiveSection("home");
+      setSearchParams({});
     } catch {
       const ok = await confirm({
         title: "제공자 신청이 필요합니다",
@@ -98,6 +133,7 @@ export default function MyPage({
   const handleSwitchToGeneral = async () => {
     await switchMode("USER");
     setActiveSection("home");
+    setSearchParams({});
   };
 
   return (
@@ -120,41 +156,98 @@ export default function MyPage({
             />
           )}
           {activeSection === "home" && isProvider && (
-            <MyPageProviderDashboard user={user} onLogout={logout} onSwitchToGeneral={handleSwitchToGeneral} />
-          )}
-          {activeSection === "profile" && <MyPageProfileEdit user={user} />}
-          {activeSection === "active-auctions" && <MyActiveAuctionPage />}
-          {activeSection === "auction-bids" && (
-            <TradeHistory
-              embedded
-              fixedRole="BUYER"
-              preview={previewTrades}
-              returnSection="auction-bids"
+            <MyPageProviderDashboard
+              user={user}
+              onSwitchToGeneral={handleSwitchToGeneral}
+              onOpenSection={handleSelectSection}
             />
           )}
-          {activeSection === "auction-sales" && <MyProductList />}
+          {activeSection === "profile" && (
+            isProvider
+              ? <ProviderProfilePage embedded />
+              : <MyPageProfileEdit user={user} />
+          )}
+          {activeSection === "active-auctions" && <MyActiveAuctionPage />}
+          {activeSection === "auction-bids" && (
+            selectedPurchaseTradeId ? (
+              <TradeDetailBuyer
+                embedded
+                tradeId={selectedPurchaseTradeId}
+                onBack={() => setSelectedPurchaseTradeId("")}
+                onOpenChat={(tradeId) => {
+                  setSelectedChatTradeId(tradeId);
+                  setChatReturnSection("auction-bids");
+                  setActiveSection("chat");
+                }}
+              />
+            ) : (
+              <TradeHistory
+                embedded
+                fixedRole="BUYER"
+                preview={previewTrades}
+                returnSection="auction-bids"
+                onOpenTradeDetail={handleOpenPurchaseTradeDetail}
+              />
+            )
+          )}
+          {activeSection === "auction-sales" && (
+            selectedSalesTradeId ? (
+              <TradeDetailSeller
+                embedded
+                tradeId={selectedSalesTradeId}
+                onBack={() => setSelectedSalesTradeId("")}
+                onOpenChat={(tradeId) => {
+                  setSelectedChatTradeId(tradeId);
+                  setChatReturnSection("auction-sales");
+                  setActiveSection("chat");
+                }}
+              />
+            ) : (
+              <MyProductList onOpenTradeDetail={handleOpenSalesTradeDetail} />
+            )
+          )}
+          {activeSection === "wishlist" && <AuctionFavoritesPage />}
           {activeSection === "wallet" && <PointWalletPage embedded />}
           {activeSection === "quote" && isProvider && <MyQuoteListPage />}
-          {activeSection === "wishlist" && <AuctionFavoritesPage />}
           {activeSection === "review" && <ReviewListPage />}
+          {isProvider && activeSection === "service-trade" && (
+            <ProviderEmbeddedSection
+              title="서비스 거래"
+              description="진행 중이거나 완료된 서비스 거래를 확인합니다."
+              emptyText="아직 표시할 서비스 거래 내역이 없습니다."
+            />
+          )}
+          {isProvider && activeSection === "settlement" && <SettlementListPage embedded />}
+          {isProvider && activeSection === "service-chat" && (
+            <ProviderEmbeddedSection
+              title="서비스 채팅"
+              description="서비스 요청자와 나눈 채팅방을 확인합니다."
+              emptyText="아직 표시할 서비스 채팅이 없습니다."
+            />
+          )}
+          {isProvider && activeSection === "approval-category" && (
+            <ProviderEmbeddedSection
+              title="승인 카테고리"
+              description="견적을 제출할 수 있도록 승인된 서비스 분야를 확인합니다."
+              emptyText="표시할 승인 카테고리가 없습니다."
+            />
+          )}
           {/* 기존 경로로 진입한 경우에도 입찰 내역을 안전하게 표시한다. */}
           {activeSection === "auction-history" && <MyBidHistoryPage />}
           {/* 개발 환경에서는 거래내역과 동일한 미리보기 채팅 데이터를 사용한다. */}
           {activeSection === "chat" && (
-            selectedChatTradeId ? (
-              <TradeChat
-                embedded
-                preview={previewTrades}
-                tradeId={selectedChatTradeId}
-                showRoomList
-                onBack={() => setSelectedChatTradeId("")}
-              />
-            ) : (
-              <MyPageTradeChatList
+            <TradeChat
+              embedded
               preview={previewTrades}
-                onOpenChatRoom={setSelectedChatTradeId}
-              />
-            )
+              tradeId={selectedChatTradeId || undefined}
+              showRoomList
+              backLabel={chatReturnSection ? "거래 상세" : undefined}
+              onBack={chatReturnSection ? () => {
+                setSelectedChatTradeId("");
+                setActiveSection(chatReturnSection);
+                setChatReturnSection("");
+              } : undefined}
+            />
           )}
         </div>
       </div>
