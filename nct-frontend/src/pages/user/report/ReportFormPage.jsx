@@ -1,9 +1,9 @@
 // src/pages/user/report/ReportFormPage.jsx
 // F-COM-018 (2단계): 신고 접수 폼 — 담당자3 황성경 소유
-// - 더미 submit. API 연동 시 useMutation(postReport) 으로 교체.
 // - 제출 후 /user/mypage?section=report-list 로 이동.
 import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSubmitCustomerReport } from "@hooks/useAbuseReport";
 
 const REPORT_TYPES = [
   "제공자 프로필",
@@ -24,6 +24,23 @@ const TARGET_TYPES = [
 const MAX_FILES = 5;
 const MAX_FILE_MB = 10;
 
+// 프론트 표시 레이블 → 백엔드 코드 매핑
+const TYPE_CODE_MAP = {
+  "제공자 프로필": "ABRC0002",
+  "거래 문제":    "ABRC0001",
+  "서비스 요청":  "ABRC0001",
+  "부적절한 리뷰": "ABRC0003",
+  "기타":         "ABRC0004",
+};
+
+const REF_TYPE_CODE_MAP = {
+  provider: "REFC0001",
+  trade:    "REFC0005",
+  service:  "REFC0007",
+  review:   null,
+  direct:   null,
+};
+
 const EMPTY = { type: "", targetType: "direct", targetId: "", targetName: "", title: "", content: "" };
 
 export default function ReportFormPage({ embedded = false }) {
@@ -35,10 +52,11 @@ export default function ReportFormPage({ embedded = false }) {
       ? navigate("/user/mypage?section=report-list")
       : navigate(-1);
 
+  const { mutateAsync, isPending } = useSubmitCustomerReport();
+
   const [form, setForm] = useState(EMPTY);
   const [files, setFiles] = useState([]); // { id, file, previewUrl }[]
   const [errors, setErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
 
   const set = (key, val) => {
     setForm((prev) => ({ ...prev, [key]: val }));
@@ -88,11 +106,21 @@ export default function ReportFormPage({ embedded = false }) {
     e.preventDefault();
     const e2 = validate();
     if (Object.keys(e2).length) { setErrors(e2); return; }
-    setSubmitting(true);
-    // TODO: API 연동 — await postReport({ ...form, files })
-    await new Promise((r) => setTimeout(r, 600));
-    setSubmitting(false);
-    navigate("/user/mypage?section=report-list");
+
+    const referenceSn = form.targetId ? Number(form.targetId) || null : null;
+    try {
+      await mutateAsync({
+        reportTypeCode:    TYPE_CODE_MAP[form.type] ?? "ABRC0004",
+        referenceTypeCode: REF_TYPE_CODE_MAP[form.targetType] ?? null,
+        referenceSn,
+        targetName: form.targetName.trim() || null,
+        title:      form.title.trim(),
+        content:    form.content.trim(),
+      });
+      navigate("/user/mypage?section=report-list");
+    } catch {
+      setErrors((prev) => ({ ...prev, _server: "신고 접수 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요." }));
+    }
   };
 
   const isTargetIdVisible = form.targetType !== "direct";
@@ -343,6 +371,10 @@ export default function ReportFormPage({ embedded = false }) {
           </ul>
         </div>
 
+        {errors._server && (
+          <p className="text-[14px] text-red-500 mb-4">{errors._server}</p>
+        )}
+
         {/* 버튼 영역 */}
         <div className="flex gap-3">
           <button
@@ -354,10 +386,10 @@ export default function ReportFormPage({ embedded = false }) {
           </button>
           <button
             type="submit"
-            disabled={submitting}
+            disabled={isPending}
             className="btn btn-primary flex-1"
           >
-            {submitting ? "접수 중…" : "신고 접수하기"}
+            {isPending ? "접수 중…" : "신고 접수하기"}
           </button>
         </div>
 
