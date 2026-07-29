@@ -9,7 +9,5 @@ export {
   MockupNoticeListSummary as NoticeListSummary,
   MockupContentPagination as ContentPagination,
   MockupNoticeDetail as NoticeDetail,
-  MockupGuideFlowGrid as GuideFlowGrid,
-  MockupGuideFlowStrip as GuideFlowStrip,
-  MockupGuideModal as GuideModal,
+  MockupGuideJourneyOverview as GuideJourneyOverview,
 } from './mockup/MockupContentComponents';
