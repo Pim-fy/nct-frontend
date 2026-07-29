@@ -1,6 +1,11 @@
 // Source: https://www.data.go.kr/data/15063424/fileData.do
 // Dataset: 국토교통부_전국 법정동_20260630 (시도/시군구만 사용)
-export const KOREA_REGIONS = [
+const REGION_DISPLAY_ORDER = [
+    "11", "41", "28", "26", "27", "12", "30", "31",
+    "36", "51", "48", "47", "52", "44", "43", "50"
+];
+
+const KOREA_REGION_DATA = [
     {
         "code":  "11",
         "name":  "서울특별시",
@@ -1174,3 +1179,13 @@ export const KOREA_REGIONS = [
                       ]
     }
 ];
+
+const regionOrder = new Map(
+    REGION_DISPLAY_ORDER.map((code, index) => [code, index])
+);
+
+export const KOREA_REGIONS = [...KOREA_REGION_DATA]
+    .sort((left, right) => (
+        (regionOrder.get(left.code) ?? Number.MAX_SAFE_INTEGER)
+        - (regionOrder.get(right.code) ?? Number.MAX_SAFE_INTEGER)
+    ));
