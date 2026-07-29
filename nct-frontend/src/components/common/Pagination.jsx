@@ -9,14 +9,28 @@ const Pagination = ({ page, totalPages, onPageChange, showSinglePage = false }) 
 
   if (!showSinglePage && visibleTotalPages <= 1) return null;
 
+  const btnBase = "flex items-center justify-center size-[35px] rounded border border-[#d9d9d9] bg-white text-[#4e4e4e] disabled:cursor-not-allowed disabled:opacity-40";
+
   return (
     <div className="flex items-center justify-center gap-2 my-6">
+      {/* 첫 페이지 «  */}
+      <button
+        type="button"
+        onClick={() => onPageChange(1)}
+        disabled={visiblePage === 1}
+        aria-label="첫 페이지"
+        className={btnBase}
+      >
+        <span className="text-[13px] font-bold">«</span>
+      </button>
+
+      {/* 이전 페이지 < */}
       <button
         type="button"
         onClick={() => onPageChange(Math.max(1, visiblePage - 1))}
         disabled={visiblePage === 1}
         aria-label="이전 페이지"
-        className="flex items-center justify-center size-[35px] rounded border border-[#d9d9d9] bg-white text-[#4e4e4e] disabled:cursor-not-allowed disabled:opacity-40"
+        className={btnBase}
       >
         <ChevronLeft size={18} />
       </button>
@@ -37,14 +51,26 @@ const Pagination = ({ page, totalPages, onPageChange, showSinglePage = false }) 
         </button>
       ))}
 
+      {/* 다음 페이지 > */}
       <button
         type="button"
         onClick={() => onPageChange(Math.min(visibleTotalPages, visiblePage + 1))}
         disabled={visiblePage === visibleTotalPages}
         aria-label="다음 페이지"
-        className="flex items-center justify-center size-[35px] rounded border border-[#d9d9d9] bg-white text-[#4e4e4e] disabled:cursor-not-allowed disabled:opacity-40"
+        className={btnBase}
       >
         <ChevronRight size={18} />
+      </button>
+
+      {/* 마지막 페이지 » */}
+      <button
+        type="button"
+        onClick={() => onPageChange(visibleTotalPages)}
+        disabled={visiblePage === visibleTotalPages}
+        aria-label="마지막 페이지"
+        className={btnBase}
+      >
+        <span className="text-[13px] font-bold">»</span>
       </button>
     </div>
   );

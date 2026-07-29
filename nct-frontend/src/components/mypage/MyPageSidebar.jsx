@@ -30,10 +30,11 @@ const GENERAL_MENU_ITEMS = [
       { key: "service-sales", label: "서비스 판매 내역", type: "todo" },
     ],
   },
-  { key: "wishlist", label: "관심 상품",   type: "section" },
-  { key: "chat",     label: "채팅",        type: "section" },
-  { key: "wallet",   label: "포인트 지갑", type: "section" },
-  { key: "review",   label: "내 리뷰",     type: "section" },
+  { key: "wishlist",     label: "관심 상품",    type: "section" },
+  { key: "chat",         label: "채팅",         type: "section" },
+  { key: "wallet",       label: "포인트 지갑",  type: "section" },
+  { key: "review",       label: "내 리뷰",      type: "section" },
+  { key: "report-list",  label: "내 신고 목록", type: "section" },
 ];
 
 const PROVIDER_MENU_ITEMS = [
@@ -46,6 +47,7 @@ const PROVIDER_MENU_ITEMS = [
   { key: "wallet",            label: "포인트 지갑",   type: "section" },
   { key: "approval-category", label: "승인 카테고리", type: "todo" },
   { key: "review",            label: "내 리뷰",       type: "section" },
+  { key: "report-list",       label: "내 신고 목록",  type: "section" },
   { key: "quote",             label: "견적",          type: "section" },
   { key: "service-trade",     label: "서비스 거래",   type: "section" },
   { key: "settlement",        label: "정산 관리",     type: "section" },
@@ -114,7 +116,7 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
       </h2>
 
       {/* 모바일: 가로 스크롤 탭 — accordion children 평탄화 */}
-      <div className="flex lg:hidden overflow-x-auto gap-2 pb-1 scrollbar-none">
+      <div className="flex lg:hidden overflow-x-auto gap-2 pb-1 scrollbar-none ">
         {mobileTabs.map((item) => {
           const isActive = item.type === "section" && item.key === activeSection;
           return (
@@ -135,7 +137,7 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
       </div>
 
       {/* 데스크톱: 세로 목록 */}
-      <div className="hidden lg:block">
+      <div className="hidden lg:block  border-t-1 border-t-gray-300">
         {menuItems.map((item) => {
           const isAccordion    = item.type === "accordion";
           const isOpen         = isAccordion && openAccordion === item.key;
@@ -147,7 +149,7 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
               <button
                 type="button"
                 onClick={() => handleClick(item)}
-                className={`cursor-pointer w-full flex items-center justify-between h-[70px] px-[18px] text-left transition-all ${
+                className={`cursor-pointer w-full flex items-center justify-between h-[70px] px-[18px] text-left transition-all  ${
                   isActive
                     ? "bg-[#0064ff] rounded-[10px] shadow-[0_4px_14px_rgba(0,0,0,0.10)]"
                     : isOpen && hasActiveChild

@@ -70,6 +70,7 @@ import ReviewEditPage from '@pages/user/ReviewEditPage';
 import MyPageReviewLayout from '@layouts/MyPageReviewLayout';
 // 내 입찰 내역 (F-AUC-022)
 import MyBidHistoryPage from '@pages/user/MyBidHistoryPage';
+import ReportFormPage from '@pages/user/report/ReportFormPage';
 
 // 담당자 7 병합 검증: develop의 상품 route가 참조하는 페이지 import가 누락되어 런타임 빈 화면이 발생해 복구했습니다.
 // 임시 코드는 아니며 상품 기능의 구현·소유권은 기존 상품 담당자에게 그대로 있습니다.
@@ -233,6 +234,9 @@ const AppRoutes = () => {
           <Route path="/product/register"        element={<ProductRegisterPage key={location.key} />} />
           <Route path="/product/me"              element={<MyProductListPage />} />
           <Route path="/product/:prdSn/seller"   element={<ProductDetailSellerPage />} />
+
+          {/* 신고 접수 (담당자3 황성경 · F-COM-018) */}
+          <Route path="/user/reports/new" element={<ReportFormPage />} />
 
           {/* 서비스 - 로그인 필요 */}
           {/* 담당자 2 · F-SVC-001~004: 서비스 요청서 작성/임시저장 폼. 라우트 소유자에게 전달 필요. */}
