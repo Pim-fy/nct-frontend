@@ -15,7 +15,7 @@ import '@assets/css/landing.css';
 const RECENT_AUCTION_SLOT_COUNT = 3;
 
 const QuickActions = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isProvider } = useAuth();
   const navigate = useNavigate();
   const [recentItems, setRecentItems] = useState(() => getRecentAuctions().slice(0, 3));
   const [failedImageIds, setFailedImageIds] = useState(() => new Set());
@@ -62,8 +62,8 @@ const QuickActions = () => {
       {/* 데스크톱 플로팅 퀵 레일 (md 이상) */}
       <div className="quick-rail hidden md:flex">
 
-        {/* 최근 본 경매 — 항목이 있을 때만 표시 */}
-        {recentItems.length > 0 && <div className="mb-5 flex flex-col items-center gap-[5px] self-center overflow-hidden rounded-[5px] bg-white/80 shadow-[0_5px_10px_rgba(0,0,0,0.12)] backdrop-blur-sm">
+        {/* 최근 본 경매 — 항목이 있을 때만 표시, 제공자모드에서는 숨김 */}
+        {!isProvider && recentItems.length > 0 && <div className="mb-5 flex flex-col items-center gap-[5px] self-center overflow-hidden rounded-[5px] bg-white/80 shadow-[0_5px_10px_rgba(0,0,0,0.12)] backdrop-blur-sm">
           <span className="qi-label w-full bg-[#444444] py-[5px] text-center text-sm text-white">최근 본</span>
           <div className="flex flex-col items-center gap-[5px] px-[5px] pb-[8px]">
             {recentItemSlots.map((item, index) => (
@@ -102,11 +102,13 @@ const QuickActions = () => {
           </div>
         </div>}
 
-        {/* 경매 등록 */}
-        <button className="quick-item quick-blue" type="button" onClick={handleAuctionCreate} title="경매 등록">
-          <img src={cursorIcon} alt="" width="22" height="22" />
-          <span className="qi-label">경매<br/>등록</span>
-        </button>
+        {/* 경매 등록 — 제공자모드에서는 숨김 */}
+        {!isProvider && (
+          <button className="quick-item quick-blue" type="button" onClick={handleAuctionCreate} title="경매 등록">
+            <img src={cursorIcon} alt="" width="22" height="22" />
+            <span className="qi-label">경매<br/>등록</span>
+          </button>
+        )}
 
         {/* 서비스 요청 */}
         <button className="quick-item quick-purple" type="button" onClick={handleServiceCreate} title="서비스 요청">
@@ -148,14 +150,16 @@ const QuickActions = () => {
 
       {/* 모바일 하단 고정 퀵바 (md 미만) */}
       <div className="fixed bottom-0 left-0 right-0 flex md:hidden z-[150] h-[60px]">
-        <button
-          type="button"
-          onClick={handleAuctionCreate}
-          className="flex-1 flex items-center justify-center gap-2 bg-[#0064ff] text-white font-bold text-[15px] border-none cursor-pointer"
-        >
-          <img src={cursorIcon} alt="" width="22" height="22" style={{ filter: 'brightness(0) invert(1)' }} />
-          경매등록
-        </button>
+        {!isProvider && (
+          <button
+            type="button"
+            onClick={handleAuctionCreate}
+            className="flex-1 flex items-center justify-center gap-2 bg-[#0064ff] text-white font-bold text-[15px] border-none cursor-pointer"
+          >
+            <img src={cursorIcon} alt="" width="22" height="22" style={{ filter: 'brightness(0) invert(1)' }} />
+            경매등록
+          </button>
+        )}
         <button
           type="button"
           onClick={handleServiceCreate}

@@ -247,6 +247,8 @@ export default function MyPageProfileEdit({ user }) {
     }));
 
   return (
+    <>
+    <h1 className="mb-5 text-2xl font-bold text-black">프로필</h1>
     <div className="flex flex-col xl:flex-row gap-4 items-start">
       {/* ── 메인 정보수정 카드 ── */}
       <div className="flex-1 min-w-0 border border-[#e5e5e5] rounded-[20px] overflow-hidden">
@@ -552,5 +554,6 @@ export default function MyPageProfileEdit({ user }) {
         </div>
       ) : null}
     </div>
+    </>
   );
 }

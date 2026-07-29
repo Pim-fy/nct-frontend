@@ -5,6 +5,7 @@
 // - 처리·제재(F-OPS-007~008)는 담당자7(조우진) 영역 — 이 페이지는 처리 결과 확인 전용
 import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import Pagination from "@components/common/Pagination";
 
 // ─── 더미 데이터 ────────────────────────────────────────────────────────────
 
@@ -185,102 +186,114 @@ const DUMMY_REPORTS = [
   },
 ];
 
-// ─── 상태 / 유형 메타 ────────────────────────────────────────────────────────
-
-const STATUS_META = {
-  접수됨:  { bg: "bg-sky-50",   text: "text-sky-700",   border: "border-sky-200"   },
-  검토중:  { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" },
-  처리완료: { bg: "bg-green-50", text: "text-green-700", border: "border-green-200" },
-  반려:    { bg: "bg-red-50",   text: "text-red-600",   border: "border-red-200"   },
+// ─── 상태 배지 매핑 (badge 클래스 시스템) ────────────────────────────────────
+// 접수됨  → badge-success   (파랑 outline — 진행 중인 긍정 상태)
+// 검토중  → badge-warning   (노랑 — 주의/대기)
+// 처리완료 → badge-primary  (파랑 filled — 완료)
+// 반려   → badge-danger    (빨강 outline — 실패/거절)
+const STATUS_BADGE_CLS = {
+  접수됨:   "badge-success",
+  검토중:   "badge-warning",
+  처리완료: "badge-primary",
+  반려:     "badge-danger",
 };
 
-const TYPE_COLOR = {
-  "제공자 프로필": { text: "text-violet-700", bg: "bg-violet-50" },
-  "거래 문제":     { text: "text-blue-700",   bg: "bg-blue-50"   },
-  "서비스 요청":   { text: "text-teal-700",   bg: "bg-teal-50"   },
-  "부적절한 리뷰": { text: "text-amber-700",  bg: "bg-amber-50"  },
-  "기타":          { text: "text-gray-600",   bg: "bg-gray-100"  },
+// 카드 좌측 컬러 바
+const STATUS_LEFT_CLS = {
+  처리완료: "bg-[#0064ff]",
+  검토중:   "bg-[#FFC526]",
+  접수됨:   "bg-sky-400",
+  반려:     "bg-red-500",
 };
 
-const STATUS_TABS = ["전체", "접수됨", "검토중", "처리완료", "반려"];
-const PAGE_SIZE = 6;
+// 신고 유형 배지 매핑
+const TYPE_BADGE_CLS = {
+  "제공자 프로필": "badge-aqua",
+  "거래 문제":     "badge-success",
+  "서비스 요청":   "badge-orange",
+  "부적절한 리뷰": "badge-warning",
+  "기타":          "badge-gray",
+};
+
+// "처리완료" 탭은 처리완료+반려를 함께 표시한다
+const STATUS_TABS = ["전체", "접수됨", "검토중", "처리완료"];
+const PAGE_SIZE = 5;
+
+const isFinished = (status) => status === "처리완료" || status === "반려";
 
 // ─── 서브 컴포넌트 ────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }) {
-  const m = STATUS_META[status] ?? { bg: "bg-gray-50", text: "text-gray-600", border: "border-gray-200" };
-  return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[13px] font-semibold border ${m.bg} ${m.text} ${m.border}`}>
-      {status}
-    </span>
-  );
+  const cls = STATUS_BADGE_CLS[status] ?? "badge-gray";
+  return <span className={`badge ${cls}`}>{status}</span>;
 }
 
 function TypeTag({ type }) {
-  const c = TYPE_COLOR[type] ?? TYPE_COLOR["기타"];
-  return (
-    <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold ${c.text} ${c.bg}`}>
-      {type}
-    </span>
-  );
+  const cls = TYPE_BADGE_CLS[type] ?? "badge-gray";
+  return <span className={`badge ${cls}`}>{type}</span>;
 }
 
-function ReportRow({ report, onClick }) {
-  const hasAnswer = !!report.adminNote;
+function ReportCard({ report, onClick }) {
   return (
     <button
       type="button"
       onClick={() => onClick(report)}
-      className="w-full text-left flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors group"
+      className="w-full text-left border border-[#e8e9ec] rounded-[12px] bg-white hover:border-[#0064ff] transition-all group overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgba(0,100,255,0.10)]"
     >
-      {/* 상태 인디케이터 선 */}
-      <div className="flex flex-col items-center gap-1 shrink-0 self-stretch justify-center">
-        <span
-          className="w-[3px] rounded-full flex-1"
-          style={{
-            background:
-              report.status === "처리완료" ? "#16a34a"
-              : report.status === "검토중"  ? "#d97706"
-              : report.status === "반려"    ? "#ef4444"
-              : "#0ea5e9",
-            minHeight: 40,
-          }}
-        />
-      </div>
+      <div className="flex items-center">
+        <div className="flex-1 min-w-0 p-5">
+          {/* 상단: 유형 태그 + ID + 날짜 / 우측 상태 배지 */}
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+              <TypeTag type={report.type} />
+              <span className="text-[14px] text-[#969696]">{report.id}</span>
+              <span className="text-[14px] text-[#d9d9d9]">·</span>
+              <span className="text-[14px] text-[#969696]">{report.submittedAt}</span>
+            </div>
+            <StatusBadge status={report.status} />
+          </div>
 
-      {/* 본문 */}
-      <div className="flex-1 min-w-0">
-        <div className="flex flex-wrap items-center gap-2 mb-1">
-          <TypeTag type={report.type} />
-          <span className="text-[14px] text-gray-400">{report.id}</span>
-          <span className="text-[14px] text-gray-300">·</span>
-          <span className="text-[14px] text-gray-400">{report.submittedAt}</span>
-        </div>
-        <p className="font-semibold text-gray-900 text-[15px] truncate m-0 mb-0.5">{report.title}</p>
-        <p className="text-[15px] text-gray-500 truncate m-0">{report.targetName}
-          <span className="text-gray-300 mx-1">·</span>
-          <span className="text-gray-400">{report.targetDesc}</span>
-        </p>
-        {hasAnswer && (
-          <p className="text-[14px] text-blue-600 mt-1.5 m-0 flex items-center gap-1">
-            <svg className="size-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-            </svg>
-            관리자 답변이 등록되었습니다
+          {/* 제목 */}
+          <p className="font-bold text-[16px] text-black truncate mb-1">{report.title}</p>
+
+          {/* 신고 대상 */}
+          <p className="text-[16px] text-[#4e4e4e] truncate">
+            {report.targetName}
+            <span className="text-[#d9d9d9] mx-1.5">·</span>
+            <span className="text-[#969696]">{report.targetDesc}</span>
           </p>
-        )}
-      </div>
 
-      {/* 우측: 상태 + 화살표 */}
-      <div className="flex flex-col items-end gap-2 shrink-0">
-        <StatusBadge status={report.status} />
-        <svg
-          className="size-4 text-gray-300 group-hover:text-gray-400 transition-colors"
-          fill="none" stroke="currentColor" viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
+          {/* 하단: 첨부파일 수 + 관리자 답변 여부 */}
+          {(report.files.length > 0 || report.adminNote) && (
+            <div className="flex items-center gap-3 mt-2">
+              {report.files.length > 0 && (
+                <span className="flex items-center gap-1 text-[14px] text-[#969696]">
+                  <svg className="size-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  </svg>
+                  첨부 {report.files.length}개
+                </span>
+              )}
+              {report.adminNote && (
+                <span className="flex items-center gap-1 text-[14px] text-[#0064ff]">
+                  <svg className="size-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                  </svg>
+                  관리자 답변 있음
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* 우측 화살표 */}
+        <div className="flex items-center pr-4 pl-1 shrink-0">
+          <svg className="size-4 text-[#d9d9d9] group-hover:text-[#0064ff] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
       </div>
     </button>
   );
@@ -291,35 +304,32 @@ function ReportDetailModal({ report, onClose }) {
 
   return (
     <div
-      className="user-modal-overlay flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.4)" }}
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="bg-white rounded-2xl w-full max-w-[520px] max-h-[86vh] flex flex-col overflow-hidden"
+        className="bg-white rounded-[12px] w-full max-w-[520px] max-h-[86vh] flex flex-col overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.12)]"
         aria-labelledby="report-detail-modal-title"
-        aria-modal="true"
-        role="dialog"
-        style={{ boxShadow: "0 8px 40px rgba(0,0,0,0.16)" }}
       >
         {/* 헤더 */}
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-start justify-between gap-3 shrink-0">
+        <div className="px-6 pt-5 pb-4 border-b border-[#e8e9ec] flex items-start justify-between gap-3 shrink-0">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
               <TypeTag type={report.type} />
               <StatusBadge status={report.status} />
             </div>
-            <h2 className="text-[18px] font-bold text-gray-900 m-0 leading-snug" id="report-detail-modal-title">{report.title}</h2>
-            <p className="text-[14px] text-gray-400 m-0 mt-1">{report.id} · 접수 {report.submittedAt}</p>
+            <h2 id="report-detail-modal-title" className="text-[18px] font-bold text-[#1a1a18] m-0 leading-snug">{report.title}</h2>
+            <p className="text-[14px] text-[#888] m-0 mt-1">{report.id} · 접수 {report.submittedAt}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="size-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 shrink-0 transition-colors"
+            className="shrink-0 size-8 flex items-center justify-center rounded-full text-[#888] hover:bg-[#f5f6f8] hover:text-[#1a1a18] transition-colors text-[18px] leading-none"
+            aria-label="닫기"
           >
-            <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            ✕
           </button>
         </div>
 
@@ -327,29 +337,29 @@ function ReportDetailModal({ report, onClose }) {
         <div className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
 
           {/* 신고 대상 */}
-          <div className="bg-gray-50 rounded-xl p-4">
-            <p className="text-[14px] text-gray-400 font-medium m-0 mb-1">신고 대상</p>
-            <p className="font-semibold text-gray-800 text-[15px] m-0">{report.targetName}</p>
-            <p className="text-[14px] text-gray-400 m-0 mt-0.5">{report.targetDesc}</p>
+          <div className="bg-[#f5f6f8] rounded-[8px] p-4">
+            <p className="text-[14px] text-[#888] font-medium m-0 mb-1">신고 대상</p>
+            <p className="font-bold text-[16px] text-[#1a1a18] m-0">{report.targetName}</p>
+            <p className="text-[14px] text-[#888] m-0 mt-0.5">{report.targetDesc}</p>
           </div>
 
           {/* 신고 내용 */}
           <div>
-            <p className="text-[15px] font-semibold text-gray-700 m-0 mb-2">신고 내용</p>
-            <p className="text-[15px] text-gray-600 leading-relaxed m-0">{report.content}</p>
+            <p className="text-[16px] font-bold text-[#1a1a18] m-0 mb-2">신고 내용</p>
+            <p className="text-[16px] text-[#444] leading-relaxed m-0">{report.content}</p>
           </div>
 
           {/* 첨부파일 */}
           {report.files.length > 0 && (
             <div>
-              <p className="text-[15px] font-semibold text-gray-700 m-0 mb-2">첨부파일 ({report.files.length})</p>
+              <p className="text-[16px] font-bold text-[#1a1a18] m-0 mb-2">첨부파일 ({report.files.length})</p>
               <div className="flex flex-wrap gap-2">
                 {report.files.map((f) => (
                   <span
                     key={f}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-[14px] text-gray-600"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] bg-[#f5f6f8] border border-[#e8e9ec] text-[14px] text-[#444]"
                   >
-                    <svg className="size-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="size-3.5 text-[#888]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                         d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                     </svg>
@@ -362,34 +372,33 @@ function ReportDetailModal({ report, onClose }) {
 
           {/* 관리자 답변 */}
           {report.adminNote && (
-            <div className="rounded-xl p-4 bg-blue-50 border border-blue-100">
+            <div className="rounded-[8px] p-4 bg-[#e5efff] border border-[#c0d8ff]">
               <div className="flex items-center gap-1.5 mb-2">
-                <svg className="size-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="size-4 text-[#0064ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                     d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                 </svg>
-                <p className="text-[15px] font-semibold text-blue-700 m-0">관리자 답변</p>
+                <p className="text-[16px] font-bold text-[#0064ff] m-0">관리자 답변</p>
               </div>
-              <p className="text-[15px] text-blue-800 leading-relaxed m-0">{report.adminNote}</p>
+              <p className="text-[16px] text-[#1a1a18] leading-relaxed m-0">{report.adminNote}</p>
             </div>
           )}
 
           {/* 처리 이력 */}
           <div>
-            <p className="text-[15px] font-semibold text-gray-700 m-0 mb-3">처리 이력</p>
+            <p className="text-[16px] font-bold text-[#1a1a18] m-0 mb-3">처리 이력</p>
             <ol className="space-y-3 m-0 p-0 list-none">
               {report.timeline.map((step, i) => {
                 const isLast = i === report.timeline.length - 1;
-                const m = STATUS_META[step.status] ?? {};
                 return (
                   <li key={step.at} className="flex items-start gap-3">
                     <div className="flex flex-col items-center shrink-0 mt-1">
-                      <span className={`size-2 rounded-full ${isLast ? "bg-blue-500" : "bg-gray-300"}`} />
-                      {!isLast && <span className="w-px h-6 bg-gray-200 mt-1" />}
+                      <span className={`size-2 rounded-full ${isLast ? "bg-[#0064ff]" : "bg-[#e8e9ec]"}`} />
+                      {!isLast && <span className="w-px h-6 bg-[#e8e9ec] mt-1" />}
                     </div>
                     <div>
                       <StatusBadge status={step.status} />
-                      <p className="text-[14px] text-gray-400 m-0 mt-1">{step.at}</p>
+                      <p className="text-[14px] text-[#888] m-0 mt-1">{step.at}</p>
                     </div>
                   </li>
                 );
@@ -398,12 +407,6 @@ function ReportDetailModal({ report, onClose }) {
           </div>
         </div>
 
-        {/* 푸터 */}
-        <div className="px-6 py-4 border-t border-gray-100 shrink-0">
-          <button type="button" onClick={onClose} className="btn btn-ghost btn-sm w-full">
-            닫기
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -419,120 +422,76 @@ export default function MyReportListPage({ embedded = false }) {
 
   const handleTab = (t) => { setActiveTab(t); setPage(1); };
 
-  const filtered = useMemo(
-    () => activeTab === "전체" ? DUMMY_REPORTS : DUMMY_REPORTS.filter((r) => r.status === activeTab),
-    [activeTab],
-  );
+  // "처리완료" 탭은 반려 포함
+  const filtered = useMemo(() => {
+    if (activeTab === "전체")     return DUMMY_REPORTS;
+    if (activeTab === "처리완료") return DUMMY_REPORTS.filter((r) => isFinished(r.status));
+    return DUMMY_REPORTS.filter((r) => r.status === activeTab);
+  }, [activeTab]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const countOf = (s) => DUMMY_REPORTS.filter((r) => r.status === s).length;
+  // 탭별 카운트 (처리완료 탭은 반려 포함)
+  const countOf = (tab) => {
+    if (tab === "전체")     return DUMMY_REPORTS.length;
+    if (tab === "처리완료") return DUMMY_REPORTS.filter((r) => isFinished(r.status)).length;
+    return DUMMY_REPORTS.filter((r) => r.status === tab).length;
+  };
 
   return (
-    <div className="max-w-[1200px] mx-auto px-4 py-10">
+    <div className={embedded ? "" : "max-w-[1200px] mx-auto px-4 py-10"}>
 
-      {/* 페이지 헤더 */}
-      <div className="flex items-center justify-between gap-4 mb-8 flex-wrap">
-        <div>
-          <h1 className="text-[28px] font-[800] text-gray-900 m-0">내 신고 내역</h1>
-          <p className="text-gray-400 text-[14px] mt-1 m-0">접수한 신고의 처리 현황을 확인할 수 있습니다.</p>
-        </div>
+      {/* 페이지 타이틀 */}
+      <div className="flex items-center justify-between gap-4 mb-5 flex-wrap">
+        <h1 className="text-2xl font-bold text-black m-0">내 신고 목록</h1>
         <button
           type="button"
-          onClick={() => navigate("/customer-support/reports/new")}
+          onClick={() => navigate("/user/mypage?section=report-form")}
           className="btn btn-primary btn-sm shrink-0"
         >
           신고 접수하기
         </button>
       </div>
 
-      {/* 상태 탭 */}
-      <div className="flex items-center gap-1 border-b border-gray-100 mb-1">
+      {/* 상태 탭 — 1차 탭메뉴 (tab-pill) */}
+      <div className="tab-group-1 mb-5">
         {STATUS_TABS.map((tab) => {
-          const count = tab === "전체" ? DUMMY_REPORTS.length : countOf(tab);
-          const isActive = activeTab === tab;
+          const count = countOf(tab);
           return (
             <button
               key={tab}
               type="button"
               onClick={() => handleTab(tab)}
-              className={`relative px-4 py-3 text-[15px] font-medium transition-colors whitespace-nowrap
-                ${isActive ? "text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
+              className={`tab-pill${activeTab === tab ? " active" : ""}`}
             >
               {tab}
-              {count > 0 && (
-                <span
-                  className={`ml-1.5 text-[11px] font-bold px-1.5 py-0.5 rounded-full
-                    ${isActive ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-400"}`}
-                >
-                  {count}
-                </span>
-              )}
-              {isActive && (
-                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-blue-600 rounded-t-full" />
-              )}
+              <span className="tab-count">{count}</span>
             </button>
           );
         })}
       </div>
 
-      {/* 리스트 카드 */}
-      <div
-        className="bg-white border border-gray-100 rounded-2xl overflow-hidden"
-        style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.06)" }}
-      >
-        {paged.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <svg className="size-12 text-gray-200 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <p className="text-gray-400 text-[15px] m-0">신고 내역이 없습니다.</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-100">
-            {paged.map((report) => (
-              <ReportRow key={report.id} report={report} onClick={setSelected} />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* 결과 수 + 페이지네이션 */}
-      {filtered.length > 0 && (
-        <div className="flex items-center justify-between mt-4 flex-wrap gap-3">
-          <p className="text-[14px] text-gray-400 m-0">
-            총 <span className="font-semibold text-gray-600">{filtered.length}건</span>
-          </p>
-          {totalPages > 1 && (
-            <div className="flex gap-1">
-              <button
-                type="button"
-                disabled={page <= 1}
-                onClick={() => setPage(page - 1)}
-                className="size-8 rounded-lg border border-gray-200 text-gray-500 text-[14px] flex items-center justify-center disabled:opacity-40 hover:border-blue-400 hover:text-blue-600 transition-colors"
-              >‹</button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setPage(p)}
-                  className={`size-8 rounded-lg border text-[14px] font-medium transition-colors
-                    ${p === page
-                      ? "bg-blue-600 border-blue-600 text-white"
-                      : "border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600"}`}
-                >{p}</button>
-              ))}
-              <button
-                type="button"
-                disabled={page >= totalPages}
-                onClick={() => setPage(page + 1)}
-                className="size-8 rounded-lg border border-gray-200 text-gray-500 text-[14px] flex items-center justify-center disabled:opacity-40 hover:border-blue-400 hover:text-blue-600 transition-colors"
-              >›</button>
-            </div>
-          )}
+      {/* 카드 목록 */}
+      {paged.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center border border-[#e5e5e5] rounded-[15px] bg-white">
+          <svg className="size-12 text-[#d9d9d9] mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <p className="text-[16px] text-[#969696] m-0">신고 내역이 없습니다.</p>
         </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {paged.map((report) => (
+            <ReportCard key={report.id} report={report} onClick={setSelected} />
+          ))}
+        </div>
+      )}
+
+      {/* 총 건수 + 페이지네이션 */}
+      {filtered.length > 0 && (
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} showSinglePage />
       )}
 
       {/* 상세 모달 */}

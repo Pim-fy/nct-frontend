@@ -33,7 +33,6 @@ export default function ReviewEditPage() {
   const [photos, setPhotos] = useState([]); // [{ id, file, previewUrl }] - 새로 첨부한 사진만 들어간다.
   const [pickMode, setPickMode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
   const fileInputRef = useRef(null);
 
   // 미리보기 URL은 컴포넌트가 사라질 때 반드시 해제해야 메모리 누수가 없다.
@@ -120,7 +119,8 @@ export default function ReviewEditPage() {
     try {
       await updateReview(id ?? item.id, formData);
       await queryClient.invalidateQueries({ queryKey: ["reviews"] });
-      setSubmitSuccess(true);
+      toast({ icon: "success", title: "리뷰가 수정되었습니다." });
+      navigate("/user/mypage?section=review");
     } catch (err) {
       console.error("리뷰 수정 실패:", err);
       toast({ icon: "error", title: "리뷰 수정에 실패했습니다. 잠시 후 다시 시도해주세요." });
@@ -274,22 +274,6 @@ export default function ReviewEditPage() {
           </button>
         </div>
 
-      {submitSuccess && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 9000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.45)" }}>
-          <div style={{ background: "#fff", borderRadius: 16, padding: "32px 28px", maxWidth: 360, width: "90%", textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.18)" }}>
-            <p style={{ fontSize: 18, fontWeight: "bold", color: "#1a1a1a", marginBottom: 8 }}>리뷰가 수정되었습니다.</p>
-            <p style={{ fontSize: 14, color: "#969696", marginBottom: 24 }}>내가 작성한 리뷰 목록으로 이동합니다.</p>
-            <button
-              type="button"
-              className="btn btn-primary"
-              style={{ width: "100%" }}
-              onClick={() => navigate("/user/mypage?section=review", { state: { justUpdated: true } })}
-            >
-              확인
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
