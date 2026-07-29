@@ -102,12 +102,12 @@ const RECENT_QUOTE_ITEMS = [
   },
 ];
 
-function StatCard({ color, icon, label, value, unit, meta }) {
+function StatCard({ color, icon, label, value, unit, meta, onMore }) {
   return (
     <div className="relative rounded-[10px] text-white p-3 md:mb-5 md:mt-5" style={{ backgroundColor: color }}>
       <button
         type="button"
-        onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
+        onClick={onMore ?? (() => toast({ icon: "info", title: "준비 중인 기능입니다." }))}
         className="absolute right-4 top-4 bg-transparent border-none cursor-pointer"
         aria-label={`${label} 더보기`}
       >
@@ -127,7 +127,7 @@ function StatCard({ color, icon, label, value, unit, meta }) {
   );
 }
 
-function TaskCard({ title, desc, action }) {
+function TaskCard({ title, desc, action, onAction }) {
   return (
     <div className="rounded-[5px] border border-[#eaeaea] bg-[#f7f7f7] p-4">
       <div className="flex items-start justify-between gap-3">
@@ -137,7 +137,7 @@ function TaskCard({ title, desc, action }) {
         </div>
         <button
           type="button"
-          onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
+          onClick={onAction ?? (() => toast({ icon: "info", title: "준비 중인 기능입니다." }))}
           className="btn btn-ghost btn-sm shrink-0"
         >
           <img src={action === "chat" ? assets.iconChat : assets.iconReport} alt="" className="size-[11px]" />
@@ -194,7 +194,7 @@ function CompactListPanel({ title, items }) {
   );
 }
 
-export default function MyPageProviderDashboard({ user, onSwitchToGeneral }) {
+export default function MyPageProviderDashboard({ user, onLogout, onSwitchToGeneral }) {
   const navigate = useNavigate();
   const nickname = user?.nickname || "고객";
   const email = user?.email || "";
@@ -216,6 +216,7 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral }) {
             <div className="flex gap-2 mt-2">
               <button
                 type="button"
+                onClick={onLogout}
                 className="btn btn-ghost btn-sm"
               >
                 <img src={assets.iconLogout} alt="" className="size-[12px]" />
@@ -256,7 +257,11 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral }) {
       {/* 통계 카드 4개 — 모바일: 4행 1열 / 태블릿: 2×2 / 데스크톱: 1행 4열 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         {STAT_CARDS.map(({ key, ...card }) => (
-          <StatCard key={key} {...card} />
+          <StatCard
+            key={key}
+            {...card}
+            onMore={key === "settleable" ? () => navigate("/user/settlement") : undefined}
+          />
         ))}
       </div>
 
@@ -272,7 +277,11 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral }) {
         ) : (
           <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {TODAY_TASKS.map((task, i) => (
-              <TaskCard key={`${task.title}-${i}`} {...task} />
+              <TaskCard
+                key={`${task.title}-${i}`}
+                {...task}
+                onAction={task.action === "chat" ? () => navigate("/user/mypage?section=chat") : undefined}
+              />
             ))}
           </div>
         )}

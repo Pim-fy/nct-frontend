@@ -30,20 +30,22 @@ const GENERAL_MENU_ITEMS = [
       { key: "service-sales", label: "서비스 판매 내역", type: "todo" },
     ],
   },
-  { key: "wishlist", label: "관심 상품",   type: "todo" },
+  { key: "wishlist", label: "관심 상품",   type: "section" },
   { key: "chat",     label: "채팅",        type: "section" },
   { key: "wallet",   label: "포인트 지갑", type: "section" },
+  { key: "review",   label: "내 리뷰",     type: "section" },
 ];
 
 const PROVIDER_MENU_ITEMS = [
   { key: "home",              label: "MY 홈",        type: "section" },
   { key: "profile",           label: "프로필",        type: "section" },
-  { key: "quote",             label: "견적",          type: "todo" },
+  { key: "quote",             label: "내 견적",        type: "section" },
   { key: "service-trade",     label: "서비스 거래",   type: "todo" },
   { key: "settlement",        label: "정산 관리",     type: "route", to: "/user/settlement" },
   { key: "service-chat",      label: "서비스 채팅",   type: "todo" },
   { key: "wallet",            label: "포인트 지갑",   type: "section" },
   { key: "approval-category", label: "승인 카테고리", type: "todo" },
+  { key: "review",            label: "내 리뷰",       type: "section" },
 ];
 
 // 아코디언 key → 포함되는 child key 목록

@@ -61,9 +61,13 @@ import ProviderProfilePage from '@pages/provider/ProviderProfilePage';
 import NotificationPage from '@pages/user/notification/NotificationPage';
 import NotificationSettingsPage from '@pages/user/notification/NotificationSettingsPage';
 import SettlementListPage from '@pages/user/settlement/SettlementListPage';
+import AuctionFavoritesPage from '@pages/auction/AuctionFavoritesPage';
+import QuoteFormPage from '@pages/provider/QuoteFormPage';
+import MyQuoteListPage from '@pages/provider/MyQuoteListPage';
 import ReviewListPage from '@pages/user/ReviewListPage';
 import ReviewWritePage from '@pages/user/ReviewWritePage';
 import ReviewEditPage from '@pages/user/ReviewEditPage';
+import MyPageReviewLayout from '@layouts/MyPageReviewLayout';
 // 내 입찰 내역 (F-AUC-022)
 import MyBidHistoryPage from '@pages/user/MyBidHistoryPage';
 
@@ -200,9 +204,12 @@ const AppRoutes = () => {
         )}
       >
         <Route element={<UserLayout />}>
-          <Route path="/user/reviews" element={<ReviewListPage />} />
-          <Route path="/user/reviews/write/:id" element={<ReviewWritePage />} />
-          <Route path="/user/reviews/edit/:id" element={<ReviewEditPage />} />
+          <Route path="/user/auction-favorites" element={<AuctionFavoritesPage />} />
+          <Route path="/user/reviews" element={<Navigate to="/user/mypage?section=review" replace />} />
+          <Route element={<MyPageReviewLayout />}>
+            <Route path="/user/reviews/write/:id" element={<ReviewWritePage />} />
+            <Route path="/user/reviews/edit/:id" element={<ReviewEditPage />} />
+          </Route>
           {/* 경매 거래내역 — 내 입찰 내역 + 내 판매 내역 2탭 (담당자3 HSK, F-AUC-022) */}
           <Route path="/my-bids" element={<MyBidHistoryPage />} />
 
@@ -255,6 +262,8 @@ const AppRoutes = () => {
       <Route element={<ProtectedRoute allowedRoles={['ROLE_SERVICE']} />}>
         <Route element={<UserLayout />}>
           <Route path="/provider/profile" element={<ProviderProfilePage />} />
+          <Route path="/provider/quotes" element={<MyQuoteListPage />} />
+          <Route path="/provider/quotes/new" element={<QuoteFormPage />} />
         </Route>
       </Route>
 

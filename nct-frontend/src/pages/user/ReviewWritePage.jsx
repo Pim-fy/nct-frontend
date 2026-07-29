@@ -8,7 +8,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
-import cameraIcon from "@assets/img/camera.png";
 import StarRating from "@components/review/StarRating";
 import { createReview } from "@api/reviewApi";
 import { toast } from "@utils/common";
@@ -32,7 +31,8 @@ export default function ReviewWritePage() {
 
   const [rating, setRating] = useState(0);
   const [content, setContent] = useState("");
-  const [photos, setPhotos] = useState([]); // [{ file, previewUrl }]
+  const [photos, setPhotos] = useState([]); // [{ id, file, previewUrl }]
+  const [pickMode, setPickMode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -63,7 +63,7 @@ export default function ReviewWritePage() {
         <p className="mt-1 text-sm text-[#969696]">목록에서 다시 "리뷰 등록"을 눌러주세요.</p>
         <button
           type="button"
-          onClick={() => navigate("/user/reviews")}
+          onClick={() => navigate("/user/mypage?section=review")}
           className="btn btn-primary mt-6"
         >
           리뷰작성 목록으로
@@ -74,17 +74,20 @@ export default function ReviewWritePage() {
 
   const dealTypeStyle = DEAL_TYPE_STYLE[resolvedItem.dealType] ?? DEAL_TYPE_STYLE.goods;
 
-  const handleFilesSelected = (e) => {
-    const files = Array.from(e.target.files ?? []);
+  const addFiles = (fileList) => {
+    const files = Array.from(fileList);
     const remainingSlots = MAX_PHOTOS - photos.length;
     if (remainingSlots <= 0) return;
-
     const nextPhotos = files.slice(0, remainingSlots).map((file) => ({
+      id: crypto.randomUUID(),
       file,
       previewUrl: URL.createObjectURL(file),
     }));
     setPhotos((prev) => [...prev, ...nextPhotos]);
-    // 같은 파일을 다시 선택할 수 있도록 입력값을 초기화
+  };
+
+  const handleFilesSelected = (e) => {
+    addFiles(e.target.files ?? []);
     e.target.value = "";
   };
 
@@ -93,6 +96,18 @@ export default function ReviewWritePage() {
       URL.revokeObjectURL(prev[index].previewUrl);
       return prev.filter((_, i) => i !== index);
     });
+  };
+
+  const setAsRepresentative = (id) => {
+    setPhotos((prev) => {
+      const idx = prev.findIndex((p) => p.id === id);
+      if (idx <= 0) return prev;
+      const next = [...prev];
+      const [picked] = next.splice(idx, 1);
+      next.unshift(picked);
+      return next;
+    });
+    setPickMode(false);
   };
 
   const handleSubmit = async () => {
@@ -117,7 +132,7 @@ export default function ReviewWritePage() {
       toast({ icon: "success", title: "리뷰가 등록되었습니다." });
       // 목록 화면의 캐시를 무효화해 다음에 보일 때 방금 등록한 리뷰까지 실제 API로 다시 불러오게 한다.
       await queryClient.invalidateQueries({ queryKey: ["reviews"] });
-      navigate("/user/reviews", { state: { justWrote: true } });
+      navigate("/user/mypage?section=review", { state: { justWrote: true } });
     } catch (err) {
       console.error("리뷰 등록 실패:", err);
       toast({ icon: "error", title: "리뷰 등록에 실패했습니다. 잠시 후 다시 시도해주세요." });
@@ -127,7 +142,7 @@ export default function ReviewWritePage() {
   };
 
   return (
-    <div className="container mt-[50px] mb-[50px]">
+    <div>
       <h1 className="mb-5 text-2xl font-bold text-black">리뷰작성</h1>
 
       <div className="rounded-2xl border border-[#e5e5e5] bg-white p-[15px] md:p-5 lg:p-8">
@@ -170,44 +185,76 @@ export default function ReviewWritePage() {
           </div>
 
           {/* 우: 사진 첨부 */}
-          <div className="flex-1">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              hidden
-              onChange={handleFilesSelected}
-            />
-            <div className="flex justify-center">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={photos.length >= MAX_PHOTOS}
-                className="btn btn-ghost disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <img src={cameraIcon} alt="" className="size-[22px] object-contain" />
-                사진 첨부하기 (최대 5장)
-              </button>
+          <div
+            className="flex-1"
+            style={{ border: "1px dashed #d8d6cf", borderRadius: 12, padding: 16, minHeight: 220, display: "flex", flexDirection: "column" }}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => { e.preventDefault(); addFiles(e.dataTransfer.files); }}
+          >
+            <input ref={fileInputRef} type="file" accept="image/*" multiple hidden onChange={handleFilesSelected} />
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div>
+                <strong style={{ fontSize: 16 }}>사진 첨부</strong>
+                <p style={{ fontSize: 14, color: "#969696", margin: "4px 0 0" }}>
+                  {pickMode ? "대표로 지정할 사진을 선택하세요" : `드래그앤드롭 또는 파일 선택 · 최대 ${MAX_PHOTOS}장 (${photos.length}/${MAX_PHOTOS})`}
+                </p>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setPickMode((v) => !v)}
+                  disabled={photos.length === 0}
+                  className="btn btn-ghost btn-sm"
+                  style={pickMode ? { background: "#0064ff", color: "#fff", borderColor: "#0064ff" } : undefined}
+                >
+                  대표이미지로 지정
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={photos.length >= MAX_PHOTOS}
+                  className="btn btn-ghost btn-sm"
+                >
+                  사진등록
+                </button>
+              </div>
             </div>
 
-            {photos.length > 0 && (
-              <div className="mt-4 flex gap-2">
-                {photos.map((p, index) => (
-                  <div key={p.previewUrl} className="relative flex-1 max-w-[126px] aspect-square overflow-hidden rounded-[10px] border border-[#d9d9d9]">
-                    <img src={p.previewUrl} alt={`첨부 이미지 ${index + 1}`} className="size-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => handleRemovePhoto(index)}
-                      aria-label="사진 삭제"
-                      className="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div style={{ display: "grid", gridTemplateColumns: `repeat(${MAX_PHOTOS}, 1fr)`, gap: 8, marginTop: 12, flex: 1 }}>
+              {photos.map((p, i) => (
+                <div
+                  key={p.id}
+                  onClick={() => pickMode && i !== 0 && setAsRepresentative(p.id)}
+                  style={{ position: "relative", cursor: pickMode && i !== 0 ? "pointer" : "default", aspectRatio: "1" }}
+                >
+                  <img
+                    src={p.previewUrl}
+                    alt={`첨부 이미지 ${i + 1}`}
+                    style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 8, border: i === 0 ? "2px solid #0064ff" : pickMode ? "2px dashed #0064ff" : "1px solid #eee" }}
+                  />
+                  {i === 0 && (
+                    <span className="badge badge-blue" style={{ position: "absolute", top: 4, left: 4, fontSize: 13 }}>대표</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleRemovePhoto(i); }}
+                    style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", border: "none", background: "#111", color: "#fff", cursor: "pointer", fontSize: 14, lineHeight: "20px", padding: 0 }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              {Array.from({ length: MAX_PHOTOS - photos.length }, (_, i) => (
+                <div
+                  key={`empty-${i}`}
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{ aspectRatio: "1", borderRadius: 8, border: "1px dashed #d8d6cf", background: "#fafaf8", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                >
+                  <span style={{ fontSize: 24, color: "#c7c5bd" }}>+</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 

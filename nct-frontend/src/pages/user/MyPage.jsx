@@ -21,6 +21,9 @@ import TradeHistory from "@pages/trade/TradeHistory";
 import MyProductList from "@components/product/MyProductList";
 import PointWalletPage from "@pages/user/point/PointWalletPage";
 import MyReportListPage from "@pages/user/report/MyReportListPage";
+import MyQuoteListPage from "@pages/provider/MyQuoteListPage";
+import ReviewListPage from "@pages/user/ReviewListPage";
+import AuctionFavoritesPage from "@pages/auction/AuctionFavoritesPage";
 import { useAuth } from "@hooks/useAuth";
 import { useMyProviderApplications } from "@hooks/useProviderApplications";
 import { confirm } from "@utils/common";
@@ -32,6 +35,9 @@ const MYPAGE_SECTION_QUERY_VALUES = new Set([
   "chat",
   "wallet",
   "profile",
+  "quote",
+  "review",
+  "wishlist",
 ]);
 
 export default function MyPage({
@@ -41,7 +47,7 @@ export default function MyPage({
   // isProvider: 현재 로그인 역할이 제공자(ROLE_SERVICE)인지 — 서버가 내려준 실제 역할 기준.
   // 예전에는 localStorage 가짜 플래그(providerMode.js)로 화면만 바꿨는데,
   // 백엔드 모드전환 API(F-PROV-008)와 실연동하면서 역할값 하나로 판단하도록 교체(2026-07-24).
-  const { user, isProvider, switchMode } = useAuth();
+  const { user, isProvider, switchMode, logout } = useAuth();
   const { data: myProviderApps = [] } = useMyProviderApplications({
     enabled: !!user && !isProvider,
   });
@@ -108,12 +114,13 @@ export default function MyPage({
             <MyPageDashboard
               user={user}
               isProviderApproved={isProviderApproved}
+              onLogout={logout}
               onRequestProviderSwitch={handleProviderSwitchRequest}
               onOpenAuctionBids={() => setActiveSection("auction-bids")}
             />
           )}
           {activeSection === "home" && isProvider && (
-            <MyPageProviderDashboard user={user} onSwitchToGeneral={handleSwitchToGeneral} />
+            <MyPageProviderDashboard user={user} onLogout={logout} onSwitchToGeneral={handleSwitchToGeneral} />
           )}
           {activeSection === "profile" && <MyPageProfileEdit user={user} />}
           {activeSection === "active-auctions" && <MyActiveAuctionPage />}
@@ -127,6 +134,9 @@ export default function MyPage({
           )}
           {activeSection === "auction-sales" && <MyProductList />}
           {activeSection === "wallet" && <PointWalletPage embedded />}
+          {activeSection === "quote" && isProvider && <MyQuoteListPage />}
+          {activeSection === "wishlist" && <AuctionFavoritesPage />}
+          {activeSection === "review" && <ReviewListPage />}
           {/* 기존 경로로 진입한 경우에도 입찰 내역을 안전하게 표시한다. */}
           {activeSection === "auction-history" && <MyBidHistoryPage />}
           {/* 개발 환경에서는 거래내역과 동일한 미리보기 채팅 데이터를 사용한다. */}
