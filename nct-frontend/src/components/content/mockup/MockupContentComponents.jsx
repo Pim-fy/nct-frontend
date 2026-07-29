@@ -1,4 +1,5 @@
-import { ArrowLeft, Eye, Pin, X } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowLeft, ArrowRight, Check, Eye, Pin, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import './mockupContentComponents.css';
 import './mockupContentPages.css';
@@ -156,74 +157,243 @@ export const MockupNoticeDetail = ({ notice }) => (
   </article>
 );
 
-export const MockupGuideFlowCard = ({ guide, onOpen }) => (
-  <button
-    aria-label={`${guide.title} 예시 흐름 보기`}
-    className="card mockup-guide-flow-card"
-    onClick={() => onOpen(guide)}
-    type="button"
+const GuidePreviewWindow = ({ label, children }) => (
+  <div
+    aria-label={`${label} 가상 화면 미리보기`}
+    className="guide-screen-preview"
+    role="img"
   >
-    <span className="mockup-guide-flow-card__number">{guide.order}</span>
-    <span className="mockup-guide-flow-card__copy">
-      <strong>{guide.title}</strong>
-      <small>{guide.summary}</small>
-    </span>
-    <span className="mockup-guide-flow-card__action">예시 흐름 보기</span>
-  </button>
-);
-
-export const MockupGuideFlowGrid = ({ guides = [], onOpen }) => (
-  <section className="guide-flow-grid" aria-label="에누리컷 이용 흐름">
-    {guides.map((guide) => (
-      <MockupGuideFlowCard guide={guide} key={guide.id} onOpen={onOpen} />
-    ))}
-  </section>
-);
-
-export const MockupGuideFlowStrip = ({ steps = [] }) => (
-  <section className="content-flow-strip" aria-label="전체 이용 순서">
-    <strong>전체 흐름</strong>
-    <div>
-      {steps.map((step, index) => (
-        <span className="content-flow-strip__step" key={step}>
-          {step}
-          {index < steps.length - 1 && <i aria-hidden="true" />}
-        </span>
-      ))}
+    <div className="guide-screen-preview__bar" aria-hidden="true">
+      <span /><span /><span />
+      <strong>{label}</strong>
+      <em>예시 화면</em>
     </div>
-  </section>
-);
-
-export const MockupGuideModal = ({ guide, imageAlt, imageSrc, closeButtonRef, onClose }) => (
-  <div className="content-modal" onMouseDown={(event) => {
-    if (event.target === event.currentTarget) onClose();
-  }}>
-    <section
-      aria-labelledby="guide-modal-title"
-      aria-describedby="guide-modal-description"
-      aria-modal="true"
-      className="content-modal__panel"
-      role="dialog"
-    >
-      <div className="content-modal__heading">
-        <div>
-          <span>{guide.order}단계</span>
-          <h2 id="guide-modal-title">{guide.flowTitle}</h2>
-        </div>
-        <button aria-label="이용가이드 닫기" onClick={onClose} ref={closeButtonRef} type="button">
-          <X aria-hidden="true" />
-        </button>
-      </div>
-      <img alt={imageAlt} src={imageSrc} />
-      <p id="guide-modal-description">{guide.flowCopy}</p>
-      {/* 담당자 7 · F-COM-014: 준비된 route만 실제 화면으로 이동한다. */}
-      {guide.targetRoute ? (
-        <Link className="content-modal__target-link" onClick={onClose} to={guide.targetRoute}>
-          {guide.targetLabel}으로 이동
-        </Link>
-      ) : (
-        <span className="content-modal__target-pending">{guide.targetLabel} · {guide.targetOwner}</span>
-      )}
-    </section>
+    <div className="guide-screen-preview__body" aria-hidden="true">
+      {children}
+    </div>
   </div>
 );
+
+const GuidePreviewField = ({ label, value }) => (
+  <div className="guide-preview-field">
+    <span>{label}</span>
+    <strong>{value}</strong>
+  </div>
+);
+
+const ProductRegisterPreview = () => (
+  <GuidePreviewWindow label="상품 등록">
+    <div className="guide-preview-page-title">
+      <strong>상품 등록</strong>
+      <div className="guide-preview-progress">
+        <span className="is-active">1 상품 정보</span>
+        <span>2 등록 확인</span>
+      </div>
+    </div>
+    <div className="guide-preview-columns">
+      <section className="guide-preview-panel">
+        <header>상품 정보</header>
+        <div>
+          <GuidePreviewField label="상품명" value="빈티지 오디오 앰프" />
+          <span className="guide-preview-label">카테고리</span>
+          <div className="guide-preview-chips"><b className="is-active">디지털</b><b>취미</b><b>생활</b></div>
+          <GuidePreviewField label="거래 형태" value="배송 · 직거래" />
+        </div>
+      </section>
+      <section className="guide-preview-panel">
+        <header>경매 설정</header>
+        <div className="guide-preview-form-grid">
+          <GuidePreviewField label="시작가" value="30,000원" />
+          <GuidePreviewField label="즉시구매가" value="90,000원" />
+          <GuidePreviewField label="경매 기간" value="3일" />
+          <GuidePreviewField label="입찰 단위" value="1,000원" />
+        </div>
+      </section>
+    </div>
+    <div className="guide-preview-actions"><span>임시저장</span><strong>다음</strong></div>
+  </GuidePreviewWindow>
+);
+
+const AuctionDetailPreview = () => (
+  <GuidePreviewWindow label="경매 상세">
+    <div className="guide-preview-auction">
+      <div className="guide-preview-product-image">
+        <span>대표 상품 이미지</span>
+        <div><i /><i /><i /></div>
+      </div>
+      <section className="guide-preview-bid-panel">
+        <div className="guide-preview-badges"><span>진행중</span><span>배송 · 직거래</span></div>
+        <h4>빈티지 오디오 앰프</h4>
+        <small>현재 최고가</small>
+        <strong className="guide-preview-price">62,000원</strong>
+        <p>종료까지 <b>02:18:34</b></p>
+        <GuidePreviewField label="입찰 금액" value="63,000원" />
+        <div className="guide-preview-actions guide-preview-actions--wide"><strong>입찰하기</strong><span>즉시구매</span></div>
+      </section>
+    </div>
+  </GuidePreviewWindow>
+);
+
+const TradeHistoryPreview = () => (
+  <GuidePreviewWindow label="상품 구매 내역">
+    <div className="guide-preview-page-title guide-preview-page-title--compact">
+      <div><small>MY AUCTION</small><strong>상품 구매 내역</strong></div>
+      <div className="guide-preview-tabs"><span className="is-active">전체 3</span><span>진행 중 1</span><span>완료 2</span></div>
+    </div>
+    <div className="guide-preview-search">상품명, 상대방, 거래번호 검색</div>
+    <article className="guide-preview-trade-item">
+      <div className="guide-preview-trade-image">상품 이미지</div>
+      <div>
+        <span className="guide-preview-status">배송 중</span>
+        <h4>빈티지 오디오 앰프</h4>
+        <p>62,000원 · 2026.07.29</p>
+        <small>구매자 거래 · 판매자 예시</small>
+      </div>
+      <strong>거래 상세</strong>
+    </article>
+  </GuidePreviewWindow>
+);
+
+const PointWalletPreview = () => (
+  <GuidePreviewWindow label="포인트 지갑">
+    <div className="guide-preview-page-title guide-preview-page-title--compact">
+      <strong>포인트 지갑</strong>
+      <div className="guide-preview-actions guide-preview-actions--inline"><strong>충전</strong><span>전환</span><span>환전</span></div>
+    </div>
+    <div className="guide-preview-wallet-cards">
+      <div><span>총 보유 포인트</span><strong>144,000 P</strong></div>
+      <div><span>사용 가능</span><strong>82,000 P</strong></div>
+      <div><span>홀딩 포인트</span><strong>62,000 P</strong></div>
+      <div><span>환전 가능</span><strong>20,000 P</strong></div>
+    </div>
+    <div className="guide-preview-ledger">
+      <strong>포인트 내역</strong>
+      <div><span>일시</span><span>유형</span><span>변동금액</span><span>잔액</span></div>
+      <div><span>07.29</span><b>홀딩</b><em>-62,000P</em><strong>82,000P</strong></div>
+    </div>
+  </GuidePreviewWindow>
+);
+
+const ServiceRequestPreview = () => (
+  <GuidePreviewWindow label="서비스 요청서 작성">
+    <div className="guide-preview-page-title"><strong>서비스 요청서 작성</strong></div>
+    <section className="guide-preview-panel guide-preview-panel--wide">
+      <header>요청 정보</header>
+      <div>
+        <GuidePreviewField label="요청 제목" value="브랜드 로고 디자인을 의뢰해요" />
+        <span className="guide-preview-label">카테고리</span>
+        <div className="guide-preview-category-cards">
+          <b>청소</b><b className="is-active">디자인 ✓</b><b>레슨</b><b>설치</b>
+        </div>
+      </div>
+    </section>
+    <section className="guide-preview-question">
+      <span>1</span>
+      <div><strong>어떤 디자인이 필요한가요?</strong><div className="guide-preview-chips"><b className="is-active">로고</b><b>명함</b><b>상세페이지</b></div></div>
+    </section>
+    <div className="guide-preview-actions"><span>임시저장</span><strong>요청서 공개</strong></div>
+  </GuidePreviewWindow>
+);
+
+const GuideScreenPreview = ({ type }) => {
+  if (type === 'product-register') return <ProductRegisterPreview />;
+  if (type === 'auction-detail') return <AuctionDetailPreview />;
+  if (type === 'trade-history') return <TradeHistoryPreview />;
+  if (type === 'point-wallet') return <PointWalletPreview />;
+  if (type === 'service-request') return <ServiceRequestPreview />;
+  return null;
+};
+
+export const MockupGuideJourneyOverview = ({
+  guides = [],
+  highlightedFlowId,
+  journeys = [],
+}) => {
+  const guidesById = new Map(guides.map((guide) => [guide.id, guide]));
+  const requestedJourney = journeys.find((journey) => (
+    highlightedFlowId && journey.flowIds.includes(highlightedFlowId)
+  ));
+  const [activeJourneyId, setActiveJourneyId] = useState(
+    requestedJourney?.id || journeys[0]?.id,
+  );
+
+  const activeJourney = journeys.find((journey) => journey.id === activeJourneyId)
+    || journeys[0];
+  const activeGuides = activeJourney?.flowIds
+    .map((flowId) => guidesById.get(flowId))
+    .filter(Boolean) || [];
+
+  if (!activeJourney) return null;
+
+  return (
+    <section className="guide-experience" aria-label="서비스 이용 흐름">
+      <div className="guide-mode-tabs" role="tablist" aria-label="가이드 종류 선택">
+        {journeys.map((journey) => (
+          <button
+            aria-selected={activeJourney.id === journey.id}
+            className={activeJourney.id === journey.id ? 'is-active' : undefined}
+            key={journey.id}
+            onClick={() => setActiveJourneyId(journey.id)}
+            role="tab"
+            type="button"
+          >
+            <span>{journey.id === 'auction' ? '01' : '02'}</span>
+            <strong>{journey.id === 'auction' ? '경매로 거래하기' : '서비스 요청하기'}</strong>
+            <small>{journey.id === 'auction' ? '판매와 입찰부터 안전한 거래까지' : '요청서 작성부터 거래 완료까지'}</small>
+          </button>
+        ))}
+      </div>
+
+      <article
+        className={`guide-feature guide-feature--${activeJourney.id}`}
+        role="tabpanel"
+      >
+        <div className="guide-feature__copy">
+          <span>{activeJourney.eyebrow}</span>
+          <h2>{activeJourney.title}</h2>
+          <p>{activeJourney.description}</p>
+
+          <ol className="guide-feature__steps">
+            {activeGuides.map((guide, index) => (
+              <li
+                className={guide.id === highlightedFlowId ? 'is-highlighted' : undefined}
+                id={`guide-flow-${guide.id}`}
+                key={`${activeJourney.id}-${guide.id}`}
+              >
+                <span>{index + 1}</span>
+                <div>
+                  <strong>{guide.title}</strong>
+                  <p>{guide.summary}</p>
+                </div>
+                <Check aria-hidden="true" />
+              </li>
+            ))}
+          </ol>
+
+          <Link className="guide-feature__cta" to={activeJourney.ctaRoute}>
+            {activeJourney.ctaLabel}
+            <ArrowRight aria-hidden="true" />
+          </Link>
+        </div>
+
+        <div className="guide-feature__visual" aria-label={`${activeJourney.title} 대표 화면`}>
+          <div className="guide-feature__visual-main">
+            <GuideScreenPreview type={activeJourney.previewType} />
+          </div>
+          <div className="guide-feature__visual-secondary">
+            <GuideScreenPreview type={activeJourney.secondaryPreviewType} />
+          </div>
+        </div>
+      </article>
+
+      <aside className="guide-trust">
+        <ShieldCheck aria-hidden="true" />
+        <div>
+          <strong>거래가 끝날 때까지 포인트를 안전하게 보호해요</strong>
+          <p>입찰·낙찰·서비스 거래 상태와 포인트 보관 내역을 한곳에서 확인할 수 있습니다.</p>
+        </div>
+        <Link to="/customersupport/faq">자주 묻는 질문 <ArrowRight aria-hidden="true" /></Link>
+      </aside>
+    </section>
+  );
+};

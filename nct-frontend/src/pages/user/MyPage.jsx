@@ -13,6 +13,9 @@ import MyPageSidebar from "@components/mypage/MyPageSidebar";
 import MyPageDashboard from "@components/mypage/MyPageDashboard";
 import MyPageProfileEdit from "@components/mypage/MyPageProfileEdit";
 import MyPageProviderDashboard from "@components/mypage/MyPageProviderDashboard";
+import ProviderEmbeddedSection from "@components/mypage/ProviderEmbeddedSection";
+import MyPageTradeChatList from "@components/mypage/MyPageTradeChatList";
+import ProviderProfilePage from "@pages/provider/ProviderProfilePage";
 import TradeChat from "@pages/trade/TradeChat";
 import MyBidHistoryPage from "@pages/user/MyBidHistoryPage";
 import MyActiveAuctionPage from "@pages/user/MyActiveAuctionPage";
@@ -22,7 +25,10 @@ import TradeDetailBuyer from "@pages/trade/TradeDetailBuyer";
 import TradeDetailSeller from "@pages/trade/TradeDetailSeller";
 import MyProductList from "@components/product/MyProductList";
 import PointWalletPage from "@pages/user/point/PointWalletPage";
+import SettlementListPage from "@pages/user/settlement/SettlementListPage";
 import MyReportListPage from "@pages/user/report/MyReportListPage";
+import MyQuoteListPage from "@pages/provider/MyQuoteListPage";
+import ReviewListPage from "@pages/user/ReviewListPage";
 import { useAuth } from "@hooks/useAuth";
 import { useMyProviderApplications } from "@hooks/useProviderApplications";
 import { confirm } from "@utils/common";
@@ -35,6 +41,12 @@ const MYPAGE_SECTION_QUERY_VALUES = new Set([
   "chat",
   "wallet",
   "profile",
+  "quote",
+  "review",
+  "service-trade",
+  "settlement",
+  "service-chat",
+  "approval-category",
 ]);
 
 export default function MyPage({
@@ -44,7 +56,7 @@ export default function MyPage({
   // isProvider: 현재 로그인 역할이 제공자(ROLE_SERVICE)인지 — 서버가 내려준 실제 역할 기준.
   // 예전에는 localStorage 가짜 플래그(providerMode.js)로 화면만 바꿨는데,
   // 백엔드 모드전환 API(F-PROV-008)와 실연동하면서 역할값 하나로 판단하도록 교체(2026-07-24).
-  const { user, isProvider, switchMode } = useAuth();
+  const { user, isProvider, switchMode, logout } = useAuth();
   const { data: myProviderApps = [] } = useMyProviderApplications({
     enabled: !!user && !isProvider,
   });
@@ -57,6 +69,14 @@ export default function MyPage({
       ? requestedSection
       : initialSection,
   );
+  useEffect(() => {
+    if (!requestedSection) {
+      if (activeSection !== initialSection) setActiveSection(initialSection);
+    } else if (MYPAGE_SECTION_QUERY_VALUES.has(requestedSection) && requestedSection !== activeSection) {
+      setActiveSection(requestedSection);
+    }
+  }, [requestedSection]);
+
   const [selectedChatTradeId, setSelectedChatTradeId] = useState("");
   const [selectedPurchaseTradeId, setSelectedPurchaseTradeId] = useState("");
   const [selectedSalesTradeId, setSelectedSalesTradeId] = useState("");
@@ -104,6 +124,7 @@ export default function MyPage({
     try {
       await switchMode("SERVICE");
       setActiveSection("home");
+      setSearchParams({});
     } catch {
       const ok = await confirm({
         title: "제공자 신청이 필요합니다",
@@ -120,6 +141,7 @@ export default function MyPage({
   const handleSwitchToGeneral = async () => {
     await switchMode("USER");
     setActiveSection("home");
+    setSearchParams({});
   };
 
   return (
@@ -136,14 +158,23 @@ export default function MyPage({
             <MyPageDashboard
               user={user}
               isProviderApproved={isProviderApproved}
+              onLogout={logout}
               onRequestProviderSwitch={handleProviderSwitchRequest}
               onOpenAuctionBids={() => setActiveSection("auction-bids")}
             />
           )}
           {activeSection === "home" && isProvider && (
-            <MyPageProviderDashboard user={user} onSwitchToGeneral={handleSwitchToGeneral} />
+            <MyPageProviderDashboard
+              user={user}
+              onSwitchToGeneral={handleSwitchToGeneral}
+              onOpenSection={handleSelectSection}
+            />
           )}
-          {activeSection === "profile" && <MyPageProfileEdit user={user} />}
+          {activeSection === "profile" && (
+            isProvider
+              ? <ProviderProfilePage embedded />
+              : <MyPageProfileEdit user={user} />
+          )}
           {activeSection === "active-auctions" && <MyActiveAuctionPage />}
           {activeSection === "auction-bids" && (
             selectedPurchaseTradeId ? (
@@ -185,6 +216,30 @@ export default function MyPage({
           )}
           {activeSection === "wishlist" && <AuctionFavoritesPage />}
           {activeSection === "wallet" && <PointWalletPage embedded />}
+          {activeSection === "quote" && isProvider && <MyQuoteListPage />}
+          {activeSection === "review" && <ReviewListPage />}
+          {isProvider && activeSection === "service-trade" && (
+            <ProviderEmbeddedSection
+              title="서비스 거래"
+              description="진행 중이거나 완료된 서비스 거래를 확인합니다."
+              emptyText="아직 표시할 서비스 거래 내역이 없습니다."
+            />
+          )}
+          {isProvider && activeSection === "settlement" && <SettlementListPage embedded />}
+          {isProvider && activeSection === "service-chat" && (
+            <ProviderEmbeddedSection
+              title="서비스 채팅"
+              description="서비스 요청자와 나눈 채팅방을 확인합니다."
+              emptyText="아직 표시할 서비스 채팅이 없습니다."
+            />
+          )}
+          {isProvider && activeSection === "approval-category" && (
+            <ProviderEmbeddedSection
+              title="승인 카테고리"
+              description="견적을 제출할 수 있도록 승인된 서비스 분야를 확인합니다."
+              emptyText="표시할 승인 카테고리가 없습니다."
+            />
+          )}
           {/* 기존 경로로 진입한 경우에도 입찰 내역을 안전하게 표시한다. */}
           {activeSection === "auction-history" && <MyBidHistoryPage />}
           {/* 개발 환경에서는 거래내역과 동일한 미리보기 채팅 데이터를 사용한다. */}

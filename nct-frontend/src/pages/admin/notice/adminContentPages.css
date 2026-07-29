@@ -500,17 +500,6 @@
   text-decoration: none;
 }
 
-.admin-guide-steps__pending {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 9px 11px;
-  border-radius: 8px;
-  background: #f3f4f7;
-  color: #7c8399;
-  font-size: 12px;
-}
-
 @media (max-width: 900px) {
   .admin-notice-filters {
     grid-template-columns: 1fr 1fr;

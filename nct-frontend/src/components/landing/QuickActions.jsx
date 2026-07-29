@@ -60,8 +60,8 @@ const QuickActions = () => {
       {/* 데스크톱 플로팅 퀵 레일 (md 이상) */}
       <div className="quick-rail hidden md:flex">
 
-        {/* 최근 본 경매 — 데이터가 없어도 3칸 높이를 유지 */}
-        <div className="mb-5 flex flex-col items-center gap-[5px] self-center overflow-hidden rounded-[5px] bg-white/80 shadow-[0_5px_10px_rgba(0,0,0,0.12)] backdrop-blur-sm">
+        {/* 최근 본 경매 — 항목이 있을 때만 표시 */}
+        {recentItems.length > 0 && <div className="mb-5 flex flex-col items-center gap-[5px] self-center overflow-hidden rounded-[5px] bg-white/80 shadow-[0_5px_10px_rgba(0,0,0,0.12)] backdrop-blur-sm">
           <span className="qi-label w-full bg-[#444444] py-[5px] text-center text-sm text-white">최근 본</span>
           <div className="flex flex-col items-center gap-[5px] px-[5px] pb-[8px]">
             {recentItemSlots.map((item, index) => (
@@ -98,7 +98,7 @@ const QuickActions = () => {
               )
             ))}
           </div>
-        </div>
+        </div>}
 
         {/* 경매 등록 */}
         <button className="quick-item quick-blue" type="button" onClick={handleAuctionCreate} title="경매 등록">
