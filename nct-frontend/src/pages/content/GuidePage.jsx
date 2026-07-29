@@ -1,75 +1,44 @@
-import { useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useSearchParams } from 'react-router-dom';
 import {
-  ContentPageHeader,
   ContentPageShell,
-  GuideFlowGrid,
-  GuideFlowStrip,
-  GuideModal,
+  GuideJourneyOverview,
 } from '@components/content/ContentUi';
-import guideExampleImage from '@assets/images/guide-service-example.svg';
-import { GUIDE_FLOWS } from './guideData';
-
-const GUIDE_STEPS = ['탐색', '요청·입찰', '거래 생성', '완료·환전'];
+import { GUIDE_FLOWS, GUIDE_JOURNEYS } from './guideData';
 
 /** F-COM-014: 방문자도 볼 수 있는 정적 이용가이드 화면입니다. */
 const GuidePage = () => {
   const [searchParams] = useSearchParams();
   const requestedFlowId = searchParams.get('flow');
-  const [selectedGuide, setSelectedGuide] = useState(
-    () => GUIDE_FLOWS.find((guide) => guide.id === requestedFlowId) ?? null,
-  );
-  const closeButtonRef = useRef(null);
-  const returnFocusRef = useRef(null);
-
-  useEffect(() => {
-    if (!selectedGuide) return undefined;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    closeButtonRef.current?.focus();
-
-    const handleModalKeyDown = (event) => {
-      if (event.key === 'Escape') setSelectedGuide(null);
-      if (event.key === 'Tab') {
-        event.preventDefault();
-        closeButtonRef.current?.focus();
-      }
-    };
-    window.addEventListener('keydown', handleModalKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', handleModalKeyDown);
-      returnFocusRef.current?.focus();
-    };
-  }, [selectedGuide]);
-
-  const openGuide = (guide) => {
-    returnFocusRef.current = document.activeElement;
-    setSelectedGuide(guide);
-  };
+  const highlightedFlowId = GUIDE_FLOWS.some((guide) => guide.id === requestedFlowId)
+    ? requestedFlowId
+    : null;
 
   return (
     <ContentPageShell>
       <Helmet><title>이용가이드 | 에누리컷</title></Helmet>
-      <ContentPageHeader
-        description="등록부터 요청·입찰·거래 완료·환전까지 에누리컷의 핵심 이용 흐름을 확인하세요."
-        eyebrow="처음 이용하는 분을 위한 안내"
-        title="이용가이드"
+      <header className="guide-hero">
+        <div className="guide-hero__copy">
+          <span>START GUIDE</span>
+          <h1>처음이어도 흐름만 알면 어렵지 않아요</h1>
+          <p>경매와 서비스 요청이 시작되고 거래가 완료되기까지의 과정을 한눈에 확인하세요.</p>
+        </div>
+        <div className="guide-hero__tags" aria-label="이용가이드 주요 내용">
+          <span>경매 거래</span>
+          <span>서비스 요청</span>
+          <span>안전한 포인트 거래</span>
+        </div>
+      </header>
+
+      <GuideJourneyOverview
+        guides={GUIDE_FLOWS}
+        highlightedFlowId={highlightedFlowId}
+        journeys={GUIDE_JOURNEYS}
       />
 
-      <GuideFlowGrid guides={GUIDE_FLOWS} onOpen={openGuide} />
-      <GuideFlowStrip steps={GUIDE_STEPS} />
-
-      {selectedGuide && (
-        <GuideModal
-          closeButtonRef={closeButtonRef}
-          guide={selectedGuide}
-          imageAlt="에누리컷 핵심 이용 단계 예시"
-          imageSrc={guideExampleImage}
-          onClose={() => setSelectedGuide(null)}
-        />
-      )}
+      <p className="guide-example-note">
+        화면 예시는 이용 흐름을 설명하기 위한 가상 데이터이며 실제 회원·거래 정보와 무관합니다.
+      </p>
     </ContentPageShell>
   );
 };

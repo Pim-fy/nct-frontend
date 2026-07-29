@@ -19,6 +19,7 @@ import { useNotificationStream } from '@hooks/useNotificationStream';
 import { usePointBalance } from '@hooks/usePoint';
 import relativeTime from '@utils/relativeTime';
 import { requestPointExchange } from '@api/pointApi';
+import { SITE_HEADER_VISIBILITY_EVENT } from '@/constants/layoutEvents';
 import QuickActions from '@components/landing/QuickActions';
 import NotificationDetailModal from '@pages/user/notification/components/NotificationDetailModal';
 import PointChargeWidgetModal from '@pages/user/point/components/PointChargeWidgetModal';
@@ -104,12 +105,34 @@ const SiteHeader = () => {
   const [mobileCustomerOpen, setMobileCustomerOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [noticeIndex, setNoticeIndex] = useState(0);
+  const [isPageHidden, setIsPageHidden] = useState(false);
   const hideMobileHeaderForAuctionSearch = pathname === '/auction'
     && scrolled
     && !mobileMenuOpen;
 
   const utilRef = useRef(null);
   const navRef = useRef(null);
+
+  useEffect(() => {
+    const handleVisibilityChange = (event) => {
+      const hidden = Boolean(event.detail?.hidden);
+      setIsPageHidden(hidden);
+      if (!hidden) return;
+
+      setNotiOpen(false);
+      setPointOpen(false);
+      setProfileOpen(false);
+      setCategoryHovered(false);
+      setServiceHovered(false);
+      setCustomerHovered(false);
+    };
+
+    window.addEventListener(SITE_HEADER_VISIBILITY_EVENT, handleVisibilityChange);
+    return () => window.removeEventListener(
+      SITE_HEADER_VISIBILITY_EVENT,
+      handleVisibilityChange,
+    );
+  }, []);
 
   // 스크롤이 임계값을 넘으면(= 상단 NoticeStrip이 화면 밖으로 나가면) 헤더 중앙에 롤링 티커를 보여준다.
   useEffect(() => {
@@ -219,11 +242,16 @@ const SiteHeader = () => {
 
   return (
     <>
-    <header className={`sticky top-0 z-[100] h-[82px] bg-white shadow-[0px_5px_10px_0px_rgba(0,0,0,0.2)] ${
+    <header
+      aria-hidden={isPageHidden || undefined}
+      className={`sticky top-0 z-[100] h-[82px] bg-white shadow-[0px_5px_10px_0px_rgba(0,0,0,0.2)] ${
+      isPageHidden ? 'invisible pointer-events-none' : ''
+    } ${
       hideMobileHeaderForAuctionSearch
         ? 'max-md:-translate-y-full max-md:transition-transform max-md:duration-200'
         : 'max-md:translate-y-0 max-md:transition-none'
-    }`}>
+    }`}
+    >
       <div className="container relative flex h-full items-center justify-between gap-8">
         {/* 로고 + 메뉴 - 디자인 시안처럼 로고 바로 우측에 붙여 왼쪽에 묶어둔다 */}
         <div className="flex items-center gap-10">
@@ -449,7 +477,10 @@ const SiteHeader = () => {
                           >
                             <span className="mt-[6px] size-[6px] shrink-0 rounded-full bg-[#d9d9d9]" />
                             <div className="min-w-0">
-                              <p className="truncate text-[13px] text-[#333]">{item.title}</p>
+                              <p className="truncate text-[13px] text-[#333]">
+                                {item.title}
+                                {item.content && <span className="text-[#969696]"> · {item.content}</span>}
+                              </p>
                               <p className="text-[11px] text-[#969696]">{relativeTime(item.regDt)}</p>
                             </div>
                           </button>
@@ -515,8 +546,8 @@ const SiteHeader = () => {
                 </div>
                 <button
                   type="button"
-                  className="mt-2 h-[34px] w-full rounded-[6px] border border-primary text-[14px] font-bold text-primary hover:bg-[#f0f6ff] transition-colors"
-                  onClick={() => { setPointOpen(false); navigate('/user/mypage?section=wallet'); }}
+                  className="mt-2 h-[34px] w-full rounded-[6px] border border-primary text-[14px] font-bold text-primary hover:bg-[#f0f6ff] transition-colors"                 
+                  onClick={() => { setPointOpen(false); window.scrollTo(0, 0); navigate('/user/mypage?section=wallet'); }}
                 >
                   포인트지갑 상세보기
                 </button>

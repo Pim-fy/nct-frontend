@@ -2,6 +2,10 @@ import {
   PROVIDER_PREVIEW,
   SERVICE_REQUEST_PREVIEW,
 } from '@pages/service/servicePreviewData';
+import {
+  fetchPublicPortfolios as fetchProviderPortfolios,
+  fetchPublicProviderProfile as fetchProviderProfile,
+} from '@api/providerProfileApi';
 
 /**
  * 담당자1·2의 실제 서비스 요청/제공자 API가 오기 전 사용하는 교체 지점입니다.
@@ -87,13 +91,49 @@ export const fetchServiceDiscovery = async ({
 };
 
 export const fetchPublicProviderProfile = async (providerId) => {
-  const provider = PROVIDER_PREVIEW.find((item) => item.id === Number(providerId));
-  if (!provider) {
-    const error = new Error('제공자 프로필을 찾을 수 없습니다.');
-    error.status = 404;
+  const previewProvider = PROVIDER_PREVIEW.find((item) => item.id === Number(providerId));
+  let profile;
+  let portfolios;
+  try {
+    [profile, portfolios] = await Promise.all([
+      fetchProviderProfile(Number(providerId)),
+      fetchProviderPortfolios(Number(providerId)),
+    ]);
+  } catch (error) {
+    const status = error?.response?.status ?? error?.status;
+    if (status === 404 && previewProvider) {
+      return { ...previewProvider, preview: true };
+    }
     throw error;
   }
-  return { ...provider, preview: true };
+  return {
+    id: profile.userSn,
+    ownerUserId: profile.userSn,
+    name: profile.displayName || `제공자 ${profile.userSn}`,
+    profileImageUrl: profile.profileImageUrl,
+    verified: true,
+    rating: Number(profile.reviewAverageScore ?? 0),
+    reviewCount: Number(profile.reviewCount ?? 0),
+    completedCount: null,
+    responseRate: null,
+    categories: profile.categories ?? [],
+    regions: profile.availableArea ? [profile.availableArea] : [],
+    intro: profile.introduction || '등록된 소개가 없습니다.',
+    reviews: [],
+    portfolios: (portfolios ?? []).map((portfolio) => {
+      const representative = portfolio.files?.find((file) => file.representative)
+        ?? portfolio.files?.[0];
+      return {
+        id: portfolio.portfolioSn,
+        title: portfolio.title,
+        category: null,
+        description: portfolio.content || '등록된 설명이 없습니다.',
+        imageUrl: representative?.url ?? null,
+        images: portfolio.files ?? [],
+      };
+    }),
+    preview: false,
+  };
 };
 
 /**
