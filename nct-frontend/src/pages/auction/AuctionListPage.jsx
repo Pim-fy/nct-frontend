@@ -247,6 +247,7 @@ const AuctionListPage = () => {
     queryKey: ['auction-filter-preview', previewQueryParams],
     queryFn: () => fetchAuctions(previewQueryParams),
     enabled: Boolean(previewQueryParams),
+    placeholderData: keepPreviousData,
     staleTime: 10 * 1000,
   });
 
@@ -349,19 +350,17 @@ const AuctionListPage = () => {
 
   return (
     <div className="min-h-full bg-white text-base leading-[1.6] text-[#1a1a18]">
-      <section className="h-[92px] bg-white" aria-label="경매 검색">
+      <section className="h-[92px] bg-white md:h-0" aria-label="경매 검색">
         <div
-          className={isSearchDocked
-            ? 'fixed inset-x-0 top-0 z-[120] flex h-[82px] items-center bg-white px-4 shadow-[0_5px_12px_rgba(0,0,0,0.14)] md:pointer-events-none md:bg-transparent md:px-0 md:shadow-none'
-            : 'mx-auto flex h-full w-full max-w-[1600px] items-center px-4 lg:px-6'}
+          className={`${
+            isSearchDocked
+              ? 'fixed inset-x-0 top-0 z-[120] flex h-[82px] items-center bg-white px-4 shadow-[0_5px_12px_rgba(0,0,0,0.14)]'
+              : 'mx-auto flex h-full w-full max-w-[1600px] items-center px-4 lg:px-6'
+          } md:pointer-events-none md:fixed md:inset-x-0 md:top-0 md:z-[120] md:flex md:h-[82px] md:w-full md:max-w-none md:items-center md:bg-transparent md:px-0 md:shadow-none`}
         >
           <div
             ref={searchContainerRef}
-            className={`relative mx-auto w-full ${
-              isSearchDocked
-                ? 'max-w-[560px] md:pointer-events-auto md:w-[min(38vw,560px)]'
-                : 'max-w-[560px]'
-            }`}
+            className="relative mx-auto w-full max-w-[560px] md:pointer-events-auto md:w-[min(38vw,560px)]"
           >
             <form
               className={`grid w-full grid-cols-[minmax(0,1fr)_56px] overflow-hidden border-[3px] border-primary bg-white ${
@@ -444,11 +443,11 @@ const AuctionListPage = () => {
             onClick={() => setFilterOpen(false)}
           />
           <aside
-            className={`fixed inset-x-0 bottom-0 z-[220] grid max-h-[88dvh] w-full gap-[18px] overflow-y-auto rounded-t-2xl border border-[#f0efec] bg-white p-5 shadow-[0_-8px_28px_rgba(0,0,0,0.18)] transition-[transform,visibility] duration-300 ease-out [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+            className={`fixed inset-x-0 bottom-0 z-[220] grid max-h-[88dvh] w-full gap-[18px] overflow-y-auto overscroll-contain rounded-t-2xl border border-[#f0efec] bg-white p-5 shadow-[0_-8px_28px_rgba(0,0,0,0.18)] transition-[transform,visibility] duration-300 ease-out [scrollbar-color:#c8ced8_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#c8ced8] [&::-webkit-scrollbar-track]:bg-transparent ${
               filterOpen
                 ? 'visible translate-y-0'
                 : 'invisible translate-y-full'
-            } md:visible md:static md:inset-auto md:z-auto md:mb-0 md:max-h-none md:w-[280px] md:flex-[0_0_280px] md:translate-y-0 md:overflow-visible md:rounded-lg md:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)]`}
+            } md:visible md:sticky md:top-[82px] md:inset-x-auto md:bottom-auto md:z-auto md:mb-0 md:h-fit md:max-h-[calc(100dvh-122px)] md:w-[280px] md:flex-[0_0_280px] md:self-start md:translate-y-0 md:overflow-y-auto md:rounded-lg md:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)]`}
             aria-label="경매 목록 필터"
           >
             <div className="flex items-center justify-between gap-3">
@@ -646,13 +645,16 @@ const AuctionListPage = () => {
               </select>
             </label>
 
-            <div className="sticky -bottom-5 -mx-5 -mb-5 border-t border-[#f0efec] bg-white p-5 pt-3 md:static md:m-0 md:border-0 md:p-0">
+            <div className="sticky -bottom-5 z-10 -mx-5 -mb-5 border-t border-[#f0efec] bg-white p-5 pt-3">
               <button
                 className="inline-flex min-h-[46px] w-full cursor-pointer items-center justify-center rounded-lg border border-primary bg-primary px-3 text-base leading-[1.4] font-bold text-white transition-colors hover:border-primary-dark hover:bg-primary-dark"
                 type="button"
                 onClick={handleFilterSearch}
+                aria-busy={filterPreviewQuery.data?.totalElements === undefined}
               >
-                상품 {(filterPreviewQuery.data?.totalElements ?? totalElements).toLocaleString('ko-KR')}개 보기
+                {filterPreviewQuery.data?.totalElements === undefined
+                  ? '상품 조회 중...'
+                  : `상품 ${filterPreviewQuery.data.totalElements.toLocaleString('ko-KR')}개 보기`}
               </button>
             </div>
           </aside>

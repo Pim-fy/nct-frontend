@@ -4,40 +4,53 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import Pagination from '@components/common/Pagination';
+import { useLocation } from 'react-router-dom';
+import { ChevronRight, Gavel, RefreshCw } from 'lucide-react';
 import { getTradeHistory } from '@api/tradeApi';
 import {
   getTradeListItems,
   toTradeHistoryItem,
 } from '@api/tradeAdapter';
-import '@assets/css/trade-history.css';
+import {
+  MyAuctionAction,
+  MyAuctionBadge,
+  MyAuctionCard,
+  MyAuctionDetail,
+  MyAuctionFilterTabs,
+  MyAuctionHeader,
+  MyAuctionList,
+  MyAuctionListSkeleton,
+  MyAuctionPagination,
+  MyAuctionSection,
+  MyAuctionState,
+  MyAuctionSummary,
+} from '@components/mypage/MyAuctionSectionUi';
 
 const statusInfo = {
   DELIVERING: {
     label: '배송·직거래중',
-    className: 'trade-history-status--progress',
+    tone: 'blue',
   },
   WAITING_CONFIRMATION: {
     label: '상대 확인 대기',
-    className: 'trade-history-status--pending',
+    tone: 'orange',
   },
   // 구매자의 완료 확인 요청 직후 상태도 같은 대기 문구로 표시한다.
   CONFIRM_PENDING: {
     label: '상대 확인 대기',
-    className: 'trade-history-status--pending',
+    tone: 'orange',
   },
   COMPLETED: {
     label: '거래 완료',
-    className: 'trade-history-status--complete',
+    tone: 'green',
   },
   ON_HOLD: {
     label: '거래 보류',
-    className: 'trade-history-status--problem',
+    tone: 'red',
   },
   CANCELED: {
     label: '거래 취소',
-    className: 'trade-history-status--canceled',
+    tone: 'gray',
   },
 };
 
@@ -87,7 +100,7 @@ const getStatusInfo = (trade) => {
   if (trade.status === 'DELIVERING') {
     return {
       label: trade.method === 'DELIVERY' ? '배송 중' : '직거래 중',
-      className: 'trade-history-status--progress',
+      tone: 'blue',
     };
   }
 
@@ -102,7 +115,7 @@ const getStatusInfo = (trade) => {
       if (hasMeetingSchedule) {
         return {
           label: '직거래 중',
-          className: 'trade-history-status--progress',
+          tone: 'blue',
         };
       }
 
@@ -114,19 +127,19 @@ const getStatusInfo = (trade) => {
 
       return {
         label,
-        className: 'trade-history-status--action',
+        tone: 'orange',
       };
     }
 
     return {
       label: '배송 등록 필요',
-      className: 'trade-history-status--action',
+      tone: 'orange',
     };
   }
 
   return statusInfo[trade.status] ?? {
     label: trade.status ?? '상태 확인 중',
-    className: 'trade-history-status--pending',
+    tone: 'gray',
   };
 };
 
@@ -156,17 +169,20 @@ const TradeHistory = ({
   const isPreview = preview || pathname.startsWith('/trades/preview');
   const tradeBasePath = isPreview ? '/trades/preview' : '/trades';
 
-  // 입찰 내역처럼 역할이 고정된 화면에서는 구매 거래만 유지한다.
-  useEffect(() => {
-    if (fixedRole) {
-      setActiveTab(fixedRole);
-    }
-  }, [fixedRole]);
-
-  // 검색·상태·역할 조건이 바뀌면 새 결과의 첫 페이지부터 보여준다.
-  useEffect(() => {
+  const handleActiveTabChange = (nextTab) => {
+    setActiveTab(nextTab);
     setCurrentPage(1);
-  }, [activeTab, keyword, statusFilter]);
+  };
+
+  const handleStatusFilterChange = (nextStatus) => {
+    setStatusFilter(nextStatus);
+    setCurrentPage(1);
+  };
+
+  const handleKeywordChange = (event) => {
+    setKeyword(event.target.value);
+    setCurrentPage(1);
+  };
 
   // 탭별 건수와 진행 중 건수는 필터와 무관한 전체 목록으로 계산한다.
   const tradeCounts = useMemo(() => {
@@ -257,7 +273,7 @@ const TradeHistory = ({
     } finally {
       setIsLoading(false);
     }
-  }, [activeTab, keyword, preview, statusFilter]);
+  }, [activeTab, preview, statusFilter]);
 
   // 첫 진입에는 탭별 건수용 전체 목록을 별도로 조회한다.
   useEffect(() => {
@@ -297,229 +313,165 @@ const TradeHistory = ({
   }, [filteredTradeItems, keyword]);
 
   const totalPages = Math.ceil(visibleTrades.length / TRADES_PER_PAGE);
+  const visiblePage = Math.min(currentPage, Math.max(1, totalPages));
   const paginatedTrades = useMemo(() => {
-    const startIndex = (currentPage - 1) * TRADES_PER_PAGE;
+    const startIndex = (visiblePage - 1) * TRADES_PER_PAGE;
 
     return visibleTrades.slice(startIndex, startIndex + TRADES_PER_PAGE);
-  }, [currentPage, visibleTrades]);
+  }, [visiblePage, visibleTrades]);
 
-  // 삭제·상태 변경 등으로 마지막 페이지가 사라지면 존재하는 마지막 페이지로 이동한다.
-  useEffect(() => {
-    if (totalPages > 0 && currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
+  const summaryItems = fixedRole === 'BUYER'
+    ? [
+      { key: 'all', label: '전체 구매', value: buyerStatusCounts.ALL ?? 0 },
+      { key: 'active', label: '진행 중', value: activeTradeCount },
+      { key: 'completed', label: '완료', value: buyerStatusCounts.COMPLETED ?? 0 },
+    ]
+    : [
+      { key: 'all', label: '전체 거래', value: tradeCounts.ALL },
+      { key: 'buyer', label: '구매 내역', value: tradeCounts.BUYER },
+      { key: 'seller', label: '판매 내역', value: tradeCounts.SELLER },
+    ];
 
   return (
-    <div className={embedded
-      ? 'trade-history-page trade-history-page--embedded'
-      : 'trade-history-page'}
-    >
-      <main className={embedded
-        ? 'trade-history-page__content'
-        : 'container trade-history-page__content'}
-      >
-        <header className="trade-history-page__header">
-          <div>
-            <p className="trade-history-page__eyebrow">MY AUCTION</p>
-            <h1>{fixedRole === 'BUYER' ? '상품 구매 내역' : '거래 내역'}</h1>
-            <p>
-              {fixedRole === 'BUYER'
-                ? '낙찰 또는 즉시구매 후 생성된 구매 거래를 확인하세요.'
-                : '구매와 판매 거래의 진행 상태를 한 곳에서 확인하세요.'}
-            </p>
-          </div>
-        </header>
+    <div className={embedded ? '' : 'bg-[#f8f9fb] py-12 max-sm:py-6'}>
+      <main className={embedded ? '' : 'container max-w-[850px]'}>
+        <MyAuctionSection>
+          <MyAuctionHeader
+            title={fixedRole === 'BUYER' ? '상품 구매 내역' : '거래 내역'}
+            description={fixedRole === 'BUYER'
+              ? '낙찰 또는 즉시구매 후 생성된 구매 거래를 확인하세요.'
+              : '구매와 판매 거래의 진행 상태를 한 곳에서 확인하세요.'}
+          />
 
-        {!fixedRole && !isLoading && !loadError && (
-          <section className="trade-history-summary" aria-label="진행 중 거래 요약">
-            <div>
-              <span>진행 중 거래</span>
-              <strong>{activeTradeCount}건</strong>
-            </div>
-            <p>
-              {fixedRole === 'BUYER'
-                ? '확인이 필요한 구매 거래부터 순서대로 확인해 주세요.'
-                : '확인이 필요한 거래부터 순서대로 확인해 주세요.'}
-            </p>
-          </section>
-        )}
+          {!isLoading && !loadError && <MyAuctionSummary items={summaryItems} />}
 
-        <section className="trade-history-panel" aria-label="거래 내역 필터">
-          {!fixedRole && (
-            <div className="trade-history-tabs" role="tablist">
-              {tabs.map((tab) => (
-                <button
-                  className={`trade-history-tab ${
-                    activeTab === tab.value ? 'trade-history-tab--active' : ''
-                  }`}
-                  type="button"
-                  role="tab"
-                  aria-selected={activeTab === tab.value}
-                  key={tab.value}
-                  onClick={() => setActiveTab(tab.value)}
-                >
-                  {tab.label} <span>{tradeCounts[tab.value]}</span>
-                </button>
-              ))}
-            </div>
-          )}
+          {!isLoading && !loadError && (
+            <>
+              {!fixedRole && (
+                <MyAuctionFilterTabs
+                  ariaLabel="거래 역할"
+                  value={activeTab}
+                  onChange={handleActiveTabChange}
+                  items={tabs.map((tab) => ({ ...tab, count: tradeCounts[tab.value] }))}
+                />
+              )}
 
-          {fixedRole === 'BUYER' && (
-            <div className="trade-history-buyer-filters" role="tablist">
-              {buyerStatusFilters.map((filter) => (
-                <button
-                  className={`trade-history-buyer-filter ${
-                    statusFilter === filter.value
-                      ? 'trade-history-buyer-filter--active'
-                      : ''
-                  }`}
-                  type="button"
-                  role="tab"
-                  aria-selected={statusFilter === filter.value}
-                  key={filter.value}
-                  onClick={() => setStatusFilter(filter.value)}
-                >
-                  {filter.label}
-                  <span>{buyerStatusCounts[filter.value] ?? 0}</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div className="trade-history-filters">
-            <label className="trade-history-search">
-              <span className="trade-history-search__label">상품 구매 검색</span>
-              <input
-                className="input"
-                value={keyword}
-                onChange={(event) => setKeyword(event.target.value)}
-                placeholder="상품명, 상대방, 거래번호 검색"
-              />
-            </label>
-            {!fixedRole && (
-              <label className="trade-history-select">
-                <span className="trade-history-search__label">거래 상태</span>
-                <select
-                  className="input"
+              {fixedRole === 'BUYER' && (
+                <MyAuctionFilterTabs
+                  ariaLabel="구매 거래 상태"
                   value={statusFilter}
-                  onChange={(event) => setStatusFilter(event.target.value)}
-                >
-                  <option value="ALL">전체 상태</option>
-                  <option value="DELIVERING">배송중</option>
-                  <option value="WAITING_CONFIRMATION">상대 확인 대기</option>
-                  <option value="COMPLETED">거래 완료</option>
-                  <option value="ON_HOLD">거래 보류</option>
-                  <option value="CANCELED">거래 취소</option>
-                </select>
-              </label>
-            )}
-          </div>
-        </section>
+                  onChange={handleStatusFilterChange}
+                  items={buyerStatusFilters.map((filter) => ({
+                    ...filter,
+                    count: buyerStatusCounts[filter.value] ?? 0,
+                  }))}
+                />
+              )}
 
-        <section className="trade-history-list" aria-live="polite">
-          {isLoading && (
-            <div className="trade-history-empty">
-              <strong>거래 내역을 불러오는 중입니다.</strong>
-            </div>
+              <div className="mb-5 grid max-w-[620px] grid-cols-[minmax(0,1fr)_180px] gap-3 max-sm:grid-cols-1">
+                <label className="grid gap-1.5">
+                  <span className="text-xs leading-[1.5] font-bold text-[#4b5565]">상품 구매 검색</span>
+                  <input
+                    className="min-h-11 rounded-lg border border-[#dce2ed] bg-white px-3 text-base outline-none focus:border-primary"
+                    value={keyword}
+                    onChange={handleKeywordChange}
+                    placeholder="상품명, 상대방, 거래번호 검색"
+                  />
+                </label>
+                {!fixedRole && (
+                  <label className="grid gap-1.5">
+                    <span className="text-xs leading-[1.5] font-bold text-[#4b5565]">거래 상태</span>
+                    <select
+                      className="min-h-11 cursor-pointer rounded-lg border border-[#dce2ed] bg-white px-3 text-base outline-none focus:border-primary"
+                      value={statusFilter}
+                      onChange={(event) => handleStatusFilterChange(event.target.value)}
+                    >
+                      <option value="ALL">전체 상태</option>
+                      <option value="DELIVERING">배송중</option>
+                      <option value="WAITING_CONFIRMATION">상대 확인 대기</option>
+                      <option value="COMPLETED">거래 완료</option>
+                      <option value="ON_HOLD">거래 보류</option>
+                      <option value="CANCELED">거래 취소</option>
+                    </select>
+                  </label>
+                )}
+              </div>
+            </>
           )}
 
-          {loadError && (
-            <div className="trade-history-empty" role="alert">
-              <strong>{loadError}</strong>
-              <button
-                className="btn btn-outline trade-history-empty__button"
-                type="button"
-                onClick={loadFilteredTradeItems}
-              >
-                다시 시도
-              </button>
-            </div>
-          )}
-
-          {!isLoading && !loadError && visibleTrades.length === 0 && (
-            <div className="trade-history-empty">
-              <strong>조건에 맞는 거래가 없습니다.</strong>
-              <p>검색어나 필터를 변경해 다시 확인해 주세요.</p>
-            </div>
-          )}
-
-          {!isLoading && !loadError && paginatedTrades.map((trade) => {
-            const status = getStatusInfo(trade);
-            const detailPath = trade.type === 'SELLER'
-              ? `${tradeBasePath}/${trade.id}/seller`
-              : `${tradeBasePath}/${trade.id}`;
-            // 마이페이지는 라우트 이동 대신 상위 화면이 상세 컴포넌트를 열 수 있다.
-            const detailTarget = embedded
-              ? `${detailPath}?from=mypage&section=${returnSection}`
-              : detailPath;
-
-            if (onOpenTradeDetail) {
-              return (
-                <button
-                  className="trade-history-item"
-                  key={trade.id}
-                  type="button"
-                  onClick={() => onOpenTradeDetail(trade.id)}
-                >
-                  <article>
-                    <div className="trade-history-item__image">상품 이미지</div>
-                    <div className="trade-history-item__body">
-                      <div className="trade-history-item__badges">
-                        <span className={`trade-history-status ${status.className}`}>
-                          {status.label}
-                        </span>
-                      </div>
-                      <h2>{trade.productName}</h2>
-                      <p>{trade.amount} · {trade.date}</p>
-                      <span className="trade-history-item__type">
-                        {trade.type === 'SELLER' ? '판매자' : '구매자'} 거래 · {trade.counterpart}
-                      </span>
-                    </div>
-                    <div className="trade-history-item__action">
-                      <span className="trade-history-item__detail-button">거래 상세</span>
-                    </div>
-                  </article>
-                </button>
-              );
-            }
-
-            return (
-              <Link className="trade-history-item" key={trade.id} to={detailTarget}>
-                <article>
-                  <div className="trade-history-item__image">상품 이미지</div>
-                  <div className="trade-history-item__body">
-                    <div className="trade-history-item__badges">
-                      <span className={`trade-history-status ${status.className}`}>
-                        {status.label}
-                      </span>
-                    </div>
-                    <h2>{trade.productName}</h2>
-                    <p>{trade.amount} · {trade.date}</p>
-                    <span className="trade-history-item__type">
-                      {trade.type === 'SELLER' ? '판매자' : '구매자'} 거래 · {trade.counterpart}
-                    </span>
-                  </div>
-                  <div className="trade-history-item__action">
-                    <span className="trade-history-item__detail-button">
-                      거래 상세
-                    </span>
-                  </div>
-                </article>
-              </Link>
-            );
-          })}
-        </section>
-
-        {!isLoading && !loadError && (
-          <div className="trade-history-pagination">
-            <Pagination
-              page={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
+          {isLoading ? (
+            <MyAuctionListSkeleton />
+          ) : loadError ? (
+            <MyAuctionState
+              tone="error"
+              title={loadError}
+              action={(
+                <MyAuctionAction onClick={loadFilteredTradeItems}>
+                  <RefreshCw size={16} />
+                  다시 시도
+                </MyAuctionAction>
+              )}
             />
-          </div>
-        )}
+          ) : visibleTrades.length === 0 ? (
+            <MyAuctionState
+              icon={<Gavel size={28} />}
+              title="조건에 맞는 거래가 없습니다."
+              description="검색어나 필터를 변경해 다시 확인해 주세요."
+            />
+          ) : (
+            <>
+              <MyAuctionList>
+                {paginatedTrades.map((trade) => {
+                  const status = getStatusInfo(trade);
+                  const detailPath = trade.type === 'SELLER'
+                    ? `${tradeBasePath}/${trade.id}/seller`
+                    : `${tradeBasePath}/${trade.id}`;
+                  const detailTarget = embedded
+                    ? `${detailPath}?from=mypage&section=${returnSection}`
+                    : detailPath;
+                  const action = onOpenTradeDetail ? (
+                    <MyAuctionAction onClick={() => onOpenTradeDetail(trade.id)}>
+                      거래 상세
+                      <ChevronRight size={17} />
+                    </MyAuctionAction>
+                  ) : (
+                    <MyAuctionAction to={detailTarget}>
+                      거래 상세
+                      <ChevronRight size={17} />
+                    </MyAuctionAction>
+                  );
+
+                  return (
+                    <MyAuctionCard
+                      key={trade.id}
+                      imageFallback="상품"
+                      badges={(
+                        <>
+                          <MyAuctionBadge tone={status.tone}>{status.label}</MyAuctionBadge>
+                          <MyAuctionBadge>{trade.type === 'SELLER' ? '판매' : '구매'}</MyAuctionBadge>
+                        </>
+                      )}
+                      title={trade.productName}
+                      description={`${trade.type === 'SELLER' ? '구매자' : '판매자'} ${trade.counterpart || '-'}`}
+                      details={(
+                        <>
+                          <MyAuctionDetail label="거래 금액" value={trade.amount} />
+                          <MyAuctionDetail label="거래일" value={trade.date} />
+                        </>
+                      )}
+                      actions={action}
+                    />
+                  );
+                })}
+              </MyAuctionList>
+              <MyAuctionPagination
+                page={visiblePage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </>
+          )}
+        </MyAuctionSection>
       </main>
     </div>
   );

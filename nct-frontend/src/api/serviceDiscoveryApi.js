@@ -1,134 +1,136 @@
-import {
-  PROVIDER_PREVIEW,
-  SERVICE_REQUEST_PREVIEW,
-} from '@pages/service/servicePreviewData';
-import api from '@api/axios';
+import api from './axios';
+import { PROVIDER_PREVIEW } from '@pages/service/servicePreviewData';
 import {
   fetchPublicPortfolios as fetchProviderPortfolios,
   fetchPublicProviderProfile as fetchProviderProfile,
 } from '@api/providerProfileApi';
 
-/**
- * 담당자 7 · F-COM-002: 제공자 검색은 공개 서비스 탐색 API를 사용합니다.
- * 서비스 요청 검색은 소유 도메인의 공개 검색 계약이 들어올 때 이 파일에서 교체합니다.
- */
+const firstDefined = (...values) => values.find((value) => value !== undefined && value !== null);
 
-const normalizeText = (value) => String(value ?? '').trim().toLowerCase();
-
-const isWithinBudget = (itemMin, itemMax, requestedMin, requestedMax) => {
-  if (requestedMin && itemMax < requestedMin) return false;
-  if (requestedMax && itemMin > requestedMax) return false;
-  return true;
+const toNumber = (value, fallback = 0) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
 };
 
-const sortRequests = (items, sort) => [...items].sort((left, right) => {
-  if (sort === 'budget-high') return right.budgetMax - left.budgetMax;
-  if (sort === 'quotes-low') return left.quoteCount - right.quoteCount;
-  if (sort === 'latest') return right.createdOrder - left.createdOrder;
-  return left.deadlineOrder - right.deadlineOrder;
+const toStringArray = (value) => {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => (typeof item === 'string'
+        ? item
+        : firstDefined(item?.categoryName, item?.catNm, item?.name)))
+      .filter(Boolean)
+      .map(String);
+  }
+  if (!value) return [];
+  return String(value).split(',').map((item) => item.trim()).filter(Boolean);
+};
+
+const normalizeRequest = (item) => ({
+  id: firstDefined(item.svcReqSn, item.serviceRequestId, item.id),
+  title: firstDefined(item.svcReqTtl, item.title, ''),
+  description: firstDefined(item.svcReqCn, item.description, item.summary, ''),
+  categoryName: firstDefined(item.catNm, item.categoryName, item.category, ''),
+  regionName: firstDefined(item.regionName, item.region, item.availableArea, ''),
+  budgetAmount: toNumber(firstDefined(item.svcReqBdgtAmt, item.budgetAmount, item.budget)),
+  budgetLabel: firstDefined(item.budgetLabel, ''),
+  statusCode: firstDefined(item.svcReqStatusCd, item.statusCode, ''),
+  statusName: firstDefined(item.svcReqStatusNm, item.statusName, item.status, ''),
+  quoteCount: firstDefined(item.quoteCount, item.quotationCount),
+  registeredAt: firstDefined(item.svcReqRegDt, item.registeredAt, item.createdAt),
 });
 
-const normalizeProvider = (provider) => ({
-  id: provider.providerUserSn,
-  ownerUserId: provider.providerUserSn,
-  name: provider.providerName || `제공자 ${provider.providerUserSn}`,
-  verified: true,
-  rating: Number(provider.reviewAverageScore ?? 0),
-  reviewCount: Number(provider.reviewCount ?? 0),
-  completedCount: null,
-  responseRate: null,
-  categories: (provider.categories ?? [])
-    .map((category) => category.categoryName)
-    .filter(Boolean),
-  regions: provider.availableArea ? [provider.availableArea] : [],
-  intro: provider.introduction || '등록된 소개가 없습니다.',
+const normalizeProvider = (item) => ({
+  id: firstDefined(item.providerUserSn, item.usrSn, item.providerId, item.id),
+  name: firstDefined(item.providerName, item.usrNm, item.name, ''),
+  introduction: firstDefined(item.prvPrfIntroCn, item.introduction, item.intro, ''),
+  availableArea: firstDefined(item.prvPrfAreaNm, item.availableArea, item.region, ''),
+  categoryNames: toStringArray(firstDefined(item.categoryNames, item.categories)),
+  rating: firstDefined(item.reviewAverageScore, item.averageRating, item.rating),
+  reviewCount: firstDefined(item.reviewCount, 0),
+  completedCount: firstDefined(item.completedCount, item.tradeCount),
+  verified: Boolean(firstDefined(item.verified, item.approved, false)),
 });
 
-const fetchProviders = async ({
-  keyword,
-  categorySn,
-  region,
-  sort,
-  page,
-}) => {
-  const response = await api.get('/service-discovery/providers', {
-    params: {
-      keyword: keyword.trim() || undefined,
-      categorySn: categorySn || undefined,
-      region: region || undefined,
-      sort: sort === 'reviews' ? 'reviews' : 'rating',
-      page,
-      size: 12,
-    },
-  });
-  const pageResponse = response.data.data;
+const normalizeDiscoveryResult = (payload, view, requestedPage, requestedSize) => {
+  const source = payload ?? {};
+  const pageSource = source.page && typeof source.page === 'object' ? source.page : source;
+  const rawItems = firstDefined(
+    source.items,
+    source.list,
+    source.content,
+    pageSource.content,
+    source.results,
+    [],
+  );
+  const total = toNumber(firstDefined(
+    source.total,
+    source.totalCount,
+    source.totalElements,
+    pageSource.totalElements,
+    rawItems.length,
+  ));
+  const totalPages = Math.max(0, toNumber(firstDefined(
+    source.totalPages,
+    pageSource.totalPages,
+    Math.ceil(total / requestedSize),
+  )));
+  const rawResponsePage = toNumber(
+    firstDefined(source.pageNumber, pageSource.number, source.page),
+    view === 'providers' ? requestedPage - 1 : requestedPage,
+  );
+  const responsePage = view === 'providers' ? rawResponsePage + 1 : rawResponsePage;
+  const counts = source.counts ?? {};
 
   return {
-    items: (pageResponse.content ?? []).map(normalizeProvider),
-    total: Number(pageResponse.totalCount ?? 0),
-    page: Number(pageResponse.page ?? 0),
-    size: Number(pageResponse.size ?? 12),
-    totalPages: Math.ceil(
-      Number(pageResponse.totalCount ?? 0) / Number(pageResponse.size ?? 12),
-    ),
-    hasNext: Boolean(pageResponse.hasNext),
+    items: rawItems.map(view === 'providers' ? normalizeProvider : normalizeRequest),
+    total,
+    totalPages,
+    page: responsePage,
+    size: toNumber(firstDefined(source.size, pageSource.size), requestedSize),
+    counts: {
+      requests: firstDefined(counts.requests, source.requestCount, view === 'requests' ? total : null),
+      providers: firstDefined(counts.providers, source.providerCount, view === 'providers' ? total : null),
+    },
+    view,
   };
 };
 
 export const fetchServiceDiscovery = async ({
   view = 'requests',
   keyword = '',
-  category = '',
-  categorySn = null,
+  categorySn = '',
   region = '',
   minBudget = 0,
   maxBudget = 0,
   sort = '',
-  page = 0,
+  page = 1,
+  size = 12,
 }) => {
-  if (view === 'providers') {
-    const providers = await fetchProviders({
-      keyword,
-      categorySn,
-      region,
-      sort,
-      page,
-    });
-
-    return {
-      ...providers,
-      counts: {
-        providers: providers.total,
-        requests: null,
-      },
-      preview: false,
-      view,
-    };
-  }
-
-  const normalizedKeyword = normalizeText(keyword);
-  const requests = SERVICE_REQUEST_PREVIEW.filter((request) => {
-    const searchable = normalizeText([
-      request.title,
-      request.summary,
-      request.category,
-      request.region,
-    ].join(' '));
-    return (!normalizedKeyword || searchable.includes(normalizedKeyword))
-      && (!category || request.category === category)
-      && (!region || request.region === region)
-      && isWithinBudget(request.budgetMin, request.budgetMax, minBudget, maxBudget);
+  const isProviderView = view === 'providers';
+  const viewSpecificParams = isProviderView
+    ? {
+        region: region.trim() || undefined,
+      }
+    : {
+        minBudget: minBudget || undefined,
+        maxBudget: maxBudget || undefined,
+      };
+  const resource = isProviderView
+    ? '/service-discovery/providers'
+    : '/service-requests';
+  const response = await api.get(resource, {
+    params: {
+      keyword: keyword.trim() || undefined,
+      categorySn: categorySn || undefined,
+      ...viewSpecificParams,
+      sort: sort || undefined,
+      page: isProviderView ? Math.max(0, page - 1) : Math.max(1, page),
+      size,
+    },
+    skipAuthRefresh: true,
+    skipServerErrorRedirect: true,
   });
-
-  const counts = { providers: null, requests: requests.length };
-
-  return {
-    items: sortRequests(requests, sort),
-    total: requests.length,
-    counts,
-    preview: true,
-    view: 'requests',
-  };
+  return normalizeDiscoveryResult(response.data.data, view, page, size);
 };
 
 export const fetchPublicProviderProfile = async (providerId) => {

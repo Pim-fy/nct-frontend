@@ -6,28 +6,14 @@ import arrowWhite from "@assets/img/arrowWhite.png";
 import MoreButton from "./MoreButton";
 import ServiceRequestCard from "./ServiceRequestCard";
 
-// TODO: 서비스요청(F-SVC) 목록 API가 준비되면 실제 조회 결과로 교체한다.
-// 지금은 정적 목업이라, 3열×2행 그리드를 "페이지" 단위로 슬라이드시키는 걸 보여주려고
-// 12건(2페이지)을 채워뒀다.
-export const SERVICE_REQUEST_ITEMS = Array.from({ length: 12 }, (_, i) => ({
-  id: i + 1,
-  price: "240,000원",
-  title: "초등 수학 주 2회 방문 레슨",
-  meta: "서울 마포구 · 6월 28일 오전 희망",
-  bidLabel: "레슨",
-  quotes: 3,
-  ddayLabel: "마감 D-2",
-  key: i,
-}));
-
 const PAGE_SIZE = 6; // 3열 x 2행
 const VIEWPORT_LEFT = 168;
 const VIEWPORT_WIDTH = 1599; // 501*3 + 48*2 (카드 3열 + 열 간격 2개)
 
-export default function NewServiceSection() {
+export default function NewServiceSection({ isError, isLoading, items }) {
   const navigate = useNavigate();
   const [page, setPage] = useState(0);
-  const totalPages = Math.ceil(SERVICE_REQUEST_ITEMS.length / PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
 
   const goPrev = () => setPage((p) => Math.max(0, p - 1));
   const goNext = () => setPage((p) => Math.min(totalPages - 1, p + 1));
@@ -48,22 +34,27 @@ export default function NewServiceSection() {
 
       {/* 서비스요청 카드 캐러셀 (페이지 단위 슬라이드) */}
       <div className="absolute top-[2017px] overflow-hidden" style={{ left: VIEWPORT_LEFT, width: VIEWPORT_WIDTH }}>
-        <div
-          className="flex transition-transform duration-300 ease-out"
-          style={{ transform: `translateX(${-page * VIEWPORT_WIDTH}px)` }}
-        >
-          {Array.from({ length: totalPages }, (_, p) => (
-            <div
-              key={p}
-              className="grid shrink-0 grid-cols-3 gap-x-[48px] gap-y-[20px]"
-              style={{ width: VIEWPORT_WIDTH }}
-            >
-              {SERVICE_REQUEST_ITEMS.slice(p * PAGE_SIZE, p * PAGE_SIZE + PAGE_SIZE).map((item) => (
-                <ServiceRequestCard key={item.key} item={item} onClick={() => navigate(`/service/${item.id}`)} />
-              ))}
-            </div>
-          ))}
-        </div>
+        {isLoading && <p className="grid h-[358px] place-items-center text-[18px] text-white">서비스 요청을 불러오는 중입니다.</p>}
+        {!isLoading && isError && <p className="grid h-[358px] place-items-center text-[18px] text-white">서비스 요청 조회 API 연결을 기다리고 있습니다.</p>}
+        {!isLoading && !isError && items.length === 0 && <p className="grid h-[358px] place-items-center text-[18px] text-white">표시할 서비스 요청이 없습니다.</p>}
+        {!isLoading && !isError && items.length > 0 && (
+          <div
+            className="flex transition-transform duration-300 ease-out"
+            style={{ transform: `translateX(${-page * VIEWPORT_WIDTH}px)` }}
+          >
+            {Array.from({ length: totalPages }, (_, pageIndex) => (
+              <div
+                key={pageIndex}
+                className="grid shrink-0 grid-cols-3 gap-x-[48px] gap-y-[20px]"
+                style={{ width: VIEWPORT_WIDTH }}
+              >
+                {items.slice(pageIndex * PAGE_SIZE, pageIndex * PAGE_SIZE + PAGE_SIZE).map((item) => (
+                  <ServiceRequestCard key={item.id} item={item} onClick={() => navigate(`/service-requests/${item.id}`)} />
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <ArrowIcon direction="left" className="left-[111px] top-[2196px]" imgSrc={arrowWhite} onClick={goPrev} disabled={page === 0} />

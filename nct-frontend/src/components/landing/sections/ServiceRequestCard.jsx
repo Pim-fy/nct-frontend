@@ -40,16 +40,24 @@ export default function ServiceRequestCard({ item, onClick }) {
         </p>
       </div>
 
-      <div className="absolute bg-white h-[20px] rounded-[15px] w-[60px]" style={{ left: 30, top: 123 }} />
-      <div className="absolute bg-white h-[20px] rounded-[15px] w-[60px]" style={{ left: 95, top: 123 }} />
-      <p className="absolute font-['Noto_Sans_KR:Medium'] font-medium text-[#4e4e4e] text-[14px] tracking-[-1.12px] whitespace-nowrap" style={{ left: 36, top: 124 }}>
-        <span>견적</span>
-        <span className="text-[#0064ff]">{` ${item.quotes}`}</span>
-        <span>{`건 `}</span>
-      </p>
-      <p className="absolute font-['Noto_Sans_KR:Medium'] font-medium text-[#4e4e4e] text-[14px] tracking-[-1.12px] whitespace-nowrap" style={{ left: 100, top: 124 }}>
-        {` ${item.ddayLabel}`}
-      </p>
+      {item.quotes != null && (
+        <>
+          <div className="absolute bg-white h-[20px] rounded-[15px] w-[60px]" style={{ left: 30, top: 123 }} />
+          <p className="absolute font-['Noto_Sans_KR:Medium'] font-medium text-[#4e4e4e] text-[14px] tracking-[-1.12px] whitespace-nowrap" style={{ left: 36, top: 124 }}>
+            <span>견적</span>
+            <span className="text-[#0064ff]">{` ${item.quotes}`}</span>
+            <span>{`건 `}</span>
+          </p>
+        </>
+      )}
+      {item.ddayLabel && (
+        <>
+          <div className="absolute bg-white h-[20px] rounded-[15px] w-[60px]" style={{ left: item.quotes != null ? 95 : 30, top: 123 }} />
+          <p className="absolute font-['Noto_Sans_KR:Medium'] font-medium text-[#4e4e4e] text-[14px] tracking-[-1.12px] whitespace-nowrap" style={{ left: item.quotes != null ? 100 : 35, top: 124 }}>
+            {item.ddayLabel}
+          </p>
+        </>
+      )}
     </div>
   );
 }
