@@ -5,7 +5,7 @@
 // 담당자 7: CATEGORY의 현재 서비스 분류(이사·청소·레슨·설치·수리·인테리어)와 같은 이름을 사용합니다.
 export const SERVICE_CATEGORIES = ['이사', '청소', '레슨', '설치·수리', '인테리어'];
 
-export const SERVICE_REGIONS = ['서울', '경기·인천', '부산·경남', '비대면'];
+export const SERVICE_REGIONS = ['서울', '경기', '인천', '부산', '경남', '비대면'];
 
 export const SERVICE_REQUEST_PREVIEW = [
   {

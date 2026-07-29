@@ -48,7 +48,7 @@ export const MockupDiscoveryTabs = ({ activeView, onChange, requestCount, provid
       role="tab"
       type="button"
     >
-      서비스 요청 <span>{requestCount}</span>
+      서비스 요청 {requestCount != null && <span>{requestCount}</span>}
     </button>
     <button
       aria-selected={activeView === 'providers'}
@@ -57,7 +57,7 @@ export const MockupDiscoveryTabs = ({ activeView, onChange, requestCount, provid
       role="tab"
       type="button"
     >
-      제공자 <span>{providerCount}</span>
+      제공자 {providerCount != null && <span>{providerCount}</span>}
     </button>
   </div>
 );
@@ -93,28 +93,30 @@ export const MockupServiceFilterPanel = ({
       </select>
     </label>
 
-    <fieldset>
-      <legend>예산 범위</legend>
-      <div className="service-budget-inputs">
-        <input
-          aria-label="최소 예산"
-          min="0"
-          onChange={(event) => onChange('minBudget', event.target.value)}
-          placeholder="최소"
-          type="number"
-          value={filters.minBudget || ''}
-        />
-        <span>~</span>
-        <input
-          aria-label="최대 예산"
-          min="0"
-          onChange={(event) => onChange('maxBudget', event.target.value)}
-          placeholder="최대"
-          type="number"
-          value={filters.maxBudget || ''}
-        />
-      </div>
-    </fieldset>
+    {view === 'requests' && (
+      <fieldset>
+        <legend>예산 범위</legend>
+        <div className="service-budget-inputs">
+          <input
+            aria-label="최소 예산"
+            min="0"
+            onChange={(event) => onChange('minBudget', event.target.value)}
+            placeholder="최소"
+            type="number"
+            value={filters.minBudget || ''}
+          />
+          <span>~</span>
+          <input
+            aria-label="최대 예산"
+            min="0"
+            onChange={(event) => onChange('maxBudget', event.target.value)}
+            placeholder="최대"
+            type="number"
+            value={filters.maxBudget || ''}
+          />
+        </div>
+      </fieldset>
+    )}
 
     <label>
       <span>정렬</span>
@@ -130,7 +132,6 @@ export const MockupServiceFilterPanel = ({
           <>
             <option value="rating">평점 높은순</option>
             <option value="reviews">리뷰 많은순</option>
-            <option value="completed">완료 많은순</option>
           </>
         )}
       </select>
@@ -179,7 +180,13 @@ const ProviderCard = ({ provider }) => (
       <div className="service-provider-card__tags">
         {provider.categories.map((category) => <span key={category}>{category}</span>)}
       </div>
-      <small>{provider.regions.join(', ')} · 완료 {provider.completedCount}건 · 응답률 {provider.responseRate}%</small>
+      <small>
+        {[
+          provider.regions.join(', '),
+          provider.completedCount != null ? `완료 ${provider.completedCount}건` : '',
+          provider.responseRate != null ? `응답률 ${provider.responseRate}%` : '',
+        ].filter(Boolean).join(' · ') || '활동 지역 미등록'}
+      </small>
     </div>
   </Link>
 );
