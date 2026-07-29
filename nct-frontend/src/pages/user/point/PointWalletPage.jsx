@@ -70,6 +70,9 @@ const PointWalletPage = ({ embedded = false } = {}) => {
   const queryClient = useQueryClient();
   // React StrictMode의 이펙트 2회 실행으로 승인(confirm)이 중복 호출되는 것을 막는 가드
   const confirmHandled = useRef(false);
+  // 사용자가 오버레이의 나가기 버튼으로 직접 빠져나갔는지 — true면 승인 응답이 나중에 와도
+  // 결과 팝업을 다시 띄우거나 페이지를 재차 이동시키지 않는다 (이미 나갔으므로 중복 동작 방지)
+  const leftManually = useRef(false);
 
   // 결제 리다이렉트 처리가 끝난 뒤, 충전을 시작했던 원래 페이지로 돌려보낸다 — 결제위젯이
   // successUrl/failUrl을 항상 포인트지갑으로 고정해 둬야 해서(AppRoutes.jsx는 담당자1 소유라
@@ -83,6 +86,15 @@ const PointWalletPage = ({ embedded = false } = {}) => {
     if (returnTo && returnTo !== window.location.pathname + window.location.search) {
       navigate(returnTo, { replace: true });
     }
+  };
+
+  // 오버레이의 나가기 버튼 — 승인 응답이 비정상적으로 안 오는 등 예외 상황에서도 사용자가
+  // 화면에 갇히지 않도록 하는 탈출구다. 승인 요청 자체는 취소하지 않고(서버는 계속 처리),
+  // 화면만 정리하고 원래 페이지로 나간다 — 포인트 반영 여부는 다음에 지갑을 열어보면 확인 가능.
+  const leaveChargeOverlay = () => {
+    leftManually.current = true;
+    setSearchParams({}, { replace: true });
+    returnToOriginalPage();
   };
 
   // 서버 조회 — 로그인(쿠키) 필요. 미로그인 401이면 axios 인터셉터가 /login으로 보낸다
@@ -109,6 +121,9 @@ const PointWalletPage = ({ embedded = false } = {}) => {
         .then(() => {
           // 잔액·원장·충전내역 모두 바뀌었으니 포인트 캐시 전체 갱신
           queryClient.invalidateQueries({ queryKey: ['point'] });
+          // 이미 나가기 버튼으로 빠져나갔으면 이제 와서 팝업을 띄우지 않는다 — 다음에 지갑을
+          // 열었을 때 반영된 내역으로 충분히 알 수 있다
+          if (leftManually.current) return null;
           return Swal.fire({
             icon: 'success',
             title: '충전 완료',
@@ -118,6 +133,7 @@ const PointWalletPage = ({ embedded = false } = {}) => {
         })
         .catch((err) => {
           queryClient.invalidateQueries({ queryKey: ['point'] });
+          if (leftManually.current) return null;
           return Swal.fire({
             icon: 'error',
             title: '충전 승인 실패',
@@ -126,6 +142,7 @@ const PointWalletPage = ({ embedded = false } = {}) => {
           });
         })
         .finally(() => {
+          if (leftManually.current) return;
           // clearParams()가 navigate() 뒤에 실행되면 이 페이지(/user/mypage) 기준
           // setSearchParams가 원래 페이지로의 이동을 되돌려버린다 — 반드시 clearParams를
           // 먼저 끝내고 나서 원래 페이지로 나가야 한다.
@@ -140,6 +157,7 @@ const PointWalletPage = ({ embedded = false } = {}) => {
         text: searchParams.get('message') ?? '결제가 완료되지 않았습니다.',
         confirmButtonColor: '#0064ff',
       }).then(() => {
+        if (leftManually.current) return;
         clearParams();
         returnToOriginalPage();
       });
@@ -262,9 +280,18 @@ const PointWalletPage = ({ embedded = false } = {}) => {
       {/* 결제 리다이렉트로 돌아온 직후 ~ 원래 페이지로 돌아가기 전까지 화면 전체를 완전히 덮는다.
           fixed + 불투명 배경이라 이 포인트지갑 페이지(사이드바 포함)가 뒤에서 잠깐이라도 비치지
           않고, 처리가 끝나면 원래 페이지로 이동하므로 사용자 입장에서는 지갑 화면을 아예 거치지
-          않은 것처럼 보인다. 닫기 버튼도 없어서 그 사이 다른 조작과 겹치지 않는다. */}
+          않은 것처럼 보인다. 승인 응답이 비정상적으로 안 오는 등 예외 상황에서 화면에 갇히지
+          않도록 우측 상단에 나가기(X) 버튼을 둔다 — 눌러도 서버 승인 처리 자체는 계속된다. */}
       {isChargeRedirect && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-white p-6">
+          <button
+            type="button"
+            aria-label="닫기"
+            className="absolute top-4 right-4 flex size-9 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors text-xl"
+            onClick={leaveChargeOverlay}
+          >
+            ×
+          </button>
           <div className="flex flex-col items-center gap-4">
             <div className="size-10 rounded-full border-4 border-gray-200 border-t-blue-600 animate-spin" />
             <p className="text-sm font-medium text-gray-700">충전 처리 중입니다. 잠시만 기다려 주세요.</p>

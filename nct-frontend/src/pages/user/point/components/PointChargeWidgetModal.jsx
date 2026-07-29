@@ -44,6 +44,16 @@ const PointChargeWidgetModal = ({ infoRow, onClose }) => {
     return () => { document.body.style.overflow = prevOverflow; };
   }, []);
 
+  // ESC로도 닫히게 — 토스 위젯이 세션 만료 등으로 자체 오류 화면을 fixed 오버레이로 덮어씌우면
+  // (실사용 중 발견, 2026-07-29) 우리 쪽 닫기 버튼·바깥 클릭이 그 오버레이에 가려 안 먹힐 수 있다.
+  // 위젯 내부 iframe에 포커스가 가 있으면 이마저도 안 먹을 수 있어, 아래 fixed 닫기 버튼과
+  // 함께 이중 탈출구로 둔다.
+  useEffect(() => {
+    const handleKeyDown = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   // step이 'widget'으로 바뀌어 DOM에 #toss-payment-methods/#toss-agreement가 실제로
   // 커밋된 뒤에만 렌더링을 호출한다 — setStep 직후 곧바로 호출하면 아직 없는 요소를
   // 찾다 실패한다 (React 상태 갱신은 비동기이므로 커밋 시점이 다르다)
@@ -113,18 +123,31 @@ const PointChargeWidgetModal = ({ infoRow, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6" onClick={onClose}>
-      <div
-        className="w-full max-w-[560px] max-h-[85vh] overflow-y-auto overscroll-contain bg-white rounded-2xl p-6 shadow-[0_20px_80px_rgba(0,0,0,0.25)]"
-        onClick={(e) => e.stopPropagation()}
+    <>
+      {/* 토스 위젯이 세션 만료 등으로 자체 오류 화면을 fixed 오버레이로 덮어씌우는 경우에도
+          항상 뚫고 나올 수 있는 탈출구 — 모달 카드 바깥의 별도 요소라 안쪽에 뭐가 그려지든
+          영향받지 않고, z-index를 최댓값 근처로 둬서 웬만한 오버레이보다 위에 남는다
+          (실사용 중 발견, 2026-07-29). */}
+      <button
+        type="button"
+        aria-label="충전 취소"
+        className="fixed top-4 right-4 z-[2147483647] flex size-10 items-center justify-center rounded-full bg-white text-gray-500 shadow-[0_4px_16px_rgba(0,0,0,0.25)] hover:bg-gray-100 hover:text-gray-700 transition-colors text-xl"
+        onClick={onClose}
       >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-gray-900 m-0">포인트 충전</h3>
-          <button
-            type="button"
-            className="text-sm text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg px-3 py-1.5"
-            onClick={onClose}
-          >
+        ×
+      </button>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6" onClick={onClose}>
+        <div
+          className="w-full max-w-[560px] max-h-[85vh] overflow-y-auto overscroll-contain bg-white rounded-2xl p-6 shadow-[0_20px_80px_rgba(0,0,0,0.25)]"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-gray-900 m-0">포인트 충전</h3>
+            <button
+              type="button"
+              className="text-sm text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg px-3 py-1.5"
+              onClick={onClose}
+            >
             닫기
           </button>
         </div>
@@ -204,7 +227,8 @@ const PointChargeWidgetModal = ({ infoRow, onClose }) => {
           </>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

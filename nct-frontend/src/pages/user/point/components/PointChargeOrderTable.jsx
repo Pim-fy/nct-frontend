@@ -28,13 +28,21 @@ const COLUMNS = [
   { key: 'failReason', header: '비고', cellClass: 'text-gray-500', render: (r) => r.failReason ?? '-' },
 ];
 
-/**
- * 충전 시도 이력 테이블 (F-PAY-011)
- * - 원장(확정 충전만 기록)과 달리 실패·취소·대기 건까지 전부 보여준다
- *   → "충전을 시도했는데 포인트가 안 들어왔다" 문의 시 사용자가 직접 실패 사유를 확인할 수 있다
- */
+// 완료(PCOC0002)·실패(PCOC0003)만 보여준다. 대기(PCOC0001)는 아직 결과가 안 나온 진행 중 건이라
+// 계속 쌓이면 목록만 어지럽히고, 취소(PCOC0004)는 실제로는 별도 사유가 있는 게 아니라 대기가
+// 3시간 지나 화면 표시만 바뀐 것(markExpiredForDisplay, DB 상태는 그대로 대기)이라 대기와
+// 같이 뺀다. 실패는 카드 거절·내부 처리 오류 등 실제 사유가 있어 "결제는 됐는데 포인트가
+// 안 들어왔다" 문의 시 필요해서 남긴다 (사용자 결정, 2026-07-29).
+const VISIBLE_STATUS_CODES = new Set(['PCOC0002', 'PCOC0003']);
+
+/** 충전 시도 이력 테이블 (F-PAY-011) — 완료·실패 건만 표시 */
 const PointChargeOrderTable = ({ rows }) => (
-  <PointTable title="충전 내역" columns={COLUMNS} rows={rows} emptyText="충전 내역이 없습니다." />
+  <PointTable
+    title="충전 내역"
+    columns={COLUMNS}
+    rows={rows.filter((r) => VISIBLE_STATUS_CODES.has(r.statusCd))}
+    emptyText="충전 내역이 없습니다."
+  />
 );
 
 export default PointChargeOrderTable;
