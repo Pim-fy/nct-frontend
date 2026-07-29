@@ -59,7 +59,7 @@ export const WIZARD_STEPS = {
     type: 'form', next: 'mv_appliance',
     layout: 'row',
     fields: [
-      { key: '평수', type: 'text', placeholder: '예: 8평', required: true, requireDigit: true },
+      { key: '평수', type: 'text', placeholder: '예: 8평', required: true, requireDigit: true, tooltip: '평수를 모를땐 예상평수로 기입해주세요.' },
       { key: '거주 인원', type: 'text', placeholder: '예: 1명', required: true, requireDigit: true },
     ],
   },
@@ -86,11 +86,11 @@ export const WIZARD_STEPS = {
     type: 'form', next: 'mv_date',
     fields: [
       { key: '출발지 주소', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true },
-      { key: '출발지 층수', type: 'text', placeholder: '예: 3층' },
-      { key: '출발지 엘리베이터', type: 'choice', options: ['있음', '없음'] },
+      { key: '출발지 층수', type: 'text', placeholder: '예: 3층', row: 'origin_floor' },
+      { key: '출발지 엘리베이터', type: 'choice', options: ['있음', '없음'], row: 'origin_floor' },
       { key: '도착지 주소', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true },
-      { key: '도착지 층수', type: 'text', placeholder: '예: 5층' },
-      { key: '도착지 엘리베이터', type: 'choice', options: ['있음', '없음'] },
+      { key: '도착지 층수', type: 'text', placeholder: '예: 5층', row: 'dest_floor' },
+      { key: '도착지 엘리베이터', type: 'choice', options: ['있음', '없음'], row: 'dest_floor' },
     ],
   },
   mv_date: {

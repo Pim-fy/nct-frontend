@@ -1,7 +1,7 @@
 // src/pages/product/steps/AuctionSettingStep.jsx
 // Step 1: 시작가·기간·시작시점·입찰단위·경매정책 동의
 // Props: form, set, policyAgreed, setPolicyAgreed, auctionRange, setAuctionRange,
-//        endDt, bidUnits, submitted
+//        endDt, bidUnits, submitted, startAmtRef, ibyAmtRef, auctionRangeRef, policyRef
 import { useEffect, useState } from 'react';
 import DateRangePicker from '@components/product/DateRangePicker';
 

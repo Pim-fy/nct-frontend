@@ -10,10 +10,14 @@ import DaumPostcode from 'react-daum-postcode';
 import ErrorMessage from '@components/common/ErrorMessage';
 import AlertModal from '@components/common/AlertModal';
 import ConfirmModal from '@components/common/ConfirmModal';
+import ServiceRequestImageUpload from '@components/service/ServiceRequestImageUpload';
 import { WIZARD_STEPS, CATEGORY_NEXT_STEP, CATEGORY_META } from './serviceRequestWizardSteps';
+
+const MAX_IMAGES = 5;
 
 const SERVICE_DOMAIN_CD = 'CATC0002';
 const ETC = '기타';
+const STEP_LABELS = ['요청 정보 입력', '요청 확인'];
 
 function CategoryIcon({ name, className }) {
   const common = { viewBox: '0 0 24 24', width: 32, height: 32, fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', className };
@@ -67,10 +71,43 @@ function CategoryIcon({ name, className }) {
   }
 }
 
-// 이 단계에서 선택에 따라 다음 단계가 달라지는가
-function isBranchingStep(stepId) {
+// 카테고리 진행률 분모 — 실제 chain은 답변할 때마다 늘어나 분모로 못 씀.
+// 분기 중 가장 긴 경로 기준으로 해당 카테고리의 전체 단계 수를 고정 계산한다.
+function getCategoryMaxSteps(stepId, visited = new Set()) {
+  if (!stepId || !WIZARD_STEPS[stepId] || visited.has(stepId)) return 0;
   const step = WIZARD_STEPS[stepId];
-  return step?.type === 'single' && step.options.some(o => o.next);
+  const nextVisited = new Set(visited);
+  nextVisited.add(stepId);
+  let maxNext = 0;
+  if (step.type === 'single') {
+    step.options.forEach(opt => {
+      maxNext = Math.max(maxNext, getCategoryMaxSteps(opt.next || step.next, nextVisited));
+    });
+  } else {
+    maxNext = getCategoryMaxSteps(step.next, nextVisited);
+  }
+  return 1 + maxNext;
+}
+
+// 분기 단계에서 "기본값(첫 번째 선택지)"을 따라갔을 때의 다음 단계 — 미리보기 카드 자리 계산용
+function getDefaultNextStep(stepId) {
+  const step = WIZARD_STEPS[stepId];
+  if (!step) return null;
+  return step.type === 'single' ? (step.options[0]?.next || step.next) : step.next;
+}
+
+// 아직 답변 전이라 실제 다음 단계를 알 수 없는 구간을, 기본 선택지를 따라간 경로로 미리 보여주기
+// 위한 미리보기 단계 id 목록 (실제로 답변하면 이 자리들이 진짜 카드로 교체된다)
+function buildPreviewSteps(startStepId, excludeIds) {
+  const preview = [];
+  const visited = new Set(excludeIds);
+  let cur = startStepId;
+  while (cur && WIZARD_STEPS[cur] && !visited.has(cur)) {
+    visited.add(cur);
+    preview.push(cur);
+    cur = getDefaultNextStep(cur);
+  }
+  return preview;
 }
 
 function parseAnswerToDraft(step, value) {
@@ -115,6 +152,9 @@ export default function ServiceRequestFormPage() {
   const errorRef = useRef(null);
 
   const [title, setTitle] = useState('');
+  // [{ id, flSn, url, file }] — SERVICE_REQUEST_FILE 연결 테이블·업로드 API 정본요청 전까지는
+  // 로컬 미리보기만 유지한다. API 확정되면 submit 시점에 업로드·연결 호출만 추가하면 됨.
+  const [images, setImages] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [chain, setChain] = useState([]);
   const [answers, setAnswers] = useState({});
@@ -123,11 +163,15 @@ export default function ServiceRequestFormPage() {
   const [freeTextDraft, setFreeTextDraft] = useState({});
   const [pendingEtcStep, setPendingEtcStep] = useState(null);
 
-  // 아코디언 상태
-  const [editingStepId, setEditingStepId] = useState(null); // 재편집 중인 완료 단계
+  // 경매등록과 같은 2단계 구성: 0=요청 정보 입력, 1=요청 확인
+  const [step, setStep] = useState(0);
+  const [agreed, setAgreed] = useState(false); // 확인 탭 최종 동의
+
+  // 아코디언 상태 — 단계 카드는 한 번에 하나만 펼쳐진다(진행 중인 카드든 재편집하려는
+  // 완료 카드든 동일하게 이 값 하나로 표현)
+  const [expandedStepId, setExpandedStepId] = useState(null);
   const [editingCategory, setEditingCategory] = useState(false); // 카테고리 재선택 중
   const [confirmPending, setConfirmPending] = useState(null); // { msg, action } | null
-  const [collapsedSteps, setCollapsedSteps] = useState(new Set()); // 수동으로 접힌 단계
   const [fieldErrors, setFieldErrors] = useState({}); // { 'stepId:fieldKey': 에러 메시지 }
   const [addressSearchKey, setAddressSearchKey] = useState(null); // 주소 검색 중인 'stepId:fieldKey'
 
@@ -227,7 +271,6 @@ export default function ServiceRequestFormPage() {
         return n;
       });
       setPendingEtcStep(prev => (removed.includes(prev) ? null : prev));
-      setCollapsedSteps(prev => { const n = new Set(prev); removed.forEach(id => n.delete(id)); return n; });
       setFieldErrors(prev => {
         const n = { ...prev };
         Object.keys(n).forEach(key => { if (removed.some(id => key.startsWith(`${id}:`))) delete n[key]; });
@@ -241,9 +284,11 @@ export default function ServiceRequestFormPage() {
   const proceed = (kept, nextId) => {
     if (nextId) {
       setChain([...kept, nextId]);
+      setExpandedStepId(nextId);
     } else {
       setChain(kept);
       setIsComplete(true);
+      setExpandedStepId(null);
     }
   };
 
@@ -263,7 +308,7 @@ export default function ServiceRequestFormPage() {
           setStepDraft({});
           setFreeTextDraft({});
           setPendingEtcStep(null);
-          setEditingStepId(null);
+          setExpandedStepId(null);
           setIsComplete(false);
           setEditingCategory(false);
         },
@@ -281,58 +326,45 @@ export default function ServiceRequestFormPage() {
     setPendingEtcStep(null);
     setIsComplete(false);
     setEditingCategory(false);
-    setEditingStepId(null);
     setFieldErrors({});
     setError('');
     const firstStep = CATEGORY_NEXT_STEP[cat.catNm];
     setChain(firstStep ? [firstStep] : []);
+    setExpandedStepId(firstStep || null);
   };
 
-  // ── 단계 카드 헤더 클릭 (토글) ─────────────────────────────────────────────
+  // ── 단계 카드 헤더 클릭 (토글) — 카드는 한 번에 하나만 펼쳐진다 ─────────────────
 
   const handleStepCardHeaderClick = (stepId) => {
-    const expanded = isStepExpanded(stepId);
-    if (expanded) {
-      // 펼쳐진 상태 → 접기
-      if (editingStepId === stepId) setEditingStepId(null);
-      setCollapsedSteps(prev => new Set([...prev, stepId]));
-    } else {
-      // 접힌 상태 → 열기
-      setCollapsedSteps(prev => { const n = new Set(prev); n.delete(stepId); return n; });
-      if (answers[stepId]) handleCompletedStepClick(stepId);
-    }
+    setExpandedStepId(prev => (prev === stepId ? null : stepId));
   };
 
-  // ── 완료된 단계 카드 클릭 ───────────────────────────────────────────────────
-
-  const handleCompletedStepClick = (stepId) => {
-    if (editingStepId === stepId) return;
+  // 편집 중이던 분기 단계의 답변을 교체할 때 공통으로 쓰는 로직 —
+  // 새 답변이 이어지는 다음 단계가 기존과 같으면 하위 입력을 그대로 유지하고,
+  // 다르면 하위 입력이 있을 때만 확인 후 초기화한다.
+  const applyEditedBranchAnswer = (stepId, answerText, newNext, afterApply) => {
     const stepIdx = chain.indexOf(stepId);
-    const hasDownstream = chain.slice(stepIdx + 1).some(id => answers[id] !== undefined);
+    const currentNextId = chain[stepIdx + 1] ?? null;
 
-    if (isBranchingStep(stepId) && hasDownstream) {
-      setConfirmPending({
-        msg: '이 항목을 변경하면 이후 입력한 내용이 초기화됩니다.',
-        action: () => {
-          // stepId 포함 이후 answers·draft 전부 제거
-          const idx = chain.indexOf(stepId);
-          const removed = chain.slice(idx);
-          setAnswers(prev => { const n = { ...prev }; removed.forEach(id => delete n[id]); return n; });
-          setStepDraft(prev => { const n = { ...prev }; removed.forEach(id => delete n[id]); return n; });
-          setFreeTextDraft(prev => {
-            const n = { ...prev };
-            Object.keys(n).forEach(key => { if (removed.some(id => key.startsWith(`${id}:`))) delete n[key]; });
-            return n;
-          });
-          setChain(chain.slice(0, idx + 1));
-          setPendingEtcStep(null);
-          setIsComplete(false);
-          setEditingStepId(null);
-        },
-      });
+    if (newNext === currentNextId) {
+      setAnswers(prev => ({ ...prev, [stepId]: answerText }));
+      setExpandedStepId(null);
+      afterApply?.();
+      return;
+    }
+
+    const hasDownstream = chain.slice(stepIdx + 1).some(id => answers[id] !== undefined);
+    const applyChange = () => {
+      const kept = truncateAfter(stepId);
+      setAnswers(prev => ({ ...prev, [stepId]: answerText }));
+      afterApply?.();
+      proceed(kept, newNext);
+    };
+
+    if (hasDownstream) {
+      setConfirmPending({ msg: '이 항목을 변경하면 이후 입력한 내용이 초기화됩니다.', action: applyChange });
     } else {
-      // 비분기 단계: 그냥 펼침, 이후 카드 유지
-      setEditingStepId(stepId);
+      applyChange();
     }
   };
 
@@ -345,17 +377,17 @@ export default function ServiceRequestFormPage() {
     }
     setPendingEtcStep(prev => (prev === stepId ? null : prev));
 
-    if (editingStepId === stepId) {
-      // 비분기 재편집: 답변만 교체, 이후 유지
-      setAnswers(prev => ({ ...prev, [stepId]: option.label }));
-      setEditingStepId(null);
+    const step = WIZARD_STEPS[stepId];
+    const newNext = option.next || step.next;
+
+    if (answers[stepId] !== undefined) {
+      applyEditedBranchAnswer(stepId, option.label, newNext);
       return;
     }
 
-    const step = WIZARD_STEPS[stepId];
     const kept = truncateAfter(stepId);
     setAnswers(prev => ({ ...prev, [stepId]: option.label }));
-    proceed(kept, option.next || step.next);
+    proceed(kept, newNext);
   };
 
   const handleEtcSingleConfirm = (stepId) => {
@@ -363,18 +395,17 @@ export default function ServiceRequestFormPage() {
     const text = (freeTextDraft[`${stepId}:${ETC}`] || '').trim();
     if (!text) { setAlertMsg('기타 내용을 입력해 주세요.'); return; }
     const option = step.options.find(o => o.label === ETC);
+    const newNext = option?.next || step.next;
 
-    if (editingStepId === stepId) {
-      setAnswers(prev => ({ ...prev, [stepId]: `${ETC}(${text})` }));
-      setPendingEtcStep(null);
-      setEditingStepId(null);
+    if (answers[stepId] !== undefined) {
+      applyEditedBranchAnswer(stepId, `${ETC}(${text})`, newNext, () => setPendingEtcStep(null));
       return;
     }
 
     const kept = truncateAfter(stepId);
     setAnswers(prev => ({ ...prev, [stepId]: `${ETC}(${text})` }));
     setPendingEtcStep(null);
-    proceed(kept, option?.next || step.next);
+    proceed(kept, newNext);
   };
 
   // ── multi 선택 ──────────────────────────────────────────────────────────────
@@ -404,9 +435,9 @@ export default function ServiceRequestFormPage() {
     }
     const labels = picked.map(l => (l === ETC ? `${ETC}(${freeTextDraft[`${stepId}:${ETC}`].trim()})` : l));
 
-    if (editingStepId === stepId) {
+    if (answers[stepId] !== undefined) {
       setAnswers(prev => ({ ...prev, [stepId]: labels.join(', ') }));
-      setEditingStepId(null);
+      setExpandedStepId(null);
       return;
     }
 
@@ -467,9 +498,9 @@ export default function ServiceRequestFormPage() {
       .filter(x => x.v)
       .map(x => `${x.k}: ${x.v}`);
 
-    if (editingStepId === stepId) {
+    if (answers[stepId] !== undefined) {
       setAnswers(prev => ({ ...prev, [stepId]: vals.length ? vals.join(' / ') : '(입력 없음)' }));
-      setEditingStepId(null);
+      setExpandedStepId(null);
       return;
     }
 
@@ -524,10 +555,24 @@ export default function ServiceRequestFormPage() {
   };
 
   const handleDraft = () => { if (validateBasic()) submit('SVCC0001'); };
+
+  const goNext = () => {
+    if (!validateBasic()) return;
+    if (!isComplete) {
+      setAlertMsg('모든 단계를 마쳐야 다음으로 진행할 수 있어요. 진행 중이라면 임시저장을 이용해 주세요.');
+      return;
+    }
+    setStep(1);
+  };
+
   const handlePublish = () => {
     if (!validateBasic()) return;
     if (!isComplete) {
       setAlertMsg('모든 단계를 마쳐야 요청서를 공개할 수 있어요. 진행 중이라면 임시저장을 이용해 주세요.');
+      return;
+    }
+    if (!agreed) {
+      setAlertMsg('요청 내용 확인 및 동의가 필요합니다.');
       return;
     }
     submit('SVCC0002');
@@ -550,7 +595,14 @@ export default function ServiceRequestFormPage() {
   // ── 파생 상태 ────────────────────────────────────────────────────────────────
 
   const isCategoryExpanded = !selectedCategory || editingCategory;
-  const isStepExpanded = (stepId) => !collapsedSteps.has(stepId) && (!answers[stepId] || editingStepId === stepId);
+  const isStepExpanded = (stepId) => expandedStepId === stepId;
+  // 카테고리별 전체 단계 수(분기 중 가장 긴 경로 기준) — chain.length 대신 진행률 분모로 사용
+  const categoryMaxSteps = selectedCategory ? getCategoryMaxSteps(CATEGORY_NEXT_STEP[selectedCategory.catNm]) : 0;
+  const answeredStepCount = chain.filter(id => answers[id] !== undefined).length;
+  // 현재 진행 중인(맨 마지막) 단계 다음부터 기본 경로를 따라간 미리보기 카드 — 아직 실제로 답변하지 않은 구간
+  const previewStepIds = selectedCategory && chain.length > 0
+    ? buildPreviewSteps(getDefaultNextStep(chain[chain.length - 1]), chain)
+    : [];
 
   // ── 렌더 ────────────────────────────────────────────────────────────────────
 
@@ -559,116 +611,201 @@ export default function ServiceRequestFormPage() {
       <div className="mx-auto w-full max-w-[1600px] px-4 lg:px-6">
         <div className="pt-9 pb-4">
           <h1 className="text-2xl font-bold">
-            {editSvcReqSn ? '서비스 요청서 수정' : '서비스 요청서 작성'}
+            {editSvcReqSn ? '전문가 견적 요청서 수정' : '전문가 견적 요청서 작성'}
           </h1>
+        </div>
+
+        {/* ── 스텝 인디케이터 (경매등록과 동일한 2단계 구성: 입력 → 확인) ── */}
+        <div className="mb-5 overflow-hidden rounded-2xl border border-[#e8e8e8]">
+          <div className="flex bg-[#eef2fb]">
+            {STEP_LABELS.map((label, i) => (
+              <div
+                key={label}
+                className={`flex flex-1 items-center justify-center gap-2 border-b-[3px] px-4 py-3.5 text-sm ${
+                  i === step ? 'border-primary font-bold text-primary'
+                  : i < step ? 'border-transparent text-[#5f5e5a]'
+                  : 'border-transparent text-[#a9a8a2]'
+                }`}
+              >
+                <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border-[1.5px] border-current text-xs font-bold">
+                  {i + 1}
+                </span>
+                {label}
+              </div>
+            ))}
+          </div>
         </div>
 
         <div ref={errorRef}><ErrorMessage message={error} /></div>
 
-        <div className="flex flex-col gap-4">
-
-          {/* ── 요청 제목 ── */}
-          <section className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm">
-            <div className="border-b border-[#e8e8e8] px-6 py-4">
-              <h2 className="text-base font-bold">요청 제목</h2>
-            </div>
-            <div className="px-6 py-5">
-              <div className="mb-1.5 flex items-center justify-between">
-                <label className="text-sm font-medium text-[#5f5e5a]">제목</label>
-                <span className="text-xs text-[#888780]">{title.length}/200</span>
+        {/* ── STEP 0: 요청 정보 입력 ── */}
+        {step === 0 && (
+          <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-2">
+            {/* 왼쪽: 요청 정보 (제목 + 카테고리 하나로 묶음) — grid items-stretch가 오른쪽 카드와
+                자동으로 높이를 맞춰준다(더 짧은 쪽이 늘어남). flex-col + 사진 첨부의 flex-1로 남는
+                공간을 채움 */}
+            <section className="flex flex-col overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm">
+              <div className="border-b border-[#e8e8e8] bg-[#eef2fb] px-6 py-4">
+                <h2 className="text-lg font-bold">요청 정보</h2>
               </div>
-              <input
-                className="w-full rounded-lg border border-[#e2e1dc] bg-white px-3 py-2.5 text-sm text-[#1d1d1f] outline-none transition-colors focus:border-primary"
-                type="text"
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-                maxLength={200}
-                placeholder="예) 성수동 원룸 이사 운반"
-              />
-              {submitted && !title.trim() && (
-                <p className="mt-1.5 text-xs font-semibold text-red-600">제목을 입력해 주세요.</p>
-              )}
-            </div>
-          </section>
 
-          {/* ── 카테고리 카드 ── */}
-          <section className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm">
-            <button
-              type="button"
-              className="flex w-full items-center justify-between px-6 py-4 text-left"
-              onClick={handleCategoryCardHeaderClick}
-            >
-              <div className="flex items-center gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#e5efff] text-xs font-bold text-[#0048bf]">
-                  1
-                </span>
-                <h2 className="text-base font-bold">카테고리</h2>
-              </div>
-              {selectedCategory && (
-                <div className="flex items-center gap-2">
-                  {!isCategoryExpanded && (
-                    <span className="text-sm font-semibold text-primary">{selectedCategory.catNm}</span>
-                  )}
-                  {isCategoryExpanded
-                    ? <ChevronUp size={16} className="shrink-0 text-[#5f5e5a]" />
-                    : <ChevronDown size={16} className="shrink-0 text-[#5f5e5a]" />
-                  }
+              {/* 1. 제목 */}
+              <div className="border-b border-[#e8e8e8] px-6 py-5">
+                <div className="mb-1.5 flex items-center gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#e5efff] text-xs font-bold text-[#0048bf]">
+                    1
+                  </span>
+                  <label className="text-base font-semibold text-[#5f5e5a]">제목</label>
+                  <span className="ml-auto text-xs text-[#888780]">{title.length}/200</span>
                 </div>
-              )}
-            </button>
-
-            {isCategoryExpanded && (
-              <div className="border-t border-[#e8e8e8] px-6 py-5">
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-                  {categories.map(cat => {
-                    const meta = CATEGORY_META[cat.catNm] || {};
-                    const active = selectedCategory?.catSn === cat.catSn;
-                    const color = meta.color || '#5f5e5a';
-                    return (
-                      <button
-                        key={cat.catSn}
-                        type="button"
-                        onClick={() => handleCategorySelect(cat)}
-                        className="relative cursor-pointer rounded-xl p-4 text-left text-white transition-opacity hover:opacity-90"
-                        style={{ backgroundColor: color, outline: active ? '3px solid #1a1a18' : 'none', outlineOffset: 2 }}
-                      >
-                        {active && (
-                          <span
-                            className="absolute right-2.5 top-2.5 flex size-5 items-center justify-center rounded-full bg-white text-xs font-bold"
-                            style={{ color }}
-                          >✓</span>
-                        )}
-                        <CategoryIcon name={cat.catNm} className="mb-2" />
-                        <p className="m-0 text-base font-bold leading-tight">{cat.catNm}</p>
-                        {meta.sub && <p className="m-0 mt-1 text-xs opacity-80">{meta.sub}</p>}
-                      </button>
-                    );
-                  })}
-                </div>
-                {submitted && !selectedCategory && (
-                  <p className="mt-3 text-xs font-semibold text-red-600">카테고리를 선택해 주세요.</p>
+                <input
+                  className="w-full rounded-lg border border-[#e2e1dc] bg-white px-3 py-2.5 text-sm text-[#1d1d1f] outline-none transition-colors focus:border-primary"
+                  type="text"
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  maxLength={200}
+                  placeholder="예) 성수동 원룸 이사 운반"
+                />
+                {submitted && !title.trim() && (
+                  <p className="mt-1.5 text-xs font-semibold text-red-600">제목을 입력해 주세요.</p>
                 )}
-                {editingCategory && selectedCategory && (
-                  <div className="mt-4 flex justify-end">
-                    <button
-                      type="button"
-                      className="rounded-lg border border-[#e2e1dc] px-4 py-1.5 text-sm text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary"
-                      onClick={() => setEditingCategory(false)}
+              </div>
+
+              {/* 2. 카테고리 */}
+              <div>
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between px-6 py-4 text-left"
+                  onClick={handleCategoryCardHeaderClick}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#e5efff] text-xs font-bold text-[#0048bf]">
+                      2
+                    </span>
+                    <h3 className="text-base font-semibold text-[#5f5e5a]">카테고리</h3>
+                  </div>
+                  {selectedCategory && (
+                    <div className="flex items-center gap-2">
+                      {isCategoryExpanded
+                        ? <ChevronUp size={16} className="shrink-0 text-[#5f5e5a]" />
+                        : <ChevronDown size={16} className="shrink-0 text-[#5f5e5a]" />
+                      }
+                    </div>
+                  )}
+                </button>
+
+                {/* 선택된 카테고리 요약 배너 — 접힌 상태에서 아이콘·이름·설명을 크게 보여줌 */}
+                {!isCategoryExpanded && selectedCategory && (
+                  <div className="px-6 pb-5">
+                    <div
+                      className="flex items-center gap-4 rounded-xl p-4 text-white"
+                      style={{ backgroundColor: (CATEGORY_META[selectedCategory.catNm] || {}).color || '#5f5e5a' }}
                     >
-                      취소
-                    </button>
+                      <CategoryIcon name={selectedCategory.catNm} />
+                      <div>
+                        <p className="m-0 text-lg font-bold leading-tight">{selectedCategory.catNm}</p>
+                        {(CATEGORY_META[selectedCategory.catNm] || {}).sub && (
+                          <p className="m-0 mt-1 text-sm opacity-90">{CATEGORY_META[selectedCategory.catNm].sub}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {isCategoryExpanded && (
+                  <div className="border-t border-[#e8e8e8] px-6 py-5">
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                      {categories.map(cat => {
+                        const meta = CATEGORY_META[cat.catNm] || {};
+                        const active = selectedCategory?.catSn === cat.catSn;
+                        const color = meta.color || '#5f5e5a';
+                        return (
+                          <button
+                            key={cat.catSn}
+                            type="button"
+                            onClick={() => handleCategorySelect(cat)}
+                            className="relative cursor-pointer rounded-xl p-4 text-left text-white transition-opacity hover:opacity-90"
+                            style={{ backgroundColor: color, outline: active ? '3px solid #1a1a18' : 'none', outlineOffset: 2 }}
+                          >
+                            {active && (
+                              <span
+                                className="absolute right-2.5 top-2.5 flex size-5 items-center justify-center rounded-full bg-white text-xs font-bold"
+                                style={{ color }}
+                              >✓</span>
+                            )}
+                            <CategoryIcon name={cat.catNm} className="mb-2" />
+                            <p className="m-0 text-base font-bold leading-tight">{cat.catNm}</p>
+                            {meta.sub && <p className="m-0 mt-1 text-xs opacity-80">{meta.sub}</p>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {submitted && !selectedCategory && (
+                      <p className="mt-3 text-xs font-semibold text-red-600">카테고리를 선택해 주세요.</p>
+                    )}
+                    {editingCategory && selectedCategory && (
+                      <div className="mt-4 flex justify-end">
+                        <button
+                          type="button"
+                          className="rounded-lg border border-[#e2e1dc] px-4 py-1.5 text-sm text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary"
+                          onClick={() => setEditingCategory(false)}
+                        >
+                          취소
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            )}
-          </section>
 
-          {/* ── 단계 카드들 ── */}
-          {chain.map((stepId, index) => {
+              {/* 상세 항목 진행률 — 오른쪽 위저드 답변 현황을 실시간으로 요약 */}
+              {selectedCategory && categoryMaxSteps > 0 && (
+                <div className="border-t border-[#e8e8e8] px-6 py-5">
+                  <div className="mb-2 flex items-center justify-between text-sm">
+                    <span className="font-semibold text-[#5f5e5a]">상세 항목 진행률</span>
+                    <span className="font-bold text-primary">{answeredStepCount}/{categoryMaxSteps}</span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-[#eef0ee]">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all"
+                      style={{ width: `${Math.min(100, (answeredStepCount / categoryMaxSteps) * 100)}%` }}
+                    />
+                  </div>
+                  {isComplete && (
+                    <p className="mt-2 text-xs font-semibold text-primary">모든 항목을 입력했어요!</p>
+                  )}
+                </div>
+              )}
+
+              {/* 3. 사진 첨부 */}
+              <div className="flex-1 border-t border-[#e8e8e8] px-6 py-5">
+                <div className="mb-3 flex items-center gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#e5efff] text-xs font-bold text-[#0048bf]">
+                    3
+                  </span>
+                  <h3 className="text-base font-semibold text-[#5f5e5a]">사진 첨부</h3>
+                  <span className="text-xs text-[#888780]">(선택)</span>
+                </div>
+                <p className="mb-3 text-xs text-[#888780]">현재 상태 사진을 첨부하면 더 정확한 견적을 받을 수 있어요.</p>
+                <ServiceRequestImageUpload images={images} onChange={setImages} maxImages={MAX_IMAGES} />
+              </div>
+            </section>
+
+            {/* 오른쪽: 요청 상세 설정 */}
+            <section className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm">
+              <div className="border-b border-[#e8e8e8] bg-[#eef2fb] px-6 py-4">
+                <h2 className="text-lg font-bold">요청 상세 설정</h2>
+              </div>
+              <div className="px-6 py-5">
+                {!selectedCategory ? (
+                  <p className="py-16 text-center text-sm text-[#888780]">카테고리를 선택하면 상세 항목이 나타납니다.</p>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    {chain.map((stepId, index) => {
             const step = WIZARD_STEPS[stepId];
             if (!step) return null;
             const expanded = isStepExpanded(stepId);
-            const stepNum = index + 2;
+            const stepNum = index + 1;
 
             return (
               <section
@@ -686,12 +823,12 @@ export default function ServiceRequestFormPage() {
                     <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#e5efff] text-xs font-bold text-[#0048bf]">
                       {stepNum}
                     </span>
-                    <h2 className="text-base font-bold">{step.title}</h2>
+                    <h2 className="text-lg font-bold">{step.title}</h2>
                   </div>
                   {answers[stepId] && (
                     <div className="flex items-center gap-3">
                       {!expanded && (
-                        <span className="max-w-[200px] truncate text-right text-sm text-[#5f5e5a] lg:max-w-[320px]">
+                        <span className="max-w-[220px] truncate text-right text-[15px] font-semibold text-primary">
                           {answers[stepId]}
                         </span>
                       )}
@@ -713,10 +850,7 @@ export default function ServiceRequestFormPage() {
                     {/* single · multi */}
                     {(step.type === 'single' || step.type === 'multi') && (
                       <>
-                        <div
-                          className="grid gap-2"
-                          style={{ gridTemplateColumns: `repeat(${step.options.length}, 1fr)` }}
-                        >
+                        <div className="flex flex-wrap gap-2">
                           {step.options.map(opt => {
                             const active = step.type === 'single'
                               ? (answers[stepId] === opt.label
@@ -730,14 +864,14 @@ export default function ServiceRequestFormPage() {
                                   ? handleSingleSelect(stepId, opt)
                                   : handleMultiToggle(stepId, opt.label)
                                 }
-                                className={`flex flex-col rounded-xl border px-3 py-2.5 text-left text-sm transition-colors ${
+                                className={`flex flex-col items-start rounded-xl border px-3.5 py-2.5 text-left text-[15px] transition-colors ${
                                   active
                                     ? 'border-primary bg-[#e5efff] font-semibold text-[#0048bf]'
                                     : 'border-[#e2e1dc] bg-white text-[#1d1d1f] hover:border-primary'
                                 }`}
                               >
                                 {opt.icon && <span className="mb-1.5 text-xl leading-none">{opt.icon}</span>}
-                                <span className="font-medium leading-snug">{opt.label}</span>
+                                <span className="whitespace-nowrap font-medium leading-snug">{opt.label}</span>
                                 {opt.sub && <span className="mt-0.5 text-xs text-[#888780]">{opt.sub}</span>}
                               </button>
                             );
@@ -780,7 +914,7 @@ export default function ServiceRequestFormPage() {
                               className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-[#0048bf]"
                               onClick={() => handleMultiConfirm(stepId)}
                             >
-                              {editingStepId === stepId ? '수정 완료' : '다음'}
+                              {answers[stepId] !== undefined ? '수정 완료' : '다음'}
                             </button>
                           </div>
                         )}
@@ -788,140 +922,241 @@ export default function ServiceRequestFormPage() {
                     )}
 
                     {/* form */}
-                    {step.type === 'form' && (
-                      <>
-                        <div className={step.layout === 'row' ? 'grid gap-3' : ''} style={step.layout === 'row' ? { gridTemplateColumns: `repeat(${step.fields.length}, 1fr)` } : undefined}>
-                        {step.fields.map(f => (
-                          <div className={step.layout === 'row' ? '' : 'mb-4 last:mb-0'} key={f.key}>
-                            <label className="mb-1.5 block text-sm font-medium text-[#5f5e5a]">
-                              {f.key}
-                              {f.required && <span className="text-red-600"> *</span>}
-                            </label>
-                            {f.type === 'choice' ? (
-                              <>
-                                <div className="flex flex-wrap gap-2">
-                                  {f.options.map(o => (
-                                    <button
-                                      key={o}
-                                      type="button"
-                                      className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${
-                                        stepDraft[stepId]?.[f.key] === o
-                                          ? 'border-primary bg-[#e5efff] font-semibold text-[#0048bf]'
-                                          : 'border-[#e2e1dc] bg-white text-[#5f5e5a] hover:border-primary'
-                                      }`}
-                                      onClick={() => handleFormFieldChange(stepId, f.key, o)}
-                                    >{o}</button>
-                                  ))}
-                                </div>
-                                {stepDraft[stepId]?.[f.key] === ETC && (
-                                  <input
-                                    className="mt-2 w-full rounded-lg border border-[#e2e1dc] px-3 py-2.5 text-sm outline-none focus:border-primary"
-                                    placeholder="기타 내용을 입력해 주세요"
-                                    value={freeTextDraft[`${stepId}:${f.key}`] || ''}
-                                    onChange={e => setFreeTextDraft(prev => ({ ...prev, [`${stepId}:${f.key}`]: e.target.value }))}
-                                  />
-                                )}
-                              </>
-                            ) : f.type === 'address' ? (
-                              <>
-                                <div className="flex gap-2">
-                                  <input
-                                    readOnly
-                                    className={`flex-1 rounded-lg border bg-[#f8f8f6] px-3 py-2.5 text-sm outline-none ${fieldErrors[`${stepId}:${f.key}`] ? 'border-red-500' : 'border-[#e2e1dc]'}`}
-                                    placeholder={f.placeholder}
-                                    value={stepDraft[stepId]?.[f.key] || ''}
-                                  />
-                                  <button
-                                    type="button"
-                                    className="shrink-0 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-primary hover:bg-[#e5efff]"
-                                    onClick={() => setAddressSearchKey(`${stepId}:${f.key}`)}
-                                  >
-                                    주소 검색
-                                  </button>
-                                </div>
-                                {fieldErrors[`${stepId}:${f.key}`] && (
-                                  <p className="mt-1 text-xs text-red-600">{fieldErrors[`${stepId}:${f.key}`]}</p>
-                                )}
-                              </>
-                            ) : f.type === 'textarea' ? (
-                              <textarea
-                                className="w-full resize-vertical rounded-lg border border-[#e2e1dc] bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary"
-                                rows={3}
-                                placeholder={f.placeholder}
-                                value={stepDraft[stepId]?.[f.key] || ''}
-                                onChange={e => handleFormFieldChange(stepId, f.key, e.target.value)}
-                              />
-                            ) : (
-                              <>
-                                <input
-                                  className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary ${fieldErrors[`${stepId}:${f.key}`] ? 'border-red-500' : 'border-[#e2e1dc]'}`}
-                                  type={f.type}
+                    {step.type === 'form' && (() => {
+                      // f.row 키가 같은 연속 필드를 하나의 그룹으로 묶음
+                      const groups = [];
+                      step.fields.forEach(f => {
+                        if (f.row) {
+                          const last = groups[groups.length - 1];
+                          if (last?.rowKey === f.row) last.fields.push(f);
+                          else groups.push({ rowKey: f.row, fields: [f] });
+                        } else {
+                          groups.push({ rowKey: null, fields: [f] });
+                        }
+                      });
+
+                      const renderNormalField = (f) => (
+                        <div key={f.key} className={step.layout === 'row' ? '' : 'mb-4 last:mb-0'}>
+                          <label className="mb-1.5 block text-base font-semibold text-[#5f5e5a]">
+                            <span className="flex items-center gap-1">
+                              {f.key}{f.required && <span className="text-red-600"> *</span>}
+                              {f.tooltip && (
+                                <span className="group/tip relative inline-flex cursor-default">
+                                  <span className="flex h-4 w-4 items-center justify-center rounded-full border border-[#9f9e9a] text-[10px] font-bold leading-none text-[#9f9e9a]">?</span>
+                                  <span className="pointer-events-none absolute bottom-full left-0 z-10 mb-1.5 whitespace-nowrap rounded-lg border border-[#e2e1dc] bg-white px-3 py-1.5 text-xs font-normal text-[#3b3a36] shadow-md opacity-0 transition-opacity group-hover/tip:opacity-100">
+                                    {f.tooltip}
+                                  </span>
+                                </span>
+                              )}
+                            </span>
+                          </label>
+                          {f.type === 'choice' ? (
+                            <>
+                              <div className="flex flex-wrap gap-2">
+                                {f.options.map(o => (
+                                  <button key={o} type="button"
+                                    className={`rounded-lg border px-3 py-1.5 text-[15px] transition-colors ${stepDraft[stepId]?.[f.key] === o ? 'border-primary bg-[#e5efff] font-semibold text-[#0048bf]' : 'border-[#e2e1dc] bg-white text-[#5f5e5a] hover:border-primary'}`}
+                                    onClick={() => handleFormFieldChange(stepId, f.key, o)}
+                                  >{o}</button>
+                                ))}
+                              </div>
+                              {stepDraft[stepId]?.[f.key] === ETC && (
+                                <input className="mt-2 w-full rounded-lg border border-[#e2e1dc] px-3 py-2.5 text-sm outline-none focus:border-primary"
+                                  placeholder="기타 내용을 입력해 주세요"
+                                  value={freeTextDraft[`${stepId}:${f.key}`] || ''}
+                                  onChange={e => setFreeTextDraft(prev => ({ ...prev, [`${stepId}:${f.key}`]: e.target.value }))}
+                                />
+                              )}
+                            </>
+                          ) : f.type === 'address' ? (
+                            <>
+                              <div className="flex gap-2">
+                                <input readOnly
+                                  className={`flex-1 rounded-lg border bg-[#f8f8f6] px-3 py-2.5 text-sm outline-none ${fieldErrors[`${stepId}:${f.key}`] ? 'border-red-500' : 'border-[#e2e1dc]'}`}
                                   placeholder={f.placeholder}
                                   value={stepDraft[stepId]?.[f.key] || ''}
-                                  onChange={e => {
-                                    handleFormFieldChange(stepId, f.key, e.target.value);
-                                    if (fieldErrors[`${stepId}:${f.key}`]) setFieldErrors(prev => { const n = { ...prev }; delete n[`${stepId}:${f.key}`]; return n; });
-                                  }}
                                 />
-                                {fieldErrors[`${stepId}:${f.key}`] && (
-                                  <p className="mt-1 text-xs text-red-600">{fieldErrors[`${stepId}:${f.key}`]}</p>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        ))}
+                                <button type="button"
+                                  className="shrink-0 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-primary hover:bg-[#e5efff]"
+                                  onClick={() => setAddressSearchKey(`${stepId}:${f.key}`)}
+                                >주소 검색</button>
+                              </div>
+                              {fieldErrors[`${stepId}:${f.key}`] && (
+                                <p className="mt-1 text-xs text-red-600">{fieldErrors[`${stepId}:${f.key}`]}</p>
+                              )}
+                            </>
+                          ) : f.type === 'textarea' ? (
+                            <textarea
+                              className="w-full resize-vertical rounded-lg border border-[#e2e1dc] bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary"
+                              rows={3} placeholder={f.placeholder}
+                              value={stepDraft[stepId]?.[f.key] || ''}
+                              onChange={e => handleFormFieldChange(stepId, f.key, e.target.value)}
+                            />
+                          ) : (
+                            <>
+                              <input
+                                className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary ${fieldErrors[`${stepId}:${f.key}`] ? 'border-red-500' : 'border-[#e2e1dc]'}`}
+                                type={f.type} placeholder={f.placeholder}
+                                value={stepDraft[stepId]?.[f.key] || ''}
+                                onChange={e => {
+                                  handleFormFieldChange(stepId, f.key, e.target.value);
+                                  if (fieldErrors[`${stepId}:${f.key}`]) setFieldErrors(prev => { const n = { ...prev }; delete n[`${stepId}:${f.key}`]; return n; });
+                                }}
+                              />
+                              {fieldErrors[`${stepId}:${f.key}`] && (
+                                <p className="mt-1 text-xs text-red-600">{fieldErrors[`${stepId}:${f.key}`]}</p>
+                              )}
+                            </>
+                          )}
                         </div>
-                        <div className="mt-4 flex justify-end">
-                          <button
-                            type="button"
-                            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-[#0048bf]"
-                            onClick={() => handleFormConfirm(stepId)}
+                      );
+
+                      return (
+                        <>
+                          <div
+                            className={step.layout === 'row' ? 'grid gap-3' : ''}
+                            style={step.layout === 'row' ? { gridTemplateColumns: `repeat(${step.fields.length}, 1fr)` } : undefined}
                           >
-                            {editingStepId === stepId ? '수정 완료' : (step.next ? '다음' : '입력 완료')}
-                          </button>
-                        </div>
-                      </>
-                    )}
+                            {groups.map(group => group.rowKey ? (
+                              <div key={group.rowKey} className="mb-4 flex items-end gap-3">
+                                {group.fields.map(f => (
+                                  <div key={f.key} className={f.type === 'text' ? 'w-32 shrink-0' : 'flex-1'}>
+                                    <label className="mb-1.5 block text-base font-semibold text-[#5f5e5a]">{f.key}</label>
+                                    {f.type === 'choice' ? (
+                                      <div className="flex gap-2">
+                                        {f.options.map(o => (
+                                          <button key={o} type="button"
+                                            className={`rounded-lg border px-3 py-2.5 text-[15px] transition-colors ${stepDraft[stepId]?.[f.key] === o ? 'border-primary bg-[#e5efff] font-semibold text-[#0048bf]' : 'border-[#e2e1dc] bg-white text-[#5f5e5a] hover:border-primary'}`}
+                                            onClick={() => handleFormFieldChange(stepId, f.key, o)}
+                                          >{o}</button>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <input
+                                        className="w-full rounded-lg border border-[#e2e1dc] bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary"
+                                        placeholder={f.placeholder}
+                                        value={stepDraft[stepId]?.[f.key] || ''}
+                                        onChange={e => handleFormFieldChange(stepId, f.key, e.target.value)}
+                                      />
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : renderNormalField(group.fields[0]))}
+                          </div>
+                          <div className="mt-4 flex justify-end">
+                            <button type="button"
+                              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-[#0048bf]"
+                              onClick={() => handleFormConfirm(stepId)}
+                            >
+                              {answers[stepId] !== undefined ? '수정 완료' : (step.next ? '다음' : '입력 완료')}
+                            </button>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
               </section>
             );
-          })}
+                    })}
 
-          {/* ── 요청 내용 확인 ── */}
-          {isComplete && (
-            <section className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm">
-              <div className="border-b border-[#e8e8e8] px-6 py-4">
-                <h2 className="text-base font-bold">요청 내용 확인</h2>
-                <p className="mt-0.5 text-sm text-[#5f5e5a]">아래 내용으로 서비스 요청서가 등록됩니다.</p>
-              </div>
-              <div className="divide-y divide-[#e8e8e8] px-6">
-                {chain.map(stepId => (
-                  <div key={stepId} className="flex gap-4 py-3.5">
-                    <span className="w-36 shrink-0 text-sm text-[#888780]">{WIZARD_STEPS[stepId].title}</span>
-                    <span className="text-sm font-medium text-[#1d1d1f]">{answers[stepId]}</span>
+                    {/* 아직 답변하지 않은 다음 단계들 — 자리만 미리 보여주고 클릭 비활성 */}
+                    {previewStepIds.map((stepId, i) => {
+                      const previewStep = WIZARD_STEPS[stepId];
+                      if (!previewStep) return null;
+                      return (
+                        <section
+                          key={stepId}
+                          className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-[#fafaf8] opacity-60"
+                        >
+                          <div className="flex w-full items-center gap-3 px-6 py-4">
+                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#eceae4] text-xs font-bold text-[#9f9e9a]">
+                              {chain.length + i + 1}
+                            </span>
+                            <h2 className="text-lg font-bold text-[#9f9e9a]">{previewStep.title}</h2>
+                          </div>
+                        </section>
+                      );
+                    })}
                   </div>
-                ))}
+                )}
               </div>
             </section>
-          )}
+          </div>
+        )}
 
-          {/* ── 하단 버튼 ── */}
-          <div className="flex items-center justify-end gap-3 pb-4">
+        {/* ── STEP 1: 요청 확인 (경매등록 등록확인 탭과 동일 역할) ── */}
+        {step === 1 && (
+          <section className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm">
+            <div className="border-b border-[#e8e8e8] bg-[#eef2fb] px-6 py-4">
+              <h2 className="text-lg font-bold">요청 내용 확인</h2>
+              <p className="mt-0.5 text-sm text-[#5f5e5a]">아래 내용으로 전문가 견적 요청서가 등록됩니다.</p>
+            </div>
+            <div className="divide-y divide-[#e8e8e8] px-6">
+              <div className="flex gap-4 py-3.5">
+                <span className="w-36 shrink-0 text-sm text-[#888780]">요청 제목</span>
+                <span className="text-sm font-medium text-[#1d1d1f]">{title}</span>
+              </div>
+              <div className="flex gap-4 py-3.5">
+                <span className="w-36 shrink-0 text-sm text-[#888780]">카테고리</span>
+                <span className="text-sm font-medium text-[#1d1d1f]">{selectedCategory?.catNm}</span>
+              </div>
+              {chain.map(stepId => (
+                <div key={stepId} className="flex gap-4 py-3.5">
+                  <span className="w-36 shrink-0 text-sm text-[#888780]">{WIZARD_STEPS[stepId].title}</span>
+                  <span className="text-sm font-medium text-[#1d1d1f]">{answers[stepId]}</span>
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-[#e8e8e8] px-6 py-4">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-[#5f5e5a]">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={agreed}
+                  onChange={e => setAgreed(e.target.checked)}
+                />
+                등록 정보 확인 및 본문 수정이 불가능함에 동의합니다.
+              </label>
+            </div>
+          </section>
+        )}
+
+        {/* ── 하단 버튼 ── */}
+        <div className="flex items-center justify-between pb-4 pt-5">
+          {step > 0 ? (
+            <button
+              type="button"
+              onClick={() => setStep(0)}
+              disabled={loading}
+              className="rounded-lg border border-[#e2e1dc] bg-white px-5 py-2.5 text-sm font-semibold text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+            >이전</button>
+          ) : <div />}
+
+          <div className="flex gap-3">
             <button
               type="button"
               onClick={handleDraft}
               disabled={loading}
               className="rounded-lg border border-[#e2e1dc] bg-white px-5 py-2.5 text-sm font-semibold text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
             >임시저장</button>
-            <button
-              type="button"
-              onClick={handlePublish}
-              disabled={loading}
-              className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#0048bf] disabled:opacity-50"
-            >
-              {loading ? '등록 중...' : '요청서 공개'}
-            </button>
+            {step === 0 ? (
+              <button
+                type="button"
+                onClick={goNext}
+                className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#0048bf]"
+              >다음</button>
+            ) : (
+              <button
+                type="button"
+                onClick={handlePublish}
+                disabled={loading}
+                className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#0048bf] disabled:opacity-50"
+              >
+                {loading ? '등록 중...' : '요청서 공개'}
+              </button>
+            )}
           </div>
         </div>
       </div>

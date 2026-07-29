@@ -1,6 +1,7 @@
 // src/pages/product/steps/ProductInfoStep.jsx
 // Step 0: 상품명·카테고리·거래형태·설명·이미지 입력
-// Props: form, set, categories, bannedKeywordError, images, onChange, tradeMethods, maxImages, pendingDescFilesMap
+// Props: form, set, categories, bannedKeywordError, images, onChange, tradeMethods, maxImages, pendingDescFilesMap,
+//        submitted, imgSectionRef, prdNmRef, catRef, tradeRef
 import ProductImageUpload from '@components/product/ProductImageUpload';
 import RichTextEditor from '@components/product/RichTextEditor';
 
