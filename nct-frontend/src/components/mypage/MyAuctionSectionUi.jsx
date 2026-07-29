@@ -25,7 +25,7 @@ const ACTION_VARIANT_CLASS = {
 
 export const MyAuctionSection = ({ children, className = '', ...props }) => (
   <section
-    className={`w-full max-w-full min-w-0 text-base leading-[1.6] text-[#1f2937] ${className}`}
+    className={`w-full max-w-full min-w-0 text-body-sm text-[#1f2937] md:text-body-md ${className}`}
     {...props}
   >
     {children}
@@ -34,12 +34,12 @@ export const MyAuctionSection = ({ children, className = '', ...props }) => (
 
 export const MyAuctionHeader = ({ title, description }) => (
   <header className="mb-6 w-full max-w-full border-b border-[#e5e9f0] pb-5">
-    <p className="m-0 text-xs leading-[1.5] font-extrabold text-primary-dark">MY AUCTION</p>
-    <h1 className="mt-1.5 mb-0 text-[32px] leading-[1.25] font-extrabold text-[#171b26] max-sm:text-[28px]">
+    <p className="m-0 text-caption font-extrabold text-primary-dark">MY AUCTION</p>
+    <h1 className="mt-1.5 mb-0 text-h2 font-extrabold text-[#171b26] md:text-h1">
       {title}
     </h1>
     {description && (
-      <p className="mt-2 mb-0 text-base leading-[1.6] text-[#667085]">{description}</p>
+      <p className="mt-2 mb-0 text-body-sm text-[#667085] md:text-body-md">{description}</p>
     )}
   </header>
 );
@@ -61,8 +61,8 @@ export const MyAuctionSummary = ({ items = [] }) => {
           }`}
           key={item.key || item.label}
         >
-          <span className="text-sm leading-[1.5] font-bold text-[#667085]">{item.label}</span>
-          <strong className="shrink-0 text-2xl leading-[1.3] font-extrabold text-primary-dark">
+          <span className="text-caption font-bold text-[#667085]">{item.label}</span>
+          <strong className="shrink-0 text-h2 font-extrabold text-primary-dark">
             {item.value}
           </strong>
         </div>
@@ -82,7 +82,7 @@ export const MyAuctionFilterTabs = ({ items = [], value, onChange, ariaLabel = '
           type="button"
           role="tab"
           aria-selected={active}
-          className={`inline-flex min-h-[38px] shrink-0 cursor-pointer items-center justify-center rounded-lg border px-3.5 text-[15px] leading-[1.4] font-bold whitespace-nowrap transition-colors ${
+          className={`inline-flex min-h-[38px] shrink-0 cursor-pointer items-center justify-center rounded-lg border px-3.5 text-body-sm font-bold whitespace-nowrap transition-colors ${
             active
               ? 'border-primary bg-primary text-white'
               : 'border-[#dce2ed] bg-white text-[#526079] hover:border-[#a7bdec]'
@@ -111,8 +111,8 @@ export const MyAuctionBadge = ({ children, tone = 'gray' }) => (
 
 export const MyAuctionDetail = ({ label, value }) => (
   <div className="flex items-baseline gap-1.5">
-    <dt className="text-[13px] leading-[1.5] text-[#7b8595]">{label}</dt>
-    <dd className="m-0 text-base leading-[1.5] font-extrabold text-[#344054]">{value}</dd>
+    <dt className="text-caption text-[#7b8595]">{label}</dt>
+    <dd className="m-0 text-body-md font-extrabold text-[#344054]">{value}</dd>
   </div>
 );
 
@@ -139,11 +139,11 @@ export const MyAuctionCard = ({
 
     <div className="min-w-0">
       {badges && <div className="mb-[7px] flex flex-wrap items-center gap-2">{badges}</div>}
-      <h2 className="m-0 overflow-hidden text-ellipsis whitespace-nowrap text-lg leading-[1.4] font-bold text-[#252b3a]">
+      <h2 className="m-0 overflow-hidden text-ellipsis whitespace-nowrap text-body-md font-bold text-[#252b3a] md:text-body-lg">
         {title}
       </h2>
       {description && (
-        <p className="mt-1.5 mb-2.5 text-sm leading-[1.6] text-[#7b8595]">{description}</p>
+        <p className="mt-1.5 mb-2.5 text-caption text-[#7b8595]">{description}</p>
       )}
       {details && (
         <dl className="m-0 flex flex-wrap gap-x-5 gap-y-1 max-sm:grid max-sm:grid-cols-1">
@@ -170,7 +170,7 @@ export const MyAuctionAction = ({
   title,
   ariaLabel,
 }) => {
-  const className = `inline-flex min-h-[38px] cursor-pointer items-center justify-center gap-1 rounded-lg border px-3.5 text-[15px] leading-[1.4] font-extrabold no-underline transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${ACTION_VARIANT_CLASS[variant] || ACTION_VARIANT_CLASS.outline}`;
+  const className = `inline-flex min-h-[38px] cursor-pointer items-center justify-center gap-1 rounded-lg border px-3.5 text-body-sm font-extrabold no-underline transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${ACTION_VARIANT_CLASS[variant] || ACTION_VARIANT_CLASS.outline}`;
 
   if (to) {
     return (
@@ -198,7 +198,7 @@ export const MyAuctionState = ({ icon, title, description, action, tone = 'defau
   <div className={`flex min-h-[220px] flex-col items-center justify-center gap-2.5 rounded-lg border border-[#e9edf4] bg-white px-6 py-10 text-center ${tone === 'error' ? 'text-[#b42318]' : 'text-[#667085]'}`}>
     {icon}
     <strong className={tone === 'error' ? 'text-[#b42318]' : 'text-[#344054]'}>{title}</strong>
-    {description && <p className="m-0 text-sm leading-[1.6]">{description}</p>}
+    {description && <p className="m-0 text-body-sm">{description}</p>}
     {action && <div className="mt-2">{action}</div>}
   </div>
 );

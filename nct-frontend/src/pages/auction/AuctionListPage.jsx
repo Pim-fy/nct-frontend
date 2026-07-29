@@ -42,10 +42,10 @@ const TRADE_METHOD_FILTERS = [
   { code: 'TRDC0020', label: '배송·직거래 모두 가능' },
 ];
 const FILTER_GROUP_CLASS = 'm-0 grid gap-2 border-0 p-0 disabled:opacity-60';
-const FILTER_OPTION_CLASS = 'flex cursor-pointer items-center gap-2 text-base leading-[1.6] text-[#5f5e5a]';
-const FILTER_MESSAGE_CLASS = 'm-0 min-h-5 text-sm leading-[1.5] text-[#5f5e5a]';
-const FILTER_INPUT_CLASS = 'min-h-10 w-full rounded-lg border border-[#e2e1dc] bg-white px-3 text-base leading-[1.5] text-[#1a1a18] outline-none transition-colors focus:border-primary';
-const PAGINATION_BUTTON_CLASS = 'min-h-10 rounded-lg border border-[#e2e1dc] bg-white px-3.5 text-base leading-[1.4] font-semibold text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-45 max-sm:min-h-9 max-sm:min-w-9 max-sm:px-1.5 max-sm:text-sm';
+const FILTER_OPTION_CLASS = 'flex cursor-pointer items-center gap-2 text-body-sm text-[#5f5e5a] md:text-body-md';
+const FILTER_MESSAGE_CLASS = 'm-0 min-h-5 text-caption text-[#5f5e5a]';
+const FILTER_INPUT_CLASS = 'min-h-10 w-full rounded-lg border border-[#e2e1dc] bg-white px-3 text-body-sm text-[#1a1a18] outline-none transition-colors focus:border-primary md:text-body-md';
+const PAGINATION_BUTTON_CLASS = 'min-h-10 rounded-lg border border-[#e2e1dc] bg-white px-3.5 text-body-md font-semibold text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-45 max-sm:min-h-9 max-sm:min-w-9 max-sm:px-1.5 max-sm:text-caption';
 const PAGINATION_WINDOW_SIZE = 5;
 
 const getPaginationItems = (currentPage, totalPages) => {
@@ -349,7 +349,7 @@ const AuctionListPage = () => {
   };
 
   return (
-    <div className="min-h-full bg-white text-base leading-[1.6] text-[#1a1a18]">
+    <div className="min-h-full bg-white text-body-sm text-[#1a1a18] md:text-body-md">
       <section className="h-[92px] bg-white md:h-0" aria-label="경매 검색">
         <div
           className={`${
@@ -371,7 +371,7 @@ const AuctionListPage = () => {
               onSubmit={handleSearch}
             >
               <input
-                className="min-h-12 min-w-0 border-0 px-[18px] text-base leading-[1.5] text-[#1a1a18] outline-none"
+                className="min-h-12 min-w-0 border-0 px-[18px] text-body-sm text-[#1a1a18] outline-none md:text-body-md"
                 type="search"
                 value={keywordDraft}
                 onChange={(event) => setKeywordDraft(event.target.value)}
@@ -405,7 +405,7 @@ const AuctionListPage = () => {
                   {searchHistory.map((term) => (
                     <li className="flex min-h-11 items-center hover:bg-[#f7f8fa]" key={term}>
                       <button
-                        className="flex min-w-0 flex-1 cursor-pointer items-center self-stretch overflow-hidden border-0 bg-transparent text-left text-base leading-[1.5] text-[#333]"
+                        className="flex min-w-0 flex-1 cursor-pointer items-center self-stretch overflow-hidden border-0 bg-transparent text-left text-body-sm text-[#333] md:text-body-md"
                         type="button"
                         onClick={() => handleRecentSearch(term)}
                       >
@@ -451,7 +451,7 @@ const AuctionListPage = () => {
             aria-label="경매 목록 필터"
           >
             <div className="flex items-center justify-between gap-3">
-              <h2 className="m-0 text-2xl leading-[1.3] font-bold">필터</h2>
+              <h2 className="m-0 text-h3 font-bold">필터</h2>
               <div className="flex items-center gap-2">
                 <button
                   className="inline-flex size-[34px] cursor-pointer items-center justify-center rounded-lg border border-[#e2e1dc] bg-white text-[#5f5e5a] transition-colors hover:border-primary hover:bg-primary-light hover:text-primary"
@@ -477,7 +477,7 @@ const AuctionListPage = () => {
               className={FILTER_GROUP_CLASS}
               disabled={categoriesQuery.isLoading || categoriesQuery.isError}
             >
-              <legend className="mb-0.5 block text-base leading-[1.4] font-extrabold text-[#1a1a18]">카테고리</legend>
+              <legend className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">카테고리</legend>
               {categoriesQuery.isLoading ? (
                 <div className="grid gap-2" aria-hidden="true">
                   {Array.from({ length: 4 }).map((_, index) => (
@@ -503,7 +503,7 @@ const AuctionListPage = () => {
                   ))}
                   {categoryOptions.length > COLLAPSED_CATEGORY_COUNT && (
                     <button
-                      className="inline-flex min-h-7 w-fit cursor-pointer items-center gap-1 border-0 bg-transparent text-sm leading-[1.5] font-bold text-primary transition-colors hover:text-primary-dark"
+                      className="inline-flex min-h-7 w-fit cursor-pointer items-center gap-1 border-0 bg-transparent text-caption font-bold text-primary transition-colors hover:text-primary-dark"
                       type="button"
                       onClick={() => setShowAllCategories((prev) => !prev)}
                     >
@@ -516,7 +516,7 @@ const AuctionListPage = () => {
             </fieldset>
 
             <fieldset className={FILTER_GROUP_CLASS}>
-              <legend className="mb-0.5 block text-base leading-[1.4] font-extrabold text-[#1a1a18]">가격 범위</legend>
+              <legend className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">가격 범위</legend>
               <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
                 <input
                   className={FILTER_INPUT_CLASS}
@@ -542,7 +542,7 @@ const AuctionListPage = () => {
               className={FILTER_GROUP_CLASS}
               disabled={auctionStatusesQuery.isLoading || auctionStatusesQuery.isError}
             >
-              <legend className="mb-0.5 block text-base leading-[1.4] font-extrabold text-[#1a1a18]">진행 상태</legend>
+              <legend className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">진행 상태</legend>
               {auctionStatusesQuery.isLoading ? (
                 <div className="grid gap-2" aria-hidden="true">
                   <SkeletonBlock className="h-5 w-[72%]" />
@@ -569,7 +569,7 @@ const AuctionListPage = () => {
               className={FILTER_GROUP_CLASS}
               disabled={tradeMethodsQuery.isLoading || tradeMethodsQuery.isError}
             >
-              <legend className="mb-0.5 block text-base leading-[1.4] font-extrabold text-[#1a1a18]">거래 방식</legend>
+              <legend className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">거래 방식</legend>
               {tradeMethodsQuery.isLoading ? (
                 <div className="grid gap-2" aria-hidden="true">
                   {Array.from({ length: 4 }).map((_, index) => (
@@ -609,7 +609,7 @@ const AuctionListPage = () => {
             </fieldset>
 
             <fieldset className={FILTER_GROUP_CLASS}>
-              <legend className="mb-0.5 block text-base leading-[1.4] font-extrabold text-[#1a1a18]">추가 조건</legend>
+              <legend className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">추가 조건</legend>
               <label className={FILTER_OPTION_CLASS}>
                 <input
                   className="accent-primary"
@@ -631,7 +631,7 @@ const AuctionListPage = () => {
             </fieldset>
 
             <label className="grid gap-2">
-              <span className="mb-0.5 block text-base leading-[1.4] font-extrabold text-[#1a1a18]">정렬</span>
+              <span className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">정렬</span>
               <select
                 className={FILTER_INPUT_CLASS}
                 value={sortDraft}
@@ -647,7 +647,7 @@ const AuctionListPage = () => {
 
             <div className="sticky -bottom-5 z-10 -mx-5 -mb-5 border-t border-[#f0efec] bg-white p-5 pt-3">
               <button
-                className="inline-flex min-h-[46px] w-full cursor-pointer items-center justify-center rounded-lg border border-primary bg-primary px-3 text-base leading-[1.4] font-bold text-white transition-colors hover:border-primary-dark hover:bg-primary-dark"
+                className="inline-flex min-h-[46px] w-full cursor-pointer items-center justify-center rounded-lg border border-primary bg-primary px-3 text-body-md font-bold text-white transition-colors hover:border-primary-dark hover:bg-primary-dark"
                 type="button"
                 onClick={handleFilterSearch}
                 aria-busy={filterPreviewQuery.data?.totalElements === undefined}
@@ -670,7 +670,7 @@ const AuctionListPage = () => {
               <SlidersHorizontal size={18} />
               필터
             </button>
-            <div className="mb-[18px] text-left text-base leading-[1.4] font-extrabold text-primary-dark max-md:mt-0.5 max-md:mb-3.5">
+            <div className="mb-[18px] text-left text-body-md font-extrabold text-primary-dark max-md:mt-0.5 max-md:mb-3.5">
               {totalElements.toLocaleString('ko-KR')}개 상품
             </div>
 
@@ -697,10 +697,10 @@ const AuctionListPage = () => {
               </div>
             ) : (
               <div className="grid min-h-[340px] place-content-center justify-items-center gap-2.5 rounded-lg border border-[#f0efec] bg-[#f8f8f6] p-7 text-center">
-                <strong className="text-xl leading-[1.4]">등록된 경매 상품이 없습니다.</strong>
+                <strong className="text-h3">등록된 경매 상품이 없습니다.</strong>
                 <p className="m-0 text-[#5f5e5a]">새 경매가 올라오면 이곳에 표시됩니다.</p>
                 <button
-                  className="min-h-10 cursor-pointer rounded-lg border border-primary bg-primary px-3.5 text-base leading-[1.4] font-semibold text-white"
+                  className="min-h-10 cursor-pointer rounded-lg border border-primary bg-primary px-3.5 text-body-md font-semibold text-white"
                   type="button"
                   onClick={clearFilters}
                 >
@@ -737,7 +737,7 @@ const AuctionListPage = () => {
                     type="button"
                     aria-current={pageNumber === page ? 'page' : undefined}
                     className={pageNumber === page
-                      ? 'min-h-10 rounded-lg border border-primary bg-primary px-3.5 text-base leading-[1.4] font-semibold text-white max-sm:min-h-9 max-sm:min-w-9 max-sm:px-1.5 max-sm:text-sm'
+                      ? 'min-h-10 rounded-lg border border-primary bg-primary px-3.5 text-body-md font-semibold text-white max-sm:min-h-9 max-sm:min-w-9 max-sm:px-1.5 max-sm:text-caption'
                       : PAGINATION_BUTTON_CLASS}
                     onClick={() => goToPage(pageNumber)}
                   >
