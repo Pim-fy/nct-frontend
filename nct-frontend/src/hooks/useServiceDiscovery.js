@@ -11,9 +11,10 @@ export const serviceDiscoveryQueryKeys = {
   provider: (providerId) => [...serviceDiscoveryQueryKeys.all, 'provider', providerId],
 };
 
-export const useServiceDiscovery = (filters) => useQuery({
+export const useServiceDiscovery = (filters, { enabled = true } = {}) => useQuery({
   queryKey: serviceDiscoveryQueryKeys.search(filters),
   queryFn: () => fetchServiceDiscovery(filters),
+  enabled,
 });
 
 export const usePublicProviderProfile = (providerId) => useQuery({
