@@ -92,9 +92,9 @@ const AuctionSellerHistory = ({
       {hasCurrentPageError && (
         <div className="grid min-h-28 place-items-center rounded-lg border border-[#e8e8e8] bg-[#f8f8f6] p-5 text-center">
           <div>
-            <p className="m-0 text-sm leading-[1.6] text-[#666]">판매자 경매 상품을 불러오지 못했습니다.</p>
+            <p className="m-0 text-body-sm text-[#666]">판매자 경매 상품을 불러오지 못했습니다.</p>
             <button
-              className="mt-3 cursor-pointer rounded-lg border border-[#d9d9d9] bg-white px-3 py-2 text-sm leading-[1.4] font-bold text-[#444] hover:border-primary hover:text-primary-dark"
+              className="mt-3 cursor-pointer rounded-lg border border-[#d9d9d9] bg-white px-3 py-2 text-caption font-bold text-[#444] hover:border-primary hover:text-primary-dark"
               type="button"
               onClick={() => {
                 firstHistoryQuery.refetch();
@@ -108,7 +108,7 @@ const AuctionSellerHistory = ({
       )}
 
       {!isInitialWaiting && !isCurrentPageWaiting && !hasCurrentPageError && totalElements === 0 && (
-        <p className="m-0 grid min-h-28 place-items-center rounded-lg border border-[#e8e8e8] bg-[#f8f8f6] p-5 text-center text-sm leading-[1.6] text-[#777]">
+        <p className="m-0 grid min-h-28 place-items-center rounded-lg border border-[#e8e8e8] bg-[#f8f8f6] p-5 text-center text-body-sm text-[#777]">
           등록된 경매 상품이 없습니다.
         </p>
       )}
@@ -127,7 +127,7 @@ const AuctionSellerHistory = ({
                   alt={item.title}
                 />
               ) : (
-                <span className="grid size-full place-items-center px-2 text-center text-xs leading-[1.5] font-semibold text-[#777]">
+                <span className="grid size-full place-items-center px-2 text-center text-caption font-semibold text-[#777]">
                   이미지 없음
                 </span>
               );
@@ -177,7 +177,7 @@ const AuctionSellerHistory = ({
               >
                 <ChevronLeft size={18} aria-hidden="true" />
               </button>
-              <span className="min-w-16 text-center text-sm leading-[1.4] font-bold tabular-nums text-[#555]">
+              <span className="min-w-16 text-center text-caption font-bold tabular-nums text-[#555]">
                 {currentPage} / {totalPages}
               </span>
               <button

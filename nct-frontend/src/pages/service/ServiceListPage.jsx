@@ -157,7 +157,7 @@ const ServiceListPage = () => {
       : '서비스 검색 결과를 불러오지 못했습니다.';
 
   return (
-    <ContentPageShell>
+    <ContentPageShell className="service-discovery-page">
       <Helmet><title>서비스 찾기 | 에누리컷</title></Helmet>
       <ContentPageHeader title="서비스 찾기" />
 
@@ -175,7 +175,7 @@ const ServiceListPage = () => {
       />
 
       <div className="mt-6 flex justify-end lg:hidden">
-        <button className="flex h-12 items-center gap-2 rounded-[5px] border border-primary px-4 text-base font-bold text-primary" onClick={() => setFiltersOpen(true)} type="button">
+        <button className="flex h-12 items-center gap-2 rounded-[5px] border border-primary px-4 text-body-md font-bold text-primary" onClick={() => setFiltersOpen(true)} type="button">
           <SlidersHorizontal aria-hidden="true" size={19} />필터
         </button>
       </div>
@@ -195,8 +195,8 @@ const ServiceListPage = () => {
 
         <section className="min-w-0 flex-1 scroll-mt-24" ref={resultHeadingRef}>
           <div className="mb-5 flex min-h-11 items-center justify-between border-b border-[#e1e1df] pb-4">
-            <h2 className="text-xl font-bold text-[#1a1a18]">{view === 'providers' ? '제공자 검색 결과' : '서비스 요청 검색 결과'}</h2>
-            <span className="text-base font-semibold text-[#555552]">총 {Number(result?.total || 0).toLocaleString('ko-KR')}건</span>
+            <h2 className="text-h3 font-bold text-[#1a1a18]">{view === 'providers' ? '제공자 검색 결과' : '서비스 요청 검색 결과'}</h2>
+            <span className="text-body-md font-semibold text-[#555552]">총 {Number(result?.total || 0).toLocaleString('ko-KR')}건</span>
           </div>
 
           {discoveryQuery.isLoading && <ListSkeleton />}
