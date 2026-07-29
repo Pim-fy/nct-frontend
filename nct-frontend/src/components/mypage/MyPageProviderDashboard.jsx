@@ -1,4 +1,6 @@
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { getUserReviews } from '@api/reviewApi';
 import { useMyPortfolios, useMyProviderProfile } from '@hooks/useProviderProfile';
 import { useNotifications } from '@hooks/useNotification';
 import { usePointBalance } from '@hooks/usePoint';
@@ -6,7 +8,7 @@ import { assets } from '@components/mypage/assets';
 
 // 담당자 7 · F-PROV-009: 일반/제공자 모드 전환 시 상단 구조가 흔들리지 않도록
 // 일반 마이페이지와 같은 프로필·알림·요약 카드 레이아웃을 사용한다.
-// 견적·서비스·리뷰 상세 데이터 계약이 들어오면 카드와 리뷰 영역에 실제 목록을 연결한다.
+// 받은 서비스 리뷰는 기존 리뷰 조회 계약을 소비하고, 견적·서비스 현황은 조회 계약이 들어오면 연결한다.
 export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpenSection }) {
   const navigate = useNavigate();
   const profileQuery = useMyProviderProfile();
@@ -15,10 +17,21 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpe
   const pointBalanceQuery = usePointBalance();
 
   const profile = profileQuery.data;
+  const providerUserSn = Number(profile?.userSn);
+  const receivedReviewsQuery = useQuery({
+    queryKey: ['reviews', 'received', providerUserSn, 'service', 0, 3],
+    queryFn: () => getUserReviews(providerUserSn, {
+      dealType: 'service',
+      page: 0,
+      size: 3,
+    }).then((response) => response?.data ?? response),
+    enabled: Number.isSafeInteger(providerUserSn) && providerUserSn > 0,
+  });
   const notifications = notificationsQuery.data ?? [];
   const unreadNotifications = notifications.filter((notification) => !notification.read);
   const latestNotification = unreadNotifications[0] ?? notifications[0];
   const pointBalance = pointBalanceQuery.data;
+  const receivedReviews = receivedReviewsQuery.data?.content ?? [];
   const nickname = user?.nickname || '제공자';
   const availableArea = profile?.availableArea?.trim();
   const introduction = profile?.introduction?.trim();
@@ -163,13 +176,86 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpe
         </article>
 
         <article className="min-h-72 rounded-2xl border border-[#e3e8f0] bg-white p-6 shadow-sm lg:col-span-1">
-          <h2 className="text-lg font-bold text-[#1f2937]">받은 리뷰</h2>
-          <div className="mt-6 border-t border-dashed border-[#dce3ec] pt-5">
-            <p className="text-sm leading-6 text-[#6b7788]">아직 받은 서비스 리뷰가 없습니다.</p>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-lg font-bold text-[#1f2937]">받은 리뷰</h2>
+            {!receivedReviewsQuery.isLoading && !receivedReviewsQuery.isError && (
+              <span className="text-sm font-semibold text-[#637085]">
+                {receivedReviewsQuery.data?.totalCount ?? 0}건
+              </span>
+            )}
           </div>
+          <ReceivedReviewContent
+            isLoading={profileQuery.isLoading || receivedReviewsQuery.isLoading}
+            isError={profileQuery.isError || receivedReviewsQuery.isError}
+            reviews={receivedReviews}
+            onRetry={() => {
+              if (profileQuery.isError) {
+                profileQuery.refetch();
+              } else {
+                receivedReviewsQuery.refetch();
+              }
+            }}
+          />
         </article>
       </section>
     </main>
+  );
+}
+
+function ReceivedReviewContent({ isLoading, isError, reviews, onRetry }) {
+  if (isLoading) {
+    return (
+      <div className="mt-6 space-y-3 border-t border-dashed border-[#dce3ec] pt-5" aria-label="받은 리뷰를 불러오는 중">
+        {[1, 2].map((item) => (
+          <div key={item} className="h-20 animate-pulse rounded-xl bg-[#f3f6fa]" />
+        ))}
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="mt-6 border-t border-dashed border-[#dce3ec] pt-5">
+        <p className="text-sm leading-6 text-[#b42318]">받은 리뷰를 불러오지 못했습니다.</p>
+        <button
+          type="button"
+          className="mt-3 text-sm font-semibold text-[#0064ff] hover:underline"
+          onClick={onRetry}
+        >
+          다시 불러오기
+        </button>
+      </div>
+    );
+  }
+
+  if (reviews.length === 0) {
+    return (
+      <div className="mt-6 border-t border-dashed border-[#dce3ec] pt-5">
+        <p className="text-sm leading-6 text-[#6b7788]">아직 받은 서비스 리뷰가 없습니다.</p>
+      </div>
+    );
+  }
+
+  return (
+    <ul className="mt-5 divide-y divide-[#edf0f4] border-t border-dashed border-[#dce3ec]">
+      {reviews.map((review) => (
+        <li key={review.reviewId} className="py-4 first:pt-5">
+          <div className="flex items-center justify-between gap-3">
+            <strong className="text-sm text-[#f59e0b]" aria-label={`평점 ${review.rating}점`}>
+              ★ {review.rating}
+            </strong>
+            <span className="text-xs text-[#8a96a8]">{review.createdDate}</span>
+          </div>
+          {review.productTitle && (
+            <p className="mt-2 truncate text-xs font-semibold text-[#637085]">
+              {review.productTitle}
+            </p>
+          )}
+          <p className="mt-1 break-words text-sm leading-6 text-[#27364b]">{review.content}</p>
+          <p className="mt-2 text-xs text-[#8a96a8]">{review.reviewerName}</p>
+        </li>
+      ))}
+    </ul>
   );
 }
 
