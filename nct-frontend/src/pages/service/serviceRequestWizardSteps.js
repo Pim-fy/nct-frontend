@@ -57,6 +57,7 @@ export const WIZARD_STEPS = {
   mv_size: {
     title: '평수·거주 인원',
     type: 'form', next: 'mv_appliance',
+    layout: 'row',
     fields: [
       { key: '평수', type: 'text', placeholder: '예: 8평', required: true, requireDigit: true },
       { key: '거주 인원', type: 'text', placeholder: '예: 1명', required: true, requireDigit: true },
@@ -81,13 +82,13 @@ export const WIZARD_STEPS = {
     ],
   },
   mv_route: {
-    title: '출발지·도착지', desc: '실제 화면에서는 주소 검색(주소 API)으로 입력받을 예정입니다.',
+    title: '출발지·도착지',
     type: 'form', next: 'mv_date',
     fields: [
-      { key: '출발지 주소', type: 'text', placeholder: '주소 검색 (주소 API 연동 예정)' },
+      { key: '출발지 주소', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true },
       { key: '출발지 층수', type: 'text', placeholder: '예: 3층' },
       { key: '출발지 엘리베이터', type: 'choice', options: ['있음', '없음'] },
-      { key: '도착지 주소', type: 'text', placeholder: '주소 검색 (주소 API 연동 예정)' },
+      { key: '도착지 주소', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true },
       { key: '도착지 층수', type: 'text', placeholder: '예: 5층' },
       { key: '도착지 엘리베이터', type: 'choice', options: ['있음', '없음'] },
     ],

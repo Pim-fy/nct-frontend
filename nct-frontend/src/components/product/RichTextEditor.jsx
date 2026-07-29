@@ -102,7 +102,7 @@ export default function RichTextEditor({ value, onChange, placeholder = '상품 
         onBlur={emitChange}
         data-placeholder={placeholder}
         className="rich-text-editor-body"
-        style={{ flex: 1, minHeight: 200, overflowY: 'auto', padding: '12px 14px', fontSize: 16, lineHeight: 1.7, outline: 'none' }}
+        style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '12px 14px', fontSize: 16, lineHeight: 1.7, outline: 'none' }}
       />
     </div>
   );

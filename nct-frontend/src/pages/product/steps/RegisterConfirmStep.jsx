@@ -33,8 +33,17 @@ export default function RegisterConfirmStep({ form, agreed, setAgreed, images, s
                 ['시작가', form.prdStartAmt ? Number(form.prdStartAmt).toLocaleString() + '원' : '—'],
                 ['즉시구매가', form.prdIbyAmt ? Number(form.prdIbyAmt).toLocaleString() + '원' : '미설정'],
                 ['입찰 단위', form.bidUnit.toLocaleString() + '원'],
-                ['경매 기간', auctionRange?.start && auctionRange?.end ? `${auctionRange.start} ~ ${auctionRange.end}` : '—'],
-                ['종료 예정', endDt ? endDt.toLocaleDateString('ko-KR') : '—'],
+                ['경매 기간', (() => {
+                  if (!auctionRange?.start || !auctionRange?.end) return '—';
+                  const startPart = form.startNow
+                    ? '즉시 시작'
+                    : `${auctionRange.start}${auctionRange.startTime ? ' ' + auctionRange.startTime : ''}`;
+                  const endPart = endDt
+                    ? endDt.toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+                    : auctionRange.end;
+                  return `${startPart} ~ ${endPart}`;
+                })()],
+                ['종료 예정', endDt ? endDt.toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'],
               ].map(([k, v], i, arr) => (
                 <tr key={k}><th style={{ background: '#eef2fb', borderBottom: i === arr.length - 1 ? 'none' : '1px solid #d8d6cf', borderRight: '1px solid #d8d6cf' }}>{k}</th><td style={{ borderLeft: '1px solid #d8d6cf' }}>{v}</td></tr>
               ))}

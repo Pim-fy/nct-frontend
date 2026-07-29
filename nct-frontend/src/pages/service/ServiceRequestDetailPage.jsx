@@ -1,7 +1,6 @@
 // src/pages/service/ServiceRequestDetailPage.jsx
-// 서비스 요청서 상세 페이지 — 요청자 본인은 관리(수정/마감), 그 외에는 조회만 (F-SVC-003~004)
-// 목업: 11_service_request_detail.html 기반 (견적 목록 패널은 QUOTE API 미구현이라 자리만 남겨둠 — 황성경 담당)
-// 라우트 예정: /service-requests/:svcReqSn
+// 서비스 요청서 상세 — 요청자 본인(마감/이어서작성) / 타인+로그인(견적제출) / 비로그인(로그인유도)
+// 라우트: /service-requests/:svcReqSn
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import DOMPurify from 'dompurify';
@@ -17,17 +16,34 @@ const STATUS_LABEL = {
   SVCC0003: '매칭완료',
   SVCC0004: '종료',
 };
-const STATUS_BADGE = {
-  SVCC0001: 'badge-gray',
-  SVCC0002: 'badge-success',
-  SVCC0003: 'badge-primary',
-  SVCC0004: 'badge-gray',
+
+const STATUS_BADGE_CLASS = {
+  SVCC0001: 'bg-[#f0f0ee] text-[#5f5e5a]',
+  SVCC0002: 'bg-[#e5efff] text-[#0048bf]',
+  SVCC0003: 'bg-[#e8f0fe] text-[#1a56a4]',
+  SVCC0004: 'bg-[#f0f0ee] text-[#5f5e5a]',
 };
 
-const RICH_TEXT_SANITIZE = {
-  ALLOWED_TAGS: ['p', 'br', 'b', 'strong', 'i', 'em', 'u', 'ul', 'ol', 'li', 'img', 'div', 'span'],
-  ALLOWED_ATTR: ['src', 'style'],
+const SANITIZE_CONFIG = {
+  ALLOWED_TAGS: ['p', 'br', 'b', 'strong', 'i', 'em', 'u', 'ul', 'ol', 'li', 'div', 'span'],
+  ALLOWED_ATTR: ['style'],
 };
+
+function parseItem(raw) {
+  const idx = raw.indexOf(': ');
+  if (idx === -1) return { label: null, value: raw };
+  return { label: raw.slice(0, idx), value: raw.slice(idx + 2) };
+}
+
+function fmtBudget(amt) {
+  if (amt == null) return '예산 미정';
+  return Number(amt).toLocaleString('ko-KR') + '원';
+}
+
+function fmtDate(dt) {
+  if (!dt) return '';
+  return new Date(dt).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+}
 
 export default function ServiceRequestDetailPage() {
   const { svcReqSn } = useParams();
@@ -68,100 +84,173 @@ export default function ServiceRequestDetailPage() {
       navigate('/login', { state: { from: location } });
       return;
     }
-    // TODO: 황성경(3) 소유 견적 작성 화면(02_제공자모드/12_quote_form.html) 라우트 확정되면 경로 교체
+    // TODO: 황성경(3) 견적 작성 라우트 확정 후 경로 교체
     navigate(`/quotes/new?svcReqSn=${svcReqSn}`);
   };
 
   if (loading) return <ViewSkeleton />;
   if (error || !request) {
     return (
-      <main className="container seller-page">
+      <div className="mx-auto w-full max-w-[1600px] px-4 lg:px-6 py-10">
         <ErrorMessage message={error || '요청서 정보를 불러오지 못했습니다.'} />
-      </main>
+      </div>
     );
   }
 
   const isOwner = authenticatedUserId != null && String(authenticatedUserId) === String(request.usrSn);
   const isDraft = request.svcReqStatusCd === 'SVCC0001';
-  const isOpen = request.svcReqStatusCd === 'SVCC0002';
+  const isOpen  = request.svcReqStatusCd === 'SVCC0002';
+
+  const parsedItems = (request.items ?? []).map(parseItem);
+
+  const statusBadgeClass = STATUS_BADGE_CLASS[request.svcReqStatusCd] ?? 'bg-[#f0f0ee] text-[#5f5e5a]';
+  const statusLabel      = STATUS_LABEL[request.svcReqStatusCd] ?? request.svcReqStatusCd;
 
   return (
-    <main className="container seller-page">
-      <div className="row" style={{ justifyContent: 'flex-end', margin: '40px 0 16px' }}>
-        <button type="button" className="btn btn-ghost" onClick={() => navigate(-1)}>← 목록으로</button>
+    <div className="bg-white pb-14 text-base leading-[1.6] text-[#1d1d1f]">
+      <div className="mx-auto w-full max-w-[1600px] px-4 lg:px-6">
+
+        {/* 뒤로가기 */}
+        <div className="flex justify-end pt-9 pb-4">
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 rounded-lg border border-[#e2e1dc] bg-white px-4 py-2 text-sm font-medium text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary"
+            onClick={() => navigate(-1)}
+          >
+            ← 목록으로
+          </button>
+        </div>
+
+        {/* 2열 레이아웃 */}
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_minmax(340px,420px)]">
+
+          {/* ── 왼쪽: 요청 정보 카드 ── */}
+          <article className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm">
+
+            {/* 헤더 */}
+            <div className="border-b border-[#e8e8e8] px-6 py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  {request.catNm && (
+                    <span className="rounded-md bg-[#f0eeff] px-2.5 py-0.5 text-xs font-semibold text-[#4a36b0]">
+                      {request.catNm}
+                    </span>
+                  )}
+                  <span className={`rounded-md px-2.5 py-0.5 text-xs font-semibold ${statusBadgeClass}`}>
+                    {statusLabel}
+                  </span>
+                </div>
+
+                {/* 요청자 본인 액션 */}
+                {isOwner && isDraft && (
+                  <button
+                    type="button"
+                    className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0048bf]"
+                    onClick={() => navigate('/service-requests/new', { state: { svcReqSn: Number(svcReqSn) } })}
+                  >
+                    이어서 작성
+                  </button>
+                )}
+                {isOwner && isOpen && (
+                  <button
+                    type="button"
+                    className="shrink-0 rounded-lg border border-[#a32d2d] bg-white px-4 py-2 text-sm font-semibold text-[#a32d2d] transition-colors hover:bg-[#fcebeb] disabled:opacity-50"
+                    onClick={handleClose}
+                    disabled={closing}
+                  >
+                    {closing ? '마감 중...' : '요청 마감'}
+                  </button>
+                )}
+              </div>
+
+              <h1 className="mt-3 text-xl font-bold leading-[1.4]">{request.svcReqTtl}</h1>
+              <p className="mt-1 text-sm text-[#5f5e5a]">
+                {fmtBudget(request.svcReqBdgtAmt)}
+                {request.svcReqRegDt && <span className="ml-2">· {fmtDate(request.svcReqRegDt)} 등록</span>}
+              </p>
+            </div>
+
+            {/* 요청 항목 (위저드 답변) */}
+            {parsedItems.length > 0 && (
+              <div className="border-b border-[#e8e8e8] px-6 py-5">
+                <h2 className="mb-3 text-sm font-semibold text-[#5f5e5a]">요청 항목</h2>
+                <div className="grid grid-cols-1 gap-0 sm:grid-cols-2">
+                  {parsedItems.map((item, i) => (
+                    <div
+                      key={i}
+                      className="border-b border-[#e8e8e8] px-1 py-3 last:border-b-0 sm:[&:nth-last-child(-n+2)]:border-b-0"
+                    >
+                      {item.label && (
+                        <span className="mb-1 block text-xs text-[#888780]">{item.label}</span>
+                      )}
+                      <strong className="block text-sm font-semibold text-[#1d1d1f]">{item.value}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 요청 원문 */}
+            <div className="px-6 py-5">
+              {request.svcReqCn ? (
+                <div
+                  className="border-l-[3px] border-primary pl-4 text-sm leading-[1.9] text-[#1d1d1f] whitespace-pre-line"
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(request.svcReqCn, SANITIZE_CONFIG) }}
+                />
+              ) : (
+                <p className="text-sm text-[#888780]">등록된 설명이 없습니다.</p>
+              )}
+            </div>
+          </article>
+
+          {/* ── 오른쪽: 견적 패널 ── */}
+          <aside className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm lg:sticky lg:top-[84px]">
+
+            {/* 패널 헤더 */}
+            <div className="border-b border-[#e8e8e8] px-5 py-4">
+              <h2 className="text-lg font-bold">도착한 견적</h2>
+              <p className="mt-0.5 text-sm text-[#5f5e5a]">견적을 선택하면 상세 내용과 제공자 리뷰를 확인할 수 있습니다.</p>
+            </div>
+
+            {/* 액션 영역 */}
+            {!isOwner && (
+              <div className="border-b border-[#e8e8e8] px-5 py-4">
+                {isAuthenticated ? (
+                  isOpen ? (
+                    <button
+                      type="button"
+                      className="w-full rounded-lg bg-primary py-3 text-sm font-bold text-white transition-colors hover:bg-[#0048bf]"
+                      onClick={handleQuoteClick}
+                    >
+                      견적 제출하기
+                    </button>
+                  ) : (
+                    <p className="text-center text-sm text-[#888780]">견적 접수가 종료된 요청입니다.</p>
+                  )
+                ) : (
+                  <div className="text-center">
+                    <p className="mb-3 text-sm text-[#5f5e5a]">견적을 제출하려면 로그인이 필요합니다.</p>
+                    <button
+                      type="button"
+                      className="w-full rounded-lg border border-primary py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-[#e5efff]"
+                      onClick={() => navigate('/login', { state: { from: location } })}
+                    >
+                      로그인하기
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 견적 목록 자리 — 황성경(3) QUOTE API 구현 후 연동 */}
+            <div className="px-5 py-6 text-center text-sm text-[#888780]">
+              아직 도착한 견적이 없습니다.
+            </div>
+          </aside>
+        </div>
       </div>
 
-      <section style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(320px,380px)', gap: 24, alignItems: 'start' }}>
-        <article className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '22px 24px 18px', borderBottom: '1px solid #f0efec' }}>
-            <div className="row" style={{ justifyContent: 'space-between' }}>
-              <div className="row" style={{ gap: 8 }}>
-                {request.catNm && <span className="badge badge-blue">{request.catNm}</span>}
-                <span className={`badge ${STATUS_BADGE[request.svcReqStatusCd] ?? 'badge-gray'}`}>
-                  {STATUS_LABEL[request.svcReqStatusCd] ?? request.svcReqStatusCd}
-                </span>
-              </div>
-              {isOwner && isDraft && (
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => navigate('/service-requests/new', { state: { svcReqSn: Number(svcReqSn) } })}
-                >
-                  이어서 작성
-                </button>
-              )}
-              {isOwner && isOpen && (
-                <button type="button" className="btn btn-danger" onClick={handleClose} disabled={closing}>
-                  {closing ? '마감 중...' : '요청 마감'}
-                </button>
-              )}
-              {!isOwner && isOpen && (
-                <button type="button" className="btn btn-primary" onClick={handleQuoteClick}>
-                  견적 작성하기
-                </button>
-              )}
-            </div>
-            <h1 style={{ margin: '14px 0 4px', fontSize: 22 }}>{request.svcReqTtl}</h1>
-            <p className="muted" style={{ margin: 0, fontSize: 14 }}>
-              {request.svcReqBdgtAmt != null ? `예산 ${Number(request.svcReqBdgtAmt).toLocaleString()}원` : '예산 미정'}
-              {request.svcReqRegDt && ` · ${new Date(request.svcReqRegDt).toLocaleDateString('ko-KR')} 등록`}
-            </p>
-          </div>
-
-          {request.items?.length > 0 && (
-            <div style={{ padding: '18px 24px 0' }}>
-              <h3 style={{ margin: '0 0 10px', fontSize: 16 }}>요청 항목</h3>
-              <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.9 }}>
-                {request.items.map((it, i) => <li key={i}>{it}</li>)}
-              </ul>
-            </div>
-          )}
-
-          <div style={{ padding: '22px 24px 24px' }}>
-            {request.svcReqCn
-              ? (
-                <div
-                  className="rich-text-editor-body"
-                  style={{ fontSize: 15, lineHeight: 1.8, color: '#1a1a18', padding: 0 }}
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(request.svcReqCn, RICH_TEXT_SANITIZE) }}
-                />
-              )
-              : <p className="muted">등록된 설명이 없습니다.</p>}
-          </div>
-        </article>
-
-        <aside className="card" style={{ padding: 0, overflow: 'hidden', position: 'sticky', top: 84 }}>
-          <div style={{ padding: '20px 22px 14px', borderBottom: '1px solid #f0efec' }}>
-            <h2 style={{ margin: 0, fontSize: 20 }}>도착한 견적</h2>
-            <p className="muted" style={{ margin: '4px 0 0', fontSize: 14 }}>견적을 선택하면 상세 내용과 제공자 리뷰를 확인할 수 있습니다.</p>
-          </div>
-          <div style={{ padding: '24px', textAlign: 'center' }}>
-            <p className="muted">아직 도착한 견적이 없습니다.</p>
-          </div>
-        </aside>
-      </section>
-
       {toast && <Toast message={toast} onClose={() => setToast('')} />}
-    </main>
+    </div>
   );
 }

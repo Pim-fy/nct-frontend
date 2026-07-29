@@ -146,23 +146,32 @@ export default function ProductRegisterPage() {
               prdStartAmt:    p.prdStartAmt != null ? String(p.prdStartAmt) : '',
               prdIbyAmt:      p.prdIbyAmt  != null ? String(p.prdIbyAmt)  : '',
               bidUnit:        p.prdDraftBidUnit != null ? Number(p.prdDraftBidUnit) : prev.bidUnit,
-              // 임시저장 시 경매기간을 저장해뒀다면 예약 모드로 복원 (즉시시작은 항상 당일 고정이라 재개 시 다시 고르면 됨)
-              startNow:       p.prdDraftStartDt || p.prdDraftEndDt ? false : prev.startNow,
+              startNow:       p.prdDraftStartNowYn === 'Y' ? true
+                            : p.prdDraftStartNowYn === 'N' ? false
+                            : (p.prdDraftStartDt || p.prdDraftEndDt) ? false  // prdDraftStartNowYn 없는 이전 데이터 호환
+                            : prev.startNow,
             }));
             if (p.prdDraftStartDt || p.prdDraftEndDt) {
               suppressRangeResetRef.current = true;
+              // 백엔드 LocalDateTime은 UTC 기준으로 저장되므로 'Z'를 붙여 UTC로 해석 후 로컬(KST) 시간으로 변환
               const splitDt = (iso) => {
                 if (!iso) return { date: '', time: '' };
-                const [date, time] = iso.split('T');
-                return { date, time: time ? time.slice(0, 5) : '' };
+                const d = new Date(iso + 'Z');
+                const pad = n => String(n).padStart(2, '0');
+                return {
+                  date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+                  time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+                };
               };
+              const isStartNow = p.prdDraftStartNowYn === 'Y';
               const start = splitDt(p.prdDraftStartDt);
               const end = splitDt(p.prdDraftEndDt);
               setAuctionRange(prev => ({
                 ...prev,
                 start: start.date,
                 end: end.date,
-                startTime: start.time || prev.startTime,
+                // 즉시시작이면 UI의 "종료 시간"이 startTime에 저장되므로 prdDraftEndDt 시각을 startTime으로 복원
+                startTime: isStartNow ? (end.time || prev.startTime) : (start.time || prev.startTime),
                 endTime: end.time || prev.endTime,
               }));
             }
@@ -232,6 +241,10 @@ export default function ProductRegisterPage() {
       const mm = String(now.getMinutes()).padStart(2, '0');
       return new Date(`${auctionRange.end}T${hh}:${mm}:00`);
     }
+    // 예약 + 시작일 = 종료일 (당일 종료): 별도 선택한 종료 시간 사용
+    if (auctionRange.start === auctionRange.end && auctionRange.endTime) {
+      return new Date(`${auctionRange.end}T${auctionRange.endTime}:00`);
+    }
     return new Date(`${auctionRange.end}T${auctionRange.startTime || '09:00'}:00`);
   };
 
@@ -273,6 +286,7 @@ export default function ProductRegisterPage() {
         flSnList:       uploadedImages.length > 0 ? uploadedImages.map(img => img.flSn) : null,
         // 임시저장이어도 값은 그대로 보낸다 — 백엔드가 prdStatusCd로 판단해 draft 보존 컬럼/AUCTION 중 알맞은 곳에 저장
         aucStartDt:     startDt.toISOString(),
+        startNow:       form.startNow,
         aucEndDt:       endDt ? endDt.toISOString() : null,
         bidUnit:        form.bidUnit,
         // 임시저장일 때만 의미 있음 — 재개 시 등록확인 탭으로 바로 이동할지 판단하는 값
@@ -409,29 +423,33 @@ export default function ProductRegisterPage() {
       {/* step 0: 상품 정보 + 경매 설정 카드 나란히 */}
       {step === 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'stretch' }}>
-          <section className="card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ background: '#eef2fb', padding: '14px 20px' }}>
-              <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>상품 정보</h3>
-            </div>
-            <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <ProductInfoStep
-                form={form}
-                set={set}
-                categories={categories}
-                bannedKeywordError={bannedKeywordError}
-                images={images}
-                onChange={setImages}
-                tradeMethods={TRADE_METHODS}
-                maxImages={MAX_IMAGES}
-                pendingDescFilesMap={pendingDescFilesMap}
-                submitted={submitted}
-                imgSectionRef={imgSectionRef}
-                prdNmRef={prdNmRef}
-                catRef={catRef}
-                tradeRef={tradeRef}
-              />
-            </div>
-          </section>
+          {/* 래퍼: grid row 높이(경매설정 카드 기준)만큼 늘어나는 빈 셀 */}
+          <div style={{ position: 'relative' }}>
+            {/* 카드 자체는 absolute로 띄워 grid row 높이 계산에 관여하지 않음 */}
+            <section className="card" style={{ position: 'absolute', inset: 0, padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ background: '#eef2fb', padding: '14px 20px', flexShrink: 0 }}>
+                <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>상품 정보</h3>
+              </div>
+              <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                <ProductInfoStep
+                  form={form}
+                  set={set}
+                  categories={categories}
+                  bannedKeywordError={bannedKeywordError}
+                  images={images}
+                  onChange={setImages}
+                  tradeMethods={TRADE_METHODS}
+                  maxImages={MAX_IMAGES}
+                  pendingDescFilesMap={pendingDescFilesMap}
+                  submitted={submitted}
+                  imgSectionRef={imgSectionRef}
+                  prdNmRef={prdNmRef}
+                  catRef={catRef}
+                  tradeRef={tradeRef}
+                />
+              </div>
+            </section>
+          </div>
 
           <section className="card" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ background: '#eef2fb', padding: '14px 20px' }}>

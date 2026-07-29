@@ -241,7 +241,7 @@ export default function ProductDetailSellerPage() {
       {/* 취소 확정된 상품(AUCC0005)은 아래 내용 전체를 블러 처리하고 안내만 보여준다 */}
       <div style={{ position: 'relative' }}>
       {isCancelled && (
-        <div style={{ position: 'absolute', inset: 0, zIndex: 5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+        <div style={{ position: 'absolute', inset: 0, zIndex: 5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', paddingTop: 230, gap: 10 }}>
           <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#c0392b" strokeWidth="1.7" aria-hidden="true">
             <circle cx="12" cy="12" r="10" />
             <line x1="5.5" y1="5.5" x2="18.5" y2="18.5" />
