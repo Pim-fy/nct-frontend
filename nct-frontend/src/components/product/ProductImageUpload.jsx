@@ -59,7 +59,7 @@ export default function ProductImageUpload({ images, onChange, maxImages = 5 }) 
     >
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <div>
-          <strong>상품 사진</strong>
+          <strong>상품 사진 <span style={{ color: '#c0392b' }}>*</span></strong>
           <p className="muted small" style={{ margin: '4px 0 0' }}>
             {pickMode ? '대표로 지정할 사진을 선택하세요' : `드래그앤드롭 또는 파일 선택 · 최대 ${maxImages}장 (${images.length}/${maxImages})`}
           </p>

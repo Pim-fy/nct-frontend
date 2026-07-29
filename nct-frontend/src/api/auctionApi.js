@@ -17,8 +17,8 @@ export const fetchAuctions = async (params = {}) => {
   return response.data.data;
 };
 
-export const fetchAuctionDetail = async (auctionId) => {
-  const response = await api.get(`/auctions/${auctionId}`);
+export const fetchAuctionDetail = async (auctionId, params = {}) => {
+  const response = await api.get(`/auctions/${auctionId}`, { params });
   return response.data.data;
 };
 
@@ -36,7 +36,9 @@ export const placeAuctionBid = async (auctionId, payload) => {
 };
 
 export const buyNowAuction = async (auctionId, payload) => {
-  const response = await api.post(`/auctions/${auctionId}/buy-now`, payload);
+  const response = await api.post(`/auctions/${auctionId}/buy-now`, payload, {
+    skipServerErrorRedirect: true,
+  });
   return response.data.data;
 };
 

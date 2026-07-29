@@ -2,11 +2,22 @@ import { useMemo } from 'react';
 import { ChevronRight, Gavel, RefreshCw } from 'lucide-react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { toImageUrl } from '@api/fileApi';
-import Pagination from '@components/common/Pagination';
-import { MyActiveAuctionSkeleton } from '@components/skeleton/AuctionSkeletons';
+import {
+  MyAuctionAction,
+  MyAuctionBadge,
+  MyAuctionCard,
+  MyAuctionDetail,
+  MyAuctionFilterTabs,
+  MyAuctionHeader,
+  MyAuctionList,
+  MyAuctionListSkeleton,
+  MyAuctionPagination,
+  MyAuctionSection,
+  MyAuctionState,
+  MyAuctionSummary,
+} from '@components/mypage/MyAuctionSectionUi';
 import useCountdown from '@hooks/useCountdown';
 import { useMyBidHistory } from '@hooks/useBid';
-import '@assets/css/my-active-auctions.css';
 
 const ACTIVE_AUCTION_STATUS_CODE = 'AUCC0002';
 const PAGE_SIZE = 8;
@@ -15,11 +26,11 @@ const REFRESH_INTERVAL_MS = 15_000;
 const STATUS_META = {
   HIGHEST: {
     label: '최고 입찰 중',
-    className: 'my-active-auction-status--highest',
+    tone: 'blue',
   },
   OUTBID: {
     label: '재입찰 필요',
-    className: 'my-active-auction-status--outbid',
+    tone: 'orange',
   },
 };
 
@@ -128,137 +139,114 @@ export default function MyActiveAuctionPage() {
 
   if (isLoading) {
     return (
-      <section className="my-active-auctions" aria-busy="true">
-        <header className="my-active-auctions__header">
-          <div>
-            <h1>진행중인 경매</h1>
-            <span>현재 참여 중인 경매와 내 입찰 상태를 확인하세요.</span>
-          </div>
-        </header>
-        <MyActiveAuctionSkeleton />
-      </section>
+      <MyAuctionSection aria-busy="true">
+        <MyAuctionHeader
+          title="진행중인 경매"
+          description="현재 참여 중인 경매와 내 입찰 상태를 확인하세요."
+        />
+        <MyAuctionListSkeleton />
+      </MyAuctionSection>
     );
   }
 
   if (isError) {
     return (
-      <section className="my-active-auctions">
-        <header className="my-active-auctions__header">
-          <h1>진행중인 경매</h1>
-        </header>
-        <div className="my-active-auctions__state my-active-auctions__state--error">
-          <strong>진행 중인 경매를 불러오지 못했습니다.</strong>
-          <button type="button" onClick={() => refetch()}>
-            <RefreshCw size={16} />
-            다시 시도
-          </button>
-        </div>
-      </section>
+      <MyAuctionSection>
+        <MyAuctionHeader
+          title="진행중인 경매"
+          description="현재 참여 중인 경매와 내 입찰 상태를 확인하세요."
+        />
+        <MyAuctionState
+          tone="error"
+          title="진행 중인 경매를 불러오지 못했습니다."
+          action={(
+            <MyAuctionAction onClick={() => refetch()}>
+              <RefreshCw size={16} />
+              다시 시도
+            </MyAuctionAction>
+          )}
+        />
+      </MyAuctionSection>
     );
   }
 
   return (
-    <section className="my-active-auctions">
-      <header className="my-active-auctions__header">
-        <div>
-          <h1>진행중인 경매</h1>
-          <span>현재 참여 중인 경매와 내 입찰 상태를 확인하세요.</span>
-        </div>
-      </header>
+    <MyAuctionSection>
+      <MyAuctionHeader
+        title="진행중인 경매"
+        description="현재 참여 중인 경매와 내 입찰 상태를 확인하세요."
+      />
 
-      <div className="my-active-auctions__summary" aria-label="진행 중인 경매 요약">
-        <div>
-          <span>참여 중</span>
-          <strong>{statusCounts.ALL}</strong>
-        </div>
-        <div>
-          <span>최고 입찰 중</span>
-          <strong>{statusCounts.HIGHEST}</strong>
-        </div>
-        <div>
-          <span>재입찰 필요</span>
-          <strong>{statusCounts.OUTBID}</strong>
-        </div>
-      </div>
+      <MyAuctionSummary items={[
+        { key: 'all', label: '참여 중', value: statusCounts.ALL },
+        { key: 'highest', label: '최고 입찰 중', value: statusCounts.HIGHEST },
+        { key: 'outbid', label: '재입찰 필요', value: statusCounts.OUTBID },
+      ]} />
 
-      <div className="my-active-auctions__filters" role="tablist" aria-label="입찰 상태">
-        {FILTERS.map((filter) => (
-          <button
-            key={filter.value}
-            type="button"
-            role="tab"
-            aria-selected={statusFilter === filter.value}
-            className={statusFilter === filter.value ? 'is-active' : ''}
-            onClick={() => handleFilterChange(filter.value)}
-          >
-            {filter.label}
-            <span>{statusCounts[filter.value]}</span>
-          </button>
-        ))}
-      </div>
+      <MyAuctionFilterTabs
+        ariaLabel="입찰 상태"
+        value={statusFilter}
+        onChange={handleFilterChange}
+        items={FILTERS.map((filter) => ({
+          ...filter,
+          count: statusCounts[filter.value],
+        }))}
+      />
 
       {filteredAuctions.length === 0 ? (
-        <div className="my-active-auctions__state">
-          <Gavel size={28} />
-          <strong>해당 상태의 진행 중인 경매가 없습니다.</strong>
-          <p>새로운 경매에 참여하면 이곳에서 입찰 상태를 확인할 수 있습니다.</p>
-        </div>
+        <MyAuctionState
+          icon={<Gavel size={28} />}
+          title="해당 상태의 진행 중인 경매가 없습니다."
+          description="새로운 경매에 참여하면 이곳에서 입찰 상태를 확인할 수 있습니다."
+        />
       ) : (
         <>
-          <div className="my-active-auctions__list">
+          <MyAuctionList>
             {pagedAuctions.map((item) => {
               const status = STATUS_META[item.displayStatus];
               const remainingTime = formatRemainingTime(item.auctionEndDateTime, now);
 
               return (
-                <article className="my-active-auction-item" key={item.aucSn}>
-                  <div className="my-active-auction-item__image">
-                    {item.thumbnailUrl ? (
-                      <img
-                        src={item.thumbnailUrl}
-                        alt={item.auctionTitle || `경매 ${item.aucSn}`}
-                      />
-                    ) : (
-                      <Gavel size={24} aria-hidden="true" />
-                    )}
-                  </div>
-
-                  <div className="my-active-auction-item__body">
-                    <div className="my-active-auction-item__title-row">
-                      <span className={`my-active-auction-status ${status.className}`}>
-                        {status.label}
-                      </span>
-                      <span className="my-active-auction-item__time">{remainingTime}</span>
-                    </div>
-                    <h2>{item.auctionTitle || `경매 #${item.aucSn}`}</h2>
-                    <p>판매자 {item.sellerName || '-'}</p>
-                    <dl>
-                      <div>
-                        <dt>현재가</dt>
-                        <dd>{formatPrice(item.currentPrice)}</dd>
-                      </div>
-                      <div>
-                        <dt>내 입찰가</dt>
-                        <dd>{formatPrice(item.bidAmount)}</dd>
-                      </div>
-                    </dl>
-                  </div>
-
-                  <button
-                    className="my-active-auction-item__action"
-                    type="button"
-                    onClick={() => navigate(`/auction/${item.aucSn}`, { state: { from: location.pathname + location.search } })}
-                  >
-                    경매 상세
-                    <ChevronRight size={17} />
-                  </button>
-                </article>
+                <MyAuctionCard
+                  key={item.aucSn}
+                  imageUrl={item.thumbnailUrl}
+                  imageAlt={item.auctionTitle || `경매 ${item.aucSn}`}
+                  imageFallback={<Gavel size={24} aria-hidden="true" />}
+                  badges={(
+                    <>
+                      <MyAuctionBadge tone={status.tone}>{status.label}</MyAuctionBadge>
+                      <MyAuctionBadge>{remainingTime}</MyAuctionBadge>
+                    </>
+                  )}
+                  title={item.auctionTitle || `경매 #${item.aucSn}`}
+                  description={`판매자 ${item.sellerName || '-'}`}
+                  details={(
+                    <>
+                      <MyAuctionDetail label="현재가" value={formatPrice(item.currentPrice)} />
+                      <MyAuctionDetail label="내 입찰가" value={formatPrice(item.bidAmount)} />
+                    </>
+                  )}
+                  actions={(
+                    <MyAuctionAction
+                      onClick={() => navigate(`/auction/${item.aucSn}`, {
+                        state: { from: location.pathname + location.search },
+                      })}
+                    >
+                      경매 상세
+                      <ChevronRight size={17} />
+                    </MyAuctionAction>
+                  )}
+                />
               );
             })}
-          </div>
-          <Pagination page={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+          </MyAuctionList>
+          <MyAuctionPagination
+            page={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
         </>
       )}
-    </section>
+    </MyAuctionSection>
   );
 }
