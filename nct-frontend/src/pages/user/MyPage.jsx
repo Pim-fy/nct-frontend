@@ -27,6 +27,7 @@ import MyProductList from "@components/product/MyProductList";
 import PointWalletPage from "@pages/user/point/PointWalletPage";
 import SettlementListPage from "@pages/user/settlement/SettlementListPage";
 import MyReportListPage from "@pages/user/report/MyReportListPage";
+import ReportFormPage from "@pages/user/report/ReportFormPage";
 import MyQuoteListPage from "@pages/provider/MyQuoteListPage";
 import ReviewListPage from "@pages/user/ReviewListPage";
 import { useAuth } from "@hooks/useAuth";
@@ -47,6 +48,8 @@ const MYPAGE_SECTION_QUERY_VALUES = new Set([
   "settlement",
   "service-chat",
   "approval-category",
+  "report-list",
+  "report-form",
 ]);
 
 export default function MyPage({
@@ -214,13 +217,15 @@ export default function MyPage({
                 }}
               />
             ) : (
-              <MyProductList onOpenTradeDetail={handleOpenSalesTradeDetail} />
+              <MyProductList embedded onOpenTradeDetail={handleOpenSalesTradeDetail} />
             )
           )}
           {activeSection === "wishlist" && <AuctionFavoritesPage />}
           {activeSection === "wallet" && <PointWalletPage embedded />}
           {activeSection === "quote" && isProvider && <MyQuoteListPage />}
           {activeSection === "review" && <ReviewListPage />}
+          {activeSection === "report-list" && <MyReportListPage embedded />}
+          {activeSection === "report-form" && <ReportFormPage embedded />}
           {isProvider && activeSection === "service-trade" && (
             <ProviderEmbeddedSection
               title="서비스 거래"

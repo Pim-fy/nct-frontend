@@ -1,5 +1,6 @@
 // src/pages/user/point/components/PointTable.jsx
 // Claude Code 작성 (BJN, 2026-07-20)
+import { useEffect, useState } from 'react';
 
 /**
  * 포인트 화면 공용 테이블 셸 — 원장·충전·환전 세 내역 테이블이 같은 표 구조(제목 + 카드형
@@ -8,53 +9,101 @@
  * 표마다 다른 것(컬럼 구성·셀 내용·셀 스타일)은 columns 설정으로 받는다:
  *   { key, header, align?('right'면 우측 정렬), cellClass?(문자열 또는 (row)=>문자열), render(row) }
  * 배지 같은 셀 생김새는 각 테이블 파일이 render로 정의 — 셸은 배치만 책임진다.
+ *
+ * pageSize를 주면(전체보기 모달) 내부에서 페이지네이션한다 — 요약 카드(최근 5건)는 pageSize
+ * 없이 불러서 그대로 다 보여준다 (2026-07-29, "+" 전체보기 모달을 10건씩 페이지로 보여달라는 요청).
  */
-const PointTable = ({ title, columns, rows, emptyText }) => (
-  <section className="mt-6">
-    <h3 className="text-lg font-bold text-gray-900 mb-3">{title}</h3>
+const PointTable = ({ title, columns, rows, emptyText, onExpand, pageSize }) => {
+  const [page, setPage] = useState(1);
+  const pageCount = pageSize ? Math.max(1, Math.ceil(rows.length / pageSize)) : 1;
 
-    <div className="overflow-x-auto bg-white border border-gray-100 rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)]">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-gray-50 text-gray-500">
-            {columns.map((col) => (
-              <th
-                key={col.key}
-                className={`${col.align === 'right' ? 'text-right' : 'text-left'} font-bold px-4 py-3`}
-              >
-                {col.header}
-              </th>
+  // rows가 바뀌면(모달 다시 열림, 데이터 갱신 등) 1페이지로 되돌린다
+  useEffect(() => { setPage(1); }, [rows]);
+
+  const pagedRows = pageSize ? rows.slice((page - 1) * pageSize, page * pageSize) : rows;
+
+  return (
+    <section className="mt-6">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-lg font-bold text-gray-900 m-0">{title}</h3>
+        {/* 목록 화면에서는 최근 5건만 보여주고, 전체 내역은 이 버튼으로 모달에서 확인한다 (2026-07-29) */}
+        {onExpand && (
+          <button
+            type="button"
+            aria-label={`${title} 전체 보기`}
+            onClick={onExpand}
+            className="flex size-7 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-colors text-base leading-none"
+          >
+            +
+          </button>
+        )}
+      </div>
+
+      <div className="overflow-x-auto bg-white border border-gray-100 rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)]">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-gray-50 text-gray-500">
+              {columns.map((col) => (
+                <th
+                  key={col.key}
+                  className={`${col.align === 'right' ? 'text-right' : 'text-left'} font-bold px-4 py-3`}
+                >
+                  {col.header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {pagedRows.length === 0 && (
+              <tr>
+                <td colSpan={columns.length} className="text-center text-gray-400 py-10">
+                  {emptyText}
+                </td>
+              </tr>
+            )}
+            {pagedRows.map((row) => (
+              <tr key={row.id} className="hover:bg-gray-50">
+                {columns.map((col) => {
+                  // 셀 스타일이 행 값에 따라 달라지는 컬럼(예: 금액 +/- 색)은 함수로 받는다
+                  const cellClass = typeof col.cellClass === 'function' ? col.cellClass(row) : (col.cellClass ?? '');
+                  return (
+                    <td
+                      key={col.key}
+                      className={`px-4 py-3 ${col.align === 'right' ? 'text-right' : ''} ${cellClass}`}
+                    >
+                      {col.render(row)}
+                    </td>
+                  );
+                })}
+              </tr>
             ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100">
-          {rows.length === 0 && (
-            <tr>
-              <td colSpan={columns.length} className="text-center text-gray-400 py-10">
-                {emptyText}
-              </td>
-            </tr>
-          )}
-          {rows.map((row) => (
-            <tr key={row.id} className="hover:bg-gray-50">
-              {columns.map((col) => {
-                // 셀 스타일이 행 값에 따라 달라지는 컬럼(예: 금액 +/- 색)은 함수로 받는다
-                const cellClass = typeof col.cellClass === 'function' ? col.cellClass(row) : (col.cellClass ?? '');
-                return (
-                  <td
-                    key={col.key}
-                    className={`px-4 py-3 ${col.align === 'right' ? 'text-right' : ''} ${cellClass}`}
-                  >
-                    {col.render(row)}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </section>
-);
+          </tbody>
+        </table>
+      </div>
+
+      {pageSize && (
+        <div className="flex items-center justify-center gap-3 mt-3">
+          <button
+            type="button"
+            disabled={page === 1}
+            onClick={() => setPage((p) => p - 1)}
+            className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:border-blue-500 hover:text-blue-600 disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:text-gray-600 transition-colors"
+          >
+            이전
+          </button>
+          <span className="text-sm text-gray-500">{page} / {pageCount}</span>
+          <button
+            type="button"
+            disabled={page === pageCount}
+            onClick={() => setPage((p) => p + 1)}
+            className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:border-blue-500 hover:text-blue-600 disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:text-gray-600 transition-colors"
+          >
+            다음
+          </button>
+        </div>
+      )}
+    </section>
+  );
+};
 
 export default PointTable;

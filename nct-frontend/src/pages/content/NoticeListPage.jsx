@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useSearchParams } from 'react-router-dom';
 import {
-  ContentPageHeader,
   ContentPageShell,
   ContentPagination,
   ContentState,
@@ -75,21 +74,33 @@ const NoticeListPage = () => {
   };
 
   return (
-    <ContentPageShell>
+    <ContentPageShell className="public-notice-page">
       <Helmet><title>공지사항 | 네고컷</title></Helmet>
-      <ContentPageHeader
-        description="서비스 점검, 정책 변경, 이용 안내와 이벤트 소식을 확인하세요."
-        eyebrow="에누리컷 소식"
-        title="공지사항"
-      />
+      <header className="customer-support-page-header">
+        <span>NOTICE</span>
+        <h1>공지사항</h1>
+        <p>서비스 점검, 정책 변경, 이용 안내와 이벤트 소식을 확인하세요.</p>
+      </header>
 
-      <NoticeFilterBar
-        hasError={typesQuery.isError}
-        onChange={changeFilter}
-        onRetry={() => typesQuery.refetch()}
-        selectedTypeCode={typeCode}
-        types={typesQuery.data ?? []}
-      />
+      <section className="public-notice-controls" aria-label="공지사항 검색 및 필터">
+        <NoticeFilterBar
+          hasError={typesQuery.isError}
+          onChange={changeFilter}
+          onRetry={() => typesQuery.refetch()}
+          selectedTypeCode={typeCode}
+          types={typesQuery.data ?? []}
+        />
+        {!noticesQuery.isLoading && !noticesQuery.isError && (
+          <div className="public-notice-list-toolbar">
+            {noticePage?.items?.length > 0 && <NoticeListSummary total={noticePage.totalItems} />}
+            <form className="public-notice-search" onSubmit={submitSearch}>
+              <input aria-label="공지 제목 또는 내용 검색" maxLength={100} onChange={(event) => setKeywordInput(event.target.value)} placeholder="제목 또는 내용 검색" value={keywordInput} />
+              <button className="btn btn-primary" type="submit">검색</button>
+            </form>
+          </div>
+        )}
+      </section>
+
       {noticesQuery.isLoading && <NoticeListSkeleton />}
 
       {noticesQuery.isError && (
@@ -100,16 +111,6 @@ const NoticeListPage = () => {
           title="공지사항을 불러오지 못했습니다."
           tone="error"
         />
-      )}
-
-      {!noticesQuery.isLoading && !noticesQuery.isError && (
-        <div className="public-notice-list-toolbar">
-          {noticePage?.items?.length > 0 && <NoticeListSummary total={noticePage.totalItems} />}
-          <form className="public-notice-search" onSubmit={submitSearch}>
-            <input aria-label="공지 제목 또는 내용 검색" maxLength={100} onChange={(event) => setKeywordInput(event.target.value)} placeholder="제목 또는 내용 검색" value={keywordInput} />
-            <button className="btn btn-primary" type="submit">검색</button>
-          </form>
-        </div>
       )}
 
       {!noticesQuery.isLoading && !noticesQuery.isError && noticePage?.items?.length === 0 && (
