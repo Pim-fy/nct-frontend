@@ -10,11 +10,15 @@ import PointChargeOrderTable from './components/PointChargeOrderTable';
 import PointExchangeOrderTable from './components/PointExchangeOrderTable';
 import PointAmountModal from './components/PointAmountModal';
 import PointChargeWidgetModal from './components/PointChargeWidgetModal';
+import PointHistoryDetailModal from './components/PointHistoryDetailModal';
 import { usePointBalance, usePointLedger, usePointChargeOrders, usePointExchangeOrders } from '../../../hooks/usePoint';
 import { confirmPointCharge, requestPointExchange, convertPoint } from '../../../api/pointApi';
 
 // 데이터 도착 전(로딩 중) 카드가 깨지지 않도록 쓰는 0값 기본 잔액
 const EMPTY_BALANCE = { available: 0, hold: 0, settleable: 0, total: 0, exchangeable: 0 };
+
+// 요약 카드에서 각 내역별로 보여주는 최근 건수 — 나머지는 "+" 눌러 전체 내역 모달에서 확인 (2026-07-29)
+const RECENT_LIMIT = 5;
 
 /** axios 오류에서 백엔드 ApiResponse의 message를 꺼낸다 (없으면 일반 안내) */
 const errorMessage = (err) =>
@@ -59,6 +63,8 @@ const SUBMIT_ACTIONS = {
  */
 const PointWalletPage = ({ embedded = false } = {}) => {
   const [openModal, setOpenModal] = useState(null); // null | 'charge' | 'exchange' | 'convert'
+  // 각 내역은 최근 5건만 보이고, "+"를 누르면 전체 내역 모달이 뜬다 (2026-07-29)
+  const [detailModal, setDetailModal] = useState(null); // null | 'ledger' | 'charge' | 'exchange'
 
   const [searchParams, setSearchParams] = useSearchParams();
   // 결제 리다이렉트로 돌아온 직후(?charge=...가 붙어 있는 동안)는 최초 렌더부터 계속 true —
@@ -239,17 +245,33 @@ const PointWalletPage = ({ embedded = false } = {}) => {
       {ledgerLoading || balanceLoading ? (
         <p className="text-sm text-gray-400 text-center py-10">포인트 내역을 불러오는 중...</p>
       ) : (
-        <PointLedgerTable rows={ledger} />
+        <PointLedgerTable rows={ledger} limit={RECENT_LIMIT} onExpand={() => setDetailModal('ledger')} />
       )}
       {ordersLoading ? (
         <p className="text-sm text-gray-400 text-center py-10">충전 내역을 불러오는 중...</p>
       ) : (
-        <PointChargeOrderTable rows={chargeOrders} />
+        <PointChargeOrderTable rows={chargeOrders} limit={RECENT_LIMIT} onExpand={() => setDetailModal('charge')} />
       )}
       {exchangeLoading ? (
         <p className="text-sm text-gray-400 text-center py-10">환전 내역을 불러오는 중...</p>
       ) : (
-        <PointExchangeOrderTable rows={exchangeOrders} />
+        <PointExchangeOrderTable rows={exchangeOrders} limit={RECENT_LIMIT} onExpand={() => setDetailModal('exchange')} />
+      )}
+
+      {detailModal === 'ledger' && (
+        <PointHistoryDetailModal title="포인트 내역" onClose={() => setDetailModal(null)}>
+          <PointLedgerTable rows={ledger} />
+        </PointHistoryDetailModal>
+      )}
+      {detailModal === 'charge' && (
+        <PointHistoryDetailModal title="충전 내역" onClose={() => setDetailModal(null)}>
+          <PointChargeOrderTable rows={chargeOrders} />
+        </PointHistoryDetailModal>
+      )}
+      {detailModal === 'exchange' && (
+        <PointHistoryDetailModal title="환전 내역" onClose={() => setDetailModal(null)}>
+          <PointExchangeOrderTable rows={exchangeOrders} />
+        </PointHistoryDetailModal>
       )}
 
       {openModal === 'charge' && (

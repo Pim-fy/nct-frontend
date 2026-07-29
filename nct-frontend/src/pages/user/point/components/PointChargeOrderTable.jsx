@@ -35,14 +35,23 @@ const COLUMNS = [
 // 안 들어왔다" 문의 시 필요해서 남긴다 (사용자 결정, 2026-07-29).
 const VISIBLE_STATUS_CODES = new Set(['PCOC0002', 'PCOC0003']);
 
-/** 충전 시도 이력 테이블 (F-PAY-011) — 완료·실패 건만 표시 */
-const PointChargeOrderTable = ({ rows }) => (
-  <PointTable
-    title="충전 내역"
-    columns={COLUMNS}
-    rows={rows.filter((r) => VISIBLE_STATUS_CODES.has(r.statusCd))}
-    emptyText="충전 내역이 없습니다."
-  />
-);
+/**
+ * 충전 시도 이력 테이블 (F-PAY-011) — 완료·실패 건만 표시.
+ * limit을 주면(마이페이지 요약 카드) 필터링 이후 기준으로 최근 N건만 보여주고 "+"로 전체보기
+ * 모달을 띄운다 — limit 없이 부르면(전체보기 모달 안) 전부 보여준다 (2026-07-29).
+ */
+const PointChargeOrderTable = ({ rows, limit, onExpand }) => {
+  const visible = rows.filter((r) => VISIBLE_STATUS_CODES.has(r.statusCd));
+  return (
+    <PointTable
+      title="충전 내역"
+      columns={COLUMNS}
+      rows={limit ? visible.slice(0, limit) : visible}
+      emptyText="충전 내역이 없습니다."
+      onExpand={limit ? onExpand : undefined}
+      pageSize={limit ? undefined : 10}
+    />
+  );
+};
 
 export default PointChargeOrderTable;
