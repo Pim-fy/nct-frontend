@@ -91,6 +91,12 @@ const PointChargeWidgetModal = ({ infoRow, onClose }) => {
     if (!widgetsRef.current || !orderRef.current) return;
     setLoading(true);
     try {
+      // 결제 완료 후 리다이렉트는 항상 포인트지갑(/user/mypage?section=wallet)으로 고정돼 있어서,
+      // 쇼핑 중이던 페이지로 돌아갈 수 있도록 지금 위치를 기억해 둔다 — 승인 처리가 끝난 뒤
+      // PointWalletPage가 이 값을 읽어 돌려보낸다. 전체 리다이렉트를 거치므로 컴포넌트 상태로는
+      // 못 들고 가고 sessionStorage에 남겨야 한다.
+      sessionStorage.setItem('pointChargeReturnTo', window.location.pathname + window.location.search);
+
       await widgetsRef.current.requestPayment({
         orderId: orderRef.current.orderId,
         orderName: orderRef.current.orderName,

@@ -1,6 +1,6 @@
 // src/pages/user/point/PointWalletPage.jsx
 import { useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import Swal from 'sweetalert2';
 
@@ -61,9 +61,29 @@ const PointWalletPage = ({ embedded = false } = {}) => {
   const [openModal, setOpenModal] = useState(null); // null | 'charge' | 'exchange' | 'convert'
 
   const [searchParams, setSearchParams] = useSearchParams();
+  // 결제 리다이렉트로 돌아온 직후(?charge=...가 붙어 있는 동안)는 최초 렌더부터 계속 true —
+  // 승인 처리 중 쇼핑 등 다른 조작과 겹치지 않도록 화면을 완전히 덮어서, 충전을 시작했던
+  // 페이지로 돌아가기 전까지 포인트지갑 화면 자체가 잠깐이라도 눈에 띄지 않게 한다
+  // (원래 페이지 유지 요청, 2026-07-29 — 지갑 화면이 스치듯 보이는 것도 없애 달라는 후속 요청).
+  const isChargeRedirect = !!searchParams.get('charge');
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   // React StrictMode의 이펙트 2회 실행으로 승인(confirm)이 중복 호출되는 것을 막는 가드
   const confirmHandled = useRef(false);
+
+  // 결제 리다이렉트 처리가 끝난 뒤, 충전을 시작했던 원래 페이지로 돌려보낸다 — 결제위젯이
+  // successUrl/failUrl을 항상 포인트지갑으로 고정해 둬야 해서(AppRoutes.jsx는 담당자1 소유라
+  // 별도 콜백 라우트를 새로 만들지 않는 기존 설계), 쇼핑 중이던 페이지에서 충전하면 결제 후
+  // 포인트지갑으로 튕겨 나가버리는 문제가 있었다. PointChargeWidgetModal이 결제 시작 직전
+  // sessionStorage에 남겨둔 원래 경로로 돌아간다 — 값이 없으면(지갑 화면에서 직접 충전한 경우
+  // 등) 그대로 지갑 화면에 머문다.
+  const returnToOriginalPage = () => {
+    const returnTo = sessionStorage.getItem('pointChargeReturnTo');
+    sessionStorage.removeItem('pointChargeReturnTo');
+    if (returnTo && returnTo !== window.location.pathname + window.location.search) {
+      navigate(returnTo, { replace: true });
+    }
+  };
 
   // 서버 조회 — 로그인(쿠키) 필요. 미로그인 401이면 axios 인터셉터가 /login으로 보낸다
   const { data: balance = EMPTY_BALANCE, isLoading: balanceLoading } = usePointBalance();
@@ -89,7 +109,7 @@ const PointWalletPage = ({ embedded = false } = {}) => {
         .then(() => {
           // 잔액·원장·충전내역 모두 바뀌었으니 포인트 캐시 전체 갱신
           queryClient.invalidateQueries({ queryKey: ['point'] });
-          Swal.fire({
+          return Swal.fire({
             icon: 'success',
             title: '충전 완료',
             text: '포인트 충전이 완료되었습니다.',
@@ -98,14 +118,20 @@ const PointWalletPage = ({ embedded = false } = {}) => {
         })
         .catch((err) => {
           queryClient.invalidateQueries({ queryKey: ['point'] });
-          Swal.fire({
+          return Swal.fire({
             icon: 'error',
             title: '충전 승인 실패',
             text: errorMessage(err),
             confirmButtonColor: '#0064ff',
           });
         })
-        .finally(clearParams);
+        .finally(() => {
+          // clearParams()가 navigate() 뒤에 실행되면 이 페이지(/user/mypage) 기준
+          // setSearchParams가 원래 페이지로의 이동을 되돌려버린다 — 반드시 clearParams를
+          // 먼저 끝내고 나서 원래 페이지로 나가야 한다.
+          clearParams();
+          returnToOriginalPage();
+        });
     } else {
       // 실패 리다이렉트 — 토스가 붙여 준 실패 메시지를 그대로 안내 (주문은 대기 상태로 남는다)
       Swal.fire({
@@ -113,8 +139,10 @@ const PointWalletPage = ({ embedded = false } = {}) => {
         title: '결제 실패',
         text: searchParams.get('message') ?? '결제가 완료되지 않았습니다.',
         confirmButtonColor: '#0064ff',
+      }).then(() => {
+        clearParams();
+        returnToOriginalPage();
       });
-      clearParams();
     }
   }, [searchParams, setSearchParams, queryClient]);
 
@@ -229,6 +257,19 @@ const PointWalletPage = ({ embedded = false } = {}) => {
           onSubmit={submitAmount('convert')}
           onClose={() => setOpenModal(null)}
         />
+      )}
+
+      {/* 결제 리다이렉트로 돌아온 직후 ~ 원래 페이지로 돌아가기 전까지 화면 전체를 완전히 덮는다.
+          fixed + 불투명 배경이라 이 포인트지갑 페이지(사이드바 포함)가 뒤에서 잠깐이라도 비치지
+          않고, 처리가 끝나면 원래 페이지로 이동하므로 사용자 입장에서는 지갑 화면을 아예 거치지
+          않은 것처럼 보인다. 닫기 버튼도 없어서 그 사이 다른 조작과 겹치지 않는다. */}
+      {isChargeRedirect && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-white p-6">
+          <div className="flex flex-col items-center gap-4">
+            <div className="size-10 rounded-full border-4 border-gray-200 border-t-blue-600 animate-spin" />
+            <p className="text-sm font-medium text-gray-700">충전 처리 중입니다. 잠시만 기다려 주세요.</p>
+          </div>
+        </div>
       )}
     </div>
   );
