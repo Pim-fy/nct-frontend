@@ -53,9 +53,7 @@ export default function AuctionSection() {
       {/* 탭 메뉴 */}
       <div className="absolute contents left-0 top-[1254px]" data-name="tabmen">
         <div className="absolute h-0 left-0 top-[1286px] w-[1955px]">
-          <div className="absolute inset-[-1px_0_0_0]">
-            <img alt="" className="block max-w-none size-full" src={assets.divider1} />
-          </div>
+          <div className="absolute inset-[-1px_0_0_0] border-t border-[#e0e0e0]" />
         </div>
         <button
           type="button"

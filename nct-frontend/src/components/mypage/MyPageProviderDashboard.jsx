@@ -6,9 +6,6 @@ import { useNotifications } from '@hooks/useNotification';
 import { usePointBalance } from '@hooks/usePoint';
 import { assets } from '@components/mypage/assets';
 
-// 담당자 7 · F-PROV-009: 일반/제공자 모드 전환 시 상단 구조가 흔들리지 않도록
-// 일반 마이페이지와 같은 프로필·알림·요약 카드 레이아웃을 사용한다.
-// 받은 서비스 리뷰는 기존 리뷰 조회 계약을 소비하고, 견적·서비스 현황은 조회 계약이 들어오면 연결한다.
 export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpenSection }) {
   const navigate = useNavigate();
   const profileQuery = useMyProviderProfile();
