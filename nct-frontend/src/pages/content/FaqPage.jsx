@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { ChevronDown } from 'lucide-react';
 import {
-  ContentPageHeader,
   ContentPageShell,
   ContentPagination,
   ContentState,
@@ -23,6 +23,7 @@ const FaqItem = ({ faq }) => {
       <summary>
         <span aria-hidden="true">Q</span>
         <strong>{faq.title}</strong>
+        <ChevronDown aria-hidden="true" className="faq-item__chevron" />
       </summary>
       <div className="faq-item__answer">
         <span aria-hidden="true">A</span>
@@ -48,13 +49,13 @@ const FaqPage = () => {
   const faqPage = faqQuery.data;
 
   return (
-    <ContentPageShell>
+    <ContentPageShell className="public-faq-page">
       <Helmet><title>자주 묻는 질문 | 네고컷</title></Helmet>
-      <ContentPageHeader
-        description="궁금한 내용을 빠르게 확인해 보세요. 답변이 없으면 고객센터로 문의해 주세요."
-        eyebrow="고객센터"
-        title="자주 묻는 질문"
-      />
+      <header className="customer-support-page-header">
+        <span>FAQ</span>
+        <h1>자주 묻는 질문</h1>
+        <p>궁금한 내용을 빠르게 확인해 보세요. 질문을 누르면 답변을 확인할 수 있습니다.</p>
+      </header>
 
       {faqQuery.isLoading && (
         <section className="faq-list faq-list--skeleton" aria-label="FAQ를 불러오는 중">

@@ -40,6 +40,8 @@
 
 /* 기본 스타일 */
 @layer base {
+  /* 담당자 7: 메뉴별 페이지 높이가 달라도 가운데 정렬된 레이아웃이 좌우로 움직이지 않게 한다. */
+  html { scrollbar-gutter: stable; }
   body { color: #1a1a18; margin: 0; line-height: 1.5;  }
   a {color: inherit;text-decoration: none; /* Tailwind의 underline 클래스로 개별 오버라이드 가능 */}
   p { margin: 0; }
