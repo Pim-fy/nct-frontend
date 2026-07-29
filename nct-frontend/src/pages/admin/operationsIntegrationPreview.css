@@ -218,40 +218,36 @@
   padding: 42px !important;
 }
 
-.admin-badge {
-  display: inline-flex;
+.operations-pagination {
+  display: flex;
   align-items: center;
-  width: fit-content;
-  padding: 5px 9px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 800;
-  white-space: nowrap;
+  justify-content: center;
+  gap: 14px;
+  padding: 18px 0 2px;
+  color: #4b5563;
+  font-size: 14px;
+  font-weight: 750;
 }
 
-.admin-badge--danger {
-  color: var(--ops-red, #b4403a);
-  background: var(--ops-red-soft, #fdecea);
+.operations-pagination button {
+  min-width: 64px;
+  height: 34px;
+  border: 1px solid #d7dce7;
+  border-radius: 8px;
+  background: #fff;
+  color: #344054;
+  cursor: pointer;
 }
 
-.admin-badge--warning {
-  color: var(--ops-amber, #b76b13);
-  background: var(--ops-amber-soft, #fff3df);
+.operations-pagination button:hover:not(:disabled) {
+  border-color: #7aa7f8;
+  color: #0057d9;
 }
 
-.admin-badge--success {
-  color: #25724a;
-  background: #e7f5ec;
-}
-
-.admin-badge--info {
-  color: var(--ops-green, #1f6f5c);
-  background: var(--ops-green-soft, #e8f5ef);
-}
-
-.admin-badge--neutral {
-  color: #666b63;
-  background: #eff0ec;
+.operations-pagination button:disabled {
+  background: #f5f6f8;
+  color: #a0a7b5;
+  cursor: not-allowed;
 }
 
 .operations-flow {
