@@ -28,7 +28,7 @@ export function usePointLedger() {
   });
 }
 
-/** 내 충전 주문 이력 — data: [{ id, date, orderNo, amount, status, statusCd, failReason }]
+/** 내 충전 주문 이력 — data: [{ id, date, orderNo, amount, status, statusCd, failReason, payMethod }]
  *  원장과 달리 실패·취소·대기 시도까지 포함한다 (가이드라인 §9: 실패 이벤트도 기록·표시) */
 export function usePointChargeOrders() {
   return useQuery({

@@ -45,7 +45,7 @@ import {
 } from './utils/auctionFormatters';
 import { addRecentAuction } from '@utils/recentAuctions';
 
-const DETAIL_PAGE_CLASS = 'bg-white pb-14 text-base leading-[1.6] text-[#1d1d1f]';
+const DETAIL_PAGE_CLASS = 'bg-white pb-14 text-body-sm text-[#1d1d1f] md:text-body-md';
 const DETAIL_CONTAINER_CLASS = 'mx-auto w-full max-w-[1600px] px-4 lg:px-6';
 const DETAIL_EMPTY_CLASS = 'grid min-h-[340px] place-content-center justify-items-center gap-2.5 rounded-lg border border-[#e8e8e8] bg-[#f8f8f6] p-7 text-center';
 const DETAIL_SECTION_ITEMS = [
@@ -358,7 +358,7 @@ const AuctionDetailPage = () => {
       <main className={DETAIL_PAGE_CLASS}>
         <div className={DETAIL_CONTAINER_CLASS}>
           <div className={DETAIL_EMPTY_CLASS}>
-            <strong className="text-xl leading-[1.4]">경매 상세 정보를 불러오지 못했습니다.</strong>
+            <strong className="text-h3">경매 상세 정보를 불러오지 못했습니다.</strong>
             <Link className="inline-flex items-center gap-1.5 font-extrabold text-primary no-underline" to={returnPath}>
               {returnLabel}으로 돌아가기
             </Link>
@@ -646,7 +646,7 @@ const AuctionDetailPage = () => {
               const isActive = activeDetailSectionId === id;
               return (
                 <button
-                  className={`relative inline-flex h-full cursor-pointer items-center justify-center border-x-0 border-t-0 border-b-[3px] bg-white px-2 text-center text-sm leading-[1.4] font-bold break-keep whitespace-normal transition-colors md:text-base ${
+                  className={`relative inline-flex h-full cursor-pointer items-center justify-center border-x-0 border-t-0 border-b-[3px] bg-white px-2 text-center text-caption font-bold break-keep whitespace-normal transition-colors md:text-body-md ${
                     isActive
                       ? 'border-b-primary text-primary'
                       : 'border-b-transparent text-[#666] hover:text-[#1d1d1f]'

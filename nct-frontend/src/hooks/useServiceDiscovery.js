@@ -1,8 +1,7 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   fetchPublicProviderProfile,
   fetchServiceDiscovery,
-  submitProviderReport,
 } from '@api/serviceDiscoveryApi';
 
 export const serviceDiscoveryQueryKeys = {
@@ -27,8 +26,4 @@ export const usePublicProviderProfile = (providerId) => useQuery({
   queryKey: serviceDiscoveryQueryKeys.provider(providerId),
   queryFn: () => fetchPublicProviderProfile(providerId),
   enabled: Number.isSafeInteger(providerId) && providerId > 0,
-});
-
-export const useProviderReport = () => useMutation({
-  mutationFn: submitProviderReport,
 });

@@ -6,7 +6,7 @@
 //   (@assets/img/bellIcon.png, walletIcon.png, userIcon.png — main.png의 free-icon-font-* 에셋).
 // - 드롭다운(경매/서비스 카테고리 · POINT · 마이페이지)은 열림·닫힘 상태가 있는 UI라 절대좌표 포팅 대신
 //   시맨틱 Tailwind + 실제 상태관리 방식을 따른다. 바깥 클릭 시 자동으로 닫힌다.
-// - 모바일(md 미만)에서는 경매/서비스/공지사항 메뉴를 숨기고 햄버거 토글로 전체 화면 메뉴를 연다.
+// - 모바일(md 미만)에서는 경매/서비스/고객센터 메뉴를 숨기고 햄버거 토글로 전체 화면 메뉴를 연다.
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -359,7 +359,7 @@ const SiteHeader = () => {
                 className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${customerOpen ? 'text-primary' : 'text-[#333333]'}`}
                 onClick={() => setCustomerHovered(false)}
               >
-                공지사항
+                고객센터
               </Link>
               {customerOpen && (
                 <div className="absolute left-0 top-full w-[161px] pt-[14px] z-50">
@@ -455,7 +455,10 @@ const SiteHeader = () => {
                         >
                           <span className="mt-[6px] size-[6px] shrink-0 rounded-full bg-primary" />
                           <div className="min-w-0">
-                            <p className="truncate text-[13px] text-[#333]">{item.title}</p>
+                            <p className="truncate text-[13px] text-[#333]">
+                              {item.title}
+                              {item.content && <span className="text-[#969696]"> · {item.content}</span>}
+                            </p>
                             <p className="text-[11px] text-[#969696]">{relativeTime(item.regDt)}</p>
                           </div>
                         </button>

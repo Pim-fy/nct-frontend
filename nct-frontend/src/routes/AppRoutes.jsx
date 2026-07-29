@@ -16,6 +16,7 @@ import LandingLayout from '@layouts/LandingLayout';
 import UserLayout    from '@layouts/UserLayout';
 import AdminLayout   from '@layouts/AdminLayout';
 import AuthLayout    from '@layouts/AuthLayout';
+import CustomerSupportLayout from '@layouts/CustomerSupportLayout';
 
 // ──────────────────────────────────────────
 // 공개 페이지
@@ -157,10 +158,12 @@ const AppRoutes = () => {
         {/* 담당자 2 · F-SVC: 서비스 요청서 상세는 비로그인도 조회 가능 (백엔드 permit-all) */}
         <Route path="/service-requests/:svcReqSn" element={<ServiceRequestDetailPage />} />
         <Route path="/providers/:providerId" element={<PublicProviderProfilePage />} />
-        <Route path="/guide" element={<GuidePage />} />
-        <Route path="/customersupport/notice" element={<NoticeListPage />} />
-        <Route path="/customersupport/notice/:noticeId" element={<NoticeDetailPage />} />
-        <Route path="/customersupport/faq" element={<FaqPage />} />
+        <Route element={<CustomerSupportLayout />}>
+          <Route path="/guide" element={<GuidePage />} />
+          <Route path="/customersupport/notice" element={<NoticeListPage />} />
+          <Route path="/customersupport/notice/:noticeId" element={<NoticeDetailPage />} />
+          <Route path="/customersupport/faq" element={<FaqPage />} />
+        </Route>
       </Route>
 
       {/* 실제 거래 경로의 인증 정책과 분리된 개발용 화면 확인 경로 */}
