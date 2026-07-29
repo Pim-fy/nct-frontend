@@ -53,3 +53,7 @@ export const postProductInquiry = (prdSn, data) =>
 /** 판매자 답변 등록 (F-AUC-012) */
 export const postInquiryReply = (prdSn, inquirySn, data) =>
   api.post(`/products/${prdSn}/inquiries/${inquirySn}/reply`, data).then(res => res.data);
+
+/** 판매자 답변 수정 — 등록 후 10분 이내만 가능 (F-AUC-012) */
+export const updateInquiryReply = (prdSn, inquirySn, data) =>
+  api.patch(`/products/${prdSn}/inquiries/${inquirySn}/reply`, data).then(res => res.data);
