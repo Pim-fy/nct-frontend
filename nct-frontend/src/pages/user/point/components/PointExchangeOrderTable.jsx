@@ -41,8 +41,17 @@ const COLUMNS = [
  * - 입금 계좌는 신청 시점 스냅샷 — 신청 후 마이페이지에서 계좌를 바꿔도 여기 표시는 안 바뀐다
  *   ("내가 어디로 받기로 했더라?" 확인용)
  */
-const PointExchangeOrderTable = ({ rows }) => (
-  <PointTable title="환전 내역" columns={COLUMNS} rows={rows} emptyText="환전 내역이 없습니다." />
+// limit을 주면(마이페이지 요약 카드) 최근 N건만 보여주고 "+"로 전체보기 모달을 띄운다.
+// limit 없이 부르면(전체보기 모달 안) 전부 보여준다 (2026-07-29).
+const PointExchangeOrderTable = ({ rows, limit, onExpand }) => (
+  <PointTable
+    title="환전 내역"
+    columns={COLUMNS}
+    rows={limit ? rows.slice(0, limit) : rows}
+    emptyText="환전 내역이 없습니다."
+    onExpand={limit ? onExpand : undefined}
+    pageSize={limit ? undefined : 10}
+  />
 );
 
 export default PointExchangeOrderTable;

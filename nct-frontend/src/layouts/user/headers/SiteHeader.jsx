@@ -261,46 +261,49 @@ const SiteHeader = () => {
 
           {/* 메뉴 (데스크톱) */}
           <nav ref={navRef} className="hidden md:flex items-center gap-8">
-            <div
-              className="relative"
-              onMouseEnter={() => {
-                setCategoryHovered(true);
-                setServiceHovered(false);
-                setCustomerHovered(false);
-              }}
-              onMouseLeave={() => setCategoryHovered(false)}
-            >
-              <Link
-                to="/auction"
-                className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${categoryOpen ? 'text-primary' : 'text-[#333333]'}`}
-                onClick={() => setCategoryHovered(false)}
+            {/* 경매 메뉴 — 제공자모드에서는 숨김 */}
+            {!isProvider && (
+              <div
+                className="relative"
+                onMouseEnter={() => {
+                  setCategoryHovered(true);
+                  setServiceHovered(false);
+                  setCustomerHovered(false);
+                }}
+                onMouseLeave={() => setCategoryHovered(false)}
               >
-                경매
-              </Link>
-              {categoryOpen && (
-                <div className="absolute left-0 top-full w-[161px] pt-[14px] z-50">
-                  <div className="rounded-[5px] border border-[#4e4e4e] bg-white py-1 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)]">
-                    <Link
-                      to="/auction"
-                      className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
-                      onClick={() => setCategoryHovered(false)}
-                    >
-                      전체보기
-                    </Link>
-                    {AUCTION_CATEGORIES.map((label) => (
+                <Link
+                  to="/auction"
+                  className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${categoryOpen ? 'text-primary' : 'text-[#333333]'}`}
+                  onClick={() => setCategoryHovered(false)}
+                >
+                  경매
+                </Link>
+                {categoryOpen && (
+                  <div className="absolute left-0 top-full w-[161px] pt-[14px] z-50">
+                    <div className="rounded-[5px] border border-[#4e4e4e] bg-white py-1 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)]">
                       <Link
-                        key={label}
-                        to={`/auction?category=${encodeURIComponent(label)}`}
+                        to="/auction"
                         className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
                         onClick={() => setCategoryHovered(false)}
                       >
-                        {label}
+                        전체보기
                       </Link>
-                    ))}
+                      {AUCTION_CATEGORIES.map((label) => (
+                        <Link
+                          key={label}
+                          to={`/auction?category=${encodeURIComponent(label)}`}
+                          className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
+                          onClick={() => setCategoryHovered(false)}
+                        >
+                          {label}
+                        </Link>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
             <div
               className="relative"
@@ -452,7 +455,10 @@ const SiteHeader = () => {
                         >
                           <span className="mt-[6px] size-[6px] shrink-0 rounded-full bg-primary" />
                           <div className="min-w-0">
-                            <p className="truncate text-[13px] text-[#333]">{item.title}</p>
+                            <p className="truncate text-[13px] text-[#333]">
+                              {item.title}
+                              {item.content && <span className="text-[#969696]"> · {item.content}</span>}
+                            </p>
                             <p className="text-[11px] text-[#969696]">{relativeTime(item.regDt)}</p>
                           </div>
                         </button>
@@ -718,34 +724,36 @@ const SiteHeader = () => {
               </div>
             )}
 
-            {/* 경매 (아코디언) */}
-            <div className="border-b border-[#f0f0f0]">
-              <button
-                type="button"
-                className="flex w-full items-center justify-between py-4 text-[20px] font-bold text-[#333333]"
-                onClick={() => setMobileAuctionOpen((v) => !v)}
-              >
-                경매
-                <ChevronRight size={20} className={`transition-transform ${mobileAuctionOpen ? 'rotate-90' : ''}`} />
-              </button>
-              {mobileAuctionOpen && (
-                <div className="flex flex-col gap-1 pb-3 pl-2">
-                  <Link to="/auction" className="py-2 text-[16px] font-bold text-primary" onClick={closeMobileMenu}>
-                    전체보기
-                  </Link>
-                  {AUCTION_CATEGORIES.map((label) => (
-                    <Link
-                      key={label}
-                      to={`/auction?category=${encodeURIComponent(label)}`}
-                      className="py-2 text-[15px] text-[#4e4e4e]"
-                      onClick={closeMobileMenu}
-                    >
-                      {label}
+            {/* 경매 (아코디언) — 제공자모드에서는 숨김 */}
+            {!isProvider && (
+              <div className="border-b border-[#f0f0f0]">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between py-4 text-[20px] font-bold text-[#333333]"
+                  onClick={() => setMobileAuctionOpen((v) => !v)}
+                >
+                  경매
+                  <ChevronRight size={20} className={`transition-transform ${mobileAuctionOpen ? 'rotate-90' : ''}`} />
+                </button>
+                {mobileAuctionOpen && (
+                  <div className="flex flex-col gap-1 pb-3 pl-2">
+                    <Link to="/auction" className="py-2 text-[16px] font-bold text-primary" onClick={closeMobileMenu}>
+                      전체보기
                     </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+                    {AUCTION_CATEGORIES.map((label) => (
+                      <Link
+                        key={label}
+                        to={`/auction?category=${encodeURIComponent(label)}`}
+                        className="py-2 text-[15px] text-[#4e4e4e]"
+                        onClick={closeMobileMenu}
+                      >
+                        {label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* 서비스 (아코디언) */}
             <div className="border-b border-[#f0f0f0]">
