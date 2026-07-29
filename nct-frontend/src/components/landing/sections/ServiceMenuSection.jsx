@@ -1,32 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { assets } from "./assets";
 import MoreButton from "./MoreButton";
-
-export const SERVICE_MENU_ITEMS = [
-  { label: "청소",     left: 322, image: assets.image10, imgLeft: 373, imgTop: 1053, imgW: 53, imgH: 47, category: "청소" },
-  { label: "이사",     left: 482, image: assets.image11, imgLeft: 535, imgTop: 1055, imgW: 52, imgH: 42, category: "이사" },
-  { label: "설치/수리", left: 642, image: assets.image8,  imgLeft: 696, imgTop: 1054, imgW: 48, imgH: 45, category: "설치/수리" },
-  { label: "인테리어", left: 802, image: assets.image9,  imgLeft: 853, imgTop: 1051, imgW: 45, imgH: 50, category: "인테리어" },
-  { label: "레슨",     left: 962, image: assets.image7,  imgLeft: 1007, imgTop: 1052, imgW: 57, imgH: 49, category: "레슨" },
-];
-
-export const HOT_ITEMS = [
-  { rank: 1,  name: "메타 퀘스트 3S VR",        price: "420,000원" },
-  { rank: 2,  name: "인바디 체성분 분석기",       price: "980,000원" },
-  { rank: 3,  name: "GIANT 카본 로드바이크",      price: "1,250,000원" },
-  { rank: 4,  name: "LG 워시타워 미니워셔",       price: "650,000원" },
-  { rank: 5,  name: "LG DIOS 전자레인지",         price: "189,000원" },
-  { rank: 6,  name: "다이슨 에어랩 멀티스타일러", price: "550,000원" },
-  { rank: 7,  name: "애플 아이패드 에어 M2",      price: "720,000원" },
-  { rank: 8,  name: "삼성 갤럭시 버즈3 프로",     price: "180,000원" },
-  { rank: 9,  name: "닌텐도 스위치 OLED",         price: "290,000원" },
-  { rank: 10, name: "로지텍 MX 마스터 3S",        price: "98,000원" },
-];
+import { SERVICE_MENU_ITEMS } from './serviceMenuData';
 
 const ITEM_HEIGHT = 50;
 const PAGE_SIZE   = 5;
-const PAGE_COUNT  = HOT_ITEMS.length / PAGE_SIZE;
 
 const STAGGER   = 120;  // 행 간 딜레이 (ms)
 const HALF_FLIP = 350;  // 반바퀴 플립 시간 (ms)
@@ -34,16 +12,18 @@ const INTERVAL  = 4500; // 자동 전환 주기 (ms)
 
 const idleStyle = { transform: 'perspective(600px) rotateX(0deg)', transition: 'none' };
 
-export default function ServiceMenuSection() {
+export default function ServiceMenuSection({ hotItems, isError, isLoading }) {
   const navigate = useNavigate();
   const [rowPages,     setRowPages]     = useState(Array(PAGE_SIZE).fill(0));
   const [rowStyles,    setRowStyles]    = useState(Array(PAGE_SIZE).fill(idleStyle));
   const [hoveredRow,   setHoveredRow]   = useState(null);
   const [currentPage,  setCurrentPage]  = useState(0);
   const busyRef = useRef(false);
+  const pageCount = Math.max(1, Math.ceil(hotItems.length / PAGE_SIZE));
+  const visiblePage = Math.min(currentPage, pageCount - 1);
 
   const goToPage = useCallback((targetPage) => {
-    if (busyRef.current) return;
+    if (busyRef.current || targetPage < 0 || targetPage >= pageCount) return;
     busyRef.current = true;
     setCurrentPage(targetPage);
 
@@ -77,14 +57,15 @@ export default function ServiceMenuSection() {
 
     const total = (PAGE_SIZE - 1) * STAGGER + HALF_FLIP * 2;
     setTimeout(() => { busyRef.current = false; }, total + 50);
-  }, []);
+  }, [pageCount]);
 
   useEffect(() => {
+    if (pageCount <= 1) return undefined;
     const id = setInterval(() => {
-      goToPage((currentPage + 1) % PAGE_COUNT);
+      goToPage((visiblePage + 1) % pageCount);
     }, INTERVAL);
     return () => clearInterval(id);
-  }, [currentPage, goToPage]);
+  }, [goToPage, pageCount, visiblePage]);
 
   return (
     <section className="absolute contents left-[167px] top-[867px]" data-name="SECTION_2(서비스메뉴/HOTITEM)">
@@ -131,12 +112,16 @@ export default function ServiceMenuSection() {
           style={{ left: 1340, top: 940, width: 426, height: PAGE_SIZE * ITEM_HEIGHT }}
         >
           {Array.from({ length: PAGE_SIZE }).map((_, rowIdx) => {
-            const item      = HOT_ITEMS[rowPages[rowIdx] * PAGE_SIZE + rowIdx];
+            const itemPage  = Math.min(rowPages[rowIdx], pageCount - 1);
+            const item      = hotItems[itemPage * PAGE_SIZE + rowIdx];
             const isHovered = hoveredRow === rowIdx;
+            if (!item) {
+              return <div className="border-b border-[#ebebeb]" key={rowIdx} style={{ height: ITEM_HEIGHT }} />;
+            }
             return (
               <Link
                 key={rowIdx}
-                to="/auction"
+                to={`/auction/${item.id}`}
                 className="flex items-center border-b border-[#ebebeb] px-5 no-underline"
                 style={{ height: ITEM_HEIGHT, ...rowStyles[rowIdx], transformOrigin: 'center center', display: 'flex' }}
                 onMouseEnter={() => setHoveredRow(rowIdx)}
@@ -167,6 +152,15 @@ export default function ServiceMenuSection() {
               </Link>
             );
           })}
+          {(isLoading || isError || hotItems.length === 0) && (
+            <p className="absolute inset-0 grid place-items-center bg-white/90 px-6 text-center text-[16px] text-[#666]">
+              {isLoading
+                ? '인기 경매를 불러오는 중입니다.'
+                : isError
+                  ? '인기 경매를 불러오지 못했습니다.'
+                  : '표시할 인기 경매가 없습니다.'}
+            </p>
+          )}
         </div>
 
         {/* 페이지 인디케이터 */}
@@ -174,16 +168,16 @@ export default function ServiceMenuSection() {
           className="absolute flex gap-[6px] items-center"
           style={{ left: 1340 + 426 / 2 - 11, top: 867 + 367 - 18 }}
         >
-          {Array.from({ length: PAGE_COUNT }).map((_, i) => (
+          {Array.from({ length: pageCount }).map((_, i) => (
             <button
               key={i}
               type="button"
               onClick={() => goToPage(i)}
               className="cursor-pointer rounded-full transition-all duration-300"
               style={{
-                width:  i === currentPage ? 16 : 8,
+                width:  i === visiblePage ? 16 : 8,
                 height: 8,
-                backgroundColor: i === currentPage ? "#0064ff" : "#c9d3e0",
+                backgroundColor: i === visiblePage ? "#0064ff" : "#c9d3e0",
               }}
             />
           ))}

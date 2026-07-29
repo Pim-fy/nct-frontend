@@ -1,4 +1,5 @@
 import TempComment from './TempComment';
+import { SkeletonBlock } from '@components/skeleton/AuctionSkeletons';
 
 const SELLER_INFO_ITEM_CLASS = 'grid min-h-[72px] content-center gap-1 border-b border-[#eceef1] py-3 last:border-b-0 md:grid-cols-[140px_minmax(0,1fr)] md:items-center md:gap-6';
 
@@ -36,6 +37,9 @@ export const AuctionSellerInformationSection = ({
   auction,
   selectedTradeName,
   sectionId,
+  sellerRating,
+  sellerReviewCount,
+  isSellerTrustLoading = false,
   children,
 }) => (
   <section
@@ -62,13 +66,17 @@ export const AuctionSellerInformationSection = ({
       <div className={SELLER_INFO_ITEM_CLASS}>
         <dt className="text-sm leading-[1.5] font-bold text-[#666]">평점</dt>
         <dd className="m-0 text-base leading-[1.6] text-[#1d1d1f]">
-          {formatSellerRating(auction.sellerRating, auction.sellerReviewCount)}
+          {isSellerTrustLoading
+            ? <SkeletonBlock className="h-5 w-28" />
+            : formatSellerRating(sellerRating, sellerReviewCount)}
         </dd>
       </div>
       <div className={SELLER_INFO_ITEM_CLASS}>
         <dt className="text-sm leading-[1.5] font-bold text-[#666]">받은 리뷰</dt>
         <dd className="m-0 text-base leading-[1.6] text-[#1d1d1f]">
-          {formatSellerReviewCount(auction.sellerReviewCount)}
+          {isSellerTrustLoading
+            ? <SkeletonBlock className="h-5 w-20" />
+            : formatSellerReviewCount(sellerReviewCount)}
         </dd>
       </div>
       <div className={SELLER_INFO_ITEM_CLASS}>

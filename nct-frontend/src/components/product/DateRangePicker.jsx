@@ -80,7 +80,8 @@ function TimeRow({ value, onChange: onChangeProp, minTime }) {
 
 export default function DateRangePicker({
   startDate, endDate, onChange, maxNavDate, maxDurationDays, fixedStart,
-  showTime, startTimeValue, endTimeValue, onStartTimeChange, onEndTimeChange,
+  showTime, startTimeValue, onStartTimeChange,
+  endTimeValue, onEndTimeChange, minEndTime,
   timeLabel = '시작 시간', timeHint = '종료 시간은 시작 시간과 동일하게 적용됩니다', minTime,
 }) {
   const now = new Date();
@@ -298,7 +299,14 @@ export default function DateRangePicker({
       <div style={{ borderTop: '1px solid #e5e7eb', padding: '4px 16px 6px', visibility: showTime ? 'visible' : 'hidden' }}>
         <span style={{ fontSize: 14, fontWeight: 600, color: '#6b7280', display: 'block', marginBottom: 3 }}>{timeLabel}</span>
         <TimeRow value={startTimeValue} onChange={onStartTimeChange} minTime={minTime} />
-        <span style={{ fontSize: 14, color: '#9ca3af', display: 'block', marginTop: 4 }}>{timeHint}</span>
+        {endTimeValue !== undefined ? (
+          <>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#6b7280', display: 'block', marginTop: 8, marginBottom: 3 }}>종료 시간</span>
+            <TimeRow value={endTimeValue} onChange={onEndTimeChange} minTime={minEndTime} />
+          </>
+        ) : (
+          <span style={{ fontSize: 14, color: '#9ca3af', display: 'block', marginTop: 4 }}>{timeHint}</span>
+        )}
       </div>
     </div>
   );
