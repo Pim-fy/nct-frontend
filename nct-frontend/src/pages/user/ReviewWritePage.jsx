@@ -7,10 +7,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { X } from "lucide-react";
 import StarRating from "@components/review/StarRating";
 import { createReview } from "@api/reviewApi";
 import { toast } from "@utils/common";
+import "../provider/QuoteFormPage.css";
 
 const MAX_PHOTOS = 5;
 const MAX_CONTENT_LENGTH = 500;
@@ -145,9 +145,8 @@ export default function ReviewWritePage() {
     <div>
       <h1 className="mb-5 text-2xl font-bold text-black">리뷰작성</h1>
 
-      <div className="rounded-2xl border border-[#e5e5e5] bg-white p-[15px] md:p-5 lg:p-8">
-        {/* 상단 2열: 아이템 정보(좌) + 사진 첨부(우) / 모바일: 단일 열(사진은 별점 아래) */}
-        <div className="flex flex-col md:flex-row gap-8">
+      {/* 상단 2열: 아이템 정보(좌) + 사진 첨부(우) / 모바일: 단일 열(사진은 별점 아래) */}
+      <div className="flex flex-col md:flex-row gap-8">
           {/* 좌: 아이템 정보 + 안내 + 별점 */}
           <div className="flex flex-col flex-1">
             {/* 모바일: 썸네일 위, 정보 아래 (세로+중앙) / 태블릿+: 가로 */}
@@ -177,7 +176,7 @@ export default function ReviewWritePage() {
             </p>
 
             <div className="mt-8">
-              <p className="mb-3 text-lg font-bold text-black text-center md:text-left">상품에 만족하셨나요?</p>
+              <p className="mb-3 text-lg font-bold text-black text-center md:text-left">만족하셨나요?</p>
               <div className="flex justify-center md:justify-start">
                 <StarRating value={rating} onChange={setRating} />
               </div>
@@ -186,21 +185,21 @@ export default function ReviewWritePage() {
 
           {/* 우: 사진 첨부 */}
           <div
-            className="flex-1"
-            style={{ border: "1px dashed #d8d6cf", borderRadius: 12, padding: 16, minHeight: 220, display: "flex", flexDirection: "column" }}
+            className="card flex-1 min-w-0 flex flex-col"
+            style={{ border: "none", padding: 0, boxShadow: "none", minHeight: 220 }}
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => { e.preventDefault(); addFiles(e.dataTransfer.files); }}
           >
             <input ref={fileInputRef} type="file" accept="image/*" multiple hidden onChange={handleFilesSelected} />
 
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div className="qf-photo-header">
               <div>
                 <strong style={{ fontSize: 16 }}>사진 첨부</strong>
                 <p style={{ fontSize: 14, color: "#969696", margin: "4px 0 0" }}>
                   {pickMode ? "대표로 지정할 사진을 선택하세요" : `드래그앤드롭 또는 파일 선택 · 최대 ${MAX_PHOTOS}장 (${photos.length}/${MAX_PHOTOS})`}
                 </p>
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div className="qf-summary-actions">
                 <button
                   type="button"
                   onClick={() => setPickMode((v) => !v)}
@@ -221,25 +220,32 @@ export default function ReviewWritePage() {
               </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: `repeat(${MAX_PHOTOS}, 1fr)`, gap: 8, marginTop: 12, flex: 1 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 8, marginTop: 12 }}>
               {photos.map((p, i) => (
-                <div
-                  key={p.id}
-                  onClick={() => pickMode && i !== 0 && setAsRepresentative(p.id)}
-                  style={{ position: "relative", cursor: pickMode && i !== 0 ? "pointer" : "default", aspectRatio: "1" }}
-                >
-                  <img
-                    src={p.previewUrl}
-                    alt={`첨부 이미지 ${i + 1}`}
-                    style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 8, border: i === 0 ? "2px solid #0064ff" : pickMode ? "2px dashed #0064ff" : "1px solid #eee" }}
-                  />
-                  {i === 0 && (
-                    <span className="badge badge-blue" style={{ position: "absolute", top: 4, left: 4, fontSize: 13 }}>대표</span>
-                  )}
+                <div key={p.id} style={{ position: "relative" }}>
+                  <div
+                    onClick={() => pickMode && i !== 0 && setAsRepresentative(p.id)}
+                    style={{
+                      aspectRatio: "1",
+                      overflow: "hidden",
+                      borderRadius: 8,
+                      cursor: pickMode && i !== 0 ? "pointer" : "default",
+                      border: i === 0 ? "2px solid #0064ff" : pickMode ? "2px dashed #0064ff" : "1px solid #eee",
+                    }}
+                  >
+                    <img
+                      src={p.previewUrl}
+                      alt={`첨부 이미지 ${i + 1}`}
+                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                    />
+                    {i === 0 && (
+                      <span className="badge badge-blue" style={{ position: "absolute", top: 4, left: 4, fontSize: 13 }}>대표</span>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); handleRemovePhoto(i); }}
-                    style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", border: "none", background: "#111", color: "#fff", cursor: "pointer", fontSize: 14, lineHeight: "20px", padding: 0 }}
+                    style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", border: "none", background: "#111", color: "#fff", cursor: "pointer", fontSize: 14, lineHeight: "20px", padding: 0, zIndex: 1 }}
                   >
                     ×
                   </button>
@@ -285,7 +291,6 @@ export default function ReviewWritePage() {
             {submitting ? "등록 중..." : "리뷰 등록"}
           </button>
         </div>
-      </div>
     </div>
   );
 }

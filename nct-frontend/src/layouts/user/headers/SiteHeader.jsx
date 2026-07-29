@@ -449,7 +449,10 @@ const SiteHeader = () => {
                           >
                             <span className="mt-[6px] size-[6px] shrink-0 rounded-full bg-[#d9d9d9]" />
                             <div className="min-w-0">
-                              <p className="truncate text-[13px] text-[#333]">{item.title}</p>
+                              <p className="truncate text-[13px] text-[#333]">
+                                {item.title}
+                                {item.content && <span className="text-[#969696]"> · {item.content}</span>}
+                              </p>
                               <p className="text-[11px] text-[#969696]">{relativeTime(item.regDt)}</p>
                             </div>
                           </button>
@@ -515,8 +518,8 @@ const SiteHeader = () => {
                 </div>
                 <button
                   type="button"
-                  className="mt-2 h-[34px] w-full rounded-[6px] border border-primary text-[14px] font-bold text-primary hover:bg-[#f0f6ff] transition-colors"
-                  onClick={() => { setPointOpen(false); navigate('/user/mypage?section=wallet'); }}
+                  className="mt-2 h-[34px] w-full rounded-[6px] border border-primary text-[14px] font-bold text-primary hover:bg-[#f0f6ff] transition-colors"                 
+                  onClick={() => { setPointOpen(false); window.scrollTo(0, 0); navigate('/user/mypage?section=wallet'); }}
                 >
                   포인트지갑 상세보기
                 </button>

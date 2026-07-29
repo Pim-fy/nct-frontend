@@ -6,195 +6,6 @@ import { useNotifications } from '@hooks/useNotification';
 import { usePointBalance } from '@hooks/usePoint';
 import { assets } from '@components/mypage/assets';
 
-const STAT_CARDS = [
-  {
-    key: "in-progress",
-    color: "#0cb8bb",
-    icon: assets.iconService,
-    label: "진행중 서비스 제공",
-    value: "4",
-    unit: "건",
-    meta: "오늘 일정 2건   ㅣ   완료 확인 대기 1건",
-  },
-  {
-    key: "accepted-quote",
-    color: "#3b4de3",
-    icon: assets.iconAction,
-    label: "수락된 견적",
-    value: "3",
-    unit: "건",
-    meta: "이번 주 신규 수주 기준",
-  },
-  {
-    key: "settleable",
-    color: "#692fb1",
-    icon: assets.iconPoint,
-    label: "정산 가능",
-    value: "120,000",
-    unit: "",
-    meta: "서비스 완료 확인 후 신청 가능",
-  },
-  {
-    key: "today",
-    color: "#2f4368",
-    icon: assets.iconEnd2,
-    label: "오늘 확인할 일",
-    value: "8",
-    unit: "건",
-    meta: "문의 5건 · 일정 확인 3건",
-  },
-];
-
-const SETTLEMENT_STATS = [
-  { label: "정산가능", value: "120,000원", desc: "이번 주 처리 가능한 서비스 수익" },
-  { label: "정산 진행중", value: "85,000원", desc: "등록된 계좌로 입금 예정" },
-  { label: "다음 정산 예정", value: "42,000원", desc: "완료 확인 대기 서비스 기준" },
-];
-
-const TODAY_TASKS = [
-  { title: "오전 이사 방문 일정 확인", desc: "의뢰인 김서연님과 10:00 방문 전 채팅 확인이 필요합니다.", action: "chat" },
-  { title: "에어컨 청소 견적 문의 답변", desc: "요청 조건을 확인하고 견적서를 작성해 주세요.", action: "quote" },
-  { title: "완료 서비스 확인 요청", desc: "포장이사 서비스의 완료 확인과 리뷰 요청이 대기 중입니다.", action: "quote" },
-  { title: "오전 이사 방문 일정 확인", desc: "의뢰인 김서연님과 10:00 방문 전 채팅 확인이 필요합니다.", action: "chat" },
-  { title: "에어컨 청소 견적 문의 답변", desc: "요청 조건을 확인하고 견적서를 작성해 주세요.", action: "quote" },
-  { title: "완료 서비스 확인 요청", desc: "포장이사 서비스의 완료 확인과 리뷰 요청이 대기 중입니다.", action: "quote" },
-];
-
-const IN_PROGRESS_ITEMS = [
-  {
-    thumbnail: assets.thumb1,
-    badge: { label: "방문예정", color: "#0064ff" },
-    title: "피씨오브플레이어 컴퓨터 게이밍 조립컴퓨터 올인...",
-    meta: "7월 12일 10:00 · 서울 마포구",
-  },
-  {
-    thumbnail: assets.thumb3,
-    badge: { label: "준비중", color: "#969696" },
-    title: "에어컨 분해 청소",
-    meta: "7월 12일 15:00 · 서울 영등포구",
-  },
-  {
-    thumbnail: assets.thumb2,
-    badge: { label: "일정확인", color: "#e63946" },
-    title: "입주청소",
-    meta: "7월 13일 09:00 · 서울 성동구",
-  },
-];
-
-const RECENT_QUOTE_ITEMS = [
-  {
-    thumbnail: assets.thumb1,
-    badge: { label: "수락됨", color: "#0064ff" },
-    title: "포장이사 견적",
-  },
-  {
-    thumbnail: assets.thumb3,
-    badge: { label: "일정조율", color: "#969696" },
-    title: "에어컨 분해 청소",
-  },
-  {
-    thumbnail: assets.thumb2,
-    badge: { label: "답변대기", color: "#e63946" },
-    title: "입주청소",
-  },
-];
-
-function StatCard({ color, icon, label, value, unit, meta, onMore }) {
-  return (
-    <div className="relative rounded-[10px] text-white p-3 md:mb-5 md:mt-5" style={{ backgroundColor: color }}>
-      <button
-        type="button"
-        onClick={onMore ?? (() => toast({ icon: "info", title: "준비 중인 기능입니다." }))}
-        className="absolute right-4 top-4 bg-transparent border-none cursor-pointer"
-        aria-label={`${label} 더보기`}
-      >
-        <img src={assets.iconMoreWhite} alt="" className="size-[20px] object-contain" />
-      </button>
-      <div className=" gap-3 p-2">
-        <div className="flex items-start mb-3">
-          <img src={icon} alt="" className="size-[40px] object-contain shrink-0 mt-0.5" />
-          <div className="min-w-0 pr-6 pl-3">
-            <p className="font-bold opacity-90 leading-tight">{label}</p>
-            <p className="font-bold text-[30px] leading-tight mt-0.5">{value}{unit}</p>
-          </div>
-        </div>
-        <p className="opacity-80 truncate">{meta}</p>
-      </div>
-    </div>
-  );
-}
-
-function TaskCard({ title, desc, action, onAction }) {
-  return (
-    <div className="rounded-[5px] border border-[#eaeaea] bg-[#f7f7f7] p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="font-bold text-[15px] text-[#3a3a3a] truncate">{title}</p>
-          <p className="text-[14px] leading-[18px] text-[#555] mt-1 line-clamp-2">{desc}</p>
-        </div>
-        <button
-          type="button"
-          onClick={onAction ?? (() => toast({ icon: "info", title: "준비 중인 기능입니다." }))}
-          className="btn btn-ghost btn-sm shrink-0"
-        >
-          <img src={action === "chat" ? assets.iconChat : assets.iconReport} alt="" className="size-[11px]" />
-          {action === "chat" ? "채팅" : "견적"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function CompactListPanel({ title, items }) {
-  return (
-    <div className="border border-[rgba(0,0,0,0.11)] rounded-[15px] overflow-hidden">
-      <div className="bg-[rgba(0,100,255,0.05)] px-5 h-[50px] flex items-center justify-between">
-        <span className="font-bold text-[16px] text-[#3a3a3a]">{title}</span>
-        <button
-          type="button"
-          onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
-          className="bg-transparent border-none cursor-pointer"
-          aria-label={`${title} 더보기`}
-        >
-          <img src={assets.iconMore} alt="" className="size-[20px] object-contain opacity-40" />
-        </button>
-      </div>
-      <div className="divide-y divide-[#e5e5e5]">
-        {items.map((item) => (
-          <div key={item.title} className="flex items-center gap-4 p-5">
-            <div className="size-[72px] shrink-0 rounded-[5px] border border-[#d9d9d9] overflow-hidden">
-              <img alt={item.title} className="size-full object-cover" src={item.thumbnail} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <span
-                className="inline-flex h-[22px] rounded-full border items-center px-2.5 whitespace-nowrap mb-1"
-                style={{ borderColor: item.badge.color, color: item.badge.color }}
-              >
-                {item.badge.label}
-              </span>
-              <p className="font-bold text-black truncate">{item.title}</p>
-              {item.meta && (
-                <p className="text-[12px] text-[#4e4e4e] truncate mt-0.5">{item.meta}</p>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
-              className="btn btn-ghost btn-sm shrink-0"
-            >
-              더보기 ›
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-export default function MyPageProviderDashboard({ user, onLogout, onSwitchToGeneral }) {
-// 담당자 7 · F-PROV-009: 일반/제공자 모드 전환 시 상단 구조가 흔들리지 않도록
-// 일반 마이페이지와 같은 프로필·알림·요약 카드 레이아웃을 사용한다.
-// 받은 서비스 리뷰는 기존 리뷰 조회 계약을 소비하고, 견적·서비스 현황은 조회 계약이 들어오면 연결한다.
 export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpenSection }) {
   const navigate = useNavigate();
   const profileQuery = useMyProviderProfile();
@@ -245,7 +56,6 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpe
             <div className="mt-2 flex gap-2">
               <button
                 type="button"
-                onClick={onLogout}
                 className="btn btn-ghost btn-sm"
                 onClick={() => openSection('profile')}
               >
@@ -280,16 +90,6 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpe
         </button>
       </section>
 
-<<<<<<< HEAD
-      {/* 통계 카드 4개 — 모바일: 4행 1열 / 태블릿: 2×2 / 데스크톱: 1행 4열 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-        {STAT_CARDS.map(({ key, ...card }) => (
-          <StatCard
-            key={key}
-            {...card}
-            onMore={key === "settleable" ? () => navigate("/user/settlement") : undefined}
-          />
-=======
       <section className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4" aria-label="제공자 요약">
         <SummaryCard
           color="#776bf8"
@@ -405,34 +205,11 @@ function ReceivedReviewContent({ isLoading, isError, reviews, onRetry }) {
       <div className="mt-6 space-y-3 border-t border-dashed border-[#dce3ec] pt-5" aria-label="받은 리뷰를 불러오는 중">
         {[1, 2].map((item) => (
           <div key={item} className="h-20 animate-pulse rounded-xl bg-[#f3f6fa]" />
->>>>>>> develop
         ))}
       </div>
     );
   }
 
-<<<<<<< HEAD
-      {/* 오늘 확인할 일 */}
-      <div className="border border-[rgba(0,0,0,0.11)] rounded-[15px] overflow-hidden">
-        <div className="bg-[rgba(0,100,255,0.05)] h-[50px] px-5 flex items-center">
-          <p className="font-bold text-[16px] text-[#3a3a3a]">오늘 확인할 일</p>
-        </div>
-        {TODAY_TASKS.length === 0 ? (
-          <div className="flex items-center justify-center py-10">
-            <p className="text-[16px] text-[#969696]">오늘 확인할 일이 없습니다.</p>
-          </div>
-        ) : (
-          <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {TODAY_TASKS.map((task, i) => (
-              <TaskCard
-                key={`${task.title}-${i}`}
-                {...task}
-                onAction={task.action === "chat" ? () => navigate("/user/mypage?section=chat") : undefined}
-              />
-            ))}
-          </div>
-        )}
-=======
   if (isError) {
     return (
       <div className="mt-6 border-t border-dashed border-[#dce3ec] pt-5">
@@ -444,7 +221,6 @@ function ReceivedReviewContent({ isLoading, isError, reviews, onRetry }) {
         >
           다시 불러오기
         </button>
->>>>>>> develop
       </div>
     );
   }

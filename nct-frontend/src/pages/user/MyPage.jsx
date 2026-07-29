@@ -69,6 +69,14 @@ export default function MyPage({
       ? requestedSection
       : initialSection,
   );
+  useEffect(() => {
+    if (!requestedSection) {
+      if (activeSection !== initialSection) setActiveSection(initialSection);
+    } else if (MYPAGE_SECTION_QUERY_VALUES.has(requestedSection) && requestedSection !== activeSection) {
+      setActiveSection(requestedSection);
+    }
+  }, [requestedSection]);
+
   const [selectedChatTradeId, setSelectedChatTradeId] = useState("");
   const [selectedPurchaseTradeId, setSelectedPurchaseTradeId] = useState("");
   const [selectedSalesTradeId, setSelectedSalesTradeId] = useState("");
