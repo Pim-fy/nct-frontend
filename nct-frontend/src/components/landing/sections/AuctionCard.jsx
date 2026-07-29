@@ -28,14 +28,20 @@ export default function AuctionCard({ item, onClick }) {
         className="absolute bg-white border border-[#ebebeb] border-solid rounded-[20px] shadow-[0px_0px_20px_0px_rgba(0,0,0,0.15)]"
         style={{ top: OVERHANG, left: 0, width: CARD_WIDTH, height: CARD_BODY_HEIGHT }}
       />
-      <div className="absolute rounded-t-[20px] overflow-hidden" style={{ top: OVERHANG, left: 1, width: 293, height: 195 }}>
-        <img alt={item.name} className="size-full object-cover" src={item.image} />
+      <div className="absolute grid place-items-center rounded-t-[20px] overflow-hidden bg-[#f3f4f6] text-base font-semibold text-[#777]" style={{ top: OVERHANG, left: 1, width: 293, height: 195 }}>
+        {item.image
+          ? <img alt={item.name} className="size-full object-cover" src={item.image} />
+          : <span>이미지 없음</span>}
       </div>
 
-      <div className="absolute bg-[#e63946] rounded-[20px] size-[14px]" style={{ top: OVERHANG + 281, left: 80 }} />
-      <p className="absolute font-['Noto_Sans_KR:Bold'] font-bold text-[10px] text-white tracking-[-0.8px] whitespace-nowrap" style={{ top: OVERHANG + 282, left: 83 }}>
-        {item.badge}
-      </p>
+      {item.badge && (
+        <>
+          <div className="absolute bg-[#e63946] rounded-[20px] size-[14px]" style={{ top: OVERHANG + 281, left: 80 }} />
+          <p className="absolute font-['Noto_Sans_KR:Bold'] font-bold text-[10px] text-white tracking-[-0.8px] whitespace-nowrap" style={{ top: OVERHANG + 282, left: 83 }}>
+            {item.badge}
+          </p>
+        </>
+      )}
 
       {/* 종료임박(빨강) - urgent 플래그가 있고 D-day 표기가 없을 때만 */}
       {item.urgent && !item.dday && (
@@ -67,12 +73,14 @@ export default function AuctionCard({ item, onClick }) {
       <p className="absolute font-['Noto_Sans_KR:Bold'] font-bold text-[25px] text-black tracking-[-2px] whitespace-nowrap" style={{ top: OVERHANG + 240, left: 22 }}>
         {item.price}
       </p>
-      <p
-        className="absolute [text-decoration-skip-ink:none] [text-underline-position:from-font] decoration-from-font decoration-solid font-['Noto_Sans_KR:Regular'] font-normal line-through text-[#969696] text-[15px] tracking-[-1.2px] whitespace-nowrap"
-        style={{ top: OVERHANG + 251, left: 133 }}
-      >
-        {item.original}
-      </p>
+      {item.secondaryPrice && (
+        <p
+          className="absolute font-['Noto_Sans_KR:Regular'] font-normal text-[#969696] text-[15px] tracking-[-1.2px] whitespace-nowrap"
+          style={{ top: OVERHANG + 251, left: 133 }}
+        >
+          {item.secondaryPrice}
+        </p>
+      )}
     </div>
   );
 }
