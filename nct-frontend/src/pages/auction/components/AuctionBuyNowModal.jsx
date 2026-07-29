@@ -5,8 +5,6 @@ const AuctionBuyNowModal = ({
   isOpen,
   auction,
   selectedTradeName,
-  holdAgreed,
-  requiresHoldConsent,
   isPending,
   isBuyNowAvailable,
   onClose,
@@ -16,7 +14,7 @@ const AuctionBuyNowModal = ({
 
   return (
     <div
-      className="fixed inset-x-0 top-[82px] bottom-0 z-[180] flex items-center justify-center bg-[#1d1d1f]/55 p-7"
+      className="user-modal-overlay flex items-center justify-center bg-[#1d1d1f]/55 p-7"
       id="buyNowModal"
     >
       <div
@@ -26,7 +24,7 @@ const AuctionBuyNowModal = ({
         aria-labelledby="buyNowModalTitle"
       >
         <div className="flex items-center justify-between gap-4 border-b border-[#e8e8e8] px-6 pt-[22px] pb-4">
-          <h2 className="m-0 text-xl font-bold" id="buyNowModalTitle">즉시구매 확인</h2>
+          <h2 className="m-0 text-2xl leading-[1.3] font-bold" id="buyNowModalTitle">즉시구매 확인</h2>
           <button
             className="inline-flex size-[38px] cursor-pointer items-center justify-center rounded-full border border-[#dadada] bg-white text-[#1d1d1f]"
             type="button"
@@ -48,22 +46,17 @@ const AuctionBuyNowModal = ({
             <li className="grid grid-cols-[112px_1fr] gap-3 border-b border-[#e8e8e8] py-2.5 max-sm:grid-cols-[96px_1fr]">
               <strong className="text-[#1d1d1f]">거래 방식</strong><span>{selectedTradeName}</span>
             </li>
-            {requiresHoldConsent && (
-              <li className="grid grid-cols-[112px_1fr] gap-3 py-2.5 max-sm:grid-cols-[96px_1fr]">
-                <strong className="text-[#1d1d1f]">포인트 홀딩</strong><span>{holdAgreed ? '동의 완료' : '동의 필요'}</span>
-              </li>
-            )}
           </ul>
           <div className="grid grid-cols-2 gap-1.5">
             <button
-              className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-white text-[15px] font-bold text-primary"
+              className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-white text-base leading-[1.4] font-bold text-primary"
               type="button"
               onClick={onClose}
             >
               취소
             </button>
             <button
-              className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-primary text-[15px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-55"
+              className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-primary text-base leading-[1.4] font-bold text-white disabled:cursor-not-allowed disabled:opacity-55"
               id="buyNowConfirmBtn"
               type="button"
               disabled={!isBuyNowAvailable || isPending}

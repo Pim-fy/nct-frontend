@@ -4,7 +4,7 @@
 // 라우트: /product/register
 // 단계: 0(상품정보) → 1(경매설정) → 2(등록확인)
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useNavigationType } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { getCategories } from '@api/categoryApi';
 import { fetchBannedKeywords, registerProduct, updateProduct, getProduct } from '@api/productApi';
@@ -56,12 +56,15 @@ const MAX_IMAGES = 5; // F-AUC-002 — 대표이미지 포함 최대 5장
 export default function ProductRegisterPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const navigationType = useNavigationType(); // 'POP'(뒤로/앞으로가기) | 'PUSH'(링크·버튼으로 새로 진입) | 'REPLACE'
   const queryClient = useQueryClient();
   const editPrdSn = location.state?.prdSn ?? null; // 임시저장 수정 모드
   const draftKey = editPrdSn ?? 'new'; // 뒤로가기로 돌아왔을 때 지금 이 진입과 같은 draft인지 구분하는 키
   // 렌더 중(첫 마운트) 한 번만 평가 — 아래 동기화 effect가 draftCache를 다시 써버리기 전에
   // "이번 마운트가 캐시에서 복원된 것인지"를 고정해둬야 서버 재조회 여부를 정확히 판단할 수 있다.
-  const hasCachedDraft = draftCache?.key === draftKey;
+  // navigationType이 'POP'(진짜 뒤로가기)일 때만 캐시를 쓴다 — 그래야 "메인페이지 갔다가 경매등록
+  // 버튼을 새로 클릭"(PUSH)했을 때는 이전 미완성 내용이 아니라 항상 빈 폼으로 시작한다.
+  const hasCachedDraft = navigationType === 'POP' && draftCache?.key === draftKey;
 
   // ─── UI 상태 ─────────────────────────────────────────────────────────────
   const [step, setStep] = useState(() => hasCachedDraft ? draftCache.step : 0);
@@ -87,6 +90,14 @@ export default function ProductRegisterPage() {
   const suppressRangeResetRef = useRef(hasCachedDraft);
   // 제출 성공 후에는 캐시 동기화 effect가 다시 draftCache를 채우지 않도록 막는 플래그
   const submittedRef = useRef(false);
+  const imgSectionRef = useRef(null);
+  const prdNmRef = useRef(null);
+  const catRef = useRef(null);
+  const tradeRef = useRef(null);
+  const startAmtRef = useRef(null);
+  const ibyAmtRef = useRef(null);
+  const auctionRangeRef = useRef(null);
+  const policyRef = useRef(null);
 
   // ─── 폼 입력값 ───────────────────────────────────────────────────────────
   const [form, setForm] = useState(() => hasCachedDraft ? draftCache.form : {
@@ -135,28 +146,41 @@ export default function ProductRegisterPage() {
               prdStartAmt:    p.prdStartAmt != null ? String(p.prdStartAmt) : '',
               prdIbyAmt:      p.prdIbyAmt  != null ? String(p.prdIbyAmt)  : '',
               bidUnit:        p.prdDraftBidUnit != null ? Number(p.prdDraftBidUnit) : prev.bidUnit,
-              // 임시저장 시 경매기간을 저장해뒀다면 예약 모드로 복원 (즉시시작은 항상 당일 고정이라 재개 시 다시 고르면 됨)
-              startNow:       p.prdDraftStartDt || p.prdDraftEndDt ? false : prev.startNow,
+              startNow:       p.prdDraftStartNowYn === 'Y' ? true
+                            : p.prdDraftStartNowYn === 'N' ? false
+                            : (p.prdDraftStartDt || p.prdDraftEndDt) ? false  // prdDraftStartNowYn 없는 이전 데이터 호환
+                            : prev.startNow,
             }));
             if (p.prdDraftStartDt || p.prdDraftEndDt) {
               suppressRangeResetRef.current = true;
+              // 백엔드 LocalDateTime은 UTC 기준으로 저장되므로 'Z'를 붙여 UTC로 해석 후 로컬(KST) 시간으로 변환
               const splitDt = (iso) => {
                 if (!iso) return { date: '', time: '' };
-                const [date, time] = iso.split('T');
-                return { date, time: time ? time.slice(0, 5) : '' };
+                const d = new Date(iso + 'Z');
+                const pad = n => String(n).padStart(2, '0');
+                return {
+                  date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+                  time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+                };
               };
+              const isStartNow = p.prdDraftStartNowYn === 'Y';
               const start = splitDt(p.prdDraftStartDt);
               const end = splitDt(p.prdDraftEndDt);
               setAuctionRange(prev => ({
                 ...prev,
                 start: start.date,
                 end: end.date,
-                startTime: start.time || prev.startTime,
+                // 즉시시작이면 UI의 "종료 시간"이 startTime에 저장되므로 prdDraftEndDt 시각을 startTime으로 복원
+                startTime: isStartNow ? (end.time || prev.startTime) : (start.time || prev.startTime),
                 endTime: end.time || prev.endTime,
               }));
             }
             if (p.imageList?.length > 0) {
               setImages(p.imageList.map(img => ({ id: img.flSn, flSn: img.flSn, url: img.url, file: null })));
+            }
+
+            if (p.prdDraftPolicyAgreedYn === 'Y') {
+              setPolicyAgreed(true);
             }
           })
           .catch(() => setError('기존 상품 정보를 불러오지 못했습니다.'))
@@ -166,6 +190,8 @@ export default function ProductRegisterPage() {
     Promise.all(loads);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => { window.scrollTo(0, 0); }, []);
 
   useEffect(() => {
     if (error && errorRef.current) {
@@ -215,6 +241,10 @@ export default function ProductRegisterPage() {
       const mm = String(now.getMinutes()).padStart(2, '0');
       return new Date(`${auctionRange.end}T${hh}:${mm}:00`);
     }
+    // 예약 + 시작일 = 종료일 (당일 종료): 별도 선택한 종료 시간 사용
+    if (auctionRange.start === auctionRange.end && auctionRange.endTime) {
+      return new Date(`${auctionRange.end}T${auctionRange.endTime}:00`);
+    }
     return new Date(`${auctionRange.end}T${auctionRange.startTime || '09:00'}:00`);
   };
 
@@ -237,6 +267,12 @@ export default function ProductRegisterPage() {
       setImages(uploadedImages); // 실패 후 재시도 시 중복 업로드되지 않도록 반영
 
       const endDt = calcEndDt();
+      // 업로드에 걸린 시간만큼 시각이 흘렀을 수 있어, 실제 전송 직전(업로드 완료 후)에 다시 한번 검증한다.
+      // 클릭 시점에만 검사하면 업로드하는 몇 초 사이에 종료 시각이 지나버려 서버에서 거부될 수 있었다.
+      if (statusCd === 'PRDC0002' && endDt && endDt.getTime() <= Date.now()) {
+        setAlertMsg('경매 종료 시각이 이미 지났습니다. 이전 단계에서 경매 기간을 다시 확인해 주세요.');
+        return;
+      }
       const startDt = form.startNow ? new Date() : (auctionRange.start ? new Date(`${auctionRange.start}T${auctionRange.startTime || '00:00'}:00`) : new Date());
       const payload = {
         catSn:          Number(form.catSn),
@@ -250,8 +286,11 @@ export default function ProductRegisterPage() {
         flSnList:       uploadedImages.length > 0 ? uploadedImages.map(img => img.flSn) : null,
         // 임시저장이어도 값은 그대로 보낸다 — 백엔드가 prdStatusCd로 판단해 draft 보존 컬럼/AUCTION 중 알맞은 곳에 저장
         aucStartDt:     startDt.toISOString(),
+        startNow:       form.startNow,
         aucEndDt:       endDt ? endDt.toISOString() : null,
         bidUnit:        form.bidUnit,
+        // 임시저장일 때만 의미 있음 — 재개 시 등록확인 탭으로 바로 이동할지 판단하는 값
+        policyAgreed:   policyAgreed,
       };
       const result = editPrdSn
         ? await updateProduct(editPrdSn, payload)
@@ -260,7 +299,8 @@ export default function ProductRegisterPage() {
       queryClient.invalidateQueries({ queryKey: ['products', 'my'] });
       submittedRef.current = true;
       draftCache = null; // DB에 반영됐으니 임시 캐시는 정리 — 다음 진입은 "재개" 흐름(서버 재조회)이 담당
-      navigate(`/product/${prdSn}/seller`);
+      // 임시저장은 판매내역 목록으로, 실제 경매 등록은 방금 만든 상품 상세로 이동
+      navigate(statusCd === 'PRDC0001' ? '/user/mypage?section=auction-sales' : `/product/${prdSn}/seller`);
     } catch (err) {
       const msg = err.response?.data?.message;
       setError(msg || (editPrdSn ? '상품 수정에 실패했습니다.' : '상품 등록에 실패했습니다.'));
@@ -279,30 +319,43 @@ export default function ProductRegisterPage() {
       return false;
     };
     if (!form.prdNm.trim()) {
+      prdNmRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail('상품명을 입력해 주세요.');
     }
     if (!form.catSn) {
+      catRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail('카테고리를 선택해 주세요.');
     }
     if (!form.prdTrdMethodCd) {
+      tradeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail('거래 형태를 선택해 주세요.');
     }
     if (bannedKeywordError) {
+      prdNmRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail(bannedKeywordError);
     }
+    if (images.length === 0) {
+      imgSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return fail('상품 사진을 1개 이상 등록해 주세요.');
+    }
     if (!form.prdStartAmt) {
+      startAmtRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail('시작가를 입력해 주세요.');
     }
     if (!auctionRange.end) {
+      auctionRangeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail('경매 기간을 지정해 주세요.');
     }
     if (Number(form.prdStartAmt) % form.bidUnit !== 0) {
+      startAmtRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail(`시작가는 입찰 단위(${form.bidUnit.toLocaleString()}원)의 배수로 입력해 주세요.`);
     }
     if (form.prdIbyAmt && Number(form.prdIbyAmt) % form.bidUnit !== 0) {
+      ibyAmtRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail(`즉시구매가는 입찰 단위(${form.bidUnit.toLocaleString()}원)의 배수로 입력해 주세요.`);
     }
     if (requirePolicyAgreed && !policyAgreed) {
+      policyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail('경매 정책을 확인하고 동의해 주세요.');
     }
     setError('');
@@ -370,24 +423,33 @@ export default function ProductRegisterPage() {
       {/* step 0: 상품 정보 + 경매 설정 카드 나란히 */}
       {step === 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'stretch' }}>
-          <section className="card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ background: '#eef2fb', padding: '14px 20px' }}>
-              <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>상품 정보</h3>
-            </div>
-            <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <ProductInfoStep
-                form={form}
-                set={set}
-                categories={categories}
-                bannedKeywordError={bannedKeywordError}
-                images={images}
-                onChange={setImages}
-                tradeMethods={TRADE_METHODS}
-                maxImages={MAX_IMAGES}
-                pendingDescFilesMap={pendingDescFilesMap}
-              />
-            </div>
-          </section>
+          {/* 래퍼: grid row 높이(경매설정 카드 기준)만큼 늘어나는 빈 셀 */}
+          <div style={{ position: 'relative' }}>
+            {/* 카드 자체는 absolute로 띄워 grid row 높이 계산에 관여하지 않음 */}
+            <section className="card" style={{ position: 'absolute', inset: 0, padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ background: '#eef2fb', padding: '14px 20px', flexShrink: 0 }}>
+                <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>상품 정보</h3>
+              </div>
+              <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                <ProductInfoStep
+                  form={form}
+                  set={set}
+                  categories={categories}
+                  bannedKeywordError={bannedKeywordError}
+                  images={images}
+                  onChange={setImages}
+                  tradeMethods={TRADE_METHODS}
+                  maxImages={MAX_IMAGES}
+                  pendingDescFilesMap={pendingDescFilesMap}
+                  submitted={submitted}
+                  imgSectionRef={imgSectionRef}
+                  prdNmRef={prdNmRef}
+                  catRef={catRef}
+                  tradeRef={tradeRef}
+                />
+              </div>
+            </section>
+          </div>
 
           <section className="card" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ background: '#eef2fb', padding: '14px 20px' }}>
@@ -404,6 +466,10 @@ export default function ProductRegisterPage() {
                 endDt={endDt}
                 bidUnits={BID_UNITS}
                 submitted={submitted}
+                startAmtRef={startAmtRef}
+                ibyAmtRef={ibyAmtRef}
+                auctionRangeRef={auctionRangeRef}
+                policyRef={policyRef}
               />
             </div>
           </section>
@@ -437,11 +503,8 @@ export default function ProductRegisterPage() {
                   setAlertMsg('등록 정보 확인 및 본문수정이 불가능함에 동의가 필요합니다.');
                   return;
                 }
-                const finalEndDt = calcEndDt();
-                if (finalEndDt && finalEndDt.getTime() <= Date.now()) {
-                  setAlertMsg('경매 종료 시각이 이미 지났습니다. 이전 단계에서 경매 기간을 다시 확인해 주세요.');
-                  return;
-                }
+                // 종료 시각이 지났는지 검사는 이미지 업로드가 끝난 뒤(handleSubmit 내부)에서 한다 —
+                // 여기서 미리 검사해봤자 업로드하는 동안 시간이 흘러 의미가 없다.
                 handleSubmit('PRDC0002');
               }}
               disabled={loading}

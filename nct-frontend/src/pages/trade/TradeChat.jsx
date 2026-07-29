@@ -54,6 +54,7 @@ const TradeChat = ({
   preview = false,
   tradeId: selectedTradeId,
   showRoomList = !embedded,
+  backLabel,
 }) => {
   const { tradeId: routeTradeId } = useParams();
   const location = useLocation();
@@ -81,6 +82,13 @@ const TradeChat = ({
   ).length;
   const completedRoomCount = rooms.length - activeRoomCount;
   const isActiveRoomClosed = activeRoom?.roomStatus === 'CLOSED';
+  const subscribedRoomIds = useMemo(
+    () => rooms
+      .filter((room) => room.roomStatus === 'ACTIVE')
+      .map((room) => room.roomId),
+    [rooms],
+  );
+  const subscribedRoomIdsKey = subscribedRoomIds.join(',');
   const filteredRooms = useMemo(() => {
     if (roomFilter === 'ACTIVE') {
       return rooms.filter((room) => room.roomStatus === 'ACTIVE');
@@ -93,14 +101,24 @@ const TradeChat = ({
     return rooms;
   }, [roomFilter, rooms]);
 
-  // 독립 상세 경로에서도 브라우저 이전 페이지가 아닌 마이페이지 채팅 목록으로 복귀한다.
-  const returnToChatList = () => {
+  // 상세에서 연 채팅은 해당 거래 상세로, 채팅 목록에서 연 채팅은 목록으로 복귀한다.
+  const returnToPreviousView = () => {
     if (onBack) {
       onBack();
       return;
     }
 
     const isPreviewPath = preview || location.pathname.startsWith('/trades/preview');
+    const chatOrigin = new URLSearchParams(location.search).get('from');
+
+    if (chatOrigin === 'buyer' || chatOrigin === 'seller') {
+      const tradeBasePath = isPreviewPath ? '/trades/preview' : '/trades';
+      navigate(chatOrigin === 'seller'
+        ? `${tradeBasePath}/${tradeId}/seller`
+        : `${tradeBasePath}/${tradeId}`);
+      return;
+    }
+
     const chatListPath = isPreviewPath
       ? '/user/mypage/preview/trades?verify=1&section=chat'
       : '/user/mypage?section=chat';
@@ -108,7 +126,7 @@ const TradeChat = ({
     navigate(chatListPath);
   };
 
-  // 거래 번호에 연결된 실제 채팅방과 메시지를 함께 조회해 첫 화면을 초기화한다.
+  // 상세에서 연 채팅만 자동으로 열고, 마이페이지 채팅 메뉴에서는 사용자가 방을 직접 선택한다.
   const loadChatRooms = useCallback(async () => {
     setIsLoading(true);
     setError('');
@@ -124,10 +142,10 @@ const TradeChat = ({
       const selectedRoom = loadedRooms.find(
         (room) => String(room.tradeId) === String(tradeId),
       );
-      const initialRoom = selectedRoom ?? loadedRooms[0] ?? null;
+      const initialRoom = selectedRoom ?? (showRoomList ? null : loadedRooms[0] ?? null);
 
       if (!initialRoom) {
-        setRooms([]);
+        setRooms(loadedRooms);
         setActiveRoomId('');
         setMessages([]);
         return;
@@ -185,8 +203,8 @@ const TradeChat = ({
     }
   }, [preview]);
 
-  // 필터 변경 후 현재 방이 목록에서 제외되면, 필터의 첫 채팅방을 함께 선택한다.
-  const changeRoomFilter = async (nextFilter) => {
+  // 필터 변경은 목록만 바꾸며, 사용자가 누르기 전까지 다른 방을 자동 선택하지 않는다.
+  const changeRoomFilter = (nextFilter) => {
     setRoomFilter(nextFilter);
 
     const nextRooms = rooms.filter((room) => {
@@ -201,19 +219,13 @@ const TradeChat = ({
       return true;
     });
 
-    if (nextRooms.some((room) => room.roomId === activeRoomId)) {
+    if (!activeRoomId || nextRooms.some((room) => room.roomId === activeRoomId)) {
       return;
     }
 
-    const nextRoom = nextRooms[0] ?? null;
-    setActiveRoomId(nextRoom?.roomId ?? '');
-
-    if (!nextRoom) {
-      setMessages([]);
-      return;
-    }
-
-    await selectChatRoom(nextRoom.roomId);
+    setActiveRoomId('');
+    setMessages([]);
+    setMessageInput('');
   };
 
   // 완료된 거래의 대화는 서버에 남기고, 현재 사용자의 목록에서만 숨긴다.
@@ -245,15 +257,9 @@ const TradeChat = ({
       return;
     }
 
-    const nextRoom = remainingRooms[0] ?? null;
-    setActiveRoomId(nextRoom?.roomId ?? '');
-
-    if (!nextRoom) {
-      setMessages([]);
-      return;
-    }
-
-    await selectChatRoom(nextRoom.roomId);
+    setActiveRoomId('');
+    setMessages([]);
+    setMessageInput('');
   };
 
   useEffect(() => {
@@ -262,10 +268,10 @@ const TradeChat = ({
     return () => window.clearTimeout(requestTimer);
   }, [loadChatRooms]);
 
-  // 실제 채팅방에서는 WebSocket을 구독해 새 메시지를 즉시 수신한다.
+  // 목록에 있는 모든 진행 중 방을 함께 구독해, 열지 않은 방의 미확인 수도 즉시 갱신한다.
   // 미리보기는 서버 연결 없이 목업 데이터를 쓰므로 기존 화면 동작만 유지한다.
   useEffect(() => {
-    if (!activeRoomId || preview || isActiveRoomClosed) {
+    if (preview || subscribedRoomIds.length === 0) {
       setRealtimeStatus('IDLE');
       return undefined;
     }
@@ -282,39 +288,48 @@ const TradeChat = ({
       }
 
       setRealtimeStatus('CONNECTED');
-      socket.send(JSON.stringify({
-        type: 'SUBSCRIBE',
-        roomId: activeRoomId,
-      }));
+      subscribedRoomIds.forEach((roomId) => {
+        socket.send(JSON.stringify({
+          type: 'SUBSCRIBE',
+          roomId,
+        }));
+      });
     };
 
     socket.onmessage = (event) => {
       try {
         const socketEvent = JSON.parse(event.data);
 
-        if (socketEvent.type === 'CHAT_MESSAGE'
-          && String(socketEvent.roomId) === String(activeRoomId)
-          && socketEvent.chatMessage) {
+        if (socketEvent.type === 'CHAT_MESSAGE' && socketEvent.chatMessage) {
           const newMessage = toTradeChatMessage(socketEvent.chatMessage);
+          const isSelectedRoom = String(socketEvent.roomId) === String(activeRoomId);
 
-          setMessages((currentMessages) => {
-            const hasSameMessage = currentMessages.some(
-              (message) => message.messageId === newMessage.messageId,
-            );
+          if (isSelectedRoom) {
+            setMessages((currentMessages) => {
+              const hasSameMessage = currentMessages.some(
+                (message) => message.messageId === newMessage.messageId,
+              );
 
-            return hasSameMessage
-              ? currentMessages
-              : [...currentMessages, newMessage];
-          });
-          setRooms((currentRooms) => currentRooms.map((room) => (
-            room.roomId === activeRoomId
-              ? {
+              return hasSameMessage
+                ? currentMessages
+                : [...currentMessages, newMessage];
+            });
+          }
+
+          setRooms((currentRooms) => currentRooms.map((room) => {
+            if (String(room.roomId) !== String(socketEvent.roomId)) {
+              return room;
+            }
+
+            return {
                 ...room,
                 lastMessage: newMessage.content,
                 latestMessageAt: newMessage.sentAt,
-              }
-              : room
-          )));
+                unreadCount: isSelectedRoom || newMessage.senderType === 'ME'
+                  ? room.unreadCount
+                  : room.unreadCount + 1,
+              };
+          }));
         }
 
         if (socketEvent.type === 'ERROR') {
@@ -349,7 +364,7 @@ const TradeChat = ({
         socketRef.current = null;
       }
     };
-  }, [activeRoomId, isActiveRoomClosed, preview, reconnectSignal]);
+  }, [activeRoomId, preview, reconnectSignal, subscribedRoomIdsKey]);
 
   // WebSocket 연결이 끊긴 경우에만 기존 REST 조회로 임시 수신을 보완한다.
   useEffect(() => {
@@ -469,6 +484,13 @@ const TradeChat = ({
     event.currentTarget.form?.requestSubmit();
   };
 
+  // 마이페이지의 목록 복귀는 같은 2열 화면에서 우측 선택만 해제한다.
+  const clearSelectedChatRoom = () => {
+    setActiveRoomId('');
+    setMessages([]);
+    setMessageInput('');
+  };
+
   return (
     <div
       className={embedded
@@ -484,9 +506,11 @@ const TradeChat = ({
           <button
             className="btn btn-ghost"
             type="button"
-            onClick={returnToChatList}
+            onClick={embedded && showRoomList && !onBack
+              ? clearSelectedChatRoom
+              : returnToPreviousView}
           >
-            ← 채팅 목록
+            ← {backLabel ?? (new URLSearchParams(location.search).get('from') ? '거래 상세' : '채팅 목록')}
           </button>
         </header>
 
@@ -697,7 +721,9 @@ const TradeChat = ({
                 </>
               ) : (
                 <div className="trade-chat-conversation__empty">
-                  선택할 수 있는 대면 거래 채팅방이 없습니다.
+                  {rooms.length > 0
+                    ? '좌측 목록에서 채팅방을 선택해 주세요.'
+                    : '선택할 수 있는 대면 거래 채팅방이 없습니다.'}
                 </div>
               )}
             </section>

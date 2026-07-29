@@ -71,6 +71,71 @@ body { font-family: 'Pretendard', 'Noto Sans KR', 'Malgun Gothic', sans-serif !i
 .badge-urgent         { background: #FFC526; color: #fff; border: 1.5px solid #FFC526; }
 .badge-blue           { background: #e8f0fe; color: #1a56a4; }
 .badge-goods          { background: #e5e4df; color: #5f5e5a; }
+.badge-aqua           { background: #55C9C8; color: #fff; }
+
+/* ===========================
+   탭메뉴 — 1차 Pill / 2차 Underline
+=========================== */
+.tab-group-1 { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.tab-pill {
+  display: inline-flex; align-items: center; justify-content: space-between;
+  width: 160px; height: 50px; padding: 0 14px;
+  border: 1.5px solid transparent; border-radius: 10px;
+  background: #f0f2f5; color: #4E4E4E;
+  font-size: 18px; font-weight: 500; cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.tab-pill .tab-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  min-width: 20px; height: 20px; padding: 0 3px;
+  border-radius: 50%; background: #4E4E4E; color: #fff;
+  font-size: 13px; font-weight: 500; line-height: 1;
+}
+.tab-pill.active { background: #fff; border-color: var(--color-primary); color: var(--color-primary); font-weight: 700; }
+.tab-pill.active .tab-count { background: var(--color-primary); color: #fff; font-weight: 700; }
+
+.tab-pill-plain {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 160px; height: 50px; padding: 0 14px;
+  border: 1.5px solid transparent; border-radius: 10px;
+  background: #f0f2f5; color: #4E4E4E;
+  font-size: 18px; font-weight: 500; cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.tab-pill-plain.active { background: var(--color-primary); border-color: var(--color-primary); color: #fff; font-weight: 700; }
+
+.tab-group-2 { display: flex; align-items: flex-end; gap: 30px; border-bottom: 1.5px solid #e5e5e5; }
+.tab-underline {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 0 0 10px;
+  background: transparent; border: none; outline: none;
+  color: #4E4E4E; font-size: 17px; font-weight: 500;
+  font-family: inherit; line-height: 1;
+  border-bottom: 2px solid transparent; margin-bottom: -1.5px;
+  cursor: pointer; transition: color .15s, border-color .15s;
+  white-space: nowrap;
+}
+.tab-underline .tab-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  min-width: 20px; height: 20px; padding: 0 3px;
+  border-radius: 50%; background: #4E4E4E; color: #fff;
+  font-size: 13px; font-weight: 500; line-height: 1;
+}
+.tab-underline.active { color: var(--color-primary); font-weight: 700; border-bottom-color: var(--color-primary); }
+.tab-underline.active .tab-count { background: var(--color-primary); font-weight: 700; }
+
+.tab-underline-plain {
+  display: inline-flex; align-items: center;
+  padding: 0 0 10px; background: transparent; border: none; outline: none;
+  color: #4E4E4E; font-size: 17px; font-weight: 500;
+  font-family: inherit;
+  border-bottom: 2px solid transparent; margin-bottom: -1.5px;
+  cursor: pointer; transition: color .15s, border-color .15s;
+  white-space: nowrap;
+}
+.tab-underline-plain.active { color: var(--color-primary); font-weight: 700; border-bottom-color: var(--color-primary); }
 
 .card { background: #ffffff;  border: 1px solid #f0efec;  border-radius: 16px;  padding: 20px;  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.06);}
 

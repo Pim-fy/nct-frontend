@@ -73,7 +73,7 @@ const AuctionImageGallery = ({
   };
 
   return (
-    <div className="relative flex min-h-0 items-center justify-center overflow-hidden rounded-lg border border-[#e8e8e8] bg-[#e9e9e9] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)] max-lg:aspect-4/3">
+    <div className="relative flex h-full min-h-0 max-h-full w-full items-center justify-center overflow-hidden rounded-lg border border-[#e8e8e8] bg-[#e9e9e9] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)] max-lg:h-auto max-lg:max-h-none max-lg:aspect-4/3">
       {slideCount > 0 ? (
         <>
           <div
@@ -100,7 +100,7 @@ const AuctionImageGallery = ({
                     onError={() => onImageError(item.url)}
                   />
                 ) : (
-                  <span className="text-lg font-extrabold text-[#666]">
+                  <span className="text-lg leading-[1.4] font-extrabold text-[#666]">
                     {auction.categoryName || '상품 이미지'}
                   </span>
                 )}
@@ -130,7 +130,7 @@ const AuctionImageGallery = ({
           )}
         </>
       ) : (
-        <span className="text-lg font-extrabold text-[#666]">
+        <span className="text-lg leading-[1.4] font-extrabold text-[#666]">
           {auction.categoryName || '상품 이미지'}
         </span>
       )}
@@ -167,7 +167,7 @@ export const AuctionPreviewRail = ({
         ))}
       </div>
     ) : (
-      <div className="grid min-h-[68px] place-items-center text-[13px] text-[#666]" role="status">
+      <div className="grid min-h-[68px] place-items-center text-[13px] leading-[1.5] text-[#666]" role="status">
         등록된 이미지가 없습니다.
       </div>
     )}

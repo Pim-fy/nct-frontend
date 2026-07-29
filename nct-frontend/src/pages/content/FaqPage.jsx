@@ -16,6 +16,7 @@ const PAGE_SIZE = 10;
 const FaqItem = ({ faq }) => {
   const [isOpen, setIsOpen] = useState(false);
   const detailQuery = usePublicNoticeDetail(isOpen ? faq.id : null);
+  const answer = detailQuery.data?.content ?? faq.summary;
 
   return (
     <details className="faq-item" onToggle={(event) => setIsOpen(event.currentTarget.open)}>
@@ -25,9 +26,11 @@ const FaqItem = ({ faq }) => {
       </summary>
       <div className="faq-item__answer">
         <span aria-hidden="true">A</span>
-        {detailQuery.isLoading && <p>답변을 불러오는 중입니다.</p>}
-        {detailQuery.isError && <p>답변을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>}
-        {!detailQuery.isLoading && !detailQuery.isError && <p>{detailQuery.data?.content ?? faq.summary}</p>}
+        {answer && <p>{answer}</p>}
+        {!answer && detailQuery.isLoading && <p>답변을 불러오는 중입니다.</p>}
+        {!answer && detailQuery.isError && (
+          <p>답변을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+        )}
       </div>
     </details>
   );
@@ -54,7 +57,7 @@ const FaqPage = () => {
       />
 
       {faqQuery.isLoading && (
-        <section className="faq-list" aria-label="FAQ를 불러오는 중">
+        <section className="faq-list faq-list--skeleton" aria-label="FAQ를 불러오는 중">
           {Array.from({ length: 5 }).map((_, index) => <div className="faq-skeleton" key={index} />)}
         </section>
       )}

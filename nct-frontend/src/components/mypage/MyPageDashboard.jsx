@@ -55,14 +55,16 @@ const NOTICES = ["입찰가가 갱신되었습니다.", "관심 상품 마감 10
 function StatCard({ color, icon, label, value, unit, meta, onMore }) {
   return (
     <div className="relative rounded-[10px] text-white p-5 md:mb-5 md:mt-5" style={{ backgroundColor: color }}>
-      <button
-        type="button"
-        onClick={onMore}
-        className="absolute right-4 top-4 bg-transparent border-none cursor-pointer"
-        aria-label={`${label} 더보기`}
-      >
-        <img src={assets.iconMoreWhite} alt="" className="size-[20px] object-contain" />
-      </button>
+      {onMore && (
+        <button
+          type="button"
+          onClick={onMore}
+          className="absolute right-4 top-4 bg-transparent border-none cursor-pointer"
+          aria-label={`${label} 더보기`}
+        >
+          <img src={assets.iconMoreWhite} alt="" className="size-[20px] object-contain" />
+        </button>
+      )}
       <div className="flex items-start gap-3 mb-3">
         <img src={icon} alt="" className="size-[40px] object-contain shrink-0 mt-0.5" />
         <div className="min-w-0 pr-6 pl-4">
@@ -70,7 +72,11 @@ function StatCard({ color, icon, label, value, unit, meta, onMore }) {
           <p className="font-bold text-[30px] leading-tight mt-0.5">{value}{unit}</p>
         </div>
       </div>
-      <p className="text-[16px] opacity-80 truncate">{meta}</p>
+      {typeof meta === 'string' ? (
+        <p className="text-[16px] opacity-80 truncate">{meta}</p>
+      ) : (
+        <div className="text-[16px]">{meta}</div>
+      )}
     </div>
   );
 }
@@ -131,6 +137,7 @@ function ListPanel({ title, items }) {
 export default function MyPageDashboard({
   user,
   isProviderApproved,
+  onLogout,
   onRequestProviderSwitch,
   onOpenAuctionBids,
 }) {
@@ -168,7 +175,7 @@ export default function MyPageDashboard({
       value: "3",
       unit: "건",
       meta: "등록 견적 1건   ㅣ   진행중 2건   ㅣ   완료 0건",
-      onMore: () => toast({ icon: "info", title: "준비 중인 기능입니다." }),
+      onMore: onOpenAuctionBids,
     },
     {
       key: "done",
@@ -177,8 +184,20 @@ export default function MyPageDashboard({
       label: "거래 완료",
       value: "5",
       unit: "건",
-      meta: "경매 2건   ㅣ   서비스 3건",
-      onMore: () => toast({ icon: "info", title: "준비 중인 기능입니다." }),
+      meta: (
+        <span className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={onOpenAuctionBids}
+            className="text-white/70 hover:text-white underline underline-offset-2 transition-colors"
+          >
+            경매 2건
+          </button>
+          <span className="text-white/70">ㅣ</span>
+          <span className="text-white/70">서비스 3건</span>
+        </span>
+      ),
+      onMore: undefined,
     },
   ];
 
@@ -203,6 +222,7 @@ export default function MyPageDashboard({
             <div className="flex gap-2 mt-2">
               <button
                 type="button"
+                onClick={onLogout}
                 className="btn btn-ghost btn-sm"
               >
                 <img src={assets.iconLogout} alt="" className="size-[12px]" />

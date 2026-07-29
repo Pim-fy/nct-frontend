@@ -1,6 +1,9 @@
-import { useMemo, useState } from 'react';
-import { History } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { History, RotateCcw } from 'lucide-react';
+import { fetchProductComments } from '@api/productApi';
 import Pagination from '@components/common/Pagination';
+import { SkeletonBlock } from '@components/skeleton/AuctionSkeletons';
 
 const UPDATES_PER_PAGE = 5;
 
@@ -20,11 +23,29 @@ const formatUpdatedAt = (value) => {
   }).format(date);
 };
 
-const AuctionProductUpdateSection = ({ sectionId, updates: updateItems }) => {
+const AuctionProductUpdateSection = ({
+  sectionId,
+  productId,
+  enabled = true,
+  onLoadSettled,
+}) => {
   const [page, setPage] = useState(1);
+  const updateQuery = useQuery({
+    queryKey: ['productComments', productId],
+    queryFn: async () => {
+      const response = await fetchProductComments(productId);
+      return response?.data ?? [];
+    },
+    enabled: Boolean(enabled && productId),
+  });
   const updates = useMemo(
-    () => (Array.isArray(updateItems) ? updateItems : []),
-    [updateItems],
+    () => (Array.isArray(updateQuery.data) ? updateQuery.data : []).map((update) => ({
+      updateId: update.prdCmtSn,
+      title: update.prdCmtTtl,
+      content: update.prdCmtCn,
+      registeredAt: update.prdCmtRegDt,
+    })),
+    [updateQuery.data],
   );
   const totalPages = Math.ceil(updates.length / UPDATES_PER_PAGE);
   const currentPage = totalPages > 0 ? Math.min(page, totalPages) : 1;
@@ -32,30 +53,64 @@ const AuctionProductUpdateSection = ({ sectionId, updates: updateItems }) => {
     const startIndex = (currentPage - 1) * UPDATES_PER_PAGE;
     return updates.slice(startIndex, startIndex + UPDATES_PER_PAGE);
   }, [currentPage, updates]);
+  const isWaiting = !enabled || updateQuery.isLoading;
+
+  useEffect(() => {
+    if (!enabled || (!updateQuery.isSuccess && !updateQuery.isError)) return;
+    onLoadSettled?.();
+  }, [enabled, onLoadSettled, updateQuery.isError, updateQuery.isSuccess]);
 
   return (
     <section
-      className="scroll-mt-[136px] py-10 md:scroll-mt-[82px] md:py-14"
+      className="scroll-mt-[136px] border-b border-[#e2e5ea] py-10 md:scroll-mt-[82px] md:py-14"
       id={sectionId}
       aria-labelledby={`${sectionId}-title`}
     >
       <header className="mb-7 flex items-center justify-between gap-4">
         <h2
-          className="m-0 text-[24px] leading-tight font-bold text-[#1d1d1f] md:text-[28px]"
+          className="m-0 text-2xl leading-[1.3] font-bold text-[#1d1d1f] md:text-[28px]"
           id={`${sectionId}-title`}
         >
-          상품 수정 내역
+          변경 내역
         </h2>
-        <strong className="text-base whitespace-nowrap text-primary-dark">{updates.length}건</strong>
+        <strong className="text-base leading-[1.4] whitespace-nowrap text-primary-dark">{updates.length}건</strong>
       </header>
 
-      {updates.length === 0 && (
-        <p className="m-0 grid min-h-28 place-items-center border-y border-[#e2e5ea] px-4 py-8 text-center text-[15px] text-[#777]">
-          등록된 수정 내역이 없습니다.
+      {isWaiting && (
+        <div className="grid gap-3 border-y border-[#e2e5ea] py-4" aria-label="변경 내역을 불러오는 중">
+          {Array.from({ length: 2 }).map((_, index) => (
+            <div className="grid grid-cols-[40px_minmax(0,1fr)] items-center gap-4 px-1 py-4" key={index}>
+              <SkeletonBlock className="size-10 rounded-full" />
+              <div className="grid gap-2">
+                <SkeletonBlock className="h-5 w-[42%]" />
+                <SkeletonBlock className="h-4 w-[72%]" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {updateQuery.isError && (
+        <div className="grid min-h-28 place-items-center content-center gap-2.5 border-y border-[#e2e5ea] px-4 py-8 text-center text-[15px] leading-[1.6] text-[#777]">
+          <p className="m-0">변경 내역을 불러오지 못했습니다.</p>
+          <button
+            className="inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border border-primary bg-white px-4 text-[15px] font-bold text-primary-dark"
+            type="button"
+            onClick={() => updateQuery.refetch()}
+          >
+            <RotateCcw size={15} aria-hidden="true" />
+            다시 불러오기
+          </button>
+        </div>
+      )}
+
+      {!isWaiting && !updateQuery.isError && updates.length === 0 && (
+        <p className="m-0 grid min-h-28 place-items-center border-y border-[#e2e5ea] px-4 py-8 text-center text-[15px] leading-[1.6] text-[#777]">
+          등록된 변경 내역이 없습니다.
         </p>
       )}
 
-      {updates.length > 0 && (
+      {!isWaiting && !updateQuery.isError && updates.length > 0 && (
         <ol className="m-0 grid list-none gap-3 border-y border-[#e2e5ea] py-4">
           {pagedUpdates.map((update) => (
             <li
@@ -67,16 +122,16 @@ const AuctionProductUpdateSection = ({ sectionId, updates: updateItems }) => {
               </span>
               <div className="min-w-0">
                 <div className="flex items-start justify-between gap-4 max-sm:flex-col max-sm:gap-1">
-                  <strong className="text-base leading-6 text-[#1d1d1f]">{update.title}</strong>
+                  <strong className="text-base leading-[1.5] text-[#1d1d1f]">{update.title}</strong>
                   <time
-                    className="text-xs leading-6 whitespace-nowrap text-[#777]"
+                    className="text-[13px] leading-[1.5] whitespace-nowrap text-[#777]"
                     dateTime={update.registeredAt}
                   >
                     {formatUpdatedAt(update.registeredAt)}
                   </time>
                 </div>
                 {update.content && (
-                  <p className="mt-2 mb-0 whitespace-pre-wrap text-[15px] leading-[1.65] text-[#555] [overflow-wrap:anywhere]">
+                  <p className="mt-2 mb-0 whitespace-pre-wrap text-base leading-[1.65] text-[#555] [overflow-wrap:anywhere]">
                     {update.content}
                   </p>
                 )}
@@ -91,6 +146,7 @@ const AuctionProductUpdateSection = ({ sectionId, updates: updateItems }) => {
           page={currentPage}
           totalPages={totalPages}
           onPageChange={setPage}
+          showSinglePage
         />
       </div>
     </section>

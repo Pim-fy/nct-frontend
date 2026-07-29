@@ -1,7 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useParams,
+} from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft } from 'lucide-react';
 import {
   addAuctionFavorite,
   buyNowAuction,
@@ -10,19 +14,25 @@ import {
   placeAuctionBid,
   removeAuctionFavorite,
 } from '@api/auctionApi';
-import { toImageUrl } from '@api/fileApi';
 import { useAuth } from '@hooks/useAuth';
 import { useAuctionStream } from '@hooks/useAuctionStream';
 import { useAuctionViewTracking } from '@hooks/useAuctionViewTracking';
 import useCountdown from '@hooks/useCountdown';
 import { usePointBalance } from '@hooks/usePoint';
+import { getUserReviewTrust } from '@api/reviewApi';
+import { SITE_HEADER_VISIBILITY_EVENT } from '@/constants/layoutEvents';
+import { AuctionDetailSkeleton } from '@components/skeleton/AuctionSkeletons';
 import PointChargeWidgetModal from '@pages/user/point/components/PointChargeWidgetModal';
 import AuctionBidPanel from './components/AuctionBidPanel';
 import AuctionBuyNowModal from './components/AuctionBuyNowModal';
 import AuctionImageGallery, { AuctionPreviewRail } from './components/AuctionImageGallery';
-import AuctionInfoGrid from './components/AuctionInfoGrid';
+import {
+  AuctionProductDescriptionSection,
+  AuctionSellerInformationSection,
+} from './components/AuctionInfoGrid';
 import AuctionInquirySection from './components/AuctionInquirySection';
 import AuctionProductUpdateSection from './components/AuctionProductUpdateSection';
+import AuctionSellerHistory from './components/AuctionSellerHistory';
 import AuctionToast from './components/AuctionToast';
 import {
   createImageItems,
@@ -33,16 +43,16 @@ import {
   parseAmount,
   resolveAuctionResultLabel,
 } from './utils/auctionFormatters';
-import { addRecentItem } from '@components/landing/QuickActions';
+import { addRecentAuction } from '@utils/recentAuctions';
 
-const DETAIL_PAGE_CLASS = 'bg-white pb-14 text-[#1d1d1f]';
-const DETAIL_CONTAINER_CLASS = 'mx-auto w-[calc(100%_-_52px)] max-w-[1600px] max-lg:w-[calc(100%_-_32px)] max-sm:w-[calc(100%_-_24px)]';
+const DETAIL_PAGE_CLASS = 'bg-white pb-14 text-base leading-[1.6] text-[#1d1d1f]';
+const DETAIL_CONTAINER_CLASS = 'mx-auto w-full max-w-[1600px] px-4 lg:px-6';
 const DETAIL_EMPTY_CLASS = 'grid min-h-[340px] place-content-center justify-items-center gap-2.5 rounded-lg border border-[#e8e8e8] bg-[#f8f8f6] p-7 text-center';
 const DETAIL_SECTION_ITEMS = [
   { id: 'auction-product-description', label: '상품설명' },
-  { id: 'auction-seller-information', label: '판매자 정보' },
+  { id: 'auction-product-updates', label: '변경 내역' },
   { id: 'auction-product-inquiries', label: '상품문의' },
-  { id: 'auction-product-updates', label: '수정 내역' },
+  { id: 'auction-seller-information', label: '판매자 정보' },
 ];
 
 const AuctionDetailPage = () => {
@@ -67,16 +77,22 @@ const AuctionDetailPage = () => {
   const [imageNavigationCommand, setImageNavigationCommand] = useState(null);
   const requestedImageIndexRef = useRef(null);
   const imageNavigationIdRef = useRef(0);
+  const trackedRecentAuctionIdRef = useRef(null);
   const requestedDetailSectionIdRef = useRef(null);
   const detailSectionUnlockTimerRef = useRef(null);
   const detailNavigationRef = useRef(null);
   const [failedImageUrls, setFailedImageUrls] = useState(() => new Set());
+  const [deferredLoadState, setDeferredLoadState] = useState({ auctionId: null, stage: 0 });
   const requestedReturnPath = location.state?.from;
   const returnPath = typeof requestedReturnPath === 'string'
     && requestedReturnPath.startsWith('/')
     ? requestedReturnPath
     : '/auction';
   const returnLabel = returnPath === '/auction' ? '경매 목록' : '이전 목록';
+
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [auctionId]);
 
   const detailQueryKey = useMemo(
     () => ['auctionDetail', auctionId, authenticatedUserId ?? 'anonymous'],
@@ -88,8 +104,40 @@ const AuctionDetailPage = () => {
     isError,
   } = useQuery({
     queryKey: detailQueryKey,
-    queryFn: () => fetchAuctionDetail(auctionId),
+    queryFn: () => fetchAuctionDetail(auctionId, { includeSupplemental: false }),
     enabled: Boolean(auctionId),
+    placeholderData: (previousAuction) => previousAuction,
+  });
+  const deferredLoadStage = auction?.productId
+    ? (String(deferredLoadState.auctionId) === String(auctionId)
+      ? deferredLoadState.stage
+      : 1)
+    : 0;
+  const handleProductUpdatesSettled = useCallback(() => {
+    setDeferredLoadState((current) => ({
+      auctionId,
+      stage: Math.max(
+        String(current.auctionId) === String(auctionId) ? current.stage : 1,
+        2,
+      ),
+    }));
+  }, [auctionId]);
+  const handleInquiriesSettled = useCallback(() => {
+    setDeferredLoadState((current) => ({
+      auctionId,
+      stage: Math.max(
+        String(current.auctionId) === String(auctionId) ? current.stage : 1,
+        3,
+      ),
+    }));
+  }, [auctionId]);
+  const sellerTrustQuery = useQuery({
+    queryKey: ['userReviewTrust', auction?.sellerId],
+    queryFn: async () => {
+      const response = await getUserReviewTrust(auction.sellerId);
+      return response?.data ?? response ?? null;
+    },
+    enabled: Boolean(deferredLoadStage >= 3 && auction?.sellerId),
   });
   const isOwnAuction = authenticatedUserId != null
     && auction?.sellerId != null
@@ -167,6 +215,7 @@ const AuctionDetailPage = () => {
       : addAuctionFavorite(auctionId)),
     onSuccess: (status) => {
       applyFavoriteStatus(status);
+      queryClient.invalidateQueries({ queryKey: ['auctionFavorites'] });
       showToast(status.favorite ? '관심 상품에 추가되었습니다' : '관심 상품에서 해제되었습니다');
     },
     onError: (error) => showToast(getErrorMessage(error)),
@@ -180,15 +229,18 @@ const AuctionDetailPage = () => {
 
   useEffect(() => {
     if (!auction) return;
-    const repImage = auction.images?.find((img) => img.representative) ?? auction.images?.[0];
-    const imageUrl = repImage?.path ? toImageUrl(repImage.path) : null;
-    if (!imageUrl) return;
-    addRecentItem({
-      id: auctionId,
-      image: imageUrl,
+    const resolvedAuctionId = String(auction.auctionId ?? auctionId);
+    if (trackedRecentAuctionIdRef.current === resolvedAuctionId) return;
+
+    const repImage = auction.images?.find(
+      (image) => image.representative === 'Y' || image.representative === true,
+    ) ?? auction.images?.[0];
+    addRecentAuction({
+      auctionId: resolvedAuctionId,
+      imagePath: repImage?.path ?? null,
       title: auction.title,
-      url: `/auction/${auctionId}`,
     });
+    trackedRecentAuctionIdRef.current = resolvedAuctionId;
   }, [auction, auctionId]);
 
   useEffect(() => {
@@ -280,16 +332,25 @@ const AuctionDetailPage = () => {
     };
   }, [auction?.productId]);
 
-  if (isAuthLoading || isLoading) {
-    return (
-      <main className={DETAIL_PAGE_CLASS}>
-        <div className={DETAIL_CONTAINER_CLASS}>
-          <div className={DETAIL_EMPTY_CLASS}>
-            <strong className="text-lg">경매 상세 정보를 불러오는 중입니다.</strong>
-          </div>
-        </div>
-      </main>
-    );
+  useEffect(() => {
+    const syncSiteHeaderVisibility = () => {
+      window.dispatchEvent(new CustomEvent(SITE_HEADER_VISIBILITY_EVENT, {
+        detail: { hidden: isDetailNavigationStuck && window.innerWidth >= 768 },
+      }));
+    };
+
+    syncSiteHeaderVisibility();
+    window.addEventListener('resize', syncSiteHeaderVisibility);
+    return () => {
+      window.removeEventListener('resize', syncSiteHeaderVisibility);
+      window.dispatchEvent(new CustomEvent(SITE_HEADER_VISIBILITY_EVENT, {
+        detail: { hidden: false },
+      }));
+    };
+  }, [isDetailNavigationStuck]);
+
+  if (isLoading) {
+    return <AuctionDetailSkeleton />;
   }
 
   if (isError || !auction) {
@@ -297,7 +358,7 @@ const AuctionDetailPage = () => {
       <main className={DETAIL_PAGE_CLASS}>
         <div className={DETAIL_CONTAINER_CLASS}>
           <div className={DETAIL_EMPTY_CLASS}>
-            <strong className="text-lg">경매 상세 정보를 불러오지 못했습니다.</strong>
+            <strong className="text-xl leading-[1.4]">경매 상세 정보를 불러오지 못했습니다.</strong>
             <Link className="inline-flex items-center gap-1.5 font-extrabold text-primary no-underline" to={returnPath}>
               {returnLabel}으로 돌아가기
             </Link>
@@ -340,10 +401,10 @@ const AuctionDetailPage = () => {
     && Number(auction.instantBuyPrice || 0) > 0;
   const isCurrentHighestBidder = Boolean(auction.currentHighestBidder);
   const hasBidHistory = Boolean(auction.hasBidHistory);
-  const requiresHoldConsent = isAuthenticated && !hasBidHistory;
+  const requiresBidHoldConsent = isAuthenticated && !hasBidHistory;
   const selectedTradeValue = auction.tradeMethodCode || '';
   const selectedTradeName = auction.tradeMethodName || '거래 방식 미정';
-  const displayedBidAmount = bidAmount || formatNumber(currentPrice);
+  const displayedBidAmount = bidAmount || formatNumber(minimumBidPrice);
   const requestedBidAmount = parseAmount(displayedBidAmount);
   const hasBidAmountSelection = bidAmount !== '';
   const bidIncrementAmount = requestedBidAmount - currentPrice;
@@ -362,7 +423,7 @@ const AuctionDetailPage = () => {
   const handleBidInputChange = (event) => setBidAmount(formatNumber(parseAmount(event.target.value)));
   const handleBidMultiplierSelect = (multiplier) => {
     setBidAmount((value) => formatNumber(
-      parseAmount(value || currentPrice) + (bidUnitPrice * multiplier),
+      parseAmount(value || minimumBidPrice) + (bidUnitPrice * multiplier),
     ));
   };
   const handleBidSubmit = () => {
@@ -395,7 +456,7 @@ const AuctionDetailPage = () => {
       showToast(`사용 가능 포인트가 부족합니다. 필요 ${formatNumber(amount)}P, 보유 ${formatNumber(availablePoint)}P`);
       return;
     }
-    if (requiresHoldConsent && !holdAgreed) {
+    if (requiresBidHoldConsent && !holdAgreed) {
       showToast('포인트 홀딩 동의가 필요합니다');
       return;
     }
@@ -423,10 +484,6 @@ const AuctionDetailPage = () => {
     }
     if (hasAvailablePoint && availablePoint < instantBuyPrice) {
       showToast(`사용 가능 포인트가 부족합니다. 필요 ${formatNumber(instantBuyPrice)}P, 보유 ${formatNumber(availablePoint)}P`);
-      return;
-    }
-    if (requiresHoldConsent && !holdAgreed) {
-      showToast('포인트 홀딩 동의가 필요합니다');
       return;
     }
     setIsBuyNowOpen(true);
@@ -519,18 +576,7 @@ const AuctionDetailPage = () => {
     <>
       <main className={DETAIL_PAGE_CLASS}>
         <div className={DETAIL_CONTAINER_CLASS}>
-          <Link
-            className="mt-[34px] inline-flex w-fit items-center gap-1.5 text-sm font-bold text-[#666] no-underline transition-colors hover:text-primary-dark"
-            to={returnPath}
-          >
-            <ChevronLeft size={18} aria-hidden="true" />
-            {returnLabel}
-          </Link>
-          <h1 className="mt-[18px] mb-3.5 text-[30px] leading-tight font-bold text-[#1d1d1f] max-lg:mt-4 max-lg:text-[26px] max-sm:text-[22px]">
-            {auction.title}
-          </h1>
-
-          <section className="grid items-stretch gap-2 lg:grid-cols-[minmax(360px,0.78fr)_minmax(560px,1.22fr)]">
+          <section className="mt-[34px] grid items-stretch gap-2 lg:grid-cols-[minmax(360px,0.78fr)_minmax(560px,1.22fr)] max-lg:mt-4">
             <div className="grid min-h-[498px] min-w-0 grid-rows-[minmax(0,1fr)_auto] gap-2 max-lg:min-h-0">
               <AuctionImageGallery
                 auction={auction}
@@ -556,7 +602,7 @@ const AuctionDetailPage = () => {
               selectedTradeName={selectedTradeName}
               displayedBidAmount={displayedBidAmount}
               holdAgreed={holdAgreed}
-              requiresHoldConsent={requiresHoldConsent}
+              requiresBidHoldConsent={requiresBidHoldConsent}
               isBidPending={bidMutation.isPending}
               isBuyNowPending={buyNowMutation.isPending}
               isAuctionOpen={isAuctionOpen}
@@ -565,6 +611,7 @@ const AuctionDetailPage = () => {
               isCurrentHighestBidder={isCurrentHighestBidder}
               isBuyNowAvailable={isBuyNowAvailable}
               isAuthenticated={isAuthenticated}
+              isAuthLoading={isAuthLoading}
               availablePoint={availablePoint}
               hasAvailablePoint={hasAvailablePoint}
               isPointBalanceLoading={isPointBalanceLoading}
@@ -587,10 +634,10 @@ const AuctionDetailPage = () => {
 
         <nav
           ref={detailNavigationRef}
-          className={`sticky top-[82px] z-[90] mt-7 h-[54px] border-y border-[#e2e5ea] bg-white transition-shadow md:top-0 md:z-[110] md:h-[82px] ${
+          className={`sticky top-[82px] mt-7 h-[54px] border-y border-[#e2e5ea] bg-white transition-shadow md:top-0 md:h-[82px] ${
             isDetailNavigationStuck
-              ? 'shadow-[0_5px_14px_rgba(0,0,0,0.14)]'
-              : 'shadow-none'
+              ? 'z-[90] shadow-[0_5px_14px_rgba(0,0,0,0.14)] md:z-[110]'
+              : 'z-0 shadow-none'
           }`}
           aria-label="경매 상세 구역"
         >
@@ -599,7 +646,7 @@ const AuctionDetailPage = () => {
               const isActive = activeDetailSectionId === id;
               return (
                 <button
-                  className={`relative inline-flex h-full cursor-pointer items-center justify-center border-x-0 border-t-0 border-b-[3px] bg-white px-2 text-sm font-bold transition-colors md:text-base ${
+                  className={`relative inline-flex h-full cursor-pointer items-center justify-center border-x-0 border-t-0 border-b-[3px] bg-white px-2 text-center text-sm leading-[1.4] font-bold break-keep whitespace-normal transition-colors md:text-base ${
                     isActive
                       ? 'border-b-primary text-primary'
                       : 'border-b-transparent text-[#666] hover:text-[#1d1d1f]'
@@ -617,11 +664,17 @@ const AuctionDetailPage = () => {
         </nav>
 
         <div className={DETAIL_CONTAINER_CLASS}>
-          <AuctionInfoGrid
+          <AuctionProductDescriptionSection
             auction={auction}
-            selectedTradeName={selectedTradeName}
-            productSectionId={DETAIL_SECTION_ITEMS[0].id}
-            sellerSectionId={DETAIL_SECTION_ITEMS[1].id}
+            sectionId={DETAIL_SECTION_ITEMS[0].id}
+          />
+
+          <AuctionProductUpdateSection
+            key={`updates-${auction.productId}`}
+            sectionId={DETAIL_SECTION_ITEMS[1].id}
+            productId={auction.productId}
+            enabled={deferredLoadStage >= 1}
+            onLoadSettled={handleProductUpdatesSettled}
           />
 
           <AuctionInquirySection
@@ -630,15 +683,28 @@ const AuctionDetailPage = () => {
             productId={auction.productId}
             isAuthenticated={isAuthenticated}
             isOwnAuction={isOwnAuction}
+            enabled={deferredLoadStage >= 2}
+            onLoadSettled={handleInquiriesSettled}
             onLoginRequired={() => navigate('/login', { state: { from: location } })}
             onToast={showToast}
           />
 
-          <AuctionProductUpdateSection
-            key={`updates-${auction.productId}`}
+          <AuctionSellerInformationSection
+            auction={auction}
+            selectedTradeName={selectedTradeName}
             sectionId={DETAIL_SECTION_ITEMS[3].id}
-            updates={auction.productUpdates}
-          />
+            sellerRating={sellerTrustQuery.data?.totalScore ?? auction.sellerRating}
+            sellerReviewCount={sellerTrustQuery.data?.totalCount ?? auction.sellerReviewCount}
+            isSellerTrustLoading={deferredLoadStage < 3 || sellerTrustQuery.isLoading}
+          >
+            <AuctionSellerHistory
+              key={`seller-history-${auction.sellerId}`}
+              currentAuctionId={auctionId}
+              sellerId={auction.sellerId}
+              sellerName={auction.sellerName}
+              enabled={deferredLoadStage >= 3}
+            />
+          </AuctionSellerInformationSection>
         </div>
       </main>
 
@@ -646,8 +712,6 @@ const AuctionDetailPage = () => {
         isOpen={isBuyNowOpen}
         auction={auction}
         selectedTradeName={selectedTradeName}
-        holdAgreed={holdAgreed}
-        requiresHoldConsent={requiresHoldConsent}
         isPending={buyNowMutation.isPending}
         isBuyNowAvailable={isBuyNowAvailable}
         onClose={() => setIsBuyNowOpen(false)}

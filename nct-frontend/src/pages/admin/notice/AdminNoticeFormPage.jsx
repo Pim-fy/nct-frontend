@@ -144,7 +144,7 @@ const AdminNoticeFormPage = () => {
   };
 
   const deleteNotice = async () => {
-    if (!requireReason() || !window.confirm('이 공지를 관리 목록에서도 삭제할까요? 변경 사유는 현재 보안 로그에 남습니다.')) return;
+    if (!requireReason() || !window.confirm('이 공지를 관리 목록에서도 삭제할까요? 변경 사유는 감사로그에 기록됩니다.')) return;
     try {
       await deleteMutation.mutateAsync({ noticeId, changeReason: form.changeReason.trim() });
       navigate('/admin/notices', { replace: true });
@@ -291,7 +291,7 @@ const AdminNoticeFormPage = () => {
         </label>
 
         <section className="admin-notice-form__audit">
-          <div><strong>관리자 처리 사유</strong><p>현재 보안 로그에 남으며, 공용 감사 DB 연결은 준비 중입니다. 개인정보는 입력하지 마세요.</p></div>
+          <div><strong>관리자 처리 사유</strong><p>등록·수정·숨김·삭제 사유는 감사로그에 기록됩니다. 개인정보는 입력하지 마세요.</p></div>
           <textarea
             disabled={isPending}
             maxLength={500}

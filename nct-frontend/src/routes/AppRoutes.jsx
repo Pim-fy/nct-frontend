@@ -61,9 +61,13 @@ import ProviderProfilePage from '@pages/provider/ProviderProfilePage';
 import NotificationPage from '@pages/user/notification/NotificationPage';
 import NotificationSettingsPage from '@pages/user/notification/NotificationSettingsPage';
 import SettlementListPage from '@pages/user/settlement/SettlementListPage';
+import AuctionFavoritesPage from '@pages/auction/AuctionFavoritesPage';
+import QuoteFormPage from '@pages/provider/QuoteFormPage';
+import MyQuoteListPage from '@pages/provider/MyQuoteListPage';
 import ReviewListPage from '@pages/user/ReviewListPage';
 import ReviewWritePage from '@pages/user/ReviewWritePage';
 import ReviewEditPage from '@pages/user/ReviewEditPage';
+import MyPageReviewLayout from '@layouts/MyPageReviewLayout';
 // 내 입찰 내역 (F-AUC-022)
 import MyBidHistoryPage from '@pages/user/MyBidHistoryPage';
 
@@ -77,6 +81,8 @@ import ProductDetailSellerPage from '@pages/product/ProductDetailSellerPage';
 import ServiceRequestFormPage from '@pages/service/ServiceRequestFormPage';
 // F-SVC-003~004: 서비스 요청서 상세 조회/관리
 import ServiceRequestDetailPage from '@pages/service/ServiceRequestDetailPage';
+// F-SVC-004: 내 서비스 요청 목록 (담당자 2)
+import MyServiceRequestListPage from '@pages/service/MyServiceRequestListPage';
 
 // 기존 지갑 주소를 유지하되, 결제 결과·모달 제어용 query string도 함께 전달한다.
 const PointWalletRedirect = () => {
@@ -109,6 +115,7 @@ const isTradePreviewEnabled = import.meta.env.DEV
   || import.meta.env.VITE_USE_TRADE_PREVIEW === 'true';
 
 const AppRoutes = () => {
+  const location = useLocation();
   return (
     <Routes>
       {/* ────────────────────────────────
@@ -146,6 +153,8 @@ const AppRoutes = () => {
 
         {/* 담당자 7의 F-COM-002/015 화면. 공통 route 소유자(담당자 1)에게 동일 manifest로 전달합니다. */}
         <Route path="/service" element={<ServiceListPage />} />
+        {/* 담당자 2 · F-SVC: 서비스 요청서 상세는 비로그인도 조회 가능 (백엔드 permit-all) */}
+        <Route path="/service-requests/:svcReqSn" element={<ServiceRequestDetailPage />} />
         <Route path="/providers/:providerId" element={<PublicProviderProfilePage />} />
         <Route path="/guide" element={<GuidePage />} />
         <Route path="/customersupport/notice" element={<NoticeListPage />} />
@@ -200,9 +209,12 @@ const AppRoutes = () => {
         )}
       >
         <Route element={<UserLayout />}>
-          <Route path="/user/reviews" element={<ReviewListPage />} />
-          <Route path="/user/reviews/write/:id" element={<ReviewWritePage />} />
-          <Route path="/user/reviews/edit/:id" element={<ReviewEditPage />} />
+          <Route path="/user/auction-favorites" element={<AuctionFavoritesPage />} />
+          <Route path="/user/reviews" element={<Navigate to="/user/mypage?section=review" replace />} />
+          <Route element={<MyPageReviewLayout />}>
+            <Route path="/user/reviews/write/:id" element={<ReviewWritePage />} />
+            <Route path="/user/reviews/edit/:id" element={<ReviewEditPage />} />
+          </Route>
           {/* 경매 거래내역 — 내 입찰 내역 + 내 판매 내역 2탭 (담당자3 HSK, F-AUC-022) */}
           <Route path="/my-bids" element={<MyBidHistoryPage />} />
 
@@ -218,14 +230,15 @@ const AppRoutes = () => {
           <Route path="/provider/apply"              element={<ProviderApplyPage />} />
           {/* 담당자 7 · F-PROV-012/014: 신청 완료 후 내 심사 상태 확인 화면. 라우트 소유자에게 전달 필요. */}
           <Route path="/provider/applications/status" element={<ProviderApplicationStatusPage />} />
-          <Route path="/product/register"        element={<ProductRegisterPage />} />
+          <Route path="/product/register"        element={<ProductRegisterPage key={location.key} />} />
           <Route path="/product/me"              element={<MyProductListPage />} />
           <Route path="/product/:prdSn/seller"   element={<ProductDetailSellerPage />} />
 
           {/* 서비스 - 로그인 필요 */}
           {/* 담당자 2 · F-SVC-001~004: 서비스 요청서 작성/임시저장 폼. 라우트 소유자에게 전달 필요. */}
           <Route path="/service-requests/new" element={<ServiceRequestFormPage />} />
-          <Route path="/service-requests/:svcReqSn" element={<ServiceRequestDetailPage />} />
+          {/* 담당자 2 · F-SVC-004: 내 서비스 요청 목록. 라우트 소유자에게 전달 필요. */}
+          <Route path="/service-requests/me" element={<MyServiceRequestListPage />} />
         </Route>
       </Route>
 
@@ -255,6 +268,8 @@ const AppRoutes = () => {
       <Route element={<ProtectedRoute allowedRoles={['ROLE_SERVICE']} />}>
         <Route element={<UserLayout />}>
           <Route path="/provider/profile" element={<ProviderProfilePage />} />
+          <Route path="/provider/quotes" element={<MyQuoteListPage />} />
+          <Route path="/provider/quotes/new" element={<QuoteFormPage />} />
         </Route>
       </Route>
 

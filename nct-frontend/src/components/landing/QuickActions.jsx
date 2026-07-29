@@ -1,51 +1,32 @@
 // src/components/landing/QuickActions.jsx
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ImageOff } from 'lucide-react';
+import { toImageUrl } from '@api/fileApi';
 import { useAuth } from '@hooks/useAuth';
+import {
+  getRecentAuctions,
+  subscribeToRecentAuctions,
+} from '@utils/recentAuctions';
 import cursorIcon from '@assets/img/cursorIcon.png';
 import commentIcon from '@assets/img/commentIcon.png';
-import thumImg01 from '@assets/img/thum_img01.png';
-import thumImg02 from '@assets/img/thum_img02.png';
-import thumImg03 from '@assets/img/thum_img03.png';
 import '@assets/css/landing.css';
 
-// 외부에서 최근 본 상품을 추가할 때 호출하는 유틸 함수
-// 사용 예: addRecentItem({ id: 1, image: '/img/product.jpg', url: '/auction/1' })
-export const addRecentItem = (item) => {
-  const stored = JSON.parse(localStorage.getItem('recentItems') || '[]');
-  const filtered = stored.filter((i) => i.id !== item.id);
-  const updated = [item, ...filtered].slice(0, 10);
-  localStorage.setItem('recentItems', JSON.stringify(updated));
-  window.dispatchEvent(new Event('recentItemsUpdated'));
-};
+const RECENT_AUCTION_SLOT_COUNT = 3;
 
 const QuickActions = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const [recentItems, setRecentItems] = useState([]);
+  const [recentItems, setRecentItems] = useState(() => getRecentAuctions().slice(0, 3));
+  const [failedImageIds, setFailedImageIds] = useState(() => new Set());
   const [showTop, setShowTop] = useState(false);
+  const recentItemSlots = Array.from(
+    { length: RECENT_AUCTION_SLOT_COUNT },
+    (_, index) => recentItems[index] ?? null,
+  );
 
   useEffect(() => {
-    // TODO: 샘플 확인용 — 실 서비스 전 제거
-    if (!localStorage.getItem('recentItems')) {
-      localStorage.setItem('recentItems', JSON.stringify([
-        { id: 's1', image: thumImg01, title: '샘플 상품 1', url: '/auction/1' },
-        { id: 's2', image: thumImg02, title: '샘플 상품 2', url: '/auction/2' },
-        { id: 's3', image: thumImg03, title: '샘플 상품 3', url: '/auction/3' },
-      ]));
-    }
-
-    const load = () => {
-      const stored = JSON.parse(localStorage.getItem('recentItems') || '[]');
-      setRecentItems(stored.slice(0, 3));
-    };
-    load();
-    window.addEventListener('recentItemsUpdated', load);
-    window.addEventListener('storage', load);
-    return () => {
-      window.removeEventListener('recentItemsUpdated', load);
-      window.removeEventListener('storage', load);
-    };
+    return subscribeToRecentAuctions((items) => setRecentItems(items.slice(0, 3)));
   }, []);
 
   useEffect(() => {
@@ -62,9 +43,11 @@ const QuickActions = () => {
     }
   };
 
+  // 담당자 2 · F-SVC-001~004: 서비스 요청서 작성 진입점. 다른 화면에서 이 폼으로 진입하는
+  // 경로가 추가되더라도 이 라우트('/service-requests/new')는 그대로 유지된다.
   const handleServiceCreate = () => {
     if (isAuthenticated) {
-      navigate('/service/create');
+      navigate('/service-requests/new');
     } else {
       navigate('/login');
     }
@@ -79,29 +62,45 @@ const QuickActions = () => {
       {/* 데스크톱 플로팅 퀵 레일 (md 이상) */}
       <div className="quick-rail hidden md:flex">
 
-        {/* 최근 본 상품 — 항목이 있을 때만 표시 */}
-        {recentItems.length > 0 && (
-          <div className="flex flex-col items-center gap-[5px] self-center bg-white/80 rounded-[5px] shadow-[0_5px_10px_rgba(0,0,0,0.12)] backdrop-blur-sm overflow-hidden mb-5">
-            <span className="qi-label w-full text-center text-white bg-[#444444] py-[5px] text-sm">최근본..</span>
-            <div className="flex flex-col items-center gap-[5px] px-[5px] pb-[8px]">
-              {recentItems.map((item) => (
+        {/* 최근 본 경매 — 항목이 있을 때만 표시 */}
+        {recentItems.length > 0 && <div className="mb-5 flex flex-col items-center gap-[5px] self-center overflow-hidden rounded-[5px] bg-white/80 shadow-[0_5px_10px_rgba(0,0,0,0.12)] backdrop-blur-sm">
+          <span className="qi-label w-full bg-[#444444] py-[5px] text-center text-sm text-white">최근 본</span>
+          <div className="flex flex-col items-center gap-[5px] px-[5px] pb-[8px]">
+            {recentItemSlots.map((item, index) => (
+              item ? (
                 <button
-                  key={item.id}
+                  key={item.auctionId}
                   type="button"
-                  onClick={() => navigate(item.url)}
-                  title={item.title || '최근 본 상품'}
-                  className="w-[50px] h-[50px] rounded-[5px] overflow-hidden bg-[#f7f7f7] cursor-pointer p-0 shrink-0"
+                  onClick={() => navigate(`/auction/${item.auctionId}`)}
+                  title={item.title || '최근 본 경매'}
+                  aria-label={`${item.title || '최근 본 경매'} 상세 보기`}
+                  className="grid size-[50px] shrink-0 cursor-pointer place-items-center overflow-hidden rounded-[5px] border border-[#e5e5e5] bg-[#f7f7f7] p-0 text-[#999]"
                 >
-                  <img
-                    src={item.image}
-                    alt={item.title || ''}
-                    className="w-full h-full object-cover"
-                  />
+                  {item.imagePath && !failedImageIds.has(item.auctionId) ? (
+                    <img
+                      src={toImageUrl(item.imagePath)}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      onError={() => setFailedImageIds((currentIds) => {
+                        const nextIds = new Set(currentIds);
+                        nextIds.add(item.auctionId);
+                        return nextIds;
+                      })}
+                    />
+                  ) : (
+                    <ImageOff size={18} aria-hidden="true" />
+                  )}
                 </button>
-              ))}
-            </div>
+              ) : (
+                <span
+                  key={`empty-recent-auction-${index}`}
+                  className="size-[50px] shrink-0"
+                  aria-hidden="true"
+                />
+              )
+            ))}
           </div>
-        )}
+        </div>}
 
         {/* 경매 등록 */}
         <button className="quick-item quick-blue" type="button" onClick={handleAuctionCreate} title="경매 등록">
