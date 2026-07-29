@@ -1,20 +1,20 @@
 // src/pages/service/ServiceRequestFormPage.jsx
-// 서비스 요청서 작성 페이지 — 요청자가 서비스를 요청하는 폼 (F-SVC-001~004)
-// 라우트 예정: /service-requests/new (신규), 수정 시 location.state.svcReqSn로 임시저장 불러오기
-// 목업: 팀전달_목업_서비스신청_카테고리선택_260727.html (백종남6 제공) — 카테고리 선택 →
-// 하위 단계 카드가 순차적으로 쌓이는 위저드 방식. 단계 데이터는 serviceRequestWizardSteps.js 참고.
+// 서비스 요청서 작성 — 아코디언 위저드 (F-SVC-001~004)
+// 라우트: /service-requests/new (신규), location.state.svcReqSn로 임시저장 수정
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { getCategories } from '@api/categoryApi';
 import { registerServiceRequest, updateServiceRequest, getServiceRequest } from '@api/serviceRequestApi';
+import DaumPostcode from 'react-daum-postcode';
 import ErrorMessage from '@components/common/ErrorMessage';
+import AlertModal from '@components/common/AlertModal';
+import ConfirmModal from '@components/common/ConfirmModal';
 import { WIZARD_STEPS, CATEGORY_NEXT_STEP, CATEGORY_META } from './serviceRequestWizardSteps';
 
 const SERVICE_DOMAIN_CD = 'CATC0002';
-const ETC = '기타'; // '기타' 선택지는 어디에 있든 텍스트 입력을 추가로 받는다
+const ETC = '기타';
 
-// 카테고리 선택 카드 아이콘 — 마이페이지 대시보드 통계카드(StatCard)와 같은
-// "컬러 박스 + 화이트 아이콘" 톤을 맞추기 위한 라인 아이콘 (해당 카테고리 전용 이미지 에셋이 아직 없어 인라인 SVG로 대체)
 function CategoryIcon({ name, className }) {
   const common = { viewBox: '0 0 24 24', width: 32, height: 32, fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', className };
   switch (name) {
@@ -30,11 +30,8 @@ function CategoryIcon({ name, className }) {
     case '청소':
       return (
         <svg {...common}>
-          {/* 손잡이 */}
           <line x1="18" y1="2" x2="12" y2="13" />
-          {/* 대걸레 머리 고정대 */}
           <line x1="6" y1="13" x2="18" y2="13" />
-          {/* 술(걸레 가닥) */}
           <line x1="7" y1="13" x2="6" y2="21" />
           <line x1="10" y1="13" x2="9.5" y2="21" />
           <line x1="13" y1="13" x2="13" y2="21" />
@@ -50,7 +47,7 @@ function CategoryIcon({ name, className }) {
     case '인테리어':
       return (
         <svg {...common}>
-          <path d="M12 3a9 9 0 1 0 0 18c1.2 0 2-.8 2-2 0-.5-.2-.9-.5-1.3-.3-.4-.5-.8-.5-1.2 0-.9.7-1.5 1.6-1.5H16a4 4 0 0 0 4-4c0-4.4-3.6-8-8-8z" />
+          <path d="M12 3a9 9 0 1 0 0 18c1.2 0 2-.8 2-2 0-.5-.2-.9-.5-1.3-.3-.4-.5-.8-.5-1.2 0-.9.7-1.6 1.6-1.6H16a4 4 0 0 0 4-4c0-4.4-3.6-8-8-8z" />
           <circle cx="7.5" cy="10.5" r="1" fill="currentColor" stroke="none" />
           <circle cx="10.5" cy="7" r="1" fill="currentColor" stroke="none" />
           <circle cx="15" cy="7.5" r="1" fill="currentColor" stroke="none" />
@@ -70,9 +67,12 @@ function CategoryIcon({ name, className }) {
   }
 }
 
-// 확정된 답변 문자열("건물 유형: 원룸", "평수: 8평 / 거주 인원: 1명")을 편집 화면 입력값으로 되돌린다.
-// 임시저장 이어서 작성 시에만 쓰이며, single 타입은 answers[stepId] 자체가 선택값이라 별도 변환이 필요 없다.
-// "기타(입력내용)" 형태는 체크박스/칩 값은 '기타'로, 입력내용은 freeText로 분리해 돌려준다.
+// 이 단계에서 선택에 따라 다음 단계가 달라지는가
+function isBranchingStep(stepId) {
+  const step = WIZARD_STEPS[stepId];
+  return step?.type === 'single' && step.options.some(o => o.next);
+}
+
 function parseAnswerToDraft(step, value) {
   if (step.type === 'multi') {
     const labels = value ? value.split(', ') : [];
@@ -105,37 +105,36 @@ function parseAnswerToDraft(step, value) {
 export default function ServiceRequestFormPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const editSvcReqSn = location.state?.svcReqSn ?? null; // 임시저장 수정 모드
+  const editSvcReqSn = location.state?.svcReqSn ?? null;
 
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [errorTick, setErrorTick] = useState(0);
+  const [alertMsg, setAlertMsg] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const errorRef = useRef(null);
 
   const [title, setTitle] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState(null); // { catSn, catNm }
-
-  // 위저드 진행 상태 — chain: 화면에 쌓인 단계 id 순서, answers: 단계별 확정된 표시 문자열,
-  // stepDraft: multi 선택 중 항목 / form 입력 중 값(다음 버튼 누르기 전까지의 임시 상태)
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [chain, setChain] = useState([]);
   const [answers, setAnswers] = useState({});
   const [stepDraft, setStepDraft] = useState({});
-  const [isComplete, setIsComplete] = useState(false); // memo 단계까지 완료해야 공개 가능
-
-  // '기타' 선택 시 추가로 받는 텍스트 — key: `${stepId}:${라벨 또는 form 필드 key}`
+  const [isComplete, setIsComplete] = useState(false);
   const [freeTextDraft, setFreeTextDraft] = useState({});
-  // single 타입 단계에서 '기타'를 눌러 텍스트 입력을 기다리는 중인 stepId (즉시 다음으로 못 넘어감)
   const [pendingEtcStep, setPendingEtcStep] = useState(null);
+
+  // 아코디언 상태
+  const [editingStepId, setEditingStepId] = useState(null); // 재편집 중인 완료 단계
+  const [editingCategory, setEditingCategory] = useState(false); // 카테고리 재선택 중
+  const [confirmPending, setConfirmPending] = useState(null); // { msg, action } | null
+  const [collapsedSteps, setCollapsedSteps] = useState(new Set()); // 수동으로 접힌 단계
+  const [fieldErrors, setFieldErrors] = useState({}); // { 'stepId:fieldKey': 에러 메시지 }
+  const [addressSearchKey, setAddressSearchKey] = useState(null); // 주소 검색 중인 'stepId:fieldKey'
 
   const cardRefs = useRef({});
 
-  // 저장된 items 배열("단계 제목: 답변" 순서 저장)을 카테고리 분기 그래프를 따라가며 되감아
-  // chain·answers·stepDraft를 복원한다. 저장 형식을 이 화면이 직접 정하므로 결정적으로 복원 가능.
   function restoreFromExisting(cat, s) {
     setSelectedCategory({ catSn: cat.catSn, catNm: cat.catNm });
-
     const items = Array.isArray(s.items) ? s.items : [];
     let stepId = CATEGORY_NEXT_STEP[cat.catNm];
     let idx = 0;
@@ -167,7 +166,6 @@ export default function ServiceRequestFormPage() {
       stepId = nextId;
     }
 
-    // budget·memo는 items가 아니라 전용 컬럼(svcReqBdgtAmt·svcReqCn)에서 복원한다.
     if (s.svcReqBdgtAmt != null) {
       newDraft.budget = { 예산: '금액 입력', 금액: String(s.svcReqBdgtAmt) };
     }
@@ -186,7 +184,6 @@ export default function ServiceRequestFormPage() {
       .then(res => {
         const children = res.data.filter(c => c.catParentSn !== null);
         setCategories(children);
-
         if (editSvcReqSn) {
           getServiceRequest(editSvcReqSn)
             .then(res2 => {
@@ -206,39 +203,36 @@ export default function ServiceRequestFormPage() {
     if (error && errorRef.current) {
       errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }, [error, errorTick]);
+  }, [error]);
 
-  // 새 단계 카드가 추가될 때만 그 위치로 스크롤 (매 렌더마다 스크롤되면 입력 중 커서가 튐)
   useEffect(() => {
     const lastId = chain[chain.length - 1];
-    const el = lastId && cardRefs.current[lastId];
+    if (!lastId || answers[lastId]) return; // 새로 추가된 미답변 단계만 스크롤
+    const el = cardRefs.current[lastId];
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [chain]);
 
-  // stepId "뒤"에 쌓인 카드·답변·입력중 값을 전부 제거한다 (앞 단계 재선택 시 초기화).
+  // ── 기존 헬퍼 ───────────────────────────────────────────────────────────────
+
   const truncateAfter = (stepId) => {
     const idx = chain.indexOf(stepId);
     const kept = idx === -1 ? [] : chain.slice(0, idx + 1);
     const removed = chain.slice(kept.length);
     if (removed.length) {
-      setAnswers(prev => {
-        const next = { ...prev };
-        removed.forEach(id => delete next[id]);
-        return next;
-      });
-      setStepDraft(prev => {
-        const next = { ...prev };
-        removed.forEach(id => delete next[id]);
-        return next;
-      });
+      setAnswers(prev => { const n = { ...prev }; removed.forEach(id => delete n[id]); return n; });
+      setStepDraft(prev => { const n = { ...prev }; removed.forEach(id => delete n[id]); return n; });
       setFreeTextDraft(prev => {
-        const next = { ...prev };
-        Object.keys(next).forEach(key => {
-          if (removed.some(id => key.startsWith(`${id}:`))) delete next[key];
-        });
-        return next;
+        const n = { ...prev };
+        Object.keys(n).forEach(key => { if (removed.some(id => key.startsWith(`${id}:`))) delete n[key]; });
+        return n;
       });
       setPendingEtcStep(prev => (removed.includes(prev) ? null : prev));
+      setCollapsedSteps(prev => { const n = new Set(prev); removed.forEach(id => n.delete(id)); return n; });
+      setFieldErrors(prev => {
+        const n = { ...prev };
+        Object.keys(n).forEach(key => { if (removed.some(id => key.startsWith(`${id}:`))) delete n[key]; });
+        return n;
+      });
     }
     setIsComplete(false);
     return kept;
@@ -253,6 +247,32 @@ export default function ServiceRequestFormPage() {
     }
   };
 
+  // ── 카테고리 ────────────────────────────────────────────────────────────────
+
+  const handleCategoryCardHeaderClick = () => {
+    if (!selectedCategory) return;
+    if (editingCategory) { setEditingCategory(false); return; } // 접기 토글
+    const hasAnsweredDownstream = chain.some(id => answers[id] !== undefined);
+    if (hasAnsweredDownstream) {
+      setConfirmPending({
+        msg: '카테고리를 변경하면 이후 입력한 내용이 모두 초기화됩니다.',
+        action: () => {
+          setSelectedCategory(null);
+          setChain([]);
+          setAnswers({});
+          setStepDraft({});
+          setFreeTextDraft({});
+          setPendingEtcStep(null);
+          setEditingStepId(null);
+          setIsComplete(false);
+          setEditingCategory(false);
+        },
+      });
+    } else {
+      setEditingCategory(true);
+    }
+  };
+
   const handleCategorySelect = (cat) => {
     setSelectedCategory({ catSn: cat.catSn, catNm: cat.catNm });
     setAnswers({});
@@ -260,18 +280,78 @@ export default function ServiceRequestFormPage() {
     setFreeTextDraft({});
     setPendingEtcStep(null);
     setIsComplete(false);
+    setEditingCategory(false);
+    setEditingStepId(null);
+    setFieldErrors({});
     setError('');
     const firstStep = CATEGORY_NEXT_STEP[cat.catNm];
     setChain(firstStep ? [firstStep] : []);
   };
 
+  // ── 단계 카드 헤더 클릭 (토글) ─────────────────────────────────────────────
+
+  const handleStepCardHeaderClick = (stepId) => {
+    const expanded = isStepExpanded(stepId);
+    if (expanded) {
+      // 펼쳐진 상태 → 접기
+      if (editingStepId === stepId) setEditingStepId(null);
+      setCollapsedSteps(prev => new Set([...prev, stepId]));
+    } else {
+      // 접힌 상태 → 열기
+      setCollapsedSteps(prev => { const n = new Set(prev); n.delete(stepId); return n; });
+      if (answers[stepId]) handleCompletedStepClick(stepId);
+    }
+  };
+
+  // ── 완료된 단계 카드 클릭 ───────────────────────────────────────────────────
+
+  const handleCompletedStepClick = (stepId) => {
+    if (editingStepId === stepId) return;
+    const stepIdx = chain.indexOf(stepId);
+    const hasDownstream = chain.slice(stepIdx + 1).some(id => answers[id] !== undefined);
+
+    if (isBranchingStep(stepId) && hasDownstream) {
+      setConfirmPending({
+        msg: '이 항목을 변경하면 이후 입력한 내용이 초기화됩니다.',
+        action: () => {
+          // stepId 포함 이후 answers·draft 전부 제거
+          const idx = chain.indexOf(stepId);
+          const removed = chain.slice(idx);
+          setAnswers(prev => { const n = { ...prev }; removed.forEach(id => delete n[id]); return n; });
+          setStepDraft(prev => { const n = { ...prev }; removed.forEach(id => delete n[id]); return n; });
+          setFreeTextDraft(prev => {
+            const n = { ...prev };
+            Object.keys(n).forEach(key => { if (removed.some(id => key.startsWith(`${id}:`))) delete n[key]; });
+            return n;
+          });
+          setChain(chain.slice(0, idx + 1));
+          setPendingEtcStep(null);
+          setIsComplete(false);
+          setEditingStepId(null);
+        },
+      });
+    } else {
+      // 비분기 단계: 그냥 펼침, 이후 카드 유지
+      setEditingStepId(stepId);
+    }
+  };
+
+  // ── single 선택 ─────────────────────────────────────────────────────────────
+
   const handleSingleSelect = (stepId, option) => {
-    // '기타'는 즉시 확정하지 않고 텍스트 입력을 기다린다 (handleEtcSingleConfirm에서 확정)
     if (option.label === ETC) {
       setPendingEtcStep(stepId);
       return;
     }
     setPendingEtcStep(prev => (prev === stepId ? null : prev));
+
+    if (editingStepId === stepId) {
+      // 비분기 재편집: 답변만 교체, 이후 유지
+      setAnswers(prev => ({ ...prev, [stepId]: option.label }));
+      setEditingStepId(null);
+      return;
+    }
+
     const step = WIZARD_STEPS[stepId];
     const kept = truncateAfter(stepId);
     setAnswers(prev => ({ ...prev, [stepId]: option.label }));
@@ -281,22 +361,36 @@ export default function ServiceRequestFormPage() {
   const handleEtcSingleConfirm = (stepId) => {
     const step = WIZARD_STEPS[stepId];
     const text = (freeTextDraft[`${stepId}:${ETC}`] || '').trim();
-    if (!text) {
-      setError('기타 내용을 입력해 주세요.');
-      setErrorTick(t => t + 1);
+    if (!text) { setAlertMsg('기타 내용을 입력해 주세요.'); return; }
+    const option = step.options.find(o => o.label === ETC);
+
+    if (editingStepId === stepId) {
+      setAnswers(prev => ({ ...prev, [stepId]: `${ETC}(${text})` }));
+      setPendingEtcStep(null);
+      setEditingStepId(null);
       return;
     }
-    const option = step.options.find(o => o.label === ETC);
+
     const kept = truncateAfter(stepId);
     setAnswers(prev => ({ ...prev, [stepId]: `${ETC}(${text})` }));
     setPendingEtcStep(null);
     proceed(kept, option?.next || step.next);
   };
 
+  // ── multi 선택 ──────────────────────────────────────────────────────────────
+
+  const NONE_LABEL = '없음';
   const handleMultiToggle = (stepId, label) => {
     setStepDraft(prev => {
-      const current = prev[stepId] || [];
-      const next = current.includes(label) ? current.filter(l => l !== label) : [...current, label];
+      const cur = prev[stepId] || [];
+      if (label === NONE_LABEL) {
+        // 없음 선택 → 다른 선택지 전부 해제, 없음만 남김 (토글)
+        const next = cur.includes(NONE_LABEL) ? [] : [NONE_LABEL];
+        return { ...prev, [stepId]: next };
+      }
+      // 일반 선택지 → 없음 해제 후 토글
+      const withoutNone = cur.filter(l => l !== NONE_LABEL);
+      const next = withoutNone.includes(label) ? withoutNone.filter(l => l !== label) : [...withoutNone, label];
       return { ...prev, [stepId]: next };
     });
   };
@@ -304,21 +398,24 @@ export default function ServiceRequestFormPage() {
   const handleMultiConfirm = (stepId) => {
     const step = WIZARD_STEPS[stepId];
     const picked = stepDraft[stepId] || [];
-    if (picked.length === 0) {
-      setError('한 개 이상 선택해 주세요.');
-      setErrorTick(t => t + 1);
-      return;
-    }
+    if (picked.length === 0) { setAlertMsg('한 개 이상 선택해 주세요.'); return; }
     if (picked.includes(ETC) && !(freeTextDraft[`${stepId}:${ETC}`] || '').trim()) {
-      setError('기타 내용을 입력해 주세요.');
-      setErrorTick(t => t + 1);
+      setAlertMsg('기타 내용을 입력해 주세요.'); return;
+    }
+    const labels = picked.map(l => (l === ETC ? `${ETC}(${freeTextDraft[`${stepId}:${ETC}`].trim()})` : l));
+
+    if (editingStepId === stepId) {
+      setAnswers(prev => ({ ...prev, [stepId]: labels.join(', ') }));
+      setEditingStepId(null);
       return;
     }
+
     const kept = truncateAfter(stepId);
-    const labels = picked.map(l => (l === ETC ? `${ETC}(${freeTextDraft[`${stepId}:${ETC}`].trim()})` : l));
     setAnswers(prev => ({ ...prev, [stepId]: labels.join(', ') }));
     proceed(kept, step.next);
   };
+
+  // ── form 입력 ───────────────────────────────────────────────────────────────
 
   const handleFormFieldChange = (stepId, key, value) => {
     setStepDraft(prev => ({ ...prev, [stepId]: { ...(prev[stepId] || {}), [key]: value } }));
@@ -327,26 +424,37 @@ export default function ServiceRequestFormPage() {
   const handleFormConfirm = (stepId) => {
     const step = WIZARD_STEPS[stepId];
     const values = stepDraft[stepId] || {};
+
     const missingRequired = step.fields.find(f => f.required && !(values[f.key] || '').toString().trim());
     if (missingRequired) {
-      setError(`${missingRequired.key}을(를) 입력해 주세요.`);
-      setErrorTick(t => t + 1);
+      const errKey = `${stepId}:${missingRequired.key}`;
+      const msg = `${missingRequired.key}을(를) 입력해 주세요.`;
+      setFieldErrors(prev => ({ ...prev, [errKey]: msg }));
+      setAlertMsg(msg);
+      cardRefs.current[stepId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
     const missingDigit = step.fields.find(f => f.requireDigit && !/\d/.test((values[f.key] || '').toString()));
     if (missingDigit) {
-      setError(`${missingDigit.key}에 숫자를 포함해 입력해 주세요.`);
-      setErrorTick(t => t + 1);
+      const errKey = `${stepId}:${missingDigit.key}`;
+      const msg = `${missingDigit.key}에 숫자를 포함해 입력해 주세요.`;
+      setFieldErrors(prev => ({ ...prev, [errKey]: msg }));
+      setAlertMsg(msg);
+      cardRefs.current[stepId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
     const etcFieldMissingText = step.fields.some(
       f => f.type === 'choice' && values[f.key] === ETC && !(freeTextDraft[`${stepId}:${f.key}`] || '').trim()
     );
-    if (etcFieldMissingText) {
-      setError('기타 내용을 입력해 주세요.');
-      setErrorTick(t => t + 1);
-      return;
-    }
+    if (etcFieldMissingText) { setAlertMsg('기타 내용을 입력해 주세요.'); return; }
+
+    // 통과 시 이 단계 에러 전부 제거
+    setFieldErrors(prev => {
+      const n = { ...prev };
+      step.fields.forEach(f => delete n[`${stepId}:${f.key}`]);
+      return n;
+    });
+
     const vals = step.fields
       .map(f => {
         let v = (values[f.key] || '').toString().trim();
@@ -358,34 +466,37 @@ export default function ServiceRequestFormPage() {
       })
       .filter(x => x.v)
       .map(x => `${x.k}: ${x.v}`);
+
+    if (editingStepId === stepId) {
+      setAnswers(prev => ({ ...prev, [stepId]: vals.length ? vals.join(' / ') : '(입력 없음)' }));
+      setEditingStepId(null);
+      return;
+    }
+
     const kept = truncateAfter(stepId);
     setAnswers(prev => ({ ...prev, [stepId]: vals.length ? vals.join(' / ') : '(입력 없음)' }));
     proceed(kept, step.next);
   };
 
+  // ── 제출 ────────────────────────────────────────────────────────────────────
+
   const validateBasic = () => {
     setSubmitted(true);
     if (!title.trim() || !selectedCategory) {
-      setError('요청 제목과 카테고리를 모두 입력해 주세요.');
-      setErrorTick(t => t + 1);
+      setAlertMsg('요청 제목과 카테고리를 모두 입력해 주세요.');
       return false;
     }
-    setError('');
     return true;
   };
 
-  // 위저드 각 단계 답변을 등록 API가 받는 형태로 변환한다.
-  // budget·memo 단계는 전용 필드(svcReqBdgtAmt·svcReqCn)로, 나머지 단계는 SVC_REQ_ITEM 자유 텍스트 목록으로 보낸다.
   const buildPayload = (statusCd) => {
     const budgetDraft = stepDraft.budget || {};
     const hasBudget = budgetDraft['예산'] === '금액 입력' && budgetDraft['금액'];
     const budgetAmount = hasBudget ? Number(String(budgetDraft['금액']).replace(/[^0-9]/g, '')) : null;
     const memoText = (stepDraft.memo?.['메모'] || '').trim() || null;
-
     const items = chain
       .filter(id => id !== 'budget' && id !== 'memo')
       .map(id => `${WIZARD_STEPS[id].title}: ${answers[id]}`);
-
     return {
       catSn: Number(selectedCategory.catSn),
       svcReqTtl: title.trim(),
@@ -397,7 +508,6 @@ export default function ServiceRequestFormPage() {
   };
 
   const submit = async (statusCd) => {
-    setError('');
     setLoading(true);
     try {
       const payload = buildPayload(statusCd);
@@ -407,9 +517,7 @@ export default function ServiceRequestFormPage() {
       const svcReqSn = result.data?.svcReqSn ?? editSvcReqSn;
       navigate(`/service-requests/${svcReqSn}`);
     } catch (err) {
-      const msg = err.response?.data?.message;
-      setError(msg || (editSvcReqSn ? '요청서 수정에 실패했습니다.' : '요청서 등록에 실패했습니다.'));
-      setErrorTick(t => t + 1);
+      setAlertMsg(err.response?.data?.message || (editSvcReqSn ? '요청서 수정에 실패했습니다.' : '요청서 등록에 실패했습니다.'));
     } finally {
       setLoading(false);
     }
@@ -419,230 +527,440 @@ export default function ServiceRequestFormPage() {
   const handlePublish = () => {
     if (!validateBasic()) return;
     if (!isComplete) {
-      setError('모든 단계를 마쳐야 요청서를 공개할 수 있어요. 진행 중이라면 임시저장을 이용해 주세요.');
-      setErrorTick(t => t + 1);
+      setAlertMsg('모든 단계를 마쳐야 요청서를 공개할 수 있어요. 진행 중이라면 임시저장을 이용해 주세요.');
       return;
     }
     submit('SVCC0002');
   };
 
+  const handleConfirmOk = () => { confirmPending?.action(); setConfirmPending(null); };
+  const handleConfirmCancel = () => setConfirmPending(null);
+
+  const handleAddressComplete = (data) => {
+    if (!addressSearchKey) return;
+    const colonIdx = addressSearchKey.indexOf(':');
+    const stepId = addressSearchKey.slice(0, colonIdx);
+    const fieldKey = addressSearchKey.slice(colonIdx + 1);
+    const address = data.roadAddress || data.jibunAddress || '';
+    handleFormFieldChange(stepId, fieldKey, address);
+    if (fieldErrors[addressSearchKey]) setFieldErrors(prev => { const n = { ...prev }; delete n[addressSearchKey]; return n; });
+    setAddressSearchKey(null);
+  };
+
+  // ── 파생 상태 ────────────────────────────────────────────────────────────────
+
+  const isCategoryExpanded = !selectedCategory || editingCategory;
+  const isStepExpanded = (stepId) => !collapsedSteps.has(stepId) && (!answers[stepId] || editingStepId === stepId);
+
+  // ── 렌더 ────────────────────────────────────────────────────────────────────
+
   return (
-    <main className="container seller-page">
-      <div className="page-title"><div><h1>{editSvcReqSn ? '서비스 요청서 수정' : '서비스 요청서 작성'}</h1></div></div>
-
-      <div ref={errorRef}><ErrorMessage message={error} /></div>
-
-      <section className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ background: '#eef2fb', padding: '14px 20px' }}>
-          <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>요청 정보</h3>
+    <div className="bg-white pb-14 text-base leading-[1.6] text-[#1d1d1f]">
+      <div className="mx-auto w-full max-w-[1600px] px-4 lg:px-6">
+        <div className="pt-9 pb-4">
+          <h1 className="text-2xl font-bold">
+            {editSvcReqSn ? '서비스 요청서 수정' : '서비스 요청서 작성'}
+          </h1>
         </div>
-        <div style={{ padding: '20px' }}>
-          <div className="field">
-            <label>요청 제목 <span>{title.length}/200</span></label>
-            <input
-              className="input"
-              type="text"
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              maxLength={200}
-              placeholder="예) 성수동 원룸 이사 운반"
-            />
-          </div>
 
-          <div className="field">
-            <label>카테고리</label>
-            {/* 마이페이지 대시보드 통계카드(MyPageDashboard StatCard)와 같은 톤 —
-                컬러 박스 + 화이트 아이콘, 선택 시 우측 상단에 체크 배지 표시 */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              {categories.map(cat => {
-                const meta = CATEGORY_META[cat.catNm] || {};
-                const active = selectedCategory?.catSn === cat.catSn;
-                const color = meta.color || '#5f5e5a';
-                return (
-                  <button
-                    key={cat.catSn}
-                    type="button"
-                    onClick={() => handleCategorySelect(cat)}
-                    className="relative rounded-[10px] text-white p-4 text-left border-none cursor-pointer"
-                    style={{ backgroundColor: color, boxShadow: active ? '0 0 0 3px #1a1a18' : 'none' }}
-                  >
-                    {active && (
-                      <span
-                        className="absolute right-3 top-3 flex items-center justify-center size-[20px] rounded-full bg-white text-[13px] font-bold"
-                        style={{ color }}
-                      >✓</span>
-                    )}
-                    <CategoryIcon name={cat.catNm} className="mb-2" />
-                    <p className="font-bold text-[16px] leading-tight m-0">{cat.catNm}</p>
-                    {meta.sub && <p className="text-[12px] opacity-80 mt-1 m-0">{meta.sub}</p>}
-                  </button>
-                );
-              })}
+        <div ref={errorRef}><ErrorMessage message={error} /></div>
+
+        <div className="flex flex-col gap-4">
+
+          {/* ── 요청 제목 ── */}
+          <section className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm">
+            <div className="border-b border-[#e8e8e8] px-6 py-4">
+              <h2 className="text-base font-bold">요청 제목</h2>
             </div>
-            {submitted && !selectedCategory && (
-              <span style={{ fontSize: 15, fontWeight: 700, color: '#c0392b', display: 'block', marginTop: 6 }}>카테고리를 선택해 주세요</span>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── 단계 카드 ─────────────────────────────────────────
-          카테고리 선택 이후 이어지는 세부 질문. chain 순서대로 하나씩 쌓이고,
-          앞 단계를 다시 선택하면 그 뒤 카드는 truncateAfter로 전부 사라진다. */}
-      {chain.map((stepId, index) => {
-        const step = WIZARD_STEPS[stepId];
-        if (!step) return null;
-        return (
-          <section
-            key={stepId}
-            className="card"
-            style={{ marginTop: 16 }}
-            ref={el => { if (el) cardRefs.current[stepId] = el; }}
-          >
-            <div className="row" style={{ gap: 10, alignItems: 'baseline', marginBottom: step.desc ? 4 : 14 }}>
-              <span style={{
-                flex: 'none', width: 26, height: 26, borderRadius: '50%',
-                background: '#e5efff', color: '#0048bf', fontSize: 13, fontWeight: 700,
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              }}>{index + 1}</span>
-              <h2 style={{ margin: 0, fontSize: 18 }}>{step.title}</h2>
+            <div className="px-6 py-5">
+              <div className="mb-1.5 flex items-center justify-between">
+                <label className="text-sm font-medium text-[#5f5e5a]">제목</label>
+                <span className="text-xs text-[#888780]">{title.length}/200</span>
+              </div>
+              <input
+                className="w-full rounded-lg border border-[#e2e1dc] bg-white px-3 py-2.5 text-sm text-[#1d1d1f] outline-none transition-colors focus:border-primary"
+                type="text"
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                maxLength={200}
+                placeholder="예) 성수동 원룸 이사 운반"
+              />
+              {submitted && !title.trim() && (
+                <p className="mt-1.5 text-xs font-semibold text-red-600">제목을 입력해 주세요.</p>
+              )}
             </div>
-            {step.desc && <p className="muted small" style={{ margin: '0 0 14px 36px' }}>{step.desc}</p>}
+          </section>
 
-            {(step.type === 'single' || step.type === 'multi') && (
-              <>
-                <div className="wizard-option-grid">
-                  {step.options.map(opt => {
-                    const active = step.type === 'single'
-                      ? (answers[stepId] === opt.label
-                          || (opt.label === ETC && (answers[stepId]?.startsWith(`${ETC}(`) || pendingEtcStep === stepId)))
-                      : (stepDraft[stepId] || []).includes(opt.label);
+          {/* ── 카테고리 카드 ── */}
+          <section className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm">
+            <button
+              type="button"
+              className="flex w-full items-center justify-between px-6 py-4 text-left"
+              onClick={handleCategoryCardHeaderClick}
+            >
+              <div className="flex items-center gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#e5efff] text-xs font-bold text-[#0048bf]">
+                  1
+                </span>
+                <h2 className="text-base font-bold">카테고리</h2>
+              </div>
+              {selectedCategory && (
+                <div className="flex items-center gap-2">
+                  {!isCategoryExpanded && (
+                    <span className="text-sm font-semibold text-primary">{selectedCategory.catNm}</span>
+                  )}
+                  {isCategoryExpanded
+                    ? <ChevronUp size={16} className="shrink-0 text-[#5f5e5a]" />
+                    : <ChevronDown size={16} className="shrink-0 text-[#5f5e5a]" />
+                  }
+                </div>
+              )}
+            </button>
+
+            {isCategoryExpanded && (
+              <div className="border-t border-[#e8e8e8] px-6 py-5">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                  {categories.map(cat => {
+                    const meta = CATEGORY_META[cat.catNm] || {};
+                    const active = selectedCategory?.catSn === cat.catSn;
+                    const color = meta.color || '#5f5e5a';
                     return (
                       <button
-                        key={opt.label}
+                        key={cat.catSn}
                         type="button"
-                        className={`wizard-option${active ? ' active' : ''}`}
-                        onClick={() => (step.type === 'single' ? handleSingleSelect(stepId, opt) : handleMultiToggle(stepId, opt.label))}
+                        onClick={() => handleCategorySelect(cat)}
+                        className="relative cursor-pointer rounded-xl p-4 text-left text-white transition-opacity hover:opacity-90"
+                        style={{ backgroundColor: color, outline: active ? '3px solid #1a1a18' : 'none', outlineOffset: 2 }}
                       >
-                        {opt.icon && <span className="wizard-option-icon">{opt.icon}</span>}
-                        <span className="wizard-option-label">{opt.label}</span>
-                        {opt.sub && <span className="wizard-option-sub">{opt.sub}</span>}
+                        {active && (
+                          <span
+                            className="absolute right-2.5 top-2.5 flex size-5 items-center justify-center rounded-full bg-white text-xs font-bold"
+                            style={{ color }}
+                          >✓</span>
+                        )}
+                        <CategoryIcon name={cat.catNm} className="mb-2" />
+                        <p className="m-0 text-base font-bold leading-tight">{cat.catNm}</p>
+                        {meta.sub && <p className="m-0 mt-1 text-xs opacity-80">{meta.sub}</p>}
                       </button>
                     );
                   })}
                 </div>
-                {step.type === 'multi' && (stepDraft[stepId] || []).includes(ETC) && (
-                  <input
-                    className="input"
-                    style={{ marginTop: 10 }}
-                    placeholder="기타 내용을 입력해 주세요"
-                    value={freeTextDraft[`${stepId}:${ETC}`] || ''}
-                    onChange={e => setFreeTextDraft(prev => ({ ...prev, [`${stepId}:${ETC}`]: e.target.value }))}
-                  />
+                {submitted && !selectedCategory && (
+                  <p className="mt-3 text-xs font-semibold text-red-600">카테고리를 선택해 주세요.</p>
                 )}
-                {step.type === 'single' && pendingEtcStep === stepId && (
-                  <div className="row" style={{ marginTop: 10 }}>
-                    <input
-                      className="input"
-                      placeholder="기타 내용을 입력해 주세요"
-                      value={freeTextDraft[`${stepId}:${ETC}`] || ''}
-                      onChange={e => setFreeTextDraft(prev => ({ ...prev, [`${stepId}:${ETC}`]: e.target.value }))}
-                    />
-                    <button type="button" className="btn btn-primary" onClick={() => handleEtcSingleConfirm(stepId)}>다음</button>
+                {editingCategory && selectedCategory && (
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      type="button"
+                      className="rounded-lg border border-[#e2e1dc] px-4 py-1.5 text-sm text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary"
+                      onClick={() => setEditingCategory(false)}
+                    >
+                      취소
+                    </button>
                   </div>
                 )}
-                {step.type === 'multi' && (
-                  <div className="row" style={{ justifyContent: 'flex-end', marginTop: 14 }}>
-                    <span className="muted small" style={{ marginRight: 'auto' }}>해당 항목을 모두 선택한 뒤 다음을 눌러 주세요.</span>
-                    <button type="button" className="btn btn-primary" onClick={() => handleMultiConfirm(stepId)}>다음</button>
-                  </div>
-                )}
-              </>
-            )}
-
-            {step.type === 'form' && (
-              <>
-                {step.fields.map(f => (
-                  <div className="field" key={f.key}>
-                    <label>{f.key}{f.required && <span style={{ color: '#c0392b' }}> *</span>}</label>
-                    {f.type === 'choice' ? (
-                      <>
-                        <div className="row">
-                          {f.options.map(o => (
-                            <button
-                              key={o}
-                              type="button"
-                              className={`chip${stepDraft[stepId]?.[f.key] === o ? ' active' : ''}`}
-                              onClick={() => handleFormFieldChange(stepId, f.key, o)}
-                            >
-                              {o}
-                            </button>
-                          ))}
-                        </div>
-                        {stepDraft[stepId]?.[f.key] === ETC && (
-                          <input
-                            className="input"
-                            style={{ marginTop: 8 }}
-                            placeholder="기타 내용을 입력해 주세요"
-                            value={freeTextDraft[`${stepId}:${f.key}`] || ''}
-                            onChange={e => setFreeTextDraft(prev => ({ ...prev, [`${stepId}:${f.key}`]: e.target.value }))}
-                          />
-                        )}
-                      </>
-                    ) : f.type === 'textarea' ? (
-                      <textarea
-                        className="input"
-                        rows={3}
-                        placeholder={f.placeholder}
-                        value={stepDraft[stepId]?.[f.key] || ''}
-                        onChange={e => handleFormFieldChange(stepId, f.key, e.target.value)}
-                      />
-                    ) : (
-                      <input
-                        className="input"
-                        type={f.type}
-                        placeholder={f.placeholder}
-                        value={stepDraft[stepId]?.[f.key] || ''}
-                        onChange={e => handleFormFieldChange(stepId, f.key, e.target.value)}
-                      />
-                    )}
-                  </div>
-                ))}
-                <div className="row" style={{ justifyContent: 'flex-end', marginTop: 4 }}>
-                  <button type="button" className="btn btn-primary" onClick={() => handleFormConfirm(stepId)}>
-                    {step.next ? '다음' : '입력 완료'}
-                  </button>
-                </div>
-              </>
+              </div>
             )}
           </section>
-        );
-      })}
 
-      {isComplete && (
-        <section className="card" style={{ marginTop: 16 }}>
-          <h2 style={{ margin: '0 0 4px', fontSize: 18 }}>요청 내용 확인</h2>
-          <p className="muted small" style={{ margin: '0 0 14px' }}>아래 내용으로 서비스 요청서가 등록됩니다.</p>
-          <div style={{ display: 'grid', gap: 8 }}>
-            {chain.map(stepId => (
-              <div key={stepId} className="row" style={{ borderBottom: '1px solid #f0efec', paddingBottom: 8, gap: 12 }}>
-                <span className="muted small" style={{ flex: '0 0 160px' }}>{WIZARD_STEPS[stepId].title}</span>
-                <span style={{ fontWeight: 500 }}>{answers[stepId]}</span>
+          {/* ── 단계 카드들 ── */}
+          {chain.map((stepId, index) => {
+            const step = WIZARD_STEPS[stepId];
+            if (!step) return null;
+            const expanded = isStepExpanded(stepId);
+            const stepNum = index + 2;
+
+            return (
+              <section
+                key={stepId}
+                className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm"
+                ref={el => { if (el) cardRefs.current[stepId] = el; }}
+              >
+                {/* 카드 헤더 */}
+                <button
+                  type="button"
+                  className="flex w-full cursor-pointer items-center justify-between px-6 py-4 text-left"
+                  onClick={() => handleStepCardHeaderClick(stepId)}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#e5efff] text-xs font-bold text-[#0048bf]">
+                      {stepNum}
+                    </span>
+                    <h2 className="text-base font-bold">{step.title}</h2>
+                  </div>
+                  {answers[stepId] && (
+                    <div className="flex items-center gap-3">
+                      {!expanded && (
+                        <span className="max-w-[200px] truncate text-right text-sm text-[#5f5e5a] lg:max-w-[320px]">
+                          {answers[stepId]}
+                        </span>
+                      )}
+                      {expanded
+                        ? <ChevronUp size={16} className="shrink-0 text-[#5f5e5a]" />
+                        : <ChevronDown size={16} className="shrink-0 text-[#5f5e5a]" />
+                      }
+                    </div>
+                  )}
+                </button>
+
+                {/* 펼쳐진 내용 */}
+                {expanded && (
+                  <div className="border-t border-[#e8e8e8] px-6 py-5">
+                    {step.desc && (
+                      <p className="mb-3 ml-9 text-sm text-[#5f5e5a]">{step.desc}</p>
+                    )}
+
+                    {/* single · multi */}
+                    {(step.type === 'single' || step.type === 'multi') && (
+                      <>
+                        <div
+                          className="grid gap-2"
+                          style={{ gridTemplateColumns: `repeat(${step.options.length}, 1fr)` }}
+                        >
+                          {step.options.map(opt => {
+                            const active = step.type === 'single'
+                              ? (answers[stepId] === opt.label
+                                  || (opt.label === ETC && (answers[stepId]?.startsWith(`${ETC}(`) || pendingEtcStep === stepId)))
+                              : (stepDraft[stepId] || []).includes(opt.label);
+                            return (
+                              <button
+                                key={opt.label}
+                                type="button"
+                                onClick={() => step.type === 'single'
+                                  ? handleSingleSelect(stepId, opt)
+                                  : handleMultiToggle(stepId, opt.label)
+                                }
+                                className={`flex flex-col rounded-xl border px-3 py-2.5 text-left text-sm transition-colors ${
+                                  active
+                                    ? 'border-primary bg-[#e5efff] font-semibold text-[#0048bf]'
+                                    : 'border-[#e2e1dc] bg-white text-[#1d1d1f] hover:border-primary'
+                                }`}
+                              >
+                                {opt.icon && <span className="mb-1.5 text-xl leading-none">{opt.icon}</span>}
+                                <span className="font-medium leading-snug">{opt.label}</span>
+                                {opt.sub && <span className="mt-0.5 text-xs text-[#888780]">{opt.sub}</span>}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* 기타 텍스트 입력 — multi */}
+                        {step.type === 'multi' && (stepDraft[stepId] || []).includes(ETC) && (
+                          <input
+                            className="mt-3 w-full rounded-lg border border-[#e2e1dc] bg-white px-3 py-2.5 text-sm outline-none focus:border-primary"
+                            placeholder="기타 내용을 입력해 주세요"
+                            value={freeTextDraft[`${stepId}:${ETC}`] || ''}
+                            onChange={e => setFreeTextDraft(prev => ({ ...prev, [`${stepId}:${ETC}`]: e.target.value }))}
+                          />
+                        )}
+
+                        {/* 기타 텍스트 입력 — single */}
+                        {step.type === 'single' && pendingEtcStep === stepId && (
+                          <div className="mt-3 flex gap-2">
+                            <input
+                              className="flex-1 rounded-lg border border-[#e2e1dc] bg-white px-3 py-2.5 text-sm outline-none focus:border-primary"
+                              placeholder="기타 내용을 입력해 주세요"
+                              value={freeTextDraft[`${stepId}:${ETC}`] || ''}
+                              onChange={e => setFreeTextDraft(prev => ({ ...prev, [`${stepId}:${ETC}`]: e.target.value }))}
+                            />
+                            <button
+                              type="button"
+                              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-[#0048bf]"
+                              onClick={() => handleEtcSingleConfirm(stepId)}
+                            >다음</button>
+                          </div>
+                        )}
+
+                        {/* 다음 버튼 — multi */}
+                        {step.type === 'multi' && (
+                          <div className="mt-4 flex items-center justify-between">
+                            <p className="text-xs text-[#888780]">해당하는 항목을 모두 선택한 뒤 다음을 눌러 주세요.</p>
+                            <button
+                              type="button"
+                              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-[#0048bf]"
+                              onClick={() => handleMultiConfirm(stepId)}
+                            >
+                              {editingStepId === stepId ? '수정 완료' : '다음'}
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {/* form */}
+                    {step.type === 'form' && (
+                      <>
+                        <div className={step.layout === 'row' ? 'grid gap-3' : ''} style={step.layout === 'row' ? { gridTemplateColumns: `repeat(${step.fields.length}, 1fr)` } : undefined}>
+                        {step.fields.map(f => (
+                          <div className={step.layout === 'row' ? '' : 'mb-4 last:mb-0'} key={f.key}>
+                            <label className="mb-1.5 block text-sm font-medium text-[#5f5e5a]">
+                              {f.key}
+                              {f.required && <span className="text-red-600"> *</span>}
+                            </label>
+                            {f.type === 'choice' ? (
+                              <>
+                                <div className="flex flex-wrap gap-2">
+                                  {f.options.map(o => (
+                                    <button
+                                      key={o}
+                                      type="button"
+                                      className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${
+                                        stepDraft[stepId]?.[f.key] === o
+                                          ? 'border-primary bg-[#e5efff] font-semibold text-[#0048bf]'
+                                          : 'border-[#e2e1dc] bg-white text-[#5f5e5a] hover:border-primary'
+                                      }`}
+                                      onClick={() => handleFormFieldChange(stepId, f.key, o)}
+                                    >{o}</button>
+                                  ))}
+                                </div>
+                                {stepDraft[stepId]?.[f.key] === ETC && (
+                                  <input
+                                    className="mt-2 w-full rounded-lg border border-[#e2e1dc] px-3 py-2.5 text-sm outline-none focus:border-primary"
+                                    placeholder="기타 내용을 입력해 주세요"
+                                    value={freeTextDraft[`${stepId}:${f.key}`] || ''}
+                                    onChange={e => setFreeTextDraft(prev => ({ ...prev, [`${stepId}:${f.key}`]: e.target.value }))}
+                                  />
+                                )}
+                              </>
+                            ) : f.type === 'address' ? (
+                              <>
+                                <div className="flex gap-2">
+                                  <input
+                                    readOnly
+                                    className={`flex-1 rounded-lg border bg-[#f8f8f6] px-3 py-2.5 text-sm outline-none ${fieldErrors[`${stepId}:${f.key}`] ? 'border-red-500' : 'border-[#e2e1dc]'}`}
+                                    placeholder={f.placeholder}
+                                    value={stepDraft[stepId]?.[f.key] || ''}
+                                  />
+                                  <button
+                                    type="button"
+                                    className="shrink-0 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-primary hover:bg-[#e5efff]"
+                                    onClick={() => setAddressSearchKey(`${stepId}:${f.key}`)}
+                                  >
+                                    주소 검색
+                                  </button>
+                                </div>
+                                {fieldErrors[`${stepId}:${f.key}`] && (
+                                  <p className="mt-1 text-xs text-red-600">{fieldErrors[`${stepId}:${f.key}`]}</p>
+                                )}
+                              </>
+                            ) : f.type === 'textarea' ? (
+                              <textarea
+                                className="w-full resize-vertical rounded-lg border border-[#e2e1dc] bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary"
+                                rows={3}
+                                placeholder={f.placeholder}
+                                value={stepDraft[stepId]?.[f.key] || ''}
+                                onChange={e => handleFormFieldChange(stepId, f.key, e.target.value)}
+                              />
+                            ) : (
+                              <>
+                                <input
+                                  className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary ${fieldErrors[`${stepId}:${f.key}`] ? 'border-red-500' : 'border-[#e2e1dc]'}`}
+                                  type={f.type}
+                                  placeholder={f.placeholder}
+                                  value={stepDraft[stepId]?.[f.key] || ''}
+                                  onChange={e => {
+                                    handleFormFieldChange(stepId, f.key, e.target.value);
+                                    if (fieldErrors[`${stepId}:${f.key}`]) setFieldErrors(prev => { const n = { ...prev }; delete n[`${stepId}:${f.key}`]; return n; });
+                                  }}
+                                />
+                                {fieldErrors[`${stepId}:${f.key}`] && (
+                                  <p className="mt-1 text-xs text-red-600">{fieldErrors[`${stepId}:${f.key}`]}</p>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        ))}
+                        </div>
+                        <div className="mt-4 flex justify-end">
+                          <button
+                            type="button"
+                            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-[#0048bf]"
+                            onClick={() => handleFormConfirm(stepId)}
+                          >
+                            {editingStepId === stepId ? '수정 완료' : (step.next ? '다음' : '입력 완료')}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </section>
+            );
+          })}
+
+          {/* ── 요청 내용 확인 ── */}
+          {isComplete && (
+            <section className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm">
+              <div className="border-b border-[#e8e8e8] px-6 py-4">
+                <h2 className="text-base font-bold">요청 내용 확인</h2>
+                <p className="mt-0.5 text-sm text-[#5f5e5a]">아래 내용으로 서비스 요청서가 등록됩니다.</p>
               </div>
-            ))}
-          </div>
-        </section>
-      )}
+              <div className="divide-y divide-[#e8e8e8] px-6">
+                {chain.map(stepId => (
+                  <div key={stepId} className="flex gap-4 py-3.5">
+                    <span className="w-36 shrink-0 text-sm text-[#888780]">{WIZARD_STEPS[stepId].title}</span>
+                    <span className="text-sm font-medium text-[#1d1d1f]">{answers[stepId]}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
-      <div className="row" style={{ justifyContent: 'space-between', padding: '16px 0', marginTop: 16 }}>
-        <div />
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button type="button" onClick={handleDraft} disabled={loading} className="btn btn-ghost">임시저장</button>
-          <button type="button" onClick={handlePublish} disabled={loading} className="btn btn-primary">
-            {loading ? '등록 중...' : '요청서 공개'}
-          </button>
+          {/* ── 하단 버튼 ── */}
+          <div className="flex items-center justify-end gap-3 pb-4">
+            <button
+              type="button"
+              onClick={handleDraft}
+              disabled={loading}
+              className="rounded-lg border border-[#e2e1dc] bg-white px-5 py-2.5 text-sm font-semibold text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+            >임시저장</button>
+            <button
+              type="button"
+              onClick={handlePublish}
+              disabled={loading}
+              className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#0048bf] disabled:opacity-50"
+            >
+              {loading ? '등록 중...' : '요청서 공개'}
+            </button>
+          </div>
         </div>
       </div>
-    </main>
+
+      <AlertModal open={!!alertMsg} message={alertMsg} onClose={() => setAlertMsg('')} />
+
+      {/* 주소 검색 모달 — MyPageProfileEdit·SignupPage와 동일한 패턴 */}
+      {addressSearchKey && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40"
+          onClick={() => setAddressSearchKey(null)}
+        >
+          <div
+            className="w-full max-w-[560px] overflow-hidden rounded-2xl bg-white shadow-[0_20px_80px_rgba(0,0,0,0.25)]"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#e8e8e8] px-5 py-3">
+              <p className="text-base font-bold">주소 검색</p>
+              <button
+                type="button"
+                className="rounded-lg border border-[#e2e1dc] px-3 py-1.5 text-sm text-[#5f5e5a] hover:border-primary hover:text-primary"
+                onClick={() => setAddressSearchKey(null)}
+              >
+                닫기
+              </button>
+            </div>
+            <DaumPostcode autoClose={false} onComplete={handleAddressComplete} />
+          </div>
+        </div>
+      )}
+
+      <ConfirmModal
+        open={!!confirmPending}
+        message={confirmPending?.msg || ''}
+        subMessage="이 작업은 되돌릴 수 없습니다."
+        confirmLabel="변경"
+        onConfirm={handleConfirmOk}
+        onCancel={handleConfirmCancel}
+      />
+    </div>
   );
 }

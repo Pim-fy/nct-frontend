@@ -82,6 +82,9 @@ export default function MyPage({
   const [selectedSalesTradeId, setSelectedSalesTradeId] = useState("");
   const [chatReturnSection, setChatReturnSection] = useState("");
 
+  // 임시저장·외부 링크 등으로 이 페이지에 진입할 때 이전 페이지의 스크롤 위치가 남지 않도록 최상단으로 이동한다.
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
   // 목록에서 상세를 열 때 이전 목록의 스크롤 위치가 남지 않도록 렌더링 뒤 본문 최상단으로 이동한다.
   const handleOpenPurchaseTradeDetail = (tradeId) => {
     setSelectedPurchaseTradeId(tradeId);
