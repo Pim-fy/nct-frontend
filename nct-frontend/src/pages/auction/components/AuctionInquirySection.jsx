@@ -171,22 +171,22 @@ const AuctionInquirySection = ({
     >
       <div className="mb-5 flex items-start justify-between gap-6 max-sm:gap-3">
         <div>
-          <h2 className="m-0 text-2xl leading-[1.3] font-bold text-[#1d1d1f] md:text-[28px]" id="auction-inquiry-title">
+          <h2 className="m-0 text-h2 font-bold text-[#1d1d1f]" id="auction-inquiry-title">
             상품 문의
           </h2>
-          <p className="mt-[7px] mb-0 text-sm leading-[1.6] text-[#666]">
+          <p className="mt-[7px] mb-0 text-body-sm text-[#666] md:text-body-md">
             상품과 거래 조건에 대해 판매자에게 문의할 수 있습니다.
           </p>
         </div>
-        <strong className="text-base leading-[1.4] whitespace-nowrap text-primary-dark">{inquiries.length}건</strong>
+        <strong className="text-body-md whitespace-nowrap text-primary-dark">{inquiries.length}건</strong>
       </div>
 
       <form className="rounded-lg border border-[#e8e8e8] bg-[#f7f8fa] p-[18px] max-sm:p-3.5" onSubmit={handleSubmit}>
-        <label className="mb-2.5 block text-base leading-[1.4] font-bold text-[#1d1d1f]" htmlFor="auction-inquiry-content">
+        <label className="mb-2.5 block text-body-md font-bold text-[#1d1d1f]" htmlFor="auction-inquiry-content">
           {isOwnAuction ? '구매자 문의는 판매자 상품 관리에서 답변할 수 있습니다.' : '판매자에게 문의하기'}
         </label>
         <textarea
-          className="min-h-28 w-full resize-y rounded-lg border border-[#dadada] bg-white px-3.5 py-[13px] text-base leading-[1.6] text-[#1d1d1f] outline-none transition-shadow focus:border-primary focus:shadow-[0_0_0_3px_#e5efff] disabled:cursor-not-allowed disabled:bg-[#eeeeef] disabled:text-[#8a8a8a]"
+          className="min-h-28 w-full resize-y rounded-lg border border-[#dadada] bg-white px-3.5 py-[13px] text-body-sm text-[#1d1d1f] outline-none transition-shadow focus:border-primary focus:shadow-[0_0_0_3px_#e5efff] disabled:cursor-not-allowed disabled:bg-[#eeeeef] disabled:text-[#8a8a8a] md:text-body-md"
           id="auction-inquiry-content"
           value={content}
           maxLength={MAX_INQUIRY_LENGTH}
@@ -197,7 +197,7 @@ const AuctionInquirySection = ({
         <div className="mt-2.5 flex min-h-10 items-center justify-end gap-4 max-sm:flex-col max-sm:items-start max-sm:gap-2">
           <span className="text-[13px] leading-[1.5] tabular-nums text-[#666]">{content.length}/{MAX_INQUIRY_LENGTH}</span>
           <button
-            className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-[7px] rounded-lg border border-primary bg-primary px-4 text-[15px] leading-[1.4] font-bold text-white disabled:cursor-not-allowed disabled:opacity-55 max-sm:w-full"
+            className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-[7px] rounded-lg border border-primary bg-primary px-4 text-body-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-55 max-sm:w-full"
             type="submit"
             disabled={isSubmitDisabled}
             aria-busy={inquiryMutation.isPending}
@@ -216,10 +216,10 @@ const AuctionInquirySection = ({
         )}
 
         {inquiryQuery.isError && (
-          <div className="grid min-h-24 place-items-center content-center gap-2.5 border-y border-[#e8e8e8] text-center text-sm leading-[1.6] text-[#666]">
+          <div className="grid min-h-24 place-items-center content-center gap-2.5 border-y border-[#e8e8e8] text-center text-body-sm text-[#666]">
             <p className="m-0">문의 목록을 불러오지 못했습니다.</p>
             <button
-              className="inline-flex min-h-9 cursor-pointer items-center justify-center gap-[7px] rounded-lg border border-primary bg-white px-4 text-[15px] leading-[1.4] font-bold text-primary-dark"
+              className="inline-flex min-h-9 cursor-pointer items-center justify-center gap-[7px] rounded-lg border border-primary bg-white px-4 text-body-sm font-bold text-primary-dark"
               type="button"
               onClick={() => inquiryQuery.refetch()}
             >
@@ -230,7 +230,7 @@ const AuctionInquirySection = ({
         )}
 
         {!isWaiting && !inquiryQuery.isError && inquiries.length === 0 && (
-          <p className="m-0 grid min-h-24 place-items-center border-y border-[#e8e8e8] text-center text-sm leading-[1.6] text-[#666]">
+          <p className="m-0 grid min-h-24 place-items-center border-y border-[#e8e8e8] text-center text-body-sm text-[#666]">
             등록된 문의가 없습니다.
           </p>
         )}
@@ -241,7 +241,7 @@ const AuctionInquirySection = ({
           return (
           <article className="min-h-[148px] rounded-lg border border-[#e8e8e8] bg-white p-[18px]" key={inquiry.prdCmtSn}>
             <div className="flex items-center justify-between gap-4 max-sm:flex-col max-sm:items-start max-sm:gap-2">
-              <strong className="text-[15px] leading-[1.5] text-[#1d1d1f]">
+              <strong className="text-body-sm text-[#1d1d1f]">
                 {inquiry.usrNm || '구매자'}
                 {hasActiveReport && (
                   <>
@@ -250,23 +250,23 @@ const AuctionInquirySection = ({
                   </>
                 )}
               </strong>
-              <time className="text-[13px] leading-[1.5] whitespace-nowrap text-[#666]" dateTime={inquiry.prdCmtRegDt}>
+              <time className="text-caption whitespace-nowrap text-[#666]" dateTime={inquiry.prdCmtRegDt}>
                 {formatRegisteredAt(inquiry.prdCmtRegDt)}
               </time>
             </div>
-            <p className="mt-3 mb-0 whitespace-pre-wrap text-base leading-[1.65] text-[#353535] [overflow-wrap:anywhere]">
+            <p className="mt-3 mb-0 whitespace-pre-wrap text-body-sm text-[#353535] [overflow-wrap:anywhere] md:text-body-md">
               {inquiry.prdCmtCn}
             </p>
 
             {inquiry.answer ? (
               <div className="mt-4 border-l-[3px] border-[#18a36b] bg-[#f2faf6] px-4 py-3.5">
                 <div className="flex items-center justify-between gap-4 max-sm:flex-col max-sm:items-start max-sm:gap-2">
-                  <strong className="text-[15px] leading-[1.5] text-[#0b7049]">판매자 답변</strong>
-                  <time className="text-[13px] leading-[1.5] whitespace-nowrap text-[#666]" dateTime={inquiry.answer.prdCmtRegDt}>
+                  <strong className="text-body-sm text-[#0b7049]">판매자 답변</strong>
+                  <time className="text-caption whitespace-nowrap text-[#666]" dateTime={inquiry.answer.prdCmtRegDt}>
                     {formatRegisteredAt(inquiry.answer.prdCmtRegDt)}
                   </time>
                 </div>
-                <p className="mt-3 mb-0 whitespace-pre-wrap text-base leading-[1.65] text-[#353535] [overflow-wrap:anywhere]">
+                <p className="mt-3 mb-0 whitespace-pre-wrap text-body-sm text-[#353535] [overflow-wrap:anywhere] md:text-body-md">
                   {inquiry.answer.prdCmtCn}
                 </p>
               </div>

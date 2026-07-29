@@ -2,28 +2,16 @@ import {
   BadgeCheck,
   BriefcaseBusiness,
   Clock3,
-  Flag,
   MapPin,
   MessageSquareText,
   Search,
   SlidersHorizontal,
   Star,
-  Unplug,
   X,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toImageUrl } from '@api/fileApi';
 import './mockupServicePages.css';
-
-export const MockupIntegrationNotice = ({ children }) => (
-  <aside className="service-integration-notice" role="note">
-    <Unplug aria-hidden="true" />
-    <div>
-      <strong>실제 데이터 연결 전 미리보기</strong>
-      <span>{children}</span>
-    </div>
-  </aside>
-);
 
 export const MockupServiceSearchBar = ({ keyword, onKeywordChange, onSubmit }) => (
   <form className="service-search-bar" onSubmit={onSubmit} role="search">
@@ -208,13 +196,11 @@ export const MockupServiceEmptyState = ({ view }) => (
 export const MockupProviderProfile = ({
   activeTab,
   onOpenPortfolio,
-  onOpenReport,
   onTabChange,
   provider,
 }) => (
   <div className="provider-public-layout">
     <aside className="provider-public-card">
-      <button className="provider-report-button" onClick={onOpenReport} type="button"><Flag aria-hidden="true" />신고</button>
       <div className="provider-public-avatar" aria-hidden="true">
         {provider.profileImageUrl
           ? <img src={toImageUrl(provider.profileImageUrl)} alt="" />
@@ -272,59 +258,6 @@ export const MockupProviderProfile = ({
         </div>
       )}
     </section>
-  </div>
-);
-
-export const MockupProviderReportModal = ({
-  closeButtonRef,
-  error,
-  form,
-  integrationMessage,
-  isSubmitting,
-  onChange,
-  onClose,
-  onSubmit,
-  providerName,
-  reportTypes,
-}) => (
-  <div className="service-modal" onMouseDown={(event) => {
-    if (event.target === event.currentTarget) onClose();
-  }}>
-    <form aria-labelledby="provider-report-title" aria-modal="true" className="service-modal__panel" onSubmit={onSubmit} role="dialog">
-      <div className="service-modal__heading">
-        <div>
-          <span>F-COM-015</span>
-          <h2 id="provider-report-title">{providerName} 신고</h2>
-        </div>
-        <button aria-label="신고 창 닫기" onClick={onClose} ref={closeButtonRef} type="button"><X aria-hidden="true" /></button>
-      </div>
-      <p className="service-modal__description">신고 유형과 사유를 입력하면 관리자 신고 처리 흐름으로 전달됩니다.</p>
-      <label>
-        <span>신고 유형 *</span>
-        <select onChange={(event) => onChange('typeCode', event.target.value)} value={form.typeCode}>
-          <option value="">신고 유형을 선택하세요</option>
-          {reportTypes.map((type) => <option key={type.code} value={type.code}>{type.name}</option>)}
-        </select>
-      </label>
-      <label>
-        <span>신고 사유 *</span>
-        <textarea
-          maxLength="4000"
-          onChange={(event) => onChange('reason', event.target.value)}
-          placeholder="확인이 필요한 내용을 구체적으로 입력해 주세요."
-          rows="6"
-          value={form.reason}
-        />
-        <small>{form.reason.length.toLocaleString('ko-KR')} / 4,000자</small>
-      </label>
-      {error && <p className="service-form-message is-error" role="alert">{error}</p>}
-      {integrationMessage && <p className="service-form-message" role="status">{integrationMessage}</p>}
-      <p className="service-modal__boundary">중복 신고와 자기 신고는 실제 서버에서도 다시 검증해야 합니다.</p>
-      <div className="service-modal__actions">
-        <button onClick={onClose} type="button">닫기</button>
-        <button disabled={isSubmitting} type="submit">{isSubmitting ? '확인 중' : '신고 접수 확인'}</button>
-      </div>
-    </form>
   </div>
 );
 

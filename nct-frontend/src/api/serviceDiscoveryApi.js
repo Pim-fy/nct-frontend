@@ -1,5 +1,4 @@
 import api from './axios';
-import { PROVIDER_PREVIEW } from '@pages/service/servicePreviewData';
 import {
   fetchPublicPortfolios as fetchProviderPortfolios,
   fetchPublicProviderProfile as fetchProviderProfile,
@@ -48,7 +47,7 @@ const normalizeProvider = (item) => ({
   rating: firstDefined(item.reviewAverageScore, item.averageRating, item.rating),
   reviewCount: firstDefined(item.reviewCount, 0),
   completedCount: firstDefined(item.completedCount, item.tradeCount),
-  verified: Boolean(firstDefined(item.verified, item.approved, false)),
+  verified: true,
 });
 
 const normalizeDiscoveryResult = (payload, view, requestedPage, requestedSize) => {
@@ -134,24 +133,13 @@ export const fetchServiceDiscovery = async ({
 };
 
 export const fetchPublicProviderProfile = async (providerId) => {
-  const previewProvider = PROVIDER_PREVIEW.find((item) => item.id === Number(providerId));
-  let profile;
-  let portfolios;
-  try {
-    [profile, portfolios] = await Promise.all([
-      fetchProviderProfile(Number(providerId)),
-      fetchProviderPortfolios(Number(providerId)),
-    ]);
-  } catch (error) {
-    const status = error?.response?.status ?? error?.status;
-    if (status === 404 && previewProvider) {
-      return { ...previewProvider, preview: true };
-    }
-    throw error;
-  }
+  const [profile, portfolios] = await Promise.all([
+    fetchProviderProfile(Number(providerId)),
+    fetchProviderPortfolios(Number(providerId)),
+  ]);
+
   return {
     id: profile.userSn,
-    ownerUserId: profile.userSn,
     name: profile.displayName || `제공자 ${profile.userSn}`,
     profileImageUrl: profile.profileImageUrl,
     verified: true,
@@ -175,16 +163,5 @@ export const fetchPublicProviderProfile = async (providerId) => {
         images: portfolio.files ?? [],
       };
     }),
-    preview: false,
   };
 };
-
-/**
- * 실제 신고 저장 API는 담당자5 계약 수신 전이므로 성공으로 가장하지 않습니다.
- * 입력 경계만 동일하게 유지하고 명시적인 연결 대기 결과를 돌려줍니다.
- */
-export const submitProviderReport = async () => ({
-  saved: false,
-  status: 'PENDING_INTEGRATION',
-  message: '신고 저장 API 연결 대기 중입니다. 입력한 내용은 저장되지 않았습니다.',
-});
