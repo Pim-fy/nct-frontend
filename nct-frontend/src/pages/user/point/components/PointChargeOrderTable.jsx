@@ -19,11 +19,11 @@ const badge = (label) => (
 // 표 배치는 공용 셸(PointTable)이 담당 — 여기는 컬럼 구성과 셀 내용만 정의한다 (2026-07-20 통합)
 const COLUMNS = [
   { key: 'date', header: '일시', cellClass: 'whitespace-nowrap text-gray-700', render: (r) => r.date },
-  { key: 'orderNo', header: '주문번호', cellClass: 'whitespace-nowrap text-gray-500 font-mono text-xs', render: (r) => r.orderNo },
   {
     key: 'amount', header: '충전금액', align: 'right', cellClass: 'whitespace-nowrap font-medium text-gray-900',
     render: (r) => `${r.amount.toLocaleString()}P`,
   },
+  { key: 'payMethod', header: '결제수단', cellClass: 'whitespace-nowrap text-gray-500', render: (r) => r.payMethod ?? '-' },
   { key: 'status', header: '상태', cellClass: 'whitespace-nowrap', render: (r) => badge(r.status) },
   { key: 'failReason', header: '비고', cellClass: 'text-gray-500', render: (r) => r.failReason ?? '-' },
 ];

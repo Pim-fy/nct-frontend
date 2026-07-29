@@ -1,4 +1,7 @@
 // src/pages/user/point/components/PointLedgerTable.jsx
+import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { useMyBidHistory } from '@hooks/useBid';
 import PointTable from './PointTable';
 
 // 원장유형(PTLG02)별 배지 색 — 목업 badge-success/warning/blue/gray 매핑
@@ -17,8 +20,38 @@ const badge = (label) => (
   </span>
 );
 
+// 참조유형공통코드(REFG01) → 이동할 화면 경로.
+// 거래(REFC0005)는 정산 적립(PTLC0008)이면 판매자 화면, 보관금 환불(PTLC0013)이면 구매자 화면으로 보낸다 —
+// 정산은 항상 판매자에게, 환불은 항상 구매자/의뢰자에게 적립되기 때문 (PointLedgerType 주석 기준).
+// 입찰(REFC0004)은 원장에 경매번호가 없어(bidSn만 있음), 내 입찰 내역(/bids/me, 담당자5 제공 조회
+// 계약)에서 bidSn→aucSn을 찾아 진행 중이든 종료됐든 상관없이 해당 경매 상세로 보낸다.
+const resolveRefLink = (row, bidByBidSn) => {
+  if (!row.refTypeCd || row.refSn == null) return null;
+  switch (row.refTypeCd) {
+    case 'REFC0005': // 거래
+      return row.typeCd === 'PTLC0008' ? `/trades/${row.refSn}/seller` : `/trades/${row.refSn}`;
+    case 'REFC0004': { // 입찰
+      const aucSn = bidByBidSn.get(row.refSn)?.aucSn;
+      return aucSn ? `/auction/${aucSn}` : null;
+    }
+    default:
+      return null;
+  }
+};
+
+// 참조번호(BID_SN 등)는 화면에서 그 자체로는 의미가 없어서, 알아볼 수 있는 상품명이 있으면
+// 상품명만 보여준다 — 참조번호는 화면에 안 찍어도 refTypeCd/refSn과 링크(href)에는 그대로
+// 남아있어 데이터 연결·원장-DB 대조에는 영향 없다 (사용자 결정, 2026-07-29).
+const withProductName = (row, bidByBidSn) => {
+  if (row.refTypeCd === 'REFC0004') {
+    const title = bidByBidSn.get(row.refSn)?.auctionTitle;
+    if (title) return title;
+  }
+  return row.ref;
+};
+
 // 표 배치는 공용 셸(PointTable)이 담당 — 여기는 컬럼 구성과 셀 내용만 정의한다 (2026-07-20 통합)
-const COLUMNS = [
+const buildColumns = (bidByBidSn) => [
   { key: 'date', header: '일시', cellClass: 'whitespace-nowrap text-gray-700', render: (r) => r.date },
   {
     key: 'type', header: '유형', cellClass: 'whitespace-nowrap',
@@ -38,13 +71,30 @@ const COLUMNS = [
     key: 'balanceAfter', header: '잔액', align: 'right', cellClass: 'whitespace-nowrap text-gray-700',
     render: (r) => `${r.balanceAfter.toLocaleString()}P`,
   },
-  { key: 'ref', header: '관련', cellClass: 'whitespace-nowrap text-gray-500', render: (r) => r.ref ?? '-' },
+  {
+    key: 'ref', header: '관련', cellClass: 'max-w-[140px] truncate text-gray-500',
+    render: (r) => {
+      if (!r.ref) return '-';
+      const label = withProductName(r, bidByBidSn);
+      const link = resolveRefLink(r, bidByBidSn);
+      return link
+        ? <Link to={link} title={label} className="text-blue-600 hover:underline">{label}</Link>
+        : <span title={label}>{label}</span>;
+    },
+  },
   { key: 'reason', header: '사유', cellClass: 'text-gray-500', render: (r) => r.reason },
 ];
 
 /** 포인트 원장 내역 테이블 (F-PAY-039) */
-const PointLedgerTable = ({ rows }) => (
-  <PointTable title="포인트 내역" columns={COLUMNS} rows={rows} emptyText="포인트 내역이 없습니다." />
-);
+const PointLedgerTable = ({ rows }) => {
+  const { data: myBids } = useMyBidHistory();
+  const bidByBidSn = useMemo(
+    () => new Map((myBids ?? []).map((b) => [b.bidSn, b])),
+    [myBids],
+  );
+  const columns = useMemo(() => buildColumns(bidByBidSn), [bidByBidSn]);
+
+  return <PointTable title="포인트 내역" columns={columns} rows={rows} emptyText="포인트 내역이 없습니다." />;
+};
 
 export default PointLedgerTable;
