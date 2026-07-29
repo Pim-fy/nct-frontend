@@ -136,36 +136,24 @@ const PointChargeWidgetModal = ({ infoRow, onClose }) => {
       >
         ×
       </button>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6" onClick={onClose}>
+      <div className="user-modal-overlay flex items-center justify-center bg-black/40 p-6" onClick={onClose}>
         <div
           className="w-full max-w-[560px] max-h-[85vh] overflow-y-auto overscroll-contain bg-white rounded-2xl p-6 shadow-[0_20px_80px_rgba(0,0,0,0.25)]"
+          aria-labelledby="point-charge-modal-title"
+          aria-modal="true"
           onClick={(e) => e.stopPropagation()}
+          role="dialog"
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-gray-900 m-0">포인트 충전</h3>
+            <h3 className="text-lg font-bold text-gray-900 m-0" id="point-charge-modal-title">포인트 충전</h3>
             <button
               type="button"
               className="text-sm text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg px-3 py-1.5"
               onClick={onClose}
             >
-    <div className="user-modal-overlay flex items-center justify-center bg-black/40 p-6" onClick={onClose}>
-      <div
-        className="w-full max-w-[560px] max-h-[85vh] overflow-y-auto overscroll-contain bg-white rounded-2xl p-6 shadow-[0_20px_80px_rgba(0,0,0,0.25)]"
-        aria-labelledby="point-charge-modal-title"
-        aria-modal="true"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-gray-900 m-0" id="point-charge-modal-title">포인트 충전</h3>
-          <button
-            type="button"
-            className="text-sm text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg px-3 py-1.5"
-            onClick={onClose}
-          >
-            닫기
-          </button>
-        </div>
+              닫기
+            </button>
+          </div>
 
         {error && (
           <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4">{error}</p>
