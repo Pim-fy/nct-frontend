@@ -455,7 +455,10 @@ const SiteHeader = () => {
                         >
                           <span className="mt-[6px] size-[6px] shrink-0 rounded-full bg-primary" />
                           <div className="min-w-0">
-                            <p className="truncate text-[13px] text-[#333]">{item.title}</p>
+                            <p className="truncate text-[13px] text-[#333]">
+                              {item.title}
+                              {item.content && <span className="text-[#969696]"> · {item.content}</span>}
+                            </p>
                             <p className="text-[11px] text-[#969696]">{relativeTime(item.regDt)}</p>
                           </div>
                         </button>
