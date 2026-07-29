@@ -214,7 +214,7 @@ export default function MyPage({
                 }}
               />
             ) : (
-              <MyProductList onOpenTradeDetail={handleOpenSalesTradeDetail} />
+              <MyProductList embedded onOpenTradeDetail={handleOpenSalesTradeDetail} />
             )
           )}
           {activeSection === "wishlist" && <AuctionFavoritesPage />}

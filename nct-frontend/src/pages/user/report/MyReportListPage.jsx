@@ -291,12 +291,15 @@ function ReportDetailModal({ report, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="user-modal-overlay flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.4)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
         className="bg-white rounded-2xl w-full max-w-[520px] max-h-[86vh] flex flex-col overflow-hidden"
+        aria-labelledby="report-detail-modal-title"
+        aria-modal="true"
+        role="dialog"
         style={{ boxShadow: "0 8px 40px rgba(0,0,0,0.16)" }}
       >
         {/* 헤더 */}
@@ -306,7 +309,7 @@ function ReportDetailModal({ report, onClose }) {
               <TypeTag type={report.type} />
               <StatusBadge status={report.status} />
             </div>
-            <h2 className="text-[18px] font-bold text-gray-900 m-0 leading-snug">{report.title}</h2>
+            <h2 className="text-[18px] font-bold text-gray-900 m-0 leading-snug" id="report-detail-modal-title">{report.title}</h2>
             <p className="text-[14px] text-gray-400 m-0 mt-1">{report.id} · 접수 {report.submittedAt}</p>
           </div>
           <button
