@@ -5,8 +5,27 @@ import { fetchSellerAuctionHistory } from '@api/auctionApi';
 import { toImageUrl } from '@api/fileApi';
 
 const HISTORY_PAGE_SIZE = 5;
+const HISTORY_FETCH_SIZE = 60;
 
-const AuctionSellerHistory = ({ currentAuctionId, sellerId, sellerName }) => {
+const fetchRemainingSellerAuctionHistory = async (sellerId, totalFetchPages) => {
+  const pageRequests = Array.from(
+    { length: Math.max(0, totalFetchPages - 1) },
+    (_, index) => fetchSellerAuctionHistory(sellerId, {
+      page: index + 2,
+      size: HISTORY_FETCH_SIZE,
+      sort: 'latest',
+    }),
+  );
+  const pages = await Promise.all(pageRequests);
+  return pages.flatMap((pageData) => pageData?.items ?? []);
+};
+
+const AuctionSellerHistory = ({
+  currentAuctionId,
+  sellerId,
+  sellerName,
+  enabled = true,
+}) => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedPage = Number.parseInt(searchParams.get('sellerPage') ?? '1', 10);
@@ -23,22 +42,43 @@ const AuctionSellerHistory = ({ currentAuctionId, sellerId, sellerName }) => {
     setSearchParams(nextSearchParams, { replace: true });
   };
 
-  const historyQuery = useQuery({
-    queryKey: ['sellerAuctionHistory', sellerId, page],
+  const firstHistoryQuery = useQuery({
+    queryKey: ['sellerAuctionHistory', sellerId, 'first'],
     queryFn: () => fetchSellerAuctionHistory(sellerId, {
-      page,
-      size: HISTORY_PAGE_SIZE,
+      page: 1,
+      size: HISTORY_FETCH_SIZE,
       sort: 'latest',
     }),
-    enabled: Boolean(sellerId),
+    enabled: Boolean(enabled && sellerId),
+  });
+  const totalFetchPages = firstHistoryQuery.data?.totalPages ?? 0;
+  const remainingHistoryQuery = useQuery({
+    queryKey: ['sellerAuctionHistory', sellerId, 'remaining', totalFetchPages],
+    queryFn: () => fetchRemainingSellerAuctionHistory(sellerId, totalFetchPages),
+    enabled: Boolean(enabled && sellerId && firstHistoryQuery.isSuccess && totalFetchPages > 1),
   });
 
-  const items = historyQuery.data?.items ?? [];
-  const totalPages = historyQuery.data?.totalPages ?? 0;
+  const firstHistoryItems = firstHistoryQuery.data?.items ?? [];
+  const historyItems = [
+    ...firstHistoryItems,
+    ...(remainingHistoryQuery.data ?? []),
+  ];
+  const totalElements = firstHistoryQuery.data?.totalElements ?? historyItems.length;
+  const totalPages = Math.ceil(totalElements / HISTORY_PAGE_SIZE);
+  const currentPage = totalPages > 0 ? Math.min(page, totalPages) : 1;
+  const firstItemIndex = (currentPage - 1) * HISTORY_PAGE_SIZE;
+  const items = historyItems.slice(firstItemIndex, firstItemIndex + HISTORY_PAGE_SIZE);
+  const isInitialWaiting = !enabled || firstHistoryQuery.isLoading;
+  const isCurrentPageWaiting = !isInitialWaiting
+    && items.length === 0
+    && firstItemIndex < totalElements
+    && remainingHistoryQuery.isLoading;
+  const hasCurrentPageError = firstHistoryQuery.isError
+    || (items.length === 0 && remainingHistoryQuery.isError);
 
   return (
     <div aria-label="판매자가 등록한 경매 상품">
-      {historyQuery.isLoading && (
+      {(isInitialWaiting || isCurrentPageWaiting) && (
         <div className="grid grid-cols-5 gap-2.5 md:gap-4" aria-label="판매자 경매 상품을 불러오는 중">
           {Array.from({ length: HISTORY_PAGE_SIZE }).map((_, index) => (
             <span
@@ -49,14 +89,17 @@ const AuctionSellerHistory = ({ currentAuctionId, sellerId, sellerName }) => {
         </div>
       )}
 
-      {historyQuery.isError && (
+      {hasCurrentPageError && (
         <div className="grid min-h-28 place-items-center rounded-lg border border-[#e8e8e8] bg-[#f8f8f6] p-5 text-center">
           <div>
             <p className="m-0 text-sm leading-[1.6] text-[#666]">판매자 경매 상품을 불러오지 못했습니다.</p>
             <button
               className="mt-3 cursor-pointer rounded-lg border border-[#d9d9d9] bg-white px-3 py-2 text-sm leading-[1.4] font-bold text-[#444] hover:border-primary hover:text-primary-dark"
               type="button"
-              onClick={() => historyQuery.refetch()}
+              onClick={() => {
+                firstHistoryQuery.refetch();
+                if (remainingHistoryQuery.isError) remainingHistoryQuery.refetch();
+              }}
             >
               다시 시도
             </button>
@@ -64,15 +107,14 @@ const AuctionSellerHistory = ({ currentAuctionId, sellerId, sellerName }) => {
         </div>
       )}
 
-      {!historyQuery.isLoading && !historyQuery.isError && items.length === 0 && (
+      {!isInitialWaiting && !isCurrentPageWaiting && !hasCurrentPageError && totalElements === 0 && (
         <p className="m-0 grid min-h-28 place-items-center rounded-lg border border-[#e8e8e8] bg-[#f8f8f6] p-5 text-center text-sm leading-[1.6] text-[#777]">
           등록된 경매 상품이 없습니다.
         </p>
       )}
 
-      {!historyQuery.isLoading && !historyQuery.isError && items.length > 0 && (
-        <>
-          <div className="grid grid-cols-5 gap-2.5 md:gap-4">
+      {!isInitialWaiting && !isCurrentPageWaiting && !hasCurrentPageError && items.length > 0 && (
+        <div className="grid grid-cols-5 gap-2.5 md:gap-4">
             {items.map((item) => {
               const thumbnailUrl = toImageUrl(item.thumbnailPath);
               const isCurrentAuction = String(item.auctionId) === String(currentAuctionId);
@@ -121,34 +163,33 @@ const AuctionSellerHistory = ({ currentAuctionId, sellerId, sellerName }) => {
                 </Link>
               );
             })}
-          </div>
+        </div>
+      )}
 
-          {totalPages > 1 && (
-            <nav className="mt-5 flex items-center justify-center gap-3" aria-label="판매자 경매 상품 페이지">
+      {!isInitialWaiting && !firstHistoryQuery.isError && totalPages > 1 && (
+        <nav className="mt-5 flex items-center justify-center gap-3" aria-label="판매자 경매 상품 페이지">
               <button
                 className="inline-flex size-9 cursor-pointer items-center justify-center rounded-lg border border-[#d9d9d9] bg-white text-[#555] hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-35"
                 type="button"
                 aria-label="이전 판매자 경매 상품"
-                disabled={page <= 1 || historyQuery.isFetching}
-                onClick={() => changePage(Math.max(1, page - 1))}
+                disabled={currentPage <= 1}
+                onClick={() => changePage(Math.max(1, currentPage - 1))}
               >
                 <ChevronLeft size={18} aria-hidden="true" />
               </button>
               <span className="min-w-16 text-center text-sm leading-[1.4] font-bold tabular-nums text-[#555]">
-                {page} / {totalPages}
+                {currentPage} / {totalPages}
               </span>
               <button
                 className="inline-flex size-9 cursor-pointer items-center justify-center rounded-lg border border-[#d9d9d9] bg-white text-[#555] hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-35"
                 type="button"
                 aria-label="다음 판매자 경매 상품"
-                disabled={page >= totalPages || historyQuery.isFetching}
-                onClick={() => changePage(Math.min(totalPages, page + 1))}
+                disabled={currentPage >= totalPages}
+                onClick={() => changePage(Math.min(totalPages, currentPage + 1))}
               >
                 <ChevronRight size={18} aria-hidden="true" />
               </button>
-            </nav>
-          )}
-        </>
+        </nav>
       )}
     </div>
   );

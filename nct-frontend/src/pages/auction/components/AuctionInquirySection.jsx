@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { RotateCcw, Send } from 'lucide-react';
 import { fetchActiveManualAbuseReportReferences } from '@api/abuseReportApi';
@@ -49,6 +49,8 @@ const AuctionInquirySection = ({
   productId,
   isAuthenticated,
   isOwnAuction,
+  enabled = true,
+  onLoadSettled,
   onLoginRequired,
   onToast,
 }) => {
@@ -63,7 +65,7 @@ const AuctionInquirySection = ({
       const response = await fetchProductInquiries(productId);
       return response?.data ?? [];
     },
-    enabled: Boolean(productId),
+    enabled: Boolean(enabled && productId),
   });
 
   const inquiryMutation = useMutation({
@@ -88,16 +90,9 @@ const AuctionInquirySection = ({
     const startIndex = (currentPage - 1) * INQUIRIES_PER_PAGE;
     return inquiries.slice(startIndex, startIndex + INQUIRIES_PER_PAGE);
   }, [currentPage, inquiries]);
-  const inquirySlots = useMemo(
-    () => Array.from(
-      { length: INQUIRIES_PER_PAGE },
-      (_, index) => pagedInquiries[index] ?? null,
-    ),
-    [pagedInquiries],
-  );
   const inquiryReferenceSns = useMemo(
-    () => pagedInquiries.map((inquiry) => inquiry.prdCmtSn).filter(Boolean),
-    [pagedInquiries],
+    () => inquiries.map((inquiry) => inquiry.prdCmtSn).filter(Boolean),
+    [inquiries],
   );
   const activeReportStatusQueryKey = useMemo(
     () => [
@@ -116,7 +111,7 @@ const AuctionInquirySection = ({
       );
       return response?.data ?? [];
     },
-    enabled: inquiryReferenceSns.length > 0,
+    enabled: Boolean(enabled && inquiryQuery.isSuccess && inquiryReferenceSns.length > 0),
   });
 
   const activeReportedReferenceSns = useMemo(
@@ -130,6 +125,24 @@ const AuctionInquirySection = ({
   const isSubmitDisabled = isOwnAuction
     || inquiryMutation.isPending
     || (isAuthenticated && !trimmedContent);
+  const isWaiting = !enabled || inquiryQuery.isLoading;
+
+  useEffect(() => {
+    if (!enabled || (!inquiryQuery.isSuccess && !inquiryQuery.isError)) return;
+    if (inquiryQuery.isSuccess
+      && inquiryReferenceSns.length > 0
+      && !activeReportStatusQuery.isSuccess
+      && !activeReportStatusQuery.isError) return;
+    onLoadSettled?.();
+  }, [
+    activeReportStatusQuery.isError,
+    activeReportStatusQuery.isSuccess,
+    enabled,
+    inquiryQuery.isError,
+    inquiryQuery.isSuccess,
+    inquiryReferenceSns.length,
+    onLoadSettled,
+  ]);
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -198,7 +211,7 @@ const AuctionInquirySection = ({
       </form>
 
       <div className="mt-6 grid gap-3" aria-live="polite">
-        {inquiryQuery.isLoading && (
+        {isWaiting && (
           <AuctionInquirySkeleton />
         )}
 
@@ -216,23 +229,13 @@ const AuctionInquirySection = ({
           </div>
         )}
 
-        {!inquiryQuery.isLoading && !inquiryQuery.isError && inquiries.length === 0 && (
+        {!isWaiting && !inquiryQuery.isError && inquiries.length === 0 && (
           <p className="m-0 grid min-h-24 place-items-center border-y border-[#e8e8e8] text-center text-sm leading-[1.6] text-[#666]">
             등록된 문의가 없습니다.
           </p>
         )}
 
-        {!inquiryQuery.isLoading && !inquiryQuery.isError && inquiries.length > 0 && inquirySlots.map((inquiry, slotIndex) => {
-          if (!inquiry) {
-            return (
-              <div
-                className="invisible min-h-[148px]"
-                key={`empty-inquiry-${currentPage}-${slotIndex}`}
-                aria-hidden="true"
-              />
-            );
-          }
-
+        {!isWaiting && !inquiryQuery.isError && inquiries.length > 0 && pagedInquiries.map((inquiry) => {
           const hasActiveReport = activeReportedReferenceSns.has(String(inquiry.prdCmtSn));
 
           return (
@@ -280,6 +283,7 @@ const AuctionInquirySection = ({
           page={currentPage}
           totalPages={totalPages}
           onPageChange={setPage}
+          showSinglePage
         />
       </div>
 

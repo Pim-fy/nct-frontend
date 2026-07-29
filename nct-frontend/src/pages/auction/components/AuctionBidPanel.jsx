@@ -12,7 +12,7 @@ const AuctionBidPanel = ({
   selectedTradeName,
   displayedBidAmount,
   holdAgreed,
-  requiresHoldConsent,
+  requiresBidHoldConsent,
   isBidPending,
   isBuyNowPending,
   isAuctionOpen,
@@ -21,6 +21,7 @@ const AuctionBidPanel = ({
   isCurrentHighestBidder,
   isBuyNowAvailable,
   isAuthenticated,
+  isAuthLoading,
   availablePoint,
   hasAvailablePoint,
   isPointBalanceLoading,
@@ -41,7 +42,7 @@ const AuctionBidPanel = ({
   const isBidPointInsufficient = hasAvailablePoint && !isBidPointSufficient;
   const isBuyNowPointInsufficient = hasAvailablePoint && !isBuyNowPointSufficient;
   const showBidAmountUnitError = hasBidAmountSelection && !isBidAmountUnitValid;
-  const favoriteButtonStateClass = !isAuthenticated || isOwnAuction
+  const favoriteButtonStateClass = isAuthLoading || !isAuthenticated || isOwnAuction
     ? 'cursor-not-allowed opacity-45'
     : (isFavoritePending ? 'cursor-wait opacity-55' : 'cursor-pointer');
   const pointBalanceLabel = !isAuthenticated
@@ -83,10 +84,12 @@ const AuctionBidPanel = ({
           }`}
           type="button"
           aria-pressed={Boolean(auction.favorite)}
-          disabled={!isAuthenticated || isOwnAuction || isFavoritePending}
+          disabled={isAuthLoading || !isAuthenticated || isOwnAuction || isFavoritePending}
           title={isOwnAuction
             ? '본인 경매 상품은 관심 상품으로 등록할 수 없습니다'
-            : (!isAuthenticated ? '로그인 후 관심 상품을 등록할 수 있습니다' : undefined)}
+            : (isAuthLoading
+              ? '로그인 정보를 확인하는 중입니다'
+              : (!isAuthenticated ? '로그인 후 관심 상품을 등록할 수 있습니다' : undefined))}
           onClick={onFavoriteToggle}
         >
           <Heart
@@ -147,6 +150,13 @@ const AuctionBidPanel = ({
           <div className="grid min-h-36 place-items-center content-center gap-2 pt-[42px] text-center text-[#1d1d1f] max-lg:pt-0" role="status">
             <strong className="text-xl leading-[1.4] font-bold">경매 시작 전입니다</strong>
             <span className="text-sm leading-[1.6] text-[#666]">입찰과 즉시구매는 경매가 시작되면 이용할 수 있습니다.</span>
+          </div>
+        ) : isAuthLoading ? (
+          <div
+            className="grid min-h-36 place-items-center pt-[42px] text-base leading-[1.5] font-bold text-[#666] max-lg:pt-0"
+            role="status"
+          >
+            로그인 정보를 확인하는 중입니다.
           </div>
         ) : isOwnAuction ? (
           <div
@@ -232,44 +242,45 @@ const AuctionBidPanel = ({
           <strong>{selectedTradeName}</strong>
         </div>
 
-        {!isOwnAuction && (
+        {!isAuthLoading && !isOwnAuction && (
           isAuthenticated ? (
-            <>
-              {requiresHoldConsent && (
-                <label className="flex items-center justify-center gap-2 text-sm leading-[1.5] text-[#666] lg:col-span-2">
-                  <input
-                    className="size-4 accent-primary"
-                    id="holdAgree"
-                    type="checkbox"
-                    checked={holdAgreed}
-                    disabled={!isAuctionOpen}
-                    onChange={(event) => onHoldAgreedChange(event.target.checked)}
-                  /> 포인트 홀딩에 동의합니다
-                </label>
-              )}
-              <div className="grid grid-cols-2 justify-center gap-1.5 max-sm:grid-cols-1 lg:col-span-2 lg:mx-auto lg:w-full lg:max-w-[520px] lg:grid-cols-2">
-              <button
-                className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-primary text-base leading-[1.4] font-bold text-white disabled:cursor-not-allowed disabled:opacity-55 aria-busy:cursor-progress"
-                id="bidBtn"
-                type="button"
-                aria-busy={isBidPending}
-                disabled={!isAuctionOpen
-                  || isCurrentHighestBidder
-                  || isBidPending
-                  || isBidPointInsufficient
-                  || !isBidAmountUnitValid}
-                onClick={onBidSubmit}
-              >
-                {!isAuctionOpen
-                  ? '입찰 종료'
-                  : (isCurrentHighestBidder
-                    ? '최고입찰 중'
-                    : (isBidPointInsufficient
-                      ? '포인트 부족'
-                      : (!isBidAmountUnitValid
-                        ? (hasBidAmountSelection ? '입찰 단위 확인' : '입찰 금액 선택')
-                        : (isBidPending ? '입찰 중' : '입찰하기'))))}
-              </button>
+            <div className="grid grid-cols-2 items-end justify-center gap-1.5 max-sm:grid-cols-1 lg:col-span-2 lg:mx-auto lg:w-full lg:max-w-[520px]">
+              <div className="grid gap-2">
+                {requiresBidHoldConsent && (
+                  <label className="flex items-center justify-center gap-2 text-sm leading-[1.5] text-[#666]">
+                    <input
+                      className="size-4 accent-primary"
+                      id="holdAgree"
+                      type="checkbox"
+                      checked={holdAgreed}
+                      disabled={!isAuctionOpen}
+                      onChange={(event) => onHoldAgreedChange(event.target.checked)}
+                    /> 입찰 포인트 홀딩에 동의합니다
+                  </label>
+                )}
+                <button
+                  className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-primary text-base leading-[1.4] font-bold text-white disabled:cursor-not-allowed disabled:opacity-55 aria-busy:cursor-progress"
+                  id="bidBtn"
+                  type="button"
+                  aria-busy={isBidPending}
+                  disabled={!isAuctionOpen
+                    || isCurrentHighestBidder
+                    || isBidPending
+                    || isBidPointInsufficient
+                    || !isBidAmountUnitValid}
+                  onClick={onBidSubmit}
+                >
+                  {!isAuctionOpen
+                    ? '입찰 종료'
+                    : (isCurrentHighestBidder
+                      ? '최고입찰 중'
+                      : (isBidPointInsufficient
+                        ? '포인트 부족'
+                        : (!isBidAmountUnitValid
+                          ? (hasBidAmountSelection ? '입찰 단위 확인' : '입찰 금액 선택')
+                          : (isBidPending ? '입찰 중' : '입찰하기'))))}
+                </button>
+              </div>
               <button
                 className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-white text-base leading-[1.4] font-bold text-primary disabled:cursor-not-allowed disabled:opacity-55 aria-busy:cursor-progress"
                 id="buyNowBtn"
@@ -287,7 +298,6 @@ const AuctionBidPanel = ({
                       : '즉시구매 불가'))}
               </button>
               </div>
-            </>
           ) : (
             <p className="m-0 mt-5 flex min-h-12 items-center justify-center pt-2 text-center text-base leading-[1.5] font-bold text-[#666] lg:col-span-2" role="status">
               로그인이 필요한 서비스입니다.
