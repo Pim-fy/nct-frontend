@@ -8,20 +8,21 @@ import {
 } from '@hooks/useAdminRiskEvents';
 import './operationsIntegrationPreview.css';
 
-/** 담당자 7 · F-OPS-013: 민감정보 탐지 결과로 생성된 위험 이벤트를 읽기 전용으로 확인하는 화면입니다. */
+/** 담당자 7 · F-OPS-011/013: 운영 위험 이벤트를 읽기 전용으로 확인하는 화면입니다. */
 const OperationsIntegrationPreview = () => {
   const [typeCode, setTypeCode] = useState('');
   const [processed, setProcessed] = useState('');
   const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(1);
 
   const filters = useMemo(
     () => ({
       typeCode: typeCode || undefined,
       processed: processed || undefined,
-      page: 1,
+      page,
       size: 20,
     }),
-    [processed, typeCode],
+    [page, processed, typeCode],
   );
 
   const eventsQuery = useAdminRiskEvents(filters);
@@ -59,7 +60,7 @@ const OperationsIntegrationPreview = () => {
 
       <header className="operations-preview__header">
         <div>
-          <h1>민감정보 탐지 이벤트</h1>
+          <h1>위험 이벤트</h1>
         </div>
         <AdminStatusBadge tone="info">읽기 전용</AdminStatusBadge>
       </header>
@@ -95,7 +96,13 @@ const OperationsIntegrationPreview = () => {
         <div className="operations-filters">
           <label>
             <span>유형</span>
-            <select onChange={(event) => setTypeCode(event.target.value)} value={typeCode}>
+            <select
+              onChange={(event) => {
+                setTypeCode(event.target.value);
+                setPage(1);
+              }}
+              value={typeCode}
+            >
               <option value="">전체</option>
               {(summaryQuery.data ?? []).map((item) => (
                 <option key={item.typeCode} value={item.typeCode}>
@@ -107,7 +114,13 @@ const OperationsIntegrationPreview = () => {
 
           <label>
             <span>처리 상태</span>
-            <select onChange={(event) => setProcessed(event.target.value)} value={processed}>
+            <select
+              onChange={(event) => {
+                setProcessed(event.target.value);
+                setPage(1);
+              }}
+              value={processed}
+            >
               <option value="">전체</option>
               <option value="N">미처리</option>
               <option value="Y">처리 완료</option>
@@ -118,7 +131,10 @@ const OperationsIntegrationPreview = () => {
             <span className="sr-only">검색</span>
             <Search size={17} aria-hidden="true" />
             <input
-              onChange={(event) => setKeyword(event.target.value)}
+              onChange={(event) => {
+                setKeyword(event.target.value);
+                setPage(1);
+              }}
               placeholder="번호, 유형, 내용 검색"
               value={keyword}
             />
@@ -184,6 +200,28 @@ const OperationsIntegrationPreview = () => {
             </tbody>
           </table>
         </div>
+
+        {(eventsQuery.data?.totalPages ?? 0) > 1 && (
+          <nav className="operations-pagination" aria-label="위험 이벤트 페이지 이동">
+            <button
+              disabled={page <= 1 || eventsQuery.isFetching}
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              type="button"
+            >
+              이전
+            </button>
+            <span>
+              {eventsQuery.data?.page ?? page} / {eventsQuery.data?.totalPages}
+            </span>
+            <button
+              disabled={page >= eventsQuery.data.totalPages || eventsQuery.isFetching}
+              onClick={() => setPage((current) => current + 1)}
+              type="button"
+            >
+              다음
+            </button>
+          </nav>
+        )}
       </section>
     </div>
   );
