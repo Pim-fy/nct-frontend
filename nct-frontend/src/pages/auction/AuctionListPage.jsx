@@ -38,9 +38,8 @@ const AUCTION_STATUS_FILTERS = [
   { code: 'AUCC0002', label: '진행 중' },
 ];
 const TRADE_METHOD_FILTERS = [
-  { code: 'TRDC0009', label: '배송' },
-  { code: 'TRDC0010', label: '직거래' },
-  { code: 'TRDC0020', label: '배송·직거래 모두 가능' },
+  { value: 'delivery', sourceCodes: ['TRDC0009', 'TRDC0020'], label: '배송' },
+  { value: 'direct', sourceCodes: ['TRDC0010', 'TRDC0020'], label: '직거래' },
 ];
 const FILTER_GROUP_CLASS = 'm-0 grid gap-2 border-0 p-0 disabled:opacity-60';
 const FILTER_OPTION_CLASS = 'flex cursor-pointer items-center gap-2 text-body-sm text-[#5f5e5a] md:text-body-md';
@@ -66,11 +65,17 @@ const toggleValue = (values, value) => (
     : [...values, value]
 );
 
+const normalizeTradeMethod = (value) => {
+  if (value === 'delivery' || value === 'TRDC0009') return 'delivery';
+  if (value === 'direct' || value === 'TRDC0010') return 'direct';
+  return 'all';
+};
+
 const createDraftFromSearchParams = (searchParams) => ({
   keyword: searchParams.get('keyword') || '',
   categories: getSelectedValues(searchParams, 'category'),
   statuses: getSelectedValues(searchParams, 'status'),
-  tradeMethod: searchParams.get('tradeMethod') || 'all',
+  tradeMethod: normalizeTradeMethod(searchParams.get('tradeMethod')),
   sort: searchParams.get('sort') || 'deadline',
   minPrice: searchParams.get('minPrice') || '',
   maxPrice: searchParams.get('maxPrice') || '',
@@ -89,7 +94,9 @@ const AuctionListPage = () => {
   const [keywordDraft, setKeywordDraft] = useState(searchParams.get('keyword') || '');
   const [categoryDraft, setCategoryDraft] = useState(() => getSelectedValues(searchParams, 'category'));
   const [statusDraft, setStatusDraft] = useState(() => getSelectedValues(searchParams, 'status'));
-  const [tradeMethodDraft, setTradeMethodDraft] = useState(searchParams.get('tradeMethod') || 'all');
+  const [tradeMethodDraft, setTradeMethodDraft] = useState(
+    normalizeTradeMethod(searchParams.get('tradeMethod')),
+  );
   const [sortDraft, setSortDraft] = useState(searchParams.get('sort') || 'deadline');
   const [minPriceDraft, setMinPriceDraft] = useState(searchParams.get('minPrice') || '');
   const [maxPriceDraft, setMaxPriceDraft] = useState(searchParams.get('maxPrice') || '');
@@ -160,7 +167,7 @@ const AuctionListPage = () => {
 
   const selectedCategories = getSelectedValues(searchParams, 'category');
   const selectedStatuses = getSelectedValues(searchParams, 'status');
-  const tradeMethod = searchParams.get('tradeMethod') || 'all';
+  const tradeMethod = normalizeTradeMethod(searchParams.get('tradeMethod'));
   const sort = searchParams.get('sort') || 'deadline';
   const minPrice = searchParams.get('minPrice') || '';
   const maxPrice = searchParams.get('maxPrice') || '';
@@ -198,7 +205,7 @@ const AuctionListPage = () => {
     tradeMethodsQuery.data?.map((method) => method.code) || [],
   );
   const tradeMethodOptions = TRADE_METHOD_FILTERS
-    .filter((method) => availableTradeMethodCodes.has(method.code));
+    .filter((method) => method.sourceCodes.some((code) => availableTradeMethodCodes.has(code)));
 
   const queryParams = {
     keyword: searchParams.get('keyword') || '',
@@ -263,7 +270,6 @@ const AuctionListPage = () => {
   });
 
   const auctionItems = auctionPage?.items || [];
-  const totalElements = auctionPage?.totalElements || 0;
   const totalPages = auctionPage?.totalPages || 0;
   const paginationItems = getPaginationItems(page, totalPages);
 
@@ -604,16 +610,16 @@ const AuctionListPage = () => {
                       checked={tradeMethodDraft === 'all'}
                       onChange={() => setTradeMethodDraft('all')}
                     />
-                    전체
+                    모두
                   </label>
                   {tradeMethodOptions.map((method) => (
-                    <label className={FILTER_OPTION_CLASS} key={method.code}>
+                    <label className={FILTER_OPTION_CLASS} key={method.value}>
                       <input
                         className="accent-primary"
                         name="tradeMethod"
                         type="radio"
-                        checked={tradeMethodDraft === method.code}
-                        onChange={() => setTradeMethodDraft(method.code)}
+                        checked={tradeMethodDraft === method.value}
+                        onChange={() => setTradeMethodDraft(method.value)}
                       />
                       {method.label}
                     </label>
