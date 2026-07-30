@@ -1,8 +1,8 @@
 // src/pages/provider/QuoteFormPage.jsx
-// F-SVC-005: 제공자 견적 제출 (담당자3 황성경 소유)
-// - 더미 UI 선구현. API 연동 시 submitQuote 호출로 교체.
+// F-SVC-005/006: 제공자 견적 제출·수정 (담당자3 황성경 소유)
 import React, { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useSubmitQuote, useUpdateQuote } from "@hooks/useQuote";
 import cameraIcon from "@assets/img/icon_camera.png";
 import iconImage from "@assets/img/icon_image.png";
 import { toast } from "@utils/common";
@@ -13,12 +13,7 @@ const MAX_WORK_PHOTOS = 20;
 const MAX_MESSAGE_LEN = 1000;
 const PHOTO_COLS      = 5;
 
-const DUMMY_REQUESTS = [
-  { id: "SVC-0010", title: "주 2회 영어 회화 레슨 (초급)", category: "레슨",     sub: "",     location: "서울 강남구", budget: "120,000~180,000원", requester: "이**" },
-  { id: "SVC-0009", title: "원룸 이사 운반",                category: "이사",     sub: "운반", location: "서울 성동구", budget: "120,000~180,000원", requester: "김**" },
-  { id: "SVC-0008", title: "사무실 정기 청소 주 3회",       category: "청소",     sub: "",     location: "서울 마포구", budget: "120,000~180,000원", requester: "박**" },
-  { id: "SVC-0007", title: "거실·주방 부분 인테리어",       category: "인테리어", sub: "",     location: "서울 성동구", budget: "120,000~180,000원", requester: "최**" },
-];
+const FALLBACK_REQUEST = { title: "서비스 요청", category: "", sub: "", location: "", budget: "", requester: "" };
 
 function FieldBlock({ label, required, hint, children }) {
   return (
@@ -220,23 +215,43 @@ function WorkPhotoUpload({ photos, onChange, submitted }) {
 
 export default function QuoteFormPage() {
   const navigate   = useNavigate();
+  const location   = useLocation();
+  const routeState = location.state || {};
+
+  // router state: { svcReqSn, svcReqTitle, category, location, budget, requester }  → 신규
+  //               { quoteId, svcReqSn, svcReqTitle, amount, content, reviseCnt }    → 수정
+  const isEditMode = !!routeState.quoteId;
+  const [quoteId]  = useState(routeState.quoteId || null);
+  const svcReqInfo = {
+    svcReqSn:  routeState.svcReqSn,
+    title:     routeState.svcReqTitle  || FALLBACK_REQUEST.title,
+    category:  routeState.category     || FALLBACK_REQUEST.category,
+    sub:       routeState.sub          || FALLBACK_REQUEST.sub,
+    location:  routeState.location     || FALLBACK_REQUEST.location,
+    budget:    routeState.budget       || FALLBACK_REQUEST.budget,
+    requester: routeState.requester    || FALLBACK_REQUEST.requester,
+  };
+
+  const submitMutation = useSubmitQuote();
+  const updateMutation = useUpdateQuote();
+
   const [submitted, setSubmitted] = useState(false);
   const [loading,   setLoading]   = useState(false);
   const [alertMsg,  setAlertMsg]  = useState("");
 
-  // 실제 구현 시 router state / URL params에서 주입. 더미는 SVC-0009 고정.
-  const DUMMY_REQUEST = DUMMY_REQUESTS[1]; // 원룸 이사 운반
-
   const MAX_EDIT_COUNT = 3;
 
-  // 신규 견적 작성 더미 (제출 전 빈 폼)
-  const [form, setForm] = useState({ price: "", duration: "", message: "" });
-  const [prevForm, setPrevForm] = useState({ price: "", duration: "", message: "" });
+  const [form, setForm] = useState({
+    price:    isEditMode ? String(routeState.amount  || "") : "",
+    duration: "",
+    message:  isEditMode ? (routeState.content || "") : "",
+  });
+  const [prevForm, setPrevForm] = useState({ ...form });
   const [workPhotos, setWorkPhotos] = useState([]);
   const [prevPhotoIds, setPrevPhotoIds] = useState([]);
   const [revisions, setRevisions] = useState([]);
-  const [editCount, setEditCount] = useState(0);
-  const [isQuoteSubmitted, setIsQuoteSubmitted] = useState(false);
+  const [editCount, setEditCount] = useState(isEditMode ? (routeState.reviseCnt || 0) : 0);
+  const [isQuoteSubmitted, setIsQuoteSubmitted] = useState(isEditMode);
 
   const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
   const fmt = n => (n ? Number(n).toLocaleString() : "");
@@ -290,7 +305,11 @@ export default function QuoteFormPage() {
     if (!validate()) return;
     setLoading(true);
     try {
-      await new Promise(r => setTimeout(r, 400));
+      await updateMutation.mutateAsync({
+        quoteId,
+        amount:  Number(form.price),
+        content: form.message,
+      });
       const desc = buildDiff(prevForm, form);
       const next = editCount + 1;
       setRevisions(prev => [...prev, { round: next, date: now(), desc }]);
@@ -298,8 +317,8 @@ export default function QuoteFormPage() {
       setPrevPhotoIds(workPhotos.map(p => p.id));
       setEditCount(next);
       setEditSuccessMsg(`견적이 수정되었습니다.\n남은 수정 횟수: ${MAX_EDIT_COUNT - next}회`);
-    } catch {
-      toast({ icon: "error", title: "견적 수정에 실패했습니다. 다시 시도해 주세요." });
+    } catch (err) {
+      toast({ icon: "error", title: err?.response?.data?.message || "견적 수정에 실패했습니다. 다시 시도해 주세요." });
     } finally {
       setLoading(false);
     }
@@ -309,11 +328,15 @@ export default function QuoteFormPage() {
     if (!validate()) return;
     setLoading(true);
     try {
-      await new Promise(r => setTimeout(r, 600));
+      await submitMutation.mutateAsync({
+        svcReqSn: svcReqInfo.svcReqSn,
+        amount:   Number(form.price),
+        content:  form.message,
+      });
       setIsQuoteSubmitted(true);
       setSubmitSuccess(true);
-    } catch {
-      toast({ icon: "error", title: "견적 제출에 실패했습니다. 다시 시도해 주세요." });
+    } catch (err) {
+      toast({ icon: "error", title: err?.response?.data?.message || "견적 제출에 실패했습니다. 다시 시도해 주세요." });
     } finally {
       setLoading(false);
     }
@@ -398,11 +421,16 @@ export default function QuoteFormPage() {
           <section className="card qf-summary-card">
             <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>요청 요약</h3>
             <p className="qf-summary-text" style={{ margin: 0, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span className="badge badge-blue" style={{ fontSize: 13, borderRadius: 5, height: 28 }}>
-                {DUMMY_REQUEST.category}{DUMMY_REQUEST.sub ? `·${DUMMY_REQUEST.sub}` : ""}
-              </span>
+              {svcReqInfo.category && (
+                <span className="badge badge-blue" style={{ fontSize: 13, borderRadius: 5, height: 28 }}>
+                  {svcReqInfo.category}{svcReqInfo.sub ? `·${svcReqInfo.sub}` : ""}
+                </span>
+              )}
               <span style={{ fontSize: 16, color: "#333" }}>
-                {DUMMY_REQUEST.title} · {DUMMY_REQUEST.location} · 희망일정 2026-06-22 오후 · 예산 {DUMMY_REQUEST.budget} · 요청자 {DUMMY_REQUEST.requester}
+                {svcReqInfo.title}
+                {svcReqInfo.location  && ` · ${svcReqInfo.location}`}
+                {svcReqInfo.budget    && ` · 예산 ${svcReqInfo.budget}`}
+                {svcReqInfo.requester && ` · 요청자 ${svcReqInfo.requester}`}
               </span>
             </p>
           </section>
