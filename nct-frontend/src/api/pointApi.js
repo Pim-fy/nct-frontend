@@ -5,7 +5,7 @@
 //   실데이터(data) 추출은 훅(usePoint.js)의 select에서 담당한다
 import api from './axios';
 
-/** 내 포인트 잔액 조회 — { available, hold, settleable, total } */
+/** 내 포인트 잔액 조회 — { available, hold, settleable, total, exchangeable } */
 export const getPointBalance = () =>
   api.get('/point/balance').then(res => res.data);
 

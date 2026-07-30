@@ -6,7 +6,6 @@ import {
   Clock3,
   RotateCcw,
   Search,
-  SlidersHorizontal,
   X,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -17,6 +16,9 @@ import {
   HEADER_SEARCH_FORM_CLASS,
   HEADER_SEARCH_INPUT_CLASS,
 } from '@components/common/HeaderSearchPortal';
+
+const FILTER_GROUP_CLASS = 'm-0 grid gap-2 border-0 p-0 disabled:opacity-60';
+const FILTER_INPUT_CLASS = 'min-h-10 w-full rounded-lg border border-[#e2e1dc] bg-white px-3 text-body-sm text-[#1a1a18] outline-none transition-colors focus:border-primary md:text-body-md';
 
 const formatAmount = (value) => {
   const amount = Number(value);
@@ -75,11 +77,11 @@ const FilterFields = ({
   onChange,
 }) => {
   return (
-    <div className="space-y-7">
-      <label className="block">
-        <span className="mb-2 block text-base font-bold text-[#272725]">카테고리</span>
+    <div className="grid gap-[18px]">
+      <label className="grid gap-2">
+        <span className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">카테고리</span>
         <select
-          className="h-12 w-full rounded-[5px] border border-[#cfcfcd] bg-white px-3 text-base outline-none focus:border-primary"
+          className={FILTER_INPUT_CLASS}
           disabled={categoriesLoading || categoriesError}
           onChange={(event) => onChange('categorySn', event.target.value)}
           value={filters.categorySn}
@@ -89,16 +91,16 @@ const FilterFields = ({
             <option key={category.catSn} value={category.catSn}>{category.catNm}</option>
           ))}
         </select>
-        {categoriesLoading && <span className="mt-2 block text-base text-[#6f6f6c]">불러오는 중입니다.</span>}
-        {categoriesError && <span className="mt-2 block text-base text-[#b42318]">카테고리를 불러오지 못했습니다.</span>}
+        {categoriesLoading && <span className="text-caption text-[#5f5e5a]">불러오는 중입니다.</span>}
+        {categoriesError && <span className="text-caption text-[#b42318]">카테고리를 불러오지 못했습니다.</span>}
       </label>
 
-      <fieldset>
-        <legend className="mb-2 text-base font-bold text-[#272725]">예산 범위</legend>
+      <fieldset className={FILTER_GROUP_CLASS}>
+        <legend className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">예산 범위</legend>
         <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
           <input
             aria-label="최소 예산"
-            className="h-12 min-w-0 rounded-[5px] border border-[#cfcfcd] px-3 text-base outline-none placeholder:text-[#999996] focus:border-primary"
+            className={`${FILTER_INPUT_CLASS} min-w-0`}
             min="0"
             onChange={(event) => onChange('minBudget', event.target.value)}
             placeholder="최소"
@@ -108,7 +110,7 @@ const FilterFields = ({
           <span className="text-base text-[#777774]">~</span>
           <input
             aria-label="최대 예산"
-            className="h-12 min-w-0 rounded-[5px] border border-[#cfcfcd] px-3 text-base outline-none placeholder:text-[#999996] focus:border-primary"
+            className={`${FILTER_INPUT_CLASS} min-w-0`}
             min="0"
             onChange={(event) => onChange('maxBudget', event.target.value)}
             placeholder="최대"
@@ -118,10 +120,10 @@ const FilterFields = ({
         </div>
       </fieldset>
 
-      <label className="block">
-        <span className="mb-2 block text-base font-bold text-[#272725]">정렬</span>
+      <label className="grid gap-2">
+        <span className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">정렬</span>
         <select
-          className="h-12 w-full rounded-[5px] border border-[#cfcfcd] bg-white px-3 text-base outline-none focus:border-primary"
+          className={FILTER_INPUT_CLASS}
           onChange={(event) => onChange('sort', event.target.value)}
           value={filters.sort}
         >
@@ -143,6 +145,8 @@ export const ServiceFilterPanel = ({
   onChange,
   onClose,
   onReset,
+  resultCount,
+  resultLoading,
 }) => {
   const fields = (
     <FilterFields
@@ -156,48 +160,43 @@ export const ServiceFilterPanel = ({
 
   return (
     <>
-      <aside className="hidden w-[280px] shrink-0 self-start border-r border-[#e1e1df] pr-7 lg:block" aria-label="서비스 검색 필터">
-        <div className="mb-7 flex h-11 items-center justify-between">
+      <button
+        aria-label="필터 닫기"
+        className={`fixed inset-0 z-[210] cursor-default border-0 bg-black/25 transition-opacity duration-200 ease-linear motion-reduce:transition-none md:hidden ${isOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}
+        onClick={onClose}
+        tabIndex={isOpen ? 0 : -1}
+        type="button"
+      />
+      <aside
+        className={`fixed inset-x-0 bottom-0 z-[220] grid max-h-[88dvh] w-full transform-gpu gap-[18px] overflow-y-auto overscroll-contain rounded-t-2xl border border-[#f0efec] bg-white p-5 shadow-[0_-8px_28px_rgba(0,0,0,0.18)] transition-transform duration-[420ms] ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform [backface-visibility:hidden] [scrollbar-color:#c8ced8_transparent] [scrollbar-width:thin] motion-reduce:transition-none [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#c8ced8] [&::-webkit-scrollbar-track]:bg-transparent ${isOpen ? 'pointer-events-auto translate-y-0' : 'pointer-events-none translate-y-[101%]'} md:sticky md:top-[82px] md:inset-x-auto md:bottom-auto md:z-auto md:h-fit md:max-h-[calc(100dvh-122px)] md:w-[280px] md:flex-[0_0_280px] md:self-start md:translate-y-0 md:overflow-y-auto md:rounded-lg md:pointer-events-auto md:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)]`}
+        aria-label="서비스 검색 필터"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="m-0 text-h3 font-bold">필터</h2>
           <div className="flex items-center gap-2">
-            <SlidersHorizontal aria-hidden="true" className="text-primary" size={20} />
-            <h2 className="text-xl font-bold text-[#1a1a18]">필터</h2>
+            <button className="inline-flex size-[34px] cursor-pointer items-center justify-center rounded-lg border border-[#e2e1dc] bg-white text-[#5f5e5a] transition-colors hover:border-primary hover:bg-primary-light hover:text-primary" onClick={onReset} title="필터 초기화" type="button">
+              <RotateCcw aria-hidden="true" size={16} />
+              <span className="sr-only">필터 초기화</span>
+            </button>
+            <button className="inline-flex size-[34px] cursor-pointer items-center justify-center rounded-lg border border-[#e2e1dc] bg-white text-[#5f5e5a] transition-colors hover:border-primary hover:bg-primary-light hover:text-primary md:hidden" onClick={onClose} title="필터 닫기" type="button">
+              <X aria-hidden="true" size={18} />
+              <span className="sr-only">필터 닫기</span>
+            </button>
           </div>
-          <button className="grid h-10 w-10 place-items-center rounded-[5px] border border-[#d7d7d5] text-[#555552] hover:bg-[#f5f5f3]" onClick={onReset} title="필터 초기화" type="button">
-            <RotateCcw aria-hidden="true" size={18} />
-            <span className="sr-only">필터 초기화</span>
-          </button>
         </div>
         {fields}
-      </aside>
-
-      {isOpen && (
-        <div className="fixed inset-0 z-[80] lg:hidden">
-          <button aria-label="필터 닫기" className="absolute inset-0 bg-black/45" onClick={onClose} type="button" />
-          <aside className="absolute inset-x-0 bottom-0 max-h-[86vh] overflow-y-auto rounded-t-[8px] bg-white px-5 pb-8 pt-5" aria-label="서비스 검색 필터">
-            <div className="mb-6 flex items-center justify-between border-b border-[#e1e1df] pb-4">
-              <h2 className="text-xl font-bold text-[#1a1a18]">필터</h2>
-              <div className="flex gap-2">
-                <button className="grid h-11 w-11 place-items-center rounded-[5px] border border-[#d7d7d5]" onClick={onReset} title="필터 초기화" type="button">
-                  <RotateCcw aria-hidden="true" size={19} />
-                  <span className="sr-only">필터 초기화</span>
-                </button>
-                <button className="grid h-11 w-11 place-items-center rounded-[5px] border border-[#d7d7d5]" onClick={onClose} title="필터 닫기" type="button">
-                  <X aria-hidden="true" size={21} />
-                  <span className="sr-only">필터 닫기</span>
-                </button>
-              </div>
-            </div>
-            {fields}
-            <button className="mt-8 h-12 w-full rounded-[5px] bg-primary text-base font-bold text-white" onClick={onClose} type="button">결과 보기</button>
-          </aside>
+        <div className="sticky -bottom-5 z-10 -mx-5 -mb-5 border-t border-[#f0efec] bg-white p-5 pt-3">
+          <button className="inline-flex min-h-[46px] w-full cursor-pointer items-center justify-center rounded-lg border border-primary bg-primary px-3 text-body-md font-bold text-white transition-colors hover:border-primary-dark hover:bg-primary-dark" onClick={onClose} type="button">
+            {resultLoading ? '서비스 조회 중...' : `서비스 ${(resultCount ?? 0).toLocaleString('ko-KR')}개 보기`}
+          </button>
         </div>
-      )}
+      </aside>
     </>
   );
 };
 
 const ServiceRequestCard = ({ request }) => (
-  <Link className="group flex min-h-[250px] flex-col border border-[#dededc] bg-white p-5 transition-colors hover:border-primary" to={`/service-requests/${request.id}`}>
+  <Link className="group flex min-h-[250px] flex-col rounded-lg border border-[#dededc] bg-white p-5 transition-colors hover:border-primary" to={`/service-requests/${request.id}`}>
     <div className="flex items-start justify-between gap-3">
       <span className="text-base font-semibold text-primary">{request.categoryName || '서비스'}</span>
       {request.statusName && <span className="text-base font-semibold text-[#555552]">{request.statusName}</span>}
@@ -212,7 +211,7 @@ const ServiceRequestCard = ({ request }) => (
 );
 
 export const ServiceRequestGrid = ({ requests }) => (
-  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3" aria-label="서비스 요청 검색 결과">
+  <div className="grid grid-cols-3 gap-[45px] max-xl:grid-cols-2 max-xl:gap-6 max-md:grid-cols-1 max-md:gap-[18px]" aria-label="서비스 요청 검색 결과">
     {requests.map((request) => <ServiceRequestCard key={request.id} request={request} />)}
   </div>
 );

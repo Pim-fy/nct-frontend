@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { QUICK_AMOUNTS } from './quickAmounts';
 
 /**
- * 포인트 금액 입력 공용 모달 — 현재는 환전 신청에서만 사용
+ * 포인트 금액 입력 공용 모달 — 환전 신청(지갑·헤더)과 전환(F-PAY-010)에서 사용
  * (충전은 결제위젯 모달 PointChargeWidgetModal로 단일화 — 사용자 결정, 2026-07-16)
  * - 환전: 방식 확정(D-026, 2026-07-17)으로 실연동 — onSubmit이 실제 신청 API를 호출한다
  */

@@ -50,7 +50,9 @@ import { confirm, formatNumber, formatPrice } from '@utils/common';
 const DETAIL_PAGE_CLASS = 'bg-white pb-14 text-[#1d1d1f]';
 const DETAIL_CONTAINER_CLASS = 'mx-auto w-[calc(100%_-_52px)] max-w-[1600px] max-lg:w-[calc(100%_-_32px)] max-sm:w-[calc(100%_-_24px)]';
 const DETAIL_EMPTY_CLASS = 'grid min-h-[340px] place-content-center justify-items-center gap-2.5 rounded-lg border border-[#e8e8e8] bg-[#f8f8f6] p-7 text-center';
-const DELIVERY_CAPABLE_TRADE_METHOD_CODES = new Set(['TRDC0009', 'TRDC0020']);
+const DELIVERY_TRADE_METHOD_CODE = 'TRDC0009';
+const OFFLINE_TRADE_METHOD_CODE = 'TRDC0010';
+const BOTH_TRADE_METHOD_CODE = 'TRDC0020';
 const DETAIL_SECTION_ITEMS = [
   { id: 'auction-product-description', label: '상품설명' },
   { id: 'auction-product-updates', label: '변경 내역' },
@@ -67,6 +69,10 @@ const AuctionDetailPage = () => {
   const authenticatedUserId = user?.id ?? user?.userId ?? user?.userSn ?? user?.usrSn;
   const [bidAmount, setBidAmount] = useState('');
   const [holdAgreed, setHoldAgreed] = useState(false);
+  const [tradeMethodSelection, setTradeMethodSelection] = useState({
+    auctionId: null,
+    code: '',
+  });
   const [showHoldConsentError, setShowHoldConsentError] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [activeDetailSectionId, setActiveDetailSectionId] = useState(
@@ -416,7 +422,12 @@ const AuctionDetailPage = () => {
     : defaultImageIndex;
   const currentPrice = Number(auction.currentPrice || auction.startPrice || 0);
   const bidUnitPrice = Number(auction.bidUnitPrice || 1000);
-  const minimumBidPrice = currentPrice + bidUnitPrice;
+  const instantBuyPrice = Number(auction.instantBuyPrice || 0);
+  const hasInstantBuyPrice = Number.isFinite(instantBuyPrice) && instantBuyPrice > 0;
+  const nextUnitBidPrice = currentPrice + bidUnitPrice;
+  const minimumBidPrice = hasInstantBuyPrice
+    ? Math.min(nextUnitBidPrice, instantBuyPrice)
+    : nextUnitBidPrice;
   const isAuctionReady = auction.auctionStatusCode === 'AUCC0001';
   const auctionResultLabel = isAuctionReady ? null : resolveAuctionResultLabel(auction);
   const auctionStartTimestamp = auction.startDateTime
@@ -442,10 +453,25 @@ const AuctionDetailPage = () => {
   const isCurrentHighestBidder = Boolean(auction.currentHighestBidder);
   const hasBidHistory = Boolean(auction.hasBidHistory);
   const requiresBidHoldConsent = isAuthenticated && !hasBidHistory;
-  const selectedTradeValue = auction.tradeMethodCode || '';
-  const selectedTradeName = auction.tradeMethodName || '거래 방식 미정';
+  const isMixedTradeMethod = auction.tradeMethodCode === BOTH_TRADE_METHOD_CODE;
+  const selectedMixedTradeMethodCode = String(tradeMethodSelection.auctionId) === String(auctionId)
+    ? tradeMethodSelection.code
+    : '';
+  const selectedTradeValue = isMixedTradeMethod
+    ? selectedMixedTradeMethodCode
+    : (auction.tradeMethodCode || '');
+  const selectedTradeName = selectedTradeValue === DELIVERY_TRADE_METHOD_CODE
+    ? '배송'
+    : (selectedTradeValue === OFFLINE_TRADE_METHOD_CODE
+      ? '직거래'
+      : (isMixedTradeMethod ? '선택 필요' : (auction.tradeMethodName || '거래 방식 미정')));
+  const ensureTradeMethodSelected = () => {
+    if (!isMixedTradeMethod || selectedTradeValue) return true;
+    showToast('배송 또는 직거래 방식을 선택해 주세요');
+    return false;
+  };
   const ensureDeliveryAddress = async () => {
-    if (!DELIVERY_CAPABLE_TRADE_METHOD_CODES.has(selectedTradeValue)) return true;
+    if (selectedTradeValue !== DELIVERY_TRADE_METHOD_CODE) return true;
 
     let profile = memberProfileQuery.data;
     if (!profile) {
@@ -466,9 +492,12 @@ const AuctionDetailPage = () => {
   const requestedBidAmount = parseAmount(displayedBidAmount);
   const hasBidAmountSelection = bidAmount !== '';
   const bidIncrementAmount = requestedBidAmount - currentPrice;
-  const isBidAmountUnitValid = requestedBidAmount >= minimumBidPrice
-    && bidIncrementAmount % bidUnitPrice === 0;
-  const instantBuyPrice = Number(auction.instantBuyPrice || 0);
+  const isInstantBuyAmountSelected = hasInstantBuyPrice
+    && requestedBidAmount >= instantBuyPrice;
+  const isBidAmountUnitValid = isInstantBuyAmountSelected || (
+    requestedBidAmount >= nextUnitBidPrice
+    && bidIncrementAmount % bidUnitPrice === 0
+  );
   const availablePointValue = pointBalanceQuery.data?.available;
   const availablePoint = availablePointValue == null ? null : Number(availablePointValue);
   const hasAvailablePoint = Number.isFinite(availablePoint);
@@ -478,7 +507,12 @@ const AuctionDetailPage = () => {
     && !hasAvailablePoint
     && pointBalanceQuery.isLoading;
   const isPointBalanceError = isAuthenticated && pointBalanceQuery.isError;
-  const handleBidInputChange = (event) => setBidAmount(formatNumber(parseAmount(event.target.value)));
+  const capBidAmount = (amount) => (hasInstantBuyPrice
+    ? Math.min(amount, instantBuyPrice)
+    : amount);
+  const handleBidInputChange = (event) => setBidAmount(
+    formatNumber(capBidAmount(parseAmount(event.target.value))),
+  );
   const handleBidInputBlur = () => {
     if (parseAmount(bidAmount) < minimumBidPrice) {
       setBidAmount(formatNumber(minimumBidPrice));
@@ -486,7 +520,7 @@ const AuctionDetailPage = () => {
   };
   const handleBidMultiplierSelect = (multiplier) => {
     setBidAmount((value) => formatNumber(
-      parseAmount(value || minimumBidPrice) + (bidUnitPrice * multiplier),
+      capBidAmount(parseAmount(value || minimumBidPrice) + (bidUnitPrice * multiplier)),
     ));
   };
   const handleBidSubmit = async () => {
@@ -504,6 +538,10 @@ const AuctionDetailPage = () => {
     }
     if (!isAuctionOpen) {
       showToast('종료된 경매에는 입찰할 수 없습니다');
+      return;
+    }
+    if (isInstantBuyAmountSelected) {
+      await handleBuyNowOpen();
       return;
     }
     const amount = requestedBidAmount;
@@ -525,6 +563,7 @@ const AuctionDetailPage = () => {
       return;
     }
     setShowHoldConsentError(false);
+    if (!ensureTradeMethodSelected()) return;
     if (!await ensureDeliveryAddress()) return;
     bidMutation.mutate({
       bidAmount: amount,
@@ -548,6 +587,7 @@ const AuctionDetailPage = () => {
       showToast('즉시구매가 제공되지 않는 경매입니다');
       return;
     }
+    if (!ensureTradeMethodSelected()) return;
     if (!await ensureDeliveryAddress()) return;
     if (hasAvailablePoint && availablePoint < instantBuyPrice) {
       showToast(`사용 가능 포인트가 부족합니다. 필요 ${formatNumber(instantBuyPrice)}P, 보유 ${formatNumber(availablePoint)}P`);
@@ -672,6 +712,8 @@ const AuctionDetailPage = () => {
               remainingTime={remainingTime}
               remainingTimeLabel={remainingTimeLabel}
               selectedTradeName={selectedTradeName}
+              selectedTradeMethodCode={selectedTradeValue}
+              isMixedTradeMethod={isMixedTradeMethod}
               displayedBidAmount={displayedBidAmount}
               holdAgreed={holdAgreed}
               requiresBidHoldConsent={requiresBidHoldConsent}
@@ -691,6 +733,7 @@ const AuctionDetailPage = () => {
               isPointBalanceError={isPointBalanceError}
               isBidPointSufficient={isBidPointSufficient}
               isBidAmountUnitValid={isBidAmountUnitValid}
+              isInstantBuyAmountSelected={isInstantBuyAmountSelected}
               hasBidAmountSelection={hasBidAmountSelection}
               isBuyNowPointSufficient={isBuyNowPointSufficient}
               isFavoritePending={favoriteMutation.isPending || favoriteStatusQuery.isFetching}
@@ -698,6 +741,7 @@ const AuctionDetailPage = () => {
               onBidInputBlur={handleBidInputBlur}
               onBidMultiplierSelect={handleBidMultiplierSelect}
               onHoldAgreedChange={handleHoldAgreedChange}
+              onTradeMethodChange={(code) => setTradeMethodSelection({ auctionId, code })}
               onBidSubmit={handleBidSubmit}
               onBuyNowOpen={handleBuyNowOpen}
               onFavoriteToggle={handleFavoriteToggle}

@@ -1,5 +1,6 @@
 // src/pages/user/notification/NotificationPage.jsx
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import NotificationDetailModal from './components/NotificationDetailModal';
 import NotificationItem from './components/NotificationItem';
@@ -22,7 +23,18 @@ const DOMAIN_DEFS = [
 const DOMAINS = DOMAIN_DEFS.map((d) => d.label);
 const FILTERS = ['전체', ...DOMAIN_DEFS.map((d) => d.filter)];
 const FILTER_TO_DOMAIN = Object.fromEntries(DOMAIN_DEFS.map((d) => [d.filter, d.label]));
+const DOMAIN_TO_FILTER = Object.fromEntries(DOMAIN_DEFS.map((d) => [d.label, d.filter]));
 const DOMAIN_CODE_TO_LABEL = Object.fromEntries(DOMAIN_DEFS.map((d) => [d.code, d.label]));
+
+// 도메인 카드 미리보기 상한 — 넘으면 "+N건 더 보기"로 해당 도메인 탭(전체 목록+페이지네이션)으로 보낸다.
+// 목록 페이지네이션은 다른 전체보기 화면(포인트 내역 등)과 같은 10건 기준 (2026-07-30)
+const CARD_PREVIEW_LIMIT = 5;
+const LIST_PAGE_SIZE = 10;
+
+// 미읽음 알림을 먼저 보여주는 정렬 — 카드 미리보기(CARD_PREVIEW_LIMIT)에서 오래된 미읽음 알림이
+// 최신 읽음 알림에 밀려 아예 안 보이는 일이 없도록 한다. Array.sort는 안정 정렬이라 같은
+// 읽음여부 안에서는 원래(최신순) 순서가 유지된다 (2026-07-30)
+const sortUnreadFirst = (list) => [...list].sort((a, b) => Number(a.read) - Number(b.read));
 
 // 일반/제공자 구분 필터 (F-COM-011, 팀 결정 2026-07-17)
 // "내가 소비자로서 받은 알림(일반)"과 "내가 서비스 제공자로서 받은 업무 알림(제공자)"을 나눈다
@@ -56,6 +68,9 @@ const NotificationPage = () => {
   const [audienceFilter, setAudienceFilter] = useState('전체');
   // 상세 팝업에 띄울 알림 — null이면 팝업 닫힌 상태
   const [selectedItem, setSelectedItem] = useState(null);
+  // 도메인 탭으로 들어간 전체 목록의 현재 페이지 — 필터가 바뀌면 1페이지로 되돌린다 (2026-07-30)
+  const [page, setPage] = useState(1);
+  useEffect(() => { setPage(1); }, [filter, audienceFilter]);
 
   const { data: notifications = [], isLoading } = useNotifications();
   const markReadMutation = useMarkRead();
@@ -76,6 +91,12 @@ const NotificationPage = () => {
 
   const visibleDomains =
     filter === '전체' ? DOMAINS : [FILTER_TO_DOMAIN[filter]];
+
+  // 도메인 탭으로 들어간 단일 도메인 전체 목록 — 필터가 '전체'가 아닐 때만 쓴다
+  const focusedDomain = filter === '전체' ? null : visibleDomains[0];
+  const focusedItems = focusedDomain ? items.filter((n) => n.domain === focusedDomain) : [];
+  const focusedPageCount = Math.max(1, Math.ceil(focusedItems.length / LIST_PAGE_SIZE));
+  const pagedFocusedItems = focusedItems.slice((page - 1) * LIST_PAGE_SIZE, page * LIST_PAGE_SIZE);
 
   return (
     <div className="container" style={{ paddingTop: '25px', paddingBottom: '25px' }}>
@@ -130,30 +151,79 @@ const NotificationPage = () => {
         </div>
       </div>
 
-      {/* 도메인별 그룹 카드 */}
+      {/* 도메인별 그룹 카드 — '전체'일 때는 도메인마다 최근 5건(미읽음 우선)만 미리보고,
+          "+N건 더 보기"나 위 도메인 탭을 누르면 그 도메인 전체를 10건씩 페이지로 보여준다.
+          카드 하나에 알림이 몰려도(예: 운영·환전) 다른 도메인 카드까지 한눈에 보이게 하기 위함
+          (2026-07-30, 알림이 많은 도메인 카드만 세로로 훅 길어지는 문제 개선) */}
       {isLoading ? (
         <CardGroupSkeleton cardsPerGroup={2} groups={4} />
-      ) : (
+      ) : filter === '전체' ? (
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-5">
           {visibleDomains.map((domain) => {
             const domainItems = items.filter((n) => n.domain === domain);
+            const overflowCount = domainItems.length - CARD_PREVIEW_LIMIT;
+            const previewItems = overflowCount > 0
+              ? sortUnreadFirst(domainItems).slice(0, CARD_PREVIEW_LIMIT)
+              : domainItems;
             return (
               <div
                 key={domain}
                 className="bg-white border border-gray-100 rounded-2xl p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)]"
               >
                 <h3 className="text-base font-bold text-gray-900 mt-0 mb-3">{domain}</h3>
-                <div className="grid gap-3">
-                  {domainItems.length === 0 && (
+                <div className="grid grid-cols-1 gap-3">
+                  {previewItems.length === 0 && (
                     <p className="text-sm text-gray-400 text-center py-6 m-0">알림이 없습니다.</p>
                   )}
-                  {domainItems.map((item) => (
+                  {previewItems.map((item) => (
                     <NotificationItem key={item.id} item={item} onClick={openItem} />
                   ))}
                 </div>
+                {overflowCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setFilter(DOMAIN_TO_FILTER[domain])}
+                    className="mt-3 text-sm font-medium text-blue-600 hover:underline"
+                  >
+                    + {overflowCount}건 더 보기
+                  </button>
+                )}
               </div>
             );
           })}
+        </section>
+      ) : (
+        <section className="bg-white border border-gray-100 rounded-2xl p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)] mt-5">
+          <h3 className="text-base font-bold text-gray-900 mt-0 mb-3">{focusedDomain} · 총 {focusedItems.length}건</h3>
+          <div className="grid grid-cols-1 gap-3">
+            {pagedFocusedItems.length === 0 && (
+              <p className="text-sm text-gray-400 text-center py-6 m-0">알림이 없습니다.</p>
+            )}
+            {pagedFocusedItems.map((item) => (
+              <NotificationItem key={item.id} item={item} onClick={openItem} />
+            ))}
+          </div>
+          {focusedItems.length > LIST_PAGE_SIZE && (
+            <div className="flex items-center justify-center gap-3 mt-4">
+              <button
+                type="button"
+                disabled={page === 1}
+                onClick={() => setPage((p) => p - 1)}
+                className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:border-blue-500 hover:text-blue-600 disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:text-gray-600 transition-colors"
+              >
+                이전
+              </button>
+              <span className="text-sm text-gray-500">{page} / {focusedPageCount}</span>
+              <button
+                type="button"
+                disabled={page === focusedPageCount}
+                onClick={() => setPage((p) => p + 1)}
+                className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:border-blue-500 hover:text-blue-600 disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:text-gray-600 transition-colors"
+              >
+                다음
+              </button>
+            </div>
+          )}
         </section>
       )}
 
