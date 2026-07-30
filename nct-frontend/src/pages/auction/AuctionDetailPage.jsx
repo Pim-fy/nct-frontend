@@ -45,7 +45,6 @@ import {
   resolveAuctionResultLabel,
 } from './utils/auctionFormatters';
 import { formatNumber, formatPrice } from '@utils/common';
-import { addRecentAuction } from '@utils/recentAuctions';
 
 const DETAIL_PAGE_CLASS = 'bg-white pb-14 text-[#1d1d1f]';
 const DETAIL_CONTAINER_CLASS = 'mx-auto w-[calc(100%_-_52px)] max-w-[1600px] max-lg:w-[calc(100%_-_32px)] max-sm:w-[calc(100%_-_24px)]';
@@ -79,7 +78,6 @@ const AuctionDetailPage = () => {
   const [imageNavigationCommand, setImageNavigationCommand] = useState(null);
   const requestedImageIndexRef = useRef(null);
   const imageNavigationIdRef = useRef(0);
-  const trackedRecentAuctionIdRef = useRef(null);
   const requestedDetailSectionIdRef = useRef(null);
   const detailSectionUnlockTimerRef = useRef(null);
   const detailNavigationRef = useRef(null);
@@ -236,22 +234,6 @@ const AuctionDetailPage = () => {
       applyFavoriteStatus(favoriteStatusQuery.data);
     }
   }, [applyFavoriteStatus, favoriteStatusQuery.data]);
-
-  useEffect(() => {
-    if (!auction) return;
-    const resolvedAuctionId = String(auction.auctionId ?? auctionId);
-    if (trackedRecentAuctionIdRef.current === resolvedAuctionId) return;
-
-    const repImage = auction.images?.find(
-      (image) => image.representative === 'Y' || image.representative === true,
-    ) ?? auction.images?.[0];
-    addRecentAuction({
-      auctionId: resolvedAuctionId,
-      imagePath: repImage?.path ?? null,
-      title: auction.title,
-    });
-    trackedRecentAuctionIdRef.current = resolvedAuctionId;
-  }, [auction, auctionId]);
 
   useEffect(() => {
     if (!toastMessage) return undefined;
