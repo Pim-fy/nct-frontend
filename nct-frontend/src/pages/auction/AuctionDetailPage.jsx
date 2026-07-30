@@ -422,7 +422,12 @@ const AuctionDetailPage = () => {
     : defaultImageIndex;
   const currentPrice = Number(auction.currentPrice || auction.startPrice || 0);
   const bidUnitPrice = Number(auction.bidUnitPrice || 1000);
-  const minimumBidPrice = currentPrice + bidUnitPrice;
+  const instantBuyPrice = Number(auction.instantBuyPrice || 0);
+  const hasInstantBuyPrice = Number.isFinite(instantBuyPrice) && instantBuyPrice > 0;
+  const nextUnitBidPrice = currentPrice + bidUnitPrice;
+  const minimumBidPrice = hasInstantBuyPrice
+    ? Math.min(nextUnitBidPrice, instantBuyPrice)
+    : nextUnitBidPrice;
   const isAuctionReady = auction.auctionStatusCode === 'AUCC0001';
   const auctionResultLabel = isAuctionReady ? null : resolveAuctionResultLabel(auction);
   const auctionStartTimestamp = auction.startDateTime
@@ -487,9 +492,12 @@ const AuctionDetailPage = () => {
   const requestedBidAmount = parseAmount(displayedBidAmount);
   const hasBidAmountSelection = bidAmount !== '';
   const bidIncrementAmount = requestedBidAmount - currentPrice;
-  const isBidAmountUnitValid = requestedBidAmount >= minimumBidPrice
-    && bidIncrementAmount % bidUnitPrice === 0;
-  const instantBuyPrice = Number(auction.instantBuyPrice || 0);
+  const isInstantBuyAmountSelected = hasInstantBuyPrice
+    && requestedBidAmount >= instantBuyPrice;
+  const isBidAmountUnitValid = isInstantBuyAmountSelected || (
+    requestedBidAmount >= nextUnitBidPrice
+    && bidIncrementAmount % bidUnitPrice === 0
+  );
   const availablePointValue = pointBalanceQuery.data?.available;
   const availablePoint = availablePointValue == null ? null : Number(availablePointValue);
   const hasAvailablePoint = Number.isFinite(availablePoint);
@@ -499,7 +507,12 @@ const AuctionDetailPage = () => {
     && !hasAvailablePoint
     && pointBalanceQuery.isLoading;
   const isPointBalanceError = isAuthenticated && pointBalanceQuery.isError;
-  const handleBidInputChange = (event) => setBidAmount(formatNumber(parseAmount(event.target.value)));
+  const capBidAmount = (amount) => (hasInstantBuyPrice
+    ? Math.min(amount, instantBuyPrice)
+    : amount);
+  const handleBidInputChange = (event) => setBidAmount(
+    formatNumber(capBidAmount(parseAmount(event.target.value))),
+  );
   const handleBidInputBlur = () => {
     if (parseAmount(bidAmount) < minimumBidPrice) {
       setBidAmount(formatNumber(minimumBidPrice));
@@ -507,7 +520,7 @@ const AuctionDetailPage = () => {
   };
   const handleBidMultiplierSelect = (multiplier) => {
     setBidAmount((value) => formatNumber(
-      parseAmount(value || minimumBidPrice) + (bidUnitPrice * multiplier),
+      capBidAmount(parseAmount(value || minimumBidPrice) + (bidUnitPrice * multiplier)),
     ));
   };
   const handleBidSubmit = async () => {
@@ -525,6 +538,10 @@ const AuctionDetailPage = () => {
     }
     if (!isAuctionOpen) {
       showToast('종료된 경매에는 입찰할 수 없습니다');
+      return;
+    }
+    if (isInstantBuyAmountSelected) {
+      await handleBuyNowOpen();
       return;
     }
     const amount = requestedBidAmount;
@@ -716,6 +733,7 @@ const AuctionDetailPage = () => {
               isPointBalanceError={isPointBalanceError}
               isBidPointSufficient={isBidPointSufficient}
               isBidAmountUnitValid={isBidAmountUnitValid}
+              isInstantBuyAmountSelected={isInstantBuyAmountSelected}
               hasBidAmountSelection={hasBidAmountSelection}
               isBuyNowPointSufficient={isBuyNowPointSufficient}
               isFavoritePending={favoriteMutation.isPending || favoriteStatusQuery.isFetching}
