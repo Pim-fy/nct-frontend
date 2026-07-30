@@ -24,7 +24,7 @@ const COLUMNS = [
  */
 // limit을 주면(마이페이지 요약 카드) 최근 N건만 보여주고 "+"로 전체보기 모달을 띄운다.
 // limit 없이 부르면(전체보기 모달 안) 전부 보여준다 (2026-07-29 다른 내역 표와 동일한 방식).
-const PointConvertHistoryTable = ({ rows, limit, onExpand }) => {
+const PointConvertHistoryTable = ({ rows, limit, onExpand, loading }) => {
   const convertRows = rows.filter((r) => r.typeCd === 'PTLC0012' && r.amount > 0);
   const visibleRows = limit ? convertRows.slice(0, limit) : convertRows;
 
@@ -36,6 +36,7 @@ const PointConvertHistoryTable = ({ rows, limit, onExpand }) => {
       emptyText="전환 내역이 없습니다."
       onExpand={limit ? onExpand : undefined}
       pageSize={limit ? undefined : 10}
+      loading={loading}
     />
   );
 };

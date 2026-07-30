@@ -259,11 +259,13 @@ const PointWalletPage = ({ embedded = false } = {}) => {
         onExpand={() => setDetailModal('charge')}
       />
 
-      {ledgerLoading ? (
-        <p className="text-sm text-gray-400 text-center py-10">전환 내역을 불러오는 중...</p>
-      ) : (
-        <PointConvertHistoryTable rows={ledger} limit={RECENT_LIMIT} onExpand={() => setDetailModal('convert')} />
-      )}
+      <PointConvertHistoryTable
+        loading={ledgerLoading}
+        rows={ledger}
+        limit={RECENT_LIMIT}
+        onExpand={() => setDetailModal('convert')}
+      />
+
       <PointExchangeOrderTable
         loading={exchangeLoading}
         rows={exchangeOrders}
