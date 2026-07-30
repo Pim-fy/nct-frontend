@@ -8,8 +8,11 @@ import { Skeleton } from '@components/skeleton/BaseSkeleton';
  * 래퍼 + thead/tbody + 빈 상태 행 + hover 행)를 3벌 복사해 쓰던 것을 하나로 통합 (2026-07-20).
  *
  * 표마다 다른 것(컬럼 구성·셀 내용·셀 스타일)은 columns 설정으로 받는다:
- *   { key, header, align?('right'면 우측 정렬), cellClass?(문자열 또는 (row)=>문자열), render(row) }
+ *   { key, header, align?('right'면 우측 정렬), cellClass?(문자열 또는 (row)=>문자열), widthClass?, render(row) }
  * 배지 같은 셀 생김새는 각 테이블 파일이 render로 정의 — 셸은 배치만 책임진다.
+ * widthClass는 일시·금액·상태 배지처럼 여러 표에 공통으로 나오는 컬럼 종류의 최소 너비를
+ * 맞추는 용도 — 표마다 컬럼 개수·내용 길이가 달라 같은 성격의 컬럼도 너비가 제각각이라
+ * 페이지에 여러 표가 나란히 쌓일 때 여백이 들쭉날쭉해 보이던 것을 줄인다 (2026-07-30)
  *
  * pageSize를 주면(전체보기 모달) 내부에서 페이지네이션한다 — 요약 카드(최근 5건)는 pageSize
  * 없이 불러서 그대로 다 보여준다 (2026-07-29, "+" 전체보기 모달을 10건씩 페이지로 보여달라는 요청).
@@ -47,7 +50,7 @@ const PointTable = ({ title, columns, rows, emptyText, onExpand, pageSize, loadi
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`${col.align === 'right' ? 'text-right' : 'text-left'} font-bold px-4 py-3`}
+                  className={`${col.align === 'right' ? 'text-right' : 'text-left'} font-bold px-4 py-3 ${col.widthClass ?? ''}`}
                 >
                   {col.header}
                 </th>
