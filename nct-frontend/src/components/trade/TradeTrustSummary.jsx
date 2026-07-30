@@ -6,6 +6,7 @@ import {
   getUserReviews,
   getUserReviewTrust,
 } from '@api/reviewApi';
+import { Skeleton } from '@components/skeleton/BaseSkeleton';
 
 const unwrapData = (response) => response?.data ?? response;
 
@@ -86,7 +87,12 @@ const TradeTrustSummary = ({ counterpartUserId }) => {
   }
 
   if (isLoading) {
-    return <div className="trade-trust">신뢰지표를 불러오는 중입니다.</div>;
+    return (
+      <div className="trade-trust">
+        <Skeleton height={20} style={{ marginBottom: 10, maxWidth: 220 }} />
+        <Skeleton count={2} height={54} style={{ marginBottom: 8 }} />
+      </div>
+    );
   }
 
   if (loadError) {

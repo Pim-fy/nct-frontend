@@ -4,10 +4,6 @@
   background: linear-gradient(180deg, #f4f7ff 0, #f8f9fb 340px, #fff 340px);
 }
 
-.trade-chat-page .container {
-  max-width: 1040px;
-}
-
 /* 마이페이지 안에서는 독립 페이지 여백과 배경을 제거하고 콘텐츠만 교체한다. */
 .trade-chat-page--embedded {
   padding: 0;
@@ -15,7 +11,7 @@
 }
 
 .trade-chat-page--embedded .container {
-  max-width: none;
+  width: 100%;
 }
 
 .trade-chat-page__header {

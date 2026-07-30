@@ -1,3 +1,5 @@
+import { formatDate, formatDateTime, formatPrice } from '@utils/common';
+
 const getResponseBody = (response) => response?.data ?? response;
 
 // 거래 상태 공통코드(TRDG02)를 기존 거래 화면에서 사용하는 상태값으로 변환한다.
@@ -22,34 +24,6 @@ export const normalizeTradeStatus = (status) => {
   }
 
   return tradeStatusCodeMap[normalizedStatus] ?? normalizedStatus;
-};
-
-const formatAmount = (amount) => {
-  if (typeof amount === 'number') {
-    return `${amount.toLocaleString('ko-KR')}원`;
-  }
-
-  return amount || '-';
-};
-
-const formatDate = (date) => {
-  if (!date) {
-    return '-';
-  }
-
-  return String(date).replaceAll('-', '.').slice(0, 10);
-};
-
-// 자동완료 기준 시각은 서버 시간을 그대로 받아 화면 표기 형식만 통일한다.
-const formatDateTime = (dateTime) => {
-  if (!dateTime) {
-    return '-';
-  }
-
-  return String(dateTime)
-    .replace('T', ' ')
-    .replaceAll('-', '.')
-    .slice(0, 16);
 };
 
 // 서버의 LocalDateTime을 기존 상세 화면에서 쓰는 날짜·시간 필드로 분리한다.
@@ -97,7 +71,7 @@ export const toTradeHistoryItem = (trade) => {
     type: trade.userRole ?? trade.role ?? trade.type,
     productName: trade.productName ?? trade.itemName ?? '-',
     counterpart: trade.counterpartNickname ?? trade.counterpart ?? '-',
-    amount: formatAmount(trade.price ?? trade.amount ?? trade.tradeAmount),
+    amount: formatPrice(trade.price ?? trade.amount ?? trade.tradeAmount),
     date: formatDate(trade.createdAt ?? trade.tradedAt ?? trade.tradeDate),
     method: trade.tradeMethod ?? trade.method,
     status: normalizeTradeStatus(trade.tradeStatus ?? trade.status),
@@ -117,7 +91,7 @@ export const toTradeDetail = (response) => {
   return {
     id: trade.tradeId ?? trade.id,
     productName: trade.productName ?? trade.itemName ?? '-',
-    price: formatAmount(trade.price ?? trade.amount ?? trade.tradeAmount),
+    price: formatPrice(trade.price ?? trade.amount ?? trade.tradeAmount),
     method: trade.tradeMethod ?? trade.method ?? null,
     status: normalizeTradeStatus(trade.tradeStatus ?? trade.status),
     // 확인 대기 상태에서 첫 완료 확인을 누른 역할을 받아 상대방에게만 두 번째 확인 버튼을 노출한다.

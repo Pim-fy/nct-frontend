@@ -6,6 +6,7 @@ import {
   ContentPagination,
   ContentState,
 } from '@components/content/ContentUi';
+import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import { usePublicNoticeDetail, usePublicNoticeList } from '@hooks/usePublicNotices';
 import './noticePage.css';
 
@@ -58,8 +59,10 @@ const FaqPage = () => {
       </header>
 
       {faqQuery.isLoading && (
-        <section className="faq-list faq-list--skeleton" aria-label="FAQ를 불러오는 중">
-          {Array.from({ length: 5 }).map((_, index) => <div className="faq-skeleton" key={index} />)}
+        <section className="faq-list" aria-label="FAQ를 불러오는 중">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <Skeleton borderRadius={10} height={68} key={index} />
+          ))}
         </section>
       )}
 

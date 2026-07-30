@@ -3,7 +3,7 @@
    - 공지 관리(adminContentPages.css, 담당자7 소유)와 비슷한 톤을 내되
      타 담당자 파일에 의존하지 않도록 담당자6 화면 전용 클래스로 분리했다 */
 
-.admin-bjn-page { max-width: 1440px; margin: 0 auto; color: #1f274c; }
+.admin-bjn-page { max-width: 1600px; margin: 0 auto; color: #1f274c; }
 .admin-bjn-page svg { width: 17px; height: 17px; }
 
 /* 필터 줄 */

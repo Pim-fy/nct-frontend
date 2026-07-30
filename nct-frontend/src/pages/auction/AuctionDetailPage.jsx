@@ -21,7 +21,7 @@ import useCountdown from '@hooks/useCountdown';
 import { usePointBalance } from '@hooks/usePoint';
 import { getUserReviewTrust } from '@api/reviewApi';
 import { SITE_HEADER_VISIBILITY_EVENT } from '@/constants/layoutEvents';
-import { AuctionDetailSkeleton } from '@components/skeleton/AuctionSkeletons';
+import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import PointChargeWidgetModal from '@pages/user/point/components/PointChargeWidgetModal';
 import AuctionBidPanel from './components/AuctionBidPanel';
 import AuctionBuyNowModal from './components/AuctionBuyNowModal';
@@ -36,17 +36,16 @@ import AuctionSellerHistory from './components/AuctionSellerHistory';
 import AuctionToast from './components/AuctionToast';
 import {
   createImageItems,
-  formatNumber,
-  formatPrice,
   formatRemainingTime,
   formatTimeUntil,
   parseAmount,
   resolveAuctionResultLabel,
 } from './utils/auctionFormatters';
+import { formatNumber, formatPrice } from '@utils/common';
 import { addRecentAuction } from '@utils/recentAuctions';
 
-const DETAIL_PAGE_CLASS = 'bg-white pb-14 text-body-sm text-[#1d1d1f] md:text-body-md';
-const DETAIL_CONTAINER_CLASS = 'mx-auto w-full max-w-[1600px] px-4 lg:px-6';
+const DETAIL_PAGE_CLASS = 'bg-white pb-14 text-[#1d1d1f]';
+const DETAIL_CONTAINER_CLASS = 'mx-auto w-[calc(100%_-_52px)] max-w-[1600px] max-lg:w-[calc(100%_-_32px)] max-sm:w-[calc(100%_-_24px)]';
 const DETAIL_EMPTY_CLASS = 'grid min-h-[340px] place-content-center justify-items-center gap-2.5 rounded-lg border border-[#e8e8e8] bg-[#f8f8f6] p-7 text-center';
 const DETAIL_SECTION_ITEMS = [
   { id: 'auction-product-description', label: '상품설명' },
@@ -349,8 +348,22 @@ const AuctionDetailPage = () => {
     };
   }, [isDetailNavigationStuck]);
 
-  if (isLoading) {
-    return <AuctionDetailSkeleton />;
+  if (isAuthLoading || isLoading) {
+    return (
+      <main className={DETAIL_PAGE_CLASS}>
+        <div className={DETAIL_CONTAINER_CLASS} style={{ paddingTop: '32px' }}>
+          <section className="grid items-stretch gap-2 lg:grid-cols-[minmax(360px,0.78fr)_minmax(560px,1.22fr)]">
+            <Skeleton height={420} />
+            <div style={{ border: '1px solid #f0efec', borderRadius: 8, padding: 24 }}>
+              <Skeleton height={16} style={{ marginBottom: 12, maxWidth: 100 }} />
+              <Skeleton height={30} style={{ marginBottom: 16, maxWidth: '80%' }} />
+              <Skeleton height={40} style={{ marginBottom: 16 }} />
+              <Skeleton count={3} height={16} style={{ marginBottom: 8 }} />
+            </div>
+          </section>
+        </div>
+      </main>
+    );
   }
 
   if (isError || !auction) {
