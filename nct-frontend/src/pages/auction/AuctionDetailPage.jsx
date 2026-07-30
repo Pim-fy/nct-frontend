@@ -46,12 +46,13 @@ import {
   resolveAuctionResultLabel,
 } from './utils/auctionFormatters';
 import { confirm, formatNumber, formatPrice } from '@utils/common';
-import { addRecentAuction } from '@utils/recentAuctions';
 
 const DETAIL_PAGE_CLASS = 'bg-white pb-14 text-[#1d1d1f]';
 const DETAIL_CONTAINER_CLASS = 'mx-auto w-[calc(100%_-_52px)] max-w-[1600px] max-lg:w-[calc(100%_-_32px)] max-sm:w-[calc(100%_-_24px)]';
 const DETAIL_EMPTY_CLASS = 'grid min-h-[340px] place-content-center justify-items-center gap-2.5 rounded-lg border border-[#e8e8e8] bg-[#f8f8f6] p-7 text-center';
-const DELIVERY_CAPABLE_TRADE_METHOD_CODES = new Set(['TRDC0009', 'TRDC0020']);
+const DELIVERY_TRADE_METHOD_CODE = 'TRDC0009';
+const OFFLINE_TRADE_METHOD_CODE = 'TRDC0010';
+const BOTH_TRADE_METHOD_CODE = 'TRDC0020';
 const DETAIL_SECTION_ITEMS = [
   { id: 'auction-product-description', label: '상품설명' },
   { id: 'auction-product-updates', label: '변경 내역' },
@@ -68,6 +69,10 @@ const AuctionDetailPage = () => {
   const authenticatedUserId = user?.id ?? user?.userId ?? user?.userSn ?? user?.usrSn;
   const [bidAmount, setBidAmount] = useState('');
   const [holdAgreed, setHoldAgreed] = useState(false);
+  const [tradeMethodSelection, setTradeMethodSelection] = useState({
+    auctionId: null,
+    code: '',
+  });
   const [showHoldConsentError, setShowHoldConsentError] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [activeDetailSectionId, setActiveDetailSectionId] = useState(
@@ -82,7 +87,6 @@ const AuctionDetailPage = () => {
   const [imageNavigationCommand, setImageNavigationCommand] = useState(null);
   const requestedImageIndexRef = useRef(null);
   const imageNavigationIdRef = useRef(0);
-  const trackedRecentAuctionIdRef = useRef(null);
   const requestedDetailSectionIdRef = useRef(null);
   const detailSectionUnlockTimerRef = useRef(null);
   const detailNavigationRef = useRef(null);
@@ -266,22 +270,6 @@ const AuctionDetailPage = () => {
   }, [applyFavoriteStatus, favoriteStatusQuery.data]);
 
   useEffect(() => {
-    if (!auction) return;
-    const resolvedAuctionId = String(auction.auctionId ?? auctionId);
-    if (trackedRecentAuctionIdRef.current === resolvedAuctionId) return;
-
-    const repImage = auction.images?.find(
-      (image) => image.representative === 'Y' || image.representative === true,
-    ) ?? auction.images?.[0];
-    addRecentAuction({
-      auctionId: resolvedAuctionId,
-      imagePath: repImage?.path ?? null,
-      title: auction.title,
-    });
-    trackedRecentAuctionIdRef.current = resolvedAuctionId;
-  }, [auction, auctionId]);
-
-  useEffect(() => {
     if (!toastMessage) return undefined;
     const timerId = window.setTimeout(() => setToastMessage(''), 1800);
     return () => window.clearTimeout(timerId);
@@ -460,10 +448,25 @@ const AuctionDetailPage = () => {
   const isCurrentHighestBidder = Boolean(auction.currentHighestBidder);
   const hasBidHistory = Boolean(auction.hasBidHistory);
   const requiresBidHoldConsent = isAuthenticated && !hasBidHistory;
-  const selectedTradeValue = auction.tradeMethodCode || '';
-  const selectedTradeName = auction.tradeMethodName || '거래 방식 미정';
+  const isMixedTradeMethod = auction.tradeMethodCode === BOTH_TRADE_METHOD_CODE;
+  const selectedMixedTradeMethodCode = String(tradeMethodSelection.auctionId) === String(auctionId)
+    ? tradeMethodSelection.code
+    : '';
+  const selectedTradeValue = isMixedTradeMethod
+    ? selectedMixedTradeMethodCode
+    : (auction.tradeMethodCode || '');
+  const selectedTradeName = selectedTradeValue === DELIVERY_TRADE_METHOD_CODE
+    ? '배송'
+    : (selectedTradeValue === OFFLINE_TRADE_METHOD_CODE
+      ? '직거래'
+      : (isMixedTradeMethod ? '선택 필요' : (auction.tradeMethodName || '거래 방식 미정')));
+  const ensureTradeMethodSelected = () => {
+    if (!isMixedTradeMethod || selectedTradeValue) return true;
+    showToast('배송 또는 직거래 방식을 선택해 주세요');
+    return false;
+  };
   const ensureDeliveryAddress = async () => {
-    if (!DELIVERY_CAPABLE_TRADE_METHOD_CODES.has(selectedTradeValue)) return true;
+    if (selectedTradeValue !== DELIVERY_TRADE_METHOD_CODE) return true;
 
     let profile = memberProfileQuery.data;
     if (!profile) {
@@ -543,6 +546,7 @@ const AuctionDetailPage = () => {
       return;
     }
     setShowHoldConsentError(false);
+    if (!ensureTradeMethodSelected()) return;
     if (!await ensureDeliveryAddress()) return;
     bidMutation.mutate({
       bidAmount: amount,
@@ -566,6 +570,7 @@ const AuctionDetailPage = () => {
       showToast('즉시구매가 제공되지 않는 경매입니다');
       return;
     }
+    if (!ensureTradeMethodSelected()) return;
     if (!await ensureDeliveryAddress()) return;
     if (hasAvailablePoint && availablePoint < instantBuyPrice) {
       showToast(`사용 가능 포인트가 부족합니다. 필요 ${formatNumber(instantBuyPrice)}P, 보유 ${formatNumber(availablePoint)}P`);
@@ -690,6 +695,8 @@ const AuctionDetailPage = () => {
               remainingTime={remainingTime}
               remainingTimeLabel={remainingTimeLabel}
               selectedTradeName={selectedTradeName}
+              selectedTradeMethodCode={selectedTradeValue}
+              isMixedTradeMethod={isMixedTradeMethod}
               displayedBidAmount={displayedBidAmount}
               holdAgreed={holdAgreed}
               requiresBidHoldConsent={requiresBidHoldConsent}
@@ -716,6 +723,7 @@ const AuctionDetailPage = () => {
               onBidInputBlur={handleBidInputBlur}
               onBidMultiplierSelect={handleBidMultiplierSelect}
               onHoldAgreedChange={handleHoldAgreedChange}
+              onTradeMethodChange={(code) => setTradeMethodSelection({ auctionId, code })}
               onBidSubmit={handleBidSubmit}
               onBuyNowOpen={handleBuyNowOpen}
               onFavoriteToggle={handleFavoriteToggle}

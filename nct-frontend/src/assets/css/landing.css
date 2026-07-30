@@ -386,47 +386,6 @@
 .rail-arrow.next { right: -48px; }
 
 /* ===========================
-   퀵 액션 (플로팅)
-=========================== */
-.quick-rail {
-  position: fixed;
-  right: 24px;
-  bottom: 117px; /* TOP 버튼(85px + 24px 하단 여백 + 8px 간격) 바로 위 */
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  z-index: 150;
-}
-
-.quick-item {
-  width: 85px;
-  height: 85px;
-  min-height: 85px;
-  border: none;
-  border-radius: 50%;
-  box-shadow: 0 8px 20px rgba(0,0,0,.12);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  cursor: pointer;
-  font-family: inherit;
-  color: #5f5e5a;
-  text-decoration: none;
-  padding: 8px 6px;
-}
-
-.quick-item {background: #fff}
-.quick-item:hover { color: #333; font-weight:700; }
-.quick-blue       { background: var(--color-primary, #0064ff); color: #fff; }
-.quick-blue:hover { background: var(--color-primary-dark, #0048bf); color: #fff; }
-.quick-purple       { background: #8b5cf6; color: #fff; }
-.quick-purple:hover { background: #7c4ef0; color: #fff; }
-.quick-top        { position: fixed; right: 24px; bottom: 24px; z-index: 150; }
-.qi-label         { font-size: 14px; text-align: center; line-height: 1.2; font-weight: 700; }
-
-/* ===========================
    반응형
 =========================== */
 @media (max-width: 900px) {
@@ -438,9 +397,6 @@
 
 @media (max-width: 767px) {
   .home-notice-strip { top: 108px; }
-  /* 모바일: 플로팅 레일/TOP 버튼 숨김 — 하단 고정 바로 대체 */
-  .quick-rail { display: none !important; }
-  .quick-top  { display: none !important; }
 }
 
 @media (max-width: 560px) {

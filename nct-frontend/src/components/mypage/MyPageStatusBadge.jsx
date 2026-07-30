@@ -24,7 +24,7 @@ export default function MyPageStatusBadge({ children, className = 'badge-outline
         color,
         border: `1.5px solid ${color}`,
         boxSizing: 'border-box',
-        height: 24,
+        height: 30,
         padding: '0 10px',
         borderRadius: 30,
         fontSize: 12,

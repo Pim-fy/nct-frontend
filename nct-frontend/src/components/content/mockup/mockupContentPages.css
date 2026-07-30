@@ -5,6 +5,12 @@
   color: #1a1a18;
 }
 
+.content-page.service-discovery-page {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding: 40px 0;
+}
+
 .guide-hero {
   position: relative;
   overflow: hidden;
