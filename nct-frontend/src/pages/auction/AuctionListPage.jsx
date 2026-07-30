@@ -441,7 +441,7 @@ const AuctionListPage = () => {
       <main className="mx-auto my-0 w-full max-w-[1600px] py-10">
         <div className="flex items-start gap-6 max-md:block">
           <button
-            className={`fixed inset-0 z-[210] cursor-default border-0 bg-black/40 transition-opacity duration-300 md:hidden ${
+            className={`fixed inset-0 z-[210] cursor-default border-0 bg-black/25 transition-opacity duration-200 ease-linear motion-reduce:transition-none md:hidden ${
               filterOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
             }`}
             type="button"
@@ -450,11 +450,11 @@ const AuctionListPage = () => {
             onClick={() => setFilterOpen(false)}
           />
           <aside
-            className={`fixed inset-x-0 bottom-0 z-[220] grid max-h-[88dvh] w-full gap-[18px] overflow-y-auto overscroll-contain rounded-t-2xl border border-[#f0efec] bg-white p-5 shadow-[0_-8px_28px_rgba(0,0,0,0.18)] transition-[transform,visibility] duration-300 ease-out [scrollbar-color:#c8ced8_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#c8ced8] [&::-webkit-scrollbar-track]:bg-transparent ${
+            className={`fixed inset-x-0 bottom-0 z-[220] grid max-h-[88dvh] w-full transform-gpu gap-[18px] overflow-y-auto overscroll-contain rounded-t-2xl border border-[#f0efec] bg-white p-5 shadow-[0_-8px_28px_rgba(0,0,0,0.18)] transition-transform duration-[420ms] ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform [backface-visibility:hidden] [scrollbar-color:#c8ced8_transparent] [scrollbar-width:thin] motion-reduce:transition-none [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#c8ced8] [&::-webkit-scrollbar-track]:bg-transparent ${
               filterOpen
-                ? 'visible translate-y-0'
-                : 'invisible translate-y-full'
-            } md:visible md:sticky md:top-[82px] md:inset-x-auto md:bottom-auto md:z-auto md:mb-0 md:h-fit md:max-h-[calc(100dvh-122px)] md:w-[280px] md:flex-[0_0_280px] md:self-start md:translate-y-0 md:overflow-y-auto md:rounded-lg md:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)]`}
+                ? 'pointer-events-auto translate-y-0'
+                : 'pointer-events-none translate-y-[101%]'
+            } md:sticky md:top-[82px] md:inset-x-auto md:bottom-auto md:z-auto md:mb-0 md:h-fit md:max-h-[calc(100dvh-122px)] md:w-[280px] md:flex-[0_0_280px] md:self-start md:translate-y-0 md:overflow-y-auto md:rounded-lg md:pointer-events-auto md:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)]`}
             aria-label="경매 목록 필터"
           >
             <div className="flex items-center justify-between gap-3">

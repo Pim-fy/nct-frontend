@@ -32,6 +32,8 @@ const AuctionCard = ({ item }) => {
   const imageUrl = toImageUrl(item.thumbnailPath);
   const auctionResultLabel = resolveAuctionResultLabel(item);
   const remainingTime = formatAuctionCardTimeLabel(item, now);
+  const instantBuyPrice = Number(item.instantBuyPrice || 0);
+  const hasInstantBuyPrice = Number.isFinite(instantBuyPrice) && instantBuyPrice > 0;
   const isTimeExpired = item.auctionStatusCode !== 'AUCC0002'
     || !item.endDateTime
     || new Date(item.endDateTime).getTime() <= now
@@ -61,8 +63,15 @@ const AuctionCard = ({ item }) => {
           {item.categoryName}
         </span>
       </div>
-      <div className="mt-2 text-h3 font-extrabold text-primary-dark">
-        {formatPrice(item.currentPrice)}
+      <div className="mt-2 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
+        <strong className="whitespace-nowrap text-h3 font-extrabold text-primary-dark">
+          {formatPrice(item.currentPrice)}
+        </strong>
+        {hasInstantBuyPrice && (
+          <span className="whitespace-nowrap text-caption font-semibold text-[#85847f]">
+            / {formatPrice(instantBuyPrice)}
+          </span>
+        )}
       </div>
       <dl className="mt-2 mb-3.5 grid grid-cols-2 gap-2 text-caption text-[#5f5e5a]">
         <div className="min-w-0 rounded-lg bg-[#f8f8f6] px-2.5 py-2">
