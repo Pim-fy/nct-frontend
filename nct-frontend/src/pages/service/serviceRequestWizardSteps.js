@@ -583,10 +583,10 @@ export const WIZARD_STEPS = {
   ls_field: {
     title: '분야 선택', type: 'single',
     options: [
-      { label: '음악', icon: '🎵', next: 'ls_music' },
-      { label: '미술', icon: '🖌️', next: 'ls_art' },
-      { label: '운동', icon: '🏋️', next: 'ls_fit' },
-      { label: '어학', icon: '🗣️', next: 'ls_lang' },
+      { label: '음악', next: 'ls_music' },
+      { label: '미술', next: 'ls_art' },
+      { label: '운동', next: 'ls_fit' },
+      { label: '어학', next: 'ls_lang' },
     ],
   },
   ls_music: {

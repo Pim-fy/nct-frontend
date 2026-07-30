@@ -347,8 +347,9 @@ export default function ServiceRequestFormPage() {
     const currentNextId = chain[stepIdx + 1] ?? null;
 
     if (newNext === currentNextId) {
+      // 하위 단계 구성은 그대로라 지우지 않되, 이어지는 다음 카드를 계속 볼 수 있게 펼쳐둔다
       setAnswers(prev => ({ ...prev, [stepId]: answerText }));
-      setExpandedStepId(null);
+      setExpandedStepId(currentNextId);
       afterApply?.();
       return;
     }
@@ -697,8 +698,10 @@ export default function ServiceRequestFormPage() {
                 {/* 선택된 카테고리 요약 배너 — 접힌 상태에서 아이콘·이름·설명을 크게 보여줌 */}
                 {!isCategoryExpanded && selectedCategory && (
                   <div className="px-6 pb-5">
-                    <div
-                      className="flex items-center gap-4 rounded-xl p-4 text-white"
+                    <button
+                      type="button"
+                      onClick={handleCategoryCardHeaderClick}
+                      className="flex w-full cursor-pointer items-center gap-4 rounded-xl p-4 text-left text-white transition-opacity hover:opacity-90"
                       style={{ backgroundColor: (CATEGORY_META[selectedCategory.catNm] || {}).color || '#5f5e5a' }}
                     >
                       <CategoryIcon name={selectedCategory.catNm} />
@@ -708,7 +711,7 @@ export default function ServiceRequestFormPage() {
                           <p className="m-0 mt-1 text-sm opacity-90">{CATEGORY_META[selectedCategory.catNm].sub}</p>
                         )}
                       </div>
-                    </div>
+                    </button>
                   </div>
                 )}
 
@@ -786,7 +789,7 @@ export default function ServiceRequestFormPage() {
                   <h3 className="text-base font-semibold text-[#5f5e5a]">사진 첨부</h3>
                   <span className="text-xs text-[#888780]">(선택)</span>
                 </div>
-                <p className="mb-3 text-xs text-[#888780]">현재 상태 사진을 첨부하면 더 정확한 견적을 받을 수 있어요.</p>
+                <p className="mb-3 text-xs text-[#888780]">사진을 첨부하면 더 정확한 견적을 받을 수 있어요.</p>
                 <ServiceRequestImageUpload images={images} onChange={setImages} maxImages={MAX_IMAGES} />
               </div>
             </section>
