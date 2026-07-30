@@ -1,6 +1,5 @@
 // src/pages/user/notification/NotificationPage.jsx
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 
 import NotificationDetailModal from './components/NotificationDetailModal';
 import NotificationItem from './components/NotificationItem';
@@ -128,13 +127,6 @@ const NotificationPage = () => {
           >
             전체 읽음
           </button>
-          {/* 알림 수신 설정 화면(F-COM-012) 진입점 */}
-          <Link
-            to="/user/notification/settings"
-            className="border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-medium rounded-lg px-4 py-2 transition-colors"
-          >
-            알림 설정
-          </Link>
         </div>
       </div>
 
