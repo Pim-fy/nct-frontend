@@ -10,6 +10,8 @@ const AuctionBidPanel = ({
   remainingTime,
   remainingTimeLabel,
   selectedTradeName,
+  selectedTradeMethodCode,
+  isMixedTradeMethod,
   displayedBidAmount,
   holdAgreed,
   requiresBidHoldConsent,
@@ -36,6 +38,7 @@ const AuctionBidPanel = ({
   onBidInputBlur,
   onBidMultiplierSelect,
   onHoldAgreedChange,
+  onTradeMethodChange,
   onBidSubmit,
   onBuyNowOpen,
   onFavoriteToggle,
@@ -56,6 +59,7 @@ const AuctionBidPanel = ({
         : (isPointBalanceError ? '확인 불가' : '-')));
   const currentPriceLabel = formatPrice(currentPrice);
   const currentPriceSize = `${100 / Math.max(currentPriceLabel.length * 0.62, 1)}cqi`;
+  const remainingTimeSize = `${100 / Math.max(String(remainingTime).length * 0.66, 1)}cqi`;
 
   return (
     <aside className="grid min-h-[452px] content-start gap-[16px] rounded-lg border border-[#e8e8e8] bg-white px-[38px] pt-[28px] pb-[30px] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)] max-lg:min-h-0 max-lg:px-[22px] max-lg:py-7">
@@ -131,7 +135,7 @@ const AuctionBidPanel = ({
               </p>
             </div>
 
-            <div className="grid min-h-[106px] content-center rounded-lg border border-[#e8e8e8] bg-white px-5 py-4">
+            <div className="grid min-h-[106px] content-center rounded-lg border border-[#e8e8e8] bg-white px-5 py-4 [container-type:inline-size]">
               <p className="m-0 grid gap-[7px] leading-[1.1]" id="countdown">
                 <span
                   className={`text-body-md font-bold ${
@@ -142,10 +146,11 @@ const AuctionBidPanel = ({
                   {remainingTimeLabel}
                 </span>
                 <span
-                  className={`text-h2 font-bold tabular-nums ${
+                  className={`max-w-full whitespace-nowrap font-bold leading-tight tabular-nums ${
                     isAuctionOpen || isAuctionReady ? 'text-[#1d1d1f]' : 'text-[#8a8a8a]'
                   }`}
                   id="countdownValue"
+                  style={{ fontSize: `clamp(1rem, ${remainingTimeSize}, 2rem)` }}
                 >
                   {remainingTime}
                 </span>
@@ -169,10 +174,44 @@ const AuctionBidPanel = ({
           </div>
 
           <div className="grid gap-3 rounded-lg border border-[#e8e8e8] bg-[#fafafa] px-4 py-3">
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-caption font-bold text-[#666]">거래 방식</span>
-              <strong className="text-body-sm text-[#1d1d1f]">{selectedTradeName}</strong>
-            </div>
+            {isMixedTradeMethod ? (
+              <div className="grid gap-2">
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-caption font-bold text-[#666]">거래 방식 선택</span>
+                  <strong className={`text-body-sm ${selectedTradeMethodCode ? 'text-[#1d1d1f]' : 'text-[#c2410c]'}`}>
+                    {selectedTradeName}
+                  </strong>
+                </div>
+                <div className="grid grid-cols-2 gap-2" role="group" aria-label="거래 방식 선택">
+                  {[
+                    { code: 'TRDC0009', label: '배송' },
+                    { code: 'TRDC0010', label: '직거래' },
+                  ].map((method) => {
+                    const selected = selectedTradeMethodCode === method.code;
+                    return (
+                      <button
+                        className={`min-h-10 cursor-pointer rounded-lg border text-body-sm font-bold transition-colors ${
+                          selected
+                            ? 'border-primary bg-primary-light text-primary-dark'
+                            : 'border-[#dadada] bg-white text-[#666] hover:border-primary hover:text-primary-dark'
+                        }`}
+                        key={method.code}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => onTradeMethodChange(method.code)}
+                      >
+                        {method.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-caption font-bold text-[#666]">거래 방식</span>
+                <strong className="text-body-sm text-[#1d1d1f]">{selectedTradeName}</strong>
+              </div>
+            )}
             <div className="border-t border-[#e8e8e8] pt-3">
               <p className="m-0 text-caption font-bold text-[#666]">안내사항</p>
               <ul className="mt-2 mb-0 list-disc space-y-1 pl-4 text-caption text-[#666]">
