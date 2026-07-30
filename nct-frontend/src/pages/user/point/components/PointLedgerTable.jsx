@@ -88,7 +88,7 @@ const buildColumns = (bidByBidSn) => [
 // limit을 주면(마이페이지 요약 카드) 최근 N건만 보여주고 "+"로 전체보기 모달을 띄운다.
 // limit 없이 부르면(전체보기 모달 안) 전부 보여준다 (2026-07-29).
 /** 포인트 원장 내역 테이블 (F-PAY-039) */
-const PointLedgerTable = ({ rows, limit, onExpand }) => {
+const PointLedgerTable = ({ rows, limit, onExpand, loading }) => {
   const { data: myBids } = useMyBidHistory();
   const bidByBidSn = useMemo(
     () => new Map((myBids ?? []).map((b) => [b.bidSn, b])),
@@ -105,6 +105,7 @@ const PointLedgerTable = ({ rows, limit, onExpand }) => {
       emptyText="포인트 내역이 없습니다."
       onExpand={limit ? onExpand : undefined}
       pageSize={limit ? undefined : 10}
+      loading={loading}
     />
   );
 };

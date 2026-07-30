@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import {
@@ -24,6 +25,7 @@ import {
 } from '@api/fileApi';
 import { toTradeDetail } from '@api/tradeAdapter';
 import TradeTrustSummary from '@components/trade/TradeTrustSummary';
+import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import '@assets/css/trade-detail.css';
 
 // date 입력의 최소값에 사용할 오늘 날짜를 사용자의 현지 시간 기준으로 만든다.
@@ -90,6 +92,18 @@ const TradeDetailSeller = ({
   const [notice, setNotice] = useState('');
   const [timeRefreshSignal, setTimeRefreshSignal] = useState(0);
   const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
+  const shippingProofFilesRef = useRef(shippingProofFiles);
+
+  // 렌더 중이 아니라 커밋 이후에 ref를 최신 shippingProofFiles로 동기화한다(react-hooks/refs 규칙 준수).
+  useEffect(() => {
+    shippingProofFilesRef.current = shippingProofFiles;
+  });
+
+  // 업로드는 선택 즉시 끝나지만, 미리보기 blob URL은 제출/삭제 없이 페이지를 벗어나면
+  // 해제될 기회가 없다 — 언마운트 시 남아있는 파일들의 미리보기 URL을 정리한다.
+  useEffect(() => () => {
+    shippingProofFilesRef.current.forEach((file) => URL.revokeObjectURL(file.previewUrl));
+  }, []);
   const todayDate = getTodayDate();
   const availableMeetingTimes = useMemo(() => {
     const minimumTime = meetingDate === todayDate
@@ -395,17 +409,34 @@ const TradeDetailSeller = ({
     return () => window.clearInterval(timer);
   }, []);
 
-  if (isLoading || loadError || !trade) {
+  if (isLoading && !loadError) {
+    return (
+      <div className="trade-detail-page trade-detail-page--seller">
+        <main className="container">
+          <div className="trade-progress" style={{ gap: 8 }}>
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton height={38} key={index} style={{ flex: 1 }} />
+            ))}
+          </div>
+          <div className="trade-detail-grid">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton height={140} key={index} style={{ borderRadius: 18 }} />
+            ))}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (loadError || !trade) {
     return (
       <div className="trade-detail-page trade-detail-page--seller">
         <main className="container trade-detail-page__state">
-          <section className="trade-detail-card" role={loadError ? 'alert' : 'status'}>
-            <h1>{loadError ? '거래 정보를 불러오지 못했습니다.' : '거래 정보를 불러오는 중입니다.'}</h1>
-            {loadError && (
-              <button className="btn btn-outline" type="button" onClick={loadTrade}>
-                다시 시도
-              </button>
-            )}
+          <section className="trade-detail-card" role="alert">
+            <h1>거래 정보를 불러오지 못했습니다.</h1>
+            <button className="btn btn-outline" type="button" onClick={loadTrade}>
+              다시 시도
+            </button>
           </section>
         </main>
       </div>

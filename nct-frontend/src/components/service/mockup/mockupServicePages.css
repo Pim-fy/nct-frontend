@@ -15,34 +15,6 @@
   line-height: var(--text-h1--line-height);
 }
 
-.service-search-bar {
-  width: min(680px, 100%);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 58px;
-  margin: 0 auto 18px;
-  overflow: hidden;
-  border: 3px solid var(--color-primary, #0064ff);
-  border-radius: 14px;
-  background: #fff;
-}
-
-.service-search-bar input {
-  min-height: 52px;
-  border: 0;
-  padding: 0 18px;
-  outline: 0;
-  font: inherit;
-}
-
-.service-search-bar button {
-  border: 0;
-  background: var(--color-primary, #0064ff);
-  color: #fff;
-  cursor: pointer;
-}
-
-.service-search-bar button svg { width: 22px; }
-
 .service-discovery-tabs {
   display: flex;
   gap: 8px;

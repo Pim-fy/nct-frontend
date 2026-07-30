@@ -10,6 +10,7 @@ import {
   useUpdateMyProviderProfile,
   useUpdatePortfolio,
 } from '@hooks/useProviderProfile';
+import FormSkeleton from '@components/skeleton/FormSkeleton';
 
 const fieldClass = 'w-full rounded-md border border-[#d9d9d9] px-3 py-2 text-sm text-[#404040] focus:border-[#0064ff] focus:outline-none';
 
@@ -21,7 +22,11 @@ export default function ProviderProfilePage({ embedded = false } = {}) {
     ? 'w-full py-12 text-center'
     : 'mx-auto max-w-3xl px-4 py-12 text-center';
 
-  if (profileQuery.isLoading) return <div className={`${statusClass} text-[#666]`}>프로필을 불러오는 중입니다.</div>;
+  if (profileQuery.isLoading) return (
+    <main className={embedded ? 'w-full py-8' : 'mx-auto max-w-3xl px-4 py-8'}>
+      <FormSkeleton fields={6} />
+    </main>
+  );
   if (profileQuery.isError) return (
     <div className={statusClass}>
       <p className="text-[#d9363e]">제공자 프로필을 불러올 수 없습니다.</p>

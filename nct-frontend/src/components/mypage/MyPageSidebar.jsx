@@ -16,7 +16,7 @@ const GENERAL_MENU_ITEMS = [
     label: "경매",
     type: "accordion",
     children: [
-      { key: "active-auctions", label: "진행중인 경매",  type: "section" },
+      { key: "active-auctions", label: "진행 중인 경매", type: "section" },
       { key: "auction-bids",    label: "상품 구매 내역", type: "section" },
       { key: "auction-sales",   label: "상품 판매 내역", type: "section" },
     ],
@@ -104,7 +104,7 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
   return (
     <nav className="lg:sticky lg:top-[102px] lg:self-start lg:w-[210px] lg:shrink-0">
       {/* 타이틀 (데스크톱) */}
-      <h2 className="hidden lg:block font-bold text-[25px] text-black mb-5 px-2">
+      <h2 className="hidden lg:block font-bold text-[25px] leading-[36px] text-black mb-5 px-2">
         마이페이지
         {mode === "provider" && (
           <span className="text-[14px] text-[#0064ff] ml-1">(제공자)</span>

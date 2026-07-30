@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchMyFavoriteAuctions } from "@api/auctionApi";
 import { toImageUrl } from "@api/fileApi";
 import { assets } from "@components/mypage/assets";
+import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
 
 const TODAY_TABS = [
   { label: "전체",     section: "auction-bids" },
@@ -229,6 +230,8 @@ export default function MyPageDashboard({
 
   return (
     <div className="space-y-5">
+      <MyPageContentHeader title="MY 홈" />
+
       {/* 프로필 헤더 + 알림 배너 */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-4 lg:grid lg:grid-cols-4 lg:gap-3 lg:items-end">
         <div className="flex items-center gap-3 shrink-0">

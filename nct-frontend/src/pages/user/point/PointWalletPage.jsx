@@ -11,6 +11,7 @@ import PointExchangeOrderTable from './components/PointExchangeOrderTable';
 import PointAmountModal from './components/PointAmountModal';
 import PointChargeWidgetModal from './components/PointChargeWidgetModal';
 import PointHistoryDetailModal from './components/PointHistoryDetailModal';
+import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
 import { usePointBalance, usePointLedger, usePointChargeOrders, usePointExchangeOrders } from '../../../hooks/usePoint';
 import { confirmPointCharge, requestPointExchange, convertPoint } from '../../../api/pointApi';
 
@@ -213,50 +214,56 @@ const PointWalletPage = ({ embedded = false } = {}) => {
       className={embedded ? undefined : 'container'}
       style={embedded ? undefined : { paddingTop: '25px', paddingBottom: '25px' }}
     >
-      {/* 페이지 타이틀 + 액션 */}
-      <div className="flex items-end justify-between gap-4 mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 m-0">포인트 지갑</h1>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg px-5 py-2.5 transition-colors"
-            onClick={() => setOpenModal('charge')}
-          >
-            충전
-          </button>
-          <button
-            type="button"
-            className="border border-blue-600 text-blue-600 hover:bg-blue-50 text-sm font-medium rounded-lg px-5 py-2.5 transition-colors"
-            onClick={() => setOpenModal('convert')}
-          >
-            전환
-          </button>
-          <button
-            type="button"
-            className="border border-blue-600 text-blue-600 hover:bg-blue-50 text-sm font-medium rounded-lg px-5 py-2.5 transition-colors"
-            onClick={() => setOpenModal('exchange')}
-          >
-            환전
-          </button>
-        </div>
-      </div>
+      <MyPageContentHeader
+        title="포인트 지갑"
+        actions={(
+          <>
+            <button
+              type="button"
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg px-5 py-2.5 transition-colors"
+              onClick={() => setOpenModal('charge')}
+            >
+              충전
+            </button>
+            <button
+              type="button"
+              className="border border-blue-600 text-blue-600 hover:bg-blue-50 text-sm font-medium rounded-lg px-5 py-2.5 transition-colors"
+              onClick={() => setOpenModal('convert')}
+            >
+              전환
+            </button>
+            <button
+              type="button"
+              className="border border-blue-600 text-blue-600 hover:bg-blue-50 text-sm font-medium rounded-lg px-5 py-2.5 transition-colors"
+              onClick={() => setOpenModal('exchange')}
+            >
+              환전
+            </button>
+          </>
+        )}
+      />
 
       <PointSummaryCards balance={balance} />
-      {ledgerLoading || balanceLoading ? (
-        <p className="text-sm text-gray-400 text-center py-10">포인트 내역을 불러오는 중...</p>
-      ) : (
-        <PointLedgerTable rows={ledger} limit={RECENT_LIMIT} onExpand={() => setDetailModal('ledger')} />
-      )}
-      {ordersLoading ? (
-        <p className="text-sm text-gray-400 text-center py-10">충전 내역을 불러오는 중...</p>
-      ) : (
-        <PointChargeOrderTable rows={chargeOrders} limit={RECENT_LIMIT} onExpand={() => setDetailModal('charge')} />
-      )}
-      {exchangeLoading ? (
-        <p className="text-sm text-gray-400 text-center py-10">환전 내역을 불러오는 중...</p>
-      ) : (
-        <PointExchangeOrderTable rows={exchangeOrders} limit={RECENT_LIMIT} onExpand={() => setDetailModal('exchange')} />
-      )}
+      <PointLedgerTable
+        loading={ledgerLoading || balanceLoading}
+        rows={ledger}
+        limit={RECENT_LIMIT}
+        onExpand={() => setDetailModal('ledger')}
+      />
+
+      <PointChargeOrderTable
+        loading={ordersLoading}
+        rows={chargeOrders}
+        limit={RECENT_LIMIT}
+        onExpand={() => setDetailModal('charge')}
+      />
+
+      <PointExchangeOrderTable
+        loading={exchangeLoading}
+        rows={exchangeOrders}
+        limit={RECENT_LIMIT}
+        onExpand={() => setDetailModal('exchange')}
+      />
 
       {detailModal === 'ledger' && (
         <PointHistoryDetailModal title="포인트 내역" onClose={() => setDetailModal(null)}>

@@ -4,19 +4,11 @@
   background: linear-gradient(180deg, #f4f7ff 0, #f8f9fb 300px, #fff 300px);
 }
 
-.trade-history-page .trade-history-page__content {
-  max-width: 850px;
-}
-
 /* 마이페이지 본문에서는 부모 레이아웃의 여백·폭을 그대로 사용한다. */
 .trade-history-page--embedded {
   min-height: 0;
   padding: 0;
   background: transparent;
-}
-
-.trade-history-page--embedded .trade-history-page__content {
-  max-width: none;
 }
 
 .trade-history-page__header {
@@ -31,7 +23,7 @@
   letter-spacing: .12em;
 }
 
-.trade-history-page h1 {
+.trade-history-page__header h1 {
   margin: 0;
   color: #171b26;
   font-size: 30px;
@@ -367,7 +359,7 @@ button.trade-history-item {
 
 @media (max-width: 768px) {
   .trade-history-page { padding: 28px 0 56px; }
-  .trade-history-page h1 { font-size: 27px; }
+  .trade-history-page__header h1 { font-size: 27px; }
   .trade-history-summary { align-items: flex-start; flex-direction: column; gap: 4px; }
   .trade-history-buyer-filters { gap: 18px; }
   .trade-history-filters,

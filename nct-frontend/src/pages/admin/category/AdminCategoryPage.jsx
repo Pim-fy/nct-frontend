@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { PencilLine, Plus, Save, X } from 'lucide-react';
+import AdminTable from '@components/admin/AdminTable';
 import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
 import MockupAdminStatusBadge from '@components/admin/mockup/MockupAdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
@@ -60,6 +61,20 @@ const AdminCategoryPage = () => {
     }
   };
 
+  const columns = useMemo(() => [
+    { key: 'index', label: '번호', render: (_, __, idx) => idx + 1 },
+    { key: 'name', label: '이름', render: (value) => <strong>{value}</strong> },
+    { key: 'professional', label: '전문 서비스', render: (value) => (value ? '예' : '아니오') },
+    {
+      key: 'active', label: '상태',
+      render: (value) => <MockupAdminStatusBadge tone={value ? 'success' : 'neutral'}>{value ? '사용 중' : '사용 중지'}</MockupAdminStatusBadge>,
+    },
+    {
+      key: 'manage', label: '관리',
+      render: (_, row) => <button className="btn btn-outline" onClick={() => edit(row)} type="button"><PencilLine /> 수정</button>,
+    },
+  ], []);
+
   return (
     <div className="admin-content-page admin-category-page">
       <PageMeta title="카테고리 관리" />
@@ -91,19 +106,21 @@ const AdminCategoryPage = () => {
       </form>
 
       {feedback && <p className={`admin-category-feedback${feedback.includes('저장했습니다') ? ' is-success' : ''}`}>{feedback}</p>}
-      {categoriesQuery.isLoading && <div className="card admin-content-state">카테고리를 불러오는 중입니다.</div>}
       {categoriesQuery.isError && <div className="card admin-content-state is-error">카테고리를 불러오지 못했습니다.</div>}
-      {categoriesQuery.data && (
+      {!categoriesQuery.isError && (
         <section className="card admin-category-list">
-          <div className="admin-notice-list__summary"><p>총 <strong>{categoriesQuery.data.length}</strong>개</p><small>표시 순서가 작은 항목부터 노출됩니다.</small></div>
-          <div className="admin-table-scroll"><table><thead><tr><th>번호</th><th>이름</th><th>전문 서비스</th><th>상태</th><th>관리</th></tr></thead>
-            <tbody>{categoriesQuery.data.map((category, index) => (
-              <tr key={category.categorySn}><td>{index + 1}</td><td><strong>{category.name}</strong></td>
-                <td>{category.professional ? '예' : '아니오'}</td>
-                <td><MockupAdminStatusBadge tone={category.active ? 'success' : 'neutral'}>{category.active ? '사용 중' : '사용 중지'}</MockupAdminStatusBadge></td>
-                <td><button className="btn btn-outline" onClick={() => edit(category)} type="button"><PencilLine /> 수정</button></td></tr>
-            ))}{categoriesQuery.data.length === 0 && <tr><td className="admin-notice-list__empty" colSpan="5">등록된 카테고리가 없습니다.</td></tr>}</tbody>
-          </table></div>
+          {!categoriesQuery.isLoading && (
+            <div className="admin-notice-list__summary"><p>총 <strong>{categoriesQuery.data.length}</strong>개</p><small>표시 순서가 작은 항목부터 노출됩니다.</small></div>
+          )}
+          <div className="admin-table-scroll">
+            <AdminTable
+              columns={columns}
+              data={categoriesQuery.data ?? []}
+              emptyMessage="등록된 카테고리가 없습니다."
+              loading={categoriesQuery.isLoading}
+              rowKey={(category) => category.categorySn}
+            />
+          </div>
         </section>
       )}
     </div>

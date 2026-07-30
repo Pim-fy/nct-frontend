@@ -14,7 +14,7 @@ import { toImageUrl } from '@api/fileApi';
 import './mockupServicePages.css';
 
 export const MockupServiceSearchBar = ({ keyword, onKeywordChange, onSubmit }) => (
-  <form className="service-search-bar" onSubmit={onSubmit} role="search">
+  <form className="hero-search-bar" onSubmit={onSubmit} role="search">
     <label className="sr-only" htmlFor="service-keyword">서비스 검색어</label>
     <input
       id="service-keyword"

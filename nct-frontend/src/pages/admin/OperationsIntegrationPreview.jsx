@@ -2,10 +2,12 @@ import { useMemo, useState } from 'react';
 import { AlertTriangle, Search } from 'lucide-react';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
+import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import {
   useAdminRiskEvents,
   useAdminRiskEventSummary,
 } from '@hooks/useAdminRiskEvents';
+import { formatDateTime } from '@utils/common';
 import './operationsIntegrationPreview.css';
 
 /** 담당자 7 · F-OPS-011/013: 운영 위험 이벤트를 읽기 전용으로 확인하는 화면입니다. */
@@ -46,13 +48,6 @@ const OperationsIntegrationPreview = () => {
     [eventsQuery.data, keyword],
   );
 
-  const formatDate = (value) =>
-    value
-      ? new Date(value).toLocaleString('ko-KR', {
-          dateStyle: 'short',
-          timeStyle: 'short',
-        })
-      : '-';
 
   return (
     <div className="operations-preview">
@@ -67,7 +62,15 @@ const OperationsIntegrationPreview = () => {
 
       <section className="operations-summary" aria-label="위험 이벤트 유형별 건수">
         {summaryQuery.isLoading ? (
-          <p>유형별 건수를 불러오는 중입니다.</p>
+          Array.from({ length: 3 }).map((_, index) => (
+            <article className="operations-summary__card" key={index}>
+              <Skeleton circle height={42} style={{ flexShrink: 0, width: 42 }} />
+              <div>
+                <Skeleton height={13} style={{ maxWidth: 90 }} />
+                <Skeleton height={25} style={{ maxWidth: 60 }} />
+              </div>
+            </article>
+          ))
         ) : (
           (summaryQuery.data ?? []).map((item) => (
             <article className="operations-summary__card" key={item.typeCode}>
@@ -154,13 +157,13 @@ const OperationsIntegrationPreview = () => {
               </tr>
             </thead>
             <tbody>
-              {eventsQuery.isLoading && (
-                <tr>
-                  <td className="operations-table__empty" colSpan="6">
-                    위험 이벤트를 불러오는 중입니다.
-                  </td>
+              {eventsQuery.isLoading && Array.from({ length: 6 }).map((_, rowIndex) => (
+                <tr key={rowIndex}>
+                  {Array.from({ length: 6 }).map((__, colIndex) => (
+                    <td key={colIndex}><Skeleton height={14} /></td>
+                  ))}
                 </tr>
-              )}
+              ))}
 
               {eventsQuery.isError && (
                 <tr>
@@ -181,7 +184,7 @@ const OperationsIntegrationPreview = () => {
                       {item.referenceTypeCode} #{item.referenceSn}
                     </td>
                     <td>{item.content}</td>
-                    <td>{formatDate(item.registeredAt)}</td>
+                    <td>{formatDateTime(item.registeredAt)}</td>
                     <td>
                       <AdminStatusBadge tone={item.processedYn === 'Y' ? 'success' : 'warning'}>
                         {item.processedYn === 'Y' ? '처리 완료' : '미처리'}

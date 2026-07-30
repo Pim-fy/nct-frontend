@@ -15,7 +15,7 @@
 }
 
 /* 담당자 7: 담당자 3 경매 화면이 따르는 공통 page-title(28px) 기준에 맞춥니다. */
-.mockup-content-page-header h1 { margin: 0; color: #1a1a18; font-size: 30px; }
+.mockup-content-page-header h1 { margin: 0; color: #1a1a18; font-size: 28px; }
 .mockup-content-page-header p { max-width: 720px; margin: 9px 0 0; color: #5f5e5a; line-height: 1.65; }
 
 /* 담당자 7 | F-COM-013: 공개 공지는 제목을 중심으로 빠르게 훑을 수 있는 목록으로 표시합니다. */

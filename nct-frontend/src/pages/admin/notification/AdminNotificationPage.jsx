@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
+import CardGroupSkeleton from '@components/skeleton/CardGroupSkeleton';
 import { useAdminNotificationSummary } from '@hooks/useAdminNotification';
 import './adminNotificationPage.css';
 
@@ -78,7 +79,7 @@ const AdminNotificationPage = () => {
         ))}
       </div>
 
-      {isLoading && <div className="admin-bjn-state">알림을 불러오는 중입니다…</div>}
+      {isLoading && <CardGroupSkeleton />}
       {isError && <div className="admin-bjn-state is-error">알림 조회에 실패했습니다. 잠시 후 다시 시도해 주세요.</div>}
 
       {!isLoading && !isError && (
