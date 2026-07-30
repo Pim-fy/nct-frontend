@@ -17,6 +17,7 @@ import {
   ServiceSearchBar,
 } from '@components/service/ServiceUi';
 import CardGridSkeleton from '@components/skeleton/CardGridSkeleton';
+import HeaderSearchPortal from '@components/common/HeaderSearchPortal';
 import {
   SERVICE_CATEGORY_DOMAIN_CODE,
   SERVICE_DISCOVERY_PAGE_SIZE,
@@ -156,11 +157,13 @@ const ServiceListPage = () => {
       <Helmet><title>서비스 찾기 | 에누리컷</title></Helmet>
       <ContentPageHeader title="서비스 찾기" />
 
-      <ServiceSearchBar
-        initialKeyword={filters.keyword}
-        key={filters.keyword}
-        onSubmit={handleSearch}
-      />
+      <HeaderSearchPortal>
+        <ServiceSearchBar
+          initialKeyword={filters.keyword}
+          key={filters.keyword}
+          onSubmit={handleSearch}
+        />
+      </HeaderSearchPortal>
 
       <div className="mt-6 flex justify-end lg:hidden">
         <button className="flex h-12 items-center gap-2 rounded-[5px] border border-primary px-4 text-body-md font-bold text-primary" onClick={() => setFiltersOpen(true)} type="button">

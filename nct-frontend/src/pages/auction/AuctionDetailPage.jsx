@@ -23,6 +23,9 @@ import { hasDeliveryAddress, useMemberProfile } from '@hooks/useMemberProfile';
 import { getUserReviewTrust } from '@api/reviewApi';
 import { SITE_HEADER_VISIBILITY_EVENT } from '@/constants/layoutEvents';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
+import HeaderSearchPortal, {
+  SimpleHeaderSearch,
+} from '@components/common/HeaderSearchPortal';
 import PointChargeWidgetModal from '@pages/user/point/components/PointChargeWidgetModal';
 import AuctionBidPanel from './components/AuctionBidPanel';
 import AuctionBuyNowModal from './components/AuctionBuyNowModal';
@@ -91,6 +94,14 @@ const AuctionDetailPage = () => {
     ? requestedReturnPath
     : '/auction';
   const returnLabel = returnPath === '/auction' ? '경매 목록' : '이전 목록';
+  const headerSearch = (
+    <HeaderSearchPortal>
+      <SimpleHeaderSearch
+        onSearch={(keyword) => navigate(`/auction?keyword=${encodeURIComponent(keyword)}`)}
+        placeholder="원하는 경매 상품을 검색하세요"
+      />
+    </HeaderSearchPortal>
+  );
 
   useLayoutEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -378,34 +389,40 @@ const AuctionDetailPage = () => {
 
   if (isAuthLoading || isLoading) {
     return (
-      <main className={DETAIL_PAGE_CLASS}>
-        <div className={DETAIL_CONTAINER_CLASS} style={{ paddingTop: '32px' }}>
-          <section className="grid items-stretch gap-2 lg:grid-cols-[minmax(360px,0.78fr)_minmax(560px,1.22fr)]">
-            <Skeleton height={420} />
-            <div style={{ border: '1px solid #f0efec', borderRadius: 8, padding: 24 }}>
-              <Skeleton height={16} style={{ marginBottom: 12, maxWidth: 100 }} />
-              <Skeleton height={30} style={{ marginBottom: 16, maxWidth: '80%' }} />
-              <Skeleton height={40} style={{ marginBottom: 16 }} />
-              <Skeleton count={3} height={16} style={{ marginBottom: 8 }} />
-            </div>
-          </section>
-        </div>
-      </main>
+      <>
+        {headerSearch}
+        <main className={DETAIL_PAGE_CLASS}>
+          <div className={DETAIL_CONTAINER_CLASS} style={{ paddingTop: '32px' }}>
+            <section className="grid items-stretch gap-2 lg:grid-cols-[minmax(360px,0.78fr)_minmax(560px,1.22fr)]">
+              <Skeleton height={420} />
+              <div style={{ border: '1px solid #f0efec', borderRadius: 8, padding: 24 }}>
+                <Skeleton height={16} style={{ marginBottom: 12, maxWidth: 100 }} />
+                <Skeleton height={30} style={{ marginBottom: 16, maxWidth: '80%' }} />
+                <Skeleton height={40} style={{ marginBottom: 16 }} />
+                <Skeleton count={3} height={16} style={{ marginBottom: 8 }} />
+              </div>
+            </section>
+          </div>
+        </main>
+      </>
     );
   }
 
   if (isError || !auction) {
     return (
-      <main className={DETAIL_PAGE_CLASS}>
-        <div className={DETAIL_CONTAINER_CLASS}>
-          <div className={DETAIL_EMPTY_CLASS}>
-            <strong className="text-h3">경매 상세 정보를 불러오지 못했습니다.</strong>
-            <Link className="inline-flex items-center gap-1.5 font-extrabold text-primary no-underline" to={returnPath}>
-              {returnLabel}으로 돌아가기
-            </Link>
+      <>
+        {headerSearch}
+        <main className={DETAIL_PAGE_CLASS}>
+          <div className={DETAIL_CONTAINER_CLASS}>
+            <div className={DETAIL_EMPTY_CLASS}>
+              <strong className="text-h3">경매 상세 정보를 불러오지 못했습니다.</strong>
+              <Link className="inline-flex items-center gap-1.5 font-extrabold text-primary no-underline" to={returnPath}>
+                {returnLabel}으로 돌아가기
+              </Link>
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </>
     );
   }
 
@@ -646,6 +663,7 @@ const AuctionDetailPage = () => {
 
   return (
     <>
+      {headerSearch}
       <main className={DETAIL_PAGE_CLASS}>
         <div className={DETAIL_CONTAINER_CLASS}>
           <section className="mt-[34px] grid items-stretch gap-2 lg:grid-cols-[minmax(360px,0.78fr)_minmax(560px,1.22fr)] max-lg:mt-4">

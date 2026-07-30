@@ -12,6 +12,11 @@ import {
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SERVICE_REQUEST_SORT_OPTIONS } from '@/constants/serviceDiscovery';
+import {
+  HEADER_SEARCH_BUTTON_CLASS,
+  HEADER_SEARCH_FORM_CLASS,
+  HEADER_SEARCH_INPUT_CLASS,
+} from '@components/common/HeaderSearchPortal';
 
 const formatAmount = (value) => {
   const amount = Number(value);
@@ -44,17 +49,17 @@ export const ServiceSearchBar = ({ initialKeyword, onSubmit }) => {
   const [keyword, setKeyword] = useState(initialKeyword);
 
   return (
-    <form className="mx-auto flex w-full max-w-[760px] overflow-hidden rounded-[6px] border-2 border-primary bg-white focus-within:ring-2 focus-within:ring-primary/20" onSubmit={(event) => onSubmit(event, keyword)} role="search">
+    <form className={HEADER_SEARCH_FORM_CLASS} onSubmit={(event) => onSubmit(event, keyword)} role="search">
       <label className="sr-only" htmlFor="service-keyword">서비스 검색어</label>
       <input
-        className="h-14 min-w-0 flex-1 border-0 px-5 text-base text-[#1a1a18] outline-none placeholder:text-[#8b8b88]"
+        className={HEADER_SEARCH_INPUT_CLASS}
         id="service-keyword"
         onChange={(event) => setKeyword(event.target.value)}
         placeholder="필요한 서비스 요청을 검색하세요"
         type="search"
         value={keyword}
       />
-      <button className="grid h-14 w-14 shrink-0 place-items-center bg-primary text-white transition-colors hover:bg-[#0056dc]" title="검색" type="submit">
+      <button className={HEADER_SEARCH_BUTTON_CLASS} title="검색" type="submit">
         <Search aria-hidden="true" size={23} />
         <span className="sr-only">검색</span>
       </button>

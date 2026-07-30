@@ -9,6 +9,9 @@ import { getServiceRequest, closeServiceRequest } from '@api/serviceRequestApi';
 import ErrorMessage from '@components/common/ErrorMessage';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
 import Toast from '@components/common/Toast';
+import HeaderSearchPortal, {
+  SimpleHeaderSearch,
+} from '@components/common/HeaderSearchPortal';
 
 const STATUS_LABEL = {
   SVCC0001: '임시저장',
@@ -57,6 +60,14 @@ export default function ServiceRequestDetailPage() {
   const [error, setError] = useState('');
   const [closing, setClosing] = useState(false);
   const [toast, setToast] = useState('');
+  const headerSearch = (
+    <HeaderSearchPortal>
+      <SimpleHeaderSearch
+        onSearch={(keyword) => navigate(`/service?keyword=${encodeURIComponent(keyword)}`)}
+        placeholder="필요한 서비스 요청을 검색하세요"
+      />
+    </HeaderSearchPortal>
+  );
 
   useEffect(() => {
     setLoading(true);
@@ -88,12 +99,22 @@ export default function ServiceRequestDetailPage() {
     navigate(`/quotes/new?svcReqSn=${svcReqSn}`);
   };
 
-  if (loading) return <ViewSkeleton />;
+  if (loading) {
+    return (
+      <>
+        {headerSearch}
+        <ViewSkeleton />
+      </>
+    );
+  }
   if (error || !request) {
     return (
-      <div className="mx-auto w-full max-w-[1600px] px-4 lg:px-6 py-10">
-        <ErrorMessage message={error || '요청서 정보를 불러오지 못했습니다.'} />
-      </div>
+      <>
+        {headerSearch}
+        <div className="mx-auto w-full max-w-[1600px] px-4 lg:px-6 py-10">
+          <ErrorMessage message={error || '요청서 정보를 불러오지 못했습니다.'} />
+        </div>
+      </>
     );
   }
 
@@ -107,8 +128,10 @@ export default function ServiceRequestDetailPage() {
   const statusLabel      = STATUS_LABEL[request.svcReqStatusCd] ?? request.svcReqStatusCd;
 
   return (
-    <div className="bg-white pb-14 text-base leading-[1.6] text-[#1d1d1f]">
-      <div className="mx-auto w-full max-w-[1600px] px-4 lg:px-6">
+    <>
+      {headerSearch}
+      <div className="bg-white pb-14 text-base leading-[1.6] text-[#1d1d1f]">
+        <div className="mx-auto w-full max-w-[1600px] px-4 lg:px-6">
 
         {/* 뒤로가기 */}
         <div className="flex justify-end pt-9 pb-4">
@@ -251,6 +274,7 @@ export default function ServiceRequestDetailPage() {
       </div>
 
       {toast && <Toast message={toast} onClose={() => setToast('')} />}
-    </div>
+      </div>
+    </>
   );
 }
