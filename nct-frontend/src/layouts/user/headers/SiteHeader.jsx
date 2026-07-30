@@ -20,8 +20,8 @@ import { usePointBalance } from '@hooks/usePoint';
 import relativeTime from '@utils/relativeTime';
 import { requestPointExchange } from '@api/pointApi';
 import { SITE_HEADER_VISIBILITY_EVENT } from '@/constants/layoutEvents';
-import QuickActions from '@components/landing/QuickActions';
 import { SITE_HEADER_SEARCH_SLOT_ID } from '@components/common/HeaderSearchPortal';
+import ScrollToTopButton from '@components/common/ScrollToTopButton';
 import NotificationDetailModal from '@pages/user/notification/components/NotificationDetailModal';
 import PointChargeWidgetModal from '@pages/user/point/components/PointChargeWidgetModal';
 import PointAmountModal from '@pages/user/point/components/PointAmountModal';
@@ -322,7 +322,7 @@ const SiteHeader = () => {
                 className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${serviceMenuOpen ? 'text-primary' : 'text-[#333333]'}`}
                 onClick={() => setServiceHovered(false)}
               >
-                서비스
+                {isProvider ? '견적 목록' : '견적 요청'}
               </Link>
               {serviceMenuOpen && (
                 <div className="absolute left-0 top-full w-[161px] pt-[14px] z-50">
@@ -406,21 +406,12 @@ const SiteHeader = () => {
 
         {/* 우측 유틸 영역 */}
         <div ref={utilRef} className="flex items-center gap-3">
-          {!user && (
-            <Link
-              to="/login"
-              className="hidden md:flex h-[33px] items-center justify-center rounded-[30px] border border-primary bg-primary px-4 text-[14px] font-medium text-white hover:bg-[#0048bf] transition-colors"
-            >
-              로그인
-            </Link>
-          )}
-
           {/* 알림 */}
           <div className="relative">
             <button
               type="button"
               title="알림"
-              className="relative flex size-[39px] items-center justify-center rounded-full bg-[#f3f5fa] hover:bg-[#e9edf5] transition-colors"
+              className="relative flex size-[40px] items-center justify-center rounded-full bg-[#f3f5fa] hover:bg-[#e9edf5] transition-colors"
               onClick={() => openOnly('noti')}
             >
               <img src={bellIcon} alt="" className="size-[18px]" />
@@ -515,7 +506,7 @@ const SiteHeader = () => {
             <button
               type="button"
               title="포인트 지갑"
-              className="flex size-[39px] items-center justify-center rounded-full bg-[#f3f5fa] hover:bg-[#e9edf5] transition-colors"
+              className="flex size-[40px] items-center justify-center rounded-full bg-[#f3f5fa] hover:bg-[#e9edf5] transition-colors"
               onClick={() => openOnly('point')}
             >
               <img src={walletIcon} alt="" className="size-[18px]" />
@@ -568,11 +559,20 @@ const SiteHeader = () => {
           <div className="relative hidden sm:block">
             <button
               type="button"
-              title="마이페이지"
-              className="flex size-[39px] items-center justify-center rounded-full bg-[#f3f5fa] hover:bg-[#e9edf5] transition-colors"
+              title={user ? '마이페이지' : '로그인'}
+              className={`flex h-[40px] w-[126px] items-center justify-between rounded-full py-1 pl-1 pr-1 text-[14px] font-medium text-white transition-colors ${
+                user
+                  ? 'bg-primary hover:bg-[#0048bf]'
+                  : 'bg-[#555555] hover:bg-[#444444]'
+              }`}
               onClick={() => (user ? openOnly('profile') : navigate('/login'))}
             >
-              <img src={userIcon} alt="" className="size-[18px]" />
+              <span className="flex-1 text-center">
+                {user ? (isProvider ? '제공자회원' : '일반회원') : '로그인'}
+              </span>
+              <span className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-white">
+                <img src={userIcon} alt="" className="size-[18px]" />
+              </span>
             </button>
             {profileOpen && (
               <div className="absolute right-0 top-[calc(100%+12px)] w-[230px] rounded-[10px] border border-[#434343] bg-white p-4 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)] z-50">
@@ -772,7 +772,7 @@ const SiteHeader = () => {
                 className="flex w-full items-center justify-between py-4 text-[20px] font-bold text-[#333333]"
                 onClick={() => setMobileServiceOpen((v) => !v)}
               >
-                서비스
+                {isProvider ? '견적 목록' : '견적 요청'}
                 <ChevronRight size={20} className={`transition-transform ${mobileServiceOpen ? 'rotate-90' : ''}`} />
               </button>
               {mobileServiceOpen && (
@@ -834,8 +834,7 @@ const SiteHeader = () => {
         </div>
       )}
     </header>
-    {/* 퀵메뉴(경매등록/서비스요청 등)를 헤더 컴포넌트에 포함시켜 모든 페이지에서 우측에 고정 노출한다. */}
-    <QuickActions />
+    <ScrollToTopButton />
     <NotificationDetailModal item={selectedNoti} onClose={() => setSelectedNoti(null)} />
     {pointModal === 'charge' && (
       <PointChargeWidgetModal
