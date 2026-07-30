@@ -20,6 +20,11 @@ import { fetchReferenceCodes } from '@api/referenceApi';
 import { SORT_OPTIONS } from '@/constants/auctionOptions';
 import CardGridSkeleton from '@components/skeleton/CardGridSkeleton';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
+import HeaderSearchPortal, {
+  HEADER_SEARCH_BUTTON_CLASS,
+  HEADER_SEARCH_FORM_CLASS,
+  HEADER_SEARCH_INPUT_CLASS,
+} from '@components/common/HeaderSearchPortal';
 import AuctionCard from './components/AuctionCard';
 import {
   addAuctionSearchHistory,
@@ -87,7 +92,6 @@ const AuctionListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const shouldScrollAfterPageChangeRef = useRef(false);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [isSearchDocked, setIsSearchDocked] = useState(false);
   const [searchHistoryOpen, setSearchHistoryOpen] = useState(false);
   const [searchHistory, setSearchHistory] = useState(() => getAuctionSearchHistory());
   const [showAllCategories, setShowAllCategories] = useState(false);
@@ -127,14 +131,6 @@ const AuctionListPage = () => {
 
     return () => window.cancelAnimationFrame(animationFrameId);
   }, [searchParamsKey]);
-
-  useEffect(() => {
-    const handleScroll = () => setIsSearchDocked(window.scrollY > 48);
-
-    handleScroll();
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   useEffect(() => {
     const handlePointerDown = (event) => {
@@ -357,28 +353,21 @@ const AuctionListPage = () => {
 
   return (
     <div className="min-h-full bg-white text-body-sm text-[#1a1a18] md:text-body-md">
-  <section className="h-[92px] bg-white md:h-0" aria-label="경매 검색">
-    <div
-      className={`${
-        isSearchDocked
-          ? 'fixed inset-x-0 top-0 z-[120] flex h-[82px] items-center bg-white px-4 shadow-[0_5px_12px_rgba(0,0,0,0.14)]'
-          : 'mx-auto flex h-full w-full max-w-[1600px] items-center px-4 lg:px-6'
-      } md:pointer-events-none md:fixed md:inset-x-0 md:top-0 md:z-[120] md:flex md:h-[82px] md:w-full md:max-w-none md:items-center md:bg-transparent md:px-0 md:shadow-none`}
-    >
+  <HeaderSearchPortal>
       <div
         ref={searchContainerRef}
-        className="relative mx-auto w-full max-w-[560px] md:pointer-events-auto md:w-[min(38vw,560px)]"
+        className="relative mx-auto w-full"
       >
         <form
-          className={`grid w-full grid-cols-[minmax(0,1fr)_56px] overflow-hidden border-[3px] border-primary bg-white ${
+          className={`${HEADER_SEARCH_FORM_CLASS} ${
             showSearchHistory
-              ? 'rounded-t-lg rounded-b-none border-b-transparent'
-              : 'rounded-lg'
+              ? 'rounded-b-none border-b-transparent'
+              : ''
           }`}
           onSubmit={handleSearch}
         >
           <input
-            className="min-h-12 min-w-0 border-0 px-[18px] text-body-sm text-[#1a1a18] outline-none md:text-body-md"
+            className={HEADER_SEARCH_INPUT_CLASS}
             type="search"
             value={keywordDraft}
             onChange={(event) => setKeywordDraft(event.target.value)}
@@ -387,7 +376,7 @@ const AuctionListPage = () => {
             onKeyDown={(event) => {
               if (event.key === 'Escape') setSearchHistoryOpen(false);
             }}
-            placeholder="검색어를 입력하세요"
+            placeholder="원하는 경매 상품을 검색하세요"
             aria-label="경매 검색어"
             aria-controls="auction-search-history"
             aria-expanded={showSearchHistory}
@@ -395,7 +384,7 @@ const AuctionListPage = () => {
           />
 
           <button
-            className="inline-flex cursor-pointer items-center justify-center border-0 bg-primary text-white transition-colors hover:bg-primary-dark"
+            className={HEADER_SEARCH_BUTTON_CLASS}
             type="submit"
             aria-label="검색"
           >
@@ -446,11 +435,10 @@ const AuctionListPage = () => {
           </div>
         )}
       </div>
-    </div>
-  </section>
+  </HeaderSearchPortal>
 
      {/* .container에 Tailwind py-*를 같이 쓰면 App.css의 padding shorthand가 레이어 충돌로 상하 패딩을 0으로 무력화한다 — 인라인 style로 우회 */}
-      <main className="mx-auto w-full max-w-[1600px] px-4 py-7 pb-[52px] lg:px-6">
+      <main className="mx-auto my-0 w-full max-w-[1600px] py-10">
         <div className="flex items-start gap-6 max-md:block">
           <button
             className={`fixed inset-0 z-[210] cursor-default border-0 bg-black/40 transition-opacity duration-300 md:hidden ${

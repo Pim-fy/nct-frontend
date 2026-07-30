@@ -14,9 +14,10 @@ export default function NewServiceSection({ isError, isLoading, items }) {
   const navigate = useNavigate();
   const [page, setPage] = useState(0);
   const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+  const visiblePage = Math.min(page, totalPages - 1);
 
-  const goPrev = () => setPage((p) => Math.max(0, p - 1));
-  const goNext = () => setPage((p) => Math.min(totalPages - 1, p + 1));
+  const goPrev = () => setPage(Math.max(0, visiblePage - 1));
+  const goNext = () => setPage(Math.min(totalPages - 1, visiblePage + 1));
 
   return (
     <section className="absolute contents left-0 top-[1903px]" data-name="SECTION_4(신규서비스요청)">
@@ -35,12 +36,12 @@ export default function NewServiceSection({ isError, isLoading, items }) {
       {/* 서비스요청 카드 캐러셀 (페이지 단위 슬라이드) */}
       <div className="absolute top-[2017px] overflow-hidden" style={{ left: VIEWPORT_LEFT, width: VIEWPORT_WIDTH }}>
         {isLoading && <p className="grid h-[358px] place-items-center text-[18px] text-white">서비스 요청을 불러오는 중입니다.</p>}
-        {!isLoading && isError && <p className="grid h-[358px] place-items-center text-[18px] text-white">서비스 요청 조회 API 연결을 기다리고 있습니다.</p>}
+        {!isLoading && isError && <p className="grid h-[358px] place-items-center text-[18px] text-white">서비스 요청을 불러오지 못했습니다.</p>}
         {!isLoading && !isError && items.length === 0 && <p className="grid h-[358px] place-items-center text-[18px] text-white">표시할 서비스 요청이 없습니다.</p>}
         {!isLoading && !isError && items.length > 0 && (
           <div
             className="flex transition-transform duration-300 ease-out"
-            style={{ transform: `translateX(${-page * VIEWPORT_WIDTH}px)` }}
+            style={{ transform: `translateX(${-visiblePage * VIEWPORT_WIDTH}px)` }}
           >
             {Array.from({ length: totalPages }, (_, pageIndex) => (
               <div
@@ -57,8 +58,8 @@ export default function NewServiceSection({ isError, isLoading, items }) {
         )}
       </div>
 
-      <ArrowIcon direction="left" className="left-[111px] top-[2196px]" imgSrc={arrowWhite} onClick={goPrev} disabled={page === 0} />
-      <ArrowIcon direction="right" className="left-[1800px] top-[2196px]" imgSrc={arrowWhite} onClick={goNext} disabled={page >= totalPages - 1} />
+      <ArrowIcon direction="left" className="left-[111px] top-[2196px]" imgSrc={arrowWhite} onClick={goPrev} disabled={visiblePage === 0} />
+      <ArrowIcon direction="right" className="left-[1800px] top-[2196px]" imgSrc={arrowWhite} onClick={goNext} disabled={visiblePage >= totalPages - 1} />
 
       <MoreButton left={895} top={2439} variant="dark" onClick={() => navigate("/service")} />
     </section>

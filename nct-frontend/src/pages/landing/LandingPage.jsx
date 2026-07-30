@@ -32,7 +32,12 @@ import MobileLandingSections from '@components/landing/sections/MobileLandingSec
 const LandingPage = () => {
   const latestAuctionQuery = useQuery({
     queryKey: ['landing-curation', 'auctions', 'latest'],
-    queryFn: () => fetchAuctions({ status: 'AUCC0002', sort: 'latest', page: 1, size: 8 }),
+    queryFn: () => fetchAuctions({
+      status: 'AUCC0002',
+      sort: 'latest',
+      page: 1,
+      size: 8,
+    }),
     staleTime: 30 * 1000,
   });
   const closingAuctionQuery = useQuery({
@@ -48,7 +53,7 @@ const LandingPage = () => {
   });
   const popularAuctionQuery = useQuery({
     queryKey: ['landing-curation', 'auctions', 'popular'],
-    queryFn: () => fetchAuctions({ status: 'AUCC0002', sort: 'bidsDesc', page: 1, size: 10 }),
+    queryFn: () => fetchAuctions({ status: 'AUCC0002', sort: 'popular', page: 1, size: 10 }),
     staleTime: 30 * 1000,
   });
   const latestServiceQuery = useServiceDiscovery({
@@ -75,10 +80,6 @@ const LandingPage = () => {
     () => (latestServiceQuery.data?.items || []).map(toLandingServiceRequest),
     [latestServiceQuery.data?.items],
   );
-  const auctionState = {
-    isLoading: latestAuctionQuery.isLoading || closingAuctionQuery.isLoading,
-    isError: latestAuctionQuery.isError || closingAuctionQuery.isError,
-  };
   const serviceState = {
     isLoading: latestServiceQuery.isLoading,
     isError: latestServiceQuery.isError,
@@ -104,9 +105,11 @@ const LandingPage = () => {
           />
           <AuctionSection
             closingItems={closingAuctions}
-            isError={auctionState.isError}
-            isLoading={auctionState.isLoading}
+            closingError={closingAuctionQuery.isError}
+            closingLoading={closingAuctionQuery.isLoading}
             newItems={latestAuctions}
+            newError={latestAuctionQuery.isError}
+            newLoading={latestAuctionQuery.isLoading}
           />
           <NewServiceSection
             isError={serviceState.isError}
@@ -120,12 +123,16 @@ const LandingPage = () => {
       <div className="lg:hidden">
         <MobileLandingSections
           closingAuctionItems={closingAuctions}
+          closingAuctionError={closingAuctionQuery.isError}
+          closingAuctionLoading={closingAuctionQuery.isLoading}
           hotItems={popularAuctions}
-          isAuctionError={auctionState.isError}
-          isAuctionLoading={auctionState.isLoading}
+          isHotAuctionError={popularAuctionQuery.isError}
+          isHotAuctionLoading={popularAuctionQuery.isLoading}
           isServiceError={serviceState.isError}
           isServiceLoading={serviceState.isLoading}
           newAuctionItems={latestAuctions}
+          newAuctionError={latestAuctionQuery.isError}
+          newAuctionLoading={latestAuctionQuery.isLoading}
           serviceRequestItems={latestServiceRequests}
         />
       </div>

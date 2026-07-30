@@ -5,7 +5,6 @@ import { SlidersHorizontal } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { getCategories } from '@api/categoryApi';
 import {
-  ContentPageHeader,
   ContentPageShell,
   ContentState,
 } from '@components/content/ContentUi';
@@ -17,6 +16,7 @@ import {
   ServiceSearchBar,
 } from '@components/service/ServiceUi';
 import CardGridSkeleton from '@components/skeleton/CardGridSkeleton';
+import HeaderSearchPortal from '@components/common/HeaderSearchPortal';
 import {
   SERVICE_CATEGORY_DOMAIN_CODE,
   SERVICE_DISCOVERY_PAGE_SIZE,
@@ -154,13 +154,14 @@ const ServiceListPage = () => {
   return (
     <ContentPageShell className="service-discovery-page">
       <Helmet><title>서비스 찾기 | 에누리컷</title></Helmet>
-      <ContentPageHeader title="서비스 찾기" />
 
-      <ServiceSearchBar
-        initialKeyword={filters.keyword}
-        key={filters.keyword}
-        onSubmit={handleSearch}
-      />
+      <HeaderSearchPortal>
+        <ServiceSearchBar
+          initialKeyword={filters.keyword}
+          key={filters.keyword}
+          onSubmit={handleSearch}
+        />
+      </HeaderSearchPortal>
 
       <div className="mt-6 flex justify-end lg:hidden">
         <button className="flex h-12 items-center gap-2 rounded-[5px] border border-primary px-4 text-body-md font-bold text-primary" onClick={() => setFiltersOpen(true)} type="button">
@@ -181,11 +182,6 @@ const ServiceListPage = () => {
         />
 
         <section className="min-w-0 flex-1 scroll-mt-24" ref={resultHeadingRef}>
-          <div className="mb-5 flex min-h-11 items-center justify-between border-b border-[#e1e1df] pb-4">
-            <h2 className="text-h3 font-bold text-[#1a1a18]">서비스 요청 검색 결과</h2>
-            <span className="text-body-md font-semibold text-[#555552]">총 {Number(result?.total || 0).toLocaleString('ko-KR')}건</span>
-          </div>
-
           {discoveryQuery.isLoading && <CardGridSkeleton cardHeight={300} columns={2} />}
 
           {(budgetInvalid || legacyCategoryMissing || discoveryQuery.isError) && (
