@@ -49,7 +49,6 @@ export const useApi = () => {
     // ==========================================
 
     // 프로필 ===================================
-    getProfile    : ()         => execute(() => api.get('/auth/me')),
     checkNickname : (nickname) => execute(() => api.get('/auth/check-nickname', { params: { nickname } })),
     updateProfile : (formData) => execute(() => api.post('/member/me', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },

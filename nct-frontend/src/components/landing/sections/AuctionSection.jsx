@@ -5,17 +5,33 @@ import arrowDark from "@assets/img/arrowDark.png";
 import MoreButton from "./MoreButton";
 import AuctionCard from "./AuctionCard";
 
-const VIEWPORT_LEFT = 168;
-const VIEWPORT_WIDTH = 1584;
-const CARD_STEP = 295 + 24; // 카드 너비 + gap-[24px]
-const VISIBLE_COUNT = Math.floor(VIEWPORT_WIDTH / CARD_STEP);
+const STAGE_WIDTH = 1920;
+const CARD_WIDTH = 295;
+const CARD_GAP = 24;
+const VISIBLE_COUNT = 5;
+const CARD_STEP = CARD_WIDTH + CARD_GAP;
+const VIEWPORT_WIDTH = (CARD_WIDTH * VISIBLE_COUNT) + (CARD_GAP * (VISIBLE_COUNT - 1));
+const VIEWPORT_LEFT = (STAGE_WIDTH - VIEWPORT_WIDTH) / 2;
+const TAB_WIDTH = 242;
+const TAB_GAP = 16;
+const TAB_GROUP_LEFT = (STAGE_WIDTH - ((TAB_WIDTH * 2) + TAB_GAP)) / 2;
+const MORE_BUTTON_LEFT = (STAGE_WIDTH - 100) / 2;
 
-export default function AuctionSection({ closingItems, isError, isLoading, newItems }) {
+export default function AuctionSection({
+  closingError,
+  closingItems,
+  closingLoading,
+  newError,
+  newItems,
+  newLoading,
+}) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("new");
   const [slideIndex, setSlideIndex] = useState(0);
 
   const items = activeTab === "new" ? newItems : closingItems;
+  const isError = activeTab === "new" ? newError : closingError;
+  const isLoading = activeTab === "new" ? newLoading : closingLoading;
   const maxIndex = Math.max(0, items.length - VISIBLE_COUNT);
 
   const handleTabChange = (tab) => {
@@ -30,15 +46,16 @@ export default function AuctionSection({ closingItems, isError, isLoading, newIt
     <section className="absolute contents left-0 top-[1254px]" data-name="SECTION_3(신규경매/마감임박경매)">
       {/* 탭 메뉴 */}
       <div className="absolute contents left-0 top-[1254px]" data-name="tabmen">
-        <div className="absolute h-0 left-0 top-[1286px] w-[1955px]">
+        <div className="absolute h-0 left-0 top-[1286px] w-[1920px]">
           <div className="absolute inset-[-1px_0_0_0] border-t border-[#e0e0e0]" />
         </div>
         <button
           type="button"
           onClick={() => handleTabChange("new")}
-          className={`absolute h-[60px] left-[711px] rounded-[40px] top-[1254px] w-[242px] cursor-pointer transition-colors ${
+          className={`absolute h-[60px] rounded-[40px] top-[1254px] w-[242px] cursor-pointer transition-colors ${
             activeTab === "new" ? "bg-[#0064ff]" : "bg-[#ebebeb]"
           }`}
+          style={{ left: TAB_GROUP_LEFT }}
         >
           <span
             className={`absolute font-['Noto_Sans_KR:Bold'] font-bold leading-[normal] left-[80px] text-[25px] top-[15px] tracking-[-2px] whitespace-nowrap ${
@@ -51,9 +68,10 @@ export default function AuctionSection({ closingItems, isError, isLoading, newIt
         <button
           type="button"
           onClick={() => handleTabChange("closing")}
-          className={`absolute h-[60px] left-[969px] rounded-[40px] top-[1254px] w-[242px] cursor-pointer transition-colors ${
+          className={`absolute h-[60px] rounded-[40px] top-[1254px] w-[242px] cursor-pointer transition-colors ${
             activeTab === "closing" ? "bg-[#0064ff]" : "bg-[#ebebeb]"
           }`}
+          style={{ left: TAB_GROUP_LEFT + TAB_WIDTH + TAB_GAP }}
         >
           <span
             className={`absolute font-['Noto_Sans_KR:Bold'] font-bold leading-[normal] left-[55px] text-[25px] top-[15px] tracking-[-2px] whitespace-nowrap ${
@@ -82,9 +100,16 @@ export default function AuctionSection({ closingItems, isError, isLoading, newIt
       </div>
 
       <ArrowIcon direction="left" className="left-[111px] top-[1541px]" imgSrc={arrowDark} onClick={goPrev} disabled={slideIndex === 0} />
-      <ArrowIcon direction="right" className="left-[1800px] top-[1541px]" imgSrc={arrowDark} onClick={goNext} disabled={slideIndex >= maxIndex} />
+      <ArrowIcon direction="right" className="left-[1777px] top-[1541px]" imgSrc={arrowDark} onClick={goNext} disabled={slideIndex >= maxIndex} />
 
-      <MoreButton left={895} top={1774} variant="light" onClick={() => navigate("/auction")} />
+      <MoreButton
+        left={MORE_BUTTON_LEFT}
+        top={1774}
+        variant="light"
+        onClick={() => navigate(activeTab === "new"
+          ? "/auction?sort=latest"
+          : "/auction?sort=deadline&endingSoonOnly=true")}
+      />
     </section>
   );
 }
