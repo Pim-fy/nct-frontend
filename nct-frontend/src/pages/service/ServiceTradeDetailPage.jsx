@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { submitServiceTradeDispute } from '@api/serviceTradeApi';
 import {
   getServiceTradeStatus,
   SERVICE_TRADE_STEPS,
@@ -6,8 +8,34 @@ import {
 import '@assets/css/service-trade-detail.css';
 
 // 담당자4 서비스 거래 상세의 표현 전용 화면이다.
-// 조회·완료·분쟁 API와 공통 route는 계약 확정 뒤 연결한다.
-export default function ServiceTradeDetailPage({ trade = null }) {
+// 조회·완료 API와 공통 route는 계약 확정 뒤 연결한다.
+export default function ServiceTradeDetailPage({
+  trade = null,
+  disputeTypes = [],
+  onRequestCompletion = null,
+  onConfirmCompletion = null,
+  scheduleHistory = [],
+  onRequestScheduleChange = null,
+  onRequestScheduleCancellation = null,
+}) {
+  const [isDisputeDialogOpen, setIsDisputeDialogOpen] = useState(false);
+  const [disputeTypeCode, setDisputeTypeCode] = useState('');
+  const [disputeContent, setDisputeContent] = useState('');
+  const [disputeError, setDisputeError] = useState('');
+  const [isSubmittingDispute, setIsSubmittingDispute] = useState(false);
+  const [disputeSubmitted, setDisputeSubmitted] = useState(false);
+  const [completionDialogType, setCompletionDialogType] = useState(null);
+  const [completionMemo, setCompletionMemo] = useState('');
+  const [isSubmittingCompletion, setIsSubmittingCompletion] = useState(false);
+  const [completionSubmitted, setCompletionSubmitted] = useState(false);
+  const [completionError, setCompletionError] = useState('');
+  const [scheduleDialogType, setScheduleDialogType] = useState(null);
+  const [requestedScheduleAt, setRequestedScheduleAt] = useState('');
+  const [scheduleReason, setScheduleReason] = useState('');
+  const [scheduleError, setScheduleError] = useState('');
+  const [isSubmittingSchedule, setIsSubmittingSchedule] = useState(false);
+  const [scheduleSubmitted, setScheduleSubmitted] = useState(false);
+
   if (!trade) {
     return (
       <main className="service-trade-detail-page">
@@ -25,6 +53,138 @@ export default function ServiceTradeDetailPage({ trade = null }) {
   const canRequestCompletion = isProvider && trade.availableActions?.includes('REQUEST_COMPLETION');
   const canConfirmCompletion = isRequester && trade.availableActions?.includes('CONFIRM_COMPLETION');
   const canSubmitDispute = trade.availableActions?.includes('SUBMIT_DISPUTE');
+  const canRequestScheduleChange = trade.availableActions?.includes('REQUEST_SCHEDULE_CHANGE');
+  const canRequestScheduleCancellation = trade.availableActions?.includes('REQUEST_SCHEDULE_CANCELLATION');
+  const hasDisputeTypes = disputeTypes.length > 0;
+  const isCompletionRequest = completionDialogType === 'REQUEST';
+  const completionHandler = isCompletionRequest ? onRequestCompletion : onConfirmCompletion;
+  const canSubmitCompletion = typeof completionHandler === 'function';
+  const isScheduleChange = scheduleDialogType === 'CHANGE';
+  const scheduleHandler = isScheduleChange ? onRequestScheduleChange : onRequestScheduleCancellation;
+  const canSubmitSchedule = typeof scheduleHandler === 'function';
+
+  const openDisputeDialog = () => {
+    setDisputeError('');
+    setDisputeSubmitted(false);
+    setIsDisputeDialogOpen(true);
+  };
+
+  const closeDisputeDialog = () => {
+    if (isSubmittingDispute) return;
+    setIsDisputeDialogOpen(false);
+  };
+
+  const handleDisputeSubmit = async (event) => {
+    event.preventDefault();
+    const content = disputeContent.trim();
+
+    if (!hasDisputeTypes) {
+      setDisputeError('거래 문제 유형 목록을 확인한 뒤 접수할 수 있습니다.');
+      return;
+    }
+    if (!disputeTypeCode) {
+      setDisputeError('거래 문제 유형을 선택해 주세요.');
+      return;
+    }
+    if (!content) {
+      setDisputeError('거래 문제 내용을 입력해 주세요.');
+      return;
+    }
+
+    setIsSubmittingDispute(true);
+    setDisputeError('');
+    try {
+      await submitServiceTradeDispute(trade.tradeId, {
+        disputeTypeCode,
+        content,
+      });
+      setDisputeSubmitted(true);
+    } catch (error) {
+      setDisputeError(error.response?.data?.message ?? '거래 문제를 접수하지 못했습니다. 다시 시도해 주세요.');
+    } finally {
+      setIsSubmittingDispute(false);
+    }
+  };
+
+  const openCompletionDialog = (type) => {
+    setCompletionDialogType(type);
+    setCompletionMemo('');
+    setCompletionError('');
+    setCompletionSubmitted(false);
+  };
+
+  const closeCompletionDialog = () => {
+    if (isSubmittingCompletion) return;
+    setCompletionDialogType(null);
+  };
+
+  const handleCompletionSubmit = async (event) => {
+    event.preventDefault();
+    const memo = completionMemo.trim();
+
+    if (isCompletionRequest && !memo) {
+      setCompletionError('완료 요청 메모를 입력해 주세요.');
+      return;
+    }
+    if (!canSubmitCompletion) {
+      setCompletionError('서비스 거래 완료 처리 계약을 확인한 뒤 요청할 수 있습니다.');
+      return;
+    }
+
+    setIsSubmittingCompletion(true);
+    setCompletionError('');
+    try {
+      await completionHandler(trade.tradeId, isCompletionRequest ? { completionMemo: memo } : undefined);
+      setCompletionSubmitted(true);
+    } catch (error) {
+      setCompletionError(error.response?.data?.message ?? '완료 처리를 요청하지 못했습니다. 다시 시도해 주세요.');
+    } finally {
+      setIsSubmittingCompletion(false);
+    }
+  };
+
+  const openScheduleDialog = (type) => {
+    setScheduleDialogType(type);
+    setRequestedScheduleAt('');
+    setScheduleReason('');
+    setScheduleError('');
+    setScheduleSubmitted(false);
+  };
+
+  const closeScheduleDialog = () => {
+    if (isSubmittingSchedule) return;
+    setScheduleDialogType(null);
+  };
+
+  const handleScheduleSubmit = async (event) => {
+    event.preventDefault();
+    const reason = scheduleReason.trim();
+    if (isScheduleChange && !requestedScheduleAt) {
+      setScheduleError('변경할 서비스 일시를 입력해 주세요.');
+      return;
+    }
+    if (!reason) {
+      setScheduleError('요청 사유를 입력해 주세요.');
+      return;
+    }
+    if (!canSubmitSchedule) {
+      setScheduleError('서비스 일정 처리 계약을 확인한 뒤 요청할 수 있습니다.');
+      return;
+    }
+
+    setIsSubmittingSchedule(true);
+    setScheduleError('');
+    try {
+      await scheduleHandler(trade.tradeId, isScheduleChange
+        ? { requestedScheduleAt, reason }
+        : { reason });
+      setScheduleSubmitted(true);
+    } catch (error) {
+      setScheduleError(error.response?.data?.message ?? '일정 요청을 처리하지 못했습니다. 다시 시도해 주세요.');
+    } finally {
+      setIsSubmittingSchedule(false);
+    }
+  };
 
   return (
     <main className="service-trade-detail-page">
@@ -70,15 +230,27 @@ export default function ServiceTradeDetailPage({ trade = null }) {
         </section>
 
         <section className="service-trade-card service-trade-card--timeline">
-          <h2>거래 이력</h2>
-          <p>서비스 거래 API가 연결되면 상태 변경과 일정 이력을 시간순으로 표시합니다.</p>
+          <h2>서비스 일정 이력</h2>
+          {scheduleHistory.length > 0 ? (
+            <ol className="service-trade-schedule-history">
+              {scheduleHistory.map((item) => (
+                <li key={item.id}>
+                  <strong>{item.title}</strong>
+                  <span>{item.occurredAt}</span>
+                  {item.reason && <p>{item.reason}</p>}
+                </li>
+              ))}
+            </ol>
+          ) : <p>서비스 일정 API가 연결되면 변경·취소 이력을 시간순으로 표시합니다.</p>}
         </section>
 
-        {(canRequestCompletion || canConfirmCompletion || canSubmitDispute) && (
+        {(canRequestCompletion || canConfirmCompletion || canSubmitDispute || canRequestScheduleChange || canRequestScheduleCancellation) && (
           <section className="service-trade-detail-actions" aria-label="서비스 거래 처리">
-            {canRequestCompletion && <button className="btn btn-success" type="button">완료 요청 작성</button>}
-            {canConfirmCompletion && <button className="btn btn-primary" type="button">완료 확인</button>}
-            {canSubmitDispute && <button className="btn btn-danger" type="button">거래 문제 접수</button>}
+            {canRequestCompletion && <button className="btn btn-success" type="button" onClick={() => openCompletionDialog('REQUEST')}>완료 요청 작성</button>}
+            {canConfirmCompletion && <button className="btn btn-primary" type="button" onClick={() => openCompletionDialog('CONFIRM')}>완료 확인</button>}
+            {canRequestScheduleChange && <button className="btn btn-ghost" type="button" onClick={() => openScheduleDialog('CHANGE')}>일정 변경 요청</button>}
+            {canRequestScheduleCancellation && <button className="btn btn-ghost" type="button" onClick={() => openScheduleDialog('CANCEL')}>일정 취소 요청</button>}
+            {canSubmitDispute && <button className="btn btn-danger" type="button" onClick={openDisputeDialog}>거래 문제 접수</button>}
           </section>
         )}
 
@@ -86,6 +258,188 @@ export default function ServiceTradeDetailPage({ trade = null }) {
           <Link className="btn btn-ghost" to={`/service-requests/${trade.serviceRequestId}`}>요청 상세</Link>
         </div>
       </div>
+
+      {isDisputeDialogOpen && (
+        <div className="service-trade-dialog-backdrop" role="presentation" onMouseDown={closeDisputeDialog}>
+          <section
+            className="service-trade-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="service-trade-dispute-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header className="service-trade-dialog__header">
+              <div>
+                <p>서비스 거래</p>
+                <h2 id="service-trade-dispute-title">거래 문제 접수</h2>
+              </div>
+              <button className="service-trade-dialog__close" type="button" onClick={closeDisputeDialog} aria-label="거래 문제 접수 창 닫기">×</button>
+            </header>
+
+            {disputeSubmitted ? (
+              <div className="service-trade-dialog__result" role="status">
+                <strong>거래 문제가 접수되었습니다.</strong>
+                <p>거래와 관련 정산은 보류되며, 관리자 처리 결과를 안내해 드립니다.</p>
+                <button className="btn btn-primary" type="button" onClick={closeDisputeDialog}>확인</button>
+              </div>
+            ) : (
+              <form className="service-trade-dispute-form" onSubmit={handleDisputeSubmit}>
+                <p className="service-trade-dispute-form__notice">거래 문제를 접수하면 완료 처리와 정산이 보류됩니다.</p>
+                <label htmlFor="service-trade-dispute-type">거래 문제 유형</label>
+                <select
+                  id="service-trade-dispute-type"
+                  value={disputeTypeCode}
+                  onChange={(event) => setDisputeTypeCode(event.target.value)}
+                  disabled={!hasDisputeTypes || isSubmittingDispute}
+                >
+                  <option value="">{hasDisputeTypes ? '유형을 선택해 주세요.' : '유형 목록 확인 대기 중'}</option>
+                  {disputeTypes.map((type) => <option key={type.code} value={type.code}>{type.label}</option>)}
+                </select>
+                {!hasDisputeTypes && <p className="service-trade-dispute-form__help">유형 목록 공통코드 계약이 연결되면 선택할 수 있습니다.</p>}
+
+                <label htmlFor="service-trade-dispute-content">상세 내용</label>
+                <textarea
+                  id="service-trade-dispute-content"
+                  value={disputeContent}
+                  onChange={(event) => setDisputeContent(event.target.value)}
+                  maxLength={4000}
+                  placeholder="문제 상황과 요청 사항을 구체적으로 입력해 주세요."
+                  disabled={isSubmittingDispute}
+                />
+                <p className="service-trade-dispute-form__count">{disputeContent.length}/4,000</p>
+                {disputeError && <p className="service-trade-dispute-form__error" role="alert">{disputeError}</p>}
+
+                <div className="service-trade-dispute-form__actions">
+                  <button className="btn btn-ghost" type="button" onClick={closeDisputeDialog} disabled={isSubmittingDispute}>취소</button>
+                  <button className="btn btn-danger" type="submit" disabled={isSubmittingDispute || !hasDisputeTypes}>
+                    {isSubmittingDispute ? '접수 중...' : '거래 문제 접수'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </section>
+        </div>
+      )}
+
+      {completionDialogType && (
+        <div className="service-trade-dialog-backdrop" role="presentation" onMouseDown={closeCompletionDialog}>
+          <section
+            className="service-trade-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="service-trade-completion-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header className="service-trade-dialog__header">
+              <div>
+                <p>서비스 거래</p>
+                <h2 id="service-trade-completion-title">{isCompletionRequest ? '서비스 완료 요청' : '서비스 완료 확인'}</h2>
+              </div>
+              <button className="service-trade-dialog__close" type="button" onClick={closeCompletionDialog} aria-label="완료 처리 창 닫기">×</button>
+            </header>
+
+            {completionSubmitted ? (
+              <div className="service-trade-dialog__result" role="status">
+                <strong>{isCompletionRequest ? '완료 요청을 전달했습니다.' : '서비스 완료를 확인했습니다.'}</strong>
+                <p>{isCompletionRequest ? '의뢰자의 확인 기한은 5일이며, 이의가 없으면 자동 완료됩니다.' : '거래 완료와 정산 처리 결과를 안내해 드립니다.'}</p>
+                <button className="btn btn-primary" type="button" onClick={closeCompletionDialog}>확인</button>
+              </div>
+            ) : (
+              <form className="service-trade-dispute-form" onSubmit={handleCompletionSubmit}>
+                <p className="service-trade-dispute-form__notice">
+                  {isCompletionRequest
+                    ? '완료 요청 후 의뢰자가 확인하거나 5일 동안 이의가 없으면 거래가 자동 완료됩니다.'
+                    : '완료를 확인하면 거래 완료와 제공자 정산 처리 절차가 진행됩니다.'}
+                </p>
+                {isCompletionRequest && (
+                  <>
+                    <label htmlFor="service-trade-completion-memo">완료 요청 메모</label>
+                    <textarea
+                      id="service-trade-completion-memo"
+                      value={completionMemo}
+                      onChange={(event) => setCompletionMemo(event.target.value)}
+                      maxLength={1000}
+                      placeholder="완료한 작업 내용과 확인 사항을 입력해 주세요."
+                      disabled={isSubmittingCompletion}
+                    />
+                    <p className="service-trade-dispute-form__count">{completionMemo.length}/1,000</p>
+                  </>
+                )}
+                {!canSubmitCompletion && <p className="service-trade-dispute-form__help">완료 처리 API 계약이 연결되면 요청할 수 있습니다.</p>}
+                {completionError && <p className="service-trade-dispute-form__error" role="alert">{completionError}</p>}
+                <div className="service-trade-dispute-form__actions">
+                  <button className="btn btn-ghost" type="button" onClick={closeCompletionDialog} disabled={isSubmittingCompletion}>취소</button>
+                  <button className="btn btn-primary" type="submit" disabled={isSubmittingCompletion || !canSubmitCompletion}>
+                    {isSubmittingCompletion ? '처리 중...' : isCompletionRequest ? '완료 요청 보내기' : '완료 확인'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </section>
+        </div>
+      )}
+
+      {scheduleDialogType && (
+        <div className="service-trade-dialog-backdrop" role="presentation" onMouseDown={closeScheduleDialog}>
+          <section
+            className="service-trade-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="service-trade-schedule-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header className="service-trade-dialog__header">
+              <div>
+                <p>서비스 거래</p>
+                <h2 id="service-trade-schedule-title">{isScheduleChange ? '서비스 일정 변경 요청' : '서비스 일정 취소 요청'}</h2>
+              </div>
+              <button className="service-trade-dialog__close" type="button" onClick={closeScheduleDialog} aria-label="일정 요청 창 닫기">×</button>
+            </header>
+
+            {scheduleSubmitted ? (
+              <div className="service-trade-dialog__result" role="status">
+                <strong>{isScheduleChange ? '일정 변경 요청을 전달했습니다.' : '일정 취소 요청을 전달했습니다.'}</strong>
+                <p>상대방 확인과 처리 결과는 서비스 거래 이력에서 안내해 드립니다.</p>
+                <button className="btn btn-primary" type="button" onClick={closeScheduleDialog}>확인</button>
+              </div>
+            ) : (
+              <form className="service-trade-dispute-form" onSubmit={handleScheduleSubmit}>
+                <p className="service-trade-dispute-form__notice">일정 변경·취소에는 수수료가 부과되지 않으며 요청 사유가 거래 이력에 기록됩니다.</p>
+                {isScheduleChange && (
+                  <>
+                    <label htmlFor="service-trade-requested-schedule">변경 희망 일시</label>
+                    <input
+                      id="service-trade-requested-schedule"
+                      type="datetime-local"
+                      value={requestedScheduleAt}
+                      onChange={(event) => setRequestedScheduleAt(event.target.value)}
+                      disabled={isSubmittingSchedule}
+                    />
+                  </>
+                )}
+                <label htmlFor="service-trade-schedule-reason">요청 사유</label>
+                <textarea
+                  id="service-trade-schedule-reason"
+                  value={scheduleReason}
+                  onChange={(event) => setScheduleReason(event.target.value)}
+                  maxLength={1000}
+                  placeholder="일정 변경 또는 취소가 필요한 사유를 입력해 주세요."
+                  disabled={isSubmittingSchedule}
+                />
+                <p className="service-trade-dispute-form__count">{scheduleReason.length}/1,000</p>
+                {!canSubmitSchedule && <p className="service-trade-dispute-form__help">서비스 일정 처리 API 계약이 연결되면 요청할 수 있습니다.</p>}
+                {scheduleError && <p className="service-trade-dispute-form__error" role="alert">{scheduleError}</p>}
+                <div className="service-trade-dispute-form__actions">
+                  <button className="btn btn-ghost" type="button" onClick={closeScheduleDialog} disabled={isSubmittingSchedule}>취소</button>
+                  <button className="btn btn-primary" type="submit" disabled={isSubmittingSchedule || !canSubmitSchedule}>
+                    {isSubmittingSchedule ? '요청 중...' : '요청 보내기'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </section>
+        </div>
+      )}
     </main>
   );
 }

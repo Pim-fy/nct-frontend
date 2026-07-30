@@ -1,12 +1,7 @@
-// 서비스 거래 공통코드를 화면 단계·문구로 변환한다.
+// TRADE.TRD_STATUS_CD(TRDG02)를 서비스 거래 화면 단계·문구로 변환한다.
+// 서비스 거래 유형(TRDC0002)과 보관금 상태는 이 모듈에서 상태 코드로 다루지 않는다.
 // 실제 API DTO가 확정되면 이 모듈만 보완해 역할별 화면이 같은 기준을 사용하게 한다.
 const SERVICE_TRADE_STATUS = {
-  TRDC0002: {
-    label: '보관금 대기',
-    description: '보관금 처리가 완료되면 서비스가 시작됩니다.',
-    step: 0,
-    tone: 'pending',
-  },
   TRDC0003: {
     label: '서비스 진행 중',
     description: '제공자가 약속한 범위의 서비스를 진행하고 있습니다.',
@@ -26,7 +21,7 @@ const SERVICE_TRADE_STATUS = {
     tone: 'complete',
   },
   TRDC0007: {
-    label: '거래 문제 검토 중',
+    label: '거래 보류',
     description: '거래 문제를 확인하는 동안 완료와 정산이 보류됩니다.',
     step: -1,
     tone: 'problem',
