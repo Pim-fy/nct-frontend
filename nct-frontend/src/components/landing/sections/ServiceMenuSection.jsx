@@ -104,7 +104,12 @@ export default function ServiceMenuSection({ hotItems, isError, isLoading }) {
         <p className="absolute font-['Noto_Sans_KR:Black'] font-black leading-[normal] left-[1363px] text-[25px] text-white top-[889px] tracking-[5px] whitespace-nowrap">
           HOT ITEM
         </p>
-        <MoreButton left={1651} top={881} variant="dark" />
+        <MoreButton
+          left={1651}
+          onClick={() => navigate("/auction?sort=popular")}
+          top={881}
+          variant="dark"
+        />
 
         {/* 행별 개별 플립 리스트 */}
         <div

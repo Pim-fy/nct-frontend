@@ -7,17 +7,17 @@ import React from "react";
  */
 export default function ServiceRequestCard({ item, onClick }) {
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onClick?.(); }}
-      className="group relative h-[169px] w-[501px] shrink-0 cursor-pointer"
-    >
+    <article className="group relative h-[169px] w-[501px] shrink-0">
+      <button
+        aria-label={`${item.title} 서비스 요청 상세보기`}
+        className="absolute inset-0 z-10 cursor-pointer rounded-[20px] border-0 bg-transparent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0064ff]"
+        onClick={onClick}
+        type="button"
+      />
       <div className="absolute inset-0 rounded-[20px] border border-solid border-[rgba(255,255,255,0.7)] bg-transparent transition-colors group-hover:border-[#0064ff]" />
 
-      <p className="absolute right-[33px] top-[72px] font-['Noto_Sans_KR:Bold'] font-bold text-white tracking-[-2px] whitespace-nowrap">
-        <span className="text-[16px]">{`최대 `}</span>
+      <p className="absolute right-[33px] top-[72px] max-w-[230px] truncate text-right font-['Noto_Sans_KR:Bold'] font-bold text-white tracking-normal">
+        {item.price !== '협의' && <span className="text-[16px]">최대 </span>}
         <span className="text-[25px]">{item.price}</span>
       </p>
 
@@ -26,19 +26,16 @@ export default function ServiceRequestCard({ item, onClick }) {
         N
       </p>
 
-      <p className="absolute font-['Noto_Sans_KR:Medium'] font-medium text-[18px] text-white tracking-[-0.9px] whitespace-nowrap" style={{ left: 29, top: 56 }}>
+      <p className="absolute max-w-[350px] truncate font-['Noto_Sans_KR:Medium'] text-[18px] font-medium text-white tracking-normal" style={{ left: 29, top: 56 }}>
         {item.title}
       </p>
-      <p className="absolute font-['Noto_Sans_KR:Medium'] font-medium text-[15px] text-white tracking-[-0.75px] whitespace-nowrap" style={{ left: 29, top: 83 }}>
+      <p className="absolute max-w-[190px] truncate font-['Noto_Sans_KR:Medium'] text-[15px] font-medium text-white tracking-normal" style={{ left: 29, top: 83 }}>
         {item.meta}
       </p>
 
-      <div className="absolute" style={{ left: 30, top: 30 }}>
-        <div className="bg-[#0064ff] border border-[#0064ff] border-solid h-[20px] rounded-[15px] w-[42px]" />
-        <p className="absolute inset-0 flex items-center justify-center font-['Noto_Sans_KR:Medium'] font-medium text-[12px] text-white tracking-[-0.96px] whitespace-nowrap">
-          {item.bidLabel}
-        </p>
-      </div>
+      <span className="absolute left-[30px] top-[30px] flex h-[22px] max-w-[160px] items-center rounded-[15px] bg-[#0064ff] px-3 font-['Noto_Sans_KR:Medium'] text-[12px] font-medium text-white tracking-normal">
+        <span className="truncate">{item.bidLabel}</span>
+      </span>
 
       {item.quotes != null && (
         <>
@@ -58,6 +55,6 @@ export default function ServiceRequestCard({ item, onClick }) {
           </p>
         </>
       )}
-    </div>
+    </article>
   );
 }

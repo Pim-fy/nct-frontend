@@ -34,12 +34,15 @@ export const confirm = async ({
   icon = 'warning',
   confirmButtonText = '확인',
   cancelButtonText  = '취소',
+  showCancelButton = true,
+  scrollbarPadding = true,
 }) => {
   const result = await Swal.fire({
     title,
     text,
     icon,
-    showCancelButton     : true,
+    showCancelButton,
+    scrollbarPadding,
     confirmButtonColor   : '#d33',
     cancelButtonColor    : '#0F9B73',
     confirmButtonText,
