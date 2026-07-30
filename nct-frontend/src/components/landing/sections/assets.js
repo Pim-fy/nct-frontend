@@ -18,6 +18,7 @@ import walletIcon from '@assets/img/walletIcon.png';
 import logo from '@assets/img/logo.png';
 import commentIcon from '@assets/img/commentIcon.png';
 import cursorIcon from '@assets/img/cursorIcon.png';
+import heroSectionImg from '@assets/img/hero_section_img.png';
 
 export const assets = {
   glennCarstensPeters,
@@ -40,6 +41,7 @@ export const assets = {
   logo,
   commentIcon,
   cursorIcon,
+  heroSectionImg,
 };
 
 export default assets;

@@ -97,9 +97,7 @@ export default function ReportModal({
   const toggleType = (t) => {
     setForm((prev) => ({
       ...prev,
-      types: prev.types.includes(t)
-        ? prev.types.filter((x) => x !== t)
-        : [...prev.types, t],
+      types: prev.types.includes(t) ? [] : [t],
     }));
     if (errors.types) setErrors((prev) => ({ ...prev, types: "" }));
   };
@@ -181,7 +179,7 @@ export default function ReportModal({
             <p className="text-[15px] font-bold text-[#1a1a18] mb-1">
               신고 유형 <span className="text-red-500">*</span>
             </p>
-            <p className="text-[13px] text-[#969696] mb-2">중복 선택 가능</p>
+            <p className="text-[13px] text-[#969696] mb-2">1개 선택</p>
             <div className="flex flex-wrap gap-2">
               {REPORT_TYPES.map((t) => {
                 const active = form.types.includes(t);

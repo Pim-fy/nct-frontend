@@ -60,7 +60,6 @@ import ProviderApplyPage from '@pages/provider/ProviderApplyPage';
 import ProviderApplicationStatusPage from '@pages/provider/ProviderApplicationStatusPage';
 import ProviderProfilePage from '@pages/provider/ProviderProfilePage';
 import NotificationPage from '@pages/user/notification/NotificationPage';
-import NotificationSettingsPage from '@pages/user/notification/NotificationSettingsPage';
 import SettlementListPage from '@pages/user/settlement/SettlementListPage';
 import AuctionFavoritesPage from '@pages/auction/AuctionFavoritesPage';
 import QuoteFormPage from '@pages/provider/QuoteFormPage';
@@ -200,10 +199,6 @@ const AppRoutes = () => {
           <Route path="/user/mypage" element={<MyPage />} />
           <Route path="/user/point" element={<PointWalletRedirect />} />
           <Route path="/user/notification" element={<NotificationPage />} />
-          <Route
-            path="/user/notification/settings"
-            element={<NotificationSettingsPage />}
-          />
           <Route path="/user/settlement" element={<SettlementListPage />} />
         </Route>
       </Route>
