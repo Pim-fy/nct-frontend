@@ -31,6 +31,7 @@ const AuctionBidPanel = ({
   isPointBalanceError,
   isBidPointSufficient,
   isBidAmountUnitValid,
+  isInstantBuyAmountSelected,
   hasBidAmountSelection,
   isBuyNowPointSufficient,
   isFavoritePending,
@@ -319,7 +320,7 @@ const AuctionBidPanel = ({
                     type="button"
                     aria-busy={isBidPending}
                     disabled={!isAuctionOpen
-                      || isCurrentHighestBidder
+                      || (isCurrentHighestBidder && !isInstantBuyAmountSelected)
                       || isBidPending
                       || isBidPointInsufficient
                       || !isBidAmountUnitValid}
@@ -327,13 +328,15 @@ const AuctionBidPanel = ({
                   >
                     {!isAuctionOpen
                       ? '입찰 종료'
-                      : (isCurrentHighestBidder
+                      : (isInstantBuyAmountSelected
+                        ? (isBidPointInsufficient ? '포인트 부족' : '즉시구매 진행')
+                        : (isCurrentHighestBidder
                         ? '최고입찰 중'
                         : (isBidPointInsufficient
                           ? '포인트 부족'
                           : (!isBidAmountUnitValid
                             ? (hasBidAmountSelection ? '입찰 단위 확인' : '입찰 금액 선택')
-                            : (isBidPending ? '입찰 중' : '입찰하기'))))}
+                            : (isBidPending ? '입찰 중' : '입찰하기')))))}
                   </button>
                   <button
                     className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-white text-body-md font-bold text-primary disabled:cursor-not-allowed disabled:opacity-55 aria-busy:cursor-progress"

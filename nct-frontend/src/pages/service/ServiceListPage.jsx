@@ -5,7 +5,6 @@ import { SlidersHorizontal } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { getCategories } from '@api/categoryApi';
 import {
-  ContentPageShell,
   ContentState,
 } from '@components/content/ContentUi';
 import {
@@ -152,7 +151,7 @@ const ServiceListPage = () => {
       : '서비스 검색 결과를 불러오지 못했습니다.';
 
   return (
-    <ContentPageShell className="service-discovery-page">
+    <div className="min-h-full bg-white text-body-sm text-[#1a1a18] md:text-body-md">
       <Helmet><title>서비스 찾기 | 에누리컷</title></Helmet>
 
       <HeaderSearchPortal>
@@ -163,13 +162,8 @@ const ServiceListPage = () => {
         />
       </HeaderSearchPortal>
 
-      <div className="mt-6 flex justify-end lg:hidden">
-        <button className="flex h-12 items-center gap-2 rounded-[5px] border border-primary px-4 text-body-md font-bold text-primary" onClick={() => setFiltersOpen(true)} type="button">
-          <SlidersHorizontal aria-hidden="true" size={19} />필터
-        </button>
-      </div>
-
-      <div className="mt-8 flex items-start gap-8">
+      <main className="mx-auto my-0 w-full max-w-[1600px] py-10">
+      <div className="flex items-start gap-6 max-md:block">
         <ServiceFilterPanel
           categories={categories}
           categoriesError={categoriesQuery.isError}
@@ -179,10 +173,16 @@ const ServiceListPage = () => {
           onChange={handleFilterChange}
           onClose={() => setFiltersOpen(false)}
           onReset={resetFilters}
+          resultCount={result?.total}
+          resultLoading={discoveryQuery.isLoading}
         />
 
         <section className="min-w-0 flex-1 scroll-mt-24" ref={resultHeadingRef}>
-          {discoveryQuery.isLoading && <CardGridSkeleton cardHeight={300} columns={2} />}
+          <button className="mb-3 hidden min-h-[42px] w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-primary bg-white font-bold text-primary max-md:inline-flex" onClick={() => setFiltersOpen(true)} type="button">
+            <SlidersHorizontal aria-hidden="true" size={18} />필터
+          </button>
+
+          {discoveryQuery.isLoading && <CardGridSkeleton cardHeight={300} columns={3} count={6} />}
 
           {(budgetInvalid || legacyCategoryMissing || discoveryQuery.isError) && (
             <ContentState
@@ -209,7 +209,8 @@ const ServiceListPage = () => {
           />
         </section>
       </div>
-    </ContentPageShell>
+      </main>
+    </div>
   );
 };
 

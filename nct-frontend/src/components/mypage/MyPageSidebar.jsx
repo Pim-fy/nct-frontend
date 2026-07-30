@@ -102,7 +102,7 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
   );
 
   return (
-    <nav className="lg:sticky lg:top-[102px] lg:self-start lg:w-[210px] lg:shrink-0">
+    <nav className="lg:w-[210px] lg:shrink-0">
       {/* 타이틀 (데스크톱) */}
       <h2 className="hidden lg:block font-bold text-[25px] leading-[36px] text-black mb-5 px-2">
         마이페이지

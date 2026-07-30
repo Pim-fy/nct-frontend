@@ -17,16 +17,16 @@ const badge = (label) => (
 
 // 표 배치는 공용 셸(PointTable)이 담당 — 여기는 컬럼 구성과 셀 내용만 정의한다 (2026-07-20 통합)
 const COLUMNS = [
-  { key: 'date', header: '신청일시', cellClass: 'whitespace-nowrap text-gray-700', render: (r) => r.date },
+  { key: 'date', header: '신청일시', widthClass: 'min-w-[150px]', cellClass: 'whitespace-nowrap text-gray-700', render: (r) => r.date },
   {
-    key: 'amount', header: '신청금액', align: 'right', cellClass: 'whitespace-nowrap font-medium text-gray-900',
+    key: 'amount', header: '신청금액', align: 'right', widthClass: 'min-w-[110px]', cellClass: 'whitespace-nowrap font-medium text-gray-900',
     render: (r) => `${r.amount.toLocaleString()}P`,
   },
   {
     key: 'account', header: '입금 계좌', cellClass: 'whitespace-nowrap text-gray-500',
     render: (r) => `${r.bankName} ${r.accountNo}`,
   },
-  { key: 'status', header: '상태', cellClass: 'whitespace-nowrap', render: (r) => badge(r.status) },
+  { key: 'status', header: '상태', widthClass: 'min-w-[110px]', cellClass: 'whitespace-nowrap', render: (r) => badge(r.status) },
   {
     // 반려면 사유, 처리됐으면 처리일, 둘 다 아니면(지급 대기) 안내 문구
     key: 'note', header: '비고', cellClass: 'text-gray-500',

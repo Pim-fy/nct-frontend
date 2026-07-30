@@ -15,9 +15,10 @@ const NotificationItem = ({ item, onClick }) => {
           : 'bg-blue-50 border-blue-100 border-l-4 border-l-blue-700 hover:bg-blue-100'}`}
     >
       <div className="min-w-0">
-        <strong className="block text-sm text-gray-900">
-          [{item.type}] {item.title}
-        </strong>
+        <p className="truncate text-sm text-gray-900 m-0">
+          <strong>[{item.type}] {item.title}</strong>
+          {item.content && <span className="text-gray-500 font-normal"> · {item.content}</span>}
+        </p>
         <p className="text-xs text-gray-500 mt-1.5 mb-0 flex items-center gap-2">
           {item.time}
           {item.ref && (
