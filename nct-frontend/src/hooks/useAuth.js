@@ -8,6 +8,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '@hooks/useApi';
 import { useConfig } from '@hooks/useConfig';
+import { memberProfileQueryOptions } from '@hooks/useMemberProfile';
 
 export const useAuth = () => {
   const apiTool = useApi();
@@ -27,6 +28,7 @@ export const useAuth = () => {
     // authData = { status, httpCode, data: {...} }, authData.data = 진짜 유저 정보.
      const authData = await apiTool.fetchMe();
      setConfig('user', authData.data);      // useConfig.js 의 setConfig에 path: 'user', value: authData.data
+     void queryClient.prefetchQuery(memberProfileQueryOptions);
      return authData.data;
   } catch {   // 예외 발생.
       localStorage.removeItem('isLogin');     // isLogin 플래그 삭제.
@@ -63,23 +65,11 @@ export const useAuth = () => {
     // 실패 시 별도 처리가 필요 없기 때문에 onSucess만 존재함.
     // 로그인 실패 시 mutationFn에서 에러 던져짐. -> 리액트쿼리가 자동으로 loginMutation.isError, .error 상태에 반영.
     // 실패 처리 책임을 호출부에 넘긴 것.
-    onSuccess: async (userData) => {
+    onSuccess: (userData) => {
       localStorage.setItem('isLogin', 'true');      // 로컬스토리지에 isLogin값을 true로 저장함
       setConfig('user', userData);      // useConfig의 전역 상태 저장소에 user 값을 userData로 세팅.
       queryClient.setQueryData(['auth', 'user'], userData);   // TanStack Query의 캐시에 직접 값을 주입.
-
-      // 로그인 성공 후 프로필 로드
-      try {
-        const profileRes = await apiTool.getProfile();      // api.get('/auth/me')
-        const { mapDataToState } = await import('@utils/common');     // 로그인 시에만 필요한 동적 import. 초기 로딩 속도에서 이점.
-        // 백엔드 응답 구조: { status, data: { id, email, name, ... } }
-        // 서버 응답을 프론트 상태 형태로 변환하는 유틸 함수임.
-        // profile이라는 타입 힌트와 함께 데이터를 넘김.
-        const profileData = mapDataToState('profile', profileRes.data ?? profileRes);
-        setConfig('profile', profileData);    // 프로필 데이터를 useConfig(전역상태)의 profile 자리에 저장함
-      } catch (e) {
-        console.error('프로필 로드 실패:', e);  // 에러가 발생하면 로그인은 성공한 것처럼 보여도, 예를 들어 마이페이지에서는 문제가 생길 수 있음. 단순히 최소한의 방어처리.
-      }
+      void queryClient.prefetchQuery(memberProfileQueryOptions);
     },
   });
   // ==========================================
@@ -101,7 +91,6 @@ export const useAuth = () => {
       // 로그인중이라는 상태를 나타내는 값들을 제거함.
       localStorage.removeItem('isLogin');
       setConfig('user', {});
-      setConfig('profile', null);
       queryClient.setQueryData(['auth', 'user'], null);
       queryClient.clear();      // 앱 전체의 모든 쿼리 캐시를 지움.
 
@@ -122,8 +111,8 @@ export const useAuth = () => {
       // 로그인중이라는 상태를 나타내는 값들을 제거함.
       localStorage.removeItem('isLogin');
       setConfig('user', {});
-      setConfig('profile', null);
       queryClient.setQueryData(['auth', 'user'], null);
+      queryClient.clear();
       window.location.href = '/';     // 랜딩 페이지로 이동. 페이지 전체 새로고침 방식 -> 앱 다시 로드.
     },
   });
@@ -156,8 +145,8 @@ export const useAuth = () => {
     // 로그인중이라는 상태를 나타내는 값들을 제거함.
     localStorage.removeItem('isLogin');
     setConfig('user', {});
-    setConfig('profile', null);
     queryClient.setQueryData(['auth', 'user'], null);
+    queryClient.clear();
     window.location.href = '/';       // 랜딩 페이지로 이동. 페이지 전체 새로고침 방식 -> 앱 다시 로드.
   };
 

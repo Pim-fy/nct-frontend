@@ -17,10 +17,12 @@ import { useMyProviderApplications } from '@hooks/useProviderApplications';
 import { useMarkRead, useNotifications } from '@hooks/useNotification';
 import { useNotificationStream } from '@hooks/useNotificationStream';
 import { usePointBalance } from '@hooks/usePoint';
+import { usePublicNoticeList } from '@hooks/usePublicNotices';
 import relativeTime from '@utils/relativeTime';
 import { requestPointExchange } from '@api/pointApi';
 import { SITE_HEADER_VISIBILITY_EVENT } from '@/constants/layoutEvents';
-import QuickActions from '@components/landing/QuickActions';
+import { SITE_HEADER_SEARCH_SLOT_ID } from '@components/common/HeaderSearchPortal';
+import ScrollToTopButton from '@components/common/ScrollToTopButton';
 import NotificationDetailModal from '@pages/user/notification/components/NotificationDetailModal';
 import PointChargeWidgetModal from '@pages/user/point/components/PointChargeWidgetModal';
 import PointAmountModal from '@pages/user/point/components/PointAmountModal';
@@ -30,14 +32,6 @@ import walletIcon from '@assets/img/walletIcon.png';
 import userIcon from '@assets/img/userIcon.png';
 import micIcon from '@assets/img/micIcon.png';
 
-// 스크롤해서 상단 공지 띠(NoticeStrip)가 화면 밖으로 나가면, 헤더 중앙에 같은 문구를
-// 연한 그레이 색상으로 자동 롤링(교체)해서 계속 보여준다.
-// TODO: 실제 공지 API가 붙으면 이 배열을 공지 목록 조회 결과로 교체한다.
-const SITE_NOTICES = [
-  '[점검] 서비스 점검 안내 · 6월 22일 02:00~04:00 포인트 충전 및 환전 메뉴 점검',
-  '경매/서비스 요청 시 실시간 알림을 받아보세요.',
-  '지금 회원가입하면 쿠폰을 드립니다.',
-];
 const NOTICE_ROTATE_MS = 3500;
 const NOTICE_SCROLL_THRESHOLD = 48; // NoticeStrip 높이 정도 스크롤하면 전환
 
@@ -69,6 +63,12 @@ const SiteHeader = () => {
     enabled: !!user && !isProvider,
   });
   const isProviderApproved = myProviderApps.some((app) => app.statusCode === 'PRVC0003');
+
+  // 공지사항 롤링 티커 — 비로그인 포함 모든 화면에서 표시
+  const { data: noticeData } = usePublicNoticeList({ page: 1, size: 5 });
+  const siteNotices = (noticeData?.items ?? []).map(
+    (n) => `[${n.typeName ?? '공지'}] ${n.title}`,
+  );
 
   // 알림·포인트 실데이터 — 로그인 상태일 때만 호출 (비로그인 401 방지)
   const notiQuery = useNotifications({ enabled: !!user });
@@ -106,9 +106,11 @@ const SiteHeader = () => {
   const [scrolled, setScrolled] = useState(false);
   const [noticeIndex, setNoticeIndex] = useState(0);
   const [isPageHidden, setIsPageHidden] = useState(false);
-  const hideMobileHeaderForAuctionSearch = pathname === '/auction'
-    && scrolled
-    && !mobileMenuOpen;
+  const isAuctionSearchRoute = pathname === '/auction'
+    || /^\/auction\/[^/]+$/.test(pathname);
+  const isServiceSearchRoute = pathname === '/service'
+    || /^\/service-requests\/\d+$/.test(pathname);
+  const hasHeaderSearch = isAuctionSearchRoute || isServiceSearchRoute;
 
   const utilRef = useRef(null);
   const navRef = useRef(null);
@@ -142,13 +144,14 @@ const SiteHeader = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 롤링 티커 자동 전환
+  // 롤링 티커 자동 전환 — siteNotices 길이 기준
   useEffect(() => {
+    if (siteNotices.length <= 1) return;
     const timer = setInterval(() => {
-      setNoticeIndex((i) => (i + 1) % SITE_NOTICES.length);
+      setNoticeIndex((i) => (i + 1) % siteNotices.length);
     }, NOTICE_ROTATE_MS);
     return () => clearInterval(timer);
-  }, []);
+  }, [siteNotices.length]);
 
   // 바깥을 클릭하면 열려 있던 팝업과 nav 드롭다운을 닫는다.
   useEffect(() => {
@@ -244,15 +247,15 @@ const SiteHeader = () => {
     <>
     <header
       aria-hidden={isPageHidden || undefined}
-      className={`sticky top-0 z-[100] h-[82px] bg-white shadow-[0px_5px_10px_0px_rgba(0,0,0,0.2)] ${
-      isPageHidden ? 'invisible pointer-events-none' : ''
+      className={`sticky top-0 z-[100] bg-white shadow-[0px_5px_10px_0px_rgba(0,0,0,0.2)] ${
+      hasHeaderSearch ? 'h-[154px] md:h-[82px]' : 'h-[82px]'
     } ${
-      hideMobileHeaderForAuctionSearch
-        ? 'max-md:-translate-y-full max-md:transition-transform max-md:duration-200'
-        : 'max-md:translate-y-0 max-md:transition-none'
+      isPageHidden ? 'invisible pointer-events-none' : ''
     }`}
     >
-      <div className="container relative flex h-full items-center justify-between gap-8">
+      <div className={`container relative flex items-center justify-between gap-8 ${
+        hasHeaderSearch ? 'h-[82px] md:h-full' : 'h-full'
+      }`}>
         {/* 로고 + 메뉴 - 디자인 시안처럼 로고 바로 우측에 붙여 왼쪽에 묶어둔다 */}
         <div className="flex items-center gap-10">
           <Link to="/" className="flex shrink-0 items-center">
@@ -319,7 +322,7 @@ const SiteHeader = () => {
                 className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${serviceMenuOpen ? 'text-primary' : 'text-[#333333]'}`}
                 onClick={() => setServiceHovered(false)}
               >
-                서비스
+                {isProvider ? '견적 목록' : '견적 요청'}
               </Link>
               {serviceMenuOpen && (
                 <div className="absolute left-0 top-full w-[161px] pt-[14px] z-50">
@@ -398,26 +401,21 @@ const SiteHeader = () => {
           style={{ opacity: scrolled ? 1 : 0 }}
         >
           <img src={micIcon} alt="" width={14} height={14} className="shrink-0 opacity-70" />
-          <span className="max-w-[420px] truncate">{SITE_NOTICES[noticeIndex]}</span>
+          <span className="max-w-[420px] truncate">
+            {siteNotices.length > 0
+              ? siteNotices[noticeIndex % siteNotices.length]
+              : '서비스 점검 안내'}
+          </span>
         </div>
 
         {/* 우측 유틸 영역 */}
         <div ref={utilRef} className="flex items-center gap-3">
-          {!user && (
-            <Link
-              to="/login"
-              className="hidden md:flex h-[33px] items-center justify-center rounded-[30px] border border-primary bg-primary px-4 text-[14px] font-medium text-white hover:bg-[#0048bf] transition-colors"
-            >
-              로그인
-            </Link>
-          )}
-
           {/* 알림 */}
           <div className="relative">
             <button
               type="button"
               title="알림"
-              className="relative flex size-[39px] items-center justify-center rounded-full bg-[#f3f5fa] hover:bg-[#e9edf5] transition-colors"
+              className="relative flex size-[40px] items-center justify-center rounded-full bg-[#f3f5fa] hover:bg-[#e9edf5] transition-colors"
               onClick={() => openOnly('noti')}
             >
               <img src={bellIcon} alt="" className="size-[18px]" />
@@ -512,7 +510,7 @@ const SiteHeader = () => {
             <button
               type="button"
               title="포인트 지갑"
-              className="flex size-[39px] items-center justify-center rounded-full bg-[#f3f5fa] hover:bg-[#e9edf5] transition-colors"
+              className="flex size-[40px] items-center justify-center rounded-full bg-[#f3f5fa] hover:bg-[#e9edf5] transition-colors"
               onClick={() => openOnly('point')}
             >
               <img src={walletIcon} alt="" className="size-[18px]" />
@@ -565,11 +563,20 @@ const SiteHeader = () => {
           <div className="relative hidden sm:block">
             <button
               type="button"
-              title="마이페이지"
-              className="flex size-[39px] items-center justify-center rounded-full bg-[#f3f5fa] hover:bg-[#e9edf5] transition-colors"
+              title={user ? '마이페이지' : '로그인'}
+              className={`flex h-[40px] w-[126px] items-center justify-between rounded-full py-1 pl-1 pr-1 text-[14px] font-medium text-white transition-colors ${
+                user
+                  ? 'bg-primary hover:bg-[#0048bf]'
+                  : 'bg-[#555555] hover:bg-[#444444]'
+              }`}
               onClick={() => (user ? openOnly('profile') : navigate('/login'))}
             >
-              <img src={userIcon} alt="" className="size-[18px]" />
+              <span className="flex-1 text-center">
+                {user ? (isProvider ? '제공자회원' : '일반회원') : '로그인'}
+              </span>
+              <span className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-white">
+                <img src={userIcon} alt="" className="size-[18px]" />
+              </span>
             </button>
             {profileOpen && (
               <div className="absolute right-0 top-[calc(100%+12px)] w-[230px] rounded-[10px] border border-[#434343] bg-white p-4 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)] z-50">
@@ -661,6 +668,13 @@ const SiteHeader = () => {
             {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
+
+        <div
+          className={hasHeaderSearch
+            ? 'absolute left-1/2 top-[92px] z-[1] w-[calc(100%-32px)] max-w-[548px] -translate-x-1/2 md:top-1/2 md:w-[min(38vw,548px)] md:-translate-y-1/2'
+            : 'hidden'}
+          id={SITE_HEADER_SEARCH_SLOT_ID}
+        />
       </div>
 
       {/* 모바일 전체화면 메뉴 */}
@@ -762,7 +776,7 @@ const SiteHeader = () => {
                 className="flex w-full items-center justify-between py-4 text-[20px] font-bold text-[#333333]"
                 onClick={() => setMobileServiceOpen((v) => !v)}
               >
-                서비스
+                {isProvider ? '견적 목록' : '견적 요청'}
                 <ChevronRight size={20} className={`transition-transform ${mobileServiceOpen ? 'rotate-90' : ''}`} />
               </button>
               {mobileServiceOpen && (
@@ -824,8 +838,7 @@ const SiteHeader = () => {
         </div>
       )}
     </header>
-    {/* 퀵메뉴(경매등록/서비스요청 등)를 헤더 컴포넌트에 포함시켜 모든 페이지에서 우측에 고정 노출한다. */}
-    <QuickActions />
+    <ScrollToTopButton />
     <NotificationDetailModal item={selectedNoti} onClose={() => setSelectedNoti(null)} />
     {pointModal === 'charge' && (
       <PointChargeWidgetModal

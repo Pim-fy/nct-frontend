@@ -1,6 +1,4 @@
 export {
-  DiscoveryTabs,
-  ProviderGrid,
   ServiceEmptyState,
   ServiceFilterPanel,
   ServicePagination,

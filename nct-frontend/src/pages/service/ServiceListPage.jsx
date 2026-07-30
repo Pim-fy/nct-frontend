@@ -5,13 +5,9 @@ import { SlidersHorizontal } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { getCategories } from '@api/categoryApi';
 import {
-  ContentPageHeader,
-  ContentPageShell,
   ContentState,
 } from '@components/content/ContentUi';
 import {
-  DiscoveryTabs,
-  ProviderGrid,
   ServiceEmptyState,
   ServiceFilterPanel,
   ServicePagination,
@@ -19,6 +15,7 @@ import {
   ServiceSearchBar,
 } from '@components/service/ServiceUi';
 import CardGridSkeleton from '@components/skeleton/CardGridSkeleton';
+import HeaderSearchPortal from '@components/common/HeaderSearchPortal';
 import {
   SERVICE_CATEGORY_DOMAIN_CODE,
   SERVICE_DISCOVERY_PAGE_SIZE,
@@ -35,14 +32,13 @@ const toPage = (value) => {
   return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : 1;
 };
 
-const defaultSort = (view) => (view === 'providers' ? 'rating' : 'latest');
+const toRequestSort = (value) => (value === 'budget' ? 'budget' : 'latest');
 
-/** F-COM-002: 물건 검색과 분리된 서비스 요청·제공자 검색 화면입니다. */
+/** F-COM-002: 공개 중인 서비스 요청을 검색하는 목록 화면입니다. */
 const ServiceListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const resultHeadingRef = useRef(null);
-  const view = searchParams.get('view') === 'providers' ? 'providers' : 'requests';
 
   const categoriesQuery = useQuery({
     queryKey: ['service-discovery-categories', SERVICE_CATEGORY_DOMAIN_CODE],
@@ -57,19 +53,16 @@ const ServiceListPage = () => {
     : '';
 
   const filters = useMemo(() => ({
-    view,
     keyword: searchParams.get('keyword') || '',
     categorySn: searchParams.get('categorySn') || String(resolvedLegacyCategorySn || ''),
-    region: view === 'providers' ? searchParams.get('region') || '' : '',
-    minBudget: view === 'requests' ? toBudget(searchParams.get('minBudget')) : 0,
-    maxBudget: view === 'requests' ? toBudget(searchParams.get('maxBudget')) : 0,
-    sort: searchParams.get('sort') || defaultSort(view),
+    minBudget: toBudget(searchParams.get('minBudget')),
+    maxBudget: toBudget(searchParams.get('maxBudget')),
+    sort: toRequestSort(searchParams.get('sort')),
     page: toPage(searchParams.get('page')),
     size: SERVICE_DISCOVERY_PAGE_SIZE,
-  }), [resolvedLegacyCategorySn, searchParams, view]);
+  }), [resolvedLegacyCategorySn, searchParams]);
 
-  const budgetInvalid = view === 'requests'
-    && filters.maxBudget > 0
+  const budgetInvalid = filters.maxBudget > 0
     && filters.minBudget > filters.maxBudget;
   const legacyCategoryPending = Boolean(legacyCategory) && categoriesQuery.isLoading;
   const legacyCategoryMissing = Boolean(legacyCategory)
@@ -107,6 +100,19 @@ const ServiceListPage = () => {
   }, [filtersOpen]);
 
   useEffect(() => {
+    const sort = searchParams.get('sort');
+    const hasProviderParams = searchParams.has('view') || searchParams.has('region');
+    const hasUnsupportedSort = Boolean(sort) && sort !== 'latest' && sort !== 'budget';
+    if (!hasProviderParams && !hasUnsupportedSort) return;
+
+    const next = new URLSearchParams(searchParams);
+    next.delete('view');
+    next.delete('region');
+    if (hasUnsupportedSort) next.delete('sort');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
     if (!legacyCategory || !resolvedLegacyCategorySn || searchParams.get('categorySn')) return;
     const next = new URLSearchParams(searchParams);
     next.delete('category');
@@ -119,17 +125,6 @@ const ServiceListPage = () => {
     updateParams({ keyword: keyword.trim(), page: null });
   };
 
-  const handleViewChange = (nextView) => {
-    updateParams({
-      view: nextView === 'providers' ? 'providers' : null,
-      region: null,
-      minBudget: null,
-      maxBudget: null,
-      sort: defaultSort(nextView),
-      page: null,
-    });
-  };
-
   const handleFilterChange = (name, value) => {
     const changes = { [name]: value, page: null };
     if (name === 'categorySn') changes.category = null;
@@ -138,7 +133,6 @@ const ServiceListPage = () => {
 
   const resetFilters = () => {
     const next = new URLSearchParams();
-    if (view === 'providers') next.set('view', 'providers');
     if (filters.keyword) next.set('keyword', filters.keyword);
     setSearchParams(next, { replace: true });
   };
@@ -157,30 +151,19 @@ const ServiceListPage = () => {
       : '서비스 검색 결과를 불러오지 못했습니다.';
 
   return (
-    <ContentPageShell className="service-discovery-page">
+    <div className="min-h-full bg-white text-body-sm text-[#1a1a18] md:text-body-md">
       <Helmet><title>서비스 찾기 | 에누리컷</title></Helmet>
-      <ContentPageHeader title="서비스 찾기" />
 
-      <ServiceSearchBar
-        initialKeyword={filters.keyword}
-        key={filters.keyword}
-        onSubmit={handleSearch}
-      />
+      <HeaderSearchPortal>
+        <ServiceSearchBar
+          initialKeyword={filters.keyword}
+          key={filters.keyword}
+          onSubmit={handleSearch}
+        />
+      </HeaderSearchPortal>
 
-      <DiscoveryTabs
-        activeView={view}
-        onChange={handleViewChange}
-        providerCount={result?.counts?.providers}
-        requestCount={result?.counts?.requests}
-      />
-
-      <div className="mt-6 flex justify-end lg:hidden">
-        <button className="flex h-12 items-center gap-2 rounded-[5px] border border-primary px-4 text-body-md font-bold text-primary" onClick={() => setFiltersOpen(true)} type="button">
-          <SlidersHorizontal aria-hidden="true" size={19} />필터
-        </button>
-      </div>
-
-      <div className="mt-8 flex items-start gap-8">
+      <main className="mx-auto my-0 w-full max-w-[1600px] py-10">
+      <div className="flex items-start gap-6 max-md:block">
         <ServiceFilterPanel
           categories={categories}
           categoriesError={categoriesQuery.isError}
@@ -190,20 +173,16 @@ const ServiceListPage = () => {
           onChange={handleFilterChange}
           onClose={() => setFiltersOpen(false)}
           onReset={resetFilters}
-          view={view}
+          resultCount={result?.total}
+          resultLoading={discoveryQuery.isLoading}
         />
 
         <section className="min-w-0 flex-1 scroll-mt-24" ref={resultHeadingRef}>
-          <div className="mb-5 flex min-h-11 items-center justify-between border-b border-[#e1e1df] pb-4">
-            <h2 className="text-h3 font-bold text-[#1a1a18]">{view === 'providers' ? '제공자 검색 결과' : '서비스 요청 검색 결과'}</h2>
-            <span className="text-body-md font-semibold text-[#555552]">총 {Number(result?.total || 0).toLocaleString('ko-KR')}건</span>
-          </div>
+          <button className="mb-3 hidden min-h-[42px] w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-primary bg-white font-bold text-primary max-md:inline-flex" onClick={() => setFiltersOpen(true)} type="button">
+            <SlidersHorizontal aria-hidden="true" size={18} />필터
+          </button>
 
-          {discoveryQuery.isLoading && (
-            view === 'providers'
-              ? <CardGridSkeleton cardHeight={140} columns={1} />
-              : <CardGridSkeleton cardHeight={300} columns={2} />
-          )}
+          {discoveryQuery.isLoading && <CardGridSkeleton cardHeight={300} columns={3} count={6} />}
 
           {(budgetInvalid || legacyCategoryMissing || discoveryQuery.isError) && (
             <ContentState
@@ -219,13 +198,9 @@ const ServiceListPage = () => {
             && !discoveryQuery.isError
             && !budgetInvalid
             && !legacyCategoryMissing
-            && result?.items?.length === 0 && <ServiceEmptyState view={view} />}
+            && result?.items?.length === 0 && <ServiceEmptyState />}
 
-          {result?.items?.length > 0 && (
-            view === 'providers'
-              ? <ProviderGrid providers={result.items} />
-              : <ServiceRequestGrid requests={result.items} />
-          )}
+          {result?.items?.length > 0 && <ServiceRequestGrid requests={result.items} />}
 
           <ServicePagination
             onChange={handlePageChange}
@@ -234,7 +209,8 @@ const ServiceListPage = () => {
           />
         </section>
       </div>
-    </ContentPageShell>
+      </main>
+    </div>
   );
 };
 

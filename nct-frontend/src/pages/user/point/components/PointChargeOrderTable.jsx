@@ -18,13 +18,13 @@ const badge = (label) => (
 
 // 표 배치는 공용 셸(PointTable)이 담당 — 여기는 컬럼 구성과 셀 내용만 정의한다 (2026-07-20 통합)
 const COLUMNS = [
-  { key: 'date', header: '일시', cellClass: 'whitespace-nowrap text-gray-700', render: (r) => r.date },
+  { key: 'date', header: '일시', widthClass: 'min-w-[150px]', cellClass: 'whitespace-nowrap text-gray-700', render: (r) => r.date },
   {
-    key: 'amount', header: '충전금액', align: 'right', cellClass: 'whitespace-nowrap font-medium text-gray-900',
+    key: 'amount', header: '충전금액', align: 'right', widthClass: 'min-w-[110px]', cellClass: 'whitespace-nowrap font-medium text-gray-900',
     render: (r) => `${r.amount.toLocaleString()}P`,
   },
   { key: 'payMethod', header: '결제수단', cellClass: 'whitespace-nowrap text-gray-500', render: (r) => r.payMethod ?? '-' },
-  { key: 'status', header: '상태', cellClass: 'whitespace-nowrap', render: (r) => badge(r.status) },
+  { key: 'status', header: '상태', widthClass: 'min-w-[110px]', cellClass: 'whitespace-nowrap', render: (r) => badge(r.status) },
   { key: 'failReason', header: '비고', cellClass: 'text-gray-500', render: (r) => r.failReason ?? '-' },
 ];
 

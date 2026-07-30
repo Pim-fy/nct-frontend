@@ -3,15 +3,24 @@
 // - 절대좌표 → 반응형 전환.
 //   메인 폼(좌)/소셜+알림(우) → xl 이상 가로 배치, 그 이하 세로 스택.
 //   폼 내부 필드: sm 이상 2열 그리드, 그 이하 단일 열.
-import React, { useEffect, useRef, useState } from "react";
+import React, { Fragment, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import DaumPostcode from "react-daum-postcode";
 import { toast, confirm } from "@utils/common";
 import { assets } from "@components/mypage/assets";
-import { updateProfile, changePassword, getProfile, getOauthLinks, unlinkOauth } from "@api/memberApi";
+import { updateProfile, changePassword, getOauthLinks, unlinkOauth } from "@api/memberApi";
 import { uploadImage, toImageUrl } from "@api/fileApi";
 import { useAuth } from "@hooks/useAuth";
+import { MEMBER_PROFILE_QUERY_KEY, useMemberProfile } from "@hooks/useMemberProfile";
+import { useNotificationSettings, useSaveNotificationSettings } from "@hooks/useNotification";
 import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
+
+const DOMAIN_LABELS = [
+  { key: 'AUCTION', label: '경매' },
+  { key: 'TRADE',   label: '거래' },
+  { key: 'SERVICE', label: '서비스' },
+  { key: 'OPS',     label: '운영' },
+];
 
 const FIELD_CLASS =
   "w-full h-[40px] rounded-[5px] border border-[#d9d9d9] bg-white px-3 text-[14px] text-[#404040] focus:outline-none focus:border-[#0064ff]";
@@ -47,18 +56,14 @@ export default function MyPageProfileEdit({ user }) {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const photoInputRef = useRef(null);
-  const [notify, setNotify] = useState({
-    auction: { inapp: true, email: false },
-    trade:   { inapp: true, email: true },
-    service: { inapp: true, email: true },
-    ops:     { inapp: true, email: true },
-  });
+  const notifyQuery = useNotificationSettings();
+  const notifyMutation = useSaveNotificationSettings();
+  const [notifyEdits, setNotifyEdits] = useState(null);
+  const serverEvents = notifyQuery.data?.events ?? [];
+  const notifyEvents = notifyEdits ?? serverEvents;
 
   // ISS-022: 전화번호·주소는 로그인 응답(user)에 없어 마이페이지 전용 조회 API로 초기값을 채운다.
-  const profileQuery = useQuery({
-    queryKey: ["member", "profile"],
-    queryFn: () => getProfile().then((res) => res.data),
-  });
+  const profileQuery = useMemberProfile();
   useEffect(() => {
     if (!profileQuery.data) return;
     // 편집 가능한 폼을 비동기 조회 결과로 1회 초기화하는 표준 패턴이다(값 자체를 렌더링에 쓰는
@@ -153,7 +158,7 @@ export default function MyPageProfileEdit({ user }) {
         accountNo: "",
       });
       setForm((prev) => ({ ...prev, bankName: "", accountNo: "" }));
-      queryClient.setQueryData(["member", "profile"], res.data);
+      queryClient.setQueryData(MEMBER_PROFILE_QUERY_KEY, res.data);
       toast({ icon: "success", title: "환전계좌가 삭제되었습니다." });
     } catch (err) {
       const msg = err?.response?.data?.message || "삭제에 실패했습니다.";
@@ -232,7 +237,7 @@ export default function MyPageProfileEdit({ user }) {
       queryClient.setQueryData(["auth", "user"], (prev) =>
         prev ? { ...prev, nickname: res.data.nickname } : prev
       );
-      queryClient.setQueryData(["member", "profile"], res.data);
+      queryClient.setQueryData(MEMBER_PROFILE_QUERY_KEY, res.data);
       setPreviewImageUrl(null); // 저장 완료 후엔 서버가 내려준 profileImageUrl을 그대로 신뢰한다
       toast({ icon: "success", title: "저장되었습니다." });
     } catch (err) {
@@ -241,11 +246,33 @@ export default function MyPageProfileEdit({ user }) {
     }
   };
 
-  const toggleNotify = (group, channel) =>
-    setNotify((prev) => ({
-      ...prev,
-      [group]: { ...prev[group], [channel]: !prev[group][channel] },
-    }));
+  const toggleNotify = (eventCode, channel) =>
+    setNotifyEdits(notifyEvents.map((e) => e.eventCode === eventCode ? { ...e, [channel]: !e[channel] } : e));
+
+  const isDomainAllChecked = (domainKey, channel) => {
+    const evs = notifyEvents.filter((e) => e.domain === domainKey);
+    return evs.length > 0 && evs.every((e) => e[channel]);
+  };
+
+  const toggleDomain = (domainKey, channel) => {
+    const allChecked = isDomainAllChecked(domainKey, channel);
+    setNotifyEdits(notifyEvents.map((e) =>
+      e.domain === domainKey ? { ...e, [channel]: !allChecked } : e
+    ));
+  };
+
+  const handleSaveNotify = () => {
+    notifyMutation.mutate(
+      { events: notifyEvents.map(({ eventCode, inapp, email }) => ({ eventCode, inapp, email })) },
+      {
+        onSuccess: () => toast({ icon: 'success', title: '알림 설정이 저장되었습니다.' }),
+        onError: (err) => {
+          const msg = err?.response?.data?.message || '저장에 실패했습니다.';
+          toast({ icon: 'error', title: msg });
+        },
+      }
+    );
+  };
 
   return (
     <>
@@ -478,61 +505,78 @@ export default function MyPageProfileEdit({ user }) {
 
         {/* 알림설정 */}
         <div className="border border-[#e5e5e5] rounded-[20px] overflow-hidden">
-          <div className="bg-[rgba(230,240,255,0.47)] px-5 h-[52px] flex items-center justify-between">
+          <div className="bg-[rgba(230,240,255,0.47)] px-5 h-[52px] flex items-center">
             <p className="font-bold text-[17px] text-black">알림설정</p>
-            <button
-              type="button"
-              onClick={() =>
-                toast({ icon: "info", title: "알림설정 상세보기는 준비 중입니다." })
-              }
-              className="bg-transparent border-none cursor-pointer text-[13px] text-[#4e4e4e]"
-            >
-              상세보기 +
-            </button>
           </div>
           <div className="px-5 pb-4">
-            <div className="flex items-center justify-between h-[40px] text-[12px] font-medium text-[#969696] border-b border-[#f0f0f0]">
+            <div className="flex items-center justify-between h-[36px] text-[16px] font-medium text-[#969696] border-b border-[#f0f0f0]">
               <span>항목</span>
-              <div className="flex gap-6">
+              <div className="flex gap-6 pr-0.5">
                 <span>인앱</span>
                 <span>이메일</span>
               </div>
             </div>
-            {[
-              { key: "auction", label: "경매 전체" },
-              { key: "trade",   label: "거래 전체" },
-              { key: "service", label: "서비스 전체" },
-              { key: "ops",     label: "운영 전체" },
-            ].map((row) => (
-              <div
-                key={row.key}
-                className="flex items-center justify-between h-[44px] border-b border-[#f0f0f0] last:border-b-0"
+            {DOMAIN_LABELS.map(({ key: domainKey, label: domainLabel }) => {
+              const domainEvents = notifyEvents.filter((e) => e.domain === domainKey);
+              if (domainEvents.length === 0) return null;
+              return (
+                <Fragment key={domainKey}>
+                  <div className="flex items-center justify-between py-1.5 border-b border-[#f0f0f0] bg-[#f8f8f8]">
+                    <span className="text-[16px] font-semibold text-[#0064ff] pl-1">{domainLabel}</span>
+                    <div className="flex gap-6 items-center">
+                      <input
+                        type="checkbox"
+                        className="w-[14px] h-[14px] accent-[#0064ff] cursor-pointer"
+                        checked={isDomainAllChecked(domainKey, "inapp")}
+                        onChange={() => toggleDomain(domainKey, "inapp")}
+                        aria-label={`${domainLabel} 인앱 전체`}
+                      />
+                      <input
+                        type="checkbox"
+                        className="w-[14px] h-[14px] accent-[#0064ff] cursor-pointer"
+                        checked={isDomainAllChecked(domainKey, "email")}
+                        onChange={() => toggleDomain(domainKey, "email")}
+                        aria-label={`${domainLabel} 이메일 전체`}
+                      />
+                    </div>
+                  </div>
+                  {domainEvents.map((e) => (
+                    <div
+                      key={e.eventCode}
+                      className="flex items-center justify-between py-1.5 border-b border-[#f0f0f0] last:border-b-0"
+                    >
+                      <span className="text-[16px] text-[#404040] pl-2">{e.label}</span>
+                      <div className="flex gap-6 items-center">
+                        <input
+                          type="checkbox"
+                          className="w-[14px] h-[14px] accent-[#0064ff] cursor-pointer"
+                          checked={e.inapp}
+                          onChange={() => toggleNotify(e.eventCode, "inapp")}
+                          aria-label={`${e.label} 인앱 알림`}
+                        />
+                        <input
+                          type="checkbox"
+                          className="w-[14px] h-[14px] accent-[#0064ff] cursor-pointer"
+                          checked={e.email}
+                          onChange={() => toggleNotify(e.eventCode, "email")}
+                          aria-label={`${e.label} 이메일 알림`}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </Fragment>
+              );
+            })}
+            <div className="pt-3 flex justify-end">
+              <button
+                type="button"
+                onClick={handleSaveNotify}
+                disabled={notifyQuery.isLoading || notifyMutation.isPending}
+                className="btn btn-primary btn-sm"
               >
-                <span className="text-[13px] text-black">{row.label}</span>
-                <div className="flex gap-6 items-center">
-                  <button
-                    type="button"
-                    onClick={() => toggleNotify(row.key, "inapp")}
-                    className="size-[16px] rounded-[2px] border border-[#d9d9d9] bg-white flex items-center justify-center cursor-pointer overflow-hidden"
-                    aria-label={`${row.label} 인앱 알림`}
-                  >
-                    {notify[row.key].inapp && (
-                      <img src={assets.checkOn} alt="" className="size-full object-cover" />
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => toggleNotify(row.key, "email")}
-                    className="size-[16px] rounded-[2px] border border-[#d9d9d9] bg-white flex items-center justify-center cursor-pointer overflow-hidden"
-                    aria-label={`${row.label} 이메일 알림`}
-                  >
-                    {notify[row.key].email && (
-                      <img src={assets.checkOn} alt="" className="size-full object-cover" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            ))}
+                {notifyMutation.isPending ? '저장 중...' : '저장'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
