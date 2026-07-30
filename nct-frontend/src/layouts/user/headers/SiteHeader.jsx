@@ -21,6 +21,7 @@ import relativeTime from '@utils/relativeTime';
 import { requestPointExchange } from '@api/pointApi';
 import { SITE_HEADER_VISIBILITY_EVENT } from '@/constants/layoutEvents';
 import QuickActions from '@components/landing/QuickActions';
+import { SITE_HEADER_SEARCH_SLOT_ID } from '@components/common/HeaderSearchPortal';
 import NotificationDetailModal from '@pages/user/notification/components/NotificationDetailModal';
 import PointChargeWidgetModal from '@pages/user/point/components/PointChargeWidgetModal';
 import PointAmountModal from '@pages/user/point/components/PointAmountModal';
@@ -106,9 +107,11 @@ const SiteHeader = () => {
   const [scrolled, setScrolled] = useState(false);
   const [noticeIndex, setNoticeIndex] = useState(0);
   const [isPageHidden, setIsPageHidden] = useState(false);
-  const hideMobileHeaderForAuctionSearch = pathname === '/auction'
-    && scrolled
-    && !mobileMenuOpen;
+  const isAuctionSearchRoute = pathname === '/auction'
+    || /^\/auction\/[^/]+$/.test(pathname);
+  const isServiceSearchRoute = pathname === '/service'
+    || /^\/service-requests\/\d+$/.test(pathname);
+  const hasHeaderSearch = isAuctionSearchRoute || isServiceSearchRoute;
 
   const utilRef = useRef(null);
   const navRef = useRef(null);
@@ -244,15 +247,15 @@ const SiteHeader = () => {
     <>
     <header
       aria-hidden={isPageHidden || undefined}
-      className={`sticky top-0 z-[100] h-[82px] bg-white shadow-[0px_5px_10px_0px_rgba(0,0,0,0.2)] ${
-      isPageHidden ? 'invisible pointer-events-none' : ''
+      className={`sticky top-0 z-[100] bg-white shadow-[0px_5px_10px_0px_rgba(0,0,0,0.2)] ${
+      hasHeaderSearch ? 'h-[154px] md:h-[82px]' : 'h-[82px]'
     } ${
-      hideMobileHeaderForAuctionSearch
-        ? 'max-md:-translate-y-full max-md:transition-transform max-md:duration-200'
-        : 'max-md:translate-y-0 max-md:transition-none'
+      isPageHidden ? 'invisible pointer-events-none' : ''
     }`}
     >
-      <div className="container relative flex h-full items-center justify-between gap-8">
+      <div className={`container relative flex items-center justify-between gap-8 ${
+        hasHeaderSearch ? 'h-[82px] md:h-full' : 'h-full'
+      }`}>
         {/* 로고 + 메뉴 - 디자인 시안처럼 로고 바로 우측에 붙여 왼쪽에 묶어둔다 */}
         <div className="flex items-center gap-10">
           <Link to="/" className="flex shrink-0 items-center">
@@ -661,6 +664,13 @@ const SiteHeader = () => {
             {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
+
+        <div
+          className={hasHeaderSearch
+            ? 'absolute left-1/2 top-[92px] z-[1] w-[calc(100%-32px)] max-w-[548px] -translate-x-1/2 md:top-1/2 md:w-[min(38vw,548px)] md:-translate-y-1/2'
+            : 'hidden'}
+          id={SITE_HEADER_SEARCH_SLOT_ID}
+        />
       </div>
 
       {/* 모바일 전체화면 메뉴 */}
