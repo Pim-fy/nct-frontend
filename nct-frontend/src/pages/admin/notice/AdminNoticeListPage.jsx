@@ -1,17 +1,16 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { FilePlus2, Search } from 'lucide-react';
+import AdminPagination from '@components/admin/AdminPagination';
+import AdminTable from '@components/admin/AdminTable';
 import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
 import MockupAdminStatusBadge from '@components/admin/mockup/MockupAdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
 import { useAdminNoticeList, useAdminNoticeOptions } from '@hooks/useAdminNotices';
+import { formatDateTime } from '@utils/common';
 import './adminContentPages.css';
 
 const PAGE_SIZE = 20;
-
-const formatDateTime = (value) => value
-  ? new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
-  : '-';
 
 const statusTone = (statusCode) => {
   if (statusCode === 'NTCC0006') return 'success';
@@ -48,6 +47,31 @@ const AdminNoticeListPage = () => {
     event.preventDefault();
     changeFilters({ keyword: keywordInput.trim(), page: 1 });
   };
+
+  const columns = useMemo(() => [
+    { key: 'noticeId', label: '번호' },
+    { key: 'typeName', label: '유형' },
+    {
+      key: 'title', label: '제목', className: 'admin-notice-list__title',
+      render: (value, row) => (
+        <Link to={`/admin/notices/${row.noticeId}`}>
+          {row.pinned && <span aria-label="중요 공지">[중요] </span>}{value}
+        </Link>
+      ),
+    },
+    {
+      key: 'statusName', label: '상태',
+      render: (value, row) => <MockupAdminStatusBadge tone={statusTone(row.statusCode)}>{value}</MockupAdminStatusBadge>,
+    },
+    {
+      key: 'visibleNow', label: '현재 노출',
+      render: (value) => <MockupAdminStatusBadge tone={value ? 'success' : 'neutral'}>{value ? '노출 중' : '미노출'}</MockupAdminStatusBadge>,
+    },
+    { key: 'postingStartAt', label: '노출 시작', render: formatDateTime },
+    { key: 'postingEndAt', label: '노출 종료', render: formatDateTime },
+    { key: 'writerName', label: '작성자' },
+    { key: 'viewCount', label: '조회수', render: (value) => value.toLocaleString('ko-KR') },
+  ], []);
 
   return (
     <div className="admin-content-page">
@@ -117,7 +141,6 @@ const AdminNoticeListPage = () => {
         )}
       </form>
 
-      {noticesQuery.isLoading && <div className="card admin-content-state">공지 목록을 불러오는 중입니다.</div>}
       {noticesQuery.isError && (
         <div className="card admin-content-state is-error">
           <strong>공지 목록을 불러오지 못했습니다.</strong>
@@ -125,85 +148,29 @@ const AdminNoticeListPage = () => {
         </div>
       )}
 
-      {!noticesQuery.isLoading && !noticesQuery.isError && (
+      {!noticesQuery.isError && (
         <section className="card admin-notice-list" aria-label="관리자 공지 목록">
-          <div className="admin-notice-list__summary">
-            <p>총 <strong>{noticePage?.totalItems ?? 0}</strong>건</p>
-            <small>숨김 공지는 사용자 공지사항에서 보이지 않습니다.</small>
-          </div>
-          <div className="admin-table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>번호</th>
-                  <th>유형</th>
-                  <th>제목</th>
-                  <th>상태</th>
-                  <th>현재 노출</th>
-                  <th>노출 시작</th>
-                  <th>노출 종료</th>
-                  <th>작성자</th>
-                  <th>조회수</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(noticePage?.items ?? []).map((notice) => (
-                  <tr key={notice.noticeId}>
-                    <td>{notice.noticeId}</td>
-                    <td>{notice.typeName}</td>
-                    <td className="admin-notice-list__title">
-                      <Link to={`/admin/notices/${notice.noticeId}`}>
-                        {notice.pinned && <span aria-label="중요 공지">[중요] </span>}{notice.title}
-                      </Link>
-                    </td>
-                    <td>
-                      <MockupAdminStatusBadge tone={statusTone(notice.statusCode)}>
-                        {notice.statusName}
-                      </MockupAdminStatusBadge>
-                    </td>
-                    <td>
-                      <MockupAdminStatusBadge tone={notice.visibleNow ? 'success' : 'neutral'}>
-                        {notice.visibleNow ? '노출 중' : '미노출'}
-                      </MockupAdminStatusBadge>
-                    </td>
-                    <td>{formatDateTime(notice.postingStartAt)}</td>
-                    <td>{formatDateTime(notice.postingEndAt)}</td>
-                    <td>{notice.writerName}</td>
-                    <td>{notice.viewCount.toLocaleString('ko-KR')}</td>
-                  </tr>
-                ))}
-                {(noticePage?.items ?? []).length === 0 && (
-                  <tr>
-                    <td className="admin-notice-list__empty" colSpan="9">
-                      조건에 맞는 공지가 없습니다.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {(noticePage?.totalPages ?? 0) > 1 && (
-            <div className="admin-pagination">
-              <button
-                className="btn btn-outline"
-                disabled={page <= 1}
-                onClick={() => changeFilters({ page: page - 1 })}
-                type="button"
-              >
-                이전
-              </button>
-              <span>{page} / {noticePage.totalPages}</span>
-              <button
-                className="btn btn-outline"
-                disabled={page >= noticePage.totalPages}
-                onClick={() => changeFilters({ page: page + 1 })}
-                type="button"
-              >
-                다음
-              </button>
+          {!noticesQuery.isLoading && (
+            <div className="admin-notice-list__summary">
+              <p>총 <strong>{noticePage?.totalItems ?? 0}</strong>건</p>
+              <small>숨김 공지는 사용자 공지사항에서 보이지 않습니다.</small>
             </div>
           )}
+          <div className="admin-table-scroll">
+            <AdminTable
+              columns={columns}
+              data={noticePage?.items ?? []}
+              emptyMessage="조건에 맞는 공지가 없습니다."
+              loading={noticesQuery.isLoading}
+              rowKey={(notice) => notice.noticeId}
+            />
+          </div>
+
+          <AdminPagination
+            onPageChange={(nextPage) => changeFilters({ page: nextPage })}
+            page={page}
+            totalPages={noticePage?.totalPages ?? 0}
+          />
         </section>
       )}
     </div>

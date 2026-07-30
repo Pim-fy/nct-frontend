@@ -11,16 +11,6 @@ const AUCTION_STATUS = {
 
 const DETAIL_SECOND_THRESHOLD = 10 * 60;
 
-export const formatPrice = (value) => {
-  const number = Number(value || 0);
-  return `${number.toLocaleString('ko-KR')}원`;
-};
-
-export const formatNumber = (value) => {
-  const number = Number(value || 0);
-  return number.toLocaleString('ko-KR');
-};
-
 export const parseAmount = (value) => Number(String(value || '').replace(/[^0-9]/g, '')) || 0;
 
 export const createImageItems = (images = []) => images.map((image, index) => ({

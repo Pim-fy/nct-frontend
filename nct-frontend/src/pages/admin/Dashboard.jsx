@@ -9,6 +9,7 @@ import {
   RefreshCw,
   Scale,
   ShieldAlert,
+  Siren,
   Users,
   WalletCards,
 } from 'lucide-react';
@@ -61,6 +62,8 @@ const SHORTCUTS = [
   { label: '경매 관리', to: '/admin/auctions', icon: Gavel },
   { label: '서비스 요청 관리', to: '/admin/services', icon: BriefcaseBusiness },
   { label: '공지 관리', to: '/admin/notices', icon: Megaphone },
+  { label: '신고 처리', to: '/admin/reports', icon: Siren },
+  { label: '환전 관리', to: '/admin/exchanges', icon: WalletCards },
 ];
 
 const formatCount = (value) =>
@@ -176,7 +179,7 @@ const Dashboard = () => {
                       : `${formatCount(summary.unprocessedRiskEventCount)}건`}
                   </span>
                 </div>
-                <Link to="/admin/operations-preview">확인</Link>
+                <Link to="/admin/risk-events">확인</Link>
               </div>
             </div>
           </article>

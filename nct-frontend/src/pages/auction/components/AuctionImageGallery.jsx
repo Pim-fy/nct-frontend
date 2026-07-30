@@ -100,7 +100,7 @@ const AuctionImageGallery = ({
                     onError={() => onImageError(item.url)}
                   />
                 ) : (
-                  <span className="text-lg leading-[1.4] font-extrabold text-[#666]">
+                  <span className="text-body-lg font-extrabold text-[#666]">
                     {auction.categoryName || '상품 이미지'}
                   </span>
                 )}
@@ -130,7 +130,7 @@ const AuctionImageGallery = ({
           )}
         </>
       ) : (
-        <span className="text-lg leading-[1.4] font-extrabold text-[#666]">
+        <span className="text-body-lg font-extrabold text-[#666]">
           {auction.categoryName || '상품 이미지'}
         </span>
       )}
@@ -167,7 +167,7 @@ export const AuctionPreviewRail = ({
         ))}
       </div>
     ) : (
-      <div className="grid min-h-[68px] place-items-center text-[13px] leading-[1.5] text-[#666]" role="status">
+      <div className="grid min-h-[68px] place-items-center text-caption text-[#666]" role="status">
         등록된 이미지가 없습니다.
       </div>
     )}

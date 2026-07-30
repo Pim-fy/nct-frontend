@@ -3,10 +3,27 @@
 // - 절대좌표 → 반응형 전환. 통계카드 2x2→4열, 목록패널 1열→2열 그리드.
 // TODO: 포인트(F-PNT)/경매(F-AUC)/서비스거래(F-SVC)/관심상품(F-WISH) API가 준비되면
 //       STAT_CARDS/TODAY_ITEMS/WISH_ITEMS를 각 도메인 조회 결과로 교체한다.
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "@utils/common";
+import { useQuery } from "@tanstack/react-query";
+import { fetchMyFavoriteAuctions } from "@api/auctionApi";
+import { toImageUrl } from "@api/fileApi";
 import { assets } from "@components/mypage/assets";
+import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
+
+const TODAY_TABS = [
+  { label: "전체",     section: "auction-bids" },
+  { label: "거래",     section: "auction-bids" },
+  { label: "서비스요청", section: "service-trade" },
+  { label: "입찰",     section: "active-auctions" },
+];
+
+const WISH_TABS = [
+  { label: "전체",     section: "wishlist" },
+  { label: "거래",     section: "wishlist" },
+  { label: "서비스요청", section: "wishlist" },
+  { label: "입찰",     section: "wishlist" },
+];
 
 const TODAY_ITEMS = [
   {
@@ -14,41 +31,24 @@ const TODAY_ITEMS = [
     badges: [{ label: "거래", cls: "badge-success" }, { label: "구매확정 대기", cls: "badge-teal" }],
     title: "[거래 구매확정] 다이슨 V11",
     meta: "거래 금액 148,000원 · 배송완료 후 3일째",
+    section: "auction-bids",
   },
   {
     thumbnail: assets.thumb2,
     badges: [{ label: "서비스 요청", cls: "badge-success" }],
     title: "[견적비교] 성수동 원룸 이사 운반",
     meta: "청년이사·바로운반 · 새 견적 도착",
+    section: "service-trade",
   },
   {
     thumbnail: assets.thumb3,
     badges: [{ label: "거래", cls: "badge-success" }, { label: "구매확정 대기", cls: "badge-teal" }],
     title: "[거래 구매확정] 미니 보온 텀블러 세트",
     meta: "거래 금액 148,000원 · 배송완료 후 3일째",
+    section: "auction-bids",
   },
 ];
 
-const WISH_ITEMS = [
-  {
-    thumbnail: assets.thumb1,
-    badges: [{ label: "입찰 12회", cls: "badge-success" }, { label: "마감임박", cls: "badge-urgent" }],
-    title: "피씨오브플레이어 컴퓨터 게이밍 조립컴퓨터 올인...",
-    meta: "현재가 612,000원 · 오늘 18:00 종료",
-  },
-  {
-    thumbnail: assets.thumb2,
-    badges: [{ label: "입찰 3회", cls: "badge-success" }],
-    title: "카본 패턴 1인용 게이밍 컴퓨터 철제책상 사무용책상...",
-    meta: "현재가 32,000원 · 내입찰가 29,000원",
-  },
-  {
-    thumbnail: assets.thumb3,
-    badges: [{ label: "입찰 1회", cls: "badge-success" }, { label: "마감임박", cls: "badge-urgent" }],
-    title: "PD 4포트 100W 멀티 충전기",
-    meta: "현재가12,000원 · 내입찰가 9,000원 · 오늘 12:00 종료",
-  },
-];
 
 const NOTICES = ["입찰가가 갱신되었습니다.", "관심 상품 마감 10분 전입니다", "새 견적이 도착했습니다"];
 
@@ -81,22 +81,30 @@ function StatCard({ color, icon, label, value, unit, meta, onMore }) {
   );
 }
 
-function ListPanel({ title, items }) {
+function ListPanel({ title, items, tabs, onTabClick, onMore, onItemMore }) {
+  const [activeIdx, setActiveIdx] = useState(0);
+
   return (
     <div className="border border-[rgba(0,0,0,0.11)] rounded-[15px] overflow-hidden">
       <div className="bg-[rgba(0,100,255,0.05)] px-5 h-[60px] flex items-center justify-between">
-        <div className="flex  items-center gap-4 min-w-0">
+        <div className="flex items-center gap-4 min-w-0">
           <span className="font-bold text-[18px] text-[#3a3a3a] shrink-0">{title}</span>
           <div className="hidden sm:flex items-center gap-4 text-[15px] mt-8 mr-0 ml-34">
-            <span className="text-[#0064ff] font-bold border-b-2 border-[#0064ff] pb-px">전체</span>
-            <span className="text-[#4e4e4e]">거래</span>
-            <span className="text-[#4e4e4e]">서비스요청</span>
-            <span className="text-[#4e4e4e]">입찰</span>
+            {tabs.map((tab, i) => (
+              <button
+                key={tab.label}
+                type="button"
+                onClick={() => { setActiveIdx(i); onTabClick?.(tab.section); }}
+                className={`bg-transparent border-none cursor-pointer pb-px text-[15px] ${i === activeIdx ? "text-[#0064ff] font-bold border-b-2 border-[#0064ff]" : "text-[#4e4e4e]"}`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
         </div>
         <button
           type="button"
-          onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
+          onClick={onMore}
           className="bg-transparent border-none cursor-pointer shrink-0 ml-2"
           aria-label={`${title} 더보기`}
         >
@@ -109,7 +117,7 @@ function ListPanel({ title, items }) {
             <div className="size-[85px] shrink-0 rounded-[5px] border border-[#d9d9d9] overflow-hidden">
               <img alt={item.title} className="size-full object-cover" src={item.thumbnail} />
             </div>
-            <div className="flex-1 min-w-0 ">
+            <div className="flex-1 min-w-0">
               <div className="flex flex-wrap gap-1.5 mb-1">
                 {item.badges.map((badge) => (
                   <span key={badge.label} className={`badge ${badge.cls}`}>
@@ -122,7 +130,7 @@ function ListPanel({ title, items }) {
             </div>
             <button
               type="button"
-              onClick={() => toast({ icon: "info", title: "준비 중인 기능입니다." })}
+              onClick={() => onItemMore?.(item.section)}
               className="btn btn-ghost btn-sm shrink-0"
             >
               더보기 ›
@@ -144,6 +152,25 @@ export default function MyPageDashboard({
   const navigate = useNavigate();
   const nickname = user?.nickname || "고객";
   const email = user?.email || "";
+
+  // 관심상품 실데이터 — 최대 3건만 미리보기
+  const wishQuery = useQuery({
+    queryKey: ["auctionFavorites", 1, 3],
+    queryFn: () => fetchMyFavoriteAuctions({ page: 1, size: 3 }),
+    enabled: !!user,
+  });
+  const wishItems = (wishQuery.data?.items ?? []).map((item) => ({
+    thumbnail: toImageUrl(item.thumbnailPath),
+    badges: [
+      { label: item.auctionStatusName || "경매중", cls: "badge-success" },
+      ...(item.bidCount > 0 ? [{ label: `입찰 ${item.bidCount}회`, cls: "badge-teal" }] : []),
+    ],
+    title: item.title || `경매 #${item.auctionId}`,
+    meta: item.currentPrice
+      ? `현재가 ${Number(item.currentPrice).toLocaleString()}원`
+      : "현재가 -",
+    section: "active-auctions",
+  }));
 
   const statCards = [
     {
@@ -203,6 +230,8 @@ export default function MyPageDashboard({
 
   return (
     <div className="space-y-5">
+      <MyPageContentHeader title="MY 홈" />
+
       {/* 프로필 헤더 + 알림 배너 */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-4 lg:grid lg:grid-cols-4 lg:gap-3 lg:items-end">
         <div className="flex items-center gap-3 shrink-0">
@@ -273,8 +302,22 @@ export default function MyPageDashboard({
 
       {/* 오늘 확인할 일 / 관심상품 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <ListPanel title="오늘 확인할 일" items={TODAY_ITEMS} />
-        <ListPanel title="관심상품" items={WISH_ITEMS} />
+        <ListPanel
+          title="오늘 확인할 일"
+          items={TODAY_ITEMS}
+          tabs={TODAY_TABS}
+          onTabClick={(section) => navigate(`/user/mypage?section=${section}`)}
+          onMore={() => navigate("/user/mypage?section=auction-bids")}
+          onItemMore={(section) => navigate(`/user/mypage?section=${section}`)}
+        />
+        <ListPanel
+          title="관심상품"
+          items={wishItems}
+          tabs={WISH_TABS}
+          onTabClick={(section) => navigate(`/user/mypage?section=${section}`)}
+          onMore={() => navigate("/user/mypage?section=wishlist")}
+          onItemMore={(section) => navigate(`/user/mypage?section=${section}`)}
+        />
       </div>
     </div>
   );

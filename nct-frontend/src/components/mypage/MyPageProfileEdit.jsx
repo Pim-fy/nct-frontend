@@ -11,6 +11,7 @@ import { assets } from "@components/mypage/assets";
 import { updateProfile, changePassword, getProfile, getOauthLinks, unlinkOauth } from "@api/memberApi";
 import { uploadImage, toImageUrl } from "@api/fileApi";
 import { useAuth } from "@hooks/useAuth";
+import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
 
 const FIELD_CLASS =
   "w-full h-[40px] rounded-[5px] border border-[#d9d9d9] bg-white px-3 text-[14px] text-[#404040] focus:outline-none focus:border-[#0064ff]";
@@ -247,7 +248,9 @@ export default function MyPageProfileEdit({ user }) {
     }));
 
   return (
-    <div className="flex flex-col xl:flex-row gap-4 items-start">
+    <>
+      <MyPageContentHeader title="프로필" />
+      <div className="flex flex-col xl:flex-row gap-4 items-start">
       {/* ── 메인 정보수정 카드 ── */}
       <div className="flex-1 min-w-0 border border-[#e5e5e5] rounded-[20px] overflow-hidden">
         <div className="bg-[rgba(230,240,255,0.47)] px-6 h-[52px] flex items-center">
@@ -551,6 +554,7 @@ export default function MyPageProfileEdit({ user }) {
           </div>
         </div>
       ) : null}
-    </div>
+      </div>
+    </>
   );
 }

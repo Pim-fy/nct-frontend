@@ -1,6 +1,6 @@
 // src/pages/user/point/PointWalletPage.jsx
 import { useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import Swal from 'sweetalert2';
 
@@ -10,11 +10,16 @@ import PointChargeOrderTable from './components/PointChargeOrderTable';
 import PointExchangeOrderTable from './components/PointExchangeOrderTable';
 import PointAmountModal from './components/PointAmountModal';
 import PointChargeWidgetModal from './components/PointChargeWidgetModal';
+import PointHistoryDetailModal from './components/PointHistoryDetailModal';
+import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
 import { usePointBalance, usePointLedger, usePointChargeOrders, usePointExchangeOrders } from '../../../hooks/usePoint';
 import { confirmPointCharge, requestPointExchange, convertPoint } from '../../../api/pointApi';
 
 // 데이터 도착 전(로딩 중) 카드가 깨지지 않도록 쓰는 0값 기본 잔액
 const EMPTY_BALANCE = { available: 0, hold: 0, settleable: 0, total: 0, exchangeable: 0 };
+
+// 요약 카드에서 각 내역별로 보여주는 최근 건수 — 나머지는 "+" 눌러 전체 내역 모달에서 확인 (2026-07-29)
+const RECENT_LIMIT = 5;
 
 /** axios 오류에서 백엔드 ApiResponse의 message를 꺼낸다 (없으면 일반 안내) */
 const errorMessage = (err) =>
@@ -59,11 +64,45 @@ const SUBMIT_ACTIONS = {
  */
 const PointWalletPage = ({ embedded = false } = {}) => {
   const [openModal, setOpenModal] = useState(null); // null | 'charge' | 'exchange' | 'convert'
+  // 각 내역은 최근 5건만 보이고, "+"를 누르면 전체 내역 모달이 뜬다 (2026-07-29)
+  const [detailModal, setDetailModal] = useState(null); // null | 'ledger' | 'charge' | 'exchange'
 
   const [searchParams, setSearchParams] = useSearchParams();
+  // 결제 리다이렉트로 돌아온 직후(?charge=...가 붙어 있는 동안)는 최초 렌더부터 계속 true —
+  // 승인 처리 중 쇼핑 등 다른 조작과 겹치지 않도록 화면을 완전히 덮어서, 충전을 시작했던
+  // 페이지로 돌아가기 전까지 포인트지갑 화면 자체가 잠깐이라도 눈에 띄지 않게 한다
+  // (원래 페이지 유지 요청, 2026-07-29 — 지갑 화면이 스치듯 보이는 것도 없애 달라는 후속 요청).
+  const isChargeRedirect = !!searchParams.get('charge');
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   // React StrictMode의 이펙트 2회 실행으로 승인(confirm)이 중복 호출되는 것을 막는 가드
   const confirmHandled = useRef(false);
+  // 사용자가 오버레이의 나가기 버튼으로 직접 빠져나갔는지 — true면 승인 응답이 나중에 와도
+  // 결과 팝업을 다시 띄우거나 페이지를 재차 이동시키지 않는다 (이미 나갔으므로 중복 동작 방지)
+  const leftManually = useRef(false);
+
+  // 결제 리다이렉트 처리가 끝난 뒤, 충전을 시작했던 원래 페이지로 돌려보낸다 — 결제위젯이
+  // successUrl/failUrl을 항상 포인트지갑으로 고정해 둬야 해서(AppRoutes.jsx는 담당자1 소유라
+  // 별도 콜백 라우트를 새로 만들지 않는 기존 설계), 쇼핑 중이던 페이지에서 충전하면 결제 후
+  // 포인트지갑으로 튕겨 나가버리는 문제가 있었다. PointChargeWidgetModal이 결제 시작 직전
+  // sessionStorage에 남겨둔 원래 경로로 돌아간다 — 값이 없으면(지갑 화면에서 직접 충전한 경우
+  // 등) 그대로 지갑 화면에 머문다.
+  const returnToOriginalPage = () => {
+    const returnTo = sessionStorage.getItem('pointChargeReturnTo');
+    sessionStorage.removeItem('pointChargeReturnTo');
+    if (returnTo && returnTo !== window.location.pathname + window.location.search) {
+      navigate(returnTo, { replace: true });
+    }
+  };
+
+  // 오버레이의 나가기 버튼 — 승인 응답이 비정상적으로 안 오는 등 예외 상황에서도 사용자가
+  // 화면에 갇히지 않도록 하는 탈출구다. 승인 요청 자체는 취소하지 않고(서버는 계속 처리),
+  // 화면만 정리하고 원래 페이지로 나간다 — 포인트 반영 여부는 다음에 지갑을 열어보면 확인 가능.
+  const leaveChargeOverlay = () => {
+    leftManually.current = true;
+    setSearchParams({}, { replace: true });
+    returnToOriginalPage();
+  };
 
   // 서버 조회 — 로그인(쿠키) 필요. 미로그인 401이면 axios 인터셉터가 /login으로 보낸다
   const { data: balance = EMPTY_BALANCE, isLoading: balanceLoading } = usePointBalance();
@@ -89,7 +128,10 @@ const PointWalletPage = ({ embedded = false } = {}) => {
         .then(() => {
           // 잔액·원장·충전내역 모두 바뀌었으니 포인트 캐시 전체 갱신
           queryClient.invalidateQueries({ queryKey: ['point'] });
-          Swal.fire({
+          // 이미 나가기 버튼으로 빠져나갔으면 이제 와서 팝업을 띄우지 않는다 — 다음에 지갑을
+          // 열었을 때 반영된 내역으로 충분히 알 수 있다
+          if (leftManually.current) return null;
+          return Swal.fire({
             icon: 'success',
             title: '충전 완료',
             text: '포인트 충전이 완료되었습니다.',
@@ -98,14 +140,22 @@ const PointWalletPage = ({ embedded = false } = {}) => {
         })
         .catch((err) => {
           queryClient.invalidateQueries({ queryKey: ['point'] });
-          Swal.fire({
+          if (leftManually.current) return null;
+          return Swal.fire({
             icon: 'error',
             title: '충전 승인 실패',
             text: errorMessage(err),
             confirmButtonColor: '#0064ff',
           });
         })
-        .finally(clearParams);
+        .finally(() => {
+          if (leftManually.current) return;
+          // clearParams()가 navigate() 뒤에 실행되면 이 페이지(/user/mypage) 기준
+          // setSearchParams가 원래 페이지로의 이동을 되돌려버린다 — 반드시 clearParams를
+          // 먼저 끝내고 나서 원래 페이지로 나가야 한다.
+          clearParams();
+          returnToOriginalPage();
+        });
     } else {
       // 실패 리다이렉트 — 토스가 붙여 준 실패 메시지를 그대로 안내 (주문은 대기 상태로 남는다)
       Swal.fire({
@@ -113,8 +163,11 @@ const PointWalletPage = ({ embedded = false } = {}) => {
         title: '결제 실패',
         text: searchParams.get('message') ?? '결제가 완료되지 않았습니다.',
         confirmButtonColor: '#0064ff',
+      }).then(() => {
+        if (leftManually.current) return;
+        clearParams();
+        returnToOriginalPage();
       });
-      clearParams();
     }
   }, [searchParams, setSearchParams, queryClient]);
 
@@ -161,49 +214,71 @@ const PointWalletPage = ({ embedded = false } = {}) => {
       className={embedded ? undefined : 'container'}
       style={embedded ? undefined : { paddingTop: '25px', paddingBottom: '25px' }}
     >
-      {/* 페이지 타이틀 + 액션 */}
-      <div className="flex items-end justify-between gap-4 mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 m-0">포인트 지갑</h1>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg px-5 py-2.5 transition-colors"
-            onClick={() => setOpenModal('charge')}
-          >
-            충전
-          </button>
-          <button
-            type="button"
-            className="border border-blue-600 text-blue-600 hover:bg-blue-50 text-sm font-medium rounded-lg px-5 py-2.5 transition-colors"
-            onClick={() => setOpenModal('convert')}
-          >
-            전환
-          </button>
-          <button
-            type="button"
-            className="border border-blue-600 text-blue-600 hover:bg-blue-50 text-sm font-medium rounded-lg px-5 py-2.5 transition-colors"
-            onClick={() => setOpenModal('exchange')}
-          >
-            환전
-          </button>
-        </div>
-      </div>
+      <MyPageContentHeader
+        title="포인트 지갑"
+        actions={(
+          <>
+            <button
+              type="button"
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg px-5 py-2.5 transition-colors"
+              onClick={() => setOpenModal('charge')}
+            >
+              충전
+            </button>
+            <button
+              type="button"
+              className="border border-blue-600 text-blue-600 hover:bg-blue-50 text-sm font-medium rounded-lg px-5 py-2.5 transition-colors"
+              onClick={() => setOpenModal('convert')}
+            >
+              전환
+            </button>
+            <button
+              type="button"
+              className="border border-blue-600 text-blue-600 hover:bg-blue-50 text-sm font-medium rounded-lg px-5 py-2.5 transition-colors"
+              onClick={() => setOpenModal('exchange')}
+            >
+              환전
+            </button>
+          </>
+        )}
+      />
 
       <PointSummaryCards balance={balance} />
-      {ledgerLoading || balanceLoading ? (
-        <p className="text-sm text-gray-400 text-center py-10">포인트 내역을 불러오는 중...</p>
-      ) : (
-        <PointLedgerTable rows={ledger} />
+      <PointLedgerTable
+        loading={ledgerLoading || balanceLoading}
+        rows={ledger}
+        limit={RECENT_LIMIT}
+        onExpand={() => setDetailModal('ledger')}
+      />
+
+      <PointChargeOrderTable
+        loading={ordersLoading}
+        rows={chargeOrders}
+        limit={RECENT_LIMIT}
+        onExpand={() => setDetailModal('charge')}
+      />
+
+      <PointExchangeOrderTable
+        loading={exchangeLoading}
+        rows={exchangeOrders}
+        limit={RECENT_LIMIT}
+        onExpand={() => setDetailModal('exchange')}
+      />
+
+      {detailModal === 'ledger' && (
+        <PointHistoryDetailModal title="포인트 내역" onClose={() => setDetailModal(null)}>
+          <PointLedgerTable rows={ledger} />
+        </PointHistoryDetailModal>
       )}
-      {ordersLoading ? (
-        <p className="text-sm text-gray-400 text-center py-10">충전 내역을 불러오는 중...</p>
-      ) : (
-        <PointChargeOrderTable rows={chargeOrders} />
+      {detailModal === 'charge' && (
+        <PointHistoryDetailModal title="충전 내역" onClose={() => setDetailModal(null)}>
+          <PointChargeOrderTable rows={chargeOrders} />
+        </PointHistoryDetailModal>
       )}
-      {exchangeLoading ? (
-        <p className="text-sm text-gray-400 text-center py-10">환전 내역을 불러오는 중...</p>
-      ) : (
-        <PointExchangeOrderTable rows={exchangeOrders} />
+      {detailModal === 'exchange' && (
+        <PointHistoryDetailModal title="환전 내역" onClose={() => setDetailModal(null)}>
+          <PointExchangeOrderTable rows={exchangeOrders} />
+        </PointHistoryDetailModal>
       )}
 
       {openModal === 'charge' && (
@@ -229,6 +304,28 @@ const PointWalletPage = ({ embedded = false } = {}) => {
           onSubmit={submitAmount('convert')}
           onClose={() => setOpenModal(null)}
         />
+      )}
+
+      {/* 결제 리다이렉트로 돌아온 직후 ~ 원래 페이지로 돌아가기 전까지 화면 전체를 완전히 덮는다.
+          fixed + 불투명 배경이라 이 포인트지갑 페이지(사이드바 포함)가 뒤에서 잠깐이라도 비치지
+          않고, 처리가 끝나면 원래 페이지로 이동하므로 사용자 입장에서는 지갑 화면을 아예 거치지
+          않은 것처럼 보인다. 승인 응답이 비정상적으로 안 오는 등 예외 상황에서 화면에 갇히지
+          않도록 우측 상단에 나가기(X) 버튼을 둔다 — 눌러도 서버 승인 처리 자체는 계속된다. */}
+      {isChargeRedirect && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-white p-6">
+          <button
+            type="button"
+            aria-label="닫기"
+            className="absolute top-4 right-4 flex size-9 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors text-xl"
+            onClick={leaveChargeOverlay}
+          >
+            ×
+          </button>
+          <div className="flex flex-col items-center gap-4">
+            <div className="size-10 rounded-full border-4 border-gray-200 border-t-blue-600 animate-spin" />
+            <p className="text-sm font-medium text-gray-700">충전 처리 중입니다. 잠시만 기다려 주세요.</p>
+          </div>
+        </div>
       )}
     </div>
   );

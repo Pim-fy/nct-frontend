@@ -6,6 +6,7 @@ import { uploadImage } from '@api/fileApi';
 import { getProfile } from '@api/memberApi';
 import PageMeta from '@components/admin/PageMeta';
 import { ContentPageHeader, ContentPageShell } from '@components/content/ContentUi';
+import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import { useMyProviderApplications, useSubmitProviderApplication } from '@hooks/useProviderApplications';
 import './providerApplyPage.css';
 import './providerApplicationMulti.css';
@@ -197,7 +198,11 @@ const ProviderApplyPage = () => {
         </div>
 
         {step === 0 && categoriesQuery.isLoading && (
-          <p className="provider-apply-demo-note">서비스 카테고리를 불러오는 중입니다.</p>
+          <div className="provider-apply-category-grid">
+            {Array.from({ length: 10 }).map((_, index) => (
+              <Skeleton borderRadius={8} height={64} key={index} />
+            ))}
+          </div>
         )}
 
         {step === 0 && categoriesQuery.isError && (

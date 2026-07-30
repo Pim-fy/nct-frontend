@@ -68,12 +68,12 @@ const AuctionProductUpdateSection = ({
     >
       <header className="mb-7 flex items-center justify-between gap-4">
         <h2
-          className="m-0 text-2xl leading-[1.3] font-bold text-[#1d1d1f] md:text-[28px]"
+          className="m-0 text-h2 font-bold text-[#1d1d1f]"
           id={`${sectionId}-title`}
         >
           변경 내역
         </h2>
-        <strong className="text-base leading-[1.4] whitespace-nowrap text-primary-dark">{updates.length}건</strong>
+        <strong className="text-body-md whitespace-nowrap text-primary-dark">{updates.length}건</strong>
       </header>
 
       {isWaiting && (
@@ -91,10 +91,10 @@ const AuctionProductUpdateSection = ({
       )}
 
       {updateQuery.isError && (
-        <div className="grid min-h-28 place-items-center content-center gap-2.5 border-y border-[#e2e5ea] px-4 py-8 text-center text-[15px] leading-[1.6] text-[#777]">
+        <div className="grid min-h-28 place-items-center content-center gap-2.5 border-y border-[#e2e5ea] px-4 py-8 text-center text-body-sm text-[#777]">
           <p className="m-0">변경 내역을 불러오지 못했습니다.</p>
           <button
-            className="inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border border-primary bg-white px-4 text-[15px] font-bold text-primary-dark"
+            className="inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border border-primary bg-white px-4 text-body-sm font-bold text-primary-dark"
             type="button"
             onClick={() => updateQuery.refetch()}
           >
@@ -105,7 +105,7 @@ const AuctionProductUpdateSection = ({
       )}
 
       {!isWaiting && !updateQuery.isError && updates.length === 0 && (
-        <p className="m-0 grid min-h-28 place-items-center border-y border-[#e2e5ea] px-4 py-8 text-center text-[15px] leading-[1.6] text-[#777]">
+        <p className="m-0 grid min-h-28 place-items-center border-y border-[#e2e5ea] px-4 py-8 text-center text-body-sm text-[#777]">
           등록된 변경 내역이 없습니다.
         </p>
       )}
@@ -122,16 +122,16 @@ const AuctionProductUpdateSection = ({
               </span>
               <div className="min-w-0">
                 <div className="flex items-start justify-between gap-4 max-sm:flex-col max-sm:gap-1">
-                  <strong className="text-base leading-[1.5] text-[#1d1d1f]">{update.title}</strong>
+                  <strong className="text-body-md text-[#1d1d1f]">{update.title}</strong>
                   <time
-                    className="text-[13px] leading-[1.5] whitespace-nowrap text-[#777]"
+                    className="text-caption whitespace-nowrap text-[#777]"
                     dateTime={update.registeredAt}
                   >
                     {formatUpdatedAt(update.registeredAt)}
                   </time>
                 </div>
                 {update.content && (
-                  <p className="mt-2 mb-0 whitespace-pre-wrap text-base leading-[1.65] text-[#555] [overflow-wrap:anywhere]">
+                  <p className="mt-2 mb-0 whitespace-pre-wrap text-body-sm text-[#555] [overflow-wrap:anywhere] md:text-body-md">
                     {update.content}
                   </p>
                 )}

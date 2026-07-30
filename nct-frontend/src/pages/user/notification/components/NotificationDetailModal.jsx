@@ -32,12 +32,15 @@ const NotificationDetailModal = ({ item, onClose }) => {
 
   return (
     <div
-      className="fixed inset-x-0 top-[82px] bottom-0 z-[180] flex items-center justify-center bg-black/40 p-6"
+      className="user-modal-overlay flex items-center justify-center bg-black/40 p-6"
       onClick={onClose}
     >
       <div
         className="w-full max-w-[480px] bg-white rounded-2xl p-6 shadow-[0_20px_80px_rgba(0,0,0,0.25)]"
+        aria-labelledby="notification-detail-modal-title"
+        aria-modal="true"
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
       >
         <div className="flex items-center justify-between mb-4">
           <span className="inline-block px-2 py-0.5 rounded-lg bg-gray-100 text-xs text-gray-500">
@@ -51,7 +54,7 @@ const NotificationDetailModal = ({ item, onClose }) => {
             닫기
           </button>
         </div>
-        <h3 className="text-lg font-bold text-gray-900 m-0 mb-2">{item.title}</h3>
+        <h3 className="text-lg font-bold text-gray-900 m-0 mb-2" id="notification-detail-modal-title">{item.title}</h3>
         <p className="text-xs text-gray-400 mb-4">{item.time}</p>
         <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed m-0">
           {item.content}

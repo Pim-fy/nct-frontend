@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import Pagination from '@components/common/Pagination';
 import { toImageUrl } from '@api/fileApi';
 import { useMyBidHistory } from '@hooks/useBid';
+import CardGridSkeleton from '@components/skeleton/CardGridSkeleton';
 
 const BID_STATUS_META = {
   HIGHEST:  { label: '최고입찰', badge: 'badge-primary' },
@@ -115,7 +116,7 @@ function BidHistoryTab() {
   const handleFilterChange = (value) => { setStatusFilter(value); setPage(1); };
   const handleGoToAuction  = (aucSn) => navigate(`/auction/${aucSn}`);
 
-  if (isLoading) return <p className="muted" style={{ textAlign: 'center', padding: '40px 0' }}>불러오는 중...</p>;
+  if (isLoading) return <CardGridSkeleton cardHeight={100} columns={1} count={4} />;
   if (isError) {
     return (
       <div style={{ textAlign: 'center', padding: '40px 0' }}>
@@ -216,7 +217,7 @@ function BidHistoryTab() {
 
 export default function MyBidHistoryPage() {
   return (
-    <div>
+    <div className="container">
       <div className="page-title">
         <div>
           <h1>상품 입찰 내역</h1>

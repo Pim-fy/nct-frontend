@@ -1,5 +1,5 @@
 import { Heart } from 'lucide-react';
-import { formatNumber, formatPrice } from '../utils/auctionFormatters';
+import { formatNumber, formatPrice } from '@utils/common';
 
 const BID_UNIT_MULTIPLIERS = [1, 5, 10];
 
@@ -101,19 +101,19 @@ const AuctionBidPanel = ({
         </button>
       </div>
 
-      <h1 className="m-0 break-words text-[32px] leading-[1.25] font-bold text-[#1d1d1f] [overflow-wrap:anywhere] max-sm:text-[28px]">
+      <h1 className="m-0 break-words text-h2 font-bold text-[#1d1d1f] [overflow-wrap:anywhere] md:text-h1">
         {auction.title}
       </h1>
 
       <div className="grid grid-cols-1 items-start gap-y-5 lg:grid-cols-[minmax(0,0.98fr)_minmax(320px,1fr)] lg:gap-x-[38px]">
         <div>
-          <p className="mt-0 mb-3.5 text-base leading-[1.4] font-bold text-[#3f3f46]">
+          <p className="mt-0 mb-3.5 text-body-md font-bold text-[#3f3f46]">
             {isAuctionReady ? '경매 시작가' : '현재 최고가'}
           </p>
-          <p className="m-0 text-[32px] leading-[1.2] font-bold text-primary-dark max-sm:text-[28px]" id="currentPrice">
+          <p className="m-0 text-h2 font-bold text-primary-dark md:text-h1" id="currentPrice">
             {formatPrice(currentPrice)}
           </p>
-          <p className="mt-3.5 mb-[18px] text-sm leading-[1.6] text-[#4d4d4d]">
+          <p className="mt-3.5 mb-[18px] text-caption text-[#4d4d4d]">
             {isAuctionReady
               ? `즉시구매가 ${formatPrice(auction.instantBuyPrice)}`
               : `시작가 ${formatPrice(auction.startPrice)} · 즉시구매가 ${formatPrice(auction.instantBuyPrice)}`}
@@ -123,7 +123,7 @@ const AuctionBidPanel = ({
             id="countdown"
           >
             <span
-              className={`text-base leading-[1.4] font-bold ${
+              className={`text-body-md font-bold ${
                 isAuctionOpen || isAuctionReady ? 'text-[#3f3f46]' : 'text-[#8a8a8a]'
               }`}
               id="countdownLabel"
@@ -131,7 +131,7 @@ const AuctionBidPanel = ({
               {remainingTimeLabel}
             </span>
             <span
-              className={`text-[28px] leading-[1.25] font-bold tabular-nums max-sm:text-2xl ${
+              className={`text-h2 font-bold tabular-nums ${
                 isAuctionOpen || isAuctionReady ? 'text-[#1d1d1f]' : 'text-[#8a8a8a]'
               }`}
               id="countdownValue"
@@ -140,7 +140,7 @@ const AuctionBidPanel = ({
             </span>
           </p>
           {isAuctionOpen && (
-            <p className="relative top-[18px] text-sm leading-[1.6] text-[#666] max-lg:top-0">
+            <p className="relative top-[18px] text-caption text-[#666] max-lg:top-0">
               마감 10분 이내 유효 입찰 시 자동 연장(1회)
             </p>
           )}
@@ -148,19 +148,19 @@ const AuctionBidPanel = ({
 
         {isAuctionReady ? (
           <div className="grid min-h-36 place-items-center content-center gap-2 pt-[42px] text-center text-[#1d1d1f] max-lg:pt-0" role="status">
-            <strong className="text-xl leading-[1.4] font-bold">경매 시작 전입니다</strong>
-            <span className="text-sm leading-[1.6] text-[#666]">입찰과 즉시구매는 경매가 시작되면 이용할 수 있습니다.</span>
+            <strong className="text-h3 font-bold">경매 시작 전입니다</strong>
+            <span className="text-body-sm text-[#666] md:text-body-md">입찰과 즉시구매는 경매가 시작되면 이용할 수 있습니다.</span>
           </div>
         ) : isAuthLoading ? (
           <div
-            className="grid min-h-36 place-items-center pt-[42px] text-base leading-[1.5] font-bold text-[#666] max-lg:pt-0"
+            className="grid min-h-36 place-items-center pt-[42px] text-body-md font-bold text-[#666] max-lg:pt-0"
             role="status"
           >
             로그인 정보를 확인하는 중입니다.
           </div>
         ) : isOwnAuction ? (
           <div
-            className="grid min-h-36 place-items-center pt-[42px] text-xl leading-[1.4] font-bold text-primary-dark max-lg:pt-0"
+            className="grid min-h-36 place-items-center pt-[42px] text-h3 font-bold text-primary-dark max-lg:pt-0"
             role="status"
           >
             본인 경매 상품
@@ -168,9 +168,9 @@ const AuctionBidPanel = ({
         ) : (
           <div className="self-start pt-[42px] max-lg:pt-0">
             <div className="mb-3.5 grid gap-2">
-              <label className="text-base leading-[1.4] font-bold text-[#666]" htmlFor="bidAmount">입찰 금액</label>
+              <label className="text-body-md font-bold text-[#666]" htmlFor="bidAmount">입찰 금액</label>
               <input
-                className="min-h-11 w-full rounded-lg border border-[#dadada] bg-white px-3.5 text-base leading-[1.5] text-[#1d1d1f] outline-none transition-colors focus:border-primary disabled:cursor-not-allowed disabled:bg-[#f3f3f3]"
+                className="min-h-11 w-full rounded-lg border border-[#dadada] bg-white px-3.5 text-body-md text-[#1d1d1f] outline-none transition-colors focus:border-primary disabled:cursor-not-allowed disabled:bg-[#f3f3f3]"
                 id="bidAmount"
                 type="text"
                 inputMode="numeric"
@@ -182,13 +182,13 @@ const AuctionBidPanel = ({
               />
             </div>
             <div className="grid gap-2">
-              <span className="text-sm leading-[1.5] text-[#666]">
+              <span className="text-caption text-[#666]">
                 입찰 단위 <strong className="ml-1 text-[#1d1d1f]">{formatPrice(bidUnitPrice)}</strong>
               </span>
               <div className="grid grid-cols-3 gap-2" role="group" aria-label="입찰 단위 배수 선택">
                 {BID_UNIT_MULTIPLIERS.map((multiplier) => (
                   <button
-                    className="min-h-10 min-w-[58px] cursor-pointer rounded-lg border border-[#dadada] bg-white text-[15px] leading-[1.4] font-bold text-[#1d1d1f] transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                    className="min-h-10 min-w-[58px] cursor-pointer rounded-lg border border-[#dadada] bg-white text-body-sm font-bold text-[#1d1d1f] transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
                     type="button"
                     key={multiplier}
                     disabled={!isAuctionOpen || isCurrentHighestBidder}
@@ -201,13 +201,13 @@ const AuctionBidPanel = ({
               </div>
             </div>
             {showBidAmountUnitError && (
-              <p className="my-3 text-sm leading-[1.6] text-[#b42318]" id="bidAmountPolicy" role="alert">
+              <p className="my-3 text-caption text-[#b42318]" id="bidAmountPolicy" role="alert">
                 {formatPrice(bidUnitPrice)} 단위에 맞는 금액을 입력해 주세요
               </p>
             )}
-            <div className="grid min-h-7 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2.5 text-sm leading-[1.5] text-[#666]">
+            <div className="grid min-h-7 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2.5 text-caption text-[#666]">
               <span>사용 가능 포인트</span>
-              <strong className={`text-base ${isBidPointInsufficient ? 'text-[#b42318]' : 'text-[#1d1d1f]'}`}>
+              <strong className={`text-body-md ${isBidPointInsufficient ? 'text-[#b42318]' : 'text-[#1d1d1f]'}`}>
                 {pointBalanceLabel}
               </strong>
               {isAuthenticated && (
@@ -225,20 +225,20 @@ const AuctionBidPanel = ({
 
         <div className="grid max-w-[310px] grid-cols-3 gap-2 pt-7 max-lg:pt-0">
           <div className="grid min-h-12 content-center gap-0.5 rounded-lg border border-[#e8e8e8] bg-white px-2 py-[7px] text-center">
-            <span className="text-[13px] leading-[1.4] font-medium text-[#666]">입찰횟수</span>
-            <strong className="text-base leading-none text-primary-dark">{auction.bidCount || 0}회</strong>
+            <span className="text-caption font-medium text-[#666]">입찰횟수</span>
+            <strong className="text-body-md text-primary-dark">{auction.bidCount || 0}회</strong>
           </div>
           <div className="grid min-h-12 content-center gap-0.5 rounded-lg border border-[#e8e8e8] bg-white px-2 py-[7px] text-center">
-            <span className="text-[13px] leading-[1.4] font-medium text-[#666]">관심인원</span>
-            <strong className="text-base leading-none text-primary-dark">{formatNumber(auction.favoriteCount)}명</strong>
+            <span className="text-caption font-medium text-[#666]">관심인원</span>
+            <strong className="text-body-md text-primary-dark">{formatNumber(auction.favoriteCount)}명</strong>
           </div>
           <div className="grid min-h-12 content-center gap-0.5 rounded-lg border border-[#e8e8e8] bg-white px-2 py-[7px] text-center">
-            <span className="text-[13px] leading-[1.4] font-medium text-[#666]">조회수</span>
-            <strong className="text-base leading-none text-primary-dark">{formatNumber(auction.viewCount)}회</strong>
+            <span className="text-caption font-medium text-[#666]">조회수</span>
+            <strong className="text-body-md text-primary-dark">{formatNumber(auction.viewCount)}회</strong>
           </div>
         </div>
         <div className="grid gap-2 pt-7 max-lg:pt-0">
-          <span className="text-sm leading-[1.5] font-bold text-[#666]">거래 방식</span>
+          <span className="text-caption font-bold text-[#666]">거래 방식</span>
           <strong>{selectedTradeName}</strong>
         </div>
 
@@ -247,7 +247,7 @@ const AuctionBidPanel = ({
             <div className="grid grid-cols-2 items-end justify-center gap-1.5 max-sm:grid-cols-1 lg:col-span-2 lg:mx-auto lg:w-full lg:max-w-[520px]">
               <div className="grid gap-2">
                 {requiresBidHoldConsent && (
-                  <label className="flex items-center justify-center gap-2 text-sm leading-[1.5] text-[#666]">
+                  <label className="flex items-center justify-center gap-2 text-caption text-[#666]">
                     <input
                       className="size-4 accent-primary"
                       id="holdAgree"
@@ -259,7 +259,7 @@ const AuctionBidPanel = ({
                   </label>
                 )}
                 <button
-                  className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-primary text-base leading-[1.4] font-bold text-white disabled:cursor-not-allowed disabled:opacity-55 aria-busy:cursor-progress"
+                  className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-primary text-body-md font-bold text-white disabled:cursor-not-allowed disabled:opacity-55 aria-busy:cursor-progress"
                   id="bidBtn"
                   type="button"
                   aria-busy={isBidPending}
@@ -282,7 +282,7 @@ const AuctionBidPanel = ({
                 </button>
               </div>
               <button
-                className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-white text-base leading-[1.4] font-bold text-primary disabled:cursor-not-allowed disabled:opacity-55 aria-busy:cursor-progress"
+                className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-white text-body-md font-bold text-primary disabled:cursor-not-allowed disabled:opacity-55 aria-busy:cursor-progress"
                 id="buyNowBtn"
                 type="button"
                 aria-busy={isBuyNowPending}
@@ -299,7 +299,7 @@ const AuctionBidPanel = ({
               </button>
               </div>
           ) : (
-            <p className="m-0 mt-5 flex min-h-12 items-center justify-center pt-2 text-center text-base leading-[1.5] font-bold text-[#666] lg:col-span-2" role="status">
+            <p className="m-0 mt-5 flex min-h-12 items-center justify-center pt-2 text-center text-body-md font-bold text-[#666] lg:col-span-2" role="status">
               로그인이 필요한 서비스입니다.
             </p>
           )

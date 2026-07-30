@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import {
   ContentPageHeader,
   ContentPageShell,
@@ -9,36 +9,21 @@ import {
 import {
   PortfolioModal,
   ProviderProfile,
-  ProviderReportModal,
 } from '@components/service/ServiceUi';
-import ViewSkeleton from '@components/skeleton/ViewSkeleton';
-import { useAuth } from '@hooks/useAuth';
-import { useProviderReport, usePublicProviderProfile } from '@hooks/useServiceDiscovery';
-import { PROVIDER_REPORT_TYPES } from '@pages/service/servicePreviewData';
+import ProfileSkeleton from '@components/skeleton/ProfileSkeleton';
+import { usePublicProviderProfile } from '@hooks/useServiceDiscovery';
 
-const EMPTY_REPORT = { typeCode: '', reason: '' };
-
-const getUserId = (user) => user?.id ?? user?.userId ?? user?.userSn ?? user?.usrSn ?? null;
-
-/** F-COM-015: 공개 제공자 프로필에서 로그인 사용자가 신고 흐름을 시작하는 화면입니다. */
+/** F-COM-002: 실제 공개 계약으로 제공자 프로필과 포트폴리오를 조회합니다. */
 const PublicProviderProfilePage = () => {
   const { providerId: rawProviderId } = useParams();
   const providerId = Number(rawProviderId);
   const validProviderId = Number.isSafeInteger(providerId) && providerId > 0;
   const providerQuery = usePublicProviderProfile(providerId);
-  const reportMutation = useProviderReport();
-  const { user, isAuthenticated } = useAuth();
-  const location = useLocation();
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('reviews');
-  const [reportOpen, setReportOpen] = useState(false);
   const [selectedPortfolio, setSelectedPortfolio] = useState(null);
-  const [reportForm, setReportForm] = useState(EMPTY_REPORT);
-  const [reportError, setReportError] = useState('');
-  const [integrationMessage, setIntegrationMessage] = useState('');
   const modalCloseRef = useRef(null);
   const previousFocusRef = useRef(null);
-  const modalOpen = reportOpen || Boolean(selectedPortfolio);
+  const modalOpen = Boolean(selectedPortfolio);
 
   useEffect(() => {
     if (!modalOpen) return undefined;
@@ -48,7 +33,6 @@ const PublicProviderProfilePage = () => {
     const focusTimer = window.setTimeout(() => modalCloseRef.current?.focus(), 0);
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
-        setReportOpen(false);
         setSelectedPortfolio(null);
       }
     };
@@ -75,7 +59,7 @@ const PublicProviderProfilePage = () => {
     );
   }
 
-  if (providerQuery.isLoading) return <ViewSkeleton />;
+  if (providerQuery.isLoading) return <ProfileSkeleton />;
 
   if (providerQuery.isError) {
     const errorStatus = providerQuery.error?.response?.status ?? providerQuery.error?.status;
@@ -99,53 +83,6 @@ const PublicProviderProfilePage = () => {
 
   const provider = providerQuery.data;
 
-  const openReport = () => {
-    if (!isAuthenticated) {
-      navigate('/login', { state: { from: location } });
-      return;
-    }
-    setReportError('');
-    setIntegrationMessage('');
-    setReportForm(EMPTY_REPORT);
-    setReportOpen(true);
-  };
-
-  const closeReport = () => {
-    if (reportMutation.isPending) return;
-    setReportOpen(false);
-  };
-
-  const changeReportForm = (name, value) => {
-    setReportForm((current) => ({ ...current, [name]: value }));
-    setReportError('');
-    setIntegrationMessage('');
-  };
-
-  const submitReport = async (event) => {
-    event.preventDefault();
-    const reason = reportForm.reason.trim();
-    if (!reportForm.typeCode) {
-      setReportError('신고 유형을 선택해 주세요.');
-      return;
-    }
-    if (!reason) {
-      setReportError('신고 사유를 입력해 주세요.');
-      return;
-    }
-    if (String(getUserId(user)) === String(provider.ownerUserId)) {
-      setReportError('자신의 제공자 프로필은 신고할 수 없습니다.');
-      return;
-    }
-
-    const result = await reportMutation.mutateAsync({
-      providerId: provider.id,
-      reportedUserId: provider.ownerUserId,
-      typeCode: reportForm.typeCode,
-      reason,
-    });
-    setIntegrationMessage(result.message);
-  };
-
   return (
     <ContentPageShell className="provider-public-page">
       <Helmet><title>{provider.name} 제공자 프로필 | 에누리컷</title></Helmet>
@@ -154,25 +91,9 @@ const PublicProviderProfilePage = () => {
       <ProviderProfile
         activeTab={activeTab}
         onOpenPortfolio={setSelectedPortfolio}
-        onOpenReport={openReport}
         onTabChange={setActiveTab}
         provider={provider}
       />
-
-      {reportOpen && (
-        <ProviderReportModal
-          closeButtonRef={modalCloseRef}
-          error={reportError}
-          form={reportForm}
-          integrationMessage={integrationMessage}
-          isSubmitting={reportMutation.isPending}
-          onChange={changeReportForm}
-          onClose={closeReport}
-          onSubmit={submitReport}
-          providerName={provider.name}
-          reportTypes={PROVIDER_REPORT_TYPES}
-        />
-      )}
 
       {selectedPortfolio && (
         <PortfolioModal

@@ -21,6 +21,7 @@ import {
   toTradeChatRooms,
 } from '@api/tradeChatAdapter';
 import { getTradeChatWebSocketUrl } from '@api/tradeChatSocket';
+import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import '@assets/css/trade-chat.css';
 
 const MAX_MESSAGE_LENGTH = 500;
@@ -515,9 +516,16 @@ const TradeChat = ({
         </header>
 
         {isLoading && (
-          <section className="trade-chat-card trade-chat-page__state" role="status">
-            채팅방을 불러오는 중입니다.
-          </section>
+          <div className="trade-chat-layout trade-chat-layout--with-room-list">
+            <aside className="trade-chat-card trade-chat-rooms">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <Skeleton height={56} key={index} style={{ marginBottom: 8 }} />
+              ))}
+            </aside>
+            <section className="trade-chat-card">
+              <Skeleton count={4} height={40} style={{ marginBottom: 12, maxWidth: '70%' }} />
+            </section>
+          </div>
         )}
 
         {!isLoading && error && (

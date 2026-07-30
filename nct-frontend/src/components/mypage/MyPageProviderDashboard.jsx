@@ -5,6 +5,7 @@ import { useMyPortfolios, useMyProviderProfile } from '@hooks/useProviderProfile
 import { useNotifications } from '@hooks/useNotification';
 import { usePointBalance } from '@hooks/usePoint';
 import { assets } from '@components/mypage/assets';
+import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
 
 export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpenSection }) {
   const navigate = useNavigate();
@@ -36,6 +37,7 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpe
 
   return (
     <main className="w-full space-y-5" aria-labelledby="provider-dashboard-title">
+      <MyPageContentHeader title="MY 홈" />
       <section className="flex flex-col gap-4 sm:flex-row sm:items-center lg:grid lg:grid-cols-4 lg:items-end lg:gap-3">
         <div className="flex shrink-0 items-center gap-3">
           <div className="size-16 shrink-0 overflow-hidden rounded-full bg-[#e6f0ff]">

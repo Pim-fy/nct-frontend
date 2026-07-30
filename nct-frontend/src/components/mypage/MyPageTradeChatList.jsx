@@ -13,6 +13,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { getTradeChatRooms } from '@api/tradeChatApi';
 import { toTradeChatRooms } from '@api/tradeChatAdapter';
+import CardGridSkeleton from '@components/skeleton/CardGridSkeleton';
 
 const HIDDEN_ROOM_STORAGE_KEY = 'nct-hidden-trade-chat-room-ids';
 
@@ -191,11 +192,7 @@ const MyPageTradeChatList = ({
         </div>
       </header>
 
-      {isLoading && (
-        <div className="rounded-[12px] bg-[#f8fafc] px-5 py-10 text-center text-[14px] text-[#6b7280]">
-          채팅 목록을 불러오는 중입니다.
-        </div>
-      )}
+      {isLoading && <CardGridSkeleton cardHeight={64} columns={1} count={4} />}
 
       {!isLoading && error && (
         <div className="rounded-[12px] border border-[#fecaca] bg-[#fff7f7] px-5 py-6 text-center">

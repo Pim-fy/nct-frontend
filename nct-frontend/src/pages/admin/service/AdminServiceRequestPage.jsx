@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { RotateCcw, Search } from 'lucide-react';
 import AdminModal from '@components/admin/AdminModal';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
+import AdminTable from '@components/admin/AdminTable';
 import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
 import MockupAdminStatusBadge from '@components/admin/mockup/MockupAdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
@@ -78,6 +79,25 @@ const AdminServiceRequestPage = () => {
 
   const change = ({ target }) => setFilter((current) => ({ ...current, [target.name]: target.value }));
 
+  const columns = useMemo(() => [
+    { key: 'id', label: '요청번호' },
+    { key: 'title', label: '요청명', className: 'admin-notice-list__title', render: (value) => <strong>{value}</strong> },
+    { key: 'category', label: '카테고리' },
+    { key: 'area', label: '지역' },
+    { key: 'requester', label: '요청자' },
+    { key: 'provider', label: '제공자' },
+    { key: 'quotes', label: '견적', render: (value) => `${value}건` },
+    { key: 'amount', label: '금액' },
+    {
+      key: 'status', label: '상태',
+      render: (value, row) => <MockupAdminStatusBadge tone={row.tone}>{value}</MockupAdminStatusBadge>,
+    },
+    {
+      key: 'manage', label: '관리',
+      render: (_, row) => <button className="btn btn-outline" onClick={() => setSelected(row)} type="button">상세보기</button>,
+    },
+  ], []);
+
   return (
     <div className="admin-content-page admin-service-page">
       <PageMeta title="서비스 요청 관리" />
@@ -124,60 +144,12 @@ const AdminServiceRequestPage = () => {
         title="서비스 요청 목록"
       >
         <div className="admin-table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>요청번호</th>
-                <th>요청명</th>
-                <th>카테고리</th>
-                <th>지역</th>
-                <th>요청자</th>
-                <th>제공자</th>
-                <th>견적</th>
-                <th>금액</th>
-                <th>상태</th>
-                <th>관리</th>
-              </tr>
-            </thead>
-            <tbody>
-              {requests.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.id}</td>
-                  <td className="admin-notice-list__title">
-                    <strong>{item.title}</strong>
-                  </td>
-                  <td>{item.category}</td>
-                  <td>{item.area}</td>
-                  <td>{item.requester}</td>
-                  <td>{item.provider}</td>
-                  <td>{item.quotes}건</td>
-                  <td>{item.amount}</td>
-                  <td>
-                    <MockupAdminStatusBadge tone={item.tone}>
-                      {item.status}
-                    </MockupAdminStatusBadge>
-                  </td>
-                  <td>
-                    <button
-                      className="btn btn-outline"
-                      onClick={() => setSelected(item)}
-                      type="button"
-                    >
-                      상세보기
-                    </button>
-                  </td>
-                </tr>
-              ))}
-
-              {!requests.length && (
-                <tr>
-                  <td className="admin-notice-list__empty" colSpan="10">
-                    조건에 맞는 임시 자료가 없습니다.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+          <AdminTable
+            columns={columns}
+            data={requests}
+            emptyMessage="조건에 맞는 임시 자료가 없습니다."
+            rowKey={(item) => item.id}
+          />
         </div>
       </AdminSectionCard>
 

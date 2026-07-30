@@ -4,10 +4,6 @@
   background: #fff;
 }
 
-.trade-detail-page .container {
-  max-width: 1160px;
-}
-
 .trade-detail-page__header {
   display: flex;
   align-items: flex-end;

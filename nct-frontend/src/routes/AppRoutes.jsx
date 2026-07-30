@@ -16,6 +16,7 @@ import LandingLayout from '@layouts/LandingLayout';
 import UserLayout    from '@layouts/UserLayout';
 import AdminLayout   from '@layouts/AdminLayout';
 import AuthLayout    from '@layouts/AuthLayout';
+import CustomerSupportLayout from '@layouts/CustomerSupportLayout';
 
 // ──────────────────────────────────────────
 // 공개 페이지
@@ -70,6 +71,7 @@ import ReviewEditPage from '@pages/user/ReviewEditPage';
 import MyPageReviewLayout from '@layouts/MyPageReviewLayout';
 // 내 입찰 내역 (F-AUC-022)
 import MyBidHistoryPage from '@pages/user/MyBidHistoryPage';
+import ReportFormPage from '@pages/user/report/ReportFormPage';
 
 // 담당자 7 병합 검증: develop의 상품 route가 참조하는 페이지 import가 누락되어 런타임 빈 화면이 발생해 복구했습니다.
 // 임시 코드는 아니며 상품 기능의 구현·소유권은 기존 상품 담당자에게 그대로 있습니다.
@@ -108,6 +110,8 @@ import AdminAuditLogPage from '@pages/admin/audit/AdminAuditLogPage';
 import AdminSystemSettingPage from '@pages/admin/setting/AdminSystemSettingPage';
 import AdminAuctionManagementPage from '@pages/admin/auction/AdminAuctionManagementPage';
 import AdminNotificationPage from '@pages/admin/notification/AdminNotificationPage';
+import AdminReportManagementPage from '@pages/admin/operation/AdminReportManagementPage';
+import AdminPointExchangePage from '@pages/admin/operation/AdminPointExchangePage';
 
 // 개발 환경에서는 별도 env 설정 없이 로그인 없는 거래 화면을 검토할 수 있다.
 // 운영 빌드에서는 false가 되어 개발용 더미 경로가 노출되지 않는다.
@@ -156,10 +160,12 @@ const AppRoutes = () => {
         {/* 담당자 2 · F-SVC: 서비스 요청서 상세는 비로그인도 조회 가능 (백엔드 permit-all) */}
         <Route path="/service-requests/:svcReqSn" element={<ServiceRequestDetailPage />} />
         <Route path="/providers/:providerId" element={<PublicProviderProfilePage />} />
-        <Route path="/guide" element={<GuidePage />} />
-        <Route path="/customersupport/notice" element={<NoticeListPage />} />
-        <Route path="/customersupport/notice/:noticeId" element={<NoticeDetailPage />} />
-        <Route path="/customersupport/faq" element={<FaqPage />} />
+        <Route element={<CustomerSupportLayout />}>
+          <Route path="/guide" element={<GuidePage />} />
+          <Route path="/customersupport/notice" element={<NoticeListPage />} />
+          <Route path="/customersupport/notice/:noticeId" element={<NoticeDetailPage />} />
+          <Route path="/customersupport/faq" element={<FaqPage />} />
+        </Route>
       </Route>
 
       {/* 실제 거래 경로의 인증 정책과 분리된 개발용 화면 확인 경로 */}
@@ -234,6 +240,9 @@ const AppRoutes = () => {
           <Route path="/product/me"              element={<MyProductListPage />} />
           <Route path="/product/:prdSn/seller"   element={<ProductDetailSellerPage />} />
 
+          {/* 신고 접수 (담당자3 황성경 · F-COM-018) */}
+          <Route path="/user/reports/new" element={<ReportFormPage />} />
+
           {/* 서비스 - 로그인 필요 */}
           {/* 담당자 2 · F-SVC-001~004: 서비스 요청서 작성/임시저장 폼. 라우트 소유자에게 전달 필요. */}
           <Route path="/service-requests/new" element={<ServiceRequestFormPage />} />
@@ -255,13 +264,15 @@ const AppRoutes = () => {
           <Route path="services" element={<AdminServiceRequestPage />} />
           <Route path="provider-applications" element={<AdminProviderApprovalPage />} />
           <Route path="auctions" element={<AdminAuctionManagementPage />} />
+          <Route path="reports" element={<AdminReportManagementPage />} />
+          <Route path="exchanges" element={<AdminPointExchangePage />} />
+          <Route path="risk-events" element={<OperationsIntegrationPreview />} />
           {/* 보안/감사·시스템 설정: 1단계 최소 설정은 담당자7 F-OPS-024, 3단계 감사/제한조회 화면은 담당자6 인수 범위입니다. */}
           <Route path="audit-logs" element={<AdminAuditLogPage />} />
           <Route path="system-settings" element={<AdminSystemSettingPage />} />
           {/* 관리자 알림 (담당자6, F-COM-004/005) */}
           <Route path="notifications" element={<AdminNotificationPage />} />
-          {/* 담당자7 · F-OPS-013 민감정보 탐지 이벤트 읽기 전용 확인 화면 */}
-          <Route path="operations-preview" element={<OperationsIntegrationPreview />} />
+          <Route path="operations-preview" element={<Navigate replace to="/admin/risk-events" />} />
         </Route>
       </Route>
 

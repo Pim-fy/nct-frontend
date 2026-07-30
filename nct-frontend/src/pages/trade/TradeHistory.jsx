@@ -4,40 +4,46 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import Pagination from '@components/common/Pagination';
+import { useLocation } from 'react-router-dom';
 import { getTradeHistory } from '@api/tradeApi';
 import {
   getTradeListItems,
   toTradeHistoryItem,
 } from '@api/tradeAdapter';
+import MyPageListSkeleton from '@components/skeleton/MyPageListSkeleton';
+import MyPageListSectionLayout from '@components/mypage/MyPageListSectionLayout';
+import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
+import MyPageListEmpty from '@components/mypage/MyPageListEmpty';
+import MyPageListError from '@components/mypage/MyPageListError';
+import MyPageListItem from '@components/mypage/MyPageListItem';
+import MyPageStatusBadge from '@components/mypage/MyPageStatusBadge';
 import '@assets/css/trade-history.css';
 
 const statusInfo = {
   DELIVERING: {
-    label: '배송·직거래중',
-    className: 'trade-history-status--progress',
+    label: '배송·직거래 중',
+    badgeClass: 'badge-teal',
   },
   WAITING_CONFIRMATION: {
     label: '상대 확인 대기',
-    className: 'trade-history-status--pending',
+    badgeClass: 'badge-orange',
   },
   // 구매자의 완료 확인 요청 직후 상태도 같은 대기 문구로 표시한다.
   CONFIRM_PENDING: {
     label: '상대 확인 대기',
-    className: 'trade-history-status--pending',
+    badgeClass: 'badge-orange',
   },
   COMPLETED: {
     label: '거래 완료',
-    className: 'trade-history-status--complete',
+    badgeClass: 'badge-outline-gray',
   },
   ON_HOLD: {
     label: '거래 보류',
-    className: 'trade-history-status--problem',
+    badgeClass: 'badge-outline-orange',
   },
   CANCELED: {
     label: '거래 취소',
-    className: 'trade-history-status--canceled',
+    badgeClass: 'badge-danger',
   },
 };
 
@@ -74,8 +80,6 @@ const buyerStatusFilters = [
   { value: 'CANCELED', label: '취소' },
 ];
 
-const TRADES_PER_PAGE = 10;
-
 // 사용자가 입력한 공백 차이로 동일한 상품을 놓치지 않도록 검색용 문자열을 통일한다.
 const normalizeSearchText = (value) => String(value ?? '')
   .toLowerCase()
@@ -87,7 +91,7 @@ const getStatusInfo = (trade) => {
   if (trade.status === 'DELIVERING') {
     return {
       label: trade.method === 'DELIVERY' ? '배송 중' : '직거래 중',
-      className: 'trade-history-status--progress',
+      badgeClass: 'badge-teal',
     };
   }
 
@@ -101,8 +105,8 @@ const getStatusInfo = (trade) => {
 
       if (hasMeetingSchedule) {
         return {
-          label: '직거래 중',
-          className: 'trade-history-status--progress',
+          label: '직거래 진행 중',
+          badgeClass: 'badge-teal',
         };
       }
 
@@ -114,19 +118,19 @@ const getStatusInfo = (trade) => {
 
       return {
         label,
-        className: 'trade-history-status--action',
+        badgeClass: 'badge-primary',
       };
     }
 
     return {
       label: '배송 등록 필요',
-      className: 'trade-history-status--action',
+      badgeClass: 'badge-primary',
     };
   }
 
   return statusInfo[trade.status] ?? {
     label: trade.status ?? '상태 확인 중',
-    className: 'trade-history-status--pending',
+    badgeClass: 'badge-orange',
   };
 };
 
@@ -148,25 +152,12 @@ const TradeHistory = ({
   const [activeTab, setActiveTab] = useState(fixedRole ?? 'ALL');
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
-  const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
   // 별도 미리보기 경로에서는 로그인 보호 경로가 아닌 미리보기 상세로 이동한다.
   const isPreview = preview || pathname.startsWith('/trades/preview');
   const tradeBasePath = isPreview ? '/trades/preview' : '/trades';
-
-  // 입찰 내역처럼 역할이 고정된 화면에서는 구매 거래만 유지한다.
-  useEffect(() => {
-    if (fixedRole) {
-      setActiveTab(fixedRole);
-    }
-  }, [fixedRole]);
-
-  // 검색·상태·역할 조건이 바뀌면 새 결과의 첫 페이지부터 보여준다.
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [activeTab, keyword, statusFilter]);
 
   // 탭별 건수와 진행 중 건수는 필터와 무관한 전체 목록으로 계산한다.
   const tradeCounts = useMemo(() => {
@@ -257,7 +248,7 @@ const TradeHistory = ({
     } finally {
       setIsLoading(false);
     }
-  }, [activeTab, keyword, preview, statusFilter]);
+  }, [activeTab, preview, statusFilter]);
 
   // 첫 진입에는 탭별 건수용 전체 목록을 별도로 조회한다.
   useEffect(() => {
@@ -296,20 +287,6 @@ const TradeHistory = ({
     });
   }, [filteredTradeItems, keyword]);
 
-  const totalPages = Math.ceil(visibleTrades.length / TRADES_PER_PAGE);
-  const paginatedTrades = useMemo(() => {
-    const startIndex = (currentPage - 1) * TRADES_PER_PAGE;
-
-    return visibleTrades.slice(startIndex, startIndex + TRADES_PER_PAGE);
-  }, [currentPage, visibleTrades]);
-
-  // 삭제·상태 변경 등으로 마지막 페이지가 사라지면 존재하는 마지막 페이지로 이동한다.
-  useEffect(() => {
-    if (totalPages > 0 && currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
-
   return (
     <div className={embedded
       ? 'trade-history-page trade-history-page--embedded'
@@ -319,17 +296,34 @@ const TradeHistory = ({
         ? 'trade-history-page__content'
         : 'container trade-history-page__content'}
       >
-        <header className="trade-history-page__header">
-          <div>
-            <p className="trade-history-page__eyebrow">MY AUCTION</p>
-            <h1>{fixedRole === 'BUYER' ? '상품 구매 내역' : '거래 내역'}</h1>
-            <p>
-              {fixedRole === 'BUYER'
-                ? '낙찰 또는 즉시구매 후 생성된 구매 거래를 확인하세요.'
-                : '구매와 판매 거래의 진행 상태를 한 곳에서 확인하세요.'}
-            </p>
-          </div>
-        </header>
+        {fixedRole === 'BUYER' ? (
+          <MyPageListSectionLayout
+            title="상품 구매 내역"
+            summaryItems={[
+              { label: '진행 중', value: buyerStatusCounts.IN_PROGRESS ?? 0 },
+              { label: '배송·직거래 중', value: buyerStatusCounts.DELIVERING ?? 0 },
+              {
+                label: '확인 대기',
+                value: (buyerStatusCounts.WAITING_CONFIRMATION ?? 0)
+                  + allTradeItems.filter(
+                    (trade) => trade.type === 'BUYER' && trade.status === 'CONFIRM_PENDING',
+                  ).length,
+              },
+            ]}
+            filterItems={buyerStatusFilters.map((filter) => ({
+              ...filter,
+              count: buyerStatusCounts[filter.value] ?? 0,
+            }))}
+            activeFilter={statusFilter}
+            onFilterChange={setStatusFilter}
+            filterAriaLabel="구매 거래 상태"
+            onSearch={setKeyword}
+            searchAriaLabel="구매 거래 검색"
+            isLoading={isLoading}
+          />
+        ) : (
+          <MyPageContentHeader title="거래 내역" />
+        )}
 
         {!fixedRole && !isLoading && !loadError && (
           <section className="trade-history-summary" aria-label="진행 중 거래 요약">
@@ -337,11 +331,7 @@ const TradeHistory = ({
               <span>진행 중 거래</span>
               <strong>{activeTradeCount}건</strong>
             </div>
-            <p>
-              {fixedRole === 'BUYER'
-                ? '확인이 필요한 구매 거래부터 순서대로 확인해 주세요.'
-                : '확인이 필요한 거래부터 순서대로 확인해 주세요.'}
-            </p>
+            <p>확인이 필요한 거래부터 순서대로 확인해 주세요.</p>
           </section>
         )}
 
@@ -365,29 +355,7 @@ const TradeHistory = ({
             </div>
           )}
 
-          {fixedRole === 'BUYER' && (
-            <div className="trade-history-buyer-filters" role="tablist">
-              {buyerStatusFilters.map((filter) => (
-                <button
-                  className={`trade-history-buyer-filter ${
-                    statusFilter === filter.value
-                      ? 'trade-history-buyer-filter--active'
-                      : ''
-                  }`}
-                  type="button"
-                  role="tab"
-                  aria-selected={statusFilter === filter.value}
-                  key={filter.value}
-                  onClick={() => setStatusFilter(filter.value)}
-                >
-                  {filter.label}
-                  <span>{buyerStatusCounts[filter.value] ?? 0}</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div className="trade-history-filters">
+          {!fixedRole && <div className="trade-history-filters">
             <label className="trade-history-search">
               <span className="trade-history-search__label">상품 구매 검색</span>
               <input
@@ -414,112 +382,57 @@ const TradeHistory = ({
                 </select>
               </label>
             )}
-          </div>
+          </div>}
         </section>
 
-        <section className="trade-history-list" aria-live="polite">
-          {isLoading && (
-            <div className="trade-history-empty">
-              <strong>거래 내역을 불러오는 중입니다.</strong>
-            </div>
-          )}
+        <section className={`trade-history-list ${fixedRole ? '!mt-0' : ''}`} aria-live="polite">
+          {isLoading && <MyPageListSkeleton count={5} />}
 
           {loadError && (
-            <div className="trade-history-empty" role="alert">
-              <strong>{loadError}</strong>
-              <button
-                className="btn btn-outline trade-history-empty__button"
-                type="button"
-                onClick={loadFilteredTradeItems}
-              >
-                다시 시도
-              </button>
-            </div>
+            <MyPageListError message={loadError} onRetry={loadFilteredTradeItems} />
           )}
 
           {!isLoading && !loadError && visibleTrades.length === 0 && (
-            <div className="trade-history-empty">
-              <strong>조건에 맞는 거래가 없습니다.</strong>
-              <p>검색어나 필터를 변경해 다시 확인해 주세요.</p>
-            </div>
+            <MyPageListEmpty message="해당 조건의 구매 내역이 없습니다." />
           )}
 
-          {!isLoading && !loadError && paginatedTrades.map((trade) => {
+          {!isLoading && !loadError && visibleTrades.map((trade) => {
             const status = getStatusInfo(trade);
             const detailPath = trade.type === 'SELLER'
               ? `${tradeBasePath}/${trade.id}/seller`
               : `${tradeBasePath}/${trade.id}`;
-            // 마이페이지는 라우트 이동 대신 상위 화면이 상세 컴포넌트를 열 수 있다.
+            // 마이페이지 안에서 연 상세는 목록 버튼도 진입한 메뉴로 되돌린다.
             const detailTarget = embedded
               ? `${detailPath}?from=mypage&section=${returnSection}`
               : detailPath;
 
-            if (onOpenTradeDetail) {
-              return (
-                <button
-                  className="trade-history-item"
-                  key={trade.id}
-                  type="button"
-                  onClick={() => onOpenTradeDetail(trade.id)}
-                >
-                  <article>
-                    <div className="trade-history-item__image">상품 이미지</div>
-                    <div className="trade-history-item__body">
-                      <div className="trade-history-item__badges">
-                        <span className={`trade-history-status ${status.className}`}>
-                          {status.label}
-                        </span>
-                      </div>
-                      <h2>{trade.productName}</h2>
-                      <p>{trade.amount} · {trade.date}</p>
-                      <span className="trade-history-item__type">
-                        {trade.type === 'SELLER' ? '판매자' : '구매자'} 거래 · {trade.counterpart}
-                      </span>
-                    </div>
-                    <div className="trade-history-item__action">
-                      <span className="trade-history-item__detail-button">거래 상세</span>
-                    </div>
-                  </article>
-                </button>
-              );
-            }
-
             return (
-              <Link className="trade-history-item" key={trade.id} to={detailTarget}>
-                <article>
-                  <div className="trade-history-item__image">상품 이미지</div>
-                  <div className="trade-history-item__body">
-                    <div className="trade-history-item__badges">
-                      <span className={`trade-history-status ${status.className}`}>
-                        {status.label}
-                      </span>
-                    </div>
-                    <h2>{trade.productName}</h2>
-                    <p>{trade.amount} · {trade.date}</p>
-                    <span className="trade-history-item__type">
-                      {trade.type === 'SELLER' ? '판매자' : '구매자'} 거래 · {trade.counterpart}
-                    </span>
-                  </div>
-                  <div className="trade-history-item__action">
-                    <span className="trade-history-item__detail-button">
-                      거래 상세
-                    </span>
-                  </div>
-                </article>
-              </Link>
+              <MyPageListItem
+                key={trade.id}
+                to={onOpenTradeDetail ? undefined : detailTarget}
+                imageFallback="상품 이미지"
+                badge={<MyPageStatusBadge className={status.badgeClass}>{status.label}</MyPageStatusBadge>}
+                title={trade.productName}
+                actions={onOpenTradeDetail ? (
+                  <button
+                    className="btn btn-sm btn-primary"
+                    type="button"
+                    onClick={() => onOpenTradeDetail(trade.id)}
+                  >
+                    거래 상세
+                  </button>
+                ) : (
+                  <span className="btn btn-sm btn-primary">거래 상세</span>
+                )}
+              >
+                <p>{trade.amount} · {trade.date}</p>
+                <p>
+                  {trade.type === 'SELLER' ? '판매자' : '구매자'} 거래 · {trade.counterpart}
+                </p>
+              </MyPageListItem>
             );
           })}
         </section>
-
-        {!isLoading && !loadError && (
-          <div className="trade-history-pagination">
-            <Pagination
-              page={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-            />
-          </div>
-        )}
       </main>
     </div>
   );

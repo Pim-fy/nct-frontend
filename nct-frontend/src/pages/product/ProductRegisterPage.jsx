@@ -374,7 +374,7 @@ export default function ProductRegisterPage() {
   const endDt = calcEndDt();
 
   return (
-    <main className="container seller-page">
+    <main className="container">
 <div className="page-title"><div><h1>{editPrdSn ? '경매 설정 완료' : '상품 등록'}</h1></div></div>
 
       {/* 스텝 인디케이터 */}

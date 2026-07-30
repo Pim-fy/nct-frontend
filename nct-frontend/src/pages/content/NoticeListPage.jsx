@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useSearchParams } from 'react-router-dom';
 import {
-  ContentPageHeader,
   ContentPageShell,
   ContentPagination,
   ContentState,
@@ -15,32 +14,6 @@ import './noticePage.css';
 
 const PAGE_SIZE = 10;
 
-const NoticeListSkeleton = () => (
-  <section className="public-notice-skeleton" aria-label="공지사항 목록을 불러오는 중">
-    <div className="public-notice-skeleton__toolbar">
-      <span />
-      <span />
-    </div>
-    <div className="public-notice-skeleton__table">
-      <div className="public-notice-skeleton__row public-notice-skeleton__row--head">
-        <span />
-        <span />
-        <span />
-        <span />
-        <span />
-      </div>
-      {Array.from({ length: 6 }).map((_, index) => (
-        <div className="public-notice-skeleton__row" key={index}>
-          <span />
-          <span />
-          <span />
-          <span />
-          <span />
-        </div>
-      ))}
-    </div>
-  </section>
-);
 
 /** F-COM-013: 공개 조건을 만족한 공지만 보여 주는 목록 화면입니다. */
 const NoticeListPage = () => {
@@ -75,22 +48,43 @@ const NoticeListPage = () => {
   };
 
   return (
-    <ContentPageShell>
+    <ContentPageShell className="public-notice-page">
       <Helmet><title>공지사항 | 네고컷</title></Helmet>
-      <ContentPageHeader
-        description="서비스 점검, 정책 변경, 이용 안내와 이벤트 소식을 확인하세요."
-        eyebrow="에누리컷 소식"
-        title="공지사항"
-      />
+      <header className="customer-support-page-header">
+        <span>NOTICE</span>
+        <h1>공지사항</h1>
+        <p>서비스 점검, 정책 변경, 이용 안내와 이벤트 소식을 확인하세요.</p>
+      </header>
 
-      <NoticeFilterBar
-        hasError={typesQuery.isError}
-        onChange={changeFilter}
-        onRetry={() => typesQuery.refetch()}
-        selectedTypeCode={typeCode}
-        types={typesQuery.data ?? []}
-      />
-      {noticesQuery.isLoading && <NoticeListSkeleton />}
+      <section className="public-notice-controls" aria-label="공지사항 검색 및 필터">
+        <NoticeFilterBar
+          hasError={typesQuery.isError}
+          onChange={changeFilter}
+          onRetry={() => typesQuery.refetch()}
+          selectedTypeCode={typeCode}
+          types={typesQuery.data ?? []}
+        />
+
+        {!noticesQuery.isError && (
+          <div className="public-notice-list-toolbar">
+            {!noticesQuery.isLoading && noticePage?.items?.length > 0 && (
+              <NoticeListSummary total={noticePage.totalItems} />
+            )}
+            <form className="public-notice-search" onSubmit={submitSearch}>
+              <input
+                aria-label="공지 제목 또는 내용 검색"
+                maxLength={100}
+                onChange={(event) => setKeywordInput(event.target.value)}
+                placeholder="제목 또는 내용 검색"
+                value={keywordInput}
+              />
+              <button className="btn btn-primary" type="submit">
+                검색
+              </button>
+            </form>
+          </div>
+        )}
+      </section>
 
       {noticesQuery.isError && (
         <ContentState
@@ -102,16 +96,6 @@ const NoticeListPage = () => {
         />
       )}
 
-      {!noticesQuery.isLoading && !noticesQuery.isError && (
-        <div className="public-notice-list-toolbar">
-          {noticePage?.items?.length > 0 && <NoticeListSummary total={noticePage.totalItems} />}
-          <form className="public-notice-search" onSubmit={submitSearch}>
-            <input aria-label="공지 제목 또는 내용 검색" maxLength={100} onChange={(event) => setKeywordInput(event.target.value)} placeholder="제목 또는 내용 검색" value={keywordInput} />
-            <button className="btn btn-primary" type="submit">검색</button>
-          </form>
-        </div>
-      )}
-
       {!noticesQuery.isLoading && !noticesQuery.isError && noticePage?.items?.length === 0 && (
         <ContentState
           description="새로운 안내가 등록되면 이곳에 표시됩니다."
@@ -119,12 +103,12 @@ const NoticeListPage = () => {
         />
       )}
 
-      {noticePage?.items?.length > 0 && (
+      {!noticesQuery.isError && (noticesQuery.isLoading || noticePage?.items?.length > 0) && (
         <>
-          {keyword && <p className="public-notice-search__result" aria-live="polite"><strong>“{keyword}”</strong> 검색 결과입니다.</p>}
-          <NoticeList notices={noticePage.items} />
+          {!noticesQuery.isLoading && keyword && <p className="public-notice-search__result" aria-live="polite"><strong>“{keyword}”</strong> 검색 결과입니다.</p>}
+          <NoticeList loading={noticesQuery.isLoading} notices={noticePage?.items ?? []} />
 
-          {noticePage.totalPages > 1 && (
+          {!noticesQuery.isLoading && noticePage?.totalPages > 1 && (
             <ContentPagination
               onChange={changePage}
               page={page}

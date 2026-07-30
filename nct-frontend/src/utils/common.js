@@ -154,41 +154,44 @@ export const mapDataToState = (type, updatedData, profileState = {}) => {
 /**
  * 숫자를 한국 화폐 형식으로 포맷
  * @param {number} amount
- * @returns {string} e.g. "1,234,567원"
+ * @returns {string} e.g. "1,234,567원". 값이 없으면 "-"
  */
 export const formatPrice = (amount) => {
-  if (amount == null) return '0원';
+  if (amount == null) return '-';
   return `${Number(amount).toLocaleString('ko-KR')}원`;
 };
 
 /**
- * 날짜를 YYYY-MM-DD 형식으로 포맷
- * @param {string|Date} date
- * @returns {string}
+ * 숫자에 천단위 콤마만 표시("원" 없음). 입력창 실시간 포맷팅 등에 사용 — 값이 없으면 0으로 처리
+ * @param {number} value
+ * @returns {string} e.g. "1,234,567"
  */
-export const formatDate = (date) => {
-  if (!date) return '';
-  const d = new Date(date);
-  return d.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })
-    .replace(/\. /g, '-').replace('.', '');
+export const formatNumber = (value) => {
+  const number = Number(value || 0);
+  return number.toLocaleString('ko-KR');
 };
 
 /**
- * 날짜를 상대 시간으로 표시 (예: "3분 전", "2일 전")
+ * 날짜를 YYYY.MM.DD 형식으로 포맷
  * @param {string|Date} date
- * @returns {string}
+ * @returns {string} 값이 없거나 날짜로 해석할 수 없으면 "-"
  */
-export const timeAgo = (date) => {
-  const now = new Date();
-  const past = new Date(date);
-  const diff = Math.floor((now - past) / 1000);
+export const formatDate = (date) => {
+  if (!date) return '-';
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return '-';
+  return d.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })
+    .replace(/\s/g, '').replace(/\.$/, '');
+};
 
-  if (diff < 60)          return `${diff}초 전`;
-  if (diff < 3600)        return `${Math.floor(diff / 60)}분 전`;
-  if (diff < 86400)       return `${Math.floor(diff / 3600)}시간 전`;
-  if (diff < 86400 * 30)  return `${Math.floor(diff / 86400)}일 전`;
-  if (diff < 86400 * 365) return `${Math.floor(diff / (86400 * 30))}달 전`;
-  return `${Math.floor(diff / (86400 * 365))}년 전`;
+/**
+ * 날짜+시간을 YYYY.MM.DD HH:mm(24시간제) 형식으로 포맷
+ * @param {string} dateTime - ISO LocalDateTime 문자열(예: "2026-07-28T14:30:00")
+ * @returns {string} 값이 없으면 "-"
+ */
+export const formatDateTime = (dateTime) => {
+  if (!dateTime) return '-';
+  return String(dateTime).replace('T', ' ').replaceAll('-', '.').slice(0, 16);
 };
 
 /**
