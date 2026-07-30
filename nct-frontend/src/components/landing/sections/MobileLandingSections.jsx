@@ -20,12 +20,16 @@ const SEARCH_TAGS = ["#마감임박경매", "#청소견적", "#전자기기", "#
 
 export default function MobileLandingSections({
   closingAuctionItems,
+  closingAuctionError,
+  closingAuctionLoading,
   hotItems,
-  isAuctionError,
-  isAuctionLoading,
+  isHotAuctionError,
+  isHotAuctionLoading,
   isServiceError,
   isServiceLoading,
   newAuctionItems,
+  newAuctionError,
+  newAuctionLoading,
   serviceRequestItems,
 }) {
   const navigate = useNavigate();
@@ -44,6 +48,8 @@ export default function MobileLandingSections({
   };
 
   const auctionItems = activeTab === "new" ? newAuctionItems : closingAuctionItems;
+  const isAuctionError = activeTab === "new" ? newAuctionError : closingAuctionError;
+  const isAuctionLoading = activeTab === "new" ? newAuctionLoading : closingAuctionLoading;
 
   return (
     <div className="flex flex-col gap-8 lg:hidden">
@@ -161,23 +167,29 @@ export default function MobileLandingSections({
         <div className="overflow-hidden rounded-2xl border border-[#ebebeb] shadow-sm">
           <div className="flex items-center justify-between bg-[#0064ff] px-4 py-3">
             <span className="text-[16px] font-black tracking-[2px] text-white">HOT ITEM</span>
-            <button type="button" onClick={() => navigate("/auction")} className="text-[12px] text-white/90">더보기 ›</button>
+            <button type="button" onClick={() => navigate("/auction?sort=popular")} className="text-[12px] text-white/90">더보기 ›</button>
           </div>
           <ul className="divide-y divide-[#f0f0f0] bg-white">
             {hotItems.slice(0, 5).map((item, i) => (
-              <li key={item.rank} className="flex items-center gap-3 px-4 py-3">
-                <span className={`flex size-[22px] shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white ${i === 0 ? "bg-[#0064ff]" : "bg-[#c9d3e0]"}`}>
-                  {item.rank}
-                </span>
-                <span className="min-w-0 flex-1 truncate text-[14px]">{item.name}</span>
-                <span className="shrink-0 text-[14px] font-bold">{item.price}</span>
+              <li key={item.id}>
+                <button
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-[#f7f9fc]"
+                  onClick={() => navigate(`/auction/${item.id}`)}
+                  type="button"
+                >
+                  <span className={`flex size-[22px] shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white ${i === 0 ? "bg-[#0064ff]" : "bg-[#c9d3e0]"}`}>
+                    {item.rank}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-[14px]">{item.name}</span>
+                  <span className="shrink-0 text-[14px] font-bold">{item.price}</span>
+                </button>
               </li>
             ))}
-            {!isAuctionLoading && !isAuctionError && hotItems.length === 0 && (
+            {!isHotAuctionLoading && !isHotAuctionError && hotItems.length === 0 && (
               <li className="px-4 py-6 text-center text-[14px] text-[#666]">표시할 인기 경매가 없습니다.</li>
             )}
-            {isAuctionLoading && <li className="px-4 py-6 text-center text-[14px] text-[#666]">불러오는 중입니다.</li>}
-            {isAuctionError && <li className="px-4 py-6 text-center text-[14px] text-[#9b2c2c]">인기 경매를 불러오지 못했습니다.</li>}
+            {isHotAuctionLoading && <li className="px-4 py-6 text-center text-[14px] text-[#666]">불러오는 중입니다.</li>}
+            {isHotAuctionError && <li className="px-4 py-6 text-center text-[14px] text-[#9b2c2c]">인기 경매를 불러오지 못했습니다.</li>}
           </ul>
         </div>
       </section>
@@ -234,7 +246,13 @@ export default function MobileLandingSections({
           {!isAuctionLoading && !isAuctionError && auctionItems.length === 0 && <p className="w-full px-4 py-14 text-center text-[16px] text-[#666]">표시할 경매가 없습니다.</p>}
         </div>
         <div className="mt-2 flex justify-center">
-          <button type="button" onClick={() => navigate("/auction")} className="rounded-full border border-[#ebebeb] bg-[#f3f5fa] px-5 py-2 text-[13px] text-[#4e4e4e]">
+          <button
+            type="button"
+            onClick={() => navigate(activeTab === "new"
+              ? "/auction?sort=latest"
+              : "/auction?sort=deadline&endingSoonOnly=true")}
+            className="rounded-full border border-[#ebebeb] bg-[#f3f5fa] px-5 py-2 text-[13px] text-[#4e4e4e]"
+          >
             더보기 ›
           </button>
         </div>
