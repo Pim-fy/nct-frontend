@@ -56,9 +56,9 @@ const withProductName = (row, bidByBidSn) => {
 
 // 표 배치는 공용 셸(PointTable)이 담당 — 여기는 컬럼 구성과 셀 내용만 정의한다 (2026-07-20 통합)
 const buildColumns = (bidByBidSn) => [
-  { key: 'date', header: '일시', cellClass: 'whitespace-nowrap text-gray-700', render: (r) => r.date },
+  { key: 'date', header: '일시', widthClass: 'min-w-[150px]', cellClass: 'whitespace-nowrap text-gray-700', render: (r) => r.date },
   {
-    key: 'type', header: '유형', cellClass: 'whitespace-nowrap',
+    key: 'type', header: '유형', widthClass: 'min-w-[110px]', cellClass: 'whitespace-nowrap',
     render: (r) => (
       <>
         {badge(r.type)}
@@ -67,12 +67,12 @@ const buildColumns = (bidByBidSn) => [
     ),
   },
   {
-    key: 'amount', header: '변동금액', align: 'right',
+    key: 'amount', header: '변동금액', align: 'right', widthClass: 'min-w-[110px]',
     cellClass: (r) => `whitespace-nowrap font-medium ${r.amount > 0 ? 'text-blue-700' : 'text-red-700'}`,
     render: (r) => `${r.amount > 0 ? '+' : ''}${r.amount.toLocaleString()}P`,
   },
   {
-    key: 'balanceAfter', header: '잔액', align: 'right', cellClass: 'whitespace-nowrap text-gray-700',
+    key: 'balanceAfter', header: '잔액', align: 'right', widthClass: 'min-w-[110px]', cellClass: 'whitespace-nowrap text-gray-700',
     render: (r) => `${r.balanceAfter.toLocaleString()}P`,
   },
   {

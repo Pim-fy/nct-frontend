@@ -4,9 +4,9 @@ import PointTable from './PointTable';
 
 // 표 배치는 공용 셸(PointTable)이 담당 — 여기는 컬럼 구성과 셀 내용만 정의한다 (2026-07-20 통합 방식과 동일)
 const COLUMNS = [
-  { key: 'date', header: '전환일시', cellClass: 'whitespace-nowrap text-gray-700', render: (r) => r.date },
+  { key: 'date', header: '전환일시', widthClass: 'min-w-[150px]', cellClass: 'whitespace-nowrap text-gray-700', render: (r) => r.date },
   {
-    key: 'amount', header: '전환 금액', align: 'right', cellClass: 'whitespace-nowrap font-medium text-blue-700',
+    key: 'amount', header: '전환 금액', align: 'right', widthClass: 'min-w-[110px]', cellClass: 'whitespace-nowrap font-medium text-blue-700',
     render: (r) => `${r.amount.toLocaleString()}P`,
   },
   {
