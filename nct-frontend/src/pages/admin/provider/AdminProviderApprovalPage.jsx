@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import AdminModal from '@components/admin/AdminModal';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
+import AdminTable from '@components/admin/AdminTable';
 import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
 import MockupAdminStatusBadge from '@components/admin/mockup/MockupAdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
@@ -125,6 +126,27 @@ const AdminProviderApprovalPage = () => {
     }
   };
 
+  const columns = useMemo(() => [
+    { key: 'id', label: '신청번호' },
+    { key: 'name', label: '신청자', className: 'admin-provider-list__applicant', render: (value) => <strong>{value}</strong> },
+    { key: 'category', label: '카테고리' },
+    { key: 'type', label: '신청유형' },
+    { key: 'date', label: '신청일' },
+    {
+      key: 'status', label: '심사 상태',
+      render: (value, row) => <MockupAdminStatusBadge tone={row.tone}>{value}</MockupAdminStatusBadge>,
+    },
+    { key: 'files', label: '서류', render: (value) => (value.length ? `${value.length}건` : '-') },
+    {
+      key: 'manage', label: '관리',
+      render: (_, row) => (
+        <button className="btn btn-outline" disabled={isPending} onClick={() => open(row)} type="button">
+          {row.status === '심사 대기' ? '심사하기' : '상세보기'}
+        </button>
+      ),
+    },
+  ], [isPending]);
+
   return (
     <div className="admin-content-page admin-provider-approval-page">
       <PageMeta title="제공자 심사" />
@@ -166,73 +188,25 @@ const AdminProviderApprovalPage = () => {
         </div>
       )}
 
-      {applicationsQuery.isLoading && (
-        <div className="card admin-content-state">제공자 신청 목록을 불러오는 중입니다.</div>
-      )}
-
       {feedback && (
         <p className="admin-provider-feedback" role="alert">{feedback}</p>
       )}
 
-      {!applicationsQuery.isError && !applicationsQuery.isLoading && (
+      {!applicationsQuery.isError && (
         <AdminSectionCard
-          action={<span>총 {filtered.length}건</span>}
+          action={!applicationsQuery.isLoading && <span>총 {filtered.length}건</span>}
           className="admin-notice-list admin-provider-list"
           description="기본은 심사 대기 건만 보여 주며, 승인·반려 이력은 심사 상태 필터에서 조회합니다."
           title="제공자 신청 목록"
         >
           <div className="admin-table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>신청번호</th>
-                  <th>신청자</th>
-                  <th>카테고리</th>
-                  <th>신청유형</th>
-                  <th>신청일</th>
-                  <th>심사 상태</th>
-                  <th>서류</th>
-                  <th>관리</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((item) => (
-                  <tr key={item.id}>
-                    <td>{item.id}</td>
-                    <td className="admin-provider-list__applicant">
-                      <strong>{item.name}</strong>
-                    </td>
-                    <td>{item.category}</td>
-                    <td>{item.type}</td>
-                    <td>{item.date}</td>
-                    <td>
-                      <MockupAdminStatusBadge tone={item.tone}>
-                        {item.status}
-                      </MockupAdminStatusBadge>
-                    </td>
-                    <td>{item.files.length ? `${item.files.length}건` : '-'}</td>
-                    <td>
-                      <button
-                        className="btn btn-outline"
-                        disabled={isPending}
-                        onClick={() => open(item)}
-                        type="button"
-                      >
-                        {item.status === '심사 대기' ? '심사하기' : '상세보기'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-
-                {!filtered.length && (
-                  <tr>
-                    <td className="admin-notice-list__empty" colSpan="8">
-                      조건에 맞는 신청 자료가 없습니다.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+            <AdminTable
+              columns={columns}
+              data={filtered}
+              emptyMessage="조건에 맞는 신청 자료가 없습니다."
+              loading={applicationsQuery.isLoading}
+              rowKey={(item) => item.id}
+            />
           </div>
         </AdminSectionCard>
       )}

@@ -16,6 +16,7 @@ import { useWritableReviews, useMyReviews } from "@hooks/useReview";
 import { deleteReview } from "@api/reviewApi";
 import { toImageUrl } from "@api/fileApi";
 import { confirm, toast } from "@utils/common";
+import { Skeleton } from "@components/skeleton/BaseSkeleton";
 
 const PAGE_SIZE = 10;
 
@@ -132,9 +133,16 @@ export default function ReviewListPage() {
         })}
       </div>
 
-      {/* 로딩 */}
       {isLoading && (
-        <p className="text-[#888] text-[15px]">불러오는 중...</p>
+        <div className="flex flex-col gap-4">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <Skeleton
+              borderRadius={20}
+              height={209}
+              key={index}
+            />
+          ))}
+        </div>
       )}
 
       {/* 에러 */}

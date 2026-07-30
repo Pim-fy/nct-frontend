@@ -1,18 +1,14 @@
 import { useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Eye, Pin, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Skeleton } from '@components/skeleton/BaseSkeleton';
+import { formatDate as sharedFormatDate } from '@utils/common';
 import './mockupContentComponents.css';
 import './mockupContentPages.css';
 
 const formatDate = (value) => {
-  if (!value) return '게시일 미정';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '게시일 미정';
-  return new Intl.DateTimeFormat('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(date);
+  if (!value || Number.isNaN(new Date(value).getTime())) return '게시일 미정';
+  return sharedFormatDate(value);
 };
 
 const formatPeriod = (start, end) => {
@@ -22,6 +18,8 @@ const formatPeriod = (start, end) => {
 
 // UI목업_v3를 React로 옮긴 임시 공통 부품입니다.
 // 페이지는 ContentUi facade만 사용하므로 피그마 확정 컴포넌트가 오면 이 구현만 교체합니다.
+// 주의: className으로 Tailwind py-*/pt-*/pb-*를 넘기지 말 것 — .content-page(언레이어 CSS,
+// padding: 56px 0 72px shorthand)가 같은 요소의 py-* 유틸리티를 레이어 충돌로 무력화시킨다.
 export const MockupContentPageShell = ({ children, className = '' }) => (
   <div className={`content-page${className ? ` ${className}` : ''}`}>
     {children}
@@ -119,12 +117,24 @@ export const MockupNoticeRow = ({ notice }) => (
   </Link>
 );
 
-export const MockupNoticeList = ({ notices = [] }) => (
+const MockupNoticeRowSkeleton = () => (
+  <div aria-hidden="true" className="mockup-notice-row">
+    <span className="mockup-notice-row__number"><Skeleton height={14} /></span>
+    <span className="mockup-notice-row__type"><Skeleton height={14} /></span>
+    <strong className="mockup-notice-row__title"><Skeleton height={14} /></strong>
+    <span className="mockup-notice-row__date"><Skeleton height={14} /></span>
+    <span className="mockup-notice-row__views"><Skeleton height={14} /></span>
+  </div>
+);
+
+export const MockupNoticeList = ({ notices = [], loading = false, loadingRows = 5 }) => (
   <div className="notice-list" aria-label="공지사항 목록">
     <div aria-hidden="true" className="mockup-notice-row mockup-notice-row--head">
       <span>번호</span><span>분류</span><span>제목</span><span>등록일</span><span>조회</span>
     </div>
-    {notices.map((notice) => <MockupNoticeRow key={notice.id} notice={notice} />)}
+    {loading
+      ? Array.from({ length: loadingRows }).map((_, index) => <MockupNoticeRowSkeleton key={index} />)
+      : notices.map((notice) => <MockupNoticeRow key={notice.id} notice={notice} />)}
   </div>
 );
 

@@ -2,7 +2,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { Truck, UserRound } from 'lucide-react';
 import { toImageUrl } from '@api/fileApi';
 import useCountdown from '@hooks/useCountdown';
-import { formatPrice, resolveAuctionResultLabel } from '../utils/auctionFormatters';
+import { formatPrice } from '@utils/common';
+import { resolveAuctionResultLabel } from '../utils/auctionFormatters';
 
 const formatAuctionCardTimeLabel = (item, now) => {
   const resultLabel = resolveAuctionResultLabel(item);

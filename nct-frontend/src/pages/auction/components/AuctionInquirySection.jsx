@@ -4,7 +4,7 @@ import { RotateCcw, Send } from 'lucide-react';
 import { fetchActiveManualAbuseReportReferences } from '@api/abuseReportApi';
 import { fetchProductInquiries, postProductInquiry } from '@api/productApi';
 import Pagination from '@components/common/Pagination';
-import { AuctionInquirySkeleton } from '@components/skeleton/AuctionSkeletons';
+import { Skeleton } from '@components/skeleton/BaseSkeleton';
 
 const INQUIRY_TYPE_CODE = 'PRDC0006';
 const ANSWER_TYPE_CODE = 'PRDC0007';
@@ -212,7 +212,11 @@ const AuctionInquirySection = ({
 
       <div className="mt-6 grid gap-3" aria-live="polite">
         {isWaiting && (
-          <AuctionInquirySkeleton />
+          <>
+            {Array.from({ length: 3 }).map((_, index) => (
+              <Skeleton height={90} key={index} style={{ borderRadius: 8 }} />
+            ))}
+          </>
         )}
 
         {inquiryQuery.isError && (

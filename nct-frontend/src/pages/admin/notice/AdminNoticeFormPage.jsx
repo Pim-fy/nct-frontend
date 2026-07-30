@@ -4,6 +4,7 @@ import { EyeOff, Save, Trash2 } from 'lucide-react';
 import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
 import MockupAdminStatusBadge from '@components/admin/mockup/MockupAdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
+import FormSkeleton from '@components/skeleton/FormSkeleton';
 import {
   useAdminNoticeDetail,
   useAdminNoticeOptions,
@@ -157,7 +158,7 @@ const AdminNoticeFormPage = () => {
     return <div className="card admin-content-state is-error">잘못된 공지 주소입니다.</div>;
   }
   if (!isNew && noticeQuery.isLoading) {
-    return <div className="card admin-content-state">공지 상세를 불러오는 중입니다.</div>;
+    return <FormSkeleton fields={6} />;
   }
   if (!isNew && noticeQuery.isError) {
     return <div className="card admin-content-state is-error">공지를 찾을 수 없거나 불러오지 못했습니다.</div>;

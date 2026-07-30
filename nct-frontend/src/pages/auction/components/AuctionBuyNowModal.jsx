@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import { formatPrice } from '../utils/auctionFormatters';
+import { formatPrice } from '@utils/common';
 
 const AuctionBuyNowModal = ({
   isOpen,

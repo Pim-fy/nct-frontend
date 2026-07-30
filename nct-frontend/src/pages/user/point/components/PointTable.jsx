@@ -1,6 +1,7 @@
 // src/pages/user/point/components/PointTable.jsx
 // Claude Code 작성 (BJN, 2026-07-20)
 import { useEffect, useState } from 'react';
+import { Skeleton } from '@components/skeleton/BaseSkeleton';
 
 /**
  * 포인트 화면 공용 테이블 셸 — 원장·충전·환전 세 내역 테이블이 같은 표 구조(제목 + 카드형
@@ -13,7 +14,7 @@ import { useEffect, useState } from 'react';
  * pageSize를 주면(전체보기 모달) 내부에서 페이지네이션한다 — 요약 카드(최근 5건)는 pageSize
  * 없이 불러서 그대로 다 보여준다 (2026-07-29, "+" 전체보기 모달을 10건씩 페이지로 보여달라는 요청).
  */
-const PointTable = ({ title, columns, rows, emptyText, onExpand, pageSize }) => {
+const PointTable = ({ title, columns, rows, emptyText, onExpand, pageSize, loading = false, loadingRows = 5 }) => {
   const [page, setPage] = useState(1);
   const pageCount = pageSize ? Math.max(1, Math.ceil(rows.length / pageSize)) : 1;
 
@@ -54,14 +55,19 @@ const PointTable = ({ title, columns, rows, emptyText, onExpand, pageSize }) => 
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {pagedRows.length === 0 && (
+            {loading && Array.from({ length: loadingRows }).map((_, rowIndex) => (
+            <tr key={rowIndex}>
+              {columns.map((col) => <td className="px-4 py-3" key={col.key}><Skeleton height={14} /></td>)}
+            </tr>
+          ))}
+          {!loading && pagedRows.length === 0 && (
               <tr>
                 <td colSpan={columns.length} className="text-center text-gray-400 py-10">
                   {emptyText}
                 </td>
               </tr>
             )}
-            {pagedRows.map((row) => (
+            {!loading && pagedRows.map((row) => (
               <tr key={row.id} className="hover:bg-gray-50">
                 {columns.map((col) => {
                   // 셀 스타일이 행 값에 따라 달라지는 컬럼(예: 금액 +/- 색)은 함수로 받는다

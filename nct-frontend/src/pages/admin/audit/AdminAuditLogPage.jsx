@@ -2,8 +2,9 @@
 // 관리자 감사로그 화면 (F-OPS-016)
 // 민감정보 원문 제한 조회(F-OPS-014)는 감사로그 조회와 분리하여
 // 거래 분쟁 상세의 대상 채팅·첨부자료에서 실행하도록 연결한다.
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Search, X } from 'lucide-react';
+import AdminTable from '@components/admin/AdminTable';
 import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
 import { useAuditLogs } from '@hooks/useAdminAudit';
 import './adminAuditPage.css';
@@ -64,6 +65,33 @@ const AdminAuditLogPage = () => {
 
   const logs = logsQuery.data ?? [];
 
+  const columns = useMemo(() => [
+    { key: 'date', label: '일시' },
+    {
+      key: 'userName', label: '행위자',
+      render: (value, row) => (value ? `${value} (#${row.userSn})` : '시스템'),
+    },
+    { key: 'type', label: '행위 유형' },
+    {
+      key: 'refType', label: '대상',
+      render: (value, row) => (value ? `${value} #${row.refSn}` : '-'),
+    },
+    { key: 'ipAddr', label: 'IP', render: (value) => value ?? '-' },
+    {
+      key: 'reason', label: '사유·내용', className: 'is-wrap',
+      render: (_, row) => (
+        <button
+          className="admin-bjn-reason-preview"
+          onClick={() => setSelectedLog(row)}
+          title="사유 전체 보기"
+          type="button"
+        >
+          {reasonPreview(auditDetails(row.reason).reason)}
+        </button>
+      ),
+    },
+  ], []);
+
   return (
     <div className="admin-bjn-page">
       <MockupAdminPageHeader
@@ -106,51 +134,17 @@ const AdminAuditLogPage = () => {
       </form>
 
       {/* 감사로그 표 */}
-      {logsQuery.isLoading && <div className="admin-bjn-state">감사로그를 불러오는 중입니다…</div>}
       {logsQuery.isError && <div className="admin-bjn-state is-error">감사로그 조회에 실패했습니다. 잠시 후 다시 시도해 주세요.</div>}
-      {!logsQuery.isLoading && !logsQuery.isError && (
-        logs.length === 0 ? (
-          <div className="admin-bjn-state">조건에 맞는 감사로그가 없습니다.</div>
-        ) : (
-          <div className="admin-bjn-table-scroll">
-            <table className="admin-bjn-table">
-              <thead>
-                <tr>
-                  <th>일시</th>
-                  <th>행위자</th>
-                  <th>행위 유형</th>
-                  <th>대상</th>
-                  <th>IP</th>
-                  <th>사유·내용</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logs.map((log) => {
-                  const details = auditDetails(log.reason);
-                  return (
-                  <tr key={log.id}>
-                    <td>{log.date}</td>
-                    <td>{log.userName ? `${log.userName} (#${log.userSn})` : '시스템'}</td>
-                    <td>{log.type}</td>
-                    <td>{log.refType ? `${log.refType} #${log.refSn}` : '-'}</td>
-                    <td>{log.ipAddr ?? '-'}</td>
-                    <td className="is-wrap">
-                      <button
-                        className="admin-bjn-reason-preview"
-                        onClick={() => setSelectedLog(log)}
-                        title="사유 전체 보기"
-                        type="button"
-                      >
-                        {reasonPreview(details.reason)}
-                      </button>
-                    </td>
-                  </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )
+      {!logsQuery.isError && (
+        <div className="admin-bjn-table-scroll">
+          <AdminTable
+            columns={columns}
+            data={logs}
+            emptyMessage="조건에 맞는 감사로그가 없습니다."
+            loading={logsQuery.isLoading}
+            rowKey={(log) => log.id}
+          />
+        </div>
       )}
 
       {selectedLog && (

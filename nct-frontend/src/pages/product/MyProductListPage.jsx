@@ -9,7 +9,7 @@ export default function MyProductListPage() {
   const navigate = useNavigate();
 
   return (
-    <main className="container seller-page">
+    <main className="container">
       <Breadcrumb items={[{ label: '홈', href: '/' }, { label: '내 판매 내역' }]} />
       <div className="page-title">
         <div><h1>내 판매 내역</h1></div>

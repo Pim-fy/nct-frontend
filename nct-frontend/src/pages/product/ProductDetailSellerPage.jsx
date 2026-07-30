@@ -10,7 +10,7 @@ import { getAuctionStatus, requestAuctionCancel, fetchAuctionFavoriteStatus } fr
 import { TRADE_LABEL, STATUS_LABEL, STATUS_BADGE } from '@/constants/productConstants';
 import useCountdown from '@hooks/useCountdown';
 import ErrorMessage from '@components/common/ErrorMessage';
-import ViewSkeleton from '@components/skeleton/ViewSkeleton';
+import MediaDetailSkeleton from '@components/skeleton/MediaDetailSkeleton';
 import Toast from '@components/common/Toast';
 import AlertModal from '@components/common/AlertModal';
 import ConfirmModal from '@components/common/ConfirmModal';
@@ -154,7 +154,6 @@ export default function ProductDetailSellerPage() {
       await postProductComment(prdSn, { ttl: cmtTtl.trim(), cn: cmtCn.trim() || null });
       const updated = await fetchProductComments(prdSn);
       setComments(updated.data);
-      setCommentsPage(1); // 최신순 정렬이라 새 항목은 1페이지에 보임
       setCmtTtl('');
       setCmtCn('');
       setToast('수정 이력이 등록되었습니다.');
@@ -201,10 +200,10 @@ export default function ProductDetailSellerPage() {
 
   const closeCancel = () => { setCancelOpen(false); setCancelReason(''); };
 
-  if (loading) return <ViewSkeleton />;
+  if (loading) return <MediaDetailSkeleton />;
   if (error || !product) {
     return (
-      <main className="container seller-page">
+      <main className="container">
         <ErrorMessage message={error || '상품 정보를 불러오지 못했습니다.'} />
       </main>
     );
@@ -233,7 +232,7 @@ export default function ProductDetailSellerPage() {
     : '임시저장 상품은 경매 설정 완료 후 공개됩니다.';
 
   return (
-    <main className="container seller-page">
+    <main className="container">
       <div className="seller-auction-head" style={{ marginBottom: 16, marginTop: 24 }}>
         <button className="btn btn-ghost" style={{ marginLeft: 'auto' }} onClick={() => navigate('/user/mypage?section=auction-sales')}>← 내 판매 내역</button>
       </div>

@@ -18,7 +18,7 @@ import {
   ServiceRequestGrid,
   ServiceSearchBar,
 } from '@components/service/ServiceUi';
-import ListSkeleton from '@components/skeleton/ListSkeleton';
+import CardGridSkeleton from '@components/skeleton/CardGridSkeleton';
 import {
   SERVICE_CATEGORY_DOMAIN_CODE,
   SERVICE_DISCOVERY_PAGE_SIZE,
@@ -199,7 +199,11 @@ const ServiceListPage = () => {
             <span className="text-body-md font-semibold text-[#555552]">총 {Number(result?.total || 0).toLocaleString('ko-KR')}건</span>
           </div>
 
-          {discoveryQuery.isLoading && <ListSkeleton />}
+          {discoveryQuery.isLoading && (
+            view === 'providers'
+              ? <CardGridSkeleton cardHeight={140} columns={1} />
+              : <CardGridSkeleton cardHeight={300} columns={2} />
+          )}
 
           {(budgetInvalid || legacyCategoryMissing || discoveryQuery.isError) && (
             <ContentState

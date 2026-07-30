@@ -6,12 +6,28 @@
 
 body { font-family: 'Pretendard', 'Noto Sans KR', 'Malgun Gothic', sans-serif !important;}
 
-/* 공통 레이아웃 */
-.container { width: 100%; max-width: 1600px; margin-left: auto; margin-right: auto; padding: 0 16px;}
+/* 콘텐츠 길이에 따라 세로 스크롤바 유무가 갈리면, 스크롤바가 차지하는 폭(보통 15~17px)만큼
+   페이지마다 가용 너비가 달라져 .container/.content-page 등 %·calc 기반 폭 계산이 페이지마다
+   미세하게 어긋난다 — 스크롤바 자리를 항상 미리 확보해 모든 페이지의 가용 너비를 통일한다. */
+html { scrollbar-gutter: stable; }
 
-@media (min-width: 768px) { 
-  .container { width: 100%; padding: 0 20px;  }
+/* 공통 레이아웃 — .content-page(mockupContentPages.css)와 동일한 폭 공식.
+   max-width+padding 대신 width:min()을 써서 모든 뷰포트에서 두 시스템이 정확히 일치하고,
+   padding 선언 자체가 없어 Tailwind py-*와의 레이어 충돌 위험도 사라진다.
+   max-width:none은 필수 — Tailwind v4가 "container"라는 같은 이름의 내장 유틸리티를 갖고 있어서
+   (@layer utilities 안에 @media (width>=Nrem){.container{max-width:Nrem}} 반응형 규칙 존재),
+   여기서 max-width를 선언하지 않으면 그 레이어드 규칙이 뷰포트별로 새어 들어와 width를 가로챈다. */
+.container { width: min(1600px, calc(100% - 52px)); max-width: none; margin-left: auto; margin-right: auto; }
+
+@media (max-width: 760px) {
+  .container { width: min(100% - 32px, 1600px); }
 }
+
+/* .container 안에 .container를 중첩(스켈레톤 로더가 페이지의 .container 안에서 다시 .container를
+   쓰는 경우 등)하면 calc(100% - 52px) 거터가 이중으로 깎여 로딩 중/후 위치가 어긋난다 —
+   중첩 시 부모가 이미 잡아준 폭을 그대로 채우도록 고정. */
+.container .container { width: 100%; }
+
 .container-fluid {  width: 100%;  padding: 0 15px;}
 
 /* ===========================
@@ -160,7 +176,3 @@ body { font-family: 'Pretendard', 'Noto Sans KR', 'Malgun Gothic', sans-serif !i
    내부 버튼은 Pagination 컴포넌트에서 렌더링
 =========================== */
 .pagination { display: flex; justify-content: center; gap: 8px; margin: 24px 0;}
-
-@media (max-width: 768px) {
-  .container { padding: 0 15px; }
-}

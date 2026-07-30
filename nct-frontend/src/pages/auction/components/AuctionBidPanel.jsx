@@ -1,5 +1,5 @@
 import { Heart } from 'lucide-react';
-import { formatNumber, formatPrice } from '../utils/auctionFormatters';
+import { formatNumber, formatPrice } from '@utils/common';
 
 const BID_UNIT_MULTIPLIERS = [1, 5, 10];
 

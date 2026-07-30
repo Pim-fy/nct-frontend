@@ -10,7 +10,7 @@ import {
   PortfolioModal,
   ProviderProfile,
 } from '@components/service/ServiceUi';
-import ViewSkeleton from '@components/skeleton/ViewSkeleton';
+import ProfileSkeleton from '@components/skeleton/ProfileSkeleton';
 import { usePublicProviderProfile } from '@hooks/useServiceDiscovery';
 
 /** F-COM-002: 실제 공개 계약으로 제공자 프로필과 포트폴리오를 조회합니다. */
@@ -59,7 +59,7 @@ const PublicProviderProfilePage = () => {
     );
   }
 
-  if (providerQuery.isLoading) return <ViewSkeleton />;
+  if (providerQuery.isLoading) return <ProfileSkeleton />;
 
   if (providerQuery.isError) {
     const errorStatus = providerQuery.error?.response?.status ?? providerQuery.error?.status;

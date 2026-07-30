@@ -17,14 +17,15 @@ import {
 import { fetchAuctions } from '@api/auctionApi';
 import { getCategories } from '@api/categoryApi';
 import { fetchReferenceCodes } from '@api/referenceApi';
-import { AuctionCardSkeleton, SkeletonBlock } from '@components/skeleton/AuctionSkeletons';
 import { SORT_OPTIONS } from '@/constants/auctionOptions';
+import CardGridSkeleton from '@components/skeleton/CardGridSkeleton';
+import { Skeleton } from '@components/skeleton/BaseSkeleton';
+import AuctionCard from './components/AuctionCard';
 import {
   addAuctionSearchHistory,
   getAuctionSearchHistory,
   removeAuctionSearchHistory,
 } from '@utils/auctionSearchHistory';
-import AuctionCard from './components/AuctionCard';
 
 const getSelectedValues = (searchParams, key) => searchParams.getAll(key);
 const DEFAULT_PAGE_SIZE = 12;
@@ -350,87 +351,99 @@ const AuctionListPage = () => {
 
   return (
     <div className="min-h-full bg-white text-body-sm text-[#1a1a18] md:text-body-md">
-      <section className="h-[92px] bg-white md:h-0" aria-label="경매 검색">
-        <div
-          className={`${
-            isSearchDocked
-              ? 'fixed inset-x-0 top-0 z-[120] flex h-[82px] items-center bg-white px-4 shadow-[0_5px_12px_rgba(0,0,0,0.14)]'
-              : 'mx-auto flex h-full w-full max-w-[1600px] items-center px-4 lg:px-6'
-          } md:pointer-events-none md:fixed md:inset-x-0 md:top-0 md:z-[120] md:flex md:h-[82px] md:w-full md:max-w-none md:items-center md:bg-transparent md:px-0 md:shadow-none`}
+  <section className="h-[92px] bg-white md:h-0" aria-label="경매 검색">
+    <div
+      className={`${
+        isSearchDocked
+          ? 'fixed inset-x-0 top-0 z-[120] flex h-[82px] items-center bg-white px-4 shadow-[0_5px_12px_rgba(0,0,0,0.14)]'
+          : 'mx-auto flex h-full w-full max-w-[1600px] items-center px-4 lg:px-6'
+      } md:pointer-events-none md:fixed md:inset-x-0 md:top-0 md:z-[120] md:flex md:h-[82px] md:w-full md:max-w-none md:items-center md:bg-transparent md:px-0 md:shadow-none`}
+    >
+      <div
+        ref={searchContainerRef}
+        className="relative mx-auto w-full max-w-[560px] md:pointer-events-auto md:w-[min(38vw,560px)]"
+      >
+        <form
+          className={`grid w-full grid-cols-[minmax(0,1fr)_56px] overflow-hidden border-[3px] border-primary bg-white ${
+            showSearchHistory
+              ? 'rounded-t-lg rounded-b-none border-b-transparent'
+              : 'rounded-lg'
+          }`}
+          onSubmit={handleSearch}
         >
-          <div
-            ref={searchContainerRef}
-            className="relative mx-auto w-full max-w-[560px] md:pointer-events-auto md:w-[min(38vw,560px)]"
+          <input
+            className="min-h-12 min-w-0 border-0 px-[18px] text-body-sm text-[#1a1a18] outline-none md:text-body-md"
+            type="search"
+            value={keywordDraft}
+            onChange={(event) => setKeywordDraft(event.target.value)}
+            onFocus={() => setSearchHistoryOpen(true)}
+            onClick={() => setSearchHistoryOpen(true)}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') setSearchHistoryOpen(false);
+            }}
+            placeholder="검색어를 입력하세요"
+            aria-label="경매 검색어"
+            aria-controls="auction-search-history"
+            aria-expanded={showSearchHistory}
+            autoComplete="off"
+          />
+
+          <button
+            className="inline-flex cursor-pointer items-center justify-center border-0 bg-primary text-white transition-colors hover:bg-primary-dark"
+            type="submit"
+            aria-label="검색"
           >
-            <form
-              className={`grid w-full grid-cols-[minmax(0,1fr)_56px] overflow-hidden border-[3px] border-primary bg-white ${
-                showSearchHistory
-                  ? 'rounded-t-lg rounded-b-none border-b-transparent'
-                  : 'rounded-lg'
-              }`}
-              onSubmit={handleSearch}
-            >
-              <input
-                className="min-h-12 min-w-0 border-0 px-[18px] text-body-sm text-[#1a1a18] outline-none md:text-body-md"
-                type="search"
-                value={keywordDraft}
-                onChange={(event) => setKeywordDraft(event.target.value)}
-                onFocus={() => setSearchHistoryOpen(true)}
-                onClick={() => setSearchHistoryOpen(true)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Escape') setSearchHistoryOpen(false);
-                }}
-                placeholder="검색어를 입력하세요"
-                aria-label="경매 검색어"
-                aria-controls="auction-search-history"
-                aria-expanded={showSearchHistory}
-                autoComplete="off"
-              />
-              <button
-                className="inline-flex cursor-pointer items-center justify-center border-0 bg-primary text-white transition-colors hover:bg-primary-dark"
-                type="submit"
-                aria-label="검색"
-              >
-                <Search size={24} strokeWidth={2.4} />
-              </button>
-            </form>
+            <Search size={24} strokeWidth={2.4} />
+          </button>
+        </form>
 
-            {showSearchHistory && (
-              <div
-                id="auction-search-history"
-                className="absolute inset-x-0 top-[calc(100%-3px)] z-[140] overflow-hidden rounded-b-lg border-[3px] border-t-0 border-primary bg-white shadow-[0_12px_24px_rgba(0,0,0,0.14)]"
-              >
-                <div className="mx-4 border-t border-[#e2e1dc]" />
-                <ul className="m-0 list-none p-0">
-                  {searchHistory.map((term) => (
-                    <li className="flex min-h-11 items-center hover:bg-[#f7f8fa]" key={term}>
-                      <button
-                        className="flex min-w-0 flex-1 cursor-pointer items-center self-stretch overflow-hidden border-0 bg-transparent text-left text-body-sm text-[#333] md:text-body-md"
-                        type="button"
-                        onClick={() => handleRecentSearch(term)}
-                      >
-                        <History className="ml-3 shrink-0 text-[#777]" size={17} aria-hidden="true" />
-                        <span className="min-w-0 overflow-hidden px-3 text-ellipsis whitespace-nowrap">
-                          {term}
-                        </span>
-                      </button>
-                      <button
-                        className="mr-1 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-[#999] hover:bg-white hover:text-[#333]"
-                        type="button"
-                        onClick={() => handleRemoveRecentSearch(term)}
-                        aria-label={`${term} 검색 기록 삭제`}
-                      >
-                        <X size={16} aria-hidden="true" />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+        {showSearchHistory && (
+          <div
+            id="auction-search-history"
+            className="absolute inset-x-0 top-[calc(100%-3px)] z-[140] overflow-hidden rounded-b-lg border-[3px] border-t-0 border-primary bg-white shadow-[0_12px_24px_rgba(0,0,0,0.14)]"
+          >
+            <div className="mx-4 border-t border-[#e2e1dc]" />
+
+            <ul className="m-0 list-none p-0">
+              {searchHistory.map((term) => (
+                <li
+                  className="flex min-h-11 items-center hover:bg-[#f7f8fa]"
+                  key={term}
+                >
+                  <button
+                    className="flex min-w-0 flex-1 cursor-pointer items-center self-stretch overflow-hidden border-0 bg-transparent text-left text-body-sm text-[#333] md:text-body-md"
+                    type="button"
+                    onClick={() => handleRecentSearch(term)}
+                  >
+                    <History
+                      className="ml-3 shrink-0 text-[#777]"
+                      size={17}
+                      aria-hidden="true"
+                    />
+
+                    <span className="min-w-0 overflow-hidden px-3 text-ellipsis whitespace-nowrap">
+                      {term}
+                    </span>
+                  </button>
+
+                  <button
+                    className="mr-1 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-[#999] hover:bg-white hover:text-[#333]"
+                    type="button"
+                    onClick={() => handleRemoveRecentSearch(term)}
+                    aria-label={`${term} 검색 기록 삭제`}
+                  >
+                    <X size={16} aria-hidden="true" />
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
-        </div>
-      </section>
+        )}
+      </div>
+    </div>
+  </section>
 
+     {/* .container에 Tailwind py-*를 같이 쓰면 App.css의 padding shorthand가 레이어 충돌로 상하 패딩을 0으로 무력화한다 — 인라인 style로 우회 */}
       <main className="mx-auto w-full max-w-[1600px] px-4 py-7 pb-[52px] lg:px-6">
         <div className="flex items-start gap-6 max-md:block">
           <button
@@ -479,9 +492,9 @@ const AuctionListPage = () => {
             >
               <legend className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">카테고리</legend>
               {categoriesQuery.isLoading ? (
-                <div className="grid gap-2" aria-hidden="true">
-                  {Array.from({ length: 4 }).map((_, index) => (
-                    <SkeletonBlock className="h-5 w-[78%]" key={index} />
+                <div className="grid gap-1.5">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <Skeleton height={18} key={index} width={100 - index * 15 + '%'} />
                   ))}
                 </div>
               ) : categoriesQuery.isError ? (
@@ -544,9 +557,10 @@ const AuctionListPage = () => {
             >
               <legend className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">진행 상태</legend>
               {auctionStatusesQuery.isLoading ? (
-                <div className="grid gap-2" aria-hidden="true">
-                  <SkeletonBlock className="h-5 w-[72%]" />
-                  <SkeletonBlock className="h-5 w-[64%]" />
+                <div className="grid gap-1.5">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <Skeleton height={18} key={index} width={100 - index * 15 + '%'} />
+                  ))}
                 </div>
               ) : auctionStatusesQuery.isError ? (
                 <p className={`${FILTER_MESSAGE_CLASS} text-[#b42318]`}>불러오지 못했습니다.</p>
@@ -571,9 +585,9 @@ const AuctionListPage = () => {
             >
               <legend className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">거래 방식</legend>
               {tradeMethodsQuery.isLoading ? (
-                <div className="grid gap-2" aria-hidden="true">
-                  {Array.from({ length: 4 }).map((_, index) => (
-                    <SkeletonBlock className="h-5 w-[76%]" key={index} />
+                <div className="grid gap-1.5">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <Skeleton height={18} key={index} width={100 - index * 15 + '%'} />
                   ))}
                 </div>
               ) : tradeMethodsQuery.isError ? (
@@ -659,6 +673,7 @@ const AuctionListPage = () => {
             </div>
           </aside>
 
+          {/* aside(필터 패널)와 flex 형제로 items-start라 테두리 자체는 이미 같은 높이에서 시작 — 추가 여백 없음 */}
           <section className="min-w-0 flex-1">
             <button
               className="mb-3 hidden min-h-[42px] w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-primary bg-white font-bold text-primary max-md:inline-flex"
@@ -670,20 +685,9 @@ const AuctionListPage = () => {
               <SlidersHorizontal size={18} />
               필터
             </button>
-            <div className="mb-[18px] text-left text-body-md font-extrabold text-primary-dark max-md:mt-0.5 max-md:mb-3.5">
-              {totalElements.toLocaleString('ko-KR')}개 상품
-            </div>
 
             {isLoading ? (
-              <div
-                className="grid grid-cols-3 gap-[45px] max-xl:grid-cols-2 max-xl:gap-6 max-md:grid-cols-1 max-md:gap-[18px]"
-                aria-busy="true"
-                aria-label="경매 상품을 불러오는 중"
-              >
-                {Array.from({ length: 6 }).map((_, index) => (
-                  <AuctionCardSkeleton key={index} />
-                ))}
-              </div>
+              <CardGridSkeleton cardHeight={410} columns={3} count={6} />
             ) : isError ? (
               <div className="grid min-h-[340px] place-content-center justify-items-center gap-2.5 rounded-lg border border-[#f0efec] bg-[#f8f8f6] p-7 text-center">
                 <strong>경매 상품을 불러오지 못했습니다.</strong>

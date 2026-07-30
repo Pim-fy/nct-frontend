@@ -18,6 +18,7 @@ import {
 import { getDeliveryProofBlob } from '@api/fileApi';
 import { toTradeDetail } from '@api/tradeAdapter';
 import TradeTrustSummary from '@components/trade/TradeTrustSummary';
+import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import '@assets/css/trade-detail.css';
 
 // 상태 코드표가 확정되기 전까지는 이미 합의된 화면 문구만 제한적으로 표시한다.
@@ -259,17 +260,34 @@ const TradeDetailBuyer = ({
     }
   };
 
-  if (isLoading || loadError || !trade) {
+  if (isLoading && !loadError) {
+    return (
+      <div className="trade-detail-page trade-detail-page--buyer">
+        <main className="container">
+          <div className="trade-progress" style={{ gap: 8 }}>
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton height={38} key={index} style={{ flex: 1 }} />
+            ))}
+          </div>
+          <div className="trade-detail-grid">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton height={140} key={index} style={{ borderRadius: 18 }} />
+            ))}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (loadError || !trade) {
     return (
       <div className="trade-detail-page trade-detail-page--buyer">
         <main className="container trade-detail-page__state">
-          <section className="trade-detail-card" role={loadError ? 'alert' : 'status'}>
-            <h1>{loadError ? '거래 정보를 불러오지 못했습니다.' : '거래 정보를 불러오는 중입니다.'}</h1>
-            {loadError && (
-              <button className="btn btn-outline" type="button" onClick={loadTrade}>
-                다시 시도
-              </button>
-            )}
+          <section className="trade-detail-card" role="alert">
+            <h1>거래 정보를 불러오지 못했습니다.</h1>
+            <button className="btn btn-outline" type="button" onClick={loadTrade}>
+              다시 시도
+            </button>
           </section>
         </main>
       </div>
