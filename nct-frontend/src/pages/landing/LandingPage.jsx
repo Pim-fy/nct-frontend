@@ -52,7 +52,6 @@ const LandingPage = () => {
     staleTime: 30 * 1000,
   });
   const latestServiceQuery = useServiceDiscovery({
-    view: 'requests',
     sort: 'latest',
     page: 1,
     size: 12,
