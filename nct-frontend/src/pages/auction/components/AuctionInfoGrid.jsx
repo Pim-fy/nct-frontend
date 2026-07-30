@@ -22,7 +22,7 @@ export const AuctionProductDescriptionSection = ({ auction, sectionId }) => (
   >
     <header className="mb-7">
       <h2
-        className="m-0 text-2xl leading-[1.3] font-bold text-[#1d1d1f] md:text-[28px]"
+        className="m-0 text-h2 font-bold text-[#1d1d1f]"
         id={`${sectionId}-title`}
       >
         상품 설명
@@ -49,7 +49,7 @@ export const AuctionSellerInformationSection = ({
   >
     <header className="mb-7">
       <h2
-        className="m-0 text-2xl leading-[1.3] font-bold text-[#1d1d1f] md:text-[28px]"
+        className="m-0 text-h2 font-bold text-[#1d1d1f]"
         id={`${sectionId}-title`}
       >
         판매자 정보
@@ -58,30 +58,30 @@ export const AuctionSellerInformationSection = ({
 
     <dl className="m-0 border-y border-[#e2e5ea]">
       <div className={SELLER_INFO_ITEM_CLASS}>
-        <dt className="text-sm leading-[1.5] font-bold text-[#666]">판매자</dt>
-        <dd className="m-0 text-base leading-[1.6] font-semibold text-[#1d1d1f]">
+        <dt className="text-caption font-bold text-[#666]">판매자</dt>
+        <dd className="m-0 text-body-md font-semibold text-[#1d1d1f]">
           {auction.sellerName || '판매자'}
         </dd>
       </div>
       <div className={SELLER_INFO_ITEM_CLASS}>
-        <dt className="text-sm leading-[1.5] font-bold text-[#666]">평점</dt>
-        <dd className="m-0 text-base leading-[1.6] text-[#1d1d1f]">
+        <dt className="text-caption font-bold text-[#666]">평점</dt>
+        <dd className="m-0 text-body-md text-[#1d1d1f]">
           {isSellerTrustLoading
             ? <SkeletonBlock className="h-5 w-28" />
             : formatSellerRating(sellerRating, sellerReviewCount)}
         </dd>
       </div>
       <div className={SELLER_INFO_ITEM_CLASS}>
-        <dt className="text-sm leading-[1.5] font-bold text-[#666]">받은 리뷰</dt>
-        <dd className="m-0 text-base leading-[1.6] text-[#1d1d1f]">
+        <dt className="text-caption font-bold text-[#666]">받은 리뷰</dt>
+        <dd className="m-0 text-body-md text-[#1d1d1f]">
           {isSellerTrustLoading
             ? <SkeletonBlock className="h-5 w-20" />
             : formatSellerReviewCount(sellerReviewCount)}
         </dd>
       </div>
       <div className={SELLER_INFO_ITEM_CLASS}>
-        <dt className="text-sm leading-[1.5] font-bold text-[#666]">거래 방식</dt>
-        <dd className="m-0 text-base leading-[1.6] text-[#1d1d1f]">{selectedTradeName}</dd>
+        <dt className="text-caption font-bold text-[#666]">거래 방식</dt>
+        <dd className="m-0 text-body-md text-[#1d1d1f]">{selectedTradeName}</dd>
       </div>
       {children && (
         <div className="border-b border-[#eceef1] py-4 last:border-b-0">

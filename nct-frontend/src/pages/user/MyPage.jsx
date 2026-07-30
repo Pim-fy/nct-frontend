@@ -150,8 +150,9 @@ export default function MyPage({
     setSearchParams({});
   };
 
+  // @ai_generated: 공통 container를 사용해 헤더와 마이페이지의 좌우 시작선을 일치시킨다.
   return (
-    <div className="max-w-[1600px] mx-auto px-4 py-6 lg:px-6 lg:py-10">
+    <div className="container py-6 lg:py-10">
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 lg:items-start ">
         <MyPageSidebar
           mode={isProvider ? "provider" : "general"}

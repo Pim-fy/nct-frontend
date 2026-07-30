@@ -6,6 +6,7 @@ import NotificationDetailModal from './components/NotificationDetailModal';
 import NotificationItem from './components/NotificationItem';
 import { useMarkAllRead, useMarkRead, useNotifications } from '../../../hooks/useNotification';
 import relativeTime from '../../../utils/relativeTime';
+import CardGroupSkeleton from '@components/skeleton/CardGroupSkeleton';
 
 // 도메인 정의 단일표 (목업 20_notification.html 기준) — DB 코드(NTFG03)·그룹 라벨·필터명을
 // 한 곳에 정의하고 나머지 형태는 전부 여기서 파생시킨다. 네 벌로 나눠 적으면 도메인 하나
@@ -139,7 +140,7 @@ const NotificationPage = () => {
 
       {/* 도메인별 그룹 카드 */}
       {isLoading ? (
-        <p className="text-sm text-gray-400 text-center py-10">알림을 불러오는 중...</p>
+        <CardGroupSkeleton cardsPerGroup={2} groups={4} />
       ) : (
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-5">
           {visibleDomains.map((domain) => {

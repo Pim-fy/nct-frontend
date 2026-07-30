@@ -13,6 +13,7 @@ import AuthPageContainer from '@components/auth/AuthPageContainer';
 import AuthCard from '@components/auth/AuthCard';
 import { SIGNUP_TERMS } from './signupTerms';
 import { formatPhoneNumber, isValidPhoneNumber, toPhoneDigits } from '@utils/phoneNumber';
+import FormSkeleton from '@components/skeleton/FormSkeleton';
 
 const AGREEMENT_ITEMS = [
   { key: 'terms', code: 'AGRC0001', label: '서비스이용약관', required: true },
@@ -198,7 +199,9 @@ const OAuthOnboardingPage = () => {
   if (loading) {
     return (
       <AuthPageContainer>
-        <p className="text-sm text-gray-500">불러오는 중입니다...</p>
+        <AuthCard className="max-w-100">
+          <FormSkeleton fields={5} />
+        </AuthCard>
       </AuthPageContainer>
     );
   }
@@ -224,7 +227,8 @@ const OAuthOnboardingPage = () => {
 
   return (
     <AuthPageContainer>
-      <section className="mx-auto w-full max-w-[1480px] py-7 text-[#1a1a18]">
+      {/* .container + Tailwind py-* 병용 시 App.css shorthand가 레이어 충돌로 상하 패딩을 무력화 — 인라인 style로 우회 */}
+      <section className="container text-[#1a1a18]" style={{ paddingTop: '28px', paddingBottom: '28px' }}>
         <header className="mb-4 flex flex-col gap-1.5">
           <h1 className="m-0 text-[28px]">{PROVIDER_LABELS[provider] ?? '소셜'} 계정으로 가입을 완료합니다</h1>
           <p className="m-0 text-xs text-[#888780]">닉네임과 선택 정보를 입력하고 약관에 동의하면 가입이 완료됩니다.</p>

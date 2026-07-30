@@ -1,9 +1,9 @@
 // src/pages/user/report/ReportFormPage.jsx
 // F-COM-018 (2단계): 신고 접수 폼 — 담당자3 황성경 소유
-// - 더미 submit. API 연동 시 useMutation(postReport) 으로 교체.
 // - 제출 후 /user/mypage?section=report-list 로 이동.
 import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSubmitCustomerReport } from "@hooks/useAbuseReport";
 
 const REPORT_TYPES = [
   "제공자 프로필",
@@ -24,6 +24,23 @@ const TARGET_TYPES = [
 const MAX_FILES = 5;
 const MAX_FILE_MB = 10;
 
+// 프론트 표시 레이블 → 백엔드 코드 매핑
+const TYPE_CODE_MAP = {
+  "제공자 프로필": "ABRC0002",
+  "거래 문제":    "ABRC0001",
+  "서비스 요청":  "ABRC0001",
+  "부적절한 리뷰": "ABRC0003",
+  "기타":         "ABRC0004",
+};
+
+const REF_TYPE_CODE_MAP = {
+  provider: "REFC0001",
+  trade:    "REFC0005",
+  service:  "REFC0007",
+  review:   null,
+  direct:   null,
+};
+
 const EMPTY = { type: "", targetType: "direct", targetId: "", targetName: "", title: "", content: "" };
 
 export default function ReportFormPage({ embedded = false }) {
@@ -35,30 +52,45 @@ export default function ReportFormPage({ embedded = false }) {
       ? navigate("/user/mypage?section=report-list")
       : navigate(-1);
 
+  const { mutateAsync, isPending } = useSubmitCustomerReport();
+
   const [form, setForm] = useState(EMPTY);
-  const [files, setFiles] = useState([]);
+  const [files, setFiles] = useState([]); // { id, file, previewUrl }[]
   const [errors, setErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
 
   const set = (key, val) => {
     setForm((prev) => ({ ...prev, [key]: val }));
     if (errors[key]) setErrors((prev) => ({ ...prev, [key]: "" }));
   };
 
-  const handleFiles = (e) => {
-    const selected = Array.from(e.target.files);
-    const merged = [...files, ...selected].slice(0, MAX_FILES);
-    const oversized = merged.filter((f) => f.size > MAX_FILE_MB * 1024 * 1024);
+  const addFiles = (fileList) => {
+    const remaining = MAX_FILES - files.length;
+    if (remaining <= 0) return;
+    const toAdd = Array.from(fileList).slice(0, remaining);
+    const oversized = toAdd.filter((f) => f.size > MAX_FILE_MB * 1024 * 1024);
     if (oversized.length) {
       setErrors((prev) => ({ ...prev, files: `${MAX_FILE_MB}MB 이하 파일만 첨부 가능합니다.` }));
       return;
     }
-    setFiles(merged);
+    const newItems = toAdd.map((file) => ({
+      id: crypto.randomUUID(),
+      file,
+      previewUrl: file.type.startsWith("image/") ? URL.createObjectURL(file) : null,
+    }));
+    setFiles((prev) => [...prev, ...newItems]);
     setErrors((prev) => ({ ...prev, files: "" }));
-    e.target.value = "";
   };
 
-  const removeFile = (idx) => setFiles((prev) => prev.filter((_, i) => i !== idx));
+  const handleFileInput = (e) => { addFiles(e.target.files); e.target.value = ""; };
+  const handleDrop = (e) => { e.preventDefault(); addFiles(e.dataTransfer.files); };
+
+  const removeFile = (id) => {
+    setFiles((prev) => {
+      const target = prev.find((f) => f.id === id);
+      if (target?.previewUrl) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((f) => f.id !== id);
+    });
+  };
 
   const validate = () => {
     const e = {};
@@ -74,11 +106,21 @@ export default function ReportFormPage({ embedded = false }) {
     e.preventDefault();
     const e2 = validate();
     if (Object.keys(e2).length) { setErrors(e2); return; }
-    setSubmitting(true);
-    // TODO: API 연동 — await postReport({ ...form, files })
-    await new Promise((r) => setTimeout(r, 600));
-    setSubmitting(false);
-    navigate("/user/mypage?section=report-list");
+
+    const referenceSn = form.targetId ? Number(form.targetId) || null : null;
+    try {
+      await mutateAsync({
+        reportTypeCode:    TYPE_CODE_MAP[form.type] ?? "ABRC0004",
+        referenceTypeCode: REF_TYPE_CODE_MAP[form.targetType] ?? null,
+        referenceSn,
+        targetName: form.targetName.trim() || null,
+        title:      form.title.trim(),
+        content:    form.content.trim(),
+      });
+      navigate("/user/mypage?section=report-list");
+    } catch {
+      setErrors((prev) => ({ ...prev, _server: "신고 접수 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요." }));
+    }
   };
 
   const isTargetIdVisible = form.targetType !== "direct";
@@ -231,57 +273,90 @@ export default function ReportFormPage({ embedded = false }) {
           </div>
         </section>
 
-        {/* ── 첨부파일 ── */}
-        <section className="bg-white rounded-[12px] shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-7 mb-8">
-          <h2 className="text-[16px] font-bold text-[#1a1a18] mb-1 pb-3 border-b border-[#e8e9ec]">첨부파일</h2>
-          <p className="text-[14px] text-[#888] mb-4">최대 {MAX_FILES}개 · 파일당 {MAX_FILE_MB}MB 이하 (이미지, PDF, 문서)</p>
-
-          {/* 파일 목록 */}
-          {files.length > 0 && (
-            <ul className="mb-3 space-y-2">
-              {files.map((f, i) => (
-                <li key={`${f.name}-${i}`} className="flex items-center gap-3 px-4 py-2.5 rounded-[8px] bg-[#f5f6f8] border border-[#e8e9ec]">
-                  <svg className="size-4 text-[#888] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                      d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                  </svg>
-                  <span className="flex-1 min-w-0 text-[15px] text-[#444] truncate">{f.name}</span>
-                  <span className="text-[13px] text-[#bbb] shrink-0">{(f.size / 1024 / 1024).toFixed(1)}MB</span>
-                  <button
-                    type="button"
-                    onClick={() => removeFile(i)}
-                    className="shrink-0 size-6 flex items-center justify-center rounded-full text-[#bbb] hover:bg-[#e8e9ec] hover:text-[#666] transition-colors text-[16px]"
-                    aria-label="파일 삭제"
-                  >
-                    ✕
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {files.length < MAX_FILES && (
-            <>
-              <input
-                ref={fileRef}
-                type="file"
-                multiple
-                className="hidden"
-                onChange={handleFiles}
-                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
-              />
+        {/* ── 첨부파일 — qf-photo-header + qf-photo-grid 동일 구조 ── */}
+        <section
+          className="bg-white rounded-[12px] shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-7 mb-8"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={handleDrop}
+        >
+          {/* 헤더 */}
+          <div className="flex justify-between items-start gap-2 pb-3 border-b border-[#e8e9ec] mb-3">
+            <div>
+              <h2 className="text-[16px] font-bold text-[#1a1a18]">첨부파일</h2>
+              <p className="text-[14px] text-[#888] mt-1">
+                드래그앤드롭 또는 파일 선택 · 최대 {MAX_FILES}개 ({files.length}/{MAX_FILES}) · 파일당 {MAX_FILE_MB}MB 이하
+              </p>
+            </div>
+            <div className="flex gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="btn btn-outline btn-sm gap-1.5"
+                disabled={files.length >= MAX_FILES}
+                className="btn btn-ghost btn-sm"
               >
-                <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                <svg className="size-[15px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                 </svg>
-                파일 첨부 ({files.length}/{MAX_FILES})
+                파일 선택
               </button>
-            </>
-          )}
+            </div>
+          </div>
+
+          <input
+            ref={fileRef}
+            type="file"
+            multiple
+            hidden
+            onChange={handleFileInput}
+            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+          />
+
+          {/* 5열 그리드 */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
+            {files.map((item) => {
+              const ext = item.file.name.split(".").pop().toUpperCase().slice(0, 4);
+              return (
+                <div key={item.id} style={{ position: "relative" }}>
+                  <div style={{ aspectRatio: "1", overflow: "hidden", borderRadius: 8, border: "1px solid #e8e9ec", background: "#f5f6f8", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {item.previewUrl ? (
+                      <img
+                        src={item.previewUrl}
+                        alt={item.file.name}
+                        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                      />
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "0 4px", width: "100%" }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "#0064ff", background: "#e5efff", borderRadius: 4, padding: "2px 6px" }}>{ext}</span>
+                        <span style={{ fontSize: 11, color: "#888", maxWidth: "90%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {item.file.name.replace(/\.[^.]+$/, "")}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeFile(item.id)}
+                    title="삭제"
+                    style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", border: "none", background: "#111", color: "#fff", cursor: "pointer", fontSize: 14, lineHeight: "20px", padding: 0, zIndex: 1 }}
+                  >
+                    ×
+                  </button>
+                </div>
+              );
+            })}
+
+            {/* 빈 슬롯 */}
+            {Array.from({ length: MAX_FILES - files.length }, (_, i) => (
+              <div
+                key={`empty-${i}`}
+                onClick={() => fileRef.current?.click()}
+                style={{ aspectRatio: "1", borderRadius: 8, border: "1px dashed #d8d6cf", background: "#fafaf8", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+              >
+                <span style={{ fontSize: 24, color: "#c7c5bd" }}>+</span>
+              </div>
+            ))}
+          </div>
 
           {errors.files && <p className="text-[14px] text-red-500 mt-2">{errors.files}</p>}
         </section>
@@ -296,6 +371,10 @@ export default function ReportFormPage({ embedded = false }) {
           </ul>
         </div>
 
+        {errors._server && (
+          <p className="text-[14px] text-red-500 mb-4">{errors._server}</p>
+        )}
+
         {/* 버튼 영역 */}
         <div className="flex gap-3">
           <button
@@ -307,10 +386,10 @@ export default function ReportFormPage({ embedded = false }) {
           </button>
           <button
             type="submit"
-            disabled={submitting}
+            disabled={isPending}
             className="btn btn-primary flex-1"
           >
-            {submitting ? "접수 중…" : "신고 접수하기"}
+            {isPending ? "접수 중…" : "신고 접수하기"}
           </button>
         </div>
 

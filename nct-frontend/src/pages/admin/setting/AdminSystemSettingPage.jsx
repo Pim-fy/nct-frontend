@@ -6,6 +6,7 @@
 // - 카테고리 승인방식은 seed 고정 기준이라 이 화면에서 다루지 않는다 (정본 규칙)
 import { useState } from 'react';
 import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
+import FormSkeleton from '@components/skeleton/FormSkeleton';
 import { useSystemSetting, useUpdateSystemSetting } from '@hooks/useAdminSystemSetting';
 import '../audit/adminAuditPage.css';
 
@@ -46,7 +47,7 @@ const AdminSystemSettingPage = () => {
   };
 
   if (settingQuery.isLoading) {
-    return <div className="admin-bjn-page"><div className="admin-bjn-state">설정을 불러오는 중입니다…</div></div>;
+    return <div className="admin-bjn-page"><FormSkeleton fields={11} /></div>;
   }
   if (settingQuery.isError || !setting) {
     return <div className="admin-bjn-page"><div className="admin-bjn-state is-error">설정 조회에 실패했습니다. 잠시 후 다시 시도해 주세요.</div></div>;

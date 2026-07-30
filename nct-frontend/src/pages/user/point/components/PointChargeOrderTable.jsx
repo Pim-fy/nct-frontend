@@ -40,7 +40,7 @@ const VISIBLE_STATUS_CODES = new Set(['PCOC0002', 'PCOC0003']);
  * limit을 주면(마이페이지 요약 카드) 필터링 이후 기준으로 최근 N건만 보여주고 "+"로 전체보기
  * 모달을 띄운다 — limit 없이 부르면(전체보기 모달 안) 전부 보여준다 (2026-07-29).
  */
-const PointChargeOrderTable = ({ rows, limit, onExpand }) => {
+const PointChargeOrderTable = ({ rows, limit, onExpand, loading }) => {
   const visible = rows.filter((r) => VISIBLE_STATUS_CODES.has(r.statusCd));
   return (
     <PointTable
@@ -50,6 +50,7 @@ const PointChargeOrderTable = ({ rows, limit, onExpand }) => {
       emptyText="충전 내역이 없습니다."
       onExpand={limit ? onExpand : undefined}
       pageSize={limit ? undefined : 10}
+      loading={loading}
     />
   );
 };

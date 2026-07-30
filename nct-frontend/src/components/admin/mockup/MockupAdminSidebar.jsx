@@ -33,12 +33,12 @@ const MENU_SECTIONS = [
     { label: '서비스 요청 관리', icon: BriefcaseBusiness, to: '/admin/services' },
     { label: '카테고리 관리', icon: Grid2X2, to: '/admin/categories' },
   ],
-  [{ label: '환전 관리', icon: WalletCards }],
+  [{ label: '환전 관리', icon: WalletCards, to: '/admin/exchanges' }],
   [
     { label: '공지 관리', icon: Megaphone, to: '/admin/notices' },
     { label: '이용가이드 관리', icon: BookOpenCheck, to: '/admin/guides' },
   ],
-  [{ label: '신고·거래 문제 처리', icon: Siren }],
+  [{ label: '신고 처리', icon: Siren, to: '/admin/reports' }],
   [
     { label: '감사 로그', icon: ScrollText, to: '/admin/audit-logs' },
     { label: '시스템 설정', icon: Settings, to: '/admin/system-settings' },
@@ -86,11 +86,11 @@ const MockupAdminSidebar = ({ collapsed = false, id, onNavigate }) => (
         <NavLink
           className={({ isActive }) => `mockup-admin-nav__item${isActive ? ' is-active' : ''}`}
           onClick={onNavigate}
-          title={collapsed ? '민감정보 탐지 이벤트' : undefined}
-          to="/admin/operations-preview"
+          title={collapsed ? '위험 이벤트' : undefined}
+          to="/admin/risk-events"
         >
           <Siren aria-hidden="true" />
-          <span><strong>민감정보 탐지 이벤트</strong></span>
+          <span><strong>위험 이벤트</strong></span>
         </NavLink>
       </div>
     </nav>

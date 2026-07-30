@@ -8,6 +8,7 @@ import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
 import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
 import PageMeta from '@components/admin/PageMeta';
+import { formatDateTime } from '@utils/common';
 import '../audit/adminAuditPage.css';
 import './adminAuctionManagementPage.css';
 
@@ -19,8 +20,6 @@ const tone = (statusCode) => {
   if (statusCode === 'AUCC0002') return 'info';
   return 'neutral';
 };
-
-const formatDate = (value) => (value ? String(value).replace('T', ' ').slice(0, 16) : '-');
 
 const INITIAL_FILTERS = {
   keyword: '',
@@ -72,7 +71,7 @@ const AdminAuctionManagementPage = () => {
     { key: 'auctionStatusName', label: '경매', render: (value, row) => <AdminStatusBadge tone={tone(row.auctionStatusCode)}>{value ?? row.auctionStatusCode}</AdminStatusBadge> },
     { key: 'bidCount', label: '입찰', render: (value) => `${value ?? 0}건` },
     { key: 'tradeStatusName', label: '거래', render: (value, row) => value ?? row.tradeStatusCode ?? '-' },
-    { key: 'registeredAt', label: '등록일', render: formatDate },
+    { key: 'registeredAt', label: '등록일', render: formatDateTime },
     {
       key: 'manage', label: '관리', render: (_, row) => (
         <button className={row.cancelRequestId ? 'btn btn-danger' : 'btn btn-outline'} onClick={(event) => { event.stopPropagation(); setSelected(row); setReviewReason(''); }} type="button">
@@ -147,11 +146,17 @@ const AdminAuctionManagementPage = () => {
       </form>
       {filterError && <p className="admin-auction-page__filter-error" role="alert">{filterError}</p>}
       {feedback && <p className="admin-auction-page__feedback" role="status">{feedback}</p>}
-      {auctionsQuery.isLoading && <div className="admin-bjn-state">경매 목록을 불러오는 중입니다.</div>}
       {auctionsQuery.isError && <div className="admin-bjn-state is-error">경매 목록을 불러오지 못했습니다. <button className="btn btn-outline" onClick={() => auctionsQuery.refetch()} type="button">다시 시도</button></div>}
-      {!auctionsQuery.isLoading && !auctionsQuery.isError && (
-        <AdminSectionCard action={<span>총 {auctionsQuery.data?.totalItems ?? 0}건</span>} title="경매·거래 목록">
-          <div className="admin-bjn-table-scroll"><AdminTable columns={columns} data={rows} onRowClick={(row) => { setSelected(row); setReviewReason(''); }} /></div>
+      {!auctionsQuery.isError && (
+        <AdminSectionCard action={!auctionsQuery.isLoading && <span>총 {auctionsQuery.data?.totalItems ?? 0}건</span>} title="경매·거래 목록">
+          <div className="admin-bjn-table-scroll">
+            <AdminTable
+              columns={columns}
+              data={rows}
+              loading={auctionsQuery.isLoading}
+              onRowClick={(row) => { setSelected(row); setReviewReason(''); }}
+            />
+          </div>
         </AdminSectionCard>
       )}
       {selected && (
@@ -164,8 +169,8 @@ const AdminAuctionManagementPage = () => {
               <dt>경매 상태</dt><dd>{selected.auctionStatusName ?? selected.auctionStatusCode}</dd>
               <dt>입찰 수</dt><dd>{selected.bidCount ?? 0}건</dd>
               <dt>거래 상태</dt><dd>{selected.tradeStatusName ?? selected.tradeStatusCode ?? '-'}</dd>
-              <dt>등록일</dt><dd>{formatDate(selected.registeredAt)}</dd>
-              {selected.cancelRequestId && <><dt>요청 일시</dt><dd>{formatDate(selected.cancelRequestedAt)}</dd><dt>판매자 사유</dt><dd>{selected.cancelReason}</dd></>}
+              <dt>등록일</dt><dd>{formatDateTime(selected.registeredAt)}</dd>
+              {selected.cancelRequestId && <><dt>요청 일시</dt><dd>{formatDateTime(selected.cancelRequestedAt)}</dd><dt>판매자 사유</dt><dd>{selected.cancelReason}</dd></>}
             </dl>
             {selected.cancelRequestId && <>
               <label>관리자 처리 사유<textarea disabled={decisionMutation.isPending} onChange={(event) => setReviewReason(event.target.value)} placeholder="승인 또는 반려 사유를 입력하세요." value={reviewReason} /></label>

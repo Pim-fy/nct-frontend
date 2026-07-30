@@ -17,14 +17,20 @@ import {
 import { fetchAuctions } from '@api/auctionApi';
 import { getCategories } from '@api/categoryApi';
 import { fetchReferenceCodes } from '@api/referenceApi';
-import { AuctionCardSkeleton, SkeletonBlock } from '@components/skeleton/AuctionSkeletons';
 import { SORT_OPTIONS } from '@/constants/auctionOptions';
+import CardGridSkeleton from '@components/skeleton/CardGridSkeleton';
+import { Skeleton } from '@components/skeleton/BaseSkeleton';
+import HeaderSearchPortal, {
+  HEADER_SEARCH_BUTTON_CLASS,
+  HEADER_SEARCH_FORM_CLASS,
+  HEADER_SEARCH_INPUT_CLASS,
+} from '@components/common/HeaderSearchPortal';
+import AuctionCard from './components/AuctionCard';
 import {
   addAuctionSearchHistory,
   getAuctionSearchHistory,
   removeAuctionSearchHistory,
 } from '@utils/auctionSearchHistory';
-import AuctionCard from './components/AuctionCard';
 
 const getSelectedValues = (searchParams, key) => searchParams.getAll(key);
 const DEFAULT_PAGE_SIZE = 12;
@@ -37,15 +43,14 @@ const AUCTION_STATUS_FILTERS = [
   { code: 'AUCC0002', label: '진행 중' },
 ];
 const TRADE_METHOD_FILTERS = [
-  { code: 'TRDC0009', label: '배송' },
-  { code: 'TRDC0010', label: '직거래' },
-  { code: 'TRDC0020', label: '배송·직거래 모두 가능' },
+  { value: 'delivery', sourceCodes: ['TRDC0009', 'TRDC0020'], label: '배송' },
+  { value: 'direct', sourceCodes: ['TRDC0010', 'TRDC0020'], label: '직거래' },
 ];
 const FILTER_GROUP_CLASS = 'm-0 grid gap-2 border-0 p-0 disabled:opacity-60';
-const FILTER_OPTION_CLASS = 'flex cursor-pointer items-center gap-2 text-base leading-[1.6] text-[#5f5e5a]';
-const FILTER_MESSAGE_CLASS = 'm-0 min-h-5 text-sm leading-[1.5] text-[#5f5e5a]';
-const FILTER_INPUT_CLASS = 'min-h-10 w-full rounded-lg border border-[#e2e1dc] bg-white px-3 text-base leading-[1.5] text-[#1a1a18] outline-none transition-colors focus:border-primary';
-const PAGINATION_BUTTON_CLASS = 'min-h-10 rounded-lg border border-[#e2e1dc] bg-white px-3.5 text-base leading-[1.4] font-semibold text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-45 max-sm:min-h-9 max-sm:min-w-9 max-sm:px-1.5 max-sm:text-sm';
+const FILTER_OPTION_CLASS = 'flex cursor-pointer items-center gap-2 text-body-sm text-[#5f5e5a] md:text-body-md';
+const FILTER_MESSAGE_CLASS = 'm-0 min-h-5 text-caption text-[#5f5e5a]';
+const FILTER_INPUT_CLASS = 'min-h-10 w-full rounded-lg border border-[#e2e1dc] bg-white px-3 text-body-sm text-[#1a1a18] outline-none transition-colors focus:border-primary md:text-body-md';
+const PAGINATION_BUTTON_CLASS = 'min-h-10 rounded-lg border border-[#e2e1dc] bg-white px-3.5 text-body-md font-semibold text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-45 max-sm:min-h-9 max-sm:min-w-9 max-sm:px-1.5 max-sm:text-caption';
 const PAGINATION_WINDOW_SIZE = 5;
 
 const getPaginationItems = (currentPage, totalPages) => {
@@ -65,11 +70,17 @@ const toggleValue = (values, value) => (
     : [...values, value]
 );
 
+const normalizeTradeMethod = (value) => {
+  if (value === 'delivery' || value === 'TRDC0009') return 'delivery';
+  if (value === 'direct' || value === 'TRDC0010') return 'direct';
+  return 'all';
+};
+
 const createDraftFromSearchParams = (searchParams) => ({
   keyword: searchParams.get('keyword') || '',
   categories: getSelectedValues(searchParams, 'category'),
   statuses: getSelectedValues(searchParams, 'status'),
-  tradeMethod: searchParams.get('tradeMethod') || 'all',
+  tradeMethod: normalizeTradeMethod(searchParams.get('tradeMethod')),
   sort: searchParams.get('sort') || 'deadline',
   minPrice: searchParams.get('minPrice') || '',
   maxPrice: searchParams.get('maxPrice') || '',
@@ -81,14 +92,15 @@ const AuctionListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const shouldScrollAfterPageChangeRef = useRef(false);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [isSearchDocked, setIsSearchDocked] = useState(false);
   const [searchHistoryOpen, setSearchHistoryOpen] = useState(false);
   const [searchHistory, setSearchHistory] = useState(() => getAuctionSearchHistory());
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [keywordDraft, setKeywordDraft] = useState(searchParams.get('keyword') || '');
   const [categoryDraft, setCategoryDraft] = useState(() => getSelectedValues(searchParams, 'category'));
   const [statusDraft, setStatusDraft] = useState(() => getSelectedValues(searchParams, 'status'));
-  const [tradeMethodDraft, setTradeMethodDraft] = useState(searchParams.get('tradeMethod') || 'all');
+  const [tradeMethodDraft, setTradeMethodDraft] = useState(
+    normalizeTradeMethod(searchParams.get('tradeMethod')),
+  );
   const [sortDraft, setSortDraft] = useState(searchParams.get('sort') || 'deadline');
   const [minPriceDraft, setMinPriceDraft] = useState(searchParams.get('minPrice') || '');
   const [maxPriceDraft, setMaxPriceDraft] = useState(searchParams.get('maxPrice') || '');
@@ -121,14 +133,6 @@ const AuctionListPage = () => {
   }, [searchParamsKey]);
 
   useEffect(() => {
-    const handleScroll = () => setIsSearchDocked(window.scrollY > 48);
-
-    handleScroll();
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  useEffect(() => {
     const handlePointerDown = (event) => {
       if (searchContainerRef.current?.contains(event.target)) return;
       setSearchHistoryOpen(false);
@@ -159,7 +163,7 @@ const AuctionListPage = () => {
 
   const selectedCategories = getSelectedValues(searchParams, 'category');
   const selectedStatuses = getSelectedValues(searchParams, 'status');
-  const tradeMethod = searchParams.get('tradeMethod') || 'all';
+  const tradeMethod = normalizeTradeMethod(searchParams.get('tradeMethod'));
   const sort = searchParams.get('sort') || 'deadline';
   const minPrice = searchParams.get('minPrice') || '';
   const maxPrice = searchParams.get('maxPrice') || '';
@@ -197,7 +201,7 @@ const AuctionListPage = () => {
     tradeMethodsQuery.data?.map((method) => method.code) || [],
   );
   const tradeMethodOptions = TRADE_METHOD_FILTERS
-    .filter((method) => availableTradeMethodCodes.has(method.code));
+    .filter((method) => method.sourceCodes.some((code) => availableTradeMethodCodes.has(code)));
 
   const queryParams = {
     keyword: searchParams.get('keyword') || '',
@@ -262,7 +266,6 @@ const AuctionListPage = () => {
   });
 
   const auctionItems = auctionPage?.items || [];
-  const totalElements = auctionPage?.totalElements || 0;
   const totalPages = auctionPage?.totalPages || 0;
   const paginationItems = getPaginationItems(page, totalPages);
 
@@ -349,88 +352,92 @@ const AuctionListPage = () => {
   };
 
   return (
-    <div className="min-h-full bg-white text-base leading-[1.6] text-[#1a1a18]">
-      <section className="h-[92px] bg-white md:h-0" aria-label="경매 검색">
-        <div
-          className={`${
-            isSearchDocked
-              ? 'fixed inset-x-0 top-0 z-[120] flex h-[82px] items-center bg-white px-4 shadow-[0_5px_12px_rgba(0,0,0,0.14)]'
-              : 'mx-auto flex h-full w-full max-w-[1600px] items-center px-4 lg:px-6'
-          } md:pointer-events-none md:fixed md:inset-x-0 md:top-0 md:z-[120] md:flex md:h-[82px] md:w-full md:max-w-none md:items-center md:bg-transparent md:px-0 md:shadow-none`}
+    <div className="min-h-full bg-white text-body-sm text-[#1a1a18] md:text-body-md">
+  <HeaderSearchPortal>
+      <div
+        ref={searchContainerRef}
+        className="relative mx-auto w-full"
+      >
+        <form
+          className={`${HEADER_SEARCH_FORM_CLASS} ${
+            showSearchHistory
+              ? 'rounded-b-none border-b-transparent'
+              : ''
+          }`}
+          onSubmit={handleSearch}
         >
-          <div
-            ref={searchContainerRef}
-            className="relative mx-auto w-full max-w-[560px] md:pointer-events-auto md:w-[min(38vw,560px)]"
+          <input
+            className={HEADER_SEARCH_INPUT_CLASS}
+            type="search"
+            value={keywordDraft}
+            onChange={(event) => setKeywordDraft(event.target.value)}
+            onFocus={() => setSearchHistoryOpen(true)}
+            onClick={() => setSearchHistoryOpen(true)}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') setSearchHistoryOpen(false);
+            }}
+            placeholder="원하는 경매 상품을 검색하세요"
+            aria-label="경매 검색어"
+            aria-controls="auction-search-history"
+            aria-expanded={showSearchHistory}
+            autoComplete="off"
+          />
+
+          <button
+            className={HEADER_SEARCH_BUTTON_CLASS}
+            type="submit"
+            aria-label="검색"
           >
-            <form
-              className={`grid w-full grid-cols-[minmax(0,1fr)_56px] overflow-hidden border-[3px] border-primary bg-white ${
-                showSearchHistory
-                  ? 'rounded-t-lg rounded-b-none border-b-transparent'
-                  : 'rounded-lg'
-              }`}
-              onSubmit={handleSearch}
-            >
-              <input
-                className="min-h-12 min-w-0 border-0 px-[18px] text-base leading-[1.5] text-[#1a1a18] outline-none"
-                type="search"
-                value={keywordDraft}
-                onChange={(event) => setKeywordDraft(event.target.value)}
-                onFocus={() => setSearchHistoryOpen(true)}
-                onClick={() => setSearchHistoryOpen(true)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Escape') setSearchHistoryOpen(false);
-                }}
-                placeholder="검색어를 입력하세요"
-                aria-label="경매 검색어"
-                aria-controls="auction-search-history"
-                aria-expanded={showSearchHistory}
-                autoComplete="off"
-              />
-              <button
-                className="inline-flex cursor-pointer items-center justify-center border-0 bg-primary text-white transition-colors hover:bg-primary-dark"
-                type="submit"
-                aria-label="검색"
-              >
-                <Search size={24} strokeWidth={2.4} />
-              </button>
-            </form>
+            <Search size={24} strokeWidth={2.4} />
+          </button>
+        </form>
 
-            {showSearchHistory && (
-              <div
-                id="auction-search-history"
-                className="absolute inset-x-0 top-[calc(100%-3px)] z-[140] overflow-hidden rounded-b-lg border-[3px] border-t-0 border-primary bg-white shadow-[0_12px_24px_rgba(0,0,0,0.14)]"
-              >
-                <div className="mx-4 border-t border-[#e2e1dc]" />
-                <ul className="m-0 list-none p-0">
-                  {searchHistory.map((term) => (
-                    <li className="flex min-h-11 items-center hover:bg-[#f7f8fa]" key={term}>
-                      <button
-                        className="flex min-w-0 flex-1 cursor-pointer items-center self-stretch overflow-hidden border-0 bg-transparent text-left text-base leading-[1.5] text-[#333]"
-                        type="button"
-                        onClick={() => handleRecentSearch(term)}
-                      >
-                        <History className="ml-3 shrink-0 text-[#777]" size={17} aria-hidden="true" />
-                        <span className="min-w-0 overflow-hidden px-3 text-ellipsis whitespace-nowrap">
-                          {term}
-                        </span>
-                      </button>
-                      <button
-                        className="mr-1 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-[#999] hover:bg-white hover:text-[#333]"
-                        type="button"
-                        onClick={() => handleRemoveRecentSearch(term)}
-                        aria-label={`${term} 검색 기록 삭제`}
-                      >
-                        <X size={16} aria-hidden="true" />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+        {showSearchHistory && (
+          <div
+            id="auction-search-history"
+            className="absolute inset-x-0 top-[calc(100%-3px)] z-[140] overflow-hidden rounded-b-lg border-[3px] border-t-0 border-primary bg-white shadow-[0_12px_24px_rgba(0,0,0,0.14)]"
+          >
+            <div className="mx-4 border-t border-[#e2e1dc]" />
+
+            <ul className="m-0 list-none p-0">
+              {searchHistory.map((term) => (
+                <li
+                  className="flex min-h-11 items-center hover:bg-[#f7f8fa]"
+                  key={term}
+                >
+                  <button
+                    className="flex min-w-0 flex-1 cursor-pointer items-center self-stretch overflow-hidden border-0 bg-transparent text-left text-body-sm text-[#333] md:text-body-md"
+                    type="button"
+                    onClick={() => handleRecentSearch(term)}
+                  >
+                    <History
+                      className="ml-3 shrink-0 text-[#777]"
+                      size={17}
+                      aria-hidden="true"
+                    />
+
+                    <span className="min-w-0 overflow-hidden px-3 text-ellipsis whitespace-nowrap">
+                      {term}
+                    </span>
+                  </button>
+
+                  <button
+                    className="mr-1 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-[#999] hover:bg-white hover:text-[#333]"
+                    type="button"
+                    onClick={() => handleRemoveRecentSearch(term)}
+                    aria-label={`${term} 검색 기록 삭제`}
+                  >
+                    <X size={16} aria-hidden="true" />
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
-        </div>
-      </section>
+        )}
+      </div>
+  </HeaderSearchPortal>
 
+     {/* .container에 Tailwind py-*를 같이 쓰면 App.css의 padding shorthand가 레이어 충돌로 상하 패딩을 0으로 무력화한다 — 인라인 style로 우회 */}
       <main className="mx-auto w-full max-w-[1600px] px-4 py-7 pb-[52px] lg:px-6">
         <div className="flex items-start gap-6 max-md:block">
           <button
@@ -451,7 +458,7 @@ const AuctionListPage = () => {
             aria-label="경매 목록 필터"
           >
             <div className="flex items-center justify-between gap-3">
-              <h2 className="m-0 text-2xl leading-[1.3] font-bold">필터</h2>
+              <h2 className="m-0 text-h3 font-bold">필터</h2>
               <div className="flex items-center gap-2">
                 <button
                   className="inline-flex size-[34px] cursor-pointer items-center justify-center rounded-lg border border-[#e2e1dc] bg-white text-[#5f5e5a] transition-colors hover:border-primary hover:bg-primary-light hover:text-primary"
@@ -477,11 +484,11 @@ const AuctionListPage = () => {
               className={FILTER_GROUP_CLASS}
               disabled={categoriesQuery.isLoading || categoriesQuery.isError}
             >
-              <legend className="mb-0.5 block text-base leading-[1.4] font-extrabold text-[#1a1a18]">카테고리</legend>
+              <legend className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">카테고리</legend>
               {categoriesQuery.isLoading ? (
-                <div className="grid gap-2" aria-hidden="true">
-                  {Array.from({ length: 4 }).map((_, index) => (
-                    <SkeletonBlock className="h-5 w-[78%]" key={index} />
+                <div className="grid gap-1.5">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <Skeleton height={18} key={index} width={100 - index * 15 + '%'} />
                   ))}
                 </div>
               ) : categoriesQuery.isError ? (
@@ -503,7 +510,7 @@ const AuctionListPage = () => {
                   ))}
                   {categoryOptions.length > COLLAPSED_CATEGORY_COUNT && (
                     <button
-                      className="inline-flex min-h-7 w-fit cursor-pointer items-center gap-1 border-0 bg-transparent text-sm leading-[1.5] font-bold text-primary transition-colors hover:text-primary-dark"
+                      className="inline-flex min-h-7 w-fit cursor-pointer items-center gap-1 border-0 bg-transparent text-caption font-bold text-primary transition-colors hover:text-primary-dark"
                       type="button"
                       onClick={() => setShowAllCategories((prev) => !prev)}
                     >
@@ -516,7 +523,7 @@ const AuctionListPage = () => {
             </fieldset>
 
             <fieldset className={FILTER_GROUP_CLASS}>
-              <legend className="mb-0.5 block text-base leading-[1.4] font-extrabold text-[#1a1a18]">가격 범위</legend>
+              <legend className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">가격 범위</legend>
               <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
                 <input
                   className={FILTER_INPUT_CLASS}
@@ -542,11 +549,12 @@ const AuctionListPage = () => {
               className={FILTER_GROUP_CLASS}
               disabled={auctionStatusesQuery.isLoading || auctionStatusesQuery.isError}
             >
-              <legend className="mb-0.5 block text-base leading-[1.4] font-extrabold text-[#1a1a18]">진행 상태</legend>
+              <legend className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">진행 상태</legend>
               {auctionStatusesQuery.isLoading ? (
-                <div className="grid gap-2" aria-hidden="true">
-                  <SkeletonBlock className="h-5 w-[72%]" />
-                  <SkeletonBlock className="h-5 w-[64%]" />
+                <div className="grid gap-1.5">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <Skeleton height={18} key={index} width={100 - index * 15 + '%'} />
+                  ))}
                 </div>
               ) : auctionStatusesQuery.isError ? (
                 <p className={`${FILTER_MESSAGE_CLASS} text-[#b42318]`}>불러오지 못했습니다.</p>
@@ -569,11 +577,11 @@ const AuctionListPage = () => {
               className={FILTER_GROUP_CLASS}
               disabled={tradeMethodsQuery.isLoading || tradeMethodsQuery.isError}
             >
-              <legend className="mb-0.5 block text-base leading-[1.4] font-extrabold text-[#1a1a18]">거래 방식</legend>
+              <legend className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">거래 방식</legend>
               {tradeMethodsQuery.isLoading ? (
-                <div className="grid gap-2" aria-hidden="true">
-                  {Array.from({ length: 4 }).map((_, index) => (
-                    <SkeletonBlock className="h-5 w-[76%]" key={index} />
+                <div className="grid gap-1.5">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <Skeleton height={18} key={index} width={100 - index * 15 + '%'} />
                   ))}
                 </div>
               ) : tradeMethodsQuery.isError ? (
@@ -590,16 +598,16 @@ const AuctionListPage = () => {
                       checked={tradeMethodDraft === 'all'}
                       onChange={() => setTradeMethodDraft('all')}
                     />
-                    전체
+                    모두
                   </label>
                   {tradeMethodOptions.map((method) => (
-                    <label className={FILTER_OPTION_CLASS} key={method.code}>
+                    <label className={FILTER_OPTION_CLASS} key={method.value}>
                       <input
                         className="accent-primary"
                         name="tradeMethod"
                         type="radio"
-                        checked={tradeMethodDraft === method.code}
-                        onChange={() => setTradeMethodDraft(method.code)}
+                        checked={tradeMethodDraft === method.value}
+                        onChange={() => setTradeMethodDraft(method.value)}
                       />
                       {method.label}
                     </label>
@@ -609,7 +617,7 @@ const AuctionListPage = () => {
             </fieldset>
 
             <fieldset className={FILTER_GROUP_CLASS}>
-              <legend className="mb-0.5 block text-base leading-[1.4] font-extrabold text-[#1a1a18]">추가 조건</legend>
+              <legend className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">추가 조건</legend>
               <label className={FILTER_OPTION_CLASS}>
                 <input
                   className="accent-primary"
@@ -631,7 +639,7 @@ const AuctionListPage = () => {
             </fieldset>
 
             <label className="grid gap-2">
-              <span className="mb-0.5 block text-base leading-[1.4] font-extrabold text-[#1a1a18]">정렬</span>
+              <span className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">정렬</span>
               <select
                 className={FILTER_INPUT_CLASS}
                 value={sortDraft}
@@ -647,7 +655,7 @@ const AuctionListPage = () => {
 
             <div className="sticky -bottom-5 z-10 -mx-5 -mb-5 border-t border-[#f0efec] bg-white p-5 pt-3">
               <button
-                className="inline-flex min-h-[46px] w-full cursor-pointer items-center justify-center rounded-lg border border-primary bg-primary px-3 text-base leading-[1.4] font-bold text-white transition-colors hover:border-primary-dark hover:bg-primary-dark"
+                className="inline-flex min-h-[46px] w-full cursor-pointer items-center justify-center rounded-lg border border-primary bg-primary px-3 text-body-md font-bold text-white transition-colors hover:border-primary-dark hover:bg-primary-dark"
                 type="button"
                 onClick={handleFilterSearch}
                 aria-busy={filterPreviewQuery.data?.totalElements === undefined}
@@ -659,6 +667,7 @@ const AuctionListPage = () => {
             </div>
           </aside>
 
+          {/* aside(필터 패널)와 flex 형제로 items-start라 테두리 자체는 이미 같은 높이에서 시작 — 추가 여백 없음 */}
           <section className="min-w-0 flex-1">
             <button
               className="mb-3 hidden min-h-[42px] w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-primary bg-white font-bold text-primary max-md:inline-flex"
@@ -670,20 +679,9 @@ const AuctionListPage = () => {
               <SlidersHorizontal size={18} />
               필터
             </button>
-            <div className="mb-[18px] text-left text-base leading-[1.4] font-extrabold text-primary-dark max-md:mt-0.5 max-md:mb-3.5">
-              {totalElements.toLocaleString('ko-KR')}개 상품
-            </div>
 
             {isLoading ? (
-              <div
-                className="grid grid-cols-3 gap-[45px] max-xl:grid-cols-2 max-xl:gap-6 max-md:grid-cols-1 max-md:gap-[18px]"
-                aria-busy="true"
-                aria-label="경매 상품을 불러오는 중"
-              >
-                {Array.from({ length: 6 }).map((_, index) => (
-                  <AuctionCardSkeleton key={index} />
-                ))}
-              </div>
+              <CardGridSkeleton cardHeight={410} columns={3} count={6} />
             ) : isError ? (
               <div className="grid min-h-[340px] place-content-center justify-items-center gap-2.5 rounded-lg border border-[#f0efec] bg-[#f8f8f6] p-7 text-center">
                 <strong>경매 상품을 불러오지 못했습니다.</strong>
@@ -697,10 +695,10 @@ const AuctionListPage = () => {
               </div>
             ) : (
               <div className="grid min-h-[340px] place-content-center justify-items-center gap-2.5 rounded-lg border border-[#f0efec] bg-[#f8f8f6] p-7 text-center">
-                <strong className="text-xl leading-[1.4]">등록된 경매 상품이 없습니다.</strong>
+                <strong className="text-h3">등록된 경매 상품이 없습니다.</strong>
                 <p className="m-0 text-[#5f5e5a]">새 경매가 올라오면 이곳에 표시됩니다.</p>
                 <button
-                  className="min-h-10 cursor-pointer rounded-lg border border-primary bg-primary px-3.5 text-base leading-[1.4] font-semibold text-white"
+                  className="min-h-10 cursor-pointer rounded-lg border border-primary bg-primary px-3.5 text-body-md font-semibold text-white"
                   type="button"
                   onClick={clearFilters}
                 >
@@ -737,7 +735,7 @@ const AuctionListPage = () => {
                     type="button"
                     aria-current={pageNumber === page ? 'page' : undefined}
                     className={pageNumber === page
-                      ? 'min-h-10 rounded-lg border border-primary bg-primary px-3.5 text-base leading-[1.4] font-semibold text-white max-sm:min-h-9 max-sm:min-w-9 max-sm:px-1.5 max-sm:text-sm'
+                      ? 'min-h-10 rounded-lg border border-primary bg-primary px-3.5 text-body-md font-semibold text-white max-sm:min-h-9 max-sm:min-w-9 max-sm:px-1.5 max-sm:text-caption'
                       : PAGINATION_BUTTON_CLASS}
                     onClick={() => goToPage(pageNumber)}
                   >

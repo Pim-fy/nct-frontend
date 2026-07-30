@@ -5,7 +5,7 @@
 //   데스크톱(lg+): 좌측 세로 목록 / 모바일: 상단 가로 스크롤 탭.
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, ChevronRight, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronUp } from "lucide-react";
 import { toast } from "@utils/common";
 
 const GENERAL_MENU_ITEMS = [
@@ -16,7 +16,7 @@ const GENERAL_MENU_ITEMS = [
     label: "경매",
     type: "accordion",
     children: [
-      { key: "active-auctions", label: "진행중인 경매",  type: "section" },
+      { key: "active-auctions", label: "진행 중인 경매", type: "section" },
       { key: "auction-bids",    label: "상품 구매 내역", type: "section" },
       { key: "auction-sales",   label: "상품 판매 내역", type: "section" },
     ],
@@ -68,6 +68,8 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
   const menuItems = mode === "provider" ? PROVIDER_MENU_ITEMS : GENERAL_MENU_ITEMS;
 
   const [openAccordion, setOpenAccordion] = useState(() => getParentAccordion(activeSection));
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
 
   // activeSection이 accordion child로 변경되면 해당 accordion 자동으로 열기
   useEffect(() => {
@@ -102,32 +104,69 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
   return (
     <nav className="lg:sticky lg:top-[102px] lg:self-start lg:w-[210px] lg:shrink-0">
       {/* 타이틀 (데스크톱) */}
-      <h2 className="hidden lg:block font-bold text-[25px] text-black mb-5 px-2">
+      <h2 className="hidden lg:block font-bold text-[25px] leading-[36px] text-black mb-5 px-2">
         마이페이지
         {mode === "provider" && (
           <span className="text-[14px] text-[#0064ff] ml-1">(제공자)</span>
         )}
       </h2>
 
-      {/* 모바일: 가로 스크롤 탭 — accordion children 평탄화 */}
-      <div className="flex lg:hidden overflow-x-auto gap-2 pb-1 scrollbar-none ">
-        {mobileTabs.map((item) => {
-          const isActive = item.type === "section" && item.key === activeSection;
-          return (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => handleClick(item)}
-              className={`cursor-pointer shrink-0 h-[34px] px-4 rounded-full text-[13px] font-medium whitespace-nowrap border transition-colors ${
-                isActive
-                  ? "bg-[#0064ff] text-white border-[#0064ff]"
-                  : "bg-white text-[#333] border-[#d9d9d9] hover:bg-[#f3f5fa]"
-              }`}
-            >
-              {item.label}
-            </button>
-          );
-        })}
+      {/* 모바일: 아코디언 네비게이션 */}
+      <div className="lg:hidden border-b border-gray-200 relative">
+        {/* 트리거 바 */}
+        <div className="flex items-center h-[44px] bg-white">
+          <button
+            type="button"
+            aria-label="이전 페이지"
+            onClick={() => navigate(-1)}
+            className="flex items-center justify-start w-[44px] h-full shrink-0 text-gray-700 pl-2"
+          >
+            <ChevronLeft size={28} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(prev => !prev)}
+            className="flex-1 flex items-center h-full pr-1"
+          >
+            <span className="flex-1 text-center text-gray-900 text-[18px] font-semibold">
+              {mobileTabs.find(t => t.key === activeSection)?.label ?? "마이페이지"}
+            </span>
+            <span className="w-[44px] flex items-center justify-center text-gray-500">
+              {mobileMenuOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </span>
+          </button>
+        </div>
+
+        {/* 모달 오버레이 + 메뉴 목록 */}
+        {mobileMenuOpen && (
+          <>
+            {/* 어두운 배경 */}
+            <div
+              className="fixed inset-0 z-[80] bg-black/40"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            {/* 메뉴 패널 */}
+            <div className="absolute top-full left-0 right-0 z-[81] bg-white shadow-[0_8px_24px_rgba(0,0,0,0.15)] rounded-b-[12px] overflow-hidden">
+              {mobileTabs.map((item) => {
+                const isActive = item.key === activeSection;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => { handleClick(item); setMobileMenuOpen(false); }}
+                    className={`w-full text-center py-[14px] text-[16px] border-b border-gray-100 last:border-b-0 transition-colors ${
+                      isActive
+                        ? "text-[#0064ff] font-bold bg-blue-50"
+                        : "text-gray-700 font-normal hover:bg-gray-50"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
 
       {/* 데스크톱: 세로 목록 */}

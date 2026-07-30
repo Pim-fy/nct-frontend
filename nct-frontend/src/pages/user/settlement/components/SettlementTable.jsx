@@ -1,4 +1,5 @@
 // src/pages/user/settlement/components/SettlementTable.jsx
+import { Skeleton } from '@components/skeleton/BaseSkeleton';
 
 const STATUS_BADGE = {
   대기: 'bg-amber-100 text-amber-800',
@@ -10,7 +11,7 @@ const STATUS_BADGE = {
  * 정산 내역 테이블 — 상태 필터 탭 포함 (목업 18_settlement.html 기준)
  * 정산 요청·계좌 정보 등은 백엔드에 대응 기능이 없어 이번 화면에서는 제외 (조회 전용)
  */
-const SettlementTable = ({ rows, filter, onFilterChange }) => {
+const SettlementTable = ({ rows, filter, onFilterChange, loading = false, loadingRows = 6 }) => {
   const filtered = filter === '전체' ? rows : rows.filter((r) => r.statusName === filter);
 
   return (
@@ -43,14 +44,21 @@ const SettlementTable = ({ rows, filter, onFilterChange }) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filtered.length === 0 && (
+            {loading && Array.from({ length: loadingRows }).map((_, rowIndex) => (
+              <tr key={rowIndex}>
+                {Array.from({ length: 5 }).map((__, cellIndex) => (
+                  <td className="px-4 py-3" key={cellIndex}><Skeleton height={14} /></td>
+                ))}
+              </tr>
+            ))}
+            {!loading && filtered.length === 0 && (
               <tr>
                 <td colSpan={5} className="text-center text-gray-400 py-10">
                   정산 내역이 없습니다.
                 </td>
               </tr>
             )}
-            {filtered.map((row) => (
+            {!loading && filtered.map((row) => (
               <tr key={row.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 whitespace-nowrap text-gray-700">STL-{row.id}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-gray-700">TRD-{row.tradeId}</td>

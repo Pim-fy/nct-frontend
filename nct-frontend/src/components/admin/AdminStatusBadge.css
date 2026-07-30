@@ -1,0 +1,35 @@
+.admin-badge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-badge--danger {
+  background: #fdecea;
+  color: #b4403a;
+}
+
+.admin-badge--warning {
+  background: #fff3df;
+  color: #b76b13;
+}
+
+.admin-badge--success {
+  background: #e7f5ec;
+  color: #25724a;
+}
+
+.admin-badge--info {
+  background: #e8f5ef;
+  color: #1f6f5c;
+}
+
+.admin-badge--neutral {
+  background: #eff0ec;
+  color: #666b63;
+}

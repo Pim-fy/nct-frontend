@@ -1,23 +1,22 @@
 import {
-  BadgeCheck,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
   Clock3,
-  MapPin,
   RotateCcw,
   Search,
   SlidersHorizontal,
-  Star,
   X,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { SERVICE_REQUEST_SORT_OPTIONS } from '@/constants/serviceDiscovery';
 import {
-  SERVICE_PROVIDER_SORT_OPTIONS,
-  SERVICE_REQUEST_SORT_OPTIONS,
-} from '@/constants/serviceDiscovery';
+  HEADER_SEARCH_BUTTON_CLASS,
+  HEADER_SEARCH_FORM_CLASS,
+  HEADER_SEARCH_INPUT_CLASS,
+} from '@components/common/HeaderSearchPortal';
 
 const formatAmount = (value) => {
   const amount = Number(value);
@@ -50,17 +49,17 @@ export const ServiceSearchBar = ({ initialKeyword, onSubmit }) => {
   const [keyword, setKeyword] = useState(initialKeyword);
 
   return (
-    <form className="mx-auto flex w-full max-w-[760px] overflow-hidden rounded-[6px] border-2 border-primary bg-white focus-within:ring-2 focus-within:ring-primary/20" onSubmit={(event) => onSubmit(event, keyword)} role="search">
+    <form className={HEADER_SEARCH_FORM_CLASS} onSubmit={(event) => onSubmit(event, keyword)} role="search">
       <label className="sr-only" htmlFor="service-keyword">서비스 검색어</label>
       <input
-        className="h-14 min-w-0 flex-1 border-0 px-5 text-base text-[#1a1a18] outline-none placeholder:text-[#8b8b88]"
+        className={HEADER_SEARCH_INPUT_CLASS}
         id="service-keyword"
         onChange={(event) => setKeyword(event.target.value)}
-        placeholder="필요한 서비스나 제공자를 검색하세요"
+        placeholder="필요한 서비스 요청을 검색하세요"
         type="search"
         value={keyword}
       />
-      <button className="grid h-14 w-14 shrink-0 place-items-center bg-primary text-white transition-colors hover:bg-[#0056dc]" title="검색" type="submit">
+      <button className={HEADER_SEARCH_BUTTON_CLASS} title="검색" type="submit">
         <Search aria-hidden="true" size={23} />
         <span className="sr-only">검색</span>
       </button>
@@ -68,37 +67,12 @@ export const ServiceSearchBar = ({ initialKeyword, onSubmit }) => {
   );
 };
 
-export const DiscoveryTabs = ({ activeView, onChange, requestCount, providerCount }) => (
-  <div className="mt-8 grid grid-cols-2 border-b border-[#dedede]" role="tablist" aria-label="검색 결과 유형">
-    {[
-      { key: 'requests', label: '서비스 요청', count: requestCount },
-      { key: 'providers', label: '제공자', count: providerCount },
-    ].map(({ key, label, count }) => {
-      const active = activeView === key;
-      return (
-        <button
-          aria-selected={active}
-          className={`relative h-14 text-base font-bold transition-colors ${active ? 'text-primary' : 'text-[#595957] hover:text-[#1a1a18]'}`}
-          key={key}
-          onClick={() => onChange(key)}
-          role="tab"
-          type="button"
-        >
-          {label}{count != null && <span className="ml-2 font-semibold">{Number(count).toLocaleString('ko-KR')}</span>}
-          {active && <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />}
-        </button>
-      );
-    })}
-  </div>
-);
-
 const FilterFields = ({
   categories,
   categoriesError,
   categoriesLoading,
   filters,
   onChange,
-  view,
 }) => {
   return (
     <div className="space-y-7">
@@ -119,75 +93,43 @@ const FilterFields = ({
         {categoriesError && <span className="mt-2 block text-base text-[#b42318]">카테고리를 불러오지 못했습니다.</span>}
       </label>
 
-      {view === 'providers' && (
-        <label className="block">
-          <span className="mb-2 block text-base font-bold text-[#272725]">활동 지역</span>
+      <fieldset>
+        <legend className="mb-2 text-base font-bold text-[#272725]">예산 범위</legend>
+        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
           <input
-            className="h-12 w-full rounded-[5px] border border-[#cfcfcd] bg-white px-3 text-base text-[#272725] outline-none placeholder:text-[#999996] focus:border-primary"
-            onChange={(event) => onChange('region', event.target.value)}
-            placeholder="예: 서울 강남구"
-            type="search"
-            value={filters.region}
+            aria-label="최소 예산"
+            className="h-12 min-w-0 rounded-[5px] border border-[#cfcfcd] px-3 text-base outline-none placeholder:text-[#999996] focus:border-primary"
+            min="0"
+            onChange={(event) => onChange('minBudget', event.target.value)}
+            placeholder="최소"
+            type="number"
+            value={filters.minBudget || ''}
           />
-        </label>
-      )}
+          <span className="text-base text-[#777774]">~</span>
+          <input
+            aria-label="최대 예산"
+            className="h-12 min-w-0 rounded-[5px] border border-[#cfcfcd] px-3 text-base outline-none placeholder:text-[#999996] focus:border-primary"
+            min="0"
+            onChange={(event) => onChange('maxBudget', event.target.value)}
+            placeholder="최대"
+            type="number"
+            value={filters.maxBudget || ''}
+          />
+        </div>
+      </fieldset>
 
-      {view === 'requests' && (
-        <fieldset>
-          <legend className="mb-2 text-base font-bold text-[#272725]">예산 범위</legend>
-          <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
-            <input
-              aria-label="최소 예산"
-              className="h-12 min-w-0 rounded-[5px] border border-[#cfcfcd] px-3 text-base outline-none placeholder:text-[#999996] focus:border-primary"
-              min="0"
-              onChange={(event) => onChange('minBudget', event.target.value)}
-              placeholder="최소"
-              type="number"
-              value={filters.minBudget || ''}
-            />
-            <span className="text-base text-[#777774]">~</span>
-            <input
-              aria-label="최대 예산"
-              className="h-12 min-w-0 rounded-[5px] border border-[#cfcfcd] px-3 text-base outline-none placeholder:text-[#999996] focus:border-primary"
-              min="0"
-              onChange={(event) => onChange('maxBudget', event.target.value)}
-              placeholder="최대"
-              type="number"
-              value={filters.maxBudget || ''}
-            />
-          </div>
-        </fieldset>
-      )}
-
-      {view === 'providers' && (
-        <label className="block">
-          <span className="mb-2 block text-base font-bold text-[#272725]">정렬</span>
-          <select
-            className="h-12 w-full rounded-[5px] border border-[#cfcfcd] bg-white px-3 text-base outline-none focus:border-primary"
-            onChange={(event) => onChange('sort', event.target.value)}
-            value={filters.sort}
-          >
-            {SERVICE_PROVIDER_SORT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-        </label>
-      )}
-
-      {view === 'requests' && (
-        <label className="block">
-          <span className="mb-2 block text-base font-bold text-[#272725]">정렬</span>
-          <select
-            className="h-12 w-full rounded-[5px] border border-[#cfcfcd] bg-white px-3 text-base outline-none focus:border-primary"
-            onChange={(event) => onChange('sort', event.target.value)}
-            value={filters.sort}
-          >
-            {SERVICE_REQUEST_SORT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-        </label>
-      )}
+      <label className="block">
+        <span className="mb-2 block text-base font-bold text-[#272725]">정렬</span>
+        <select
+          className="h-12 w-full rounded-[5px] border border-[#cfcfcd] bg-white px-3 text-base outline-none focus:border-primary"
+          onChange={(event) => onChange('sort', event.target.value)}
+          value={filters.sort}
+        >
+          {SERVICE_REQUEST_SORT_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
+      </label>
     </div>
   );
 };
@@ -201,7 +143,6 @@ export const ServiceFilterPanel = ({
   onChange,
   onClose,
   onReset,
-  view,
 }) => {
   const fields = (
     <FilterFields
@@ -210,7 +151,6 @@ export const ServiceFilterPanel = ({
       categoriesLoading={categoriesLoading}
       filters={filters}
       onChange={onChange}
-      view={view}
     />
   );
 
@@ -264,13 +204,9 @@ const ServiceRequestCard = ({ request }) => (
     </div>
     <h3 className="mt-4 line-clamp-2 text-xl font-bold leading-7 text-[#1a1a18] group-hover:text-primary">{request.title}</h3>
     {request.description && <p className="mt-3 line-clamp-2 text-base leading-7 text-[#62625f]">{request.description}</p>}
-    <div className="mt-auto space-y-2 pt-5 text-base text-[#555552]">
-      {request.regionName && <p className="flex items-center gap-2"><MapPin aria-hidden="true" size={18} />{request.regionName}</p>}
-      {request.registeredAt && <p className="flex items-center gap-2"><Clock3 aria-hidden="true" size={18} />{formatDate(request.registeredAt)}</p>}
-    </div>
+    {request.registeredAt && <p className="mt-auto flex items-center gap-2 pt-5 text-base text-[#555552]"><Clock3 aria-hidden="true" size={18} />{formatDate(request.registeredAt)}</p>}
     <div className="mt-5 flex items-end justify-between border-t border-[#ececea] pt-4">
       <strong className="text-lg text-[#1a1a18]">{request.budgetLabel || formatAmount(request.budgetAmount)}</strong>
-      {request.quoteCount != null && <span className="text-base text-[#666663]">견적 {Number(request.quoteCount).toLocaleString('ko-KR')}건</span>}
     </div>
   </Link>
 );
@@ -281,41 +217,10 @@ export const ServiceRequestGrid = ({ requests }) => (
   </div>
 );
 
-const ProviderCard = ({ provider }) => (
-  <Link className="group flex min-h-[230px] gap-4 border border-[#dededc] bg-white p-5 transition-colors hover:border-primary" to={`/providers/${provider.id}`}>
-    <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[#eef4ff] text-xl font-bold text-primary" aria-hidden="true">
-      {(provider.name || '?').slice(0, 1)}
-    </div>
-    <div className="min-w-0 flex-1">
-      <div className="flex items-center gap-2">
-        <h3 className="truncate text-xl font-bold text-[#1a1a18] group-hover:text-primary">{provider.name || '이름 미등록'}</h3>
-        {provider.verified && <BadgeCheck aria-label="승인된 제공자" className="shrink-0 text-primary" size={20} />}
-      </div>
-      {provider.rating != null && (
-        <p className="mt-2 flex items-center gap-1 text-base text-[#555552]"><Star aria-hidden="true" className="fill-[#f5b700] text-[#f5b700]" size={18} />{provider.rating} · 리뷰 {Number(provider.reviewCount || 0).toLocaleString('ko-KR')}개</p>
-      )}
-      {provider.introduction && <p className="mt-4 line-clamp-2 text-base leading-7 text-[#62625f]">{provider.introduction}</p>}
-      {provider.categoryNames?.length > 0 && (
-        <p className="mt-4 line-clamp-1 text-base text-[#40403d]">{provider.categoryNames.join(' · ')}</p>
-      )}
-      <div className="mt-4 space-y-1 text-base text-[#666663]">
-        {provider.availableArea && <p>{provider.availableArea}</p>}
-        {provider.completedCount != null && <p>완료 {Number(provider.completedCount).toLocaleString('ko-KR')}건</p>}
-      </div>
-    </div>
-  </Link>
-);
-
-export const ProviderGrid = ({ providers }) => (
-  <div className="grid grid-cols-1 gap-4 md:grid-cols-2" aria-label="제공자 검색 결과">
-    {providers.map((provider) => <ProviderCard key={provider.id} provider={provider} />)}
-  </div>
-);
-
-export const ServiceEmptyState = ({ view }) => (
+export const ServiceEmptyState = () => (
   <div className="flex min-h-[360px] flex-col items-center justify-center border-y border-[#e2e2df] text-center" role="status">
     <Search aria-hidden="true" className="text-[#9b9b98]" size={42} />
-    <strong className="mt-5 text-xl text-[#282826]">조건에 맞는 {view === 'providers' ? '제공자가' : '서비스 요청이'} 없습니다.</strong>
+    <strong className="mt-5 text-xl text-[#282826]">조건에 맞는 서비스 요청이 없습니다.</strong>
     <span className="mt-2 text-base text-[#666663]">검색어나 필터 조건을 변경해 주세요.</span>
   </div>
 );

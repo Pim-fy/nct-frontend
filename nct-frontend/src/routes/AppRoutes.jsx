@@ -16,6 +16,7 @@ import LandingLayout from '@layouts/LandingLayout';
 import UserLayout    from '@layouts/UserLayout';
 import AdminLayout   from '@layouts/AdminLayout';
 import AuthLayout    from '@layouts/AuthLayout';
+import CustomerSupportLayout from '@layouts/CustomerSupportLayout';
 
 // ──────────────────────────────────────────
 // 공개 페이지
@@ -109,6 +110,8 @@ import AdminAuditLogPage from '@pages/admin/audit/AdminAuditLogPage';
 import AdminSystemSettingPage from '@pages/admin/setting/AdminSystemSettingPage';
 import AdminAuctionManagementPage from '@pages/admin/auction/AdminAuctionManagementPage';
 import AdminNotificationPage from '@pages/admin/notification/AdminNotificationPage';
+import AdminReportManagementPage from '@pages/admin/operation/AdminReportManagementPage';
+import AdminPointExchangePage from '@pages/admin/operation/AdminPointExchangePage';
 
 // 개발 환경에서는 별도 env 설정 없이 로그인 없는 거래 화면을 검토할 수 있다.
 // 운영 빌드에서는 false가 되어 개발용 더미 경로가 노출되지 않는다.
@@ -157,10 +160,12 @@ const AppRoutes = () => {
         {/* 담당자 2 · F-SVC: 서비스 요청서 상세는 비로그인도 조회 가능 (백엔드 permit-all) */}
         <Route path="/service-requests/:svcReqSn" element={<ServiceRequestDetailPage />} />
         <Route path="/providers/:providerId" element={<PublicProviderProfilePage />} />
-        <Route path="/guide" element={<GuidePage />} />
-        <Route path="/customersupport/notice" element={<NoticeListPage />} />
-        <Route path="/customersupport/notice/:noticeId" element={<NoticeDetailPage />} />
-        <Route path="/customersupport/faq" element={<FaqPage />} />
+        <Route element={<CustomerSupportLayout />}>
+          <Route path="/guide" element={<GuidePage />} />
+          <Route path="/customersupport/notice" element={<NoticeListPage />} />
+          <Route path="/customersupport/notice/:noticeId" element={<NoticeDetailPage />} />
+          <Route path="/customersupport/faq" element={<FaqPage />} />
+        </Route>
       </Route>
 
       {/* 실제 거래 경로의 인증 정책과 분리된 개발용 화면 확인 경로 */}
@@ -259,13 +264,15 @@ const AppRoutes = () => {
           <Route path="services" element={<AdminServiceRequestPage />} />
           <Route path="provider-applications" element={<AdminProviderApprovalPage />} />
           <Route path="auctions" element={<AdminAuctionManagementPage />} />
+          <Route path="reports" element={<AdminReportManagementPage />} />
+          <Route path="exchanges" element={<AdminPointExchangePage />} />
+          <Route path="risk-events" element={<OperationsIntegrationPreview />} />
           {/* 보안/감사·시스템 설정: 1단계 최소 설정은 담당자7 F-OPS-024, 3단계 감사/제한조회 화면은 담당자6 인수 범위입니다. */}
           <Route path="audit-logs" element={<AdminAuditLogPage />} />
           <Route path="system-settings" element={<AdminSystemSettingPage />} />
           {/* 관리자 알림 (담당자6, F-COM-004/005) */}
           <Route path="notifications" element={<AdminNotificationPage />} />
-          {/* 담당자7 · F-OPS-013 민감정보 탐지 이벤트 읽기 전용 확인 화면 */}
-          <Route path="operations-preview" element={<OperationsIntegrationPreview />} />
+          <Route path="operations-preview" element={<Navigate replace to="/admin/risk-events" />} />
         </Route>
       </Route>
 

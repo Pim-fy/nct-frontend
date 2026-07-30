@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
 import { useNotificationSettings, useSaveNotificationSettings } from '../../../hooks/useNotification';
+import { Skeleton } from '@components/skeleton/BaseSkeleton';
 
 // 도메인 표시 순서·라벨 — 목업(34_notification_settings.html) 그룹 구분 그대로
 const DOMAIN_LABELS = [
@@ -84,77 +85,82 @@ const NotificationSettingsPage = () => {
       </div>
 
       <div className="bg-white border border-gray-100 rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)] overflow-hidden">
-        {isLoading ? (
-          <p className="text-sm text-gray-400 text-center py-10">설정을 불러오는 중...</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-blue-50 text-blue-800">
-                <th className="text-left font-bold px-5 py-3">알림 유형</th>
-                <th className="text-center font-bold px-5 py-3 w-24">
-                  <div className="flex flex-col items-center gap-1.5">
-                    <span>인앱</span>
-                    <input
-                      type="checkbox"
-                      className="w-4 h-4 accent-blue-600 cursor-pointer"
-                      title="인앱 전체 선택"
-                      checked={allChecked('inapp')}
-                      onChange={(e) => toggleColumn('inapp', e.target.checked)}
-                    />
-                  </div>
-                </th>
-                <th className="text-center font-bold px-5 py-3 w-24">
-                  <div className="flex flex-col items-center gap-1.5">
-                    <span>이메일</span>
-                    <input
-                      type="checkbox"
-                      className="w-4 h-4 accent-blue-600 cursor-pointer"
-                      title="이메일 전체 선택"
-                      checked={allChecked('email')}
-                      onChange={(e) => toggleColumn('email', e.target.checked)}
-                    />
-                  </div>
-                </th>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-blue-50 text-blue-800">
+              <th className="text-left font-bold px-5 py-3">알림 유형</th>
+              <th className="text-center font-bold px-5 py-3 w-24">
+                <div className="flex flex-col items-center gap-1.5">
+                  <span>인앱</span>
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 accent-blue-600 cursor-pointer"
+                    title="인앱 전체 선택"
+                    checked={allChecked('inapp')}
+                    disabled={isLoading}
+                    onChange={(e) => toggleColumn('inapp', e.target.checked)}
+                  />
+                </div>
+              </th>
+              <th className="text-center font-bold px-5 py-3 w-24">
+                <div className="flex flex-col items-center gap-1.5">
+                  <span>이메일</span>
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 accent-blue-600 cursor-pointer"
+                    title="이메일 전체 선택"
+                    checked={allChecked('email')}
+                    disabled={isLoading}
+                    onChange={(e) => toggleColumn('email', e.target.checked)}
+                  />
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {isLoading && Array.from({ length: 6 }).map((_, rowIndex) => (
+              <tr key={rowIndex}>
+                <td className="px-5 py-3"><Skeleton height={14} /></td>
+                <td className="px-5 py-3"><Skeleton height={14} /></td>
+                <td className="px-5 py-3"><Skeleton height={14} /></td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {DOMAIN_LABELS.map(({ key: domainKey, label: domainLabel }) => {
-                const domainEvents = events.filter((e) => e.domain === domainKey);
-                if (domainEvents.length === 0) return null;
-                return (
-                  <Fragment key={domainKey}>
-                    <tr className="bg-gray-50">
-                      <td colSpan={3} className="px-5 pt-4 pb-1.5 text-xs font-medium text-gray-400">
-                        {domainLabel}
+            ))}
+            {!isLoading && DOMAIN_LABELS.map(({ key: domainKey, label: domainLabel }) => {
+              const domainEvents = events.filter((e) => e.domain === domainKey);
+              if (domainEvents.length === 0) return null;
+              return (
+                <Fragment key={domainKey}>
+                  <tr className="bg-gray-50">
+                    <td colSpan={3} className="px-5 pt-4 pb-1.5 text-xs font-medium text-gray-400">
+                      {domainLabel}
+                    </td>
+                  </tr>
+                  {domainEvents.map((e) => (
+                    <tr key={e.eventCode} className="hover:bg-gray-50">
+                      <td className="px-5 py-3 pl-8 text-gray-700">{e.label}</td>
+                      <td className="text-center px-5 py-3">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 accent-blue-600 cursor-pointer"
+                          checked={e.inapp}
+                          onChange={() => toggle(e.eventCode, 'inapp')}
+                        />
+                      </td>
+                      <td className="text-center px-5 py-3">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 accent-blue-600 cursor-pointer"
+                          checked={e.email}
+                          onChange={() => toggle(e.eventCode, 'email')}
+                        />
                       </td>
                     </tr>
-                    {domainEvents.map((e) => (
-                      <tr key={e.eventCode} className="hover:bg-gray-50">
-                        <td className="px-5 py-3 pl-8 text-gray-700">{e.label}</td>
-                        <td className="text-center px-5 py-3">
-                          <input
-                            type="checkbox"
-                            className="w-4 h-4 accent-blue-600 cursor-pointer"
-                            checked={e.inapp}
-                            onChange={() => toggle(e.eventCode, 'inapp')}
-                          />
-                        </td>
-                        <td className="text-center px-5 py-3">
-                          <input
-                            type="checkbox"
-                            className="w-4 h-4 accent-blue-600 cursor-pointer"
-                            checked={e.email}
-                            onChange={() => toggle(e.eventCode, 'email')}
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
+                  ))}
+                </Fragment>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
       <p className="text-xs text-gray-400 mt-3 mb-6">
