@@ -3,10 +3,22 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { assets } from "./assets";
 
-const SEARCH_PLACEHOLDERS = {
-  경매: "원하는 경매 상품을 검색하세요.",
-  견적요청: "필요한 서비스 요청을 검색하세요.",
-};
+const SEARCH_TARGETS = [
+  {
+    id: "auction",
+    label: "경매 상품",
+    toggleLabel: "경매",
+    path: "/auction",
+    placeholder: "원하는 경매 상품을 검색하세요.",
+  },
+  {
+    id: "service",
+    label: "견적 요청",
+    toggleLabel: "견적",
+    path: "/service",
+    placeholder: "필요한 서비스 요청을 검색하세요.",
+  },
+];
 
 const SLIDE = {
   eyebrow: "START GUIDE",
@@ -18,24 +30,24 @@ const SLIDE = {
   tags: ["경매 거래", "서비스 요청", "안전 거래"],
 };
 
-const HOT_ITEM_W = 426;
-
 export default function HeroSection({ hotItems = [] }) {
   const navigate = useNavigate();
-  const [keyword,    setKeyword]    = useState("");
-  const [searchType, setSearchType] = useState("경매");
+  const [keyword, setKeyword] = useState("");
+  const [searchTarget, setSearchTarget] = useState("auction");
+
+  const selectedSearchTarget = SEARCH_TARGETS.find((item) => item.id === searchTarget)
+    ?? SEARCH_TARGETS[0];
+  const hotTags = hotItems.slice(0, 5);
 
   const runSearch = (value) => {
-    const t = value.trim();
-    if (!t) return;
-    navigate(searchType === "경매" ? `/auction?keyword=${encodeURIComponent(t)}` : `/service?keyword=${encodeURIComponent(t)}`);
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    navigate(`${selectedSearchTarget.path}?keyword=${encodeURIComponent(trimmed)}`);
   };
-
-  const hotTags = hotItems.slice(0, 5);
 
   return (
     <>
-      {/* 흰 영역: 타이틀 + 태그 + 검색창 */}
+      {/* 담당자 7: develop 반응형 히어로에 경매·견적 검색 전환 계약을 통합합니다. */}
       <div className="relative z-10 pt-10">
         <div className="w-[95%] max-w-[880px] mx-auto">
           <h1 className="text-center text-[50px] font-bold leading-tight tracking-[-2.5px] mb-5">
@@ -63,35 +75,60 @@ export default function HeroSection({ hotItems = [] }) {
 
         <div className="w-[95%] max-w-[880px] mx-auto">
           <div className="flex items-center bg-white rounded-full shadow-[0px_4px_20px_0px_rgba(0,0,0,0.15)] border-2 border-[#0064ff] px-6 h-[73px]">
-            <div className="relative flex items-center shrink-0">
-              <select
-                value={searchType}
-                onChange={(e) => { setSearchType(e.target.value); setKeyword(""); }}
-                className="appearance-none bg-transparent border-none outline-none cursor-pointer text-[18px] font-medium text-black pr-5"
+            <button
+              aria-checked={searchTarget === "service"}
+              aria-label={`검색 종류 전환, 현재 ${selectedSearchTarget.label}`}
+              className={`relative h-[36px] w-[92px] shrink-0 cursor-pointer overflow-hidden rounded-[18px] text-[15px] font-bold text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16),0_2px_5px_rgba(17,24,39,0.14)] outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[#0064ff]/25 ${
+                searchTarget === "service"
+                  ? "bg-gradient-to-r from-[#00bfc9] to-[#0099a6]"
+                  : "bg-gradient-to-r from-[#0064ff] to-[#0048d9]"
+              }`}
+              onClick={() => setSearchTarget((current) => (
+                current === "auction" ? "service" : "auction"
+              ))}
+              role="switch"
+              type="button"
+            >
+              <span
+                aria-hidden="true"
+                className={`absolute left-[4px] top-[4px] h-[28px] w-[28px] rounded-full border border-white/80 bg-white shadow-[0_1px_4px_rgba(17,24,39,0.2)] transition-transform duration-200 ease-out ${
+                  searchTarget === "service" ? "translate-x-[56px]" : "translate-x-0"
+                }`}
+              />
+              <span
+                className={`absolute top-1/2 -translate-y-1/2 whitespace-nowrap text-center tracking-[-0.5px] ${
+                  searchTarget === "service"
+                    ? "left-[4px] right-[36px]"
+                    : "left-[36px] right-[4px]"
+                }`}
               >
-                <option value="경매">경매</option>
-                <option value="견적요청">견적요청</option>
-              </select>
-              <span className="absolute right-0 text-[9px] text-black pointer-events-none">▼</span>
-            </div>
+                {selectedSearchTarget.toggleLabel}
+              </span>
+            </button>
+
             <div className="w-px h-[32px] bg-[#d9d9d9] mx-4 shrink-0" />
             <input
+              aria-label={`${selectedSearchTarget.label} 검색어`}
               type="text"
               value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") runSearch(keyword); }}
-              placeholder={SEARCH_PLACEHOLDERS[searchType]}
+              onChange={(event) => setKeyword(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") runSearch(keyword);
+              }}
+              placeholder={selectedSearchTarget.placeholder}
               className="flex-1 bg-transparent text-[18px] text-black placeholder:text-[#b1b1b1] outline-none"
             />
-            <button type="button" onClick={() => runSearch(keyword)} className="shrink-0 ml-3">
+            <button
+              type="button"
+              onClick={() => runSearch(keyword)}
+              className="shrink-0 ml-3"
+            >
               <img alt="검색" src={assets.searchIcon} className="size-[27px] object-contain" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* 다크 영역: 배경이미지 + 슬라이드 배너 */}
-      {/* -mt-9(36px): 검색창 하단 절반과 겹쳐서 배경이미지가 검색창 중간부터 시작되는 효과 */}
       <div className="relative h-[555px] -mt-[35px] overflow-hidden">
         <div className="absolute inset-0">
           <img src={assets.bgImg} alt="" className="w-full h-full object-cover object-center" />
@@ -99,10 +136,9 @@ export default function HeroSection({ hotItems = [] }) {
         </div>
 
         <div className="relative h-full max-w-[1600px] mx-auto px-8 pt-[35px] flex items-center justify-center">
-          {/* 슬라이드 배너 래퍼: 좌우 버튼 포함 */}
           <div className="relative" style={{ width: 870 }}>
-            {/* 좌 버튼 */}
             <button
+              aria-label="이전 안내"
               type="button"
               className="absolute left-4 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center size-[36px] rounded-full bg-white/70 hover:bg-white transition-colors"
             >
@@ -114,24 +150,20 @@ export default function HeroSection({ hotItems = [] }) {
               style={{ height: 303 }}
             >
               <div className="flex-1 min-w-0 text-center">
-                {SLIDE.eyebrow && (
-                  <p className="text-[14px] font-bold text-[#0064ff] tracking-[3px] mb-3 leading-normal">
-                    {SLIDE.eyebrow}
-                  </p>
-                )}
+                <p className="text-[14px] font-bold text-[#0064ff] tracking-[3px] mb-3 leading-normal">
+                  {SLIDE.eyebrow}
+                </p>
                 <p className="text-[45px] font-bold text-black leading-[1.2] tracking-[-2.25px]">
                   {SLIDE.title1}<br />{SLIDE.title2}
                 </p>
                 <p className="text-[16px] text-black tracking-[-0.8px] mt-2">{SLIDE.sub}</p>
-                {SLIDE.tags && (
-                  <div className="flex justify-center gap-2 mt-3">
-                    {SLIDE.tags.map((tag) => (
-                      <span key={tag} className="bg-[#eef3ff] text-[#0064ff] text-[13px] font-bold px-3 py-1 rounded-full">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                <div className="flex justify-center gap-2 mt-3">
+                  {SLIDE.tags.map((tag) => (
+                    <span key={tag} className="bg-[#eef3ff] text-[#0064ff] text-[13px] font-bold px-3 py-1 rounded-full">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
                 <div className="flex justify-center mt-4">
                   <button
                     type="button"
@@ -149,8 +181,8 @@ export default function HeroSection({ hotItems = [] }) {
               />
             </div>
 
-            {/* 우 버튼 */}
             <button
+              aria-label="다음 안내"
               type="button"
               className="absolute right-4 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center size-[36px] rounded-full bg-white/70 hover:bg-white transition-colors"
             >

@@ -12,7 +12,7 @@ const DOMAINS = [
   { code: 'CATC0001', label: '상품 카테고리' },
   { code: 'CATC0002', label: '서비스 카테고리' },
 ];
-const EMPTY_FORM = { name: '', sortNo: 10, professional: false, active: true, changeReason: '' };
+const EMPTY_FORM = { name: '', sortNo: 10, professional: false, active: true };
 
 /** 담당자 7 · F-COM-003: 상품·서비스 카테고리를 분리해 등록·수정·사용 중지하는 화면이다. */
 const AdminCategoryPage = () => {
@@ -32,7 +32,6 @@ const AdminCategoryPage = () => {
       sortNo: category.sortNo,
       professional: category.professional,
       active: category.active,
-      changeReason: '',
     });
     setFeedback('');
   };
@@ -101,7 +100,6 @@ const AdminCategoryPage = () => {
         <label><span>표시 순서</span><input max="9999" min="1" name="sortNo" onChange={change} required type="number" value={form.sortNo} /></label>
         {domainCode === 'CATC0002' && <label className="admin-category-check"><input checked={form.professional} name="professional" onChange={change} type="checkbox" /> 전문 서비스</label>}
         <label className="admin-category-check"><input checked={form.active} name="active" onChange={change} type="checkbox" /> 사용 중</label>
-        <label className="admin-category-reason"><span>변경 사유</span><input maxLength="500" name="changeReason" onChange={change} placeholder="예: 서비스 분류 개편" required value={form.changeReason} /></label>
         <button className="btn btn-primary" disabled={saveMutation.isPending} type="submit"><Save /> {saveMutation.isPending ? '저장 중' : '저장'}</button>
       </form>
 

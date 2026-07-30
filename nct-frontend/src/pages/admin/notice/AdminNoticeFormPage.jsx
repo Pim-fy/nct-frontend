@@ -16,10 +16,11 @@ import {
 import './adminContentPages.css';
 
 const FAQ_TYPE_CODE = 'NTCC0008';
+const PUBLISHED_STATUS_CODE = 'NTCC0006';
 
 const EMPTY_FORM = {
   typeCode: '',
-  statusCode: 'NTCC0005',
+  statusCode: PUBLISHED_STATUS_CODE,
   title: '',
   content: '',
   postingStartAt: '',
@@ -28,11 +29,10 @@ const EMPTY_FORM = {
   expectedUpdatedAt: null,
   expectedRevision: null,
   pinned: false,
-  changeReason: '',
 };
 
 const toDateTimeInput = (value) => value ? value.slice(0, 16) : '';
-// 담당자 7 | F-OPS-023: 신규 공지의 게시 시작일시는 작성자가 보는 현재 날짜·시각으로 시작합니다.
+// 담당자 7 | F-OPS-023: 신규 공지는 게시 상태·현재 시각·종료일 없음으로 바로 노출할 수 있게 시작합니다.
 const nowDateTimeInput = () => {
   const now = new Date();
   return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
@@ -51,7 +51,6 @@ const formFromNotice = (notice) => ({
   expectedUpdatedAt: notice.updatedAt,
   expectedRevision: notice.revisionToken,
   pinned: notice.typeCode === FAQ_TYPE_CODE ? false : notice.pinned,
-  changeReason: '',
 });
 
 /** 공지 신규 작성과 기존 공지 상세·수정을 한 화면 구조로 제공해 입력 규칙을 동일하게 유지합니다. */
@@ -64,17 +63,21 @@ const AdminNoticeFormPage = () => {
   const [draft, setDraft] = useState(null);
   const [isEditing, setIsEditing] = useState(isNew);
   const [feedback, setFeedback] = useState('');
+  const [deletePanelOpen, setDeletePanelOpen] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
   const optionsQuery = useAdminNoticeOptions();
   const noticeQuery = useAdminNoticeDetail(isNew ? null : noticeId);
   const createMutation = useCreateAdminNotice();
   const updateMutation = useUpdateAdminNotice();
   const hideMutation = useHideAdminNotice();
   const deleteMutation = useDeleteAdminNotice();
+  const noticeTypeOptions = optionsQuery.data?.types ?? [];
+  const noticeStatusOptions = optionsQuery.data?.statuses ?? [];
   const isPending = createMutation.isPending || updateMutation.isPending
     || hideMutation.isPending || deleteMutation.isPending;
 
   const initialForm = isNew
-    ? { ...EMPTY_FORM, postingStartAt: nowDateTimeInput(), typeCode: optionsQuery.data?.types?.[0]?.code ?? '' }
+    ? { ...EMPTY_FORM, postingStartAt: nowDateTimeInput(), typeCode: noticeTypeOptions[0]?.code ?? '' }
     : noticeQuery.data ? formFromNotice(noticeQuery.data) : EMPTY_FORM;
   const form = draft ?? initialForm;
 
@@ -127,16 +130,12 @@ const AdminNoticeFormPage = () => {
     }
   };
 
-  const requireReason = () => {
-    if (form.changeReason.trim()) return true;
-    setFeedback('관리자 처리 사유를 입력해 주세요.');
-    return false;
-  };
-
   const hideNotice = async () => {
-    if (!requireReason() || !window.confirm('이 공지를 사용자 화면에서 숨길까요?')) return;
+    if (!window.confirm('이 공지를 사용자 화면에서 숨길까요?')) return;
     try {
-      await hideMutation.mutateAsync({ noticeId, changeReason: form.changeReason.trim() });
+      await hideMutation.mutateAsync({ noticeId });
+      setDeletePanelOpen(false);
+      setDeleteReason('');
       setDraft(null);
       setFeedback('공지가 숨김 처리되었습니다. 같은 요청을 다시 해도 중복 처리되지 않습니다.');
     } catch (error) {
@@ -145,9 +144,14 @@ const AdminNoticeFormPage = () => {
   };
 
   const deleteNotice = async () => {
-    if (!requireReason() || !window.confirm('이 공지를 관리 목록에서도 삭제할까요? 변경 사유는 감사로그에 기록됩니다.')) return;
+    const reason = deleteReason.trim();
+    if (!reason) {
+      setFeedback('삭제 사유를 입력해 주세요.');
+      return;
+    }
+    if (!window.confirm('이 공지를 관리 목록에서도 삭제할까요? 삭제 후에는 사용자와 관리자 목록에서 보이지 않습니다.')) return;
     try {
-      await deleteMutation.mutateAsync({ noticeId, changeReason: form.changeReason.trim() });
+      await deleteMutation.mutateAsync({ noticeId, changeReason: reason });
       navigate('/admin/notices', { replace: true });
     } catch (error) {
       setFeedback(getErrorMessage(error));
@@ -178,7 +182,7 @@ const AdminNoticeFormPage = () => {
           </MockupAdminStatusBadge>
         )}
         description={isNew
-          ? '공지 내용과 공개 조건을 입력합니다.'
+          ? '기본값은 즉시 게시입니다. 필요한 경우 임시저장이나 예약 게시로 변경할 수 있습니다.'
           : '저장된 공지와 사용자 노출 상태를 확인합니다.'}
         eyebrow="F-OPS-023 · 관리자 전용"
         title={isNew ? '공지 작성' : '공지 상세'}
@@ -203,7 +207,7 @@ const AdminNoticeFormPage = () => {
               required
               value={form.typeCode}
             >
-              {(optionsQuery.data?.types ?? []).map((option) => (
+              {noticeTypeOptions.map((option) => (
                 <option key={option.code} value={option.code}>{option.name}</option>
               ))}
             </select>
@@ -217,7 +221,7 @@ const AdminNoticeFormPage = () => {
               required
               value={form.statusCode}
             >
-              {(optionsQuery.data?.statuses ?? []).map((option) => (
+              {noticeStatusOptions.map((option) => (
                 <option key={option.code} value={option.code}>{option.name}</option>
               ))}
             </select>
@@ -291,20 +295,6 @@ const AdminNoticeFormPage = () => {
           중요 공지로 등록{isFaq && ' (FAQ는 선택 불가)'}
         </label>
 
-        <section className="admin-notice-form__audit">
-          <div><strong>관리자 처리 사유</strong><p>등록·수정·숨김·삭제 사유는 감사로그에 기록됩니다. 개인정보는 입력하지 마세요.</p></div>
-          <textarea
-            disabled={isPending}
-            maxLength={500}
-            name="changeReason"
-            onChange={changeField}
-            placeholder="예: 7월 정기점검 일정 공지"
-            required={isEditing}
-            rows="3"
-            value={form.changeReason}
-          />
-        </section>
-
         <section className="admin-notice-preview" aria-label="사용자 공지 미리보기">
           <div><small>사용자 화면 미리보기</small><strong>{previewTitle}</strong><p>{form.content.trim() || '공지 내용이 이곳에 표시됩니다.'}</p></div>
           <div>
@@ -316,6 +306,53 @@ const AdminNoticeFormPage = () => {
             )}
           </div>
         </section>
+
+        {deletePanelOpen && (
+          <section className="admin-notice-form__delete-confirm" aria-label="공지 삭제 확인">
+            <div>
+              <strong>공지 삭제</strong>
+              <p>삭제는 관리 목록에서도 공지를 제거합니다. 삭제가 필요한 이유만 기록해 주세요.</p>
+            </div>
+            <label>
+              <span>삭제 사유</span>
+              <textarea
+                autoFocus
+                disabled={isPending}
+                maxLength={500}
+                onChange={(event) => {
+                  setDeleteReason(event.target.value);
+                  setFeedback('');
+                }}
+                placeholder="예: 중복 등록된 공지"
+                rows="2"
+                value={deleteReason}
+              />
+            </label>
+            <div className="admin-notice-form__delete-actions">
+              <button
+                className="btn btn-outline"
+                disabled={isPending}
+                onClick={() => {
+                  setDeletePanelOpen(false);
+                  setDeleteReason('');
+                  setFeedback('');
+                }}
+                type="button"
+              >
+                취소
+              </button>
+              <button
+                className="btn admin-danger-button"
+                disabled={isPending || !deleteReason.trim()}
+                onClick={deleteNotice}
+                type="button"
+              >
+                <Trash2 aria-hidden="true" />
+                삭제 확인
+              </button>
+            </div>
+          </section>
+        )}
 
         {feedback && (
           <p className={`admin-notice-form__feedback${feedback.includes('되었습니다') ? ' is-success' : ''}`}>
@@ -330,7 +367,11 @@ const AdminNoticeFormPage = () => {
               <button
                 className="btn btn-outline"
                 disabled={isPending}
-                onClick={() => setIsEditing(true)}
+                onClick={() => {
+                  setDeletePanelOpen(false);
+                  setDeleteReason('');
+                  setIsEditing(true);
+                }}
                 type="button"
               >
                 수정하기
@@ -347,7 +388,11 @@ const AdminNoticeFormPage = () => {
               <button
                 className="btn admin-danger-button"
                 disabled={isPending}
-                onClick={deleteNotice}
+                onClick={() => {
+                  setDeletePanelOpen(true);
+                  setDeleteReason('');
+                  setFeedback('');
+                }}
                 type="button"
               >
                 <Trash2 aria-hidden="true" />

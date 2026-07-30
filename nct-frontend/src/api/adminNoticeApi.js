@@ -25,8 +25,13 @@ export const createAdminNotice = (payload) =>
 export const updateAdminNotice = ({ noticeId, payload }) =>
   api.put(`/admin/notices/${noticeId}`, payload).then((response) => response.data.data);
 
-export const hideAdminNotice = ({ noticeId, changeReason }) =>
-  api.patch(`/admin/notices/${noticeId}/hide`, { changeReason })
+/** 담당자 7 | F-OPS-023: 제목·내용·게시 기간은 보존하고 상태만 게시로 전환합니다. */
+export const publishAdminNotice = ({ noticeId, expectedRevision }) =>
+  api.patch(`/admin/notices/${noticeId}/publish`, { expectedRevision })
+    .then((response) => response.data.data);
+
+export const hideAdminNotice = ({ noticeId }) =>
+  api.patch(`/admin/notices/${noticeId}/hide`)
     .then((response) => response.data.data);
 
 export const deleteAdminNotice = ({ noticeId, changeReason }) =>

@@ -1,16 +1,21 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { FilePlus2, Search } from 'lucide-react';
+import { CalendarClock, Eye, FilePlus2, Search } from 'lucide-react';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminTable from '@components/admin/AdminTable';
 import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
 import MockupAdminStatusBadge from '@components/admin/mockup/MockupAdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
-import { useAdminNoticeList, useAdminNoticeOptions } from '@hooks/useAdminNotices';
+import {
+  useAdminNoticeList,
+  useAdminNoticeOptions,
+  usePublishAdminNotice,
+} from '@hooks/useAdminNotices';
 import { formatDateTime } from '@utils/common';
 import './adminContentPages.css';
 
 const PAGE_SIZE = 20;
+const PUBLISHED_STATUS = 'NTCC0006';
 
 const statusTone = (statusCode) => {
   if (statusCode === 'NTCC0006') return 'success';
@@ -18,10 +23,15 @@ const statusTone = (statusCode) => {
   return 'neutral';
 };
 
+const getErrorMessage = (error) => error?.response?.status === 409
+  ? '다른 관리자가 먼저 공지를 변경했습니다. 목록을 새로 불러온 뒤 다시 시도해 주세요.'
+  : error?.response?.data?.message || '공지 노출 처리 중 오류가 발생했습니다.';
+
 /** F-OPS-023: 임시저장·게시·숨김을 모두 확인하는 관리자 공지 목록입니다. */
 const AdminNoticeListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [keywordInput, setKeywordInput] = useState(searchParams.get('keyword') || '');
+  const [publishFeedback, setPublishFeedback] = useState(null);
   const typeCode = searchParams.get('typeCode') || '';
   const statusCode = searchParams.get('statusCode') || '';
   const keyword = searchParams.get('keyword') || '';
@@ -30,6 +40,7 @@ const AdminNoticeListPage = () => {
   const filters = { typeCode, statusCode, keyword, page, size: PAGE_SIZE };
   const optionsQuery = useAdminNoticeOptions();
   const noticesQuery = useAdminNoticeList(filters);
+  const publishMutation = usePublishAdminNotice();
   const noticePage = noticesQuery.data;
   const hasActiveFilters = Boolean(typeCode || statusCode || keyword);
 
@@ -48,7 +59,26 @@ const AdminNoticeListPage = () => {
     changeFilters({ keyword: keywordInput.trim(), page: 1 });
   };
 
-  const columns = useMemo(() => [
+  /** 담당자 7 | F-OPS-023: 게시 기간은 보존하고 상태만 게시로 바꿔 감사 가능한 즉시 노출을 제공합니다. */
+  const publishNotice = async (notice) => {
+    setPublishFeedback(null);
+    try {
+      const published = await publishMutation.mutateAsync({
+        noticeId: notice.noticeId,
+        expectedRevision: notice.revisionToken,
+      });
+      setPublishFeedback({
+        tone: published.visibleNow ? 'success' : 'warning',
+        message: published.visibleNow
+          ? '공지의 게시 상태가 변경되었습니다.'
+          : '게시 상태는 변경됐지만 노출 기간 때문에 현재 미노출입니다. 기간을 수정해 주세요.',
+      });
+    } catch (error) {
+      setPublishFeedback({ tone: 'error', message: getErrorMessage(error) });
+    }
+  };
+
+  const columns = [
     { key: 'noticeId', label: '번호' },
     { key: 'typeName', label: '유형' },
     {
@@ -65,13 +95,44 @@ const AdminNoticeListPage = () => {
     },
     {
       key: 'visibleNow', label: '현재 노출',
-      render: (value) => <MockupAdminStatusBadge tone={value ? 'success' : 'neutral'}>{value ? '노출 중' : '미노출'}</MockupAdminStatusBadge>,
+      render: (value, row) => {
+        const canPublishNow = !value && row.statusCode !== PUBLISHED_STATUS;
+        return (
+          <div className="admin-notice-list__visibility">
+            <MockupAdminStatusBadge tone={value ? 'success' : 'neutral'}>
+              {value ? '노출 중' : '미노출'}
+            </MockupAdminStatusBadge>
+            {canPublishNow && (
+              <button
+                aria-label={`${row.title} 공지 노출하기`}
+                className="admin-notice-list__publish-button"
+                disabled={publishMutation.isPending}
+                onClick={() => publishNotice(row)}
+                type="button"
+              >
+                <Eye aria-hidden="true" />
+                노출하기
+              </button>
+            )}
+            {!value && !canPublishNow && (
+              <Link
+                aria-label={`${row.title} 공지 노출 기간 수정`}
+                className="admin-notice-list__period-link"
+                to={`/admin/notices/${row.noticeId}`}
+              >
+                <CalendarClock aria-hidden="true" />
+                기간 수정
+              </Link>
+            )}
+          </div>
+        );
+      },
     },
     { key: 'postingStartAt', label: '노출 시작', render: formatDateTime },
     { key: 'postingEndAt', label: '노출 종료', render: formatDateTime },
     { key: 'writerName', label: '작성자' },
     { key: 'viewCount', label: '조회수', render: (value) => value.toLocaleString('ko-KR') },
-  ], []);
+  ];
 
   return (
     <div className="admin-content-page">
@@ -153,8 +214,16 @@ const AdminNoticeListPage = () => {
           {!noticesQuery.isLoading && (
             <div className="admin-notice-list__summary">
               <p>총 <strong>{noticePage?.totalItems ?? 0}</strong>건</p>
-              <small>숨김 공지는 사용자 공지사항에서 보이지 않습니다.</small>
+              <small>임시저장·숨김 공지는 목록에서 게시로 전환하고, 예약·종료 기간은 상세에서 수정합니다.</small>
             </div>
+          )}
+          {publishFeedback && (
+            <p
+              aria-live="polite"
+              className={`admin-notice-list__feedback is-${publishFeedback.tone}`}
+            >
+              {publishFeedback.message}
+            </p>
           )}
           <div className="admin-table-scroll">
             <AdminTable
