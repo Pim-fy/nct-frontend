@@ -104,7 +104,7 @@ export default function HeroSection() {
         <button
           aria-checked={searchTarget === "service"}
           aria-label={`검색 종류 전환, 현재 ${selectedSearchTarget.label}`}
-          className={`absolute left-[590px] top-[364px] h-[32px] w-[108px] cursor-pointer overflow-hidden rounded-[16px] font-['Noto_Sans_KR:Medium'] text-[15px] font-bold text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16),0_2px_5px_rgba(17,24,39,0.14)] outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[#0064ff]/25 ${
+          className={`absolute left-[597px] top-[362px] h-[36px] w-[92px] cursor-pointer overflow-hidden rounded-[18px] font-['Noto_Sans_KR:Medium'] text-[15px] font-bold text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16),0_2px_5px_rgba(17,24,39,0.14)] outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[#0064ff]/25 ${
             searchTarget === "service"
               ? "bg-gradient-to-r from-[#00bfc9] to-[#0099a6]"
               : "bg-gradient-to-r from-[#0064ff] to-[#0048d9]"
@@ -117,15 +117,15 @@ export default function HeroSection() {
         >
           <span
             aria-hidden="true"
-            className={`absolute left-[4px] top-[4px] h-[24px] w-[24px] rounded-full border border-white/80 bg-white shadow-[0_1px_4px_rgba(17,24,39,0.2)] transition-transform duration-200 ease-out ${
-              searchTarget === "service" ? "translate-x-[76px]" : "translate-x-0"
+            className={`absolute left-[4px] top-[4px] h-[28px] w-[28px] rounded-full border border-white/80 bg-white shadow-[0_1px_4px_rgba(17,24,39,0.2)] transition-transform duration-200 ease-out ${
+              searchTarget === "service" ? "translate-x-[56px]" : "translate-x-0"
             }`}
           />
           <span
             className={`absolute top-1/2 -translate-y-1/2 whitespace-nowrap text-center tracking-[-0.5px] transition-[left,right] duration-200 ${
               searchTarget === "service"
-                ? "left-[4px] right-[32px]"
-                : "left-[32px] right-[4px]"
+                ? "left-[4px] right-[36px]"
+                : "left-[36px] right-[4px]"
             }`}
           >
             {selectedSearchTarget.toggleLabel}
