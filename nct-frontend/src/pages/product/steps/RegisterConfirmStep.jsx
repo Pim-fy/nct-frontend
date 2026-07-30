@@ -4,6 +4,13 @@
 import { useState } from 'react';
 import DOMPurify from 'dompurify';
 import { SANITIZE_OPTS } from '@components/product/richTextEditorImages';
+import { formatDateTimeAmPm } from '@/utils/common';
+
+// endDt(Date 객체)를 formatDateTime이 기대하는 오프셋 없는 로컬 ISO 문자열로 변환
+const toNaiveIso = (date) => {
+  const pad = n => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:00`;
+};
 
 export default function RegisterConfirmStep({ form, agreed, setAgreed, images, selectedCat, selectedTrade, endDt, auctionRange }) {
   const [descOpen, setDescOpen] = useState(false);
@@ -37,13 +44,11 @@ export default function RegisterConfirmStep({ form, agreed, setAgreed, images, s
                   if (!auctionRange?.start || !auctionRange?.end) return '—';
                   const startPart = form.startNow
                     ? '즉시 시작'
-                    : `${auctionRange.start}${auctionRange.startTime ? ' ' + auctionRange.startTime : ''}`;
-                  const endPart = endDt
-                    ? endDt.toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
-                    : auctionRange.end;
+                    : formatDateTimeAmPm(`${auctionRange.start}T${auctionRange.startTime || '00:00'}:00`);
+                  const endPart = endDt ? formatDateTimeAmPm(toNaiveIso(endDt)) : auctionRange.end;
                   return `${startPart} ~ ${endPart}`;
                 })()],
-                ['종료 예정', endDt ? endDt.toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'],
+                ['종료 예정', endDt ? formatDateTimeAmPm(toNaiveIso(endDt)) : '—'],
               ].map(([k, v], i, arr) => (
                 <tr key={k}><th style={{ background: '#eef2fb', borderBottom: i === arr.length - 1 ? 'none' : '1px solid #d8d6cf', borderRight: '1px solid #d8d6cf' }}>{k}</th><td style={{ borderLeft: '1px solid #d8d6cf' }}>{v}</td></tr>
               ))}

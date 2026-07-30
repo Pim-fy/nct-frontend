@@ -195,6 +195,21 @@ export const formatDateTime = (dateTime) => {
 };
 
 /**
+ * 날짜+시간을 YYYY.MM.DD 오전/오후 h:mm 형식으로 포맷 (12시간제)
+ * @param {string} dateTime - ISO LocalDateTime 문자열(예: "2026-07-28T14:30:00")
+ * @returns {string} 값이 없으면 "-"
+ */
+export const formatDateTimeAmPm = (dateTime) => {
+  if (!dateTime) return '-';
+  const [datePart, timePart] = String(dateTime).split('T');
+  if (!datePart || !timePart) return '-';
+  const [h, m] = timePart.split(':').map(Number);
+  const period = h < 12 ? '오전' : '오후';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${datePart.replaceAll('-', '.')} ${period} ${h12}:${String(m).padStart(2, '0')}`;
+};
+
+/**
  * 문자열 말줄임 처리
  * @param {string} str
  * @param {number} limit

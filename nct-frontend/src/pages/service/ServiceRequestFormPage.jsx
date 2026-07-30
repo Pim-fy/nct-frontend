@@ -3,7 +3,7 @@
 // 라우트: /service-requests/new (신규), location.state.svcReqSn로 임시저장 수정
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Truck, BrushCleaning, Wrench, Armchair, GraduationCap } from 'lucide-react';
 import { getCategories } from '@api/categoryApi';
 import { registerServiceRequest, updateServiceRequest, getServiceRequest } from '@api/serviceRequestApi';
 import DaumPostcode from 'react-daum-postcode';
@@ -11,6 +11,7 @@ import ErrorMessage from '@components/common/ErrorMessage';
 import AlertModal from '@components/common/AlertModal';
 import ConfirmModal from '@components/common/ConfirmModal';
 import ServiceRequestImageUpload from '@components/service/ServiceRequestImageUpload';
+import DateRangePicker from '@components/product/DateRangePicker';
 import { WIZARD_STEPS, CATEGORY_NEXT_STEP, CATEGORY_META } from './serviceRequestWizardSteps';
 
 const MAX_IMAGES = 5;
@@ -19,56 +20,26 @@ const SERVICE_DOMAIN_CD = 'CATC0002';
 const ETC = '기타';
 const STEP_LABELS = ['요청 정보 입력', '요청 확인'];
 
+// 한글 단어 끝음절 받침 유무에 따라 "을/를" 조사를 붙인다 (유효성 검증 문구용)
+function withEulReul(word) {
+  const last = word[word.length - 1];
+  const code = last.charCodeAt(0) - 0xac00;
+  const hasBatchim = code < 0 || code > 11171 ? true : code % 28 !== 0;
+  return `${word}${hasBatchim ? '을' : '를'}`;
+}
+
+const CATEGORY_ICON = {
+  '이사': Truck,
+  '청소': BrushCleaning,
+  '설치·수리': Wrench,
+  '인테리어': Armchair,
+  '레슨': GraduationCap,
+};
+
 function CategoryIcon({ name, className }) {
-  const common = { viewBox: '0 0 24 24', width: 32, height: 32, fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', className };
-  switch (name) {
-    case '이사':
-      return (
-        <svg {...common}>
-          <path d="M1 4h13v11H1z" />
-          <path d="M14 8h4l3 3v4h-7V8z" />
-          <circle cx="5.5" cy="18" r="1.8" />
-          <circle cx="18.5" cy="18" r="1.8" />
-        </svg>
-      );
-    case '청소':
-      return (
-        <svg {...common}>
-          <line x1="18" y1="2" x2="12" y2="13" />
-          <line x1="6" y1="13" x2="18" y2="13" />
-          <line x1="7" y1="13" x2="6" y2="21" />
-          <line x1="10" y1="13" x2="9.5" y2="21" />
-          <line x1="13" y1="13" x2="13" y2="21" />
-          <line x1="16" y1="13" x2="16.5" y2="21" />
-        </svg>
-      );
-    case '설치·수리':
-      return (
-        <svg {...common}>
-          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z" />
-        </svg>
-      );
-    case '인테리어':
-      return (
-        <svg {...common}>
-          <path d="M12 3a9 9 0 1 0 0 18c1.2 0 2-.8 2-2 0-.5-.2-.9-.5-1.3-.3-.4-.5-.8-.5-1.2 0-.9.7-1.6 1.6-1.6H16a4 4 0 0 0 4-4c0-4.4-3.6-8-8-8z" />
-          <circle cx="7.5" cy="10.5" r="1" fill="currentColor" stroke="none" />
-          <circle cx="10.5" cy="7" r="1" fill="currentColor" stroke="none" />
-          <circle cx="15" cy="7.5" r="1" fill="currentColor" stroke="none" />
-          <circle cx="16.5" cy="11" r="1" fill="currentColor" stroke="none" />
-        </svg>
-      );
-    case '레슨':
-      return (
-        <svg {...common}>
-          <path d="M22 9L12 4 2 9l10 5 10-5z" />
-          <path d="M6 11v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5" />
-          <path d="M22 9v6" />
-        </svg>
-      );
-    default:
-      return null;
-  }
+  const Icon = CATEGORY_ICON[name];
+  if (!Icon) return null;
+  return <Icon size={32} strokeWidth={1.7} className={className} />;
 }
 
 // 카테고리 진행률 분모 — 실제 chain은 답변할 때마다 늘어나 분모로 못 씀.
@@ -176,6 +147,8 @@ export default function ServiceRequestFormPage() {
   const [addressSearchKey, setAddressSearchKey] = useState(null); // 주소 검색 중인 'stepId:fieldKey'
 
   const cardRefs = useRef({});
+  const titleSectionRef = useRef(null);
+  const categorySectionRef = useRef(null);
 
   function restoreFromExisting(cat, s) {
     setSelectedCategory({ catSn: cat.catSn, catNm: cat.catNm });
@@ -211,7 +184,7 @@ export default function ServiceRequestFormPage() {
     }
 
     if (s.svcReqBdgtAmt != null) {
-      newDraft.budget = { 예산: '금액 입력', 금액: String(s.svcReqBdgtAmt) };
+      newDraft.budget = { 예산: String(s.svcReqBdgtAmt) };
     }
     if (s.svcReqCn) {
       newDraft.memo = { 메모: s.svcReqCn };
@@ -372,6 +345,9 @@ export default function ServiceRequestFormPage() {
   // ── single 선택 ─────────────────────────────────────────────────────────────
 
   const handleSingleSelect = (stepId, option) => {
+    if (fieldErrors[`${stepId}:single`]) {
+      setFieldErrors(prev => { const n = { ...prev }; delete n[`${stepId}:single`]; return n; });
+    }
     if (option.label === ETC) {
       setPendingEtcStep(stepId);
       return;
@@ -392,9 +368,16 @@ export default function ServiceRequestFormPage() {
   };
 
   const handleEtcSingleConfirm = (stepId) => {
+    if (fieldErrors[`${stepId}:single`]) {
+      setFieldErrors(prev => { const n = { ...prev }; delete n[`${stepId}:single`]; return n; });
+    }
     const step = WIZARD_STEPS[stepId];
     const text = (freeTextDraft[`${stepId}:${ETC}`] || '').trim();
-    if (!text) { setAlertMsg('기타 내용을 입력해 주세요.'); return; }
+    if (!text) {
+      setAlertMsg('기타 내용을 입력해 주세요.');
+      cardRefs.current[stepId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     const option = step.options.find(o => o.label === ETC);
     const newNext = option?.next || step.next;
 
@@ -425,20 +408,34 @@ export default function ServiceRequestFormPage() {
       const next = withoutNone.includes(label) ? withoutNone.filter(l => l !== label) : [...withoutNone, label];
       return { ...prev, [stepId]: next };
     });
+    if (fieldErrors[`${stepId}:multi`]) {
+      setFieldErrors(prev => { const n = { ...prev }; delete n[`${stepId}:multi`]; return n; });
+    }
   };
 
   const handleMultiConfirm = (stepId) => {
     const step = WIZARD_STEPS[stepId];
     const picked = stepDraft[stepId] || [];
-    if (picked.length === 0) { setAlertMsg('한 개 이상 선택해 주세요.'); return; }
-    if (picked.includes(ETC) && !(freeTextDraft[`${stepId}:${ETC}`] || '').trim()) {
-      setAlertMsg('기타 내용을 입력해 주세요.'); return;
+    if (picked.length === 0) {
+      const cleanTitle = step.title.replace(/\s*\(복수 선택\)$/, '');
+      const msg = `${withEulReul(cleanTitle)} 선택해 주세요.`;
+      setAlertMsg(msg);
+      setFieldErrors(prev => ({ ...prev, [`${stepId}:multi`]: msg }));
+      cardRefs.current[stepId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
     }
+    if (picked.includes(ETC) && !(freeTextDraft[`${stepId}:${ETC}`] || '').trim()) {
+      setAlertMsg('기타 내용을 입력해 주세요.');
+      cardRefs.current[stepId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    setFieldErrors(prev => { const n = { ...prev }; delete n[`${stepId}:multi`]; return n; });
     const labels = picked.map(l => (l === ETC ? `${ETC}(${freeTextDraft[`${stepId}:${ETC}`].trim()})` : l));
 
     if (answers[stepId] !== undefined) {
       setAnswers(prev => ({ ...prev, [stepId]: labels.join(', ') }));
-      setExpandedStepId(null);
+      // 재편집 성공 — 하위 단계 구성은 그대로라 이어지는 다음 카드를 계속 볼 수 있게 펼쳐둔다
+      setExpandedStepId(chain[chain.indexOf(stepId) + 1] ?? null);
       return;
     }
 
@@ -451,6 +448,13 @@ export default function ServiceRequestFormPage() {
 
   const handleFormFieldChange = (stepId, key, value) => {
     setStepDraft(prev => ({ ...prev, [stepId]: { ...(prev[stepId] || {}), [key]: value } }));
+    const errKey = `${stepId}:${key}`;
+    setFieldErrors(prev => {
+      if (!prev[errKey]) return prev;
+      const n = { ...prev };
+      delete n[errKey];
+      return n;
+    });
   };
 
   const handleFormConfirm = (stepId) => {
@@ -460,7 +464,8 @@ export default function ServiceRequestFormPage() {
     const missingRequired = step.fields.find(f => f.required && !(values[f.key] || '').toString().trim());
     if (missingRequired) {
       const errKey = `${stepId}:${missingRequired.key}`;
-      const msg = `${missingRequired.key}을(를) 입력해 주세요.`;
+      const verb = missingRequired.type === 'choice' || missingRequired.type === 'select' ? '선택' : '입력';
+      const msg = `${withEulReul(missingRequired.key)} ${verb}해 주세요.`;
       setFieldErrors(prev => ({ ...prev, [errKey]: msg }));
       setAlertMsg(msg);
       cardRefs.current[stepId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -478,7 +483,11 @@ export default function ServiceRequestFormPage() {
     const etcFieldMissingText = step.fields.some(
       f => f.type === 'choice' && values[f.key] === ETC && !(freeTextDraft[`${stepId}:${f.key}`] || '').trim()
     );
-    if (etcFieldMissingText) { setAlertMsg('기타 내용을 입력해 주세요.'); return; }
+    if (etcFieldMissingText) {
+      setAlertMsg('기타 내용을 입력해 주세요.');
+      cardRefs.current[stepId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
 
     // 통과 시 이 단계 에러 전부 제거
     setFieldErrors(prev => {
@@ -501,7 +510,8 @@ export default function ServiceRequestFormPage() {
 
     if (answers[stepId] !== undefined) {
       setAnswers(prev => ({ ...prev, [stepId]: vals.length ? vals.join(' / ') : '(입력 없음)' }));
-      setExpandedStepId(null);
+      // 재편집 성공 — 하위 단계 구성은 그대로라 이어지는 다음 카드를 계속 볼 수 있게 펼쳐둔다
+      setExpandedStepId(chain[chain.indexOf(stepId) + 1] ?? null);
       return;
     }
 
@@ -514,8 +524,14 @@ export default function ServiceRequestFormPage() {
 
   const validateBasic = () => {
     setSubmitted(true);
-    if (!title.trim() || !selectedCategory) {
-      setAlertMsg('요청 제목과 카테고리를 모두 입력해 주세요.');
+    if (!title.trim()) {
+      setAlertMsg('요청 제목을 입력해 주세요.');
+      titleSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return false;
+    }
+    if (!selectedCategory) {
+      setAlertMsg('카테고리를 선택해 주세요.');
+      categorySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return false;
     }
     return true;
@@ -523,8 +539,9 @@ export default function ServiceRequestFormPage() {
 
   const buildPayload = (statusCd) => {
     const budgetDraft = stepDraft.budget || {};
-    const hasBudget = budgetDraft['예산'] === '금액 입력' && budgetDraft['금액'];
-    const budgetAmount = hasBudget ? Number(String(budgetDraft['금액']).replace(/[^0-9]/g, '')) : null;
+    const budgetRaw = budgetDraft['예산'];
+    const hasBudget = budgetRaw && budgetRaw !== '미정';
+    const budgetAmount = hasBudget ? Number(String(budgetRaw).replace(/[^0-9]/g, '')) : null;
     const memoText = (stepDraft.memo?.['메모'] || '').trim() || null;
     const items = chain
       .filter(id => id !== 'budget' && id !== 'memo')
@@ -560,7 +577,18 @@ export default function ServiceRequestFormPage() {
   const goNext = () => {
     if (!validateBasic()) return;
     if (!isComplete) {
-      setAlertMsg('모든 단계를 마쳐야 다음으로 진행할 수 있어요. 진행 중이라면 임시저장을 이용해 주세요.');
+      const lastId = chain[chain.length - 1];
+      const lastStep = lastId ? WIZARD_STEPS[lastId] : null;
+      const msg = lastStep?.type === 'single'
+        ? `${withEulReul(lastStep.title)} 선택해 주세요.`
+        : '모든 단계를 마쳐야 다음으로 진행할 수 있어요. 진행 중이라면 임시저장을 이용해 주세요.';
+      setAlertMsg(msg);
+      if (lastId) {
+        cardRefs.current[lastId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (lastStep?.type === 'single') {
+          setFieldErrors(prev => ({ ...prev, [`${lastId}:single`]: msg }));
+        }
+      }
       return;
     }
     setStep(1);
@@ -597,6 +625,10 @@ export default function ServiceRequestFormPage() {
 
   const isCategoryExpanded = !selectedCategory || editingCategory;
   const isStepExpanded = (stepId) => expandedStepId === stepId;
+  // 이미 답변된 이전 단계를 재편집하는 중이면, 그 이후(다운스트림) 단계들은 값은 그대로 둔 채
+  // 비활성화한다 — 재편집이 성공(그대로 유지 또는 다음 답변으로 교체)하거나 실패(계속 편집 중)
+  // 하는 동안 expandedStepId가 자연스럽게 이 조건을 갱신하므로 별도 해제 로직이 필요 없다.
+  const editingStepIndex = expandedStepId && answers[expandedStepId] !== undefined ? chain.indexOf(expandedStepId) : -1;
   // 카테고리별 전체 단계 수(분기 중 가장 긴 경로 기준) — chain.length 대신 진행률 분모로 사용
   const categoryMaxSteps = selectedCategory ? getCategoryMaxSteps(CATEGORY_NEXT_STEP[selectedCategory.catNm]) : 0;
   const answeredStepCount = chain.filter(id => answers[id] !== undefined).length;
@@ -604,6 +636,12 @@ export default function ServiceRequestFormPage() {
   const previewStepIds = selectedCategory && chain.length > 0
     ? buildPreviewSteps(getDefaultNextStep(chain[chain.length - 1]), chain)
     : [];
+  // 희망일 달력에서 최대 6개월 뒤까지만 넘겨볼 수 있게 제한
+  const maxCalendarNavDate = (() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 6);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  })();
 
   // ── 렌더 ────────────────────────────────────────────────────────────────────
 
@@ -641,17 +679,16 @@ export default function ServiceRequestFormPage() {
 
         {/* ── STEP 0: 요청 정보 입력 ── */}
         {step === 0 && (
-          <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-2">
-            {/* 왼쪽: 요청 정보 (제목 + 카테고리 하나로 묶음) — grid items-stretch가 오른쪽 카드와
-                자동으로 높이를 맞춰준다(더 짧은 쪽이 늘어남). flex-col + 사진 첨부의 flex-1로 남는
-                공간을 채움 */}
-            <section className="flex flex-col overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm">
+          <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
+            {/* 왼쪽: 요청 정보 (제목 + 카테고리 하나로 묶음) — 오른쪽 카드 높이와 억지로 맞추지 않고
+                자기 콘텐츠만큼만 자연스럽게 높이를 가짐 */}
+            <section className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm">
               <div className="border-b border-[#e8e8e8] bg-[#eef2fb] px-6 py-4">
                 <h2 className="text-lg font-bold">요청 정보</h2>
               </div>
 
               {/* 1. 제목 */}
-              <div className="border-b border-[#e8e8e8] px-6 py-5">
+              <div ref={titleSectionRef} className="border-b border-[#e8e8e8] px-6 py-5">
                 <div className="mb-1.5 flex items-center gap-3">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#e5efff] text-xs font-bold text-[#0048bf]">
                     1
@@ -673,7 +710,7 @@ export default function ServiceRequestFormPage() {
               </div>
 
               {/* 2. 카테고리 */}
-              <div>
+              <div ref={categorySectionRef}>
                 <button
                   type="button"
                   className="flex w-full items-center justify-between px-6 py-4 text-left"
@@ -761,27 +798,42 @@ export default function ServiceRequestFormPage() {
                 )}
               </div>
 
-              {/* 상세 항목 진행률 — 오른쪽 위저드 답변 현황을 실시간으로 요약 */}
+              {/* 상세 항목 진행률 — 오른쪽 위저드 번호 배지와 같은 점-연결선 형태로 표시 */}
               {selectedCategory && categoryMaxSteps > 0 && (
                 <div className="border-t border-[#e8e8e8] px-6 py-5">
-                  <div className="mb-2 flex items-center justify-between text-sm">
+                  <div className="mb-3 flex items-center justify-between text-sm">
                     <span className="font-semibold text-[#5f5e5a]">상세 항목 진행률</span>
                     <span className="font-bold text-primary">{answeredStepCount}/{categoryMaxSteps}</span>
                   </div>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-[#eef0ee]">
-                    <div
-                      className="h-full rounded-full bg-primary transition-all"
-                      style={{ width: `${Math.min(100, (answeredStepCount / categoryMaxSteps) * 100)}%` }}
-                    />
+                  <div className="flex w-full items-center">
+                    {Array.from({ length: categoryMaxSteps }, (_, i) => {
+                      const state = i < answeredStepCount ? 'done' : i === answeredStepCount ? 'current' : 'upcoming';
+                      return (
+                        <div key={i} className="flex flex-1 items-center last:flex-none">
+                          <span
+                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                              state === 'done' ? 'bg-primary text-white'
+                              : state === 'current' ? 'bg-[#e5efff] text-primary ring-2 ring-primary'
+                              : 'bg-[#eceae4] text-[#9f9e9a]'
+                            }`}
+                          >
+                            {i + 1}
+                          </span>
+                          {i < categoryMaxSteps - 1 && (
+                            <span className={`h-[2px] flex-1 ${i < answeredStepCount ? 'bg-primary' : 'bg-[#e2e1dc]'}`} />
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                   {isComplete && (
-                    <p className="mt-2 text-xs font-semibold text-primary">모든 항목을 입력했어요!</p>
+                    <p className="mt-3 text-xs font-semibold text-primary">모든 항목을 입력했어요!</p>
                   )}
                 </div>
               )}
 
               {/* 3. 사진 첨부 */}
-              <div className="flex-1 border-t border-[#e8e8e8] px-6 py-5">
+              <div className="border-t border-[#e8e8e8] px-6 py-5">
                 <div className="mb-3 flex items-center gap-3">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#e5efff] text-xs font-bold text-[#0048bf]">
                     3
@@ -809,11 +861,12 @@ export default function ServiceRequestFormPage() {
             if (!step) return null;
             const expanded = isStepExpanded(stepId);
             const stepNum = index + 1;
+            const disabledByEdit = editingStepIndex !== -1 && index > editingStepIndex;
 
             return (
               <section
                 key={stepId}
-                className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm"
+                className={`overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm ${disabledByEdit ? 'pointer-events-none opacity-50' : ''}`}
                 ref={el => { if (el) cardRefs.current[stepId] = el; }}
               >
                 {/* 카드 헤더 */}
@@ -853,7 +906,7 @@ export default function ServiceRequestFormPage() {
                     {/* single · multi */}
                     {(step.type === 'single' || step.type === 'multi') && (
                       <>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))' }}>
                           {step.options.map(opt => {
                             const active = step.type === 'single'
                               ? (answers[stepId] === opt.label
@@ -874,12 +927,16 @@ export default function ServiceRequestFormPage() {
                                 }`}
                               >
                                 {opt.icon && <span className="mb-1.5 text-xl leading-none">{opt.icon}</span>}
-                                <span className="whitespace-nowrap font-medium leading-snug">{opt.label}</span>
+                                <span className="font-medium leading-snug">{opt.label}</span>
                                 {opt.sub && <span className="mt-0.5 text-xs text-[#888780]">{opt.sub}</span>}
                               </button>
                             );
                           })}
                         </div>
+
+                        {step.type === 'single' && fieldErrors[`${stepId}:single`] && (
+                          <p className="mt-2 text-xs font-semibold text-red-600">{fieldErrors[`${stepId}:single`]}</p>
+                        )}
 
                         {/* 기타 텍스트 입력 — multi */}
                         {step.type === 'multi' && (stepDraft[stepId] || []).includes(ETC) && (
@@ -910,6 +967,10 @@ export default function ServiceRequestFormPage() {
 
                         {/* 다음 버튼 — multi */}
                         {step.type === 'multi' && (
+                          <>
+                          {fieldErrors[`${stepId}:multi`] && (
+                            <p className="mt-2 text-xs font-semibold text-red-600">{fieldErrors[`${stepId}:multi`]}</p>
+                          )}
                           <div className="mt-4 flex items-center justify-between">
                             <p className="text-xs text-[#888780]">해당하는 항목을 모두 선택한 뒤 다음을 눌러 주세요.</p>
                             <button
@@ -917,9 +978,10 @@ export default function ServiceRequestFormPage() {
                               className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-[#0048bf]"
                               onClick={() => handleMultiConfirm(stepId)}
                             >
-                              {answers[stepId] !== undefined ? '수정 완료' : '다음'}
+                              다음
                             </button>
                           </div>
+                          </>
                         )}
                       </>
                     )}
@@ -927,8 +989,12 @@ export default function ServiceRequestFormPage() {
                     {/* form */}
                     {step.type === 'form' && (() => {
                       // f.row 키가 같은 연속 필드를 하나의 그룹으로 묶음
+                      // calendar 필드의 embed 목록에 든 필드는 달력 박스 안에서 같이 렌더링되므로
+                      // 별도 그룹으로 다시 만들지 않는다
+                      const embeddedKeys = new Set(step.fields.flatMap(f => f.embed || []));
                       const groups = [];
                       step.fields.forEach(f => {
+                        if (embeddedKeys.has(f.key)) return;
                         if (f.row) {
                           const last = groups[groups.length - 1];
                           if (last?.rowKey === f.row) last.fields.push(f);
@@ -940,19 +1006,21 @@ export default function ServiceRequestFormPage() {
 
                       const renderNormalField = (f) => (
                         <div key={f.key} className={step.layout === 'row' ? '' : 'mb-4 last:mb-0'}>
-                          <label className="mb-1.5 block text-base font-semibold text-[#5f5e5a]">
-                            <span className="flex items-center gap-1">
-                              {f.key}{f.required && <span className="text-red-600"> *</span>}
-                              {f.tooltip && (
-                                <span className="group/tip relative inline-flex cursor-default">
-                                  <span className="flex h-4 w-4 items-center justify-center rounded-full border border-[#9f9e9a] text-[10px] font-bold leading-none text-[#9f9e9a]">?</span>
-                                  <span className="pointer-events-none absolute bottom-full left-0 z-10 mb-1.5 whitespace-nowrap rounded-lg border border-[#e2e1dc] bg-white px-3 py-1.5 text-xs font-normal text-[#3b3a36] shadow-md opacity-0 transition-opacity group-hover/tip:opacity-100">
-                                    {f.tooltip}
+                          {f.type !== 'calendar' && (
+                            <label className="mb-1.5 block text-base font-semibold text-[#5f5e5a]">
+                              <span className="flex items-center gap-1">
+                                {f.key}{f.required && <span className="text-red-600"> *</span>}
+                                {f.tooltip && (
+                                  <span className="group/tip relative inline-flex cursor-default">
+                                    <span className="flex h-4 w-4 items-center justify-center rounded-full border border-[#9f9e9a] text-[10px] font-bold leading-none text-[#9f9e9a]">?</span>
+                                    <span className="pointer-events-none absolute bottom-full left-0 z-10 mb-1.5 whitespace-nowrap rounded-lg border border-[#e2e1dc] bg-white px-3 py-1.5 text-xs font-normal text-[#3b3a36] shadow-md opacity-0 transition-opacity group-hover/tip:opacity-100">
+                                      {f.tooltip}
+                                    </span>
                                   </span>
-                                </span>
-                              )}
-                            </span>
-                          </label>
+                                )}
+                              </span>
+                            </label>
+                          )}
                           {f.type === 'choice' ? (
                             <>
                               <div className="flex flex-wrap gap-2">
@@ -971,6 +1039,86 @@ export default function ServiceRequestFormPage() {
                                 />
                               )}
                             </>
+                          ) : f.type === 'select' ? (
+                            <>
+                              <select
+                                className="w-full rounded-lg border border-[#e2e1dc] bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary"
+                                value={stepDraft[stepId]?.[f.key] || ''}
+                                onChange={e => handleFormFieldChange(stepId, f.key, e.target.value)}
+                              >
+                                <option value="" disabled>선택</option>
+                                {f.options.map(o => <option key={o} value={o}>{o}</option>)}
+                              </select>
+                              {fieldErrors[`${stepId}:${f.key}`] && (
+                                <p className="mt-1 text-xs text-red-600">{fieldErrors[`${stepId}:${f.key}`]}</p>
+                              )}
+                            </>
+                          ) : f.type === 'calendar' ? (
+                            <DateRangePicker
+                              fixedStart
+                              maxNavDate={maxCalendarNavDate}
+                              endDate={stepDraft[stepId]?.[f.key] || null}
+                              onChange={({ end }) => handleFormFieldChange(stepId, f.key, end)}
+                              hideStatus={!!f.embed}
+                              gridPadding="24px 16px 8px"
+                              footer={f.embed && (
+                                <div className="flex flex-col gap-3">
+                                  {f.embed.map(embedKey => {
+                                    const embedField = step.fields.find(ef => ef.key === embedKey);
+                                    if (!embedField) return null;
+                                    return (
+                                      <div key={embedKey}>
+                                        <label className="mb-1.5 block text-sm font-semibold text-[#5f5e5a]">{embedField.key}</label>
+                                        <div className="flex flex-wrap gap-2">
+                                          {embedField.options.map(o => (
+                                            <button key={o} type="button"
+                                              className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${stepDraft[stepId]?.[embedKey] === o ? 'border-primary bg-[#e5efff] font-semibold text-[#0048bf]' : 'border-[#e2e1dc] bg-white text-[#5f5e5a] hover:border-primary'}`}
+                                              onClick={() => handleFormFieldChange(stepId, embedKey, o)}
+                                            >{o}</button>
+                                          ))}
+                                        </div>
+                                        {fieldErrors[`${stepId}:${embedKey}`] && (
+                                          <p className="mt-1 text-xs text-red-600">{fieldErrors[`${stepId}:${embedKey}`]}</p>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                  {(() => {
+                                    const dateVal = stepDraft[stepId]?.[f.key];
+                                    const parts = [];
+                                    if (dateVal) {
+                                      const [y, m, d] = dateVal.split('-').map(Number);
+                                      parts.push(`${y}년 ${m}월 ${d}일`);
+                                    }
+                                    f.embed.forEach(embedKey => {
+                                      const v = stepDraft[stepId]?.[embedKey];
+                                      if (v) parts.push(v);
+                                    });
+                                    if (parts.length === 0) return null;
+                                    return (
+                                      <div className="rounded-lg bg-[#f5f7ff] px-3 py-2.5 text-sm">
+                                        <span className="text-[#5f5e5a]">선택한 일정: </span>
+                                        <span className="font-semibold text-primary">{parts.join(' · ')}</span>
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+                              )}
+                            />
+                          ) : f.type === 'amount-toggle' ? (
+                            <div className="flex gap-2">
+                              <input
+                                className="flex-1 rounded-lg border border-[#e2e1dc] bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary disabled:bg-[#f8f8f6] disabled:text-[#9f9e9a]"
+                                placeholder={f.placeholder}
+                                disabled={stepDraft[stepId]?.[f.key] === '미정'}
+                                value={stepDraft[stepId]?.[f.key] === '미정' ? '' : (stepDraft[stepId]?.[f.key] || '')}
+                                onChange={e => handleFormFieldChange(stepId, f.key, e.target.value)}
+                              />
+                              <button type="button"
+                                className={`shrink-0 rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors ${stepDraft[stepId]?.[f.key] === '미정' ? 'border-primary bg-[#e5efff] text-[#0048bf]' : 'border-[#e2e1dc] bg-white text-[#5f5e5a] hover:border-primary'}`}
+                                onClick={() => handleFormFieldChange(stepId, f.key, stepDraft[stepId]?.[f.key] === '미정' ? '' : '미정')}
+                              >미정</button>
+                            </div>
                           ) : f.type === 'address' ? (
                             <>
                               <div className="flex gap-2">
@@ -1001,10 +1149,7 @@ export default function ServiceRequestFormPage() {
                                 className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary ${fieldErrors[`${stepId}:${f.key}`] ? 'border-red-500' : 'border-[#e2e1dc]'}`}
                                 type={f.type} placeholder={f.placeholder}
                                 value={stepDraft[stepId]?.[f.key] || ''}
-                                onChange={e => {
-                                  handleFormFieldChange(stepId, f.key, e.target.value);
-                                  if (fieldErrors[`${stepId}:${f.key}`]) setFieldErrors(prev => { const n = { ...prev }; delete n[`${stepId}:${f.key}`]; return n; });
-                                }}
+                                onChange={e => handleFormFieldChange(stepId, f.key, e.target.value)}
                               />
                               {fieldErrors[`${stepId}:${f.key}`] && (
                                 <p className="mt-1 text-xs text-red-600">{fieldErrors[`${stepId}:${f.key}`]}</p>
@@ -1021,26 +1166,67 @@ export default function ServiceRequestFormPage() {
                             style={step.layout === 'row' ? { gridTemplateColumns: `repeat(${step.fields.length}, 1fr)` } : undefined}
                           >
                             {groups.map(group => group.rowKey ? (
-                              <div key={group.rowKey} className="mb-4 flex items-end gap-3">
+                              <div key={group.rowKey} className="mb-4 flex items-start gap-3">
                                 {group.fields.map(f => (
-                                  <div key={f.key} className={f.type === 'text' ? 'w-32 shrink-0' : 'flex-1'}>
+                                  <div key={f.key} className={f.type === 'address' ? 'flex-[6]' : f.wide ? 'flex-[4]' : f.type === 'text' ? 'w-32 shrink-0' : f.type === 'select' ? 'w-36 shrink-0' : f.narrow ? 'w-48 shrink-0' : 'flex-1'}>
                                     <label className="mb-1.5 block text-base font-semibold text-[#5f5e5a]">{f.key}</label>
                                     {f.type === 'choice' ? (
-                                      <div className="flex gap-2">
-                                        {f.options.map(o => (
-                                          <button key={o} type="button"
-                                            className={`rounded-lg border px-3 py-2.5 text-[15px] transition-colors ${stepDraft[stepId]?.[f.key] === o ? 'border-primary bg-[#e5efff] font-semibold text-[#0048bf]' : 'border-[#e2e1dc] bg-white text-[#5f5e5a] hover:border-primary'}`}
-                                            onClick={() => handleFormFieldChange(stepId, f.key, o)}
-                                          >{o}</button>
-                                        ))}
-                                      </div>
+                                      <>
+                                        <div className="flex gap-2">
+                                          {f.options.map(o => (
+                                            <button key={o} type="button"
+                                              className={`flex-1 rounded-lg border px-3 py-2.5 text-[15px] transition-colors ${stepDraft[stepId]?.[f.key] === o ? 'border-primary bg-[#e5efff] font-semibold text-[#0048bf]' : 'border-[#e2e1dc] bg-white text-[#5f5e5a] hover:border-primary'}`}
+                                              onClick={() => handleFormFieldChange(stepId, f.key, o)}
+                                            >{o}</button>
+                                          ))}
+                                        </div>
+                                        {fieldErrors[`${stepId}:${f.key}`] && (
+                                          <p className="mt-1 text-xs text-red-600">{fieldErrors[`${stepId}:${f.key}`]}</p>
+                                        )}
+                                      </>
+                                    ) : f.type === 'select' ? (
+                                      <>
+                                        <select
+                                          className="w-full rounded-lg border border-[#e2e1dc] bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary"
+                                          value={stepDraft[stepId]?.[f.key] || ''}
+                                          onChange={e => handleFormFieldChange(stepId, f.key, e.target.value)}
+                                        >
+                                          <option value="" disabled>선택</option>
+                                          {f.options.map(o => <option key={o} value={o}>{o}</option>)}
+                                        </select>
+                                        {fieldErrors[`${stepId}:${f.key}`] && (
+                                          <p className="mt-1 text-xs text-red-600">{fieldErrors[`${stepId}:${f.key}`]}</p>
+                                        )}
+                                      </>
+                                    ) : f.type === 'address' ? (
+                                      <>
+                                        <div className="flex gap-2">
+                                          <input readOnly
+                                            className={`flex-1 rounded-lg border bg-[#f8f8f6] px-3 py-2.5 text-sm outline-none ${fieldErrors[`${stepId}:${f.key}`] ? 'border-red-500' : 'border-[#e2e1dc]'}`}
+                                            placeholder={f.placeholder}
+                                            value={stepDraft[stepId]?.[f.key] || ''}
+                                          />
+                                          <button type="button"
+                                            className="shrink-0 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-primary hover:bg-[#e5efff]"
+                                            onClick={() => setAddressSearchKey(`${stepId}:${f.key}`)}
+                                          >주소 검색</button>
+                                        </div>
+                                        {fieldErrors[`${stepId}:${f.key}`] && (
+                                          <p className="mt-1 text-xs text-red-600">{fieldErrors[`${stepId}:${f.key}`]}</p>
+                                        )}
+                                      </>
                                     ) : (
-                                      <input
-                                        className="w-full rounded-lg border border-[#e2e1dc] bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary"
-                                        placeholder={f.placeholder}
-                                        value={stepDraft[stepId]?.[f.key] || ''}
-                                        onChange={e => handleFormFieldChange(stepId, f.key, e.target.value)}
-                                      />
+                                      <>
+                                        <input
+                                          className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary ${fieldErrors[`${stepId}:${f.key}`] ? 'border-red-500' : 'border-[#e2e1dc]'}`}
+                                          placeholder={f.placeholder}
+                                          value={stepDraft[stepId]?.[f.key] || ''}
+                                          onChange={e => handleFormFieldChange(stepId, f.key, e.target.value)}
+                                        />
+                                        {fieldErrors[`${stepId}:${f.key}`] && (
+                                          <p className="mt-1 text-xs text-red-600">{fieldErrors[`${stepId}:${f.key}`]}</p>
+                                        )}
+                                      </>
                                     )}
                                   </div>
                                 ))}
@@ -1052,7 +1238,7 @@ export default function ServiceRequestFormPage() {
                               className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-[#0048bf]"
                               onClick={() => handleFormConfirm(stepId)}
                             >
-                              {answers[stepId] !== undefined ? '수정 완료' : (step.next ? '다음' : '입력 완료')}
+                              {step.next ? '다음' : '입력 완료'}
                             </button>
                           </div>
                         </>
@@ -1070,7 +1256,7 @@ export default function ServiceRequestFormPage() {
                       if (!previewStep) return null;
                       return (
                         <section
-                          key={stepId}
+                          key={`preview-${stepId}`}
                           className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-[#fafaf8] opacity-60"
                         >
                           <div className="flex w-full items-center gap-3 px-6 py-4">

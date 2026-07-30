@@ -1,11 +1,15 @@
 // src/pages/product/steps/ProductInfoStep.jsx
 // Step 0: 상품명·카테고리·거래형태·설명·이미지 입력
 // Props: form, set, categories, bannedKeywordError, images, onChange, tradeMethods, maxImages, pendingDescFilesMap,
-//        submitted, imgSectionRef, prdNmRef, catRef, tradeRef
+//        submitted, imgSectionRef, prdNmRef, catRef, tradeRef, onTradeRegionsChange
 import ProductImageUpload from '@components/product/ProductImageUpload';
 import RichTextEditor from '@components/product/RichTextEditor';
+import RegionSelector from '@components/common/RegionSelector';
 
-export default function ProductInfoStep({ form, set, categories, bannedKeywordError, images, onChange, tradeMethods, maxImages, pendingDescFilesMap, submitted, imgSectionRef, prdNmRef, catRef, tradeRef }) {
+// 이 값일 때만 희망 거래지역 선택 UI 노출 — 직거래(TRDC0010)·둘 다 가능(TRDC0020)
+const REGION_REQUIRED_TRADE_METHODS = ['TRDC0010', 'TRDC0020'];
+
+export default function ProductInfoStep({ form, set, categories, bannedKeywordError, images, onChange, tradeMethods, maxImages, pendingDescFilesMap, submitted, imgSectionRef, prdNmRef, catRef, tradeRef, onTradeRegionsChange }) {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <div className="field" ref={prdNmRef}>
@@ -70,6 +74,17 @@ export default function ProductInfoStep({ form, set, categories, bannedKeywordEr
           ))}
         </div>
       </div>
+
+      {REGION_REQUIRED_TRADE_METHODS.includes(form.prdTrdMethodCd) && (
+        <div className="field" style={{ marginTop: 20 }}>
+          <RegionSelector
+            label="희망 거래지역 (최대 5곳)"
+            placeholder="희망 거래지역을 선택해 주세요"
+            value={form.tradeRegions.map(r => r.name)}
+            onChange={onTradeRegionsChange}
+          />
+        </div>
+      )}
 
       <div className="field" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         <label>상품 설명</label>
