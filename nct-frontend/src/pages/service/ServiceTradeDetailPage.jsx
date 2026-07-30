@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { submitServiceTradeDispute } from '@api/serviceTradeApi';
+import {
+  confirmServiceCompletion,
+  requestServiceCompletion,
+  submitServiceTradeDispute,
+} from '@api/serviceTradeApi';
 import {
   getServiceTradeStatus,
   SERVICE_TRADE_STEPS,
@@ -12,8 +16,8 @@ import '@assets/css/service-trade-detail.css';
 export default function ServiceTradeDetailPage({
   trade = null,
   disputeTypes = [],
-  onRequestCompletion = null,
-  onConfirmCompletion = null,
+  onRequestCompletion = requestServiceCompletion,
+  onConfirmCompletion = confirmServiceCompletion,
   scheduleHistory = [],
   onRequestScheduleChange = null,
   onRequestScheduleCancellation = null,
