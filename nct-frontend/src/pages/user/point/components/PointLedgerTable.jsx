@@ -12,6 +12,9 @@ const TYPE_BADGE = {
   보관금전환: 'bg-amber-100 text-amber-800',
   정산:       'bg-blue-100 text-blue-800',
   전환:       'bg-purple-100 text-purple-800',
+  환전출금:   'bg-red-100 text-red-700',
+  환전복원:   'bg-teal-100 text-teal-800',
+  환불:       'bg-cyan-100 text-cyan-800',
   보정:       'bg-gray-100 text-gray-600',
 };
 
