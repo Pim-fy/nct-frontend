@@ -11,6 +11,7 @@ const TYPE_BADGE = {
   반환:       'bg-indigo-100 text-indigo-800',
   보관금전환: 'bg-amber-100 text-amber-800',
   정산:       'bg-blue-100 text-blue-800',
+  전환:       'bg-purple-100 text-purple-800',
   보정:       'bg-gray-100 text-gray-600',
 };
 

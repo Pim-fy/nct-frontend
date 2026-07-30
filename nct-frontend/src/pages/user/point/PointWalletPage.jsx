@@ -7,6 +7,7 @@ import Swal from 'sweetalert2';
 import PointSummaryCards from './components/PointSummaryCards';
 import PointLedgerTable from './components/PointLedgerTable';
 import PointChargeOrderTable from './components/PointChargeOrderTable';
+import PointConvertHistoryTable from './components/PointConvertHistoryTable';
 import PointExchangeOrderTable from './components/PointExchangeOrderTable';
 import PointAmountModal from './components/PointAmountModal';
 import PointChargeWidgetModal from './components/PointChargeWidgetModal';
@@ -64,7 +65,7 @@ const SUBMIT_ACTIONS = {
 const PointWalletPage = ({ embedded = false } = {}) => {
   const [openModal, setOpenModal] = useState(null); // null | 'charge' | 'exchange' | 'convert'
   // 각 내역은 최근 5건만 보이고, "+"를 누르면 전체 내역 모달이 뜬다 (2026-07-29)
-  const [detailModal, setDetailModal] = useState(null); // null | 'ledger' | 'charge' | 'exchange'
+  const [detailModal, setDetailModal] = useState(null); // null | 'ledger' | 'charge' | 'convert' | 'exchange'
 
   const [searchParams, setSearchParams] = useSearchParams();
   // 결제 리다이렉트로 돌아온 직후(?charge=...가 붙어 있는 동안)는 최초 렌더부터 계속 true —
@@ -252,6 +253,11 @@ const PointWalletPage = ({ embedded = false } = {}) => {
       ) : (
         <PointChargeOrderTable rows={chargeOrders} limit={RECENT_LIMIT} onExpand={() => setDetailModal('charge')} />
       )}
+      {ledgerLoading ? (
+        <p className="text-sm text-gray-400 text-center py-10">전환 내역을 불러오는 중...</p>
+      ) : (
+        <PointConvertHistoryTable rows={ledger} limit={RECENT_LIMIT} onExpand={() => setDetailModal('convert')} />
+      )}
       {exchangeLoading ? (
         <p className="text-sm text-gray-400 text-center py-10">환전 내역을 불러오는 중...</p>
       ) : (
@@ -266,6 +272,11 @@ const PointWalletPage = ({ embedded = false } = {}) => {
       {detailModal === 'charge' && (
         <PointHistoryDetailModal title="충전 내역" onClose={() => setDetailModal(null)}>
           <PointChargeOrderTable rows={chargeOrders} />
+        </PointHistoryDetailModal>
+      )}
+      {detailModal === 'convert' && (
+        <PointHistoryDetailModal title="전환 내역" onClose={() => setDetailModal(null)}>
+          <PointConvertHistoryTable rows={ledger} />
         </PointHistoryDetailModal>
       )}
       {detailModal === 'exchange' && (
