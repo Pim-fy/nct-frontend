@@ -7,7 +7,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchMyFavoriteAuctions } from "@api/auctionApi";
-import { toImageUrl } from "@api/fileApi";
 import { assets } from "@components/mypage/assets";
 import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
 
@@ -27,22 +26,19 @@ const WISH_TABS = [
 
 const TODAY_ITEMS = [
   {
-    thumbnail: assets.thumb1,
-    badges: [{ label: "거래", cls: "badge-success" }, { label: "구매확정 대기", cls: "badge-teal" }],
+    badges: [{ label: "거래", cls: "badge-blue" }, { label: "구매확정 대기", cls: "badge-danger" }],
     title: "[거래 구매확정] 다이슨 V11",
     meta: "거래 금액 148,000원 · 배송완료 후 3일째",
     section: "auction-bids",
   },
   {
-    thumbnail: assets.thumb2,
-    badges: [{ label: "서비스 요청", cls: "badge-success" }],
+    badges: [{ label: "서비스요청", cls: "badge-success" }],
     title: "[견적비교] 성수동 원룸 이사 운반",
     meta: "청년이사·바로운반 · 새 견적 도착",
     section: "service-trade",
   },
   {
-    thumbnail: assets.thumb3,
-    badges: [{ label: "거래", cls: "badge-success" }, { label: "구매확정 대기", cls: "badge-teal" }],
+    badges: [{ label: "거래", cls: "badge-blue" }, { label: "구매확정 대기", cls: "badge-danger" }],
     title: "[거래 구매확정] 미니 보온 텀블러 세트",
     meta: "거래 금액 148,000원 · 배송완료 후 3일째",
     section: "auction-bids",
@@ -85,59 +81,67 @@ function ListPanel({ title, items, tabs, onTabClick, onMore, onItemMore }) {
   const [activeIdx, setActiveIdx] = useState(0);
 
   return (
-    <div className="border border-[rgba(0,0,0,0.11)] rounded-[15px] overflow-hidden">
-      <div className="bg-[rgba(0,100,255,0.05)] px-5 h-[60px] flex items-center justify-between">
-        <div className="flex items-center gap-4 min-w-0">
-          <span className="font-bold text-[18px] text-[#3a3a3a] shrink-0">{title}</span>
-          <div className="hidden sm:flex items-center gap-4 text-[15px] mt-8 mr-0 ml-34">
-            {tabs.map((tab, i) => (
-              <button
-                key={tab.label}
-                type="button"
-                onClick={() => { setActiveIdx(i); onTabClick?.(tab.section); }}
-                className={`bg-transparent border-none cursor-pointer pb-px text-[15px] ${i === activeIdx ? "text-[#0064ff] font-bold border-b-2 border-[#0064ff]" : "text-[#4e4e4e]"}`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
+    <div>
+      {/* 섹션 헤더 */}
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-bold text-[18px] text-[#1a1a1a] m-0">{title}</h3>
         <button
           type="button"
           onClick={onMore}
-          className="bg-transparent border-none cursor-pointer shrink-0 ml-2"
+          className="bg-transparent border-none cursor-pointer flex items-center gap-1 text-[14px] text-[#969696]"
           aria-label={`${title} 더보기`}
         >
-          <img src={assets.iconMore} alt="" className="size-[20px] object-contain opacity-40" />
+          더보기
+          <img src={assets.iconMore} alt="" className="size-[14px] object-contain opacity-40" />
         </button>
       </div>
-      <div className="divide-y divide-[#e5e5e5]">
-        {items.map((item) => (
-          <div key={item.title} className="flex gap-4 p-5 items-center">
-            <div className="size-[85px] shrink-0 rounded-[5px] border border-[#d9d9d9] overflow-hidden">
-              <img alt={item.title} className="size-full object-cover" src={item.thumbnail} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap gap-1.5 mb-1">
+
+      {/* 탭 */}
+      <div className="flex gap-5 border-b border-[#e5e5e5] mb-4">
+        {tabs.map((tab, i) => (
+          <button
+            key={tab.label}
+            type="button"
+            onClick={() => { setActiveIdx(i); onTabClick?.(tab.section); }}
+            style={{ marginBottom: -1 }}
+            className={`pb-2.5 text-[15px] font-medium bg-transparent border-none cursor-pointer transition-colors ${
+              i === activeIdx
+                ? "text-[#0064ff] border-b-2 border-[#0064ff]"
+                : "text-[#969696]"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* 카드 그리드 */}
+      {items.length === 0 ? (
+        <p className="text-[15px] text-[#969696] py-10 text-center">표시할 항목이 없습니다.</p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+          {items.map((item, i) => (
+            <div
+              key={`${item.title}-${i}`}
+              className="border border-[rgba(0,0,0,0.08)] rounded-[10px] bg-white p-4 cursor-pointer hover:border-[rgba(0,100,255,0.3)] transition-colors"
+              style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
+              onClick={() => onItemMore?.(item.section)}
+            >
+              <div className="flex flex-wrap gap-1 mb-2">
                 {item.badges.map((badge) => (
-                  <span key={badge.label} className={`badge ${badge.cls}`}>
+                  <span key={badge.label} className={`badge ${badge.cls}`} style={{ fontSize: 13, height: 30, borderRadius: 5 }}>
                     {badge.label}
                   </span>
                 ))}
               </div>
-              <p className="font-bold text-[18px] text-black truncate">{item.title}</p>
-              <p className="text-[15px] text-[#4e4e4e] truncate mt-1">{item.meta}</p>
+              <p className="font-bold text-[16px] text-[#1a1a1a] leading-snug mb-1.5" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                {item.title}
+              </p>
+              <p className="text-[14px] text-[#969696] truncate">{item.meta}</p>
             </div>
-            <button
-              type="button"
-              onClick={() => onItemMore?.(item.section)}
-              className="btn btn-ghost btn-sm shrink-0"
-            >
-              더보기 ›
-            </button>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -160,9 +164,8 @@ export default function MyPageDashboard({
     enabled: !!user,
   });
   const wishItems = (wishQuery.data?.items ?? []).map((item) => ({
-    thumbnail: toImageUrl(item.thumbnailPath),
     badges: [
-      { label: item.auctionStatusName || "경매중", cls: "badge-success" },
+      { label: item.auctionStatusName || "경매중", cls: "badge-blue" },
       ...(item.bidCount > 0 ? [{ label: `입찰 ${item.bidCount}회`, cls: "badge-teal" }] : []),
     ],
     title: item.title || `경매 #${item.auctionId}`,
@@ -301,7 +304,7 @@ export default function MyPageDashboard({
       </div>
 
       {/* 오늘 확인할 일 / 관심상품 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="flex flex-col gap-8">
         <ListPanel
           title="오늘 확인할 일"
           items={TODAY_ITEMS}
