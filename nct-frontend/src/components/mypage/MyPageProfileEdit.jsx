@@ -8,9 +8,10 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import DaumPostcode from "react-daum-postcode";
 import { toast, confirm } from "@utils/common";
 import { assets } from "@components/mypage/assets";
-import { updateProfile, changePassword, getProfile, getOauthLinks, unlinkOauth } from "@api/memberApi";
+import { updateProfile, changePassword, getOauthLinks, unlinkOauth } from "@api/memberApi";
 import { uploadImage, toImageUrl } from "@api/fileApi";
 import { useAuth } from "@hooks/useAuth";
+import { MEMBER_PROFILE_QUERY_KEY, useMemberProfile } from "@hooks/useMemberProfile";
 import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
 
 const FIELD_CLASS =
@@ -55,10 +56,7 @@ export default function MyPageProfileEdit({ user }) {
   });
 
   // ISS-022: 전화번호·주소는 로그인 응답(user)에 없어 마이페이지 전용 조회 API로 초기값을 채운다.
-  const profileQuery = useQuery({
-    queryKey: ["member", "profile"],
-    queryFn: () => getProfile().then((res) => res.data),
-  });
+  const profileQuery = useMemberProfile();
   useEffect(() => {
     if (!profileQuery.data) return;
     // 편집 가능한 폼을 비동기 조회 결과로 1회 초기화하는 표준 패턴이다(값 자체를 렌더링에 쓰는
@@ -153,7 +151,7 @@ export default function MyPageProfileEdit({ user }) {
         accountNo: "",
       });
       setForm((prev) => ({ ...prev, bankName: "", accountNo: "" }));
-      queryClient.setQueryData(["member", "profile"], res.data);
+      queryClient.setQueryData(MEMBER_PROFILE_QUERY_KEY, res.data);
       toast({ icon: "success", title: "환전계좌가 삭제되었습니다." });
     } catch (err) {
       const msg = err?.response?.data?.message || "삭제에 실패했습니다.";
@@ -232,7 +230,7 @@ export default function MyPageProfileEdit({ user }) {
       queryClient.setQueryData(["auth", "user"], (prev) =>
         prev ? { ...prev, nickname: res.data.nickname } : prev
       );
-      queryClient.setQueryData(["member", "profile"], res.data);
+      queryClient.setQueryData(MEMBER_PROFILE_QUERY_KEY, res.data);
       setPreviewImageUrl(null); // 저장 완료 후엔 서버가 내려준 profileImageUrl을 그대로 신뢰한다
       toast({ icon: "success", title: "저장되었습니다." });
     } catch (err) {
