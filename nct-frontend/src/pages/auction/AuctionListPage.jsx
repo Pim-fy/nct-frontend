@@ -438,7 +438,7 @@ const AuctionListPage = () => {
   </HeaderSearchPortal>
 
      {/* .container에 Tailwind py-*를 같이 쓰면 App.css의 padding shorthand가 레이어 충돌로 상하 패딩을 0으로 무력화한다 — 인라인 style로 우회 */}
-      <main className="mx-auto w-full max-w-[1600px] px-4 py-7 pb-[52px] lg:px-6">
+      <main className="mx-auto my-0 w-full max-w-[1600px] py-10">
         <div className="flex items-start gap-6 max-md:block">
           <button
             className={`fixed inset-0 z-[210] cursor-default border-0 bg-black/40 transition-opacity duration-300 md:hidden ${
