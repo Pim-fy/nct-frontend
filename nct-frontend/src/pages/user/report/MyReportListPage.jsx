@@ -9,7 +9,7 @@ import ReportModal from "@components/common/ReportModal";
 
 const STATUS_LABEL = {
   ABRC0005: "접수됨",
-  ABRC0006: "검토중",
+  ABRC0006: "처리중",
   ABRC0007: "처리완료",
   ABRC0008: "반려",
 };
@@ -38,7 +38,7 @@ const getTypeNames = (report) => {
 const STATUS_TABS = [
   { label: "전체",    status: null },
   { label: "접수됨",  status: "ABRC0005" },
-  { label: "검토중",  status: "ABRC0006" },
+  { label: "처리중",  status: "ABRC0006" },
   { label: "처리완료", status: "FINISHED" },
 ];
 
@@ -61,7 +61,7 @@ function TypeBadge({ typeName, style }) {
 function ReportCard({ report, isOpen, onToggle, number }) {
   const [hovered, setHovered] = React.useState(false);
   return (
-    <div className="transition-all bg-white overflow-hidden rounded-[20px] shadow-[0_2px_12px_rgba(0,0,0,0.05)] border border-[#e4e9f2] hover:border-[#a0aec0] cursor-pointer">
+    <div className="transition-all bg-white overflow-hidden rounded-[20px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] border border-[#e4e9f2] hover:border-[#a0aec0] cursor-pointer">
       {/* 헤더 행 */}
       <button
         type="button"
@@ -75,7 +75,7 @@ function ReportCard({ report, isOpen, onToggle, number }) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 min-w-0">
               {getTypeNames(report).map((name) => (
-                <TypeBadge key={name} typeName={name} style={{ borderRadius: "5px", fontSize: "14px", fontWeight: 400, flexShrink: 0 }} />
+                <TypeBadge key={name} typeName={name} style={{ borderRadius: "5px", fontSize: "14px", fontWeight: 400, flexShrink: 0, height: "28px", paddingLeft: "5px", paddingRight: "5px", display: "inline-flex", alignItems: "center", color: "#333333", borderColor: "#555555" }} />
               ))}
               <p className="font-bold text-[18px] text-[#333] truncate mb-0 min-w-0">{report.title}</p>
             </div>
@@ -115,13 +115,13 @@ function ReportCard({ report, isOpen, onToggle, number }) {
             </p>
           </div>
 
-          <div className="pb-4">
+          <div className="pb-1">
             <p className="font-bold m-0 mb-2" style={{ fontSize: "16px", color: "#333333" }}>신고 내용</p>
             <p className="text-[16px] text-[#444] leading-relaxed m-0">{report.content}</p>
           </div>
 
           {report.processReason && (
-            <div className="rounded-[8px] p-4 border border-[#e8e9ec]" style={{ background: "#F8FAFC" }}>
+            <div className="rounded-[8px] p-4 border border-[#e8e9ec]" style={{ background: "#ffffff" }}>
               <div className="flex items-center gap-1.5 mb-2">
                 <svg className="size-4 text-[#0064ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
