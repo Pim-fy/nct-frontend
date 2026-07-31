@@ -20,7 +20,7 @@ const PopularAuctionSidebar = ({ items = DUMMY_POPULAR }) => {
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-lg font-bold text-gray-900 m-0">실시간 인기 경매</h3>
         <Link
-          to="/auction"
+          to="/auction?sort=popular"
           className="text-xs text-gray-400 hover:text-blue-600 no-underline transition-colors"
         >
           더보기 →

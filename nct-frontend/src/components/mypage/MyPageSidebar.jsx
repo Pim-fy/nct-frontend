@@ -23,11 +23,11 @@ const GENERAL_MENU_ITEMS = [
   },
   {
     key: "service-history",
-    label: "서비스 거래내역",
+    label: "서비스 요청",
     type: "accordion",
     children: [
-      { key: "service-bids",  label: "서비스 입찰 내역", type: "todo" },
-      { key: "service-sales", label: "서비스 판매 내역", type: "todo" },
+      { key: "service-requests", label: "내 서비스 요청 목록", type: "todo" },
+      { key: "received-quotes",  label: "받은 견적 관리",      type: "todo" },
     ],
   },
   { key: "wishlist",     label: "관심 상품",    type: "section" },
