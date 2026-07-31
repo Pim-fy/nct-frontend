@@ -46,6 +46,7 @@ const PROVIDER_MENU_ITEMS = [
   { key: "service-chat",      label: "서비스 채팅",   type: "section" },
   { key: "wallet",            label: "포인트 지갑",   type: "section" },
   { key: "approval-category", label: "승인 카테고리", type: "section" },
+  { key: "received-review",   label: "받은 리뷰",     type: "section" },
   { key: "review",            label: "내 리뷰",       type: "section" },
   { key: "report-list",       label: "내 신고 목록",  type: "section" },
 ];
@@ -63,9 +64,19 @@ function getParentAccordion(sectionKey) {
   return null;
 }
 
-export default function MyPageSidebar({ mode = "general", activeSection, onSelect, onRequestProviderSwitch }) {
+export default function MyPageSidebar({
+  mode = "general",
+  activeSection,
+  onSelect,
+  onRequestProviderSwitch,
+  menuItems: customMenuItems,
+  title,
+}) {
   const navigate = useNavigate();
-  const menuItems = mode === "provider" ? PROVIDER_MENU_ITEMS : GENERAL_MENU_ITEMS;
+  // 담당자 7: 고객센터처럼 같은 규격을 쓰는 화면은 메뉴 데이터와 제목만 주입해 재사용합니다.
+  const menuItems = customMenuItems
+    ?? (mode === "provider" ? PROVIDER_MENU_ITEMS : GENERAL_MENU_ITEMS);
+  const sidebarTitle = title ?? "마이페이지";
 
   const [openAccordion, setOpenAccordion] = useState(() => getParentAccordion(activeSection));
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -90,9 +101,9 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
     // 아코디언 자식이 아닌 항목 클릭 시 아코디언 닫기
     if (!getParentAccordion(item.key)) setOpenAccordion(null);
 
-    if (item.type === "section") { onSelect(item.key); return; }
+    if (item.type === "section") { onSelect?.(item.key); return; }
     if (item.type === "route")   { navigate(item.to); return; }
-    if (item.type === "provider-switch") { onRequestProviderSwitch(); return; }
+    if (item.type === "provider-switch") { onRequestProviderSwitch?.(); return; }
     toast({ icon: "info", title: "준비 중인 메뉴입니다." });
   };
 
@@ -102,11 +113,11 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
   );
 
   return (
-    <nav className="lg:w-[210px] lg:shrink-0">
+    <nav className="lg:w-[210px] lg:shrink-0" aria-label={`${sidebarTitle} 메뉴`}>
       {/* 타이틀 (데스크톱) */}
       <h2 className="hidden lg:block font-bold text-[25px] leading-[36px] text-black mb-5 px-2">
-        마이페이지
-        {mode === "provider" && (
+        {sidebarTitle}
+        {!title && mode === "provider" && (
           <span className="text-[14px] text-[#0064ff] ml-1">(제공자)</span>
         )}
       </h2>
@@ -129,7 +140,7 @@ export default function MyPageSidebar({ mode = "general", activeSection, onSelec
             className="flex-1 flex items-center h-full pr-1"
           >
             <span className="flex-1 text-center text-gray-900 text-[18px] font-semibold">
-              {mobileTabs.find(t => t.key === activeSection)?.label ?? "마이페이지"}
+              {mobileTabs.find(t => t.key === activeSection)?.label ?? sidebarTitle}
             </span>
             <span className="w-[44px] flex items-center justify-center text-gray-500">
               {mobileMenuOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}

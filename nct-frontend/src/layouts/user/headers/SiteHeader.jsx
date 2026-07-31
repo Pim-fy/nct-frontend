@@ -22,6 +22,7 @@ import relativeTime from '@utils/relativeTime';
 import { requestPointExchange } from '@api/pointApi';
 import { SITE_HEADER_VISIBILITY_EVENT } from '@/constants/layoutEvents';
 import { SITE_HEADER_SEARCH_SLOT_ID } from '@components/common/HeaderSearchPortal';
+import HeaderCreateAction from '@components/common/HeaderCreateAction';
 import ScrollToTopButton from '@components/common/ScrollToTopButton';
 import NotificationDetailModal from '@pages/user/notification/components/NotificationDetailModal';
 import PointChargeWidgetModal from '@pages/user/point/components/PointChargeWidgetModal';
@@ -53,7 +54,13 @@ const NOTI_PREVIEW_MAX = 5;
 const SiteHeader = () => {
   // isProvider·switchMode: 제공자 모드전환 실연동 (F-PROV-008, 담당자6 BJN, 2026-07-24)
   // — 종전 localStorage 가짜 플래그(@utils/providerMode) 대신 서버가 내려준 실제 역할 기준.
-  const { user, logout, isProvider, switchMode } = useAuth();
+  const {
+    user,
+    loading: authLoading,
+    logout,
+    isProvider,
+    switchMode,
+  } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const queryClient = useQueryClient();
@@ -111,6 +118,15 @@ const SiteHeader = () => {
   const isServiceSearchRoute = pathname === '/service'
     || /^\/service-requests\/\d+$/.test(pathname);
   const hasHeaderSearch = isAuctionSearchRoute || isServiceSearchRoute;
+  let headerCreateActionType = null;
+  const canShowCreateAction = !authLoading && (!user || user.role === 'ROLE_USER');
+  if (canShowCreateAction) {
+    if (isAuctionSearchRoute) {
+      headerCreateActionType = 'auction';
+    } else if (isServiceSearchRoute) {
+      headerCreateActionType = 'service';
+    }
+  }
 
   const utilRef = useRef(null);
   const navRef = useRef(null);
@@ -409,7 +425,9 @@ const SiteHeader = () => {
         </div>
 
         {/* 우측 유틸 영역 */}
-        <div ref={utilRef} className="flex items-center gap-3">
+        <div ref={utilRef} className="flex items-center gap-2 md:gap-3">
+          <HeaderCreateAction type={headerCreateActionType} />
+
           {/* 알림 */}
           <div className="relative">
             <button
