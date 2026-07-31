@@ -156,7 +156,7 @@ function NotificationPanel({ notifications = [], onItemClick, onMore }) {
   });
 
   return (
-    <div className="bg-white rounded-[20px] shadow-[0_2px_12px_rgba(0,0,0,0.08)] border border-[#e4e9f2] overflow-hidden">
+    <div className="bg-white rounded-[20px] shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-[#e4e9f2] overflow-hidden">
       {/* 헤더 배경 영역 */}
       <div className="bg-[#f5f7fc] px-5 border-b border-[#e8e9ec]">
         <div className="flex items-end justify-between h-[60px] gap-4">
@@ -184,7 +184,7 @@ function NotificationPanel({ notifications = [], onItemClick, onMore }) {
       </div>
 
       {/* 리스트 영역 */}
-      <div className="px-5 pb-5">
+      <div className="px-5 pb-5 min-h-[122px]">
         {filtered.length === 0 ? (
           <div className="flex items-center justify-center py-10">
             <p className="text-[15px] text-[#969696] m-0">알림이 없습니다.</p>
@@ -221,10 +221,10 @@ function ReviewablePanel({ items, onWrite, onMore }) {
   const preview = items.slice(0, 3);
 
   return (
-    <div className="bg-white rounded-[20px] shadow-[0_2px_12px_rgba(0,0,0,0.08)] border border-[#e4e9f2] overflow-hidden h-[280px] flex flex-col">
+    <div className="bg-white rounded-[20px] shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-[#e4e9f2] overflow-hidden">
       {/* 헤더 배경 영역 */}
       <div className="bg-[#f5f7fc] px-5 border-b border-[#e8e9ec]">
-        <div className="flex items-center justify-between h-[60px]">
+        <div className="flex items-end pb-3 justify-between h-[60px]">
           <h3 className="font-bold text-[18px] text-[#1a1a1a] m-0">
             거래 완료 리뷰작성
             <span className="ml-2 text-[15px] text-[#0064ff] font-bold">{items.length}건</span>
@@ -240,7 +240,7 @@ function ReviewablePanel({ items, onWrite, onMore }) {
       </div>
 
       {/* 리스트 영역 */}
-      <div className="px-5 pb-5 flex-1 overflow-hidden">
+      <div className="px-5 pb-5 min-h-[122px]">
       <div className="divide-y divide-[#e8e9ec]">
         {preview.map((item) => {
           const type = REVIEW_DEAL_TYPE[item.dealType] ?? { label: item.dealType, cls: "badge-gray" };
@@ -283,10 +283,10 @@ function ReviewablePanel({ items, onWrite, onMore }) {
 
 function ActiveChatPanel({ rooms, onOpenChat, onMore }) {
   return (
-    <div className="bg-white rounded-[20px] shadow-[0_2px_12px_rgba(0,0,0,0.08)] border border-[#e4e9f2] overflow-hidden h-[280px] flex flex-col">
+    <div className="bg-white rounded-[20px] shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-[#e4e9f2] overflow-hidden">
       {/* 헤더 배경 영역 */}
       <div className="bg-[#f5f7fc] px-5 border-b border-[#e8e9ec]">
-        <div className="flex items-center justify-between h-[60px]">
+        <div className="flex items-end pb-3 justify-between h-[60px]">
           <h3 className="font-bold text-[18px] text-[#1a1a1a] m-0">
             진행중인 채팅
             {rooms.length > 0 && (
@@ -304,7 +304,7 @@ function ActiveChatPanel({ rooms, onOpenChat, onMore }) {
       </div>
 
       {/* 리스트 영역 */}
-      <div className="px-5 pb-5 flex-1 overflow-hidden">
+      <div className="px-5 pb-5 min-h-[122px]">
       {rooms.length === 0 ? (
         <div className="flex items-center justify-center py-10">
           <p className="text-[15px] text-[#969696] m-0">진행중인 채팅이 없습니다.</p>
