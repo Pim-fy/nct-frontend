@@ -72,8 +72,8 @@ export default function ReviewListPage() {
   }, []);
 
   const tabs = [
-    { key: "writable", label: "작성가능한 리뷰", count: writableItems.length },
-    { key: "written",  label: "내가작성한 리뷰", count: writtenItems.length },
+    { key: "writable", label: "작성가능 리뷰",  count: writableItems.length },
+    { key: "written",  label: "작성완료 리뷰",  count: writtenItems.length },
   ];
 
   const totalPages = Math.max(1, Math.ceil(writtenItems.length / PAGE_SIZE));

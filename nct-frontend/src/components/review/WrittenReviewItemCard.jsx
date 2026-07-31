@@ -19,7 +19,7 @@ export default function WrittenReviewItemCard({
   const typeStyle = DEAL_TYPE_STYLE[dealType] ?? DEAL_TYPE_STYLE.goods;
 
   return (
-    <div className="flex items-center gap-4 bg-white border border-[#e5e5e5] rounded-[20px] p-4 md:p-5">
+    <div className="flex items-center gap-4 bg-white border border-[#e5e5e5] rounded-[15px] p-4 md:p-5">
       {/* 썸네일 */}
       <button
         type="button"
