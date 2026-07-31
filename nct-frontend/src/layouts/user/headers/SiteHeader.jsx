@@ -62,7 +62,8 @@ const SiteHeader = () => {
     switchMode,
   } = useAuth();
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname } = location;
   const queryClient = useQueryClient();
 
   // 제공자 승인 여부 — 일반모드 로그인 상태일 때만 호출 (비로그인·이미 제공자 모드면 불필요)
@@ -211,6 +212,22 @@ const SiteHeader = () => {
 
   // 한 팝업을 열면 나머지는 닫는다.
   const openOnly = (which) => {
+    // 담당자 7: 비회원은 알림·포인트 팝업을 열지 않고 로그인 후 현재 화면으로 돌아오게 한다.
+    if (which === 'noti' || which === 'point') {
+      if (authLoading) return;
+      if (!user) {
+        setNotiOpen(false);
+        setPointOpen(false);
+        setProfileOpen(false);
+        if (pathname === '/login') return;
+
+        const loginRedirectFrom = `${location.pathname}${location.search}${location.hash}`;
+        sessionStorage.setItem('loginRedirectFrom', loginRedirectFrom);
+        navigate('/login', { state: { from: location } });
+        return;
+      }
+    }
+
     setNotiOpen(which === 'noti' ? (v) => !v : false);
     setPointOpen(which === 'point' ? (v) => !v : false);
     setProfileOpen(which === 'profile' ? (v) => !v : false);
@@ -426,8 +443,6 @@ const SiteHeader = () => {
 
         {/* 우측 유틸 영역 */}
         <div ref={utilRef} className="flex items-center gap-2 md:gap-3">
-          <HeaderCreateAction type={headerCreateActionType} />
-
           {/* 알림 */}
           <div className="relative">
             <button
@@ -689,10 +704,12 @@ const SiteHeader = () => {
 
         <div
           className={hasHeaderSearch
-            ? 'absolute left-1/2 top-[92px] z-[1] w-[calc(100%-32px)] max-w-[548px] -translate-x-1/2 md:top-1/2 md:w-[min(38vw,548px)] md:-translate-y-1/2'
+            ? 'absolute left-1/2 top-[92px] z-[1] flex w-[calc(100%-32px)] max-w-[548px] -translate-x-1/2 items-center gap-2 md:top-1/2 md:w-[min(38vw,548px)] md:-translate-y-1/2'
             : 'hidden'}
-          id={SITE_HEADER_SEARCH_SLOT_ID}
-        />
+        >
+          <div className="min-w-0 flex-1" id={SITE_HEADER_SEARCH_SLOT_ID} />
+          <HeaderCreateAction type={headerCreateActionType} />
+        </div>
       </div>
 
       {/* 모바일 전체화면 메뉴 */}
