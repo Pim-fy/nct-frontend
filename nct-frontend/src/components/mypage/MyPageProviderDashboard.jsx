@@ -4,6 +4,7 @@ import { getUserReviews } from '@api/reviewApi';
 import { useMyPortfolios, useMyProviderProfile } from '@hooks/useProviderProfile';
 import { useNotifications } from '@hooks/useNotification';
 import { usePointBalance } from '@hooks/usePoint';
+import { useMyQuotes } from '@hooks/useQuote';
 import { assets } from '@components/mypage/assets';
 import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
 
@@ -13,6 +14,7 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpe
   const portfoliosQuery = useMyPortfolios();
   const notificationsQuery = useNotifications();
   const pointBalanceQuery = usePointBalance();
+  const quotesQuery = useMyQuotes({ page: 1, size: 1 });
 
   const profile = profileQuery.data;
   const providerUserSn = Number(profile?.userSn);
@@ -33,6 +35,7 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpe
   const nickname = user?.nickname || '제공자';
   const availableArea = profile?.availableArea?.trim();
   const introduction = profile?.introduction?.trim();
+  const approvedCategories = profile?.categories ?? [];
   const openSection = (section) => onOpenSection?.(section);
 
   return (
@@ -107,8 +110,14 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpe
           color="#0064ff"
           icon={assets.iconAction}
           label="견적 현황"
-          value="—"
-          meta="참여 중인 견적을 확인합니다."
+          value={quotesQuery.isLoading
+            ? '…'
+            : quotesQuery.isError
+              ? '—'
+              : `${formatNumber(quotesQuery.data?.totalCount)}건`}
+          meta={quotesQuery.isError
+            ? '견적 현황을 불러오지 못했습니다.'
+            : '제출한 견적 목록을 확인합니다.'}
           onClick={() => openSection('quote')}
         />
         <SummaryCard
@@ -152,6 +161,13 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpe
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               <ProfileSummaryItem label="활동 지역" value={availableArea || '아직 등록되지 않았습니다.'} />
               <ProfileSummaryItem label="소개" value={introduction || '아직 등록되지 않았습니다.'} />
+              <ProfileSummaryItem
+                label="승인 카테고리"
+                value={approvedCategories.length > 0
+                  ? approvedCategories.join(' · ')
+                  : '현재 승인된 카테고리가 없습니다.'}
+                className="sm:col-span-2"
+              />
             </div>
           )}
 
@@ -178,9 +194,20 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpe
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-bold text-[#1f2937]">받은 리뷰</h2>
             {!receivedReviewsQuery.isLoading && !receivedReviewsQuery.isError && (
-              <span className="text-sm font-semibold text-[#637085]">
-                {receivedReviewsQuery.data?.totalCount ?? 0}건
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold text-[#637085]">
+                  {receivedReviewsQuery.data?.totalCount ?? 0}건
+                </span>
+                {(receivedReviewsQuery.data?.totalCount ?? 0) > 0 && (
+                  <button
+                    type="button"
+                    className="text-sm font-semibold text-[#0064ff] hover:underline"
+                    onClick={() => openSection('received-review')}
+                  >
+                    전체보기
+                  </button>
+                )}
+              </div>
             )}
           </div>
           <ReceivedReviewContent
@@ -258,9 +285,9 @@ function ReceivedReviewContent({ isLoading, isError, reviews, onRetry }) {
   );
 }
 
-function ProfileSummaryItem({ label, value }) {
+function ProfileSummaryItem({ label, value, className = '' }) {
   return (
-    <div className="rounded-xl border border-[#edf0f4] bg-[#fafbfc] px-4 py-4">
+    <div className={`rounded-xl border border-[#edf0f4] bg-[#fafbfc] px-4 py-4 ${className}`}>
       <p className="text-xs font-semibold text-[#637085]">{label}</p>
       <p className="mt-2 break-words text-sm leading-6 text-[#27364b]">{value}</p>
     </div>

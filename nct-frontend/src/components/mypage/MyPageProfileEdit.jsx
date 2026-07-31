@@ -3,10 +3,12 @@
 // - 절대좌표 → 반응형 전환.
 //   메인 폼(좌)/소셜+알림(우) → xl 이상 가로 배치, 그 이하 세로 스택.
 //   폼 내부 필드: sm 이상 2열 그리드, 그 이하 단일 열.
-import React, { Fragment, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { ChevronUp, ChevronDown } from "lucide-react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import DaumPostcode from "react-daum-postcode";
 import { toast, confirm } from "@utils/common";
+import AlertModal from "@components/common/AlertModal";
 import { assets } from "@components/mypage/assets";
 import { updateProfile, changePassword, getOauthLinks, unlinkOauth } from "@api/memberApi";
 import { uploadImage, toImageUrl } from "@api/fileApi";
@@ -59,6 +61,9 @@ export default function MyPageProfileEdit({ user }) {
   const notifyQuery = useNotificationSettings();
   const notifyMutation = useSaveNotificationSettings();
   const [notifyEdits, setNotifyEdits] = useState(null);
+  const [openDomains, setOpenDomains] = useState(new Set());
+  const [saveAlertOpen, setSaveAlertOpen] = useState(false);
+  const [profileSaveAlertOpen, setProfileSaveAlertOpen] = useState(false);
   const serverEvents = notifyQuery.data?.events ?? [];
   const notifyEvents = notifyEdits ?? serverEvents;
 
@@ -158,7 +163,7 @@ export default function MyPageProfileEdit({ user }) {
         accountNo: "",
       });
       setForm((prev) => ({ ...prev, bankName: "", accountNo: "" }));
-      queryClient.setQueryData(MEMBER_PROFILE_QUERY_KEY, res.data);
+      queryClient.invalidateQueries({ queryKey: MEMBER_PROFILE_QUERY_KEY });
       toast({ icon: "success", title: "환전계좌가 삭제되었습니다." });
     } catch (err) {
       const msg = err?.response?.data?.message || "삭제에 실패했습니다.";
@@ -234,12 +239,10 @@ export default function MyPageProfileEdit({ user }) {
         bankName: form.bankName.trim(),
         accountNo: form.accountNo.trim(),
       });
-      queryClient.setQueryData(["auth", "user"], (prev) =>
-        prev ? { ...prev, nickname: res.data.nickname } : prev
-      );
-      queryClient.setQueryData(MEMBER_PROFILE_QUERY_KEY, res.data);
+      queryClient.invalidateQueries({ queryKey: ["auth", "user"] });
+      queryClient.invalidateQueries({ queryKey: MEMBER_PROFILE_QUERY_KEY });
       setPreviewImageUrl(null); // 저장 완료 후엔 서버가 내려준 profileImageUrl을 그대로 신뢰한다
-      toast({ icon: "success", title: "저장되었습니다." });
+      setProfileSaveAlertOpen(true);
     } catch (err) {
       const msg = err?.response?.data?.message || "저장에 실패했습니다.";
       toast({ icon: "error", title: msg });
@@ -265,7 +268,7 @@ export default function MyPageProfileEdit({ user }) {
     notifyMutation.mutate(
       { events: notifyEvents.map(({ eventCode, inapp, email }) => ({ eventCode, inapp, email })) },
       {
-        onSuccess: () => toast({ icon: 'success', title: '알림 설정이 저장되었습니다.' }),
+        onSuccess: () => setSaveAlertOpen(true),
         onError: (err) => {
           const msg = err?.response?.data?.message || '저장에 실패했습니다.';
           toast({ icon: 'error', title: msg });
@@ -279,8 +282,8 @@ export default function MyPageProfileEdit({ user }) {
       <MyPageContentHeader title="프로필" />
       <div className="flex flex-col xl:flex-row gap-4 items-start">
       {/* ── 메인 정보수정 카드 ── */}
-      <div className="flex-1 min-w-0 border border-[#e5e5e5] rounded-[20px] overflow-hidden">
-        <div className="bg-[rgba(230,240,255,0.47)] px-6 h-[52px] flex items-center">
+      <div className="flex-1 min-w-0 border border-[#e4e9f2] rounded-[20px] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+        <div className="bg-[#f5f7fc] px-6 h-[60px] flex items-end pb-3 border-b border-[#e8e9ec]">
           <p className="font-bold text-[17px] text-[#404040]">정보수정</p>
         </div>
 
@@ -314,14 +317,14 @@ export default function MyPageProfileEdit({ user }) {
 
           {/* 닉네임 */}
           <div>
-            <label className="block font-bold text-[14px] text-[#404040] mb-1.5">닉네임</label>
+            <label className="block font-bold text-[14px] text-[#404040] mb-0.5">닉네임</label>
             <input className={FIELD_CLASS} value={form.nickname} onChange={handleChange("nickname")} />
           </div>
 
           {/* 이메일 / 전화번호 */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block font-bold text-[14px] text-[#404040] mb-1.5">이메일</label>
+              <label className="block font-bold text-[14px] text-[#404040] mb-0.5">이메일</label>
               <div className={FIELD_CLASS + " flex items-center text-[#404040]"}>
                 {user?.email
                   ? user.email.replace(/(?<=.{2}).(?=.*@)/g, "*")
@@ -329,7 +332,7 @@ export default function MyPageProfileEdit({ user }) {
               </div>
             </div>
             <div>
-              <label className="block font-bold text-[14px] text-[#404040] mb-1.5">전화번호</label>
+              <label className="block font-bold text-[14px] text-[#404040] mb-0.5">전화번호</label>
               <input
                 className={FIELD_CLASS}
                 type="tel"
@@ -342,7 +345,7 @@ export default function MyPageProfileEdit({ user }) {
 
           {/* 비밀번호 */}
           <div>
-            <label className="block font-bold text-[14px] text-[#404040] mb-1.5">현재 비밀번호</label>
+            <label className="block font-bold text-[14px] text-[#404040] mb-0.5">현재 비밀번호</label>
             <input
               type="password"
               className={FIELD_CLASS}
@@ -355,7 +358,7 @@ export default function MyPageProfileEdit({ user }) {
             />
           </div>
           <div>
-            <label className="block font-bold text-[14px] text-[#404040] mb-1.5">새 비밀번호</label>
+            <label className="block font-bold text-[14px] text-[#404040] mb-0.5">새 비밀번호</label>
             <input
               type="password"
               className={FIELD_CLASS}
@@ -368,7 +371,7 @@ export default function MyPageProfileEdit({ user }) {
             />
           </div>
           <div>
-            <label className="block font-bold text-[14px] text-[#404040] mb-1.5">새 비밀번호 확인</label>
+            <label className="block font-bold text-[14px] text-[#404040] mb-0.5">새 비밀번호 확인</label>
             <input
               type="password"
               className={FIELD_CLASS}
@@ -398,7 +401,7 @@ export default function MyPageProfileEdit({ user }) {
 
           {/* 주소 */}
           <div>
-            <label className="block font-bold text-[14px] text-[#404040] mb-1.5">주소</label>
+            <label className="block font-bold text-[14px] text-[#404040] mb-0.5">주소</label>
             <div className="flex gap-2">
               <input
                 className={FIELD_CLASS + " flex-1"}
@@ -417,7 +420,7 @@ export default function MyPageProfileEdit({ user }) {
             {form.zip && <p className="mt-1 text-[12px] text-[#969696]">우편번호 {form.zip}</p>}
           </div>
           <div>
-            <label className="block font-bold text-[14px] text-[#404040] mb-1.5">상세주소</label>
+            <label className="block font-bold text-[14px] text-[#404040] mb-0.5">상세주소</label>
             <input
               className={FIELD_CLASS}
               disabled={!form.address}
@@ -429,7 +432,7 @@ export default function MyPageProfileEdit({ user }) {
 
           {/* 환전계좌 */}
           <div>
-            <label className="block font-bold text-[14px] text-[#404040] mb-1.5">환전계좌</label>
+            <label className="block font-bold text-[14px] text-[#404040] mb-0.5">환전계좌</label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <input
                 className={FIELD_CLASS}
@@ -470,8 +473,8 @@ export default function MyPageProfileEdit({ user }) {
       {/* ── 우측: 소셜 로그인 + 알림설정 ── */}
       <div className="w-full xl:w-[300px] shrink-0 flex flex-col gap-4">
         {/* 소셜 로그인 연동 */}
-        <div className="border border-[#e5e5e5] rounded-[20px] overflow-hidden">
-          <div className="bg-[rgba(230,240,255,0.47)] px-5 h-[52px] flex items-center">
+        <div className="border border-[#e4e9f2] rounded-[20px] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+          <div className="bg-[#f5f7fc] px-5 h-[60px] flex items-end pb-3 border-b border-[#e8e9ec]">
             <p className="font-bold text-[17px] text-black">소셜 로그인 연동</p>
           </div>
           <div className="p-5">
@@ -504,26 +507,55 @@ export default function MyPageProfileEdit({ user }) {
         </div>
 
         {/* 알림설정 */}
-        <div className="border border-[#e5e5e5] rounded-[20px] overflow-hidden">
-          <div className="bg-[rgba(230,240,255,0.47)] px-5 h-[52px] flex items-center">
+        <div className="border border-[#e4e9f2] rounded-[20px] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+          <div className="bg-[#f5f7fc] px-5 h-[60px] flex items-end pb-3 border-b border-[#e8e9ec] justify-between">
             <p className="font-bold text-[17px] text-black">알림설정</p>
+            <button
+              type="button"
+              onClick={handleSaveNotify}
+              disabled={notifyQuery.isLoading || notifyMutation.isPending}
+              className="btn btn-sm"
+              style={{ height: 28, padding: "0 8px", fontSize: 13, background: "#fff", border: "1px solid #d9d9d9", color: "#1a1a1a" }}
+            >
+              {notifyMutation.isPending ? "저장 중..." : "✓저장"}
+            </button>
           </div>
           <div className="px-5 pb-4">
-            <div className="flex items-center justify-between h-[36px] text-[16px] font-medium text-[#969696] border-b border-[#f0f0f0]">
-              <span>항목</span>
-              <div className="flex gap-6 pr-0.5">
-                <span>인앱</span>
-                <span>이메일</span>
-              </div>
+            {/* 컬럼 헤더 */}
+            <div className="flex items-center h-[36px] text-[14px] font-medium text-[#969696] border-b border-[#f0f0f0]">
+              <span className="flex-1 pl-5">카테고리</span>
+              <span className="w-[44px] text-center shrink-0">인앱</span>
+              <span className="w-[44px] text-center shrink-0">이메일</span>
             </div>
             {DOMAIN_LABELS.map(({ key: domainKey, label: domainLabel }) => {
               const domainEvents = notifyEvents.filter((e) => e.domain === domainKey);
               if (domainEvents.length === 0) return null;
+              const isOpen = openDomains.has(domainKey);
+              const toggleOpen = () => setOpenDomains((prev) => {
+                const next = new Set(prev);
+                next.has(domainKey) ? next.delete(domainKey) : next.add(domainKey);
+                return next;
+              });
               return (
-                <Fragment key={domainKey}>
-                  <div className="flex items-center justify-between py-1.5 border-b border-[#f0f0f0] bg-[#f8f8f8]">
-                    <span className="text-[16px] font-semibold text-[#0064ff] pl-1">{domainLabel}</span>
-                    <div className="flex gap-6 items-center">
+                <div key={domainKey} className="border-b border-[#f0f0f0] last:border-b-0">
+                  {/* 아코디언 헤더 행 */}
+                  <div className="flex items-center h-[42px]">
+                    <button
+                      type="button"
+                      onClick={toggleOpen}
+                      className="flex-1 flex items-center gap-1.5 h-full text-left min-w-0"
+                    >
+                      {isOpen
+                        ? <ChevronDown size={14} className="text-[#0064ff] shrink-0" />
+                        : <ChevronUp   size={14} className="text-[#0064ff] shrink-0" />
+                      }
+                      <span>
+                        <span className="text-[15px] font-semibold text-[#1a1a1a]">{domainLabel}</span>
+                        <span className="text-[12px] text-[#aaa] ml-[2px]">({domainEvents.length})</span>
+                      </span>
+                    </button>
+                    {/* 도메인 전체 선택 체크박스 */}
+                    <div className="w-[44px] flex justify-center shrink-0">
                       <input
                         type="checkbox"
                         className="w-[14px] h-[14px] accent-[#0064ff] cursor-pointer"
@@ -531,6 +563,8 @@ export default function MyPageProfileEdit({ user }) {
                         onChange={() => toggleDomain(domainKey, "inapp")}
                         aria-label={`${domainLabel} 인앱 전체`}
                       />
+                    </div>
+                    <div className="w-[44px] flex justify-center shrink-0">
                       <input
                         type="checkbox"
                         className="w-[14px] h-[14px] accent-[#0064ff] cursor-pointer"
@@ -540,43 +574,40 @@ export default function MyPageProfileEdit({ user }) {
                       />
                     </div>
                   </div>
-                  {domainEvents.map((e) => (
-                    <div
-                      key={e.eventCode}
-                      className="flex items-center justify-between py-1.5 border-b border-[#f0f0f0] last:border-b-0"
-                    >
-                      <span className="text-[16px] text-[#404040] pl-2">{e.label}</span>
-                      <div className="flex gap-6 items-center">
-                        <input
-                          type="checkbox"
-                          className="w-[14px] h-[14px] accent-[#0064ff] cursor-pointer"
-                          checked={e.inapp}
-                          onChange={() => toggleNotify(e.eventCode, "inapp")}
-                          aria-label={`${e.label} 인앱 알림`}
-                        />
-                        <input
-                          type="checkbox"
-                          className="w-[14px] h-[14px] accent-[#0064ff] cursor-pointer"
-                          checked={e.email}
-                          onChange={() => toggleNotify(e.eventCode, "email")}
-                          aria-label={`${e.label} 이메일 알림`}
-                        />
-                      </div>
+                  {/* 아코디언 본문 — 개별 이벤트 행 */}
+                  {isOpen && (
+                    <div className="bg-[#f8f9fc] border-t border-[#f0f0f0]">
+                      {domainEvents.map((e) => (
+                        <div
+                          key={e.eventCode}
+                          className="flex items-center h-[38px] border-b border-[#f0f0f0] last:border-b-0"
+                        >
+                          <span className="flex-1 min-w-0 text-[14px] text-[#404040] pl-6">{e.label}</span>
+                          <div className="w-[44px] flex justify-center shrink-0">
+                            <input
+                              type="checkbox"
+                              className="w-[14px] h-[14px] accent-[#0064ff] cursor-pointer"
+                              checked={e.inapp}
+                              onChange={() => toggleNotify(e.eventCode, "inapp")}
+                              aria-label={`${e.label} 인앱 알림`}
+                            />
+                          </div>
+                          <div className="w-[44px] flex justify-center shrink-0">
+                            <input
+                              type="checkbox"
+                              className="w-[14px] h-[14px] accent-[#0064ff] cursor-pointer"
+                              checked={e.email}
+                              onChange={() => toggleNotify(e.eventCode, "email")}
+                              aria-label={`${e.label} 이메일 알림`}
+                            />
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </Fragment>
+                  )}
+                </div>
               );
             })}
-            <div className="pt-3 flex justify-end">
-              <button
-                type="button"
-                onClick={handleSaveNotify}
-                disabled={notifyQuery.isLoading || notifyMutation.isPending}
-                className="btn btn-primary btn-sm"
-              >
-                {notifyMutation.isPending ? '저장 중...' : '저장'}
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -599,6 +630,16 @@ export default function MyPageProfileEdit({ user }) {
         </div>
       ) : null}
       </div>
+      <AlertModal
+        open={saveAlertOpen}
+        message="알림 설정이 저장되었습니다."
+        onClose={() => setSaveAlertOpen(false)}
+      />
+      <AlertModal
+        open={profileSaveAlertOpen}
+        message="저장되었습니다."
+        onClose={() => setProfileSaveAlertOpen(false)}
+      />
     </>
   );
 }

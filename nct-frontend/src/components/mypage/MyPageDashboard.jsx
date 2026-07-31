@@ -11,6 +11,9 @@ import { fetchMyFavoriteAuctions } from "@api/auctionApi";
 import { getMyBidHistory } from "@api/bidApi";
 import { getMyServiceRequests } from "@api/serviceRequestApi";
 import { getMyQuotes } from "@api/quoteApi";
+import { getMyProducts } from "@api/productApi";
+import { getTradeHistory } from "@api/tradeApi";
+import { getTradeListItems, toTradeHistoryItem } from "@api/tradeAdapter";
 import { getWritableReviews } from "@api/reviewApi";
 import { getTradeChatRooms } from "@api/tradeChatApi";
 import { toTradeChatRooms } from "@api/tradeChatAdapter";
@@ -156,7 +159,7 @@ function NotificationPanel({ notifications = [], onItemClick, onMore }) {
   });
 
   return (
-    <div className="bg-white rounded-[20px] shadow-[0_2px_12px_rgba(0,0,0,0.08)] border border-[#e4e9f2] overflow-hidden">
+    <div className="bg-white rounded-[20px] shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-[#e4e9f2] overflow-hidden">
       {/* 헤더 배경 영역 */}
       <div className="bg-[#f5f7fc] px-5 border-b border-[#e8e9ec]">
         <div className="flex items-end justify-between h-[60px] gap-4">
@@ -184,7 +187,7 @@ function NotificationPanel({ notifications = [], onItemClick, onMore }) {
       </div>
 
       {/* 리스트 영역 */}
-      <div className="px-5 pb-5">
+      <div className="px-5 pb-5 min-h-[122px]">
         {filtered.length === 0 ? (
           <div className="flex items-center justify-center py-10">
             <p className="text-[15px] text-[#969696] m-0">알림이 없습니다.</p>
@@ -221,10 +224,10 @@ function ReviewablePanel({ items, onWrite, onMore }) {
   const preview = items.slice(0, 3);
 
   return (
-    <div className="bg-white rounded-[20px] shadow-[0_2px_12px_rgba(0,0,0,0.08)] border border-[#e4e9f2] overflow-hidden h-[280px] flex flex-col">
+    <div className="bg-white rounded-[20px] shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-[#e4e9f2] overflow-hidden">
       {/* 헤더 배경 영역 */}
       <div className="bg-[#f5f7fc] px-5 border-b border-[#e8e9ec]">
-        <div className="flex items-center justify-between h-[60px]">
+        <div className="flex items-end pb-3 justify-between h-[60px]">
           <h3 className="font-bold text-[18px] text-[#1a1a1a] m-0">
             거래 완료 리뷰작성
             <span className="ml-2 text-[15px] text-[#0064ff] font-bold">{items.length}건</span>
@@ -240,7 +243,7 @@ function ReviewablePanel({ items, onWrite, onMore }) {
       </div>
 
       {/* 리스트 영역 */}
-      <div className="px-5 pb-5 flex-1 overflow-hidden">
+      <div className="px-5 pb-5 min-h-[122px]">
       <div className="divide-y divide-[#e8e9ec]">
         {preview.map((item) => {
           const type = REVIEW_DEAL_TYPE[item.dealType] ?? { label: item.dealType, cls: "badge-gray" };
@@ -283,10 +286,10 @@ function ReviewablePanel({ items, onWrite, onMore }) {
 
 function ActiveChatPanel({ rooms, onOpenChat, onMore }) {
   return (
-    <div className="bg-white rounded-[20px] shadow-[0_2px_12px_rgba(0,0,0,0.08)] border border-[#e4e9f2] overflow-hidden h-[280px] flex flex-col">
+    <div className="bg-white rounded-[20px] shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-[#e4e9f2] overflow-hidden">
       {/* 헤더 배경 영역 */}
       <div className="bg-[#f5f7fc] px-5 border-b border-[#e8e9ec]">
-        <div className="flex items-center justify-between h-[60px]">
+        <div className="flex items-end pb-3 justify-between h-[60px]">
           <h3 className="font-bold text-[18px] text-[#1a1a1a] m-0">
             진행중인 채팅
             {rooms.length > 0 && (
@@ -304,7 +307,7 @@ function ActiveChatPanel({ rooms, onOpenChat, onMore }) {
       </div>
 
       {/* 리스트 영역 */}
-      <div className="px-5 pb-5 flex-1 overflow-hidden">
+      <div className="px-5 pb-5 min-h-[122px]">
       {rooms.length === 0 ? (
         <div className="flex items-center justify-center py-10">
           <p className="text-[15px] text-[#969696] m-0">진행중인 채팅이 없습니다.</p>
@@ -393,8 +396,18 @@ export default function MyPageDashboard({
       .filter((b) => b.auctionStatusCode === "AUCC0002" && (b.displayStatus === "HIGHEST" || b.displayStatus === "OUTBID"))
       .map((b) => b.aucSn)
   ).size;
-  const purchaseCnt = new Set(bidHistory.map((b) => b.aucSn)).size;
-  const wonCnt      = new Set(bidHistory.filter((b) => b.displayStatus === "WON").map((b) => b.aucSn)).size;
+  const wonCnt = new Set(bidHistory.filter((b) => b.displayStatus === "WON").map((b) => b.aucSn)).size;
+
+  // 구매 건수 — 상품 구매내역 페이지(TradeHistory fixedRole=BUYER)와 동일한 기준
+  const { data: allTradeItems = [] } = useQuery({
+    queryKey: ["trades", "my", "all"],
+    queryFn: async () => {
+      const res = await getTradeHistory({});
+      return getTradeListItems(res).map(toTradeHistoryItem);
+    },
+    enabled: !!user,
+  });
+  const purchaseCnt = allTradeItems.filter((t) => t.type === "BUYER").length;
 
   // 서비스 요청 전체 건수 (구매자 입찰)
   const { data: svcReqAll } = useQuery({
@@ -422,6 +435,15 @@ export default function MyPageDashboard({
     enabled: !!user,
   });
   const svcSaleCnt = quotePage?.totalCount ?? 0;
+
+  // 경매 판매 건수 (진행 중 상태)
+  const { data: auctionActiveSummary } = useQuery({
+    queryKey: ["products", "my", 1, 1, "ACTIVE"],
+    queryFn: () => getMyProducts(1, 1, "ACTIVE"),
+    select: (res) => res.data,
+    enabled: !!user,
+  });
+  const auctionSaleCnt = auctionActiveSummary?.total ?? 0;
 
   // 진행중인 채팅방 (ACTIVE 상태만)
   const { data: activeChatRooms = [] } = useQuery({
@@ -473,7 +495,7 @@ export default function MyPageDashboard({
           <span className="text-white/70">ㅣ</span>
           <button type="button" onClick={nav("auction-bids")}    className={subBtn}>구매 {purchaseCnt}건</button>
           <span className="text-white/70">ㅣ</span>
-          <button type="button" onClick={nav("auction-sales")}   className={subBtn}>판매 0건</button>
+          <button type="button" onClick={nav("auction-sales")}   className={subBtn}>판매 {auctionSaleCnt}건</button>
         </span>
       ),
       onMore: nav("active-auctions"),
