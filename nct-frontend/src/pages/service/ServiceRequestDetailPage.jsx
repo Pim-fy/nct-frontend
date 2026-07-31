@@ -95,8 +95,15 @@ export default function ServiceRequestDetailPage() {
       navigate('/login', { state: { from: location } });
       return;
     }
-    // TODO: 황성경(3) 견적 작성 라우트 확정 후 경로 교체
-    navigate(`/quotes/new?svcReqSn=${svcReqSn}`);
+    // QuoteFormPage(황성경3 소유)는 svcReqSn 등을 쿼리스트링이 아니라 router state로 받는다
+    navigate('/provider/quotes/new', {
+      state: {
+        svcReqSn,
+        svcReqTitle: request.svcReqTtl,
+        category: request.catNm,
+        budget: fmtBudget(request.svcReqBdgtAmt),
+      },
+    });
   };
 
   if (loading) {
