@@ -19,6 +19,7 @@ import { getTradeChatRooms } from "@api/tradeChatApi";
 import { toTradeChatRooms } from "@api/tradeChatAdapter";
 import { usePointBalance } from "@hooks/usePoint";
 import { useNotifications } from "@hooks/useNotification";
+import { useMemberProfile } from "@hooks/useMemberProfile";
 import relativeTime from "@utils/relativeTime";
 import { assets } from "@components/mypage/assets";
 import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
@@ -354,6 +355,7 @@ export default function MyPageDashboard({
   const navigate = useNavigate();
   const nickname = user?.nickname || "고객";
   const email = user?.email || "";
+  const profileQuery = useMemberProfile();
 
   // 관심상품 실데이터 — 최대 3건만 미리보기
   const wishQuery = useQuery({
@@ -542,8 +544,8 @@ export default function MyPageDashboard({
       <div className="flex flex-col sm:flex-row sm:items-center gap-4 lg:grid lg:grid-cols-4 lg:gap-3 lg:items-end">
         <div className="flex items-center gap-3 shrink-0">
           <div className="size-[64px] rounded-full overflow-hidden bg-[#e6f0ff] shrink-0">
-            {user?.profileImageUrl ? (
-              <img src={user.profileImageUrl} alt="" className="size-full object-cover" />
+            {(profileQuery.data?.profileImageUrl || user?.profileImageUrl) ? (
+              <img src={profileQuery.data?.profileImageUrl || user.profileImageUrl} alt="" className="size-full object-cover" />
             ) : (
               <img src={assets.profile} alt="" className="size-full object-cover" />
             )}
