@@ -4,9 +4,11 @@
 //   메인 폼(좌)/소셜+알림(우) → xl 이상 가로 배치, 그 이하 세로 스택.
 //   폼 내부 필드: sm 이상 2열 그리드, 그 이하 단일 열.
 import React, { useEffect, useRef, useState } from "react";
+import { ChevronUp, ChevronDown } from "lucide-react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import DaumPostcode from "react-daum-postcode";
 import { toast, confirm } from "@utils/common";
+import AlertModal from "@components/common/AlertModal";
 import { assets } from "@components/mypage/assets";
 import { updateProfile, changePassword, getOauthLinks, unlinkOauth } from "@api/memberApi";
 import { uploadImage, toImageUrl } from "@api/fileApi";
@@ -60,6 +62,8 @@ export default function MyPageProfileEdit({ user }) {
   const notifyMutation = useSaveNotificationSettings();
   const [notifyEdits, setNotifyEdits] = useState(null);
   const [openDomains, setOpenDomains] = useState(new Set());
+  const [saveAlertOpen, setSaveAlertOpen] = useState(false);
+  const [profileSaveAlertOpen, setProfileSaveAlertOpen] = useState(false);
   const serverEvents = notifyQuery.data?.events ?? [];
   const notifyEvents = notifyEdits ?? serverEvents;
 
@@ -159,7 +163,7 @@ export default function MyPageProfileEdit({ user }) {
         accountNo: "",
       });
       setForm((prev) => ({ ...prev, bankName: "", accountNo: "" }));
-      queryClient.setQueryData(MEMBER_PROFILE_QUERY_KEY, res.data);
+      queryClient.invalidateQueries({ queryKey: MEMBER_PROFILE_QUERY_KEY });
       toast({ icon: "success", title: "환전계좌가 삭제되었습니다." });
     } catch (err) {
       const msg = err?.response?.data?.message || "삭제에 실패했습니다.";
@@ -235,12 +239,10 @@ export default function MyPageProfileEdit({ user }) {
         bankName: form.bankName.trim(),
         accountNo: form.accountNo.trim(),
       });
-      queryClient.setQueryData(["auth", "user"], (prev) =>
-        prev ? { ...prev, nickname: res.data.nickname } : prev
-      );
-      queryClient.setQueryData(MEMBER_PROFILE_QUERY_KEY, res.data);
+      queryClient.invalidateQueries({ queryKey: ["auth", "user"] });
+      queryClient.invalidateQueries({ queryKey: MEMBER_PROFILE_QUERY_KEY });
       setPreviewImageUrl(null); // 저장 완료 후엔 서버가 내려준 profileImageUrl을 그대로 신뢰한다
-      toast({ icon: "success", title: "저장되었습니다." });
+      setProfileSaveAlertOpen(true);
     } catch (err) {
       const msg = err?.response?.data?.message || "저장에 실패했습니다.";
       toast({ icon: "error", title: msg });
@@ -266,7 +268,7 @@ export default function MyPageProfileEdit({ user }) {
     notifyMutation.mutate(
       { events: notifyEvents.map(({ eventCode, inapp, email }) => ({ eventCode, inapp, email })) },
       {
-        onSuccess: () => toast({ icon: 'success', title: '알림 설정이 저장되었습니다.' }),
+        onSuccess: () => setSaveAlertOpen(true),
         onError: (err) => {
           const msg = err?.response?.data?.message || '저장에 실패했습니다.';
           toast({ icon: 'error', title: msg });
@@ -543,14 +545,14 @@ export default function MyPageProfileEdit({ user }) {
                       onClick={toggleOpen}
                       className="flex-1 flex items-center gap-1.5 h-full text-left min-w-0"
                     >
-                      <span
-                        className="text-[11px] text-[#0064ff] shrink-0 transition-transform duration-200"
-                        style={{ display: "inline-block", transform: isOpen ? "rotate(90deg)" : "rotate(0deg)" }}
-                      >
-                        ▶
+                      {isOpen
+                        ? <ChevronDown size={14} className="text-[#0064ff] shrink-0" />
+                        : <ChevronUp   size={14} className="text-[#0064ff] shrink-0" />
+                      }
+                      <span>
+                        <span className="text-[15px] font-semibold text-[#1a1a1a]">{domainLabel}</span>
+                        <span className="text-[12px] text-[#aaa] ml-[2px]">({domainEvents.length})</span>
                       </span>
-                      <span className="text-[15px] font-semibold text-[#1a1a1a]">{domainLabel}</span>
-                      <span className="text-[12px] text-[#aaa] ml-0.5">({domainEvents.length})</span>
                     </button>
                     {/* 도메인 전체 선택 체크박스 */}
                     <div className="w-[44px] flex justify-center shrink-0">
@@ -578,9 +580,9 @@ export default function MyPageProfileEdit({ user }) {
                       {domainEvents.map((e) => (
                         <div
                           key={e.eventCode}
-                          className="flex items-center justify-between h-[38px] px-3 border-b border-[#f0f0f0] last:border-b-0"
+                          className="flex items-center h-[38px] border-b border-[#f0f0f0] last:border-b-0"
                         >
-                          <span className="flex-1 min-w-0 text-[14px] text-[#404040]">{e.label}</span>
+                          <span className="flex-1 min-w-0 text-[14px] text-[#404040] pl-6">{e.label}</span>
                           <div className="w-[44px] flex justify-center shrink-0">
                             <input
                               type="checkbox"
@@ -628,6 +630,16 @@ export default function MyPageProfileEdit({ user }) {
         </div>
       ) : null}
       </div>
+      <AlertModal
+        open={saveAlertOpen}
+        message="알림 설정이 저장되었습니다."
+        onClose={() => setSaveAlertOpen(false)}
+      />
+      <AlertModal
+        open={profileSaveAlertOpen}
+        message="저장되었습니다."
+        onClose={() => setProfileSaveAlertOpen(false)}
+      />
     </>
   );
 }

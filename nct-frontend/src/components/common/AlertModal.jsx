@@ -6,8 +6,8 @@ const AlertModal = ({ open, message, onClose, confirmLabel = '확인' }) => (
     onClick={e => { if (e.target === e.currentTarget) onClose(); }}
   >
     <div className="modal-box">
-      <p style={{ marginBottom: 20, fontSize: 17, whiteSpace: 'pre-line' }}>{message}</p>
-      <div className="row" style={{ justifyContent: 'flex-end' }}>
+      <p style={{ marginBottom: 20, fontSize: 17, whiteSpace: 'pre-line', textAlign: 'center' }}>{message}</p>
+      <div className="row" style={{ justifyContent: 'center' }}>
         <button className="btn btn-primary" onClick={onClose}>{confirmLabel}</button>
       </div>
     </div>

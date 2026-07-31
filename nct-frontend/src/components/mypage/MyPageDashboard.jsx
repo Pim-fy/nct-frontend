@@ -11,6 +11,9 @@ import { fetchMyFavoriteAuctions } from "@api/auctionApi";
 import { getMyBidHistory } from "@api/bidApi";
 import { getMyServiceRequests } from "@api/serviceRequestApi";
 import { getMyQuotes } from "@api/quoteApi";
+import { getMyProducts } from "@api/productApi";
+import { getTradeHistory } from "@api/tradeApi";
+import { getTradeListItems, toTradeHistoryItem } from "@api/tradeAdapter";
 import { getWritableReviews } from "@api/reviewApi";
 import { getTradeChatRooms } from "@api/tradeChatApi";
 import { toTradeChatRooms } from "@api/tradeChatAdapter";
@@ -393,8 +396,18 @@ export default function MyPageDashboard({
       .filter((b) => b.auctionStatusCode === "AUCC0002" && (b.displayStatus === "HIGHEST" || b.displayStatus === "OUTBID"))
       .map((b) => b.aucSn)
   ).size;
-  const purchaseCnt = new Set(bidHistory.map((b) => b.aucSn)).size;
-  const wonCnt      = new Set(bidHistory.filter((b) => b.displayStatus === "WON").map((b) => b.aucSn)).size;
+  const wonCnt = new Set(bidHistory.filter((b) => b.displayStatus === "WON").map((b) => b.aucSn)).size;
+
+  // 구매 건수 — 상품 구매내역 페이지(TradeHistory fixedRole=BUYER)와 동일한 기준
+  const { data: allTradeItems = [] } = useQuery({
+    queryKey: ["trades", "my", "all"],
+    queryFn: async () => {
+      const res = await getTradeHistory({});
+      return getTradeListItems(res).map(toTradeHistoryItem);
+    },
+    enabled: !!user,
+  });
+  const purchaseCnt = allTradeItems.filter((t) => t.type === "BUYER").length;
 
   // 서비스 요청 전체 건수 (구매자 입찰)
   const { data: svcReqAll } = useQuery({
@@ -422,6 +435,15 @@ export default function MyPageDashboard({
     enabled: !!user,
   });
   const svcSaleCnt = quotePage?.totalCount ?? 0;
+
+  // 경매 판매 건수 (진행 중 상태)
+  const { data: auctionActiveSummary } = useQuery({
+    queryKey: ["products", "my", 1, 1, "ACTIVE"],
+    queryFn: () => getMyProducts(1, 1, "ACTIVE"),
+    select: (res) => res.data,
+    enabled: !!user,
+  });
+  const auctionSaleCnt = auctionActiveSummary?.total ?? 0;
 
   // 진행중인 채팅방 (ACTIVE 상태만)
   const { data: activeChatRooms = [] } = useQuery({
@@ -473,7 +495,7 @@ export default function MyPageDashboard({
           <span className="text-white/70">ㅣ</span>
           <button type="button" onClick={nav("auction-bids")}    className={subBtn}>구매 {purchaseCnt}건</button>
           <span className="text-white/70">ㅣ</span>
-          <button type="button" onClick={nav("auction-sales")}   className={subBtn}>판매 0건</button>
+          <button type="button" onClick={nav("auction-sales")}   className={subBtn}>판매 {auctionSaleCnt}건</button>
         </span>
       ),
       onMore: nav("active-auctions"),
