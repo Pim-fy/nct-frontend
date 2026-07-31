@@ -76,78 +76,57 @@ export default function MyServiceRequestListPage() {
   return (
     <main className="container seller-page">
       <Breadcrumb items={[{ label: '홈', href: '/' }, { label: '내 서비스 요청' }]} />
-      <div className="page-title">
-        <h1>내 서비스 요청</h1>
+      <div className="page-title"><h1>내 서비스 요청</h1></div>
+      <div className="flex flex-col gap-5">
+
+        <div className="tab-group-1">
+          {FILTERS.map(f => (
+            <button
+              key={String(f.value)}
+              type="button"
+              onClick={() => handleFilter(f.value)}
+              className={`tab-pill${filter === f.value ? ' active' : ''}`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        {error && <ErrorMessage message={error} />}
+
+        {!loading && !error && list.length === 0 && (
+          <div className="flex items-center justify-center py-20 text-center rounded-[15px] bg-white border border-[#e4e9f2]">
+            <p className="text-[16px] text-[#969696] m-0">등록된 서비스 요청이 없습니다.</p>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-3">
+          {list.map(item => (
+            <button
+              key={item.svcReqSn}
+              type="button"
+              onClick={() => navigate(`/service-requests/${item.svcReqSn}`)}
+              className="w-full text-left bg-white border border-[#e4e9f2] rounded-[15px] px-5 py-4 cursor-pointer hover:border-[#a0aec0] transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`badge ${STATUS_BADGE[item.svcReqStatusCd] ?? 'badge-gray'}`} style={{ borderRadius: 5, fontSize: 13 }}>
+                  {STATUS_LABEL[item.svcReqStatusCd] ?? item.svcReqStatusCd}
+                </span>
+                <span className="text-[13px] text-[#969696]">{item.catNm}</span>
+              </div>
+              <p className="font-bold text-[16px] text-[#1a1a1a] mb-1.5 m-0">{item.svcReqTtl}</p>
+              <div className="flex gap-4 text-[13px] text-[#969696]">
+                <span>예산 {fmtBudget(item.svcReqBdgtAmt)}</span>
+                <span>등록 {fmtDate(item.svcReqRegDt)}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {totalPages > 1 && (
+          <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+        )}
       </div>
-
-      <section className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ background: '#eef2fb', padding: '14px 20px' }}>
-          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>서비스 요청 내역</h3>
-        </div>
-        <div style={{ padding: '20px' }}>
-
-          {/* 필터 칩 */}
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-            {FILTERS.map(f => (
-              <button
-                key={String(f.value)}
-                type="button"
-                onClick={() => handleFilter(f.value)}
-                className={`chip${filter === f.value ? ' active' : ''}`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-
-          {error && <ErrorMessage message={error} />}
-
-          {/* 목록 */}
-          {!loading && !error && list.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '48px 0', color: '#888' }}>
-              등록된 서비스 요청이 없습니다.
-            </div>
-          )}
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {list.map(item => (
-              <button
-                key={item.svcReqSn}
-                type="button"
-                onClick={() => navigate(`/service-requests/${item.svcReqSn}`)}
-                style={{
-                  display: 'block', width: '100%', textAlign: 'left',
-                  background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8,
-                  padding: '16px 20px', cursor: 'pointer',
-                  transition: 'border-color 0.15s',
-                }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = '#6366f1'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = '#e5e7eb'}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                  <span className={`badge ${STATUS_BADGE[item.svcReqStatusCd] ?? 'badge-gray'}`}>
-                    {STATUS_LABEL[item.svcReqStatusCd] ?? item.svcReqStatusCd}
-                  </span>
-                  <span style={{ fontSize: 13, color: '#6b7280' }}>{item.catNm}</span>
-                </div>
-                <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>
-                  {item.svcReqTtl}
-                </div>
-                <div style={{ display: 'flex', gap: 16, fontSize: 13, color: '#6b7280' }}>
-                  <span>예산 {fmtBudget(item.svcReqBdgtAmt)}</span>
-                  <span>등록 {fmtDate(item.svcReqRegDt)}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-
-          {totalPages > 1 && (
-            <div style={{ marginTop: 24 }}>
-              <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
-            </div>
-          )}
-        </div>
-      </section>
     </main>
   );
 }

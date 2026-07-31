@@ -19,3 +19,7 @@ export const getMyQuotes = (params) =>
 /** 견적 수정 이력 조회 */
 export const getQuoteHistory = (quoteId) =>
   api.get(`/quotes/${quoteId}/history`).then((res) => res.data);
+
+/** 받은 견적 목록 조회 (요청자용) */
+export const getReceivedQuotes = (svcReqSn) =>
+  api.get(`/quotes/service-request/${svcReqSn}`).then((res) => res.data);
