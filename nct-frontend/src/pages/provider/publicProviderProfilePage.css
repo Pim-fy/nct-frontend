@@ -1,0 +1,76 @@
+/* 담당자 7 · F-COM-002/F-COM-015: 공통 제공자 프로필을 수정하지 않고 공개 화면의 깊이만 보강합니다. */
+.provider-public-page .mockup-content-page-header {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 22px;
+  border: 1px solid #dbe8ff;
+  border-radius: 20px;
+  padding: 24px 28px;
+  background:
+    radial-gradient(circle at 92% 8%, rgb(0 100 255 / 13%), transparent 30%),
+    linear-gradient(135deg, #f3f7ff 0%, #fff 72%);
+  box-shadow: 0 12px 30px rgb(16 24 40 / 5%);
+}
+
+.provider-public-page .mockup-content-page-header::after {
+  position: absolute;
+  right: -40px;
+  bottom: -90px;
+  width: 190px;
+  height: 190px;
+  border: 1px solid rgb(0 100 255 / 10%);
+  border-radius: 50%;
+  content: '';
+}
+
+.provider-public-page .mockup-content-page-header h1 {
+  position: relative;
+  z-index: 1;
+  color: #101828;
+  letter-spacing: -.025em;
+}
+
+.provider-public-page .provider-public-card,
+.provider-public-page .provider-public-content {
+  border-color: #dfe5ee;
+  box-shadow: 0 14px 34px rgb(16 24 40 / 7%);
+}
+
+.provider-public-page .provider-public-card {
+  background:
+    linear-gradient(180deg, #fbfdff 0, #fff 180px);
+}
+
+.provider-public-page .provider-public-content {
+  background: linear-gradient(180deg, #fff, #fdfefe);
+}
+
+.provider-public-page .provider-public-tabs button {
+  transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease;
+}
+
+.provider-public-page .provider-public-tabs button:hover {
+  color: #0057dc;
+  background: #f7faff;
+}
+
+.provider-public-page .provider-review-list article,
+.provider-public-page .provider-portfolio-grid > button {
+  border-color: #e1e7f0;
+  box-shadow: 0 4px 14px rgb(16 24 40 / 4%);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.provider-public-page .provider-review-list article:hover,
+.provider-public-page .provider-portfolio-grid > button:hover {
+  border-color: #9fc0fb;
+  box-shadow: 0 11px 24px rgb(0 100 255 / 9%);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 680px) {
+  .provider-public-page .mockup-content-page-header {
+    border-radius: 18px;
+    padding: 21px 20px;
+  }
+}

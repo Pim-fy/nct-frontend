@@ -58,7 +58,7 @@ export const GUIDE_FLOWS = [
 export const GUIDE_JOURNEYS = [
   {
     id: 'auction',
-    eyebrow: 'AUCTION JOURNEY',
+    eyebrow: '',
     title: '경매 이용 순서',
     description: '상품 등록부터 입찰·낙찰, 거래 완료, 포인트 확인까지 이어지는 흐름입니다.',
     flowIds: ['product-registration', 'auction-bid', 'trade-completion', 'point-settlement'],
@@ -69,7 +69,7 @@ export const GUIDE_JOURNEYS = [
   },
   {
     id: 'service',
-    eyebrow: 'SERVICE JOURNEY',
+    eyebrow: '',
     title: '서비스 요청 이용 순서',
     description: '서비스 탐색·요청부터 거래 완료와 정산 확인까지 이어지는 흐름입니다.',
     flowIds: ['service-request', 'trade-completion', 'point-settlement'],

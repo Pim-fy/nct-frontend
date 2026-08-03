@@ -65,7 +65,6 @@ const FaqPage = () => {
     <ContentPageShell className="public-faq-page">
       <Helmet><title>자주 묻는 질문 | 네고컷</title></Helmet>
       <header className="customer-support-page-header">
-        <span>FAQ</span>
         <h1>자주 묻는 질문</h1>
         <p>궁금한 내용을 빠르게 확인해 보세요. 질문을 누르면 답변을 확인할 수 있습니다.</p>
       </header>
