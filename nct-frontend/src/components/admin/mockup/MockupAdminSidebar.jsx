@@ -2,7 +2,6 @@ import { createElement } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   Bell,
-  BookOpenCheck,
   BriefcaseBusiness,
   ClipboardCheck,
   Gavel,
@@ -36,7 +35,6 @@ const MENU_SECTIONS = [
   [{ label: '환전 관리', icon: WalletCards, to: '/admin/exchanges' }],
   [
     { label: '공지 관리', icon: Megaphone, to: '/admin/notices' },
-    { label: '이용가이드 관리', icon: BookOpenCheck, to: '/admin/guides' },
   ],
   [{ label: '신고 처리', icon: Siren, to: '/admin/reports' }],
   [

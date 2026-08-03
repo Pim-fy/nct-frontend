@@ -103,6 +103,7 @@ const PublicProviderProfilePage = () => {
         onClose={() => setReportOpen(false)}
         open={reportOpen}
         referenceSn={provider.id}
+        reportedUserSn={provider.id}
         targetName={provider.name}
         targetType="provider"
       />

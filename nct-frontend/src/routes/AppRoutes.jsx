@@ -101,7 +101,6 @@ import Dashboard        from '@pages/admin/Dashboard';
 import OperationsIntegrationPreview from '@pages/admin/OperationsIntegrationPreview';
 import AdminNoticeListPage from '@pages/admin/notice/AdminNoticeListPage';
 import AdminNoticeFormPage from '@pages/admin/notice/AdminNoticeFormPage';
-import AdminGuidePage from '@pages/admin/guide/AdminGuidePage';
 import AdminCategoryPage from '@pages/admin/category/AdminCategoryPage';
 import AdminServiceRequestPage from '@pages/admin/service/AdminServiceRequestPage';
 import AdminProviderApprovalPage from '@pages/admin/provider/AdminProviderApprovalPage';
@@ -254,7 +253,7 @@ const AppRoutes = () => {
           <Route path="notices" element={<AdminNoticeListPage />} />
           <Route path="notices/new" element={<AdminNoticeFormPage />} />
           <Route path="notices/:noticeId" element={<AdminNoticeFormPage />} />
-          <Route path="guides" element={<AdminGuidePage />} />
+          <Route path="guides" element={<Navigate replace to="/guide" />} />
           <Route path="categories" element={<AdminCategoryPage />} />
           <Route path="services" element={<AdminServiceRequestPage />} />
           <Route path="provider-applications" element={<AdminProviderApprovalPage />} />
