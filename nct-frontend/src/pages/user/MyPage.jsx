@@ -92,22 +92,20 @@ export default function MyPage({
   useEffect(() => {
     const requestedSectionAllowed = isAllowedSection(requestedSection, isProvider);
     const nextSection = requestedSectionAllowed ? requestedSection : initialSection;
-    if (nextSection === activeSection) return undefined;
 
+    // 함수형 업데이트로 activeSection을 읽지 않아, 이 effect가 activeSection 변경 자체에는
+    // 반응하지 않는다 — 사이드바 클릭처럼 이미 URL과 동기화된 내부 전환에서 불필요하게
+    // 재검증이 도는 걸 막는다 (재검증은 URL/역할이 실제로 바뀔 때만 필요).
     const animationFrameId = window.requestAnimationFrame(() => {
-      setActiveSection(nextSection);
+      setActiveSection((prevSection) => (
+        nextSection === prevSection ? prevSection : nextSection
+      ));
       if (requestedSection && !requestedSectionAllowed) {
         setSearchParams({}, { replace: true });
       }
     });
     return () => window.cancelAnimationFrame(animationFrameId);
-  }, [
-    activeSection,
-    initialSection,
-    isProvider,
-    requestedSection,
-    setSearchParams,
-  ]);
+  }, [initialSection, isProvider, requestedSection, setSearchParams]);
 
   const [selectedChatTradeId, setSelectedChatTradeId] = useState("");
   const [selectedPurchaseTradeId, setSelectedPurchaseTradeId] = useState("");
