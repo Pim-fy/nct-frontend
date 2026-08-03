@@ -3,7 +3,10 @@ import { Truck, UserRound } from 'lucide-react';
 import { toImageUrl } from '@api/fileApi';
 import useCountdown from '@hooks/useCountdown';
 import { formatPrice } from '@utils/common';
-import { resolveAuctionResultLabel } from '../utils/auctionFormatters';
+import {
+  resolveAuctionResultLabel,
+  resolveTradeMethodLabel,
+} from '../utils/auctionFormatters';
 
 const formatAuctionCardTimeLabel = (item, now) => {
   const resultLabel = resolveAuctionResultLabel(item);
@@ -89,7 +92,7 @@ const AuctionCard = ({ item }) => {
             거래 방식
           </dt>
           <dd className="m-0 truncate font-semibold text-[#3f3f3c]">
-            {item.tradeMethodName || '정보 없음'}
+            {resolveTradeMethodLabel(item.tradeMethodCode, item.tradeMethodName)}
           </dd>
         </div>
       </dl>

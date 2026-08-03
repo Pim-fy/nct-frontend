@@ -21,6 +21,7 @@ import {
   SERVICE_DISCOVERY_PAGE_SIZE,
 } from '@/constants/serviceDiscovery';
 import { useServiceDiscovery } from '@hooks/useServiceDiscovery';
+import useBodyScrollLock from '@hooks/useBodyScrollLock';
 
 const toBudget = (value) => {
   const parsed = Number(value || 0);
@@ -87,17 +88,16 @@ const ServiceListPage = () => {
 
   useEffect(() => {
     if (!filtersOpen) return undefined;
-    const previousOverflow = document.body.style.overflow;
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') setFiltersOpen(false);
     };
-    document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', handleKeyDown);
     return () => {
-      document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [filtersOpen]);
+
+  useBodyScrollLock(filtersOpen);
 
   useEffect(() => {
     const sort = searchParams.get('sort');

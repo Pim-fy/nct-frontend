@@ -1,5 +1,6 @@
 import { Flag, Heart } from 'lucide-react';
 import { formatNumber, formatPrice } from '@utils/common';
+import { resolveTradeMethodLabel } from '../utils/auctionFormatters';
 
 const BID_UNIT_MULTIPLIERS = [1, 5, 10];
 
@@ -12,16 +13,19 @@ const AuctionBidPanel = ({
   selectedTradeName,
   selectedTradeMethodCode,
   isMixedTradeMethod,
+  showTradeMethodError,
   displayedBidAmount,
   holdAgreed,
   requiresBidHoldConsent,
   showHoldConsentError,
   isBidPending,
+  isTradeMethodChangePending,
   isBuyNowPending,
   isAuctionOpen,
   isAuctionReady,
   isOwnAuction,
   isCurrentHighestBidder,
+  hasTradeMethodChange,
   isBuyNowAvailable,
   isAuthenticated,
   isAuthLoading,
@@ -34,6 +38,8 @@ const AuctionBidPanel = ({
   isInstantBuyAmountSelected,
   hasBidAmountSelection,
   isBuyNowPointSufficient,
+  isDeliveryAddressChecking,
+  requiresDeliveryAddressRegistration,
   isFavoritePending,
   onBidInputChange,
   onBidInputBlur,
@@ -41,13 +47,17 @@ const AuctionBidPanel = ({
   onHoldAgreedChange,
   onTradeMethodChange,
   onBidSubmit,
+  onTradeMethodChangeSubmit,
   onBuyNowOpen,
+  onDeliveryAddressOpen,
   onFavoriteToggle,
   onChargeClick,
 }) => {
   const isBidPointInsufficient = hasAvailablePoint && !isBidPointSufficient;
   const isBuyNowPointInsufficient = hasAvailablePoint && !isBuyNowPointSufficient;
   const showBidAmountUnitError = hasBidAmountSelection && !isBidAmountUnitValid;
+  const showDeliveryAddressGate = isDeliveryAddressChecking
+    || requiresDeliveryAddressRegistration;
   const favoriteButtonStateClass = isAuthLoading || !isAuthenticated || isOwnAuction
     ? 'cursor-not-allowed opacity-45'
     : (isFavoritePending ? 'cursor-wait opacity-55' : 'cursor-pointer');
@@ -61,6 +71,34 @@ const AuctionBidPanel = ({
   const currentPriceLabel = formatPrice(currentPrice);
   const currentPriceSize = `${100 / Math.max(currentPriceLabel.length * 0.62, 1)}cqi`;
   const remainingTimeSize = `${100 / Math.max(String(remainingTime).length * 0.66, 1)}cqi`;
+  const isCurrentHighestTradeMethodControl = isCurrentHighestBidder && isMixedTradeMethod;
+  const isPrimaryActionPending = isCurrentHighestTradeMethodControl
+    ? isTradeMethodChangePending
+    : isBidPending;
+  const isPrimaryActionDisabled = isCurrentHighestTradeMethodControl
+    ? (!isAuctionOpen || !hasTradeMethodChange || isTradeMethodChangePending)
+    : (!isAuctionOpen
+      || (isCurrentHighestBidder && !isInstantBuyAmountSelected)
+      || isBidPending
+      || isBidPointInsufficient
+      || !isBidAmountUnitValid);
+  const resolvePrimaryActionLabel = () => {
+    if (isCurrentHighestTradeMethodControl) {
+      if (!hasTradeMethodChange) return '최고입찰 중';
+      return `${selectedTradeName}으로 변경${isTradeMethodChangePending ? ' 중' : ''}`;
+    }
+    if (!isAuctionOpen) return '입찰 종료';
+    if (isInstantBuyAmountSelected) {
+      return isBidPointInsufficient ? '포인트 부족' : '즉시구매 진행';
+    }
+    if (isCurrentHighestBidder) return '최고입찰 중';
+    if (isBidPointInsufficient) return '포인트 부족';
+    if (!isBidAmountUnitValid) {
+      return hasBidAmountSelection ? '입찰 단위 확인' : '입찰 금액 선택';
+    }
+    return isBidPending ? '입찰 중' : '입찰하기';
+  };
+  const primaryActionLabel = resolvePrimaryActionLabel();
 
   return (
     <aside className="grid min-h-[452px] content-start gap-[16px] rounded-lg border border-[#e8e8e8] bg-white px-[38px] pt-[28px] pb-[30px] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)] max-lg:min-h-0 max-lg:px-[22px] max-lg:py-7">
@@ -73,17 +111,18 @@ const AuctionBidPanel = ({
           {auction.tradeMethodName && (
             <span className="inline-flex min-h-5 items-center gap-1.5 rounded-full px-[9px] text-[13px] leading-[1.4] font-bold whitespace-nowrap text-[#3f3f46]">
               <span className="size-[7px] rounded-full bg-primary" aria-hidden="true" />
-              {auction.tradeMethodName}
+              {resolveTradeMethodLabel(auction.tradeMethodCode, auction.tradeMethodName)}
             </span>
           )}
-          {isCurrentHighestBidder && (
-            <span
-              className="inline-flex min-h-6 items-center rounded-lg border border-[#88c9a1] bg-[#edf9f1] px-[9px] py-0.5 text-[13px] leading-[1.4] font-bold text-[#176b3a]"
-              role="status"
-            >
-              최고입찰자
-            </span>
-          )}
+          <span
+            aria-hidden={!isCurrentHighestBidder}
+            className={`inline-flex min-h-6 items-center rounded-lg border border-[#88c9a1] bg-[#edf9f1] px-[9px] py-0.5 text-[13px] leading-[1.4] font-bold text-[#176b3a] transition-opacity ${
+              isCurrentHighestBidder ? 'visible opacity-100' : 'invisible opacity-0'
+            }`}
+            role={isCurrentHighestBidder ? 'status' : undefined}
+          >
+            최고입찰자
+          </span>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <button
@@ -176,10 +215,20 @@ const AuctionBidPanel = ({
 
           <div className="grid gap-3 rounded-lg border border-[#e8e8e8] bg-[#fafafa] px-4 py-3">
             {isMixedTradeMethod ? (
-              <div className="grid gap-2">
+              <div className={`grid gap-2 rounded-lg border px-3 py-2 transition-colors ${
+                showTradeMethodError
+                  ? 'border-[#f0aaa4] bg-[#fff4f3]'
+                  : 'border-transparent'
+              }`}>
                 <div className="flex items-center justify-between gap-4">
-                  <span className="text-caption font-bold text-[#666]">거래 방식 선택</span>
-                  <strong className={`text-body-sm ${selectedTradeMethodCode ? 'text-[#1d1d1f]' : 'text-[#c2410c]'}`}>
+                  <span className={`text-caption font-bold ${showTradeMethodError ? 'text-[#b42318]' : 'text-[#666]'}`}>
+                    거래 방식 선택
+                  </span>
+                  <strong className={`text-body-sm ${
+                    selectedTradeMethodCode
+                      ? 'text-[#1d1d1f]'
+                      : (showTradeMethodError ? 'text-[#b42318]' : 'text-[#666]')
+                  }`}>
                     {selectedTradeName}
                   </strong>
                 </div>
@@ -199,6 +248,7 @@ const AuctionBidPanel = ({
                         key={method.code}
                         type="button"
                         aria-pressed={selected}
+                        disabled={!isAuctionOpen || isTradeMethodChangePending}
                         onClick={() => onTradeMethodChange(method.code)}
                       >
                         {method.label}
@@ -206,6 +256,15 @@ const AuctionBidPanel = ({
                     );
                   })}
                 </div>
+                <p
+                  aria-hidden={!showTradeMethodError}
+                  className={`m-0 min-h-5 text-caption font-bold text-[#b42318] transition-opacity ${
+                    showTradeMethodError ? 'visible opacity-100' : 'invisible opacity-0'
+                  }`}
+                  role={showTradeMethodError ? 'alert' : undefined}
+                >
+                  배송 또는 직거래 방식을 선택해 주세요
+                </p>
               </div>
             ) : (
               <div className="flex items-center justify-between gap-4">
@@ -273,11 +332,16 @@ const AuctionBidPanel = ({
                   ))}
                 </div>
               </div>
-              {showBidAmountUnitError && (
-                <p className="my-3 text-caption text-[#b42318]" id="bidAmountPolicy" role="alert">
-                  {formatPrice(bidUnitPrice)} 단위에 맞는 금액을 입력해 주세요
-                </p>
-              )}
+              <p
+                aria-hidden={!showBidAmountUnitError}
+                className={`mt-2 mb-0 min-h-5 text-caption text-[#b42318] transition-opacity ${
+                  showBidAmountUnitError ? 'visible opacity-100' : 'invisible opacity-0'
+                }`}
+                id="bidAmountPolicy"
+                role={showBidAmountUnitError ? 'alert' : undefined}
+              >
+                {formatPrice(bidUnitPrice)} 단위에 맞는 금액을 입력해 주세요
+              </p>
               <div className="grid min-h-7 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2.5 text-caption text-[#666]">
                 <span>사용 가능 포인트</span>
                 <strong className={`text-body-md ${isBidPointInsufficient ? 'text-[#b42318]' : 'text-[#1d1d1f]'}`}>
@@ -291,69 +355,80 @@ const AuctionBidPanel = ({
               </div>
 
               {!isAuthenticated ? (
-                <p className="m-0 mt-auto flex min-h-12 items-center justify-center pt-5 text-center text-body-md font-bold text-[#666]" role="status">
+                <p className="mt-16 mb-0 flex min-h-12 items-center justify-center text-center text-body-md font-bold text-[#666] max-lg:mt-8" role="status">
                   로그인이 필요한 서비스입니다.
                 </p>
               ) : (
                 <div className="mt-auto grid gap-1.5 pt-4">
-                  {requiresBidHoldConsent && (
-                    <label className={`mb-0.5 flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-caption transition-colors ${
-                      showHoldConsentError
-                        ? 'border-[#f0aaa4] bg-[#fff4f3] font-bold text-[#b42318]'
-                        : 'border-transparent text-[#666]'
-                    }`}>
-                      <input
-                        className="size-4 accent-primary"
-                        id="holdAgree"
-                        type="checkbox"
-                        checked={holdAgreed}
-                        disabled={!isAuctionOpen}
-                        aria-invalid={showHoldConsentError}
-                        onChange={(event) => onHoldAgreedChange(event.target.checked)}
-                      />
-                      입찰 포인트 홀딩에 동의합니다
-                    </label>
+                  {showDeliveryAddressGate ? (
+                    <>
+                      {requiresBidHoldConsent && (
+                        <span aria-hidden="true" className="mb-0.5 min-h-[38px]" />
+                      )}
+                      <button
+                        className={`min-h-[46px] rounded-lg border text-body-md font-bold ${
+                          isDeliveryAddressChecking
+                            ? 'border-[#dadada] bg-[#f3f3f3] text-[#666]'
+                            : 'cursor-pointer border-primary bg-primary text-white hover:bg-[#0058df]'
+                        }`}
+                        type="button"
+                        disabled={isDeliveryAddressChecking}
+                        onClick={isDeliveryAddressChecking ? undefined : onDeliveryAddressOpen}
+                      >
+                        {isDeliveryAddressChecking ? '배송지 확인 중' : '배송지 등록'}
+                      </button>
+                      <span aria-hidden="true" className="min-h-[46px]" />
+                    </>
+                  ) : (
+                    <>
+                      {requiresBidHoldConsent && (
+                        <label className={`mb-0.5 flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-caption transition-colors ${
+                          showHoldConsentError
+                            ? 'border-[#f0aaa4] bg-[#fff4f3] font-bold text-[#b42318]'
+                            : 'border-transparent text-[#666]'
+                        }`}>
+                          <input
+                            className="size-4 accent-primary"
+                            id="holdAgree"
+                            type="checkbox"
+                            checked={holdAgreed}
+                            disabled={!isAuctionOpen}
+                            aria-invalid={showHoldConsentError}
+                            onChange={(event) => onHoldAgreedChange(event.target.checked)}
+                          />
+                          입찰 포인트 홀딩에 동의합니다
+                        </label>
+                      )}
+                      <button
+                        className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-primary text-body-md font-bold text-white disabled:cursor-not-allowed disabled:opacity-55 aria-busy:cursor-progress"
+                        id="bidBtn"
+                        type="button"
+                        aria-busy={isPrimaryActionPending}
+                        disabled={isPrimaryActionDisabled}
+                        onClick={isCurrentHighestTradeMethodControl
+                          ? onTradeMethodChangeSubmit
+                          : onBidSubmit}
+                      >
+                        {primaryActionLabel}
+                      </button>
+                      <button
+                        className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-white text-body-md font-bold text-primary disabled:cursor-not-allowed disabled:opacity-55 aria-busy:cursor-progress"
+                        id="buyNowBtn"
+                        type="button"
+                        aria-busy={isBuyNowPending}
+                        disabled={!isBuyNowAvailable || isBuyNowPending || isBuyNowPointInsufficient}
+                        onClick={onBuyNowOpen}
+                      >
+                        {!isAuctionOpen
+                          ? '즉시구매 종료'
+                          : (isBuyNowPointInsufficient
+                            ? '포인트 부족'
+                            : (isBuyNowAvailable
+                              ? `즉시구매 ${formatPrice(auction.instantBuyPrice)}`
+                              : '즉시구매 불가'))}
+                      </button>
+                    </>
                   )}
-                  <button
-                    className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-primary text-body-md font-bold text-white disabled:cursor-not-allowed disabled:opacity-55 aria-busy:cursor-progress"
-                    id="bidBtn"
-                    type="button"
-                    aria-busy={isBidPending}
-                    disabled={!isAuctionOpen
-                      || (isCurrentHighestBidder && !isInstantBuyAmountSelected)
-                      || isBidPending
-                      || isBidPointInsufficient
-                      || !isBidAmountUnitValid}
-                    onClick={onBidSubmit}
-                  >
-                    {!isAuctionOpen
-                      ? '입찰 종료'
-                      : (isInstantBuyAmountSelected
-                        ? (isBidPointInsufficient ? '포인트 부족' : '즉시구매 진행')
-                        : (isCurrentHighestBidder
-                        ? '최고입찰 중'
-                        : (isBidPointInsufficient
-                          ? '포인트 부족'
-                          : (!isBidAmountUnitValid
-                            ? (hasBidAmountSelection ? '입찰 단위 확인' : '입찰 금액 선택')
-                            : (isBidPending ? '입찰 중' : '입찰하기')))))}
-                  </button>
-                  <button
-                    className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-white text-body-md font-bold text-primary disabled:cursor-not-allowed disabled:opacity-55 aria-busy:cursor-progress"
-                    id="buyNowBtn"
-                    type="button"
-                    aria-busy={isBuyNowPending}
-                    disabled={!isBuyNowAvailable || isBuyNowPending || isBuyNowPointInsufficient}
-                    onClick={onBuyNowOpen}
-                  >
-                    {!isAuctionOpen
-                      ? '즉시구매 종료'
-                      : (isBuyNowPointInsufficient
-                        ? '포인트 부족'
-                        : (isBuyNowAvailable
-                          ? `즉시구매 ${formatPrice(auction.instantBuyPrice)}`
-                          : '즉시구매 불가'))}
-                  </button>
                 </div>
               )}
             </>

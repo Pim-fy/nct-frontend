@@ -35,6 +35,11 @@ export const placeAuctionBid = async (auctionId, payload) => {
   return response.data.data;
 };
 
+export const changeMyAuctionBidTradeMethod = async (auctionId, payload) => {
+  const response = await api.put(`/auctions/${auctionId}/bids/me/trade-method`, payload);
+  return response.data.data;
+};
+
 export const buyNowAuction = async (auctionId, payload) => {
   const response = await api.post(`/auctions/${auctionId}/buy-now`, payload, {
     skipServerErrorRedirect: true,
