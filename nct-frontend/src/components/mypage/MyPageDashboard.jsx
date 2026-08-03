@@ -418,7 +418,7 @@ export default function MyPageDashboard({
     select: (res) => res.data,
     enabled: !!user,
   });
-  const svcBidCnt = svcReqAll?.totalCount ?? 0;
+  const svcBidCnt = svcReqAll?.total ?? 0;
 
   // 서비스 요청 완료 건수
   const { data: svcReqClosed } = useQuery({
@@ -427,7 +427,7 @@ export default function MyPageDashboard({
     select: (res) => res.data,
     enabled: !!user,
   });
-  const svcClosedCnt = svcReqClosed?.totalCount ?? 0;
+  const svcClosedCnt = svcReqClosed?.total ?? 0;
 
   // 견적 목록 건수 (제공자 판매)
   const { data: quotePage } = useQuery({
@@ -511,12 +511,12 @@ export default function MyPageDashboard({
       unit: "건",
       meta: (
         <span className="flex items-center gap-x-2">
-          <button type="button" onClick={nav("service-bids")}  className={subBtn}>입찰 {svcBidCnt}건</button>
+          <button type="button" onClick={nav("service-requests")} className={subBtn}>입찰 {svcBidCnt}건</button>
           <span className="text-white/70">ㅣ</span>
           <button type="button" onClick={nav("service-sales")} className={subBtn}>판매 {svcSaleCnt}건</button>
         </span>
       ),
-      onMore: nav("service-bids"),
+      onMore: nav("service-requests"),
     },
     {
       key: "done",

@@ -12,6 +12,7 @@ export default function MyPageListSectionLayout({
   filterAriaLabel,
   onSearch,
   searchAriaLabel,
+  searchPlaceholder,
   extraControls,
   isLoading = false,
 }) {
@@ -29,7 +30,7 @@ export default function MyPageListSectionLayout({
           endContent={(
             <div className="flex flex-col gap-2 sm:flex-row">
               {extraControls}
-              <MyPageListSearch onSearch={onSearch} ariaLabel={searchAriaLabel} />
+              <MyPageListSearch onSearch={onSearch} ariaLabel={searchAriaLabel} placeholder={searchPlaceholder} />
             </div>
           )}
         />

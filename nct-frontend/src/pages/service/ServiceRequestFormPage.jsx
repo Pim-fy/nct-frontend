@@ -11,7 +11,7 @@ import ErrorMessage from '@components/common/ErrorMessage';
 import AlertModal from '@components/common/AlertModal';
 import ConfirmModal from '@components/common/ConfirmModal';
 import ServiceRequestImageUpload from '@components/service/ServiceRequestImageUpload';
-import { toImageUrl } from '@api/fileApi';
+import { toImageUrl, uploadImage } from '@api/fileApi';
 import DateRangePicker from '@components/product/DateRangePicker';
 import RegionSelector from '@components/common/RegionSelector';
 import { WIZARD_STEPS, CATEGORY_NEXT_STEP, CATEGORY_META } from './serviceRequestWizardSteps';
@@ -165,6 +165,7 @@ export default function ServiceRequestFormPage() {
   const [policyAgreed, setPolicyAgreed] = useState(false); // 요청 정보 입력 탭 — 견적 요청 정책 동의
   const policyRef = useRef(null);
   const agreedRef = useRef(null);
+  const detailSectionRef = useRef(null);
 
   // 아코디언 상태 — 단계 카드는 한 번에 하나만 펼쳐진다(진행 중인 카드든 재편집하려는
   // 완료 카드든 동일하게 이 값 하나로 표현)
@@ -211,17 +212,31 @@ export default function ServiceRequestFormPage() {
       stepId = nextId;
     }
 
-    if (s.svcReqBdgtAmt != null) {
-      newDraft.budget = { 예산: String(s.svcReqBdgtAmt) };
+    // budget/memo는 저장 시 items 배열에서 빠지고 svcReqBdgtAmt/svcReqCn으로 따로 저장되므로,
+    // 위 루프가 자연스럽게 소비를 못 하고 budget 직전에서 멈춘다. 여기서 체인에 직접 이어붙인다.
+    // svcReqBdgtAmt가 null이면 "아직 예산 단계에 도달 못 함"과 "미정을 선택함"을 구분할 수 없는데,
+    // 여기까지 온 이상 이미 예산 단계를 지났다고 보고 미정으로 간주한다.
+    if (stepId === 'budget') {
+      const hasAmount = s.svcReqBdgtAmt != null;
+      newAnswers.budget = hasAmount ? `예산: ${Number(s.svcReqBdgtAmt).toLocaleString('ko-KR')}원` : '예산: 미정';
+      newDraft.budget = { 예산: hasAmount ? String(s.svcReqBdgtAmt) : '미정' };
+      newChain.push('budget');
+      stepId = WIZARD_STEPS.budget.next;
     }
-    if (s.svcReqCn) {
-      newDraft.memo = { 메모: s.svcReqCn };
+    if (stepId === 'memo') {
+      newAnswers.memo = s.svcReqCn ? `메모: ${s.svcReqCn}` : '(입력 없음)';
+      newDraft.memo = { 메모: s.svcReqCn || '' };
+      newChain.push('memo');
     }
 
     setChain(newChain);
     setAnswers(newAnswers);
     setStepDraft(prev => ({ ...prev, ...newDraft }));
     setFreeTextDraft(prev => ({ ...prev, ...newFreeText }));
+    setImages((s.imageList ?? []).map(img => ({ id: img.flSn, flSn: img.flSn, url: img.url, file: null })));
+    // 기존에 임시저장된 요청서를 이어서 작성하는 경우 — 이미 답변된 단계가 있다는 건
+    // 정책 안내 단계를 지나 여기까지 진행했다는 뜻이므로 다시 체크하게 하지 않는다.
+    if (newChain.length > 0) setPolicyAgreed(true);
   }
 
   useEffect(() => {
@@ -352,6 +367,16 @@ export default function ServiceRequestFormPage() {
     setExpandedStepId(prev => (prev === stepId ? null : stepId));
   };
 
+  // 진행률의 완료된(done) 배지를 클릭하면 해당 단계 카드를 펼치고 그 위치로 스크롤한다
+  const handleProgressBadgeClick = (stepIndex) => {
+    const stepId = chain[stepIndex];
+    if (!stepId) return;
+    setExpandedStepId(stepId);
+    requestAnimationFrame(() => {
+      cardRefs.current[stepId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  };
+
   // 편집 중이던 분기 단계의 답변을 교체할 때 공통으로 쓰는 로직 —
   // 새 답변이 이어지는 다음 단계가 기존과 같으면 하위 입력을 그대로 유지하고,
   // 다르면 하위 입력이 있을 때만 확인 후 초기화한다.
@@ -434,17 +459,19 @@ export default function ServiceRequestFormPage() {
 
   // ── multi 선택 ──────────────────────────────────────────────────────────────
 
-  const NONE_LABEL = '없음';
+  // "없음"/"해당없음"처럼 "이 항목엔 해당하는 게 없다"는 뜻의 선택지는 다른 선택지와 동시에
+  // 고를 수 없는 독립 항목으로 취급한다
+  const isNoneLabel = label => label === '없음' || label === '해당없음';
   const handleMultiToggle = (stepId, label) => {
     setStepDraft(prev => {
       const cur = prev[stepId] || [];
-      if (label === NONE_LABEL) {
-        // 없음 선택 → 다른 선택지 전부 해제, 없음만 남김 (토글)
-        const next = cur.includes(NONE_LABEL) ? [] : [NONE_LABEL];
+      if (isNoneLabel(label)) {
+        // "없음"류 선택 → 다른 선택지 전부 해제, 이것만 남김 (토글)
+        const next = cur.includes(label) ? [] : [label];
         return { ...prev, [stepId]: next };
       }
-      // 일반 선택지 → 없음 해제 후 토글
-      const withoutNone = cur.filter(l => l !== NONE_LABEL);
+      // 일반 선택지 → "없음"류 전부 해제 후 토글
+      const withoutNone = cur.filter(l => !isNoneLabel(l));
       const next = withoutNone.includes(label) ? withoutNone.filter(l => l !== label) : [...withoutNone, label];
       return { ...prev, [stepId]: next };
     });
@@ -601,7 +628,7 @@ export default function ServiceRequestFormPage() {
     return true;
   };
 
-  const buildPayload = (statusCd) => {
+  const buildPayload = (statusCd, flSnList) => {
     const budgetDraft = stepDraft.budget || {};
     const budgetRaw = budgetDraft['예산'];
     const hasBudget = budgetRaw && budgetRaw !== '미정';
@@ -617,13 +644,24 @@ export default function ServiceRequestFormPage() {
       svcReqBdgtAmt: budgetAmount != null && !Number.isNaN(budgetAmount) ? budgetAmount : null,
       svcReqStatusCd: statusCd,
       items,
+      flSnList,
     };
   };
 
   const submit = async (statusCd) => {
     setLoading(true);
     try {
-      const payload = buildPayload(statusCd);
+      // 사진은 선택 시점엔 로컬 blob 미리보기만 두고, 제출 시점에 한 번에 업로드한다
+      // (상품등록 handleSubmit과 동일한 패턴) — 이미 업로드된(수정 모드) 이미지는 재업로드하지 않는다.
+      const uploadedImages = await Promise.all(images.map(async img => {
+        if (img.flSn) return img;
+        const res = await uploadImage(img.file, 'service-request');
+        URL.revokeObjectURL(img.url);
+        return { ...img, flSn: res.data.flSn, url: res.data.url };
+      }));
+      const flSnList = uploadedImages.length > 0 ? uploadedImages.map(img => img.flSn) : null;
+
+      const payload = buildPayload(statusCd, flSnList);
       const result = editSvcReqSn
         ? await updateServiceRequest(editSvcReqSn, payload)
         : await registerServiceRequest(payload);
@@ -639,9 +677,10 @@ export default function ServiceRequestFormPage() {
   const handleDraft = () => { if (validateBasic()) submit('SVCC0001'); };
 
   const goNext = () => {
-    if (!validateBasic()) return;
+    if (!validateBasic()) { console.log('[goNext] blocked: validateBasic 실패(제목/카테고리)'); return; }
 
     if (!policyAgreed) {
+      console.log('[goNext] blocked: 정책 미동의');
       setAlertMsg('견적 요청 정책을 확인하고 동의해 주세요.');
       policyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
@@ -651,9 +690,11 @@ export default function ServiceRequestFormPage() {
     // 안 그러면 체인 맨 끝(재편집 중인 단계와 무관한 이후 단계)이 엉뚱하게 지목된다.
     if (expandedStepId && answers[expandedStepId] !== undefined) {
       const editingStep = WIZARD_STEPS[expandedStepId];
+      console.log('[goNext] 재편집 중인 카드 검증:', expandedStepId, editingStep?.type);
       if (editingStep?.type === 'multi') {
         const picked = stepDraft[expandedStepId] || [];
         if (picked.length === 0) {
+          console.log('[goNext] blocked: 재편집 중 multi 미선택', expandedStepId);
           const cleanTitle = editingStep.title.replace(/\s*\(복수 선택\)$/, '');
           const msg = `${withEulReul(cleanTitle)} 선택해 주세요.`;
           setAlertMsg(msg);
@@ -662,7 +703,9 @@ export default function ServiceRequestFormPage() {
           return;
         }
       } else if (editingStep?.type === 'form') {
-        if (!validateFormStep(expandedStepId)) return;
+        const ok = validateFormStep(expandedStepId);
+        console.log('[goNext] 재편집 중 form 검증 결과:', expandedStepId, ok);
+        if (!ok) { console.log('[goNext] blocked: 재편집 중 form 검증 실패', expandedStepId); return; }
       }
     }
 
@@ -671,26 +714,33 @@ export default function ServiceRequestFormPage() {
     const lastId = chain[chain.length - 1];
     const lastStep = lastId ? WIZARD_STEPS[lastId] : null;
     const actuallyComplete = !!lastId && answers[lastId] !== undefined && !lastStep?.next;
+    console.log('[goNext] lastId:', lastId, 'lastStep.type:', lastStep?.type, 'lastStep.next:', lastStep?.next, 'answers[lastId] 존재:', lastId ? answers[lastId] !== undefined : null, 'actuallyComplete:', actuallyComplete);
 
     if (!actuallyComplete) {
+      console.log('[goNext] 미완료 처리 진입, lastId:', lastId, 'type:', lastStep?.type);
       if (lastStep?.type === 'form') {
         // 카드 안 "다음" 버튼과 동일한 검증(알림+포커스+인라인 에러)을 그대로 재사용.
-        if (!validateFormStep(lastId)) return;
+        const ok = validateFormStep(lastId);
+        console.log('[goNext] 마지막 form 카드 검증 결과:', lastId, ok);
+        if (!ok) { console.log('[goNext] blocked: 마지막 form 카드 검증 실패', lastId); return; }
         // 필수 항목이 하나도 없는 단계(예: 특이사항 메모)는 안내 문구로 막을 이유가 없으니
         // 카드 안 버튼을 누른 것과 동일하게 바로 확정 처리한다.
         if (!lastStep.fields.some(f => f.required)) {
+          console.log('[goNext] 필수 없는 form 자동 확정:', lastId, '다음단계 없음?', !lastStep.next);
           handleFormConfirm(lastId);
           // 이 단계가 마지막(다음 단계 없음)이면 확정과 동시에 완료된 것이므로 바로 확인 탭으로 넘어간다.
           // isComplete는 handleFormConfirm 내부 setState라 이 시점엔 아직 반영 전이라 여기서 직접 판단한다.
-          if (!lastStep.next) setStep(1);
+          if (!lastStep.next) { console.log('[goNext] setStep(1) 호출 (자동확정 경로)'); setStep(1); }
           return;
         }
+        console.log('[goNext] 필수 있는 form 카드, 자동확정 안 하고 아래 공용 안내로 진행:', lastId);
         // 필수 항목은 다 채웠지만 카드 안 버튼을 아직 안 눌러 확정 안 된 경우엔 여기서
         // return하지 않고 아래 공용 안내 문구로 이어지게 한다.
       }
       if (lastStep?.type === 'multi') {
         const picked = stepDraft[lastId] || [];
         if (picked.length === 0) {
+          console.log('[goNext] blocked: 마지막 multi 카드 미선택', lastId);
           const cleanTitle = lastStep.title.replace(/\s*\(복수 선택\)$/, '');
           const msg = `${withEulReul(cleanTitle)} 선택해 주세요.`;
           setAlertMsg(msg);
@@ -700,6 +750,7 @@ export default function ServiceRequestFormPage() {
         }
       }
 
+      console.log('[goNext] blocked: 공용 안내 문구(모든 단계를 마쳐야) 표시, lastId:', lastId, 'type:', lastStep?.type);
       const msg = lastStep?.type === 'single'
         ? `${withEulReul(lastStep.title)} 선택해 주세요.`
         : '모든 단계를 마쳐야 다음으로 진행할 수 있어요. \n진행 중이라면 임시저장을 이용해 주세요.';
@@ -712,6 +763,7 @@ export default function ServiceRequestFormPage() {
       }
       return;
     }
+    console.log('[goNext] setStep(1) 호출 (완료 경로)');
     setStep(1);
   };
 
@@ -920,40 +972,6 @@ export default function ServiceRequestFormPage() {
                 )}
               </div>
 
-              {/* 상세 항목 진행률 — 오른쪽 위저드 번호 배지와 같은 점-연결선 형태로 표시 */}
-              {selectedCategory && categoryMaxSteps > 0 && (
-                <div className="border-t border-[#e8e8e8] px-6 py-5">
-                  <div className="mb-3 flex items-center justify-between text-sm">
-                    <span className="font-semibold text-[#5f5e5a]">상세 항목 진행률</span>
-                    <span className="font-bold text-primary">{answeredStepCount}/{categoryMaxSteps}</span>
-                  </div>
-                  <div className="flex w-full items-center">
-                    {Array.from({ length: categoryMaxSteps }, (_, i) => {
-                      const state = i < answeredStepCount ? 'done' : i === answeredStepCount ? 'current' : 'upcoming';
-                      return (
-                        <div key={i} className="flex flex-1 items-center last:flex-none">
-                          <span
-                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                              state === 'done' ? 'bg-primary text-white'
-                              : state === 'current' ? 'bg-[#e5efff] text-primary ring-2 ring-primary'
-                              : 'bg-[#eceae4] text-[#9f9e9a]'
-                            }`}
-                          >
-                            {i + 1}
-                          </span>
-                          {i < categoryMaxSteps - 1 && (
-                            <span className={`h-[2px] flex-1 ${i < answeredStepCount ? 'bg-primary' : 'bg-[#e2e1dc]'}`} />
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {isComplete && (
-                    <p className="mt-3 text-xs font-semibold text-primary">모든 항목을 입력했어요!</p>
-                  )}
-                </div>
-              )}
-
               {/* 3. 사진 첨부 */}
               <div className="border-t border-[#e8e8e8] px-6 py-5">
                 <div className="mb-3 flex items-center gap-3">
@@ -984,7 +1002,14 @@ export default function ServiceRequestFormPage() {
                       <input
                         type="checkbox"
                         checked={policyAgreed}
-                        onChange={e => setPolicyAgreed(e.target.checked)}
+                        onChange={e => {
+                          const checked = e.target.checked;
+                          setPolicyAgreed(checked);
+                          if (checked) {
+                            // 체크하는 순간 방금까지 비활성화돼 있던 요청 상세 설정 쪽으로 포커스를 옮겨준다.
+                            detailSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }
+                        }}
                       />
                       위 견적 요청 정책을 확인하였습니다.
                     </label>
@@ -995,6 +1020,7 @@ export default function ServiceRequestFormPage() {
 
             {/* 오른쪽: 요청 상세 설정 — 정책 미동의 시 비활성화 */}
             <section
+              ref={detailSectionRef}
               className={`overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm transition-opacity ${
                 policyAgreed ? '' : 'pointer-events-none opacity-50'
               }`}
@@ -1009,6 +1035,48 @@ export default function ServiceRequestFormPage() {
                   <p className="py-16 text-center text-sm text-[#888780]">카테고리를 선택하면 상세 항목이 나타납니다.</p>
                 ) : (
                   <div className="flex flex-col gap-4">
+                    {/* 상세 항목 진행률 — 아래 단계 카드들의 답변 진행 상황을 점-연결선 형태로 표시 */}
+                    {categoryMaxSteps > 0 && (
+                      <div className="rounded-2xl border border-[#e8e8e8] bg-white px-6 py-5 shadow-sm">
+                        <div className="mb-3 flex items-center justify-between text-sm">
+                          <span className="font-semibold text-[#5f5e5a]">상세 항목 진행률</span>
+                          <span className="font-bold text-primary">{answeredStepCount}/{categoryMaxSteps}</span>
+                        </div>
+                        <div className="flex w-full items-center">
+                          {Array.from({ length: categoryMaxSteps }, (_, i) => {
+                            const state = i < answeredStepCount ? 'done' : i === answeredStepCount ? 'current' : 'upcoming';
+                            return (
+                              <div key={i} className="flex flex-1 items-center last:flex-none">
+                                {state === 'done' ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleProgressBadgeClick(i)}
+                                    className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary text-xs font-bold text-white transition-opacity hover:opacity-80"
+                                  >
+                                    {i + 1}
+                                  </button>
+                                ) : (
+                                  <span
+                                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                                      state === 'current' ? 'bg-[#e5efff] text-primary ring-2 ring-primary'
+                                      : 'bg-[#eceae4] text-[#9f9e9a]'
+                                    }`}
+                                  >
+                                    {i + 1}
+                                  </span>
+                                )}
+                                {i < categoryMaxSteps - 1 && (
+                                  <span className={`h-[2px] flex-1 ${i < answeredStepCount ? 'bg-primary' : 'bg-[#e2e1dc]'}`} />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {isComplete && (
+                          <p className="mt-3 text-xs font-semibold text-primary">모든 항목을 입력했어요!</p>
+                        )}
+                      </div>
+                    )}
                     {chain.map((stepId, index) => {
             const step = WIZARD_STEPS[stepId];
             if (!step) return null;
@@ -1588,8 +1656,9 @@ export default function ServiceRequestFormPage() {
           </>
         )}
 
-        {/* ── 하단 버튼 ── */}
-        <div className="flex items-center justify-between pb-4 pt-5">
+        {/* ── 하단 버튼 — 화면에 고정해서 스크롤 중에도 항상 같은 위치를 클릭할 수 있게 함
+             (스크롤 애니메이션 중 버튼 위치가 흔들려서 클릭이 빗나가는 문제 방지) ── */}
+        <div className="sticky bottom-0 z-10 flex items-center justify-between border-t border-[#e8e8e8] bg-white pb-4 pt-4">
           {step > 0 ? (
             <button
               type="button"
