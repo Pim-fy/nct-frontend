@@ -8,14 +8,8 @@ import {
   Search,
   X,
 } from 'lucide-react';
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SERVICE_REQUEST_SORT_OPTIONS } from '@/constants/serviceDiscovery';
-import {
-  HEADER_SEARCH_BUTTON_CLASS,
-  HEADER_SEARCH_FORM_CLASS,
-  HEADER_SEARCH_INPUT_CLASS,
-} from '@components/common/HeaderSearchPortal';
 
 const FILTER_GROUP_CLASS = 'm-0 grid gap-2 border-0 p-0 disabled:opacity-60';
 const FILTER_INPUT_CLASS = 'min-h-10 w-full rounded-lg border border-[#e2e1dc] bg-white px-3 text-body-sm text-[#1a1a18] outline-none transition-colors focus:border-primary md:text-body-md';
@@ -45,28 +39,6 @@ const getPageNumbers = (page, totalPages) => {
     Math.max(1, totalPages - visibleCount + 1),
   );
   return Array.from({ length: visibleCount }, (_, index) => start + index);
-};
-
-export const ServiceSearchBar = ({ initialKeyword, onSubmit }) => {
-  const [keyword, setKeyword] = useState(initialKeyword);
-
-  return (
-    <form className={HEADER_SEARCH_FORM_CLASS} onSubmit={(event) => onSubmit(event, keyword)} role="search">
-      <label className="sr-only" htmlFor="service-keyword">서비스 검색어</label>
-      <input
-        className={HEADER_SEARCH_INPUT_CLASS}
-        id="service-keyword"
-        onChange={(event) => setKeyword(event.target.value)}
-        placeholder="필요한 서비스 요청을 검색하세요"
-        type="search"
-        value={keyword}
-      />
-      <button className={HEADER_SEARCH_BUTTON_CLASS} title="검색" type="submit">
-        <Search aria-hidden="true" size={23} />
-        <span className="sr-only">검색</span>
-      </button>
-    </form>
-  );
 };
 
 const FilterFields = ({
