@@ -39,7 +39,14 @@ function toH24str(ampm, h12, m) {
 function TimeRow({ value, onChange: onChangeProp, minTime }) {
   const pad = n => String(n).padStart(2, '0');
   const { isPm, hour12, min } = parseTime(value);
-  const emit = (ampm, h, m) => onChangeProp && onChangeProp(toH24str(ampm, h, m));
+  // 오전/오후 전환·시·분 선택으로 만들어진 조합이 minTime보다 이전(무효)이면 minTime으로 초기화한다.
+  // 예: 오전 9시(min=09:00) 상태에서 오후 2시로 바꿨다가 다시 오전을 누르면 시·분이 그대로 남아
+  // 오전 2시(무효)가 되는 문제를 막는다.
+  const emit = (ampm, h, m) => {
+    if (!onChangeProp) return;
+    const next = toH24str(ampm, h, m);
+    onChangeProp(minTime && next < minTime ? minTime : next);
+  };
   const ampm = isPm ? 'pm' : 'am';
 
   const minH24 = minTime ? Number(minTime.split(':')[0]) : null;
@@ -83,6 +90,7 @@ export default function DateRangePicker({
   showTime, startTimeValue, onStartTimeChange,
   endTimeValue, onEndTimeChange, minEndTime,
   timeLabel = '시작 시간', timeHint = '종료 시간은 시작 시간과 동일하게 적용됩니다', minTime,
+  hideStatus, footer, gridPadding = '28px 16px 44px', cellAspectRatio = '1',
 }) {
   const now = new Date();
   const todayStr = toStr(now.getFullYear(), now.getMonth(), now.getDate());
@@ -214,7 +222,7 @@ export default function DateRangePicker({
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
           {Array.from({ length: firstDay }, (_, i) => (
-            <div key={`p${i}`} style={{ aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#d1d5db' }}>
+            <div key={`p${i}`} style={{ aspectRatio: cellAspectRatio, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#d1d5db' }}>
               {daysInPrev - firstDay + 1 + i}
             </div>
           ))}
@@ -239,7 +247,7 @@ export default function DateRangePicker({
                 onClick={() => !disabled && handleClick(dateStr)}
                 onMouseEnter={() => !locked && phase === 'end' && !disabled && setHovering(dateStr)}
                 onMouseLeave={() => setHovering(null)}
-                style={{ aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', background: bg, cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.3 : 1, position: 'relative' }}
+                style={{ aspectRatio: cellAspectRatio, display: 'flex', alignItems: 'center', justifyContent: 'center', background: bg, cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.3 : 1, position: 'relative' }}
               >
                 <span style={{ width: '80%', aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: spanBg, color, fontWeight: fw, fontSize: 14 }}>
                   {d}
@@ -251,7 +259,7 @@ export default function DateRangePicker({
             );
           })}
           {Array.from({ length: trailing }, (_, i) => (
-            <div key={`n${i}`} style={{ aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#d1d5db' }}>{i + 1}</div>
+            <div key={`n${i}`} style={{ aspectRatio: cellAspectRatio, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#d1d5db' }}>{i + 1}</div>
           ))}
         </div>
       </div>
@@ -275,39 +283,52 @@ export default function DateRangePicker({
       </div>
 
       {/* 2개월 달력 */}
-      <div style={{ display: 'flex', padding: '28px 16px 44px', gap: 16 }}>
+      <div style={{ display: 'flex', padding: gridPadding, gap: 16 }}>
         {renderMonth(leftYear, leftMonth)}
         <div style={{ width: 1, background: '#e5e7eb', flexShrink: 0 }} />
         {renderMonth(rightYear, rightMonth)}
       </div>
 
       {/* 선택 상태 */}
-      <div style={{ borderTop: '1px solid #e5e7eb', padding: '8px 16px', fontSize: 15, color: '#6b7280' }}>
-        <span>
-          {fixedStart
-            ? (!endDate && <span>종료일을 선택하세요</span>)
-            : startDate && endDate
-              ? <><strong style={{ color: '#0064ff' }}>{startDate}</strong> ~ <strong style={{ color: '#0064ff' }}>{endDate}</strong></>
-              : startDate
-                ? <><strong style={{ color: '#0064ff' }}>{startDate}</strong> ~ <span>종료일을 선택하세요</span></>
-                : <span>시작일을 선택하세요</span>
-          }
-        </span>
-      </div>
+      {!hideStatus && (
+        <div style={{ borderTop: '1px solid #e5e7eb', padding: '8px 16px', fontSize: 15, color: '#6b7280' }}>
+          <span>
+            {fixedStart
+              ? (!endDate && <span>종료일을 선택하세요</span>)
+              : startDate && endDate
+                ? <><strong style={{ color: '#0064ff' }}>{startDate}</strong> ~ <strong style={{ color: '#0064ff' }}>{endDate}</strong></>
+                : startDate
+                  ? <><strong style={{ color: '#0064ff' }}>{startDate}</strong> ~ <span>종료일을 선택하세요</span></>
+                  : <span>시작일을 선택하세요</span>
+            }
+          </span>
+        </div>
+      )}
 
-      {/* 시간 선택 — 필요 없는 모드에서도 같은 공간을 차지하도록 visibility로 숨김 */}
-      <div style={{ borderTop: '1px solid #e5e7eb', padding: '4px 16px 6px', visibility: showTime ? 'visible' : 'hidden' }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: '#6b7280', display: 'block', marginBottom: 3 }}>{timeLabel}</span>
-        <TimeRow value={startTimeValue} onChange={onStartTimeChange} minTime={minTime} />
-        {endTimeValue !== undefined ? (
-          <>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#6b7280', display: 'block', marginTop: 8, marginBottom: 3 }}>종료 시간</span>
-            <TimeRow value={endTimeValue} onChange={onEndTimeChange} minTime={minEndTime} />
-          </>
-        ) : (
-          <span style={{ fontSize: 14, color: '#9ca3af', display: 'block', marginTop: 4 }}>{timeHint}</span>
-        )}
-      </div>
+      {footer && (
+        <div style={{ borderTop: '1px solid #e5e7eb', padding: '12px 16px' }}>
+          {footer}
+        </div>
+      )}
+
+      {/* 시간 선택 — showTime을 쓰는(즉시/예약 전환이 있는) 호출부에서만 렌더링.
+          그런 곳에서는 필요 없는 모드에서도 같은 공간을 차지하도록 visibility로 숨긴다(레이아웃이
+          안 튀게). showTime 자체를 안 쓰는 호출부(예: 서비스 요청서)에서는 아예 렌더링하지 않아
+          불필요한 여백이 남지 않는다. */}
+      {showTime !== undefined && (
+        <div style={{ borderTop: '1px solid #e5e7eb', padding: '4px 16px 6px', visibility: showTime ? 'visible' : 'hidden' }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#6b7280', display: 'block', marginBottom: 3 }}>{timeLabel}</span>
+          <TimeRow value={startTimeValue} onChange={onStartTimeChange} minTime={minTime} />
+          {endTimeValue !== undefined ? (
+            <>
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#6b7280', display: 'block', marginTop: 8, marginBottom: 3 }}>종료 시간</span>
+              <TimeRow value={endTimeValue} onChange={onEndTimeChange} minTime={minEndTime} />
+            </>
+          ) : (
+            <span style={{ fontSize: 14, color: '#9ca3af', display: 'block', marginTop: 4 }}>{timeHint}</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

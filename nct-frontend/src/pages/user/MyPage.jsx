@@ -14,6 +14,7 @@ import MyPageDashboard from "@components/mypage/MyPageDashboard";
 import MyPageProfileEdit from "@components/mypage/MyPageProfileEdit";
 import MyPageProviderDashboard from "@components/mypage/MyPageProviderDashboard";
 import ProviderEmbeddedSection from "@components/mypage/ProviderEmbeddedSection";
+import ProviderReceivedReviewSection from "@components/mypage/ProviderReceivedReviewSection";
 import MyPageTradeChatList from "@components/mypage/MyPageTradeChatList";
 import ProviderProfilePage from "@pages/provider/ProviderProfilePage";
 import TradeChat from "@pages/trade/TradeChat";
@@ -47,10 +48,23 @@ const MYPAGE_SECTION_QUERY_VALUES = new Set([
   "service-trade",
   "settlement",
   "service-chat",
-  "approval-category",
+  "received-review",
   "report-list",
   "report-form",
 ]);
+
+const PROVIDER_ONLY_SECTION_QUERY_VALUES = new Set([
+  "quote",
+  "service-trade",
+  "settlement",
+  "service-chat",
+  "received-review",
+]);
+
+const isAllowedSection = (section, isProvider) => (
+  MYPAGE_SECTION_QUERY_VALUES.has(section)
+  && (isProvider || !PROVIDER_ONLY_SECTION_QUERY_VALUES.has(section))
+);
 
 export default function MyPage({
   initialSection = "home",
@@ -68,17 +82,29 @@ export default function MyPage({
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedSection = searchParams.get("section");
   const [activeSection, setActiveSection] = useState(
-    MYPAGE_SECTION_QUERY_VALUES.has(requestedSection)
+    isAllowedSection(requestedSection, isProvider)
       ? requestedSection
       : initialSection,
   );
   useEffect(() => {
-    if (!requestedSection) {
-      if (activeSection !== initialSection) setActiveSection(initialSection);
-    } else if (MYPAGE_SECTION_QUERY_VALUES.has(requestedSection) && requestedSection !== activeSection) {
-      setActiveSection(requestedSection);
-    }
-  }, [requestedSection]);
+    const requestedSectionAllowed = isAllowedSection(requestedSection, isProvider);
+    const nextSection = requestedSectionAllowed ? requestedSection : initialSection;
+    if (nextSection === activeSection) return undefined;
+
+    const animationFrameId = window.requestAnimationFrame(() => {
+      setActiveSection(nextSection);
+      if (requestedSection && !requestedSectionAllowed) {
+        setSearchParams({}, { replace: true });
+      }
+    });
+    return () => window.cancelAnimationFrame(animationFrameId);
+  }, [
+    activeSection,
+    initialSection,
+    isProvider,
+    requestedSection,
+    setSearchParams,
+  ]);
 
   const [selectedChatTradeId, setSelectedChatTradeId] = useState("");
   const [selectedPurchaseTradeId, setSelectedPurchaseTradeId] = useState("");
@@ -223,8 +249,8 @@ export default function MyPage({
           )}
           {activeSection === "wishlist" && <AuctionFavoritesPage />}
           {activeSection === "wallet" && <PointWalletPage embedded />}
-          {activeSection === "quote" && isProvider && <MyQuoteListPage />}
-          {activeSection === "review" && <ReviewListPage />}
+          {activeSection === "quote" && isProvider && <MyQuoteListPage embedded />}
+          {!isProvider && activeSection === "review" && <ReviewListPage />}
           {activeSection === "report-list" && <MyReportListPage embedded />}
           {activeSection === "report-form" && <ReportFormPage embedded />}
           {isProvider && activeSection === "service-trade" && (
@@ -242,13 +268,7 @@ export default function MyPage({
               emptyText="아직 표시할 서비스 채팅이 없습니다."
             />
           )}
-          {isProvider && activeSection === "approval-category" && (
-            <ProviderEmbeddedSection
-              title="승인 카테고리"
-              description="견적을 제출할 수 있도록 승인된 서비스 분야를 확인합니다."
-              emptyText="표시할 승인 카테고리가 없습니다."
-            />
-          )}
+          {isProvider && activeSection === "received-review" && <ProviderReceivedReviewSection />}
           {/* 기존 경로로 진입한 경우에도 입찰 내역을 안전하게 표시한다. */}
           {activeSection === "auction-history" && <MyBidHistoryPage />}
           {/* 개발 환경에서는 거래내역과 동일한 미리보기 채팅 데이터를 사용한다. */}

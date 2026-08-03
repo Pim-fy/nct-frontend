@@ -14,6 +14,44 @@ import './noticePage.css';
 
 const PAGE_SIZE = 10;
 
+/** 담당자 7 · F-COM-013: 검색 도구 영역의 크기를 유지해 로딩 전후 흔들림을 줄입니다. */
+const NoticeToolbarSkeleton = () => (
+  <div
+    aria-hidden="true"
+    className="public-notice-list-toolbar public-notice-list-toolbar--loading"
+  >
+    <span className="public-notice-skeleton__summary" />
+    <div className="public-notice-skeleton__search">
+      <span />
+      <span />
+    </div>
+  </div>
+);
+
+/** 담당자 7 · F-COM-013: 실제 공지 표와 같은 열 구조를 유지하는 목록 전용 로딩 화면입니다. */
+const NoticeListSkeleton = () => (
+  <section className="public-notice-skeleton" aria-label="공지사항 목록을 불러오는 중">
+    <div className="public-notice-skeleton__table">
+      <div className="public-notice-skeleton__row public-notice-skeleton__row--head">
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
+      </div>
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div className="public-notice-skeleton__row" key={index}>
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+      ))}
+    </div>
+  </section>
+);
+
 
 /** F-COM-013: 공개 조건을 만족한 공지만 보여 주는 목록 화면입니다. */
 const NoticeListPage = () => {
@@ -51,7 +89,6 @@ const NoticeListPage = () => {
     <ContentPageShell className="public-notice-page">
       <Helmet><title>공지사항 | 네고컷</title></Helmet>
       <header className="customer-support-page-header">
-        <span>NOTICE</span>
         <h1>공지사항</h1>
         <p>서비스 점검, 정책 변경, 이용 안내와 이벤트 소식을 확인하세요.</p>
       </header>
@@ -65,9 +102,11 @@ const NoticeListPage = () => {
           types={typesQuery.data ?? []}
         />
 
-        {!noticesQuery.isError && (
+        {noticesQuery.isLoading && <NoticeToolbarSkeleton />}
+
+        {!noticesQuery.isLoading && !noticesQuery.isError && (
           <div className="public-notice-list-toolbar">
-            {!noticesQuery.isLoading && noticePage?.items?.length > 0 && (
+            {noticePage?.items?.length > 0 && (
               <NoticeListSummary total={noticePage.totalItems} />
             )}
             <form className="public-notice-search" onSubmit={submitSearch}>
@@ -86,6 +125,8 @@ const NoticeListPage = () => {
         )}
       </section>
 
+      {noticesQuery.isLoading && <NoticeListSkeleton />}
+
       {noticesQuery.isError && (
         <ContentState
           actionLabel="다시 불러오기"
@@ -103,13 +144,14 @@ const NoticeListPage = () => {
         />
       )}
 
-      {!noticesQuery.isError && (noticesQuery.isLoading || noticePage?.items?.length > 0) && (
+      {!noticesQuery.isLoading && noticePage?.items?.length > 0 && (
         <>
-          {!noticesQuery.isLoading && keyword && <p className="public-notice-search__result" aria-live="polite"><strong>“{keyword}”</strong> 검색 결과입니다.</p>}
-          <NoticeList loading={noticesQuery.isLoading} notices={noticePage?.items ?? []} />
+          {keyword && <p className="public-notice-search__result" aria-live="polite"><strong>“{keyword}”</strong> 검색 결과입니다.</p>}
+          <NoticeList notices={noticePage.items} />
 
-          {!noticesQuery.isLoading && noticePage?.totalPages > 1 && (
+          {noticePage.totalPages > 1 && (
             <ContentPagination
+              ariaLabel="공지사항 페이지 이동"
               onChange={changePage}
               page={page}
               totalPages={noticePage.totalPages}

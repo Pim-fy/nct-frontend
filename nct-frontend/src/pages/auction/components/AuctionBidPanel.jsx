@@ -1,5 +1,6 @@
-import { Heart } from 'lucide-react';
+import { Flag, Heart } from 'lucide-react';
 import { formatNumber, formatPrice } from '@utils/common';
+import { resolveTradeMethodLabel } from '../utils/auctionFormatters';
 
 const BID_UNIT_MULTIPLIERS = [1, 5, 10];
 
@@ -10,15 +11,21 @@ const AuctionBidPanel = ({
   remainingTime,
   remainingTimeLabel,
   selectedTradeName,
+  selectedTradeMethodCode,
+  isMixedTradeMethod,
+  showTradeMethodError,
   displayedBidAmount,
   holdAgreed,
   requiresBidHoldConsent,
+  showHoldConsentError,
   isBidPending,
+  isTradeMethodChangePending,
   isBuyNowPending,
   isAuctionOpen,
   isAuctionReady,
   isOwnAuction,
   isCurrentHighestBidder,
+  hasTradeMethodChange,
   isBuyNowAvailable,
   isAuthenticated,
   isAuthLoading,
@@ -28,20 +35,29 @@ const AuctionBidPanel = ({
   isPointBalanceError,
   isBidPointSufficient,
   isBidAmountUnitValid,
+  isInstantBuyAmountSelected,
   hasBidAmountSelection,
   isBuyNowPointSufficient,
+  isDeliveryAddressChecking,
+  requiresDeliveryAddressRegistration,
   isFavoritePending,
   onBidInputChange,
+  onBidInputBlur,
   onBidMultiplierSelect,
   onHoldAgreedChange,
+  onTradeMethodChange,
   onBidSubmit,
+  onTradeMethodChangeSubmit,
   onBuyNowOpen,
+  onDeliveryAddressOpen,
   onFavoriteToggle,
   onChargeClick,
 }) => {
   const isBidPointInsufficient = hasAvailablePoint && !isBidPointSufficient;
   const isBuyNowPointInsufficient = hasAvailablePoint && !isBuyNowPointSufficient;
   const showBidAmountUnitError = hasBidAmountSelection && !isBidAmountUnitValid;
+  const showDeliveryAddressGate = isDeliveryAddressChecking
+    || requiresDeliveryAddressRegistration;
   const favoriteButtonStateClass = isAuthLoading || !isAuthenticated || isOwnAuction
     ? 'cursor-not-allowed opacity-45'
     : (isFavoritePending ? 'cursor-wait opacity-55' : 'cursor-pointer');
@@ -52,9 +68,40 @@ const AuctionBidPanel = ({
       : (isPointBalanceLoading
         ? '조회 중'
         : (isPointBalanceError ? '확인 불가' : '-')));
+  const currentPriceLabel = formatPrice(currentPrice);
+  const currentPriceSize = `${100 / Math.max(currentPriceLabel.length * 0.62, 1)}cqi`;
+  const remainingTimeSize = `${100 / Math.max(String(remainingTime).length * 0.66, 1)}cqi`;
+  const isCurrentHighestTradeMethodControl = isCurrentHighestBidder && isMixedTradeMethod;
+  const isPrimaryActionPending = isCurrentHighestTradeMethodControl
+    ? isTradeMethodChangePending
+    : isBidPending;
+  const isPrimaryActionDisabled = isCurrentHighestTradeMethodControl
+    ? (!isAuctionOpen || !hasTradeMethodChange || isTradeMethodChangePending)
+    : (!isAuctionOpen
+      || (isCurrentHighestBidder && !isInstantBuyAmountSelected)
+      || isBidPending
+      || isBidPointInsufficient
+      || !isBidAmountUnitValid);
+  const resolvePrimaryActionLabel = () => {
+    if (isCurrentHighestTradeMethodControl) {
+      if (!hasTradeMethodChange) return '최고입찰 중';
+      return `${selectedTradeName}으로 변경${isTradeMethodChangePending ? ' 중' : ''}`;
+    }
+    if (!isAuctionOpen) return '입찰 종료';
+    if (isInstantBuyAmountSelected) {
+      return isBidPointInsufficient ? '포인트 부족' : '즉시구매 진행';
+    }
+    if (isCurrentHighestBidder) return '최고입찰 중';
+    if (isBidPointInsufficient) return '포인트 부족';
+    if (!isBidAmountUnitValid) {
+      return hasBidAmountSelection ? '입찰 단위 확인' : '입찰 금액 선택';
+    }
+    return isBidPending ? '입찰 중' : '입찰하기';
+  };
+  const primaryActionLabel = resolvePrimaryActionLabel();
 
   return (
-    <aside className="grid min-h-[498px] content-start gap-[18px] rounded-lg border border-[#e8e8e8] bg-white px-[38px] pt-[30px] pb-[34px] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)] max-lg:min-h-0 max-lg:px-[22px] max-lg:py-7">
+    <aside className="grid min-h-[452px] content-start gap-[16px] rounded-lg border border-[#e8e8e8] bg-white px-[38px] pt-[28px] pb-[30px] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)] max-lg:min-h-0 max-lg:px-[22px] max-lg:py-7">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <span className="inline-flex min-h-5 items-center gap-1.5 rounded-full bg-primary-light px-[9px] text-[13px] leading-[1.4] font-bold whitespace-nowrap text-primary-dark">
@@ -64,246 +111,329 @@ const AuctionBidPanel = ({
           {auction.tradeMethodName && (
             <span className="inline-flex min-h-5 items-center gap-1.5 rounded-full px-[9px] text-[13px] leading-[1.4] font-bold whitespace-nowrap text-[#3f3f46]">
               <span className="size-[7px] rounded-full bg-primary" aria-hidden="true" />
-              {auction.tradeMethodName}
+              {resolveTradeMethodLabel(auction.tradeMethodCode, auction.tradeMethodName)}
             </span>
           )}
-          {isCurrentHighestBidder && (
-            <span
-              className="inline-flex min-h-6 items-center rounded-lg border border-[#88c9a1] bg-[#edf9f1] px-[9px] py-0.5 text-[13px] leading-[1.4] font-bold text-[#176b3a]"
-              role="status"
-            >
-              최고입찰자
-            </span>
-          )}
+          <span
+            aria-hidden={!isCurrentHighestBidder}
+            className={`inline-flex min-h-6 items-center rounded-lg border border-[#88c9a1] bg-[#edf9f1] px-[9px] py-0.5 text-[13px] leading-[1.4] font-bold text-[#176b3a] transition-opacity ${
+              isCurrentHighestBidder ? 'visible opacity-100' : 'invisible opacity-0'
+            }`}
+            role={isCurrentHighestBidder ? 'status' : undefined}
+          >
+            최고입찰자
+          </span>
         </div>
-        <button
-          className={`inline-flex min-h-6 shrink-0 items-center gap-1 rounded-full border px-3 py-0.5 text-[13px] leading-[1.4] font-bold transition-colors ${favoriteButtonStateClass} ${
-            auction.favorite
-              ? 'border-[#f6c6d2] bg-[#fff0f4] text-[#c0184a]'
-              : 'border-[#dadada] bg-white text-[#666]'
-          }`}
-          type="button"
-          aria-pressed={Boolean(auction.favorite)}
-          disabled={isAuthLoading || !isAuthenticated || isOwnAuction || isFavoritePending}
-          title={isOwnAuction
-            ? '본인 경매 상품은 관심 상품으로 등록할 수 없습니다'
-            : (isAuthLoading
-              ? '로그인 정보를 확인하는 중입니다'
-              : (!isAuthenticated ? '로그인 후 관심 상품을 등록할 수 있습니다' : undefined))}
-          onClick={onFavoriteToggle}
-        >
-          <Heart
-            size={14}
-            fill={auction.favorite ? 'currentColor' : 'none'}
-            aria-hidden="true"
-          />
-          관심
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            className={`inline-flex min-h-6 shrink-0 items-center gap-1 rounded-full border px-3 py-0.5 text-[13px] leading-[1.4] font-bold transition-colors ${favoriteButtonStateClass} ${
+              auction.favorite
+                ? 'border-[#f6c6d2] bg-[#fff0f4] text-[#c0184a]'
+                : 'border-[#dadada] bg-white text-[#666]'
+            }`}
+            type="button"
+            aria-pressed={Boolean(auction.favorite)}
+            disabled={isAuthLoading || !isAuthenticated || isOwnAuction || isFavoritePending}
+            title={isOwnAuction
+              ? '본인 경매 상품은 관심 상품으로 등록할 수 없습니다'
+              : (isAuthLoading
+                ? '로그인 정보를 확인하는 중입니다'
+                : (!isAuthenticated ? '로그인 후 관심 상품을 등록할 수 있습니다' : undefined))}
+            onClick={onFavoriteToggle}
+          >
+            <Heart size={14} fill={auction.favorite ? 'currentColor' : 'none'} aria-hidden="true" />
+            관심
+          </button>
+          <button
+            className="inline-flex min-h-6 shrink-0 cursor-default items-center gap-1 rounded-full border border-[#dadada] bg-white px-3 py-0.5 text-[13px] leading-[1.4] font-bold text-[#666]"
+            type="button"
+            title="경매 상품 신고"
+          >
+            <Flag size={14} aria-hidden="true" />
+            신고
+          </button>
+        </div>
       </div>
 
       <h1 className="m-0 break-words text-h2 font-bold text-[#1d1d1f] [overflow-wrap:anywhere] md:text-h1">
         {auction.title}
       </h1>
 
-      <div className="grid grid-cols-1 items-start gap-y-5 lg:grid-cols-[minmax(0,0.98fr)_minmax(320px,1fr)] lg:gap-x-[38px]">
-        <div>
-          <p className="mt-0 mb-3.5 text-body-md font-bold text-[#3f3f46]">
-            {isAuctionReady ? '경매 시작가' : '현재 최고가'}
-          </p>
-          <p className="m-0 text-h2 font-bold text-primary-dark md:text-h1" id="currentPrice">
-            {formatPrice(currentPrice)}
-          </p>
-          <p className="mt-3.5 mb-[18px] text-caption text-[#4d4d4d]">
-            {isAuctionReady
-              ? `즉시구매가 ${formatPrice(auction.instantBuyPrice)}`
-              : `시작가 ${formatPrice(auction.startPrice)} · 즉시구매가 ${formatPrice(auction.instantBuyPrice)}`}
-          </p>
-          <p
-            className="relative top-[18px] m-0 mb-3 grid gap-[7px] leading-[1.1] max-lg:top-0"
-            id="countdown"
-          >
-            <span
-              className={`text-body-md font-bold ${
-                isAuctionOpen || isAuctionReady ? 'text-[#3f3f46]' : 'text-[#8a8a8a]'
-              }`}
-              id="countdownLabel"
-            >
-              {remainingTimeLabel}
-            </span>
-            <span
-              className={`text-h2 font-bold tabular-nums ${
-                isAuctionOpen || isAuctionReady ? 'text-[#1d1d1f]' : 'text-[#8a8a8a]'
-              }`}
-              id="countdownValue"
-            >
-              {remainingTime}
-            </span>
-          </p>
-          {isAuctionOpen && (
-            <p className="relative top-[18px] text-caption text-[#666] max-lg:top-0">
-              마감 10분 이내 유효 입찰 시 자동 연장(1회)
-            </p>
-          )}
-        </div>
+      <div className="grid items-stretch gap-4 xl:grid-cols-[minmax(0,1.03fr)_minmax(280px,0.82fr)]">
+        <section className="grid min-w-0 grid-rows-[auto_auto_1fr] gap-3" aria-label="경매 현황">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid min-h-[106px] content-center rounded-lg border border-[#e8e8e8] bg-white px-5 py-4 [container-type:inline-size]">
+              <p className="mt-0 mb-2 text-body-md font-bold text-[#3f3f46]">
+                {isAuctionReady ? '경매 시작가' : '현재 최고가'}
+              </p>
+              <p
+                className="m-0 max-w-full whitespace-nowrap font-bold leading-tight text-primary-dark tabular-nums"
+                id="currentPrice"
+                style={{ fontSize: `clamp(1rem, ${currentPriceSize}, 2rem)` }}
+              >
+                {currentPriceLabel}
+              </p>
+            </div>
 
-        {isAuctionReady ? (
-          <div className="grid min-h-36 place-items-center content-center gap-2 pt-[42px] text-center text-[#1d1d1f] max-lg:pt-0" role="status">
-            <strong className="text-h3 font-bold">경매 시작 전입니다</strong>
-            <span className="text-body-sm text-[#666] md:text-body-md">입찰과 즉시구매는 경매가 시작되면 이용할 수 있습니다.</span>
-          </div>
-        ) : isAuthLoading ? (
-          <div
-            className="grid min-h-36 place-items-center pt-[42px] text-body-md font-bold text-[#666] max-lg:pt-0"
-            role="status"
-          >
-            로그인 정보를 확인하는 중입니다.
-          </div>
-        ) : isOwnAuction ? (
-          <div
-            className="grid min-h-36 place-items-center pt-[42px] text-h3 font-bold text-primary-dark max-lg:pt-0"
-            role="status"
-          >
-            본인 경매 상품
-          </div>
-        ) : (
-          <div className="self-start pt-[42px] max-lg:pt-0">
-            <div className="mb-3.5 grid gap-2">
-              <label className="text-body-md font-bold text-[#666]" htmlFor="bidAmount">입찰 금액</label>
-              <input
-                className="min-h-11 w-full rounded-lg border border-[#dadada] bg-white px-3.5 text-body-md text-[#1d1d1f] outline-none transition-colors focus:border-primary disabled:cursor-not-allowed disabled:bg-[#f3f3f3]"
-                id="bidAmount"
-                type="text"
-                inputMode="numeric"
-                value={displayedBidAmount}
-                disabled={!isAuctionOpen || isCurrentHighestBidder}
-                aria-invalid={showBidAmountUnitError}
-                aria-describedby={showBidAmountUnitError ? 'bidAmountPolicy' : undefined}
-                onChange={onBidInputChange}
-              />
+            <div className="grid min-h-[106px] content-center rounded-lg border border-[#e8e8e8] bg-white px-5 py-4 [container-type:inline-size]">
+              <p className="m-0 grid gap-[7px] leading-[1.1]" id="countdown">
+                <span
+                  className={`text-body-md font-bold ${
+                    isAuctionOpen || isAuctionReady ? 'text-[#3f3f46]' : 'text-[#8a8a8a]'
+                  }`}
+                  id="countdownLabel"
+                >
+                  {remainingTimeLabel}
+                </span>
+                <span
+                  className={`max-w-full whitespace-nowrap font-bold leading-tight tabular-nums ${
+                    isAuctionOpen || isAuctionReady ? 'text-[#1d1d1f]' : 'text-[#8a8a8a]'
+                  }`}
+                  id="countdownValue"
+                  style={{ fontSize: `clamp(1rem, ${remainingTimeSize}, 2rem)` }}
+                >
+                  {remainingTime}
+                </span>
+              </p>
             </div>
-            <div className="grid gap-2">
-              <span className="text-caption text-[#666]">
-                입찰 단위 <strong className="ml-1 text-[#1d1d1f]">{formatPrice(bidUnitPrice)}</strong>
-              </span>
-              <div className="grid grid-cols-3 gap-2" role="group" aria-label="입찰 단위 배수 선택">
-                {BID_UNIT_MULTIPLIERS.map((multiplier) => (
-                  <button
-                    className="min-h-10 min-w-[58px] cursor-pointer rounded-lg border border-[#dadada] bg-white text-body-sm font-bold text-[#1d1d1f] transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
-                    type="button"
-                    key={multiplier}
-                    disabled={!isAuctionOpen || isCurrentHighestBidder}
-                    aria-label={`현재가에 입찰 단위 ${multiplier}배 추가`}
-                    onClick={() => onBidMultiplierSelect(multiplier)}
-                  >
-                    +{formatNumber(bidUnitPrice * multiplier)}
-                  </button>
-                ))}
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <div className="grid min-h-12 content-center gap-0.5 rounded-lg border border-[#e8e8e8] bg-white px-2 py-[7px] text-center">
+              <span className="text-caption font-medium text-[#666]">입찰횟수</span>
+              <strong className="text-body-md text-primary-dark">{auction.bidCount || 0}회</strong>
+            </div>
+            <div className="grid min-h-12 content-center gap-0.5 rounded-lg border border-[#e8e8e8] bg-white px-2 py-[7px] text-center">
+              <span className="text-caption font-medium text-[#666]">관심인원</span>
+              <strong className="text-body-md text-primary-dark">{formatNumber(auction.favoriteCount)}명</strong>
+            </div>
+            <div className="grid min-h-12 content-center gap-0.5 rounded-lg border border-[#e8e8e8] bg-white px-2 py-[7px] text-center">
+              <span className="text-caption font-medium text-[#666]">조회수</span>
+              <strong className="text-body-md text-primary-dark">{formatNumber(auction.viewCount)}회</strong>
+            </div>
+          </div>
+
+          <div className="grid gap-3 rounded-lg border border-[#e8e8e8] bg-[#fafafa] px-4 py-3">
+            {isMixedTradeMethod ? (
+              <div className={`grid gap-2 rounded-lg border px-3 py-2 transition-colors ${
+                showTradeMethodError
+                  ? 'border-[#f0aaa4] bg-[#fff4f3]'
+                  : 'border-transparent'
+              }`}>
+                <div className="flex items-center justify-between gap-4">
+                  <span className={`text-caption font-bold ${showTradeMethodError ? 'text-[#b42318]' : 'text-[#666]'}`}>
+                    거래 방식 선택
+                  </span>
+                  <strong className={`text-body-sm ${
+                    selectedTradeMethodCode
+                      ? 'text-[#1d1d1f]'
+                      : (showTradeMethodError ? 'text-[#b42318]' : 'text-[#666]')
+                  }`}>
+                    {selectedTradeName}
+                  </strong>
+                </div>
+                <div className="grid grid-cols-2 gap-2" role="group" aria-label="거래 방식 선택">
+                  {[
+                    { code: 'TRDC0009', label: '배송' },
+                    { code: 'TRDC0010', label: '직거래' },
+                  ].map((method) => {
+                    const selected = selectedTradeMethodCode === method.code;
+                    return (
+                      <button
+                        className={`min-h-10 cursor-pointer rounded-lg border text-body-sm font-bold transition-colors ${
+                          selected
+                            ? 'border-primary bg-primary-light text-primary-dark'
+                            : 'border-[#dadada] bg-white text-[#666] hover:border-primary hover:text-primary-dark'
+                        }`}
+                        key={method.code}
+                        type="button"
+                        aria-pressed={selected}
+                        disabled={!isAuctionOpen || isTradeMethodChangePending}
+                        onClick={() => onTradeMethodChange(method.code)}
+                      >
+                        {method.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p
+                  aria-hidden={!showTradeMethodError}
+                  className={`m-0 min-h-5 text-caption font-bold text-[#b42318] transition-opacity ${
+                    showTradeMethodError ? 'visible opacity-100' : 'invisible opacity-0'
+                  }`}
+                  role={showTradeMethodError ? 'alert' : undefined}
+                >
+                  배송 또는 직거래 방식을 선택해 주세요
+                </p>
               </div>
+            ) : (
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-caption font-bold text-[#666]">거래 방식</span>
+                <strong className="text-body-sm text-[#1d1d1f]">{selectedTradeName}</strong>
+              </div>
+            )}
+            <div className="border-t border-[#e8e8e8] pt-3">
+              <p className="m-0 text-caption font-bold text-[#666]">안내사항</p>
+              <ul className="mt-2 mb-0 list-disc space-y-1 pl-4 text-caption text-[#666]">
+                <li>마감 10분 이내 유효 입찰 시 종료 시간이 자동 연장됩니다.</li>
+                <li>완료된 입찰은 취소할 수 없으니 금액을 확인해 주세요.</li>
+              </ul>
             </div>
-            {showBidAmountUnitError && (
-              <p className="my-3 text-caption text-[#b42318]" id="bidAmountPolicy" role="alert">
+          </div>
+        </section>
+
+        <section className="flex min-w-0 flex-col rounded-lg border border-[#e8e8e8] bg-white px-5 py-4" aria-label="입찰 및 즉시구매">
+          {isAuctionReady ? (
+            <div className="grid min-h-36 flex-1 place-items-center content-center gap-2 text-center text-[#1d1d1f]" role="status">
+              <strong className="text-h3 font-bold">경매 시작 전입니다</strong>
+              <span className="text-body-sm text-[#666] md:text-body-md">입찰과 즉시구매는 경매가 시작되면 이용할 수 있습니다.</span>
+            </div>
+          ) : isAuthLoading ? (
+            <div className="grid min-h-36 flex-1 place-items-center text-body-md font-bold text-[#666]" role="status">
+              로그인 정보를 확인하는 중입니다.
+            </div>
+          ) : isOwnAuction ? (
+            <div className="grid min-h-36 flex-1 place-items-center text-h3 font-bold text-primary-dark" role="status">
+              본인 경매 상품
+            </div>
+          ) : (
+            <>
+              <div className="mb-2.5 grid gap-2">
+                <label className="text-body-md font-bold text-[#666]" htmlFor="bidAmount">입찰 금액</label>
+                <input
+                  className="min-h-11 w-full rounded-lg border border-[#dadada] bg-white px-3.5 text-body-md text-[#1d1d1f] outline-none transition-colors focus:border-primary disabled:cursor-not-allowed disabled:bg-[#f3f3f3]"
+                  id="bidAmount"
+                  type="text"
+                  inputMode="numeric"
+                  value={displayedBidAmount}
+                  disabled={!isAuctionOpen || isCurrentHighestBidder}
+                  aria-invalid={showBidAmountUnitError}
+                  aria-describedby={showBidAmountUnitError ? 'bidAmountPolicy' : undefined}
+                  onChange={onBidInputChange}
+                  onBlur={onBidInputBlur}
+                />
+              </div>
+              <div className="grid gap-2">
+                <span className="text-caption text-[#666]">
+                  입찰 단위 <strong className="ml-1 text-[#1d1d1f]">{formatPrice(bidUnitPrice)}</strong>
+                </span>
+                <div className="grid grid-cols-3 gap-2" role="group" aria-label="입찰 단위 배수 선택">
+                  {BID_UNIT_MULTIPLIERS.map((multiplier) => (
+                    <button
+                      className="min-h-10 min-w-[58px] cursor-pointer rounded-lg border border-[#dadada] bg-white text-body-sm font-bold text-[#1d1d1f] transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                      type="button"
+                      key={multiplier}
+                      disabled={!isAuctionOpen || isCurrentHighestBidder}
+                      aria-label={`현재가에 입찰 단위 ${multiplier}배 추가`}
+                      onClick={() => onBidMultiplierSelect(multiplier)}
+                    >
+                      +{formatNumber(bidUnitPrice * multiplier)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <p
+                aria-hidden={!showBidAmountUnitError}
+                className={`mt-2 mb-0 min-h-5 text-caption text-[#b42318] transition-opacity ${
+                  showBidAmountUnitError ? 'visible opacity-100' : 'invisible opacity-0'
+                }`}
+                id="bidAmountPolicy"
+                role={showBidAmountUnitError ? 'alert' : undefined}
+              >
                 {formatPrice(bidUnitPrice)} 단위에 맞는 금액을 입력해 주세요
               </p>
-            )}
-            <div className="grid min-h-7 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2.5 text-caption text-[#666]">
-              <span>사용 가능 포인트</span>
-              <strong className={`text-body-md ${isBidPointInsufficient ? 'text-[#b42318]' : 'text-[#1d1d1f]'}`}>
-                {pointBalanceLabel}
-              </strong>
-              {isAuthenticated && (
-                <button
-                  className="font-bold text-primary-dark underline underline-offset-3"
-                  type="button"
-                  onClick={onChargeClick}
-                >
-                  충전
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        <div className="grid max-w-[310px] grid-cols-3 gap-2 pt-7 max-lg:pt-0">
-          <div className="grid min-h-12 content-center gap-0.5 rounded-lg border border-[#e8e8e8] bg-white px-2 py-[7px] text-center">
-            <span className="text-caption font-medium text-[#666]">입찰횟수</span>
-            <strong className="text-body-md text-primary-dark">{auction.bidCount || 0}회</strong>
-          </div>
-          <div className="grid min-h-12 content-center gap-0.5 rounded-lg border border-[#e8e8e8] bg-white px-2 py-[7px] text-center">
-            <span className="text-caption font-medium text-[#666]">관심인원</span>
-            <strong className="text-body-md text-primary-dark">{formatNumber(auction.favoriteCount)}명</strong>
-          </div>
-          <div className="grid min-h-12 content-center gap-0.5 rounded-lg border border-[#e8e8e8] bg-white px-2 py-[7px] text-center">
-            <span className="text-caption font-medium text-[#666]">조회수</span>
-            <strong className="text-body-md text-primary-dark">{formatNumber(auction.viewCount)}회</strong>
-          </div>
-        </div>
-        <div className="grid gap-2 pt-7 max-lg:pt-0">
-          <span className="text-caption font-bold text-[#666]">거래 방식</span>
-          <strong>{selectedTradeName}</strong>
-        </div>
-
-        {!isAuthLoading && !isOwnAuction && (
-          isAuthenticated ? (
-            <div className="grid grid-cols-2 items-end justify-center gap-1.5 max-sm:grid-cols-1 lg:col-span-2 lg:mx-auto lg:w-full lg:max-w-[520px]">
-              <div className="grid gap-2">
-                {requiresBidHoldConsent && (
-                  <label className="flex items-center justify-center gap-2 text-caption text-[#666]">
-                    <input
-                      className="size-4 accent-primary"
-                      id="holdAgree"
-                      type="checkbox"
-                      checked={holdAgreed}
-                      disabled={!isAuctionOpen}
-                      onChange={(event) => onHoldAgreedChange(event.target.checked)}
-                    /> 입찰 포인트 홀딩에 동의합니다
-                  </label>
+              <div className="grid min-h-7 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2.5 text-caption text-[#666]">
+                <span>사용 가능 포인트</span>
+                <strong className={`text-body-md ${isBidPointInsufficient ? 'text-[#b42318]' : 'text-[#1d1d1f]'}`}>
+                  {pointBalanceLabel}
+                </strong>
+                {isAuthenticated && (
+                  <button className="font-bold text-primary-dark underline underline-offset-3" type="button" onClick={onChargeClick}>
+                    충전
+                  </button>
                 )}
-                <button
-                  className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-primary text-body-md font-bold text-white disabled:cursor-not-allowed disabled:opacity-55 aria-busy:cursor-progress"
-                  id="bidBtn"
-                  type="button"
-                  aria-busy={isBidPending}
-                  disabled={!isAuctionOpen
-                    || isCurrentHighestBidder
-                    || isBidPending
-                    || isBidPointInsufficient
-                    || !isBidAmountUnitValid}
-                  onClick={onBidSubmit}
-                >
-                  {!isAuctionOpen
-                    ? '입찰 종료'
-                    : (isCurrentHighestBidder
-                      ? '최고입찰 중'
-                      : (isBidPointInsufficient
-                        ? '포인트 부족'
-                        : (!isBidAmountUnitValid
-                          ? (hasBidAmountSelection ? '입찰 단위 확인' : '입찰 금액 선택')
-                          : (isBidPending ? '입찰 중' : '입찰하기'))))}
-                </button>
               </div>
-              <button
-                className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-white text-body-md font-bold text-primary disabled:cursor-not-allowed disabled:opacity-55 aria-busy:cursor-progress"
-                id="buyNowBtn"
-                type="button"
-                aria-busy={isBuyNowPending}
-                disabled={!isBuyNowAvailable || isBuyNowPending || isBuyNowPointInsufficient}
-                onClick={onBuyNowOpen}
-              >
-                {!isAuctionOpen
-                  ? '즉시구매 종료'
-                  : (isBuyNowPointInsufficient
-                    ? '포인트 부족'
-                    : (isBuyNowAvailable
-                      ? `즉시구매 ${formatPrice(auction.instantBuyPrice)}`
-                      : '즉시구매 불가'))}
-              </button>
-              </div>
-          ) : (
-            <p className="m-0 mt-5 flex min-h-12 items-center justify-center pt-2 text-center text-body-md font-bold text-[#666] lg:col-span-2" role="status">
-              로그인이 필요한 서비스입니다.
-            </p>
-          )
-        )}
+
+              {!isAuthenticated ? (
+                <p className="mt-16 mb-0 flex min-h-12 items-center justify-center text-center text-body-md font-bold text-[#666] max-lg:mt-8" role="status">
+                  로그인이 필요한 서비스입니다.
+                </p>
+              ) : (
+                <div className="mt-auto grid gap-1.5 pt-4">
+                  {showDeliveryAddressGate ? (
+                    <>
+                      {requiresBidHoldConsent && (
+                        <span aria-hidden="true" className="mb-0.5 min-h-[38px]" />
+                      )}
+                      <button
+                        className={`min-h-[46px] rounded-lg border text-body-md font-bold ${
+                          isDeliveryAddressChecking
+                            ? 'border-[#dadada] bg-[#f3f3f3] text-[#666]'
+                            : 'cursor-pointer border-primary bg-primary text-white hover:bg-[#0058df]'
+                        }`}
+                        type="button"
+                        disabled={isDeliveryAddressChecking}
+                        onClick={isDeliveryAddressChecking ? undefined : onDeliveryAddressOpen}
+                      >
+                        {isDeliveryAddressChecking ? '배송지 확인 중' : '배송지 등록'}
+                      </button>
+                      <span aria-hidden="true" className="min-h-[46px]" />
+                    </>
+                  ) : (
+                    <>
+                      {requiresBidHoldConsent && (
+                        <label className={`mb-0.5 flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-caption transition-colors ${
+                          showHoldConsentError
+                            ? 'border-[#f0aaa4] bg-[#fff4f3] font-bold text-[#b42318]'
+                            : 'border-transparent text-[#666]'
+                        }`}>
+                          <input
+                            className="size-4 accent-primary"
+                            id="holdAgree"
+                            type="checkbox"
+                            checked={holdAgreed}
+                            disabled={!isAuctionOpen}
+                            aria-invalid={showHoldConsentError}
+                            onChange={(event) => onHoldAgreedChange(event.target.checked)}
+                          />
+                          입찰 포인트 홀딩에 동의합니다
+                        </label>
+                      )}
+                      <button
+                        className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-primary text-body-md font-bold text-white disabled:cursor-not-allowed disabled:opacity-55 aria-busy:cursor-progress"
+                        id="bidBtn"
+                        type="button"
+                        aria-busy={isPrimaryActionPending}
+                        disabled={isPrimaryActionDisabled}
+                        onClick={isCurrentHighestTradeMethodControl
+                          ? onTradeMethodChangeSubmit
+                          : onBidSubmit}
+                      >
+                        {primaryActionLabel}
+                      </button>
+                      <button
+                        className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-white text-body-md font-bold text-primary disabled:cursor-not-allowed disabled:opacity-55 aria-busy:cursor-progress"
+                        id="buyNowBtn"
+                        type="button"
+                        aria-busy={isBuyNowPending}
+                        disabled={!isBuyNowAvailable || isBuyNowPending || isBuyNowPointInsufficient}
+                        onClick={onBuyNowOpen}
+                      >
+                        {!isAuctionOpen
+                          ? '즉시구매 종료'
+                          : (isBuyNowPointInsufficient
+                            ? '포인트 부족'
+                            : (isBuyNowAvailable
+                              ? `즉시구매 ${formatPrice(auction.instantBuyPrice)}`
+                              : '즉시구매 불가'))}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </section>
       </div>
     </aside>
   );

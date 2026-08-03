@@ -1,23 +1,24 @@
 import {
-  BadgeCheck,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
   Clock3,
-  MapPin,
   RotateCcw,
   Search,
-  SlidersHorizontal,
-  Star,
   X,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { SERVICE_REQUEST_SORT_OPTIONS } from '@/constants/serviceDiscovery';
 import {
-  SERVICE_PROVIDER_SORT_OPTIONS,
-  SERVICE_REQUEST_SORT_OPTIONS,
-} from '@/constants/serviceDiscovery';
+  HEADER_SEARCH_BUTTON_CLASS,
+  HEADER_SEARCH_FORM_CLASS,
+  HEADER_SEARCH_INPUT_CLASS,
+} from '@components/common/HeaderSearchPortal';
+
+const FILTER_GROUP_CLASS = 'm-0 grid gap-2 border-0 p-0 disabled:opacity-60';
+const FILTER_INPUT_CLASS = 'min-h-10 w-full rounded-lg border border-[#e2e1dc] bg-white px-3 text-body-sm text-[#1a1a18] outline-none transition-colors focus:border-primary md:text-body-md';
 
 const formatAmount = (value) => {
   const amount = Number(value);
@@ -50,17 +51,17 @@ export const ServiceSearchBar = ({ initialKeyword, onSubmit }) => {
   const [keyword, setKeyword] = useState(initialKeyword);
 
   return (
-    <form className="mx-auto flex w-full max-w-[760px] overflow-hidden rounded-[6px] border-2 border-primary bg-white focus-within:ring-2 focus-within:ring-primary/20" onSubmit={(event) => onSubmit(event, keyword)} role="search">
+    <form className={HEADER_SEARCH_FORM_CLASS} onSubmit={(event) => onSubmit(event, keyword)} role="search">
       <label className="sr-only" htmlFor="service-keyword">서비스 검색어</label>
       <input
-        className="h-14 min-w-0 flex-1 border-0 px-5 text-base text-[#1a1a18] outline-none placeholder:text-[#8b8b88]"
+        className={HEADER_SEARCH_INPUT_CLASS}
         id="service-keyword"
         onChange={(event) => setKeyword(event.target.value)}
-        placeholder="필요한 서비스나 제공자를 검색하세요"
+        placeholder="필요한 서비스 요청을 검색하세요"
         type="search"
         value={keyword}
       />
-      <button className="grid h-14 w-14 shrink-0 place-items-center bg-primary text-white transition-colors hover:bg-[#0056dc]" title="검색" type="submit">
+      <button className={HEADER_SEARCH_BUTTON_CLASS} title="검색" type="submit">
         <Search aria-hidden="true" size={23} />
         <span className="sr-only">검색</span>
       </button>
@@ -68,44 +69,19 @@ export const ServiceSearchBar = ({ initialKeyword, onSubmit }) => {
   );
 };
 
-export const DiscoveryTabs = ({ activeView, onChange, requestCount, providerCount }) => (
-  <div className="mt-8 grid grid-cols-2 border-b border-[#dedede]" role="tablist" aria-label="검색 결과 유형">
-    {[
-      { key: 'requests', label: '서비스 요청', count: requestCount },
-      { key: 'providers', label: '제공자', count: providerCount },
-    ].map(({ key, label, count }) => {
-      const active = activeView === key;
-      return (
-        <button
-          aria-selected={active}
-          className={`relative h-14 text-base font-bold transition-colors ${active ? 'text-primary' : 'text-[#595957] hover:text-[#1a1a18]'}`}
-          key={key}
-          onClick={() => onChange(key)}
-          role="tab"
-          type="button"
-        >
-          {label}{count != null && <span className="ml-2 font-semibold">{Number(count).toLocaleString('ko-KR')}</span>}
-          {active && <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />}
-        </button>
-      );
-    })}
-  </div>
-);
-
 const FilterFields = ({
   categories,
   categoriesError,
   categoriesLoading,
   filters,
   onChange,
-  view,
 }) => {
   return (
-    <div className="space-y-7">
-      <label className="block">
-        <span className="mb-2 block text-base font-bold text-[#272725]">카테고리</span>
+    <div className="grid gap-[18px]">
+      <label className="grid gap-2">
+        <span className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">카테고리</span>
         <select
-          className="h-12 w-full rounded-[5px] border border-[#cfcfcd] bg-white px-3 text-base outline-none focus:border-primary"
+          className={FILTER_INPUT_CLASS}
           disabled={categoriesLoading || categoriesError}
           onChange={(event) => onChange('categorySn', event.target.value)}
           value={filters.categorySn}
@@ -115,79 +91,47 @@ const FilterFields = ({
             <option key={category.catSn} value={category.catSn}>{category.catNm}</option>
           ))}
         </select>
-        {categoriesLoading && <span className="mt-2 block text-base text-[#6f6f6c]">불러오는 중입니다.</span>}
-        {categoriesError && <span className="mt-2 block text-base text-[#b42318]">카테고리를 불러오지 못했습니다.</span>}
+        {categoriesLoading && <span className="text-caption text-[#5f5e5a]">불러오는 중입니다.</span>}
+        {categoriesError && <span className="text-caption text-[#b42318]">카테고리를 불러오지 못했습니다.</span>}
       </label>
 
-      {view === 'providers' && (
-        <label className="block">
-          <span className="mb-2 block text-base font-bold text-[#272725]">활동 지역</span>
+      <fieldset className={FILTER_GROUP_CLASS}>
+        <legend className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">예산 범위</legend>
+        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
           <input
-            className="h-12 w-full rounded-[5px] border border-[#cfcfcd] bg-white px-3 text-base text-[#272725] outline-none placeholder:text-[#999996] focus:border-primary"
-            onChange={(event) => onChange('region', event.target.value)}
-            placeholder="예: 서울 강남구"
-            type="search"
-            value={filters.region}
+            aria-label="최소 예산"
+            className={`${FILTER_INPUT_CLASS} min-w-0`}
+            min="0"
+            onChange={(event) => onChange('minBudget', event.target.value)}
+            placeholder="최소"
+            type="number"
+            value={filters.minBudget || ''}
           />
-        </label>
-      )}
+          <span className="text-base text-[#777774]">~</span>
+          <input
+            aria-label="최대 예산"
+            className={`${FILTER_INPUT_CLASS} min-w-0`}
+            min="0"
+            onChange={(event) => onChange('maxBudget', event.target.value)}
+            placeholder="최대"
+            type="number"
+            value={filters.maxBudget || ''}
+          />
+        </div>
+      </fieldset>
 
-      {view === 'requests' && (
-        <fieldset>
-          <legend className="mb-2 text-base font-bold text-[#272725]">예산 범위</legend>
-          <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
-            <input
-              aria-label="최소 예산"
-              className="h-12 min-w-0 rounded-[5px] border border-[#cfcfcd] px-3 text-base outline-none placeholder:text-[#999996] focus:border-primary"
-              min="0"
-              onChange={(event) => onChange('minBudget', event.target.value)}
-              placeholder="최소"
-              type="number"
-              value={filters.minBudget || ''}
-            />
-            <span className="text-base text-[#777774]">~</span>
-            <input
-              aria-label="최대 예산"
-              className="h-12 min-w-0 rounded-[5px] border border-[#cfcfcd] px-3 text-base outline-none placeholder:text-[#999996] focus:border-primary"
-              min="0"
-              onChange={(event) => onChange('maxBudget', event.target.value)}
-              placeholder="최대"
-              type="number"
-              value={filters.maxBudget || ''}
-            />
-          </div>
-        </fieldset>
-      )}
-
-      {view === 'providers' && (
-        <label className="block">
-          <span className="mb-2 block text-base font-bold text-[#272725]">정렬</span>
-          <select
-            className="h-12 w-full rounded-[5px] border border-[#cfcfcd] bg-white px-3 text-base outline-none focus:border-primary"
-            onChange={(event) => onChange('sort', event.target.value)}
-            value={filters.sort}
-          >
-            {SERVICE_PROVIDER_SORT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-        </label>
-      )}
-
-      {view === 'requests' && (
-        <label className="block">
-          <span className="mb-2 block text-base font-bold text-[#272725]">정렬</span>
-          <select
-            className="h-12 w-full rounded-[5px] border border-[#cfcfcd] bg-white px-3 text-base outline-none focus:border-primary"
-            onChange={(event) => onChange('sort', event.target.value)}
-            value={filters.sort}
-          >
-            {SERVICE_REQUEST_SORT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-        </label>
-      )}
+      <label className="grid gap-2">
+        <span className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">정렬</span>
+        <select
+          className={FILTER_INPUT_CLASS}
+          onChange={(event) => onChange('sort', event.target.value)}
+          value={filters.sort}
+        >
+          {SERVICE_REQUEST_SORT_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
+      </label>
     </div>
   );
 };
@@ -201,7 +145,8 @@ export const ServiceFilterPanel = ({
   onChange,
   onClose,
   onReset,
-  view,
+  resultCount,
+  resultLoading,
 }) => {
   const fields = (
     <FilterFields
@@ -210,112 +155,71 @@ export const ServiceFilterPanel = ({
       categoriesLoading={categoriesLoading}
       filters={filters}
       onChange={onChange}
-      view={view}
     />
   );
 
   return (
     <>
-      <aside className="hidden w-[280px] shrink-0 self-start border-r border-[#e1e1df] pr-7 lg:block" aria-label="서비스 검색 필터">
-        <div className="mb-7 flex h-11 items-center justify-between">
+      <button
+        aria-label="필터 닫기"
+        className={`fixed inset-0 z-[210] cursor-default border-0 bg-black/25 transition-opacity duration-200 ease-linear motion-reduce:transition-none md:hidden ${isOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}
+        onClick={onClose}
+        tabIndex={isOpen ? 0 : -1}
+        type="button"
+      />
+      <aside
+        className={`fixed inset-x-0 bottom-0 z-[220] grid max-h-[88dvh] w-full transform-gpu gap-[18px] overflow-y-auto overscroll-contain rounded-t-2xl border border-[#f0efec] bg-white p-5 shadow-[0_-8px_28px_rgba(0,0,0,0.18)] transition-transform duration-[420ms] ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform [backface-visibility:hidden] [scrollbar-color:#c8ced8_transparent] [scrollbar-width:thin] motion-reduce:transition-none [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#c8ced8] [&::-webkit-scrollbar-track]:bg-transparent ${isOpen ? 'pointer-events-auto translate-y-0' : 'pointer-events-none translate-y-[101%]'} md:sticky md:top-[82px] md:inset-x-auto md:bottom-auto md:z-auto md:h-fit md:max-h-[calc(100dvh-122px)] md:w-[280px] md:flex-[0_0_280px] md:self-start md:translate-y-0 md:overflow-y-auto md:rounded-lg md:pointer-events-auto md:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)]`}
+        aria-label="서비스 검색 필터"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="m-0 text-h3 font-bold">필터</h2>
           <div className="flex items-center gap-2">
-            <SlidersHorizontal aria-hidden="true" className="text-primary" size={20} />
-            <h2 className="text-xl font-bold text-[#1a1a18]">필터</h2>
+            <button className="inline-flex size-[34px] cursor-pointer items-center justify-center rounded-lg border border-[#e2e1dc] bg-white text-[#5f5e5a] transition-colors hover:border-primary hover:bg-primary-light hover:text-primary" onClick={onReset} title="필터 초기화" type="button">
+              <RotateCcw aria-hidden="true" size={16} />
+              <span className="sr-only">필터 초기화</span>
+            </button>
+            <button className="inline-flex size-[34px] cursor-pointer items-center justify-center rounded-lg border border-[#e2e1dc] bg-white text-[#5f5e5a] transition-colors hover:border-primary hover:bg-primary-light hover:text-primary md:hidden" onClick={onClose} title="필터 닫기" type="button">
+              <X aria-hidden="true" size={18} />
+              <span className="sr-only">필터 닫기</span>
+            </button>
           </div>
-          <button className="grid h-10 w-10 place-items-center rounded-[5px] border border-[#d7d7d5] text-[#555552] hover:bg-[#f5f5f3]" onClick={onReset} title="필터 초기화" type="button">
-            <RotateCcw aria-hidden="true" size={18} />
-            <span className="sr-only">필터 초기화</span>
-          </button>
         </div>
         {fields}
-      </aside>
-
-      {isOpen && (
-        <div className="fixed inset-0 z-[80] lg:hidden">
-          <button aria-label="필터 닫기" className="absolute inset-0 bg-black/45" onClick={onClose} type="button" />
-          <aside className="absolute inset-x-0 bottom-0 max-h-[86vh] overflow-y-auto rounded-t-[8px] bg-white px-5 pb-8 pt-5" aria-label="서비스 검색 필터">
-            <div className="mb-6 flex items-center justify-between border-b border-[#e1e1df] pb-4">
-              <h2 className="text-xl font-bold text-[#1a1a18]">필터</h2>
-              <div className="flex gap-2">
-                <button className="grid h-11 w-11 place-items-center rounded-[5px] border border-[#d7d7d5]" onClick={onReset} title="필터 초기화" type="button">
-                  <RotateCcw aria-hidden="true" size={19} />
-                  <span className="sr-only">필터 초기화</span>
-                </button>
-                <button className="grid h-11 w-11 place-items-center rounded-[5px] border border-[#d7d7d5]" onClick={onClose} title="필터 닫기" type="button">
-                  <X aria-hidden="true" size={21} />
-                  <span className="sr-only">필터 닫기</span>
-                </button>
-              </div>
-            </div>
-            {fields}
-            <button className="mt-8 h-12 w-full rounded-[5px] bg-primary text-base font-bold text-white" onClick={onClose} type="button">결과 보기</button>
-          </aside>
+        <div className="sticky -bottom-5 z-10 -mx-5 -mb-5 border-t border-[#f0efec] bg-white p-5 pt-3">
+          <button className="inline-flex min-h-[46px] w-full cursor-pointer items-center justify-center rounded-lg border border-primary bg-primary px-3 text-body-md font-bold text-white transition-colors hover:border-primary-dark hover:bg-primary-dark" onClick={onClose} type="button">
+            {resultLoading ? '서비스 조회 중...' : `서비스 ${(resultCount ?? 0).toLocaleString('ko-KR')}개 보기`}
+          </button>
         </div>
-      )}
+      </aside>
     </>
   );
 };
 
 const ServiceRequestCard = ({ request }) => (
-  <Link className="group flex min-h-[250px] flex-col border border-[#dededc] bg-white p-5 transition-colors hover:border-primary" to={`/service-requests/${request.id}`}>
+  <Link className="group flex min-h-[250px] flex-col rounded-lg border border-[#dededc] bg-white p-5 transition-colors hover:border-primary" to={`/service-requests/${request.id}`}>
     <div className="flex items-start justify-between gap-3">
       <span className="text-base font-semibold text-primary">{request.categoryName || '서비스'}</span>
       {request.statusName && <span className="text-base font-semibold text-[#555552]">{request.statusName}</span>}
     </div>
     <h3 className="mt-4 line-clamp-2 text-xl font-bold leading-7 text-[#1a1a18] group-hover:text-primary">{request.title}</h3>
     {request.description && <p className="mt-3 line-clamp-2 text-base leading-7 text-[#62625f]">{request.description}</p>}
-    <div className="mt-auto space-y-2 pt-5 text-base text-[#555552]">
-      {request.regionName && <p className="flex items-center gap-2"><MapPin aria-hidden="true" size={18} />{request.regionName}</p>}
-      {request.registeredAt && <p className="flex items-center gap-2"><Clock3 aria-hidden="true" size={18} />{formatDate(request.registeredAt)}</p>}
-    </div>
+    {request.registeredAt && <p className="mt-auto flex items-center gap-2 pt-5 text-base text-[#555552]"><Clock3 aria-hidden="true" size={18} />{formatDate(request.registeredAt)}</p>}
     <div className="mt-5 flex items-end justify-between border-t border-[#ececea] pt-4">
       <strong className="text-lg text-[#1a1a18]">{request.budgetLabel || formatAmount(request.budgetAmount)}</strong>
-      {request.quoteCount != null && <span className="text-base text-[#666663]">견적 {Number(request.quoteCount).toLocaleString('ko-KR')}건</span>}
     </div>
   </Link>
 );
 
 export const ServiceRequestGrid = ({ requests }) => (
-  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3" aria-label="서비스 요청 검색 결과">
+  <div className="grid grid-cols-3 gap-[45px] max-xl:grid-cols-2 max-xl:gap-6 max-md:grid-cols-1 max-md:gap-[18px]" aria-label="서비스 요청 검색 결과">
     {requests.map((request) => <ServiceRequestCard key={request.id} request={request} />)}
   </div>
 );
 
-const ProviderCard = ({ provider }) => (
-  <Link className="group flex min-h-[230px] gap-4 border border-[#dededc] bg-white p-5 transition-colors hover:border-primary" to={`/providers/${provider.id}`}>
-    <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[#eef4ff] text-xl font-bold text-primary" aria-hidden="true">
-      {(provider.name || '?').slice(0, 1)}
-    </div>
-    <div className="min-w-0 flex-1">
-      <div className="flex items-center gap-2">
-        <h3 className="truncate text-xl font-bold text-[#1a1a18] group-hover:text-primary">{provider.name || '이름 미등록'}</h3>
-        {provider.verified && <BadgeCheck aria-label="승인된 제공자" className="shrink-0 text-primary" size={20} />}
-      </div>
-      {provider.rating != null && (
-        <p className="mt-2 flex items-center gap-1 text-base text-[#555552]"><Star aria-hidden="true" className="fill-[#f5b700] text-[#f5b700]" size={18} />{provider.rating} · 리뷰 {Number(provider.reviewCount || 0).toLocaleString('ko-KR')}개</p>
-      )}
-      {provider.introduction && <p className="mt-4 line-clamp-2 text-base leading-7 text-[#62625f]">{provider.introduction}</p>}
-      {provider.categoryNames?.length > 0 && (
-        <p className="mt-4 line-clamp-1 text-base text-[#40403d]">{provider.categoryNames.join(' · ')}</p>
-      )}
-      <div className="mt-4 space-y-1 text-base text-[#666663]">
-        {provider.availableArea && <p>{provider.availableArea}</p>}
-        {provider.completedCount != null && <p>완료 {Number(provider.completedCount).toLocaleString('ko-KR')}건</p>}
-      </div>
-    </div>
-  </Link>
-);
-
-export const ProviderGrid = ({ providers }) => (
-  <div className="grid grid-cols-1 gap-4 md:grid-cols-2" aria-label="제공자 검색 결과">
-    {providers.map((provider) => <ProviderCard key={provider.id} provider={provider} />)}
-  </div>
-);
-
-export const ServiceEmptyState = ({ view }) => (
+export const ServiceEmptyState = () => (
   <div className="flex min-h-[360px] flex-col items-center justify-center border-y border-[#e2e2df] text-center" role="status">
     <Search aria-hidden="true" className="text-[#9b9b98]" size={42} />
-    <strong className="mt-5 text-xl text-[#282826]">조건에 맞는 {view === 'providers' ? '제공자가' : '서비스 요청이'} 없습니다.</strong>
+    <strong className="mt-5 text-xl text-[#282826]">조건에 맞는 서비스 요청이 없습니다.</strong>
     <span className="mt-2 text-base text-[#666663]">검색어나 필터 조건을 변경해 주세요.</span>
   </div>
 );

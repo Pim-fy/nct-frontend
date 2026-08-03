@@ -1,147 +1,25 @@
 // src/pages/provider/MyQuoteListPage.jsx
 // F-SVC-005/006/008 + F-PROV-010: 제공자 내 견적 목록 (담당자3 황성경 소유)
-// - 더미 데이터로 UI 선구현. API 연동 시 DUMMY_QUOTES → useMyQuotes 훅 결과로 교체.
 // - 버튼/배지: PROJECT/ui-preview.html 클래스 시스템 사용 (btn, badge)
 import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { confirm, toast } from "@utils/common";
+import { useMyQuotes, useWithdrawQuote } from "@hooks/useQuote";
+import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
 
-// ─── 더미 데이터 ─────────────────────────────────────────────────────────────
+// ─── 상태 매핑 ────────────────────────────────────────────────────────────────
 
-const CATEGORY_BADGE = {
-  이사:     "badge-success",
-  청소:     "badge-success",
-  레슨:     "badge-success",
-  인테리어: "badge-success",
-  이사운반: "badge-success",
-  홈케어:   "badge-success",
+const STATUS_MAP = {
+  QUTC0001: "대기중",  // 제출
+  QUTC0002: "대기중",  // 수정
+  QUTC0003: "종료",    // 만료
+  QUTC0004: "진행중",  // 선택됨
+  QUTC0005: "종료",    // 철회
 };
-
-const DUMMY_QUOTES = [
-  {
-    id: "QUO-0010",
-    category: "이사",
-    title: "소형 이사의 가구 재배치",
-    location: "인천 부평구",
-    price: { base: 70000, min: 120000, max: 180000 },
-    submittedAt: "2026.06.14",
-    status: "대기중",
-    editCount: 1,
-  },
-  {
-    id: "QUO-0009",
-    category: "청소",
-    title: "사무실 정기청소",
-    location: "서울 강남구",
-    price: { base: 390000, min: 120000, max: 180000 },
-    submittedAt: "2026.08.02",
-    status: "대기중",
-    editCount: 0,
-  },
-  {
-    id: "QUO-0008",
-    category: "레슨",
-    title: "주 2회 온라인 영어 회화 레슨",
-    location: "서울 노원구",
-    price: { base: 70000, min: 120000, max: 180000 },
-    submittedAt: "2026.06.14",
-    status: "대기중",
-    editCount: 2,
-  },
-  {
-    id: "QUO-0007",
-    category: "인테리어",
-    title: "거실 부분 인테리어 상담",
-    location: "서울 강남구",
-    price: { base: 390000, min: 120000, max: 180000 },
-    submittedAt: "2026.08.02",
-    status: "대기중",
-    editCount: 0,
-  },
-  {
-    id: "QUO-0006",
-    category: "이사",
-    title: "소형 이사의 가구 재배치",
-    location: "인천 부평구",
-    price: { base: 70000, min: 120000, max: 180000 },
-    submittedAt: "2026.06.14",
-    status: "대기중",
-    editCount: 1,
-  },
-  {
-    id: "QUO-0005",
-    category: "청소",
-    title: "주 1회 가정집 정기 청소",
-    location: "서울 마포구",
-    price: { base: 70000, min: 120000, max: 180000 },
-    submittedAt: "2026.06.14",
-    status: "대기중",
-    editCount: 0,
-  },
-  {
-    id: "QUO-0004",
-    category: "이사운반",
-    title: "포장이사 원룸 → 투룸 이사",
-    location: "서울 성동구",
-    price: { base: 550000, min: 450000, max: 650000 },
-    submittedAt: "2026.07.10",
-    status: "진행중",
-    editCount: 0,
-  },
-  {
-    id: "QUO-0003",
-    category: "청소",
-    title: "에어컨 분해 청소 (2대)",
-    location: "서울 영등포구",
-    price: { base: 160000, min: 140000, max: 180000 },
-    submittedAt: "2026.07.01",
-    status: "진행중",
-    editCount: 1,
-  },
-  {
-    id: "QUO-0002",
-    category: "레슨",
-    title: "수능 수학 과외 (고3 기준)",
-    location: "경기 수원시",
-    price: { base: 200000, min: 180000, max: 220000 },
-    submittedAt: "2026.07.05",
-    status: "진행중",
-    editCount: 0,
-  },
-  {
-    id: "QUO-0001",
-    category: "홈케어",
-    title: "입주청소 30평 풀옵션",
-    location: "서울 송파구",
-    price: { base: 480000, min: 420000, max: 520000 },
-    submittedAt: "2026.06.01",
-    status: "종료",
-    editCount: 2,
-  },
-  {
-    id: "QUO-0000",
-    category: "이사",
-    title: "가구 분해·조립 포함 1.5톤 이사",
-    location: "인천 계양구",
-    price: { base: 350000, min: 300000, max: 400000 },
-    submittedAt: "2026.05.28",
-    status: "종료",
-    editCount: 0,
-  },
-];
 
 const TABS = ["전체", "대기중", "진행중", "종료"];
 
 // ─── 서브 컴포넌트 ────────────────────────────────────────────────────────────
-
-function CategoryBadge({ category }) {
-  const cls = CATEGORY_BADGE[category] ?? "badge-success";
-  return (
-    <span className={`badge ${cls} shrink-0 font-medium`} style={{ fontSize: "14px", height: "33px", borderRadius: "5px" }}>
-      {category}
-    </span>
-  );
-}
 
 function QuoteCard({ quote, onEdit, onCancel }) {
   const isDone   = quote.status === "종료";
@@ -149,20 +27,18 @@ function QuoteCard({ quote, onEdit, onCancel }) {
   const canEdit   = !isDone && !isActive && quote.editCount < 3;
   const canCancel = !isDone && !isActive;
 
-  const fmt = (n) => n.toLocaleString();
+  const fmt = (n) => Number(n).toLocaleString();
 
   return (
     <div className="border border-[rgba(0,0,0,0.08)] rounded-[10px] bg-white p-5 flex flex-col gap-3"
          style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05)" }}>
 
-      {/* 상단: 뱃지 + 타이틀 + 액션 버튼 */}
+      {/* 상단: 타이틀 + 액션 버튼 */}
       <div className="flex items-center gap-2">
-        <CategoryBadge category={quote.category} />
         <p className="flex-1 min-w-0 font-bold text-[20px] text-[#333333] leading-none truncate">
           {quote.title}
         </p>
 
-        {/* 상태별 버튼 영역 */}
         {isDone ? (
           <span className="badge badge-gray shrink-0" style={{ borderRadius: "5px", height: "30px" }}>종료</span>
         ) : isActive ? (
@@ -183,6 +59,7 @@ function QuoteCard({ quote, onEdit, onCancel }) {
             <button
               type="button"
               onClick={() => onCancel(quote)}
+              disabled={!canCancel}
               className="btn btn-ghost btn-sm h-[33px] text-[16px] font-medium"
               style={{ borderColor: "#4E4E4E", color: "#4E4E4E" }}
             >
@@ -199,22 +76,10 @@ function QuoteCard({ quote, onEdit, onCancel }) {
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center gap-1.5">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#969696" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-            <circle cx="12" cy="10" r="3"/>
-          </svg>
-          <span className="text-[16px] text-[#555]">{quote.location}</span>
-        </div>
-
-        <div className="flex items-center gap-1.5">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#969696" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="1" x2="12" y2="23"/>
             <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
           </svg>
-          <span className="text-[16px] text-[#555]">
-            전력 {fmt(quote.price.base)}원
-            <span className="text-[#bbb] mx-1">/</span>
-            최대 {fmt(quote.price.min)}~{fmt(quote.price.max)}원
-          </span>
+          <span className="text-[16px] text-[#555]">견적 금액 {fmt(quote.amount)}원</span>
         </div>
 
         <div className="flex items-center gap-1.5">
@@ -233,24 +98,56 @@ function QuoteCard({ quote, onEdit, onCancel }) {
 
 // ─── 메인 ────────────────────────────────────────────────────────────────────
 
-export default function MyQuoteListPage() {
+export default function MyQuoteListPage({ embedded = false } = {}) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("대기중");
 
+  const { data: pageData, isLoading, isError } = useMyQuotes({ page: 1, size: 50 });
+  const withdrawMutation = useWithdrawQuote();
+
+  const quotes = useMemo(() => {
+    if (!pageData?.content) return [];
+    return pageData.content.map((q) => ({
+      qutSn:      q.qutSn,
+      svcReqSn:   q.svcReqSn,
+      title:      q.svcReqTitle,
+      amount:     q.amount,
+      content:    q.content,
+      reviseCnt:  q.reviseCnt,
+      submittedAt: q.registeredAt
+        ? String(q.registeredAt).slice(0, 10).replace(/-/g, ".")
+        : "-",
+      status:    STATUS_MAP[q.statusCode] || "종료",
+      editCount: q.reviseCnt,
+    }));
+  }, [pageData]);
+
   const filtered = useMemo(
-    () => activeTab === "전체" ? DUMMY_QUOTES : DUMMY_QUOTES.filter((q) => q.status === activeTab),
-    [activeTab],
+    () => activeTab === "전체" ? quotes : quotes.filter((q) => q.status === activeTab),
+    [activeTab, quotes],
   );
 
-  const countOf = (s) => DUMMY_QUOTES.filter((q) => q.status === s).length;
-  const totalCount = DUMMY_QUOTES.length;
+  const countOf = (s) => quotes.filter((q) => q.status === s).length;
+  const totalCount = quotes.length;
+  const pageHeader = embedded
+    ? <MyPageContentHeader title="내 견적" />
+    : <h2 className="m-0 text-[22px] font-bold text-[#1a1a1a]">내 견적</h2>;
 
   const handleEdit = (quote) => {
     if (quote.editCount >= 3) {
       toast({ icon: "warning", title: "수정 가능 횟수(3회)를 초과했습니다." });
       return;
     }
-    toast({ icon: "info", title: "견적 수정 — API 연동 후 활성화됩니다." });
+    navigate("/provider/quotes/form", {
+      state: {
+        quoteId:     quote.qutSn,
+        svcReqSn:    quote.svcReqSn,
+        svcReqTitle: quote.title,
+        amount:      quote.amount,
+        content:     quote.content,
+        reviseCnt:   quote.reviseCnt,
+      },
+    });
   };
 
   const handleCancel = async (quote) => {
@@ -261,52 +158,80 @@ export default function MyQuoteListPage() {
       confirmButtonText: "철회",
       cancelButtonText: "취소",
     });
-    if (ok) toast({ icon: "success", title: "견적이 철회되었습니다." });
+    if (!ok) return;
+    try {
+      await withdrawMutation.mutateAsync(quote.qutSn);
+      toast({ icon: "success", title: "견적이 철회되었습니다." });
+    } catch (err) {
+      toast({ icon: "error", title: err?.response?.data?.message || "견적 철회에 실패했습니다." });
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-5">
+        {pageHeader}
+        <div className="flex items-center justify-center py-20">
+          <p className="text-[15px] text-[#969696]">불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col gap-5">
+        {pageHeader}
+        <div className="flex items-center justify-center py-20">
+          <p className="text-[15px] text-[#969696]">견적 목록을 불러올 수 없습니다.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-5">
 
       {/* 헤더 */}
-      <h2 className="text-[22px] font-bold text-[#1a1a1a] m-0">내 견적</h2>
+      {pageHeader}
 
       {/* 탭 */}
       <div className="tab-group-1">
         {TABS.map((tab) => {
-        const count    = tab === "전체" ? totalCount : countOf(tab);
-        const isActive = activeTab === tab;
-        return (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => setActiveTab(tab)}
-            className={`tab-pill${isActive ? " active" : ""}`}
-          >
-            {tab}
-            <span className="tab-count">{count}</span>
-          </button>
-        );
+          const count    = tab === "전체" ? totalCount : countOf(tab);
+          const isActive = activeTab === tab;
+          return (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={`tab-pill${isActive ? " active" : ""}`}
+            >
+              {tab}
+              <span className="tab-count">{count}</span>
+            </button>
+          );
         })}
       </div>
 
       {/* 카드 그리드 */}
       <div className="mt-4">
-      {filtered.length === 0 ? (
-        <div className="flex items-center justify-center py-20 border border-[rgba(0,0,0,0.08)] rounded-[10px] bg-white">
-          <p className="text-[15px] text-[#969696]">해당 견적이 없습니다.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {filtered.map((quote) => (
-            <QuoteCard
-              key={quote.id}
-              quote={quote}
-              onEdit={handleEdit}
-              onCancel={handleCancel}
-            />
-          ))}
-        </div>
-      )}
+        {filtered.length === 0 ? (
+          <div className="flex items-center justify-center py-20 border border-[rgba(0,0,0,0.08)] rounded-[10px] bg-white">
+            <p className="text-[15px] text-[#969696]">해당 견적이 없습니다.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {filtered.map((quote) => (
+              <QuoteCard
+                key={quote.qutSn}
+                quote={quote}
+                onEdit={handleEdit}
+                onCancel={handleCancel}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
     </div>

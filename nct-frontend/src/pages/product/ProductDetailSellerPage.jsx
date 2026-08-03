@@ -7,13 +7,13 @@ import DOMPurify from 'dompurify';
 import { toImageUrl } from '@api/fileApi';
 import { getProduct, postProductComment, fetchProductComments, fetchProductInquiries, postInquiryReply, updateInquiryReply } from '@api/productApi';
 import { getAuctionStatus, requestAuctionCancel, fetchAuctionFavoriteStatus } from '@api/auctionApi';
+import { submitInquiryReport } from '@api/abuseReportApi';
 import { TRADE_LABEL, STATUS_LABEL, STATUS_BADGE } from '@/constants/productConstants';
 import useCountdown from '@hooks/useCountdown';
 import ErrorMessage from '@components/common/ErrorMessage';
 import MediaDetailSkeleton from '@components/skeleton/MediaDetailSkeleton';
 import Toast from '@components/common/Toast';
 import AlertModal from '@components/common/AlertModal';
-import ConfirmModal from '@components/common/ConfirmModal';
 import Pagination from '@components/common/Pagination';
 
 const CANCEL_REASONS = ['상품 상태 변경', '상품 정보 오류', '판매 진행 불가', '기타'];
@@ -79,6 +79,8 @@ export default function ProductDetailSellerPage() {
   const [replySubmitting, setReplySubmitting] = useState(false);
   const [reportOpen, setReportOpen]           = useState(false);
   const [reportTargetSn, setReportTargetSn]   = useState(null); // 신고 대상 inquirySn
+  const [reportContent, setReportContent]     = useState(''); // 신고 사유
+  const [reportSubmitting, setReportSubmitting] = useState(false);
   // 답변 수정 가능 시간(10분) 판단용 — 1초마다 갱신해 시간이 지나면 수정 버튼이 실시간으로 사라지게 함
   const replyClock = useCountdown(true);
 
@@ -144,6 +146,26 @@ export default function ProductDetailSellerPage() {
       setToast('취소 요청에 실패했습니다.');
     } finally {
       setCancelSubmitting(false);
+    }
+  };
+
+  const handleReportSubmit = async () => {
+    if (!reportContent.trim()) { setAlertMsg('신고 사유를 입력해 주세요.'); return; }
+    setReportSubmitting(true);
+    try {
+      await submitInquiryReport({
+        targetType: 'INQUIRY',
+        targetSn: reportTargetSn,
+        reportContent: reportContent.trim(),
+      });
+      setToast('신고가 접수되었습니다.');
+      setReportOpen(false);
+      setReportTargetSn(null);
+      setReportContent('');
+    } catch (err) {
+      setToast(err.response?.data?.message || '신고 접수에 실패했습니다.');
+    } finally {
+      setReportSubmitting(false);
     }
   };
 
@@ -332,17 +354,19 @@ export default function ProductDetailSellerPage() {
             </div>
           </div>
 
-          {product.prdCn && (
-            <div style={{ marginTop: 18, borderTop: '1px solid #f0efec', paddingTop: 16, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-              <p style={{ margin: '0 0 8px', fontSize: 14, color: '#5f5e5a', fontWeight: 600, flexShrink: 0 }}>상품 설명</p>
-              {/* 남는 공간을 전부 채우고, 넘치는 내용은 스크롤 */}
+          <div style={{ marginTop: 18, borderTop: '1px solid #f0efec', paddingTop: 16, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <p style={{ margin: '0 0 8px', fontSize: 14, color: '#5f5e5a', fontWeight: 600, flexShrink: 0 }}>상품 설명</p>
+            {product.prdCn ? (
+              // 남는 공간을 전부 채우고, 넘치는 내용은 스크롤
               <div
                 className="rich-text-editor-body"
                 style={{ fontSize: 16, lineHeight: 1.7, color: '#1a1a18', flex: 1, minHeight: 0, overflowY: 'auto', padding: 0 }}
                 dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.prdCn, { ALLOWED_TAGS: ['p', 'br', 'b', 'strong', 'i', 'em', 'u', 'ul', 'ol', 'li', 'img', 'div', 'span'], ALLOWED_ATTR: ['src', 'style'] }) }}
               />
-            </div>
-          )}
+            ) : (
+              <p style={{ margin: 0, fontSize: 15, color: '#a8a79f' }}>상품설명이 없습니다.</p>
+            )}
+          </div>
 
           </div>{/* /padding div */}
 
@@ -568,14 +592,31 @@ export default function ProductDetailSellerPage() {
       </div>{/* /blur wrapper */}
       </div>{/* /취소 안내 오버레이 wrapper */}
 
-      <ConfirmModal
-        open={reportOpen}
-        message="해당 구매자 문의를 신고하시겠습니까?"
-        subMessage={`"${inquiries.find(i => i.inquirySn === reportTargetSn)?.content ?? ''}" — 욕설 및 할인 요청 등 불필요한 문의내용이 포함되어 있을때 신고해주세요.`}
-        confirmLabel="신고하기"
-        onConfirm={() => { setReportOpen(false); setReportTargetSn(null); setToast('신고가 접수되었습니다.'); }}
-        onCancel={() => { setReportOpen(false); setReportTargetSn(null); }}
-      />
+      {/* 구매자 문의 신고 모달 */}
+      <div className={`modal ${reportOpen ? 'open' : ''}`} onClick={e => { if (e.target === e.currentTarget) { setReportOpen(false); setReportTargetSn(null); setReportContent(''); } }}>
+        <div className="modal-box">
+          <h3 style={{ margin: '0 0 16px', fontSize: 18 }}>구매자 문의 신고</h3>
+          <p className="muted small" style={{ marginBottom: 16 }}>
+            "{inquiries.find(i => i.inquirySn === reportTargetSn)?.content ?? ''}" — 욕설 및 할인 요청 등 불필요한 문의내용이 포함되어 있을때 신고해주세요.
+          </p>
+          <div className="field">
+            <label>신고 사유</label>
+            <textarea
+              rows={3}
+              maxLength={500}
+              placeholder="신고 사유를 입력해 주세요."
+              value={reportContent}
+              onChange={e => setReportContent(e.target.value)}
+            />
+          </div>
+          <div className="row" style={{ justifyContent: 'flex-end', gap: 8 }}>
+            <button className="btn btn-ghost" onClick={() => { setReportOpen(false); setReportTargetSn(null); setReportContent(''); }}>취소</button>
+            <button className="btn btn-danger" onClick={handleReportSubmit} disabled={reportSubmitting}>
+              {reportSubmitting ? '접수 중...' : '신고하기'}
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* 경매 취소 요청 모달 (F-AUC-008) */}
       <div className={`modal ${cancelOpen ? 'open' : ''}`} onClick={e => { if (e.target === e.currentTarget) closeCancel(); }}>

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { AlertTriangle, Search } from 'lucide-react';
+import AdminPagination from '@components/admin/AdminPagination';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
@@ -9,6 +10,8 @@ import {
 } from '@hooks/useAdminRiskEvents';
 import { formatDateTime } from '@utils/common';
 import './operationsIntegrationPreview.css';
+
+const TABLE_SKELETON_WIDTHS = ['52%', '68%', '74%', '86%', '70%', '58%'];
 
 /** 담당자 7 · F-OPS-011/013: 운영 위험 이벤트를 읽기 전용으로 확인하는 화면입니다. */
 const OperationsIntegrationPreview = () => {
@@ -60,7 +63,10 @@ const OperationsIntegrationPreview = () => {
         <AdminStatusBadge tone="info">읽기 전용</AdminStatusBadge>
       </header>
 
-      <section className="operations-summary" aria-label="위험 이벤트 유형별 건수">
+      <section
+        className={`operations-summary${summaryQuery.isLoading ? ' is-loading' : ''}`}
+        aria-label="위험 이벤트 유형별 건수"
+      >
         {summaryQuery.isLoading ? (
           Array.from({ length: 3 }).map((_, index) => (
             <article className="operations-summary__card" key={index}>
@@ -156,11 +162,13 @@ const OperationsIntegrationPreview = () => {
                 <th>처리 상태</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className={eventsQuery.isLoading ? 'is-loading' : ''}>
               {eventsQuery.isLoading && Array.from({ length: 6 }).map((_, rowIndex) => (
                 <tr key={rowIndex}>
                   {Array.from({ length: 6 }).map((__, colIndex) => (
-                    <td key={colIndex}><Skeleton height={14} /></td>
+                    <td key={colIndex}>
+                      <Skeleton height={14} width={TABLE_SKELETON_WIDTHS[colIndex]} />
+                    </td>
                   ))}
                 </tr>
               ))}
@@ -204,27 +212,14 @@ const OperationsIntegrationPreview = () => {
           </table>
         </div>
 
-        {(eventsQuery.data?.totalPages ?? 0) > 1 && (
-          <nav className="operations-pagination" aria-label="위험 이벤트 페이지 이동">
-            <button
-              disabled={page <= 1 || eventsQuery.isFetching}
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-              type="button"
-            >
-              이전
-            </button>
-            <span>
-              {eventsQuery.data?.page ?? page} / {eventsQuery.data?.totalPages}
-            </span>
-            <button
-              disabled={page >= eventsQuery.data.totalPages || eventsQuery.isFetching}
-              onClick={() => setPage((current) => current + 1)}
-              type="button"
-            >
-              다음
-            </button>
-          </nav>
-        )}
+        <AdminPagination
+          ariaLabel="위험 이벤트 페이지 이동"
+          className="operations-pagination"
+          disabled={eventsQuery.isFetching}
+          onPageChange={setPage}
+          page={eventsQuery.data?.page ?? page}
+          totalPages={eventsQuery.data?.totalPages ?? 0}
+        />
       </section>
     </div>
   );

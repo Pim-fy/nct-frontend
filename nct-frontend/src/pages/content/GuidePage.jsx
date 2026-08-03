@@ -15,11 +15,10 @@ const GuidePage = () => {
     : null;
 
   return (
-    <ContentPageShell>
+    <ContentPageShell className="public-guide-page">
       <Helmet><title>이용가이드 | 에누리컷</title></Helmet>
       <header className="guide-hero">
         <div className="guide-hero__copy">
-          <span>START GUIDE</span>
           <h1>처음이어도 흐름만 알면 어렵지 않아요</h1>
           <p>경매와 서비스 요청이 시작되고 거래가 완료되기까지의 과정을 한눈에 확인하세요.</p>
         </div>

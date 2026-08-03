@@ -1,66 +1,83 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { assets } from "./assets";
-import ArrowIcon from "./ArrowIcon";
-import arrowWhite from "@assets/img/arrowWhite.png";
-import MoreButton from "./MoreButton";
 import ServiceRequestCard from "./ServiceRequestCard";
 
-const PAGE_SIZE = 6; // 3열 x 2행
-const VIEWPORT_LEFT = 168;
-const VIEWPORT_WIDTH = 1599; // 501*3 + 48*2 (카드 3열 + 열 간격 2개)
+const PAGE_SIZE = 6;
 
 export default function NewServiceSection({ isError, isLoading, items }) {
   const navigate = useNavigate();
   const [page, setPage] = useState(0);
-  const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+  const totalPages  = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+  const visiblePage = Math.min(page, totalPages - 1);
 
-  const goPrev = () => setPage((p) => Math.max(0, p - 1));
-  const goNext = () => setPage((p) => Math.min(totalPages - 1, p + 1));
+  const goPrev = () => setPage(Math.max(0, visiblePage - 1));
+  const goNext = () => setPage(Math.min(totalPages - 1, visiblePage + 1));
+
+  const visibleItems = items.slice(visiblePage * PAGE_SIZE, visiblePage * PAGE_SIZE + PAGE_SIZE);
 
   return (
-    <section className="absolute contents left-0 top-[1903px]" data-name="SECTION_4(신규서비스요청)">
-      <div className="absolute bg-[#f5f9ff] h-[684px] left-0 top-[1903px] w-[1920px]" />
-      <div className="absolute h-[684px] left-0 top-[1903px] w-[1920px]">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <img alt="" className="absolute h-[210.37%] left-[-6.02%] max-w-none top-[-44.67%] w-[112.64%]" src={assets.glennCarstensPeters} />
-        </div>
+    <section className="relative overflow-hidden py-16">
+      {/* 배경 */}
+      <div className="absolute inset-0">
+        <img
+          src={assets.glennCarstensPeters}
+          alt=""
+          className="w-full h-full object-cover object-center"
+        />
+        <div className="absolute inset-0 bg-black/30" />
       </div>
-      <div className="absolute bg-[rgba(0,0,0,0.3)] h-[684px] left-0 top-[1903px] w-[1920px]" />
 
-      <p className="absolute font-bold leading-[normal] left-[168px] text-[25px] text-white top-[1967px] tracking-[-2px] whitespace-nowrap">
-        신규 서비스 요청
-      </p>
+      <div className="relative z-10 max-w-[1600px] mx-auto px-8">
+        {/* 헤더 */}
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-[25px] font-bold text-white tracking-[-2px]">신규 서비스 요청</h2>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={goPrev}
+              disabled={visiblePage === 0}
+              aria-label="이전"
+              className="flex items-center justify-center size-[40px] rounded-full bg-white/20 hover:bg-white/30 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft size={20} className="text-white" />
+            </button>
+            <button
+              type="button"
+              onClick={goNext}
+              disabled={visiblePage >= totalPages - 1}
+              aria-label="다음"
+              className="flex items-center justify-center size-[40px] rounded-full bg-white/20 hover:bg-white/30 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronRight size={20} className="text-white" />
+            </button>
+          </div>
+        </div>
 
-      {/* 서비스요청 카드 캐러셀 (페이지 단위 슬라이드) */}
-      <div className="absolute top-[2017px] overflow-hidden" style={{ left: VIEWPORT_LEFT, width: VIEWPORT_WIDTH }}>
+        {/* 카드 그리드 */}
         {isLoading && <p className="grid h-[358px] place-items-center text-[18px] text-white">서비스 요청을 불러오는 중입니다.</p>}
-        {!isLoading && isError && <p className="grid h-[358px] place-items-center text-[18px] text-white">서비스 요청 조회 API 연결을 기다리고 있습니다.</p>}
+        {!isLoading && isError && <p className="grid h-[358px] place-items-center text-[18px] text-white">서비스 요청을 불러오지 못했습니다.</p>}
         {!isLoading && !isError && items.length === 0 && <p className="grid h-[358px] place-items-center text-[18px] text-white">표시할 서비스 요청이 없습니다.</p>}
         {!isLoading && !isError && items.length > 0 && (
-          <div
-            className="flex transition-transform duration-300 ease-out"
-            style={{ transform: `translateX(${-page * VIEWPORT_WIDTH}px)` }}
-          >
-            {Array.from({ length: totalPages }, (_, pageIndex) => (
-              <div
-                key={pageIndex}
-                className="grid shrink-0 grid-cols-3 gap-x-[48px] gap-y-[20px]"
-                style={{ width: VIEWPORT_WIDTH }}
-              >
-                {items.slice(pageIndex * PAGE_SIZE, pageIndex * PAGE_SIZE + PAGE_SIZE).map((item) => (
-                  <ServiceRequestCard key={item.id} item={item} onClick={() => navigate(`/service-requests/${item.id}`)} />
-                ))}
-              </div>
+          <div className="grid grid-cols-3 gap-x-12 gap-y-5">
+            {visibleItems.map((item) => (
+              <ServiceRequestCard key={item.id} item={item} onClick={() => navigate(`/service-requests/${item.id}`)} />
             ))}
           </div>
         )}
+
+        {/* 더보기 */}
+        <div className="flex justify-center mt-10">
+          <button
+            type="button"
+            onClick={() => navigate("/service")}
+            className="h-[45px] w-[100px] rounded-[40px] bg-transparent border border-white/60 text-[14px] text-white hover:bg-white/10 transition-colors"
+          >
+            더보기
+          </button>
+        </div>
       </div>
-
-      <ArrowIcon direction="left" className="left-[111px] top-[2196px]" imgSrc={arrowWhite} onClick={goPrev} disabled={page === 0} />
-      <ArrowIcon direction="right" className="left-[1800px] top-[2196px]" imgSrc={arrowWhite} onClick={goNext} disabled={page >= totalPages - 1} />
-
-      <MoreButton left={895} top={2439} variant="dark" onClick={() => navigate("/service")} />
     </section>
   );
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Eye, Pin, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import Pagination from '@components/common/Pagination';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import { formatDate as sharedFormatDate } from '@utils/common';
 import './mockupContentComponents.css';
@@ -142,12 +143,16 @@ export const MockupNoticeListSummary = ({ total }) => (
   <p className="notice-total">총 <strong>{Number(total || 0).toLocaleString('ko-KR')}</strong>건</p>
 );
 
-export const MockupContentPagination = ({ page, totalPages, onChange }) => (
-  <nav className="content-pagination" aria-label="공지사항 페이지 이동">
-    <button disabled={page <= 1} onClick={() => onChange(page - 1)} type="button">이전</button>
-    <span>{page} / {totalPages}</span>
-    <button disabled={page >= totalPages} onClick={() => onChange(page + 1)} type="button">다음</button>
-  </nav>
+/** 담당자 7 · F-COM-013: 고객센터도 전역 공용 페이지네이션을 사용하고 간격만 화면에 맞춥니다. */
+export const MockupContentPagination = ({ page, totalPages, onChange, ariaLabel }) => (
+  <Pagination
+    ariaLabel={ariaLabel || '고객센터 목록 페이지 이동'}
+    className="content-pagination"
+    maxVisiblePages={5}
+    onPageChange={onChange}
+    page={page}
+    totalPages={totalPages}
+  />
 );
 
 export const MockupNoticeDetail = ({ notice }) => (

@@ -5,11 +5,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import {
-  useLocation,
-  useNavigate,
-  useParams,
-} from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import {
   getTradeChatMessages,
   getTradeChatRooms,
@@ -51,15 +47,11 @@ const saveHiddenRoomIds = (roomIds) => {
 
 const TradeChat = ({
   embedded = false,
-  onBack,
   preview = false,
   tradeId: selectedTradeId,
   showRoomList = !embedded,
-  backLabel,
 }) => {
   const { tradeId: routeTradeId } = useParams();
-  const location = useLocation();
-  const navigate = useNavigate();
   const tradeId = selectedTradeId ?? routeTradeId;
   const [rooms, setRooms] = useState([]);
   const [activeRoomId, setActiveRoomId] = useState('');
@@ -101,31 +93,6 @@ const TradeChat = ({
 
     return rooms;
   }, [roomFilter, rooms]);
-
-  // 상세에서 연 채팅은 해당 거래 상세로, 채팅 목록에서 연 채팅은 목록으로 복귀한다.
-  const returnToPreviousView = () => {
-    if (onBack) {
-      onBack();
-      return;
-    }
-
-    const isPreviewPath = preview || location.pathname.startsWith('/trades/preview');
-    const chatOrigin = new URLSearchParams(location.search).get('from');
-
-    if (chatOrigin === 'buyer' || chatOrigin === 'seller') {
-      const tradeBasePath = isPreviewPath ? '/trades/preview' : '/trades';
-      navigate(chatOrigin === 'seller'
-        ? `${tradeBasePath}/${tradeId}/seller`
-        : `${tradeBasePath}/${tradeId}`);
-      return;
-    }
-
-    const chatListPath = isPreviewPath
-      ? '/user/mypage/preview/trades?verify=1&section=chat'
-      : '/user/mypage?section=chat';
-
-    navigate(chatListPath);
-  };
 
   // 상세에서 연 채팅만 자동으로 열고, 마이페이지 채팅 메뉴에서는 사용자가 방을 직접 선택한다.
   const loadChatRooms = useCallback(async () => {
@@ -504,15 +471,6 @@ const TradeChat = ({
             <h1>거래 채팅</h1>
             <p>대면 거래 당사자만 이용할 수 있는 1:1 채팅입니다.</p>
           </div>
-          <button
-            className="btn btn-ghost"
-            type="button"
-            onClick={embedded && showRoomList && !onBack
-              ? clearSelectedChatRoom
-              : returnToPreviousView}
-          >
-            ← {backLabel ?? (new URLSearchParams(location.search).get('from') ? '거래 상세' : '채팅 목록')}
-          </button>
         </header>
 
         {isLoading && (
@@ -657,20 +615,31 @@ const TradeChat = ({
                       <h2>{activeRoom.counterpartNickname}</h2>
                       <p>{activeRoom.productName}</p>
                     </div>
-                    <span className="trade-chat-status">
-                      {activeRoom.roomStatus === 'ACTIVE' ? '대화 가능' : '채팅 불가'}
-                    </span>
-                    {!preview && !isActiveRoomClosed && (
-                      <span
-                        className={realtimeStatus === 'CONNECTED'
-                          ? 'trade-chat-realtime trade-chat-realtime--connected'
-                          : 'trade-chat-realtime'}
-                      >
-                        {realtimeStatus === 'CONNECTED'
-                          ? '실시간 연결됨'
-                          : '실시간 재연결 중'}
+                    <div className="trade-chat-conversation__actions">
+                      <span className="trade-chat-status">
+                        {activeRoom.roomStatus === 'ACTIVE' ? '대화 가능' : '채팅 불가'}
                       </span>
-                    )}
+                      {!preview && !isActiveRoomClosed && (
+                        <span
+                          className={realtimeStatus === 'CONNECTED'
+                            ? 'trade-chat-realtime trade-chat-realtime--connected'
+                            : 'trade-chat-realtime'}
+                        >
+                          {realtimeStatus === 'CONNECTED'
+                            ? '실시간 연결됨'
+                            : '실시간 재연결 중'}
+                        </span>
+                      )}
+                      {showRoomList && (
+                        <button
+                          className="btn btn-ghost trade-chat-conversation__close"
+                          type="button"
+                          onClick={clearSelectedChatRoom}
+                        >
+                          닫기
+                        </button>
+                      )}
+                    </div>
                   </header>
 
                   <div className="trade-chat-notice">

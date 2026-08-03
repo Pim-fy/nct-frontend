@@ -5,6 +5,7 @@ import SettlementSummaryCards from './components/SettlementSummaryCards';
 import SettlementTable from './components/SettlementTable';
 import { useSettlementList } from '../../../hooks/useSettlement';
 import CardGridSkeleton from '@components/skeleton/CardGridSkeleton';
+import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
 
 /**
  * 정산 관리 (제공자용, 목업 18_settlement.html, F-STL-01)
@@ -20,10 +21,14 @@ const SettlementListPage = ({ embedded = false } = {}) => {
       className={embedded ? 'w-full' : 'container'}
       style={embedded ? undefined : { paddingTop: '40px', paddingBottom: '40px' }}
     >
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 m-0">정산 관리</h1>
-        <p className="text-gray-500 mt-1.5 mb-0">거래 완료 후 정산 대기, 보류, 완료 내역을 확인합니다.</p>
-      </div>
+      {embedded ? (
+        <MyPageContentHeader title="정산 관리" />
+      ) : (
+        <div className="mb-6">
+          <h1 className="m-0 text-3xl font-bold text-gray-900">정산 관리</h1>
+          <p className="mb-0 mt-1.5 text-gray-500">거래 완료 후 정산 대기, 보류, 완료 내역을 확인합니다.</p>
+        </div>
+      )}
 
       {isLoading ? (
         <CardGridSkeleton cardHeight={90} columns={3} count={3} />

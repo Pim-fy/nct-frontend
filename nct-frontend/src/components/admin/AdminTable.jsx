@@ -1,11 +1,14 @@
 // src/components/admin/AdminTable.jsx
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
+import './AdminTable.css';
+
+const SKELETON_WIDTHS = ['58%', '76%', '68%', '52%', '72%'];
 
 const AdminTable = ({
   columns = [], data = [], onRowClick, rowKey, emptyMessage = '데이터가 없습니다.',
   loading = false, loadingRows = 6,
 }) => (
-  <table className="admin-table">
+  <table className={`admin-table${loading ? ' admin-table--loading' : ''}`}>
     <thead>
       <tr>{columns.map(col => <th key={col.key}>{col.label}</th>)}</tr>
     </thead>
@@ -13,7 +16,14 @@ const AdminTable = ({
       {loading
         ? Array.from({ length: loadingRows }).map((_, rowIndex) => (
             <tr key={rowIndex}>
-              {columns.map((col) => <td key={col.key}><Skeleton height={14} /></td>)}
+              {columns.map((col, columnIndex) => (
+                <td key={col.key}>
+                  <Skeleton
+                    height={14}
+                    width={col.skeletonWidth ?? SKELETON_WIDTHS[columnIndex % SKELETON_WIDTHS.length]}
+                  />
+                </td>
+              ))}
             </tr>
           ))
         : data.length === 0

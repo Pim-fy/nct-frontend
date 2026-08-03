@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
 import { PencilLine, Plus, Save, X } from 'lucide-react';
+import AdminPagination from '@components/admin/AdminPagination';
 import AdminTable from '@components/admin/AdminTable';
 import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
 import MockupAdminStatusBadge from '@components/admin/mockup/MockupAdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
 import { useAdminCategories, useSaveAdminCategory } from '@hooks/useAdminCategories';
+import useClientPagination from '@hooks/useClientPagination';
 import '../notice/adminContentPages.css';
 import './adminCategoryPage.css';
 
@@ -12,7 +14,8 @@ const DOMAINS = [
   { code: 'CATC0001', label: '상품 카테고리' },
   { code: 'CATC0002', label: '서비스 카테고리' },
 ];
-const EMPTY_FORM = { name: '', sortNo: 10, professional: false, active: true, changeReason: '' };
+const EMPTY_FORM = { name: '', sortNo: 10, professional: false, active: true };
+const PAGE_SIZE = 20;
 
 /** 담당자 7 · F-COM-003: 상품·서비스 카테고리를 분리해 등록·수정·사용 중지하는 화면이다. */
 const AdminCategoryPage = () => {
@@ -22,9 +25,18 @@ const AdminCategoryPage = () => {
   const [feedback, setFeedback] = useState('');
   const categoriesQuery = useAdminCategories(domainCode);
   const saveMutation = useSaveAdminCategory();
+  const {
+    page,
+    pagedItems: pagedCategories,
+    resetPage,
+    setPage,
+    startIndex,
+    totalItems,
+    totalPages,
+  } = useClientPagination(categoriesQuery.data ?? [], PAGE_SIZE);
 
   const reset = () => { setEditingId(null); setForm(EMPTY_FORM); setFeedback(''); };
-  const changeDomain = (code) => { setDomainCode(code); reset(); };
+  const changeDomain = (code) => { setDomainCode(code); resetPage(); reset(); };
   const edit = (category) => {
     setEditingId(category.categorySn);
     setForm({
@@ -32,7 +44,6 @@ const AdminCategoryPage = () => {
       sortNo: category.sortNo,
       professional: category.professional,
       active: category.active,
-      changeReason: '',
     });
     setFeedback('');
   };
@@ -62,7 +73,7 @@ const AdminCategoryPage = () => {
   };
 
   const columns = useMemo(() => [
-    { key: 'index', label: '번호', render: (_, __, idx) => idx + 1 },
+    { key: 'index', label: '번호', render: (_, __, idx) => startIndex + idx + 1 },
     { key: 'name', label: '이름', render: (value) => <strong>{value}</strong> },
     { key: 'professional', label: '전문 서비스', render: (value) => (value ? '예' : '아니오') },
     {
@@ -73,7 +84,7 @@ const AdminCategoryPage = () => {
       key: 'manage', label: '관리',
       render: (_, row) => <button className="btn btn-outline" onClick={() => edit(row)} type="button"><PencilLine /> 수정</button>,
     },
-  ], []);
+  ], [startIndex]);
 
   return (
     <div className="admin-content-page admin-category-page">
@@ -101,7 +112,6 @@ const AdminCategoryPage = () => {
         <label><span>표시 순서</span><input max="9999" min="1" name="sortNo" onChange={change} required type="number" value={form.sortNo} /></label>
         {domainCode === 'CATC0002' && <label className="admin-category-check"><input checked={form.professional} name="professional" onChange={change} type="checkbox" /> 전문 서비스</label>}
         <label className="admin-category-check"><input checked={form.active} name="active" onChange={change} type="checkbox" /> 사용 중</label>
-        <label className="admin-category-reason"><span>변경 사유</span><input maxLength="500" name="changeReason" onChange={change} placeholder="예: 서비스 분류 개편" required value={form.changeReason} /></label>
         <button className="btn btn-primary" disabled={saveMutation.isPending} type="submit"><Save /> {saveMutation.isPending ? '저장 중' : '저장'}</button>
       </form>
 
@@ -110,17 +120,24 @@ const AdminCategoryPage = () => {
       {!categoriesQuery.isError && (
         <section className="card admin-category-list">
           {!categoriesQuery.isLoading && (
-            <div className="admin-notice-list__summary"><p>총 <strong>{categoriesQuery.data.length}</strong>개</p><small>표시 순서가 작은 항목부터 노출됩니다.</small></div>
+            <div className="admin-notice-list__summary"><p>총 <strong>{totalItems}</strong>개</p><small>표시 순서가 작은 항목부터 노출됩니다.</small></div>
           )}
           <div className="admin-table-scroll">
             <AdminTable
               columns={columns}
-              data={categoriesQuery.data ?? []}
+              data={pagedCategories}
               emptyMessage="등록된 카테고리가 없습니다."
               loading={categoriesQuery.isLoading}
               rowKey={(category) => category.categorySn}
             />
           </div>
+          <AdminPagination
+            ariaLabel="카테고리 목록 페이지 이동"
+            disabled={categoriesQuery.isFetching}
+            onPageChange={setPage}
+            page={page}
+            totalPages={totalPages}
+          />
         </section>
       )}
     </div>

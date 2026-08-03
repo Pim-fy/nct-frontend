@@ -89,10 +89,12 @@ const RegionSelector = ({
   counts = {},
   disabled = false,
   label = '지역',
+  maxSelections = null,
   multiple = true,
   onChange,
   placeholder = '지역을 선택해 주세요',
   regions = KOREA_REGIONS,
+  size = 'md',
   value = [],
 }) => {
   const panelId = useId();
@@ -206,6 +208,8 @@ const RegionSelector = ({
       emitSelections([selection]);
       return;
     }
+
+    if (maxSelections && selections.length >= maxSelections) return;
 
     const withoutSameRegion = selection.level === 'sido'
       ? selections.filter((item) => item.sidoCode !== selection.sidoCode)
@@ -359,11 +363,11 @@ const RegionSelector = ({
 
   return (
     <fieldset className={`min-w-0 ${className}`} disabled={disabled} ref={rootRef}>
-      <legend className="mb-2 text-base font-bold text-[#272725]">{label}</legend>
+      <legend className={size === 'sm' ? 'mb-1.5 text-sm font-semibold text-[#5f5e5a]' : 'mb-2 text-base font-bold text-[#272725]'}>{label}</legend>
       <button
         aria-controls={panelId}
         aria-expanded={isOpen}
-        className="flex h-12 w-full items-center gap-2 rounded-[5px] border border-[#cfcfcd] bg-white px-3 text-left text-base outline-none transition-colors hover:border-[#8aaef5] focus:border-primary disabled:cursor-not-allowed disabled:bg-[#f5f5f3] disabled:text-[#92928e]"
+        className={`flex w-full items-center gap-2 rounded-[5px] border border-[#cfcfcd] bg-white text-left outline-none transition-colors hover:border-[#8aaef5] focus:border-primary disabled:cursor-not-allowed disabled:bg-[#f5f5f3] disabled:text-[#92928e] ${size === 'sm' ? 'h-[42px] px-3 text-sm' : 'h-12 px-3 text-base'}`}
         onClick={() => {
           if (!isOpen && selections[0]?.sidoCode) {
             setActiveSidoCode(selections[0].sidoCode);

@@ -6,6 +6,21 @@ export const fetchAdminAuctions = async (params) => {
   return response.data.data;
 };
 
+export const fetchAdminAuctionOverview = async (auctionId) => {
+  const response = await api.get(`/admin/auctions/${auctionId}`, {
+    skipServerErrorRedirect: true,
+  });
+  return response.data.data;
+};
+
+export const fetchAdminAuctionCancellationRequest = async (auctionId) => {
+  const response = await api.get(
+    `/admin/seller-cancellations/auctions/${auctionId}/cancellation-request`,
+    { skipServerErrorRedirect: true },
+  );
+  return response.data.data;
+};
+
 export const decideAdminAuctionCancellation = async ({ auctionId, decision, reason }) => {
   await api.post(`/admin/seller-cancellations/auctions/${auctionId}/cancellation-request/decision`, {
     decision,

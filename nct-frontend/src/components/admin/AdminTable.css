@@ -1,0 +1,18 @@
+/* 담당자 7: 관리자 표 스켈레톤은 실제 행 안에서만 보이고 짧은 요청에서는 노출하지 않습니다. */
+.admin-table th,
+.admin-table td {
+  vertical-align: middle;
+}
+
+.admin-table--loading tbody {
+  opacity: 0;
+  animation: admin-table-skeleton-reveal 0s linear 250ms forwards;
+}
+
+.admin-table--loading td .react-loading-skeleton {
+  vertical-align: middle;
+}
+
+@keyframes admin-table-skeleton-reveal {
+  to { opacity: 1; }
+}

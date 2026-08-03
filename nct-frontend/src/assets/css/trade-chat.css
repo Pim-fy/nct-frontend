@@ -277,6 +277,18 @@
   font-size: 13px;
 }
 
+.trade-chat-conversation__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.trade-chat-conversation__close {
+  min-width: auto;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
 .trade-chat-status {
   padding: 6px 9px;
   border-radius: 999px;
@@ -287,7 +299,6 @@
 }
 
 .trade-chat-realtime {
-  margin-left: auto;
   color: #8a94a6;
   font-size: 12px;
   font-weight: 700;

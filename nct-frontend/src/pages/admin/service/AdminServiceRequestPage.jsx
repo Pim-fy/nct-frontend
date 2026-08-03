@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react';
 import { RotateCcw, Search } from 'lucide-react';
 import AdminModal from '@components/admin/AdminModal';
+import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminTable from '@components/admin/AdminTable';
 import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
 import MockupAdminStatusBadge from '@components/admin/mockup/MockupAdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
+import useClientPagination from '@hooks/useClientPagination';
 import '../notice/adminContentPages.css';
 import './adminServiceRequestPage.css';
 
@@ -56,6 +58,7 @@ const SAMPLE_REQUESTS = [
 ];
 
 const EMPTY_FILTER = { category: '전체', status: '전체', area: '전체', keyword: '' };
+const PAGE_SIZE = 20;
 const OPTIONS = {
   category: ['전체', '이사', '청소', '레슨', '설치·수리', '인테리어'],
   status: ['전체', '견적대기', '진행중', '완료', '분쟁'],
@@ -76,8 +79,23 @@ const AdminServiceRequestPage = () => {
     }),
     [filter],
   );
+  const {
+    page,
+    pagedItems: pagedRequests,
+    resetPage,
+    setPage,
+    totalItems,
+    totalPages,
+  } = useClientPagination(requests, PAGE_SIZE);
 
-  const change = ({ target }) => setFilter((current) => ({ ...current, [target.name]: target.value }));
+  const change = ({ target }) => {
+    setFilter((current) => ({ ...current, [target.name]: target.value }));
+    resetPage();
+  };
+  const resetFilters = () => {
+    setFilter(EMPTY_FILTER);
+    resetPage();
+  };
 
   const columns = useMemo(() => [
     { key: 'id', label: '요청번호' },
@@ -131,14 +149,14 @@ const AdminServiceRequestPage = () => {
             />
           </div>
         </label>
-        <button className="btn btn-outline" onClick={() => setFilter(EMPTY_FILTER)} type="button">
+        <button className="btn btn-outline" onClick={resetFilters} type="button">
           <RotateCcw />
           초기화
         </button>
       </section>
 
       <AdminSectionCard
-        action={<span>총 {requests.length}건</span>}
+        action={<span>총 {totalItems}건</span>}
         className="admin-notice-list admin-service-list"
         description="서비스 요청·견적·거래 API가 연결되면 목록 데이터만 교체합니다."
         title="서비스 요청 목록"
@@ -146,11 +164,17 @@ const AdminServiceRequestPage = () => {
         <div className="admin-table-scroll">
           <AdminTable
             columns={columns}
-            data={requests}
+            data={pagedRequests}
             emptyMessage="조건에 맞는 임시 자료가 없습니다."
             rowKey={(item) => item.id}
           />
         </div>
+        <AdminPagination
+          ariaLabel="서비스 요청 목록 페이지 이동"
+          onPageChange={setPage}
+          page={page}
+          totalPages={totalPages}
+        />
       </AdminSectionCard>
 
       {selected && (

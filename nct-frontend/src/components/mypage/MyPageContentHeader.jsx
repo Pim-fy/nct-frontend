@@ -1,7 +1,7 @@
 // @ai_generated
 // 마이페이지 각 섹션의 제목과 선택적 우측 액션을 같은 레이아웃으로 표시한다.
 const MyPageContentHeader = ({ title, actions }) => (
-    <div className="flex items-start justify-between gap-4 mb-6">
+    <div className="flex items-start justify-between gap-4 mb-5">
     <h1
       className="text-gray-900 m-0"
       style={{
