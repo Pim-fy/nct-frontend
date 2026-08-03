@@ -238,9 +238,9 @@ export default function AuctionSettingStep({
 
       <div className="card" ref={policyRef} style={{ background: '#e5efff', border: 'none', marginTop: 16 }}>
         <h4 style={{ marginTop: 0, color: '#0048bf' }}>경매 정책 안내 <span style={{ color: '#c0392b' }}>*</span></h4>
-        <ul style={{ margin: 0, paddingLeft: 18, fontSize: 16, lineHeight: 2 }}>
+        <ul style={{ margin: 0, paddingLeft: 18, fontSize: 16, lineHeight: 2, listStyle: 'disc' }}>
           <li>마감 10분 이내 유효 입찰 시 잔여 시간이 10분으로 자동 연장됩니다 (1회)</li>
-          <li>경매 시작 후 상품 설명, 가격, 기간은 수정할 수 없습니다</li>
+          <li>상품 등록 후에는 본문을 수정할 수 없으며 변경사항은 별도로 최대 3회까지 추가할 수 있습니다</li>
           <li>즉시구매가는 최고 입찰가보다 반드시 높아야 합니다</li>
           <li>낙찰 후 거래를 정당한 사유 없이 취소하면 포인트 패널티가 부과됩니다</li>
         </ul>

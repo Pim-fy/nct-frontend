@@ -421,7 +421,7 @@ export default function ProductRegisterPage() {
 
   return (
     <main className="container">
-<div className="page-title"><div><h1>{editPrdSn ? '경매 설정 완료' : '상품 등록'}</h1></div></div>
+<div className="page-title"><div><h1 style={{ fontWeight: 700 }}>{editPrdSn ? '경매 설정 완료' : '상품 등록'}</h1></div></div>
 
       {/* 스텝 인디케이터 */}
       <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 20 }}>

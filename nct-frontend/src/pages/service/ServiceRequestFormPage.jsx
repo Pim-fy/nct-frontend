@@ -3,7 +3,7 @@
 // 라우트: /service-requests/new (신규), location.state.svcReqSn로 임시저장 수정
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronDown, ChevronUp, Truck, BrushCleaning, Wrench, Armchair, GraduationCap } from 'lucide-react';
+import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Truck, BrushCleaning, Wrench, Armchair, GraduationCap } from 'lucide-react';
 import { getCategories } from '@api/categoryApi';
 import { registerServiceRequest, updateServiceRequest, getServiceRequest } from '@api/serviceRequestApi';
 import DaumPostcode from 'react-daum-postcode';
@@ -11,7 +11,9 @@ import ErrorMessage from '@components/common/ErrorMessage';
 import AlertModal from '@components/common/AlertModal';
 import ConfirmModal from '@components/common/ConfirmModal';
 import ServiceRequestImageUpload from '@components/service/ServiceRequestImageUpload';
+import { toImageUrl } from '@api/fileApi';
 import DateRangePicker from '@components/product/DateRangePicker';
+import RegionSelector from '@components/common/RegionSelector';
 import { WIZARD_STEPS, CATEGORY_NEXT_STEP, CATEGORY_META } from './serviceRequestWizardSteps';
 
 const MAX_IMAGES = 5;
@@ -36,10 +38,32 @@ const CATEGORY_ICON = {
   '레슨': GraduationCap,
 };
 
-function CategoryIcon({ name, className }) {
+function CategoryIcon({ name, className, style }) {
   const Icon = CATEGORY_ICON[name];
   if (!Icon) return null;
-  return <Icon size={32} strokeWidth={1.7} className={className} />;
+  return <Icon size={32} strokeWidth={1.7} className={className} style={style} />;
+}
+
+// 확인 탭 "상세 내용" 표에서 "출발지 주소: 서울.. / 출발지 상세주소: 105 / ..."처럼
+// " / "로 이어붙인 답변을 필드별로 나눠서 2열 그리드로 보여줄 때 쓴다
+function parseFieldPart(raw) {
+  const idx = raw.indexOf(': ');
+  if (idx === -1) return { label: null, value: raw };
+  return { label: raw.slice(0, idx), value: raw.slice(idx + 2) };
+}
+
+// "과목 (복수 선택)", "특이사항 메모 (선택)"처럼 뒤에 괄호 안내문이 붙는 제목은 어중간하게
+// 줄바꿈되지 않도록 "제목" / "(안내문)" 두 줄로 자연스럽게 나눠 보여준다
+function renderStepTitle(title) {
+  const match = title.match(/^(.+) (\([^)]*\))$/);
+  if (!match) return title;
+  return (
+    <>
+      {match[1]}
+      <br />
+      {match[2]}
+    </>
+  );
 }
 
 // 카테고리 진행률 분모 — 실제 chain은 답변할 때마다 늘어나 분모로 못 씀.
@@ -136,7 +160,11 @@ export default function ServiceRequestFormPage() {
 
   // 경매등록과 같은 2단계 구성: 0=요청 정보 입력, 1=요청 확인
   const [step, setStep] = useState(0);
+  const [confirmPhotoIndex, setConfirmPhotoIndex] = useState(0); // 요청 확인 탭 사진 박스 슬라이드 인덱스
   const [agreed, setAgreed] = useState(false); // 확인 탭 최종 동의
+  const [policyAgreed, setPolicyAgreed] = useState(false); // 요청 정보 입력 탭 — 견적 요청 정책 동의
+  const policyRef = useRef(null);
+  const agreedRef = useRef(null);
 
   // 아코디언 상태 — 단계 카드는 한 번에 하나만 펼쳐진다(진행 중인 카드든 재편집하려는
   // 완료 카드든 동일하게 이 값 하나로 표현)
@@ -229,6 +257,13 @@ export default function ServiceRequestFormPage() {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [chain]);
 
+  // 요청 정보 입력(0)↔요청 확인(1) 탭 전환 시 맨 위로 스크롤한다.
+  // 안 그러면 스크롤이 한참 내려간 채로 탭만 바뀌어서, 화면이 짧아진 쪽으로 넘어갈 때
+  // 아무 반응이 없는 것처럼 보인다(예: 맨 아래 특이사항 메모 카드에서 "다음" 클릭).
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [step]);
+
   // ── 기존 헬퍼 ───────────────────────────────────────────────────────────────
 
   const truncateAfter = (stepId) => {
@@ -304,6 +339,11 @@ export default function ServiceRequestFormPage() {
     const firstStep = CATEGORY_NEXT_STEP[cat.catNm];
     setChain(firstStep ? [firstStep] : []);
     setExpandedStepId(firstStep || null);
+    // 카테고리를 고르면 아래 상세 설정 카드는 정책 동의 전까지 비활성 상태이므로,
+    // 바로 정책 안내 쪽으로 포커스를 옮겨 동의부터 하도록 유도한다.
+    if (!policyAgreed) {
+      policyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   };
 
   // ── 단계 카드 헤더 클릭 (토글) — 카드는 한 번에 하나만 펼쳐진다 ─────────────────
@@ -457,37 +497,61 @@ export default function ServiceRequestFormPage() {
     });
   };
 
-  const handleFormConfirm = (stepId) => {
+  // form 단계의 필수·숫자포함·기타텍스트 검증 — 실패 시 알림+포커스 이동+인라인 에러를 설정하고
+  // false를 반환한다. 카드 안의 "다음" 버튼과 화면 하단 전체 "다음" 버튼(goNext) 양쪽에서 재사용
+  const validateFormStep = (stepId) => {
     const step = WIZARD_STEPS[stepId];
     const values = stepDraft[stepId] || {};
+    // hideWhen 조건에 걸려 화면에 안 보이는 필드(예: 온라인·화상 레슨의 지역)와,
+    // 같은 단계 안 다른 필드가 채워져 비활성화된 필드(예: 예상 금액대 선택 시 예산)는 검증에서도 뺀다
+    const visibleFields = step.fields.filter(f =>
+      (!f.hideWhen || answers[f.hideWhen.step] !== f.hideWhen.equals)
+      && (!f.disabledWhenFilled || !(values[f.disabledWhenFilled] || '').toString().trim())
+    );
 
-    const missingRequired = step.fields.find(f => f.required && !(values[f.key] || '').toString().trim());
-    if (missingRequired) {
-      const errKey = `${stepId}:${missingRequired.key}`;
-      const verb = missingRequired.type === 'choice' || missingRequired.type === 'select' ? '선택' : '입력';
-      const msg = `${withEulReul(missingRequired.key)} ${verb}해 주세요.`;
-      setFieldErrors(prev => ({ ...prev, [errKey]: msg }));
-      setAlertMsg(msg);
-      cardRefs.current[stepId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
+    // 필드를 하나씩 순서대로 확인해서, 앞선 필드의 숫자 검증이 뒤에 있는 다른 필드의
+    // 필수 입력 검증보다 먼저 걸리도록 한다 (필수/숫자를 전체 필드 두 번 훑지 않음)
+    for (const f of visibleFields) {
+      const raw = (values[f.key] || '').toString().trim();
+      if (f.required && !raw) {
+        const errKey = `${stepId}:${f.key}`;
+        const verb = f.type === 'choice' || f.type === 'select' || f.type === 'calendar' ? '선택' : '입력';
+        const msg = `${withEulReul(f.key)} ${verb}해 주세요.`;
+        setFieldErrors(prev => ({ ...prev, [errKey]: msg }));
+        setAlertMsg(msg);
+        cardRefs.current[stepId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return false;
+      }
+      if (f.requireDigit && raw && !/\d/.test(raw)) {
+        const errKey = `${stepId}:${f.key}`;
+        const msg = `${f.key}에 숫자를 포함해 입력해 주세요.`;
+        setFieldErrors(prev => ({ ...prev, [errKey]: msg }));
+        setAlertMsg(msg);
+        cardRefs.current[stepId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return false;
+      }
     }
-    const missingDigit = step.fields.find(f => f.requireDigit && !/\d/.test((values[f.key] || '').toString()));
-    if (missingDigit) {
-      const errKey = `${stepId}:${missingDigit.key}`;
-      const msg = `${missingDigit.key}에 숫자를 포함해 입력해 주세요.`;
-      setFieldErrors(prev => ({ ...prev, [errKey]: msg }));
-      setAlertMsg(msg);
-      cardRefs.current[stepId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
-    }
-    const etcFieldMissingText = step.fields.some(
+    const etcFieldMissingText = visibleFields.some(
       f => f.type === 'choice' && values[f.key] === ETC && !(freeTextDraft[`${stepId}:${f.key}`] || '').trim()
     );
     if (etcFieldMissingText) {
       setAlertMsg('기타 내용을 입력해 주세요.');
       cardRefs.current[stepId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
+      return false;
     }
+    return true;
+  };
+
+  const handleFormConfirm = (stepId) => {
+    if (!validateFormStep(stepId)) return;
+    const step = WIZARD_STEPS[stepId];
+    const values = stepDraft[stepId] || {};
+    // hideWhen 조건에 걸려 숨겨졌거나 disabledWhenFilled로 비활성화된 필드는
+    // 값이 남아있어도 저장하지 않는다
+    const visibleFields = step.fields.filter(f =>
+      (!f.hideWhen || answers[f.hideWhen.step] !== f.hideWhen.equals)
+      && (!f.disabledWhenFilled || !(values[f.disabledWhenFilled] || '').toString().trim())
+    );
 
     // 통과 시 이 단계 에러 전부 제거
     setFieldErrors(prev => {
@@ -496,7 +560,7 @@ export default function ServiceRequestFormPage() {
       return n;
     });
 
-    const vals = step.fields
+    const vals = visibleFields
       .map(f => {
         let v = (values[f.key] || '').toString().trim();
         if (f.type === 'choice' && v === ETC) {
@@ -576,12 +640,69 @@ export default function ServiceRequestFormPage() {
 
   const goNext = () => {
     if (!validateBasic()) return;
-    if (!isComplete) {
-      const lastId = chain[chain.length - 1];
-      const lastStep = lastId ? WIZARD_STEPS[lastId] : null;
+
+    if (!policyAgreed) {
+      setAlertMsg('견적 요청 정책을 확인하고 동의해 주세요.');
+      policyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    // 이미 답변된 단계를 다시 열어 편집하는 중이면, 그 초안이 지금 유효한지부터 확인한다.
+    // 안 그러면 체인 맨 끝(재편집 중인 단계와 무관한 이후 단계)이 엉뚱하게 지목된다.
+    if (expandedStepId && answers[expandedStepId] !== undefined) {
+      const editingStep = WIZARD_STEPS[expandedStepId];
+      if (editingStep?.type === 'multi') {
+        const picked = stepDraft[expandedStepId] || [];
+        if (picked.length === 0) {
+          const cleanTitle = editingStep.title.replace(/\s*\(복수 선택\)$/, '');
+          const msg = `${withEulReul(cleanTitle)} 선택해 주세요.`;
+          setAlertMsg(msg);
+          setFieldErrors(prev => ({ ...prev, [`${expandedStepId}:multi`]: msg }));
+          cardRefs.current[expandedStepId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+      } else if (editingStep?.type === 'form') {
+        if (!validateFormStep(expandedStepId)) return;
+      }
+    }
+
+    // isComplete는 상태값이라 재편집 흐름(같은 분기로 재선택 등)에서 실제 진행 상황과 어긋날 수 있어,
+    // 여기서는 체인 끝 단계가 실제로 답변됐고 다음 단계가 없는지를 그 자리에서 다시 계산해 사용한다.
+    const lastId = chain[chain.length - 1];
+    const lastStep = lastId ? WIZARD_STEPS[lastId] : null;
+    const actuallyComplete = !!lastId && answers[lastId] !== undefined && !lastStep?.next;
+
+    if (!actuallyComplete) {
+      if (lastStep?.type === 'form') {
+        // 카드 안 "다음" 버튼과 동일한 검증(알림+포커스+인라인 에러)을 그대로 재사용.
+        if (!validateFormStep(lastId)) return;
+        // 필수 항목이 하나도 없는 단계(예: 특이사항 메모)는 안내 문구로 막을 이유가 없으니
+        // 카드 안 버튼을 누른 것과 동일하게 바로 확정 처리한다.
+        if (!lastStep.fields.some(f => f.required)) {
+          handleFormConfirm(lastId);
+          // 이 단계가 마지막(다음 단계 없음)이면 확정과 동시에 완료된 것이므로 바로 확인 탭으로 넘어간다.
+          // isComplete는 handleFormConfirm 내부 setState라 이 시점엔 아직 반영 전이라 여기서 직접 판단한다.
+          if (!lastStep.next) setStep(1);
+          return;
+        }
+        // 필수 항목은 다 채웠지만 카드 안 버튼을 아직 안 눌러 확정 안 된 경우엔 여기서
+        // return하지 않고 아래 공용 안내 문구로 이어지게 한다.
+      }
+      if (lastStep?.type === 'multi') {
+        const picked = stepDraft[lastId] || [];
+        if (picked.length === 0) {
+          const cleanTitle = lastStep.title.replace(/\s*\(복수 선택\)$/, '');
+          const msg = `${withEulReul(cleanTitle)} 선택해 주세요.`;
+          setAlertMsg(msg);
+          setFieldErrors(prev => ({ ...prev, [`${lastId}:multi`]: msg }));
+          cardRefs.current[lastId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+      }
+
       const msg = lastStep?.type === 'single'
         ? `${withEulReul(lastStep.title)} 선택해 주세요.`
-        : '모든 단계를 마쳐야 다음으로 진행할 수 있어요. 진행 중이라면 임시저장을 이용해 주세요.';
+        : '모든 단계를 마쳐야 다음으로 진행할 수 있어요. \n진행 중이라면 임시저장을 이용해 주세요.';
       setAlertMsg(msg);
       if (lastId) {
         cardRefs.current[lastId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -597,11 +718,12 @@ export default function ServiceRequestFormPage() {
   const handlePublish = () => {
     if (!validateBasic()) return;
     if (!isComplete) {
-      setAlertMsg('모든 단계를 마쳐야 요청서를 공개할 수 있어요. 진행 중이라면 임시저장을 이용해 주세요.');
+      setAlertMsg('모든 단계를 마쳐야 요청서를 공개할 수 있어요. \n진행 중이라면 임시저장을 이용해 주세요.');
       return;
     }
     if (!agreed) {
       setAlertMsg('요청 내용 확인 및 동의가 필요합니다.');
+      agreedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
     submit('SVCC0002');
@@ -647,26 +769,26 @@ export default function ServiceRequestFormPage() {
 
   return (
     <div className="bg-white pb-14 text-base leading-[1.6] text-[#1d1d1f]">
-      <div className="mx-auto w-full max-w-[1600px] px-4 lg:px-6">
+      <div className="container">
         <div className="pt-9 pb-4">
-          <h1 className="text-2xl font-bold">
+          <h1 className="text-[28px] font-bold">
             {editSvcReqSn ? '전문가 견적 요청서 수정' : '전문가 견적 요청서 작성'}
           </h1>
         </div>
 
         {/* ── 스텝 인디케이터 (경매등록과 동일한 2단계 구성: 입력 → 확인) ── */}
         <div className="mb-5 overflow-hidden rounded-2xl border border-[#e8e8e8]">
-          <div className="flex bg-[#eef2fb]">
+          <div className="flex bg-[#eef2fb] px-5 py-3.5">
             {STEP_LABELS.map((label, i) => (
               <div
                 key={label}
-                className={`flex flex-1 items-center justify-center gap-2 border-b-[3px] px-4 py-3.5 text-sm ${
+                className={`flex flex-1 items-center justify-center gap-2 border-b-[3px] p-3 text-lg ${
                   i === step ? 'border-primary font-bold text-primary'
-                  : i < step ? 'border-transparent text-[#5f5e5a]'
-                  : 'border-transparent text-[#a9a8a2]'
+                  : i < step ? 'border-[#e5efff] text-[#5f5e5a]'
+                  : 'border-[#f0efec] text-[#888780]'
                 }`}
               >
-                <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border-[1.5px] border-current text-xs font-bold">
+                <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border-[1.5px] border-current text-sm font-bold">
                   {i + 1}
                 </span>
                 {label}
@@ -844,15 +966,46 @@ export default function ServiceRequestFormPage() {
                 <p className="mb-3 text-xs text-[#888780]">사진을 첨부하면 더 정확한 견적을 받을 수 있어요.</p>
                 <ServiceRequestImageUpload images={images} onChange={setImages} maxImages={MAX_IMAGES} />
               </div>
+
+              {/* 견적 요청 정책 안내 — 경매등록 정책 안내와 동일한 스타일 */}
+              <div ref={policyRef} className="border-t border-[#e8e8e8] px-6 py-5">
+                <div className="rounded-[10px] bg-[#e5efff] p-5">
+                  <h4 className="mb-2 font-bold text-[#0048bf]">
+                    견적 요청 정책 안내 <span className="text-[#c0392b]">*</span>
+                  </h4>
+                  <ul className="list-disc space-y-2 pl-[18px] text-[15px] leading-[1.7] text-[#1d1d1f]">
+                    <li>요청서 등록 후에는 본문을 수정할 수 없으며, 변경사항은 별도로 최대 3회까지 추가할 수 있습니다</li>
+                    <li>포인트 홀딩은 제공자의 견적을 선택한 시점부터 시작됩니다</li>
+                    <li>매칭 후 거래를 정당한 사유 없이 취소하면 포인트 패널티가 부과됩니다</li>
+                    <li>요청서 삭제는 관리자에게 요청하여 정당한 사유가 확인된 경우에만 처리됩니다</li>
+                  </ul>
+                  <div className="mt-3 rounded-lg border border-[#f0efec] bg-white px-3.5 py-3">
+                    <label className="flex cursor-pointer items-center gap-2 text-sm text-[#1d1d1f]">
+                      <input
+                        type="checkbox"
+                        checked={policyAgreed}
+                        onChange={e => setPolicyAgreed(e.target.checked)}
+                      />
+                      위 견적 요청 정책을 확인하였습니다.
+                    </label>
+                  </div>
+                </div>
+              </div>
             </section>
 
-            {/* 오른쪽: 요청 상세 설정 */}
-            <section className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm">
+            {/* 오른쪽: 요청 상세 설정 — 정책 미동의 시 비활성화 */}
+            <section
+              className={`overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm transition-opacity ${
+                policyAgreed ? '' : 'pointer-events-none opacity-50'
+              }`}
+            >
               <div className="border-b border-[#e8e8e8] bg-[#eef2fb] px-6 py-4">
                 <h2 className="text-lg font-bold">요청 상세 설정</h2>
               </div>
               <div className="px-6 py-5">
-                {!selectedCategory ? (
+                {!policyAgreed ? (
+                  <p className="py-16 text-center text-sm text-[#888780]">견적 요청 정책에 동의하면 상세 항목을 입력할 수 있습니다.</p>
+                ) : !selectedCategory ? (
                   <p className="py-16 text-center text-sm text-[#888780]">카테고리를 선택하면 상세 항목이 나타납니다.</p>
                 ) : (
                   <div className="flex flex-col gap-4">
@@ -906,7 +1059,7 @@ export default function ServiceRequestFormPage() {
                     {/* single · multi */}
                     {(step.type === 'single' || step.type === 'multi') && (
                       <>
-                        <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))' }}>
+                        <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
                           {step.options.map(opt => {
                             const active = step.type === 'single'
                               ? (answers[stepId] === opt.label
@@ -991,9 +1144,11 @@ export default function ServiceRequestFormPage() {
                       // f.row 키가 같은 연속 필드를 하나의 그룹으로 묶음
                       // calendar 필드의 embed 목록에 든 필드는 달력 박스 안에서 같이 렌더링되므로
                       // 별도 그룹으로 다시 만들지 않는다
-                      const embeddedKeys = new Set(step.fields.flatMap(f => f.embed || []));
+                      // hideWhen 조건에 걸리는 필드(예: 온라인·화상 레슨일 땐 지역 불필요)는 아예 뺀다
+                      const visibleFields = step.fields.filter(f => !f.hideWhen || answers[f.hideWhen.step] !== f.hideWhen.equals);
+                      const embeddedKeys = new Set(visibleFields.flatMap(f => f.embed || []));
                       const groups = [];
-                      step.fields.forEach(f => {
+                      visibleFields.forEach(f => {
                         if (embeddedKeys.has(f.key)) return;
                         if (f.row) {
                           const last = groups[groups.length - 1];
@@ -1006,28 +1161,26 @@ export default function ServiceRequestFormPage() {
 
                       const renderNormalField = (f) => (
                         <div key={f.key} className={step.layout === 'row' ? '' : 'mb-4 last:mb-0'}>
-                          {f.type !== 'calendar' && (
-                            <label className="mb-1.5 block text-base font-semibold text-[#5f5e5a]">
-                              <span className="flex items-center gap-1">
-                                {f.key}{f.required && <span className="text-red-600"> *</span>}
-                                {f.tooltip && (
-                                  <span className="group/tip relative inline-flex cursor-default">
-                                    <span className="flex h-4 w-4 items-center justify-center rounded-full border border-[#9f9e9a] text-[10px] font-bold leading-none text-[#9f9e9a]">?</span>
-                                    <span className="pointer-events-none absolute bottom-full left-0 z-10 mb-1.5 whitespace-nowrap rounded-lg border border-[#e2e1dc] bg-white px-3 py-1.5 text-xs font-normal text-[#3b3a36] shadow-md opacity-0 transition-opacity group-hover/tip:opacity-100">
-                                      {f.tooltip}
-                                    </span>
+                          <label className="mb-1.5 block text-base font-semibold text-[#5f5e5a]">
+                            <span className="flex items-center gap-1">
+                              {f.key}{f.required && <span className="text-red-600"> *</span>}
+                              {f.tooltip && (
+                                <span className="group/tip relative inline-flex cursor-default">
+                                  <span className="flex h-4 w-4 items-center justify-center rounded-full border border-[#9f9e9a] text-[10px] font-bold leading-none text-[#9f9e9a]">?</span>
+                                  <span className="pointer-events-none absolute bottom-full left-0 z-10 mb-1.5 whitespace-nowrap rounded-lg border border-[#e2e1dc] bg-white px-3 py-1.5 text-xs font-normal text-[#3b3a36] shadow-md opacity-0 transition-opacity group-hover/tip:opacity-100">
+                                    {f.tooltip}
                                   </span>
-                                )}
-                              </span>
-                            </label>
-                          )}
+                                </span>
+                              )}
+                            </span>
+                          </label>
                           {f.type === 'choice' ? (
                             <>
                               <div className="flex flex-wrap gap-2">
                                 {f.options.map(o => (
                                   <button key={o} type="button"
                                     className={`rounded-lg border px-3 py-1.5 text-[15px] transition-colors ${stepDraft[stepId]?.[f.key] === o ? 'border-primary bg-[#e5efff] font-semibold text-[#0048bf]' : 'border-[#e2e1dc] bg-white text-[#5f5e5a] hover:border-primary'}`}
-                                    onClick={() => handleFormFieldChange(stepId, f.key, o)}
+                                    onClick={() => handleFormFieldChange(stepId, f.key, f.toggleable && stepDraft[stepId]?.[f.key] === o ? '' : o)}
                                   >{o}</button>
                                 ))}
                               </div>
@@ -1106,19 +1259,30 @@ export default function ServiceRequestFormPage() {
                               )}
                             />
                           ) : f.type === 'amount-toggle' ? (
-                            <div className="flex gap-2">
-                              <input
-                                className="flex-1 rounded-lg border border-[#e2e1dc] bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary disabled:bg-[#f8f8f6] disabled:text-[#9f9e9a]"
-                                placeholder={f.placeholder}
-                                disabled={stepDraft[stepId]?.[f.key] === '미정'}
-                                value={stepDraft[stepId]?.[f.key] === '미정' ? '' : (stepDraft[stepId]?.[f.key] || '')}
-                                onChange={e => handleFormFieldChange(stepId, f.key, e.target.value)}
-                              />
-                              <button type="button"
-                                className={`shrink-0 rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors ${stepDraft[stepId]?.[f.key] === '미정' ? 'border-primary bg-[#e5efff] text-[#0048bf]' : 'border-[#e2e1dc] bg-white text-[#5f5e5a] hover:border-primary'}`}
-                                onClick={() => handleFormFieldChange(stepId, f.key, stepDraft[stepId]?.[f.key] === '미정' ? '' : '미정')}
-                              >미정</button>
-                            </div>
+                            (() => {
+                              const disabledByOther = f.disabledWhenFilled && !!(stepDraft[stepId]?.[f.disabledWhenFilled] || '').toString().trim();
+                              return (
+                                <>
+                                  <div className="flex gap-2">
+                                    <input
+                                      className={`flex-1 rounded-lg border bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary disabled:bg-[#f8f8f6] disabled:text-[#9f9e9a] ${fieldErrors[`${stepId}:${f.key}`] ? 'border-red-500' : 'border-[#e2e1dc]'}`}
+                                      placeholder={f.placeholder}
+                                      disabled={disabledByOther || stepDraft[stepId]?.[f.key] === '미정'}
+                                      value={stepDraft[stepId]?.[f.key] === '미정' ? '' : (stepDraft[stepId]?.[f.key] || '')}
+                                      onChange={e => handleFormFieldChange(stepId, f.key, e.target.value)}
+                                    />
+                                    <button type="button"
+                                      disabled={disabledByOther}
+                                      className={`shrink-0 rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${stepDraft[stepId]?.[f.key] === '미정' ? 'border-primary bg-[#e5efff] text-[#0048bf]' : 'border-[#e2e1dc] bg-white text-[#5f5e5a] hover:border-primary'}`}
+                                      onClick={() => handleFormFieldChange(stepId, f.key, stepDraft[stepId]?.[f.key] === '미정' ? '' : '미정')}
+                                    >미정</button>
+                                  </div>
+                                  {fieldErrors[`${stepId}:${f.key}`] && (
+                                    <p className="mt-1 text-xs text-red-600">{fieldErrors[`${stepId}:${f.key}`]}</p>
+                                  )}
+                                </>
+                              );
+                            })()
                           ) : f.type === 'address' ? (
                             <>
                               <div className="flex gap-2">
@@ -1168,8 +1332,10 @@ export default function ServiceRequestFormPage() {
                             {groups.map(group => group.rowKey ? (
                               <div key={group.rowKey} className="mb-4 flex items-start gap-3">
                                 {group.fields.map(f => (
-                                  <div key={f.key} className={f.type === 'address' ? 'flex-[6]' : f.wide ? 'flex-[4]' : f.type === 'text' ? 'w-32 shrink-0' : f.type === 'select' ? 'w-36 shrink-0' : f.narrow ? 'w-48 shrink-0' : 'flex-1'}>
-                                    <label className="mb-1.5 block text-base font-semibold text-[#5f5e5a]">{f.key}</label>
+                                  <div key={f.key} className={f.type === 'address' || f.type === 'region' ? 'flex-[6]' : f.wide ? 'flex-[4]' : f.compact ? 'w-20 shrink-0' : f.type === 'text' ? 'w-32 shrink-0' : f.type === 'select' ? 'w-36 shrink-0' : f.narrow ? 'w-48 shrink-0' : 'flex-1'}>
+                                    {f.type !== 'region' && (
+                                      <label className="mb-1.5 block text-base font-semibold text-[#5f5e5a]">{f.key}</label>
+                                    )}
                                     {f.type === 'choice' ? (
                                       <>
                                         <div className="flex gap-2">
@@ -1211,6 +1377,22 @@ export default function ServiceRequestFormPage() {
                                             onClick={() => setAddressSearchKey(`${stepId}:${f.key}`)}
                                           >주소 검색</button>
                                         </div>
+                                        {fieldErrors[`${stepId}:${f.key}`] && (
+                                          <p className="mt-1 text-xs text-red-600">{fieldErrors[`${stepId}:${f.key}`]}</p>
+                                        )}
+                                      </>
+                                    ) : f.type === 'region' ? (
+                                      <>
+                                        <RegionSelector
+                                          label={f.key}
+                                          placeholder={f.placeholder}
+                                          size="sm"
+                                          multiple
+                                          maxSelections={f.maxSelections}
+                                          value={stepDraft[stepId]?.[f.key] ? stepDraft[stepId][f.key].split(', ') : []}
+                                          onChange={sel => handleFormFieldChange(stepId, f.key, sel.map(s => s.label).join(', '))}
+                                        />
+                                        {f.desc && <p className="mt-1 text-xs text-[#888780]">{f.desc}</p>}
                                         {fieldErrors[`${stepId}:${f.key}`] && (
                                           <p className="mt-1 text-xs text-red-600">{fieldErrors[`${stepId}:${f.key}`]}</p>
                                         )}
@@ -1275,30 +1457,124 @@ export default function ServiceRequestFormPage() {
           </div>
         )}
 
-        {/* ── STEP 1: 요청 확인 (경매등록 등록확인 탭과 동일 역할) ── */}
+        {/* ── STEP 1: 요청 확인 (경매등록 RegisterConfirmStep과 동일한 표 스타일) ── */}
         {step === 1 && (
-          <section className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm">
-            <div className="border-b border-[#e8e8e8] bg-[#eef2fb] px-6 py-4">
-              <h2 className="text-lg font-bold">요청 내용 확인</h2>
-              <p className="mt-0.5 text-sm text-[#5f5e5a]">아래 내용으로 전문가 견적 요청서가 등록됩니다.</p>
-            </div>
-            <div className="divide-y divide-[#e8e8e8] px-6">
-              <div className="flex gap-4 py-3.5">
-                <span className="w-36 shrink-0 text-sm text-[#888780]">요청 제목</span>
-                <span className="text-sm font-medium text-[#1d1d1f]">{title}</span>
-              </div>
-              <div className="flex gap-4 py-3.5">
-                <span className="w-36 shrink-0 text-sm text-[#888780]">카테고리</span>
-                <span className="text-sm font-medium text-[#1d1d1f]">{selectedCategory?.catNm}</span>
-              </div>
-              {chain.map(stepId => (
-                <div key={stepId} className="flex gap-4 py-3.5">
-                  <span className="w-36 shrink-0 text-sm text-[#888780]">{WIZARD_STEPS[stepId].title}</span>
-                  <span className="text-sm font-medium text-[#1d1d1f]">{answers[stepId]}</span>
+          <>
+            <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-2">
+              <section className="flex flex-col overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm">
+                <div className="border-b border-[#e8e8e8] bg-[#eef2fb] px-6 py-4">
+                  <h2 className="text-lg font-bold">요청 정보</h2>
                 </div>
-              ))}
+                <div className="flex-1 p-6">
+                  <table className="w-full overflow-hidden rounded-[10px] border border-[#d8d6cf] text-sm">
+                    <tbody>
+                      {[
+                        ['요청 제목', title || '—'],
+                        ['카테고리', selectedCategory?.catNm || '—'],
+                        ['사진', images.length > 0 ? `${images.length}장 등록됨` : '없음'],
+                      ].map(([k, v], i, arr) => (
+                        <tr key={k}>
+                          <th
+                            className={`w-28 break-keep px-3 py-2.5 text-left font-semibold border-r border-[#d8d6cf] ${i === arr.length - 1 ? '' : 'border-b border-[#d8d6cf]'}`}
+                            style={{ verticalAlign: 'middle', backgroundColor: '#eef2fb', color: '#5f5e5a' }}
+                          >
+                            {k}
+                          </th>
+                          <td className={`px-3 py-2.5 text-[#1d1d1f] ${i === arr.length - 1 ? '' : 'border-b border-[#d8d6cf]'}`}>{v}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {/* 등록한 사진 — 정사각형 큰 박스, 여러 장이면 좌우로 넘겨볼 수 있음. 없으면 빈 상자 */}
+                  <div className="mt-5 flex-1">
+                    <p className="mb-2 text-sm font-semibold text-[#5f5e5a]">등록한 사진</p>
+                    {images.length > 0 ? (
+                      (() => {
+                        const photoIndex = Math.min(confirmPhotoIndex, images.length - 1);
+                        const current = images[photoIndex];
+                        return (
+                          <div className="relative aspect-square w-full overflow-hidden rounded-[10px] border border-[#d8d6cf] bg-[#fafaf8]">
+                            <img
+                              src={toImageUrl(current.url)}
+                              alt={`요청 사진 ${photoIndex + 1}`}
+                              className="h-full w-full object-cover"
+                            />
+                            {images.length > 1 && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmPhotoIndex(i => (i - 1 + images.length) % images.length)}
+                                  className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-[#1a1a18]/60 text-white hover:bg-[#1a1a18]/80"
+                                  aria-label="이전 사진"
+                                >
+                                  <ChevronLeft size={18} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmPhotoIndex(i => (i + 1) % images.length)}
+                                  className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-[#1a1a18]/60 text-white hover:bg-[#1a1a18]/80"
+                                  aria-label="다음 사진"
+                                >
+                                  <ChevronRight size={18} />
+                                </button>
+                                <span className="absolute bottom-2 right-2 rounded-full bg-[#1a1a18]/60 px-2 py-0.5 text-xs text-white">
+                                  {photoIndex + 1} / {images.length}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })()
+                    ) : (
+                      <div className="flex aspect-square w-full items-center justify-center rounded-[10px] border border-dashed border-[#d8d6cf] bg-[#fafaf8]">
+                        <p className="text-sm text-[#888780]">등록된 사진이 없습니다</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              <section className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm">
+                <div className="border-b border-[#e8e8e8] bg-[#eef2fb] px-6 py-4">
+                  <h2 className="text-lg font-bold">상세 내용</h2>
+                </div>
+                <div className="p-6">
+                  <table className="w-full overflow-hidden rounded-[10px] border border-[#d8d6cf] text-sm">
+                    <tbody>
+                      {chain.map((stepId, i, arr) => {
+                        const answerText = answers[stepId] || '';
+                        const parts = answerText.includes(' / ') ? answerText.split(' / ').map(parseFieldPart) : null;
+                        return (
+                          <tr key={stepId}>
+                            <th
+                              className={`w-32 break-keep px-3 py-2.5 text-left font-semibold border-r border-[#d8d6cf] ${i === arr.length - 1 ? '' : 'border-b border-[#d8d6cf]'}`}
+                              style={{ verticalAlign: 'middle', backgroundColor: '#eef2fb', color: '#5f5e5a' }}
+                            >
+                              {renderStepTitle(WIZARD_STEPS[stepId].title)}
+                            </th>
+                            <td className={`px-3 py-2.5 text-[#1d1d1f] ${i === arr.length - 1 ? '' : 'border-b border-[#d8d6cf]'}`}>
+                              {parts ? (
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                                  {parts.map((item, j) => (
+                                    <div key={j}>
+                                      {item.label && <span className="block text-xs text-[#888780]">{item.label}</span>}
+                                      <span>{item.value}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : answerText}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
             </div>
-            <div className="border-t border-[#e8e8e8] px-6 py-4">
+
+            <section ref={agreedRef} className="mt-5 overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white px-6 py-4 shadow-sm">
               <label className="flex cursor-pointer items-center gap-2 text-sm text-[#5f5e5a]">
                 <input
                   type="checkbox"
@@ -1306,10 +1582,10 @@ export default function ServiceRequestFormPage() {
                   checked={agreed}
                   onChange={e => setAgreed(e.target.checked)}
                 />
-                등록 정보 확인 및 본문 수정이 불가능함에 동의합니다.
+                위 요청 내용을 확인하였으며, 등록 후 본문 수정이 불가능함에 동의합니다.
               </label>
-            </div>
-          </section>
+            </section>
+          </>
         )}
 
         {/* ── 하단 버튼 ── */}
