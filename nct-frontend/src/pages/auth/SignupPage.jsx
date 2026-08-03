@@ -99,7 +99,7 @@ const AgreementModal = ({ agreement, onClose }) => {
   const terms = SIGNUP_TERMS[agreement.code];
 
   return (
-    <div aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-6" role="dialog">
+    <div aria-modal="true" className="fixed inset-0 z-[500] flex items-center justify-center bg-black/35 p-6" role="dialog">
       <div className="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-2xl bg-white p-6 shadow-2xl">
         <h2 className="m-0 text-xl">{terms?.title ?? agreement.label}</h2>
         {terms ? (
@@ -153,9 +153,11 @@ const validateEmail = (value) => {
   return '';
 };
 
-const validateTelno = (value) => (
-  !value.trim() || isValidPhoneNumber(value) ? '' : '0으로 시작하는 11자리 숫자를 입력해주세요.'
-);
+// @ai_generated: ISS-023 - 전화번호가 선택에서 필수로 전환됐다.
+const validateTelno = (value) => {
+  if (!value.trim()) return '전화번호를 입력해주세요.';
+  return isValidPhoneNumber(value) ? '' : '0으로 시작하는 11자리 숫자를 입력해주세요.';
+};
 
 const validateOptionalLength = (value, maxLength, fieldName) => (
   value.trim().length <= maxLength ? '' : `${fieldName}은 ${maxLength}자 이하로 입력해주세요.`
@@ -609,17 +611,16 @@ const SignupPage = () => {
 
   return (
     <>
-      {/* @ai_generated: 넓은 가입 그리드는 AuthLayout 본문 안에서 기존 폭과 배치를 유지한다. */}
       {/* .container + Tailwind py-* 병용 시 App.css shorthand가 레이어 충돌로 상하 패딩을 무력화 — 인라인 style로 우회 */}
       <section className="container flex-1 text-[#1a1a18]" style={{ paddingTop: '28px', paddingBottom: '28px' }}>
         {/* @ai_generated: 가입 동작은 입력 카드 전체의 바깥 우하단에 배치한다. */}
-        <div className="mx-auto mb-4 mt-7 flex max-w-[1480px] flex-col gap-3 min-[769px]:flex-row min-[769px]:items-start min-[769px]:justify-between">
+        <div className="mb-4 mt-7 flex flex-col gap-3 min-[769px]:flex-row min-[769px]:items-start min-[769px]:justify-between">
           <div className="flex flex-col gap-1.5">
             <h1 className="m-0 text-[28px]">회원가입</h1>
             {!signupSucceeded ? (
               // @ai_generated: 가입 전 안내는 제목 바로 아래에 두고 상태 변화도 계속 알린다.
               <p aria-live="polite" className={`m-0 text-left text-xs ${signupMessage ? 'text-[#a32d2d]' : 'text-[#888780]'}`}>
-                {signupMessage || (verifiedForCurrentEmail ? '가입 완료를 누르면 계정이 생성됩니다.' : '필수 약관 동의와 이메일 인증을 완료하면 가입할 수 있습니다.')}
+                {signupMessage || (verifiedForCurrentEmail ? '가입 완료를 누르면 계정이 생성됩니다.' : '')}
               </p>
             ) : null}
           </div>
@@ -635,7 +636,7 @@ const SignupPage = () => {
           </section>
         ) : (
           <>
-          <div className="mx-auto grid max-w-[1480px] gap-6">
+          <div className="grid gap-6">
               {/* @ai_generated: 약관은 상단 전체폭, 입력 정보는 하단 동등한 2열 카드로 그룹화한다. */}
               <section aria-labelledby="agreement-title" className="rounded-2xl border border-[#f0efec] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,.04),0_2px_8px_rgba(0,0,0,.06)]">
                 <h2 className="m-0 text-lg" id="agreement-title">약관 동의</h2>
@@ -729,6 +730,17 @@ const SignupPage = () => {
                     ) : null}
                   </Field>
 
+                  <Field error={fieldError('telno')} label="전화번호" required>
+                    <input
+                      className={INPUT_CLASS}
+                      onBlur={handleFieldBlur('telno')}
+                      onChange={handleFieldChange('telno')}
+                      placeholder="010-1234-5678"
+                      type="tel"
+                      value={form.telno}
+                    />
+                  </Field>
+
                   <Field error={fieldError('email')} label="이메일" required>
                     <div className="grid gap-2 min-[769px]:grid-cols-[minmax(0,1fr)_auto]">
                       <input
@@ -799,21 +811,9 @@ const SignupPage = () => {
 
               <section aria-labelledby="additional-info-title" className="rounded-2xl border border-[#f0efec] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,.04),0_2px_8px_rgba(0,0,0,.06)]">
                 <div className="flex items-center gap-2">
-                  <h2 className="m-0 text-lg" id="additional-info-title">추가 정보</h2>
-                  <span className="rounded-full bg-[#f0f0ee] px-2 py-0.5 text-xs text-[#5f5e5a]">모두 선택</span>
+                  <h2 className="m-0 text-lg" id="additional-info-title">추가정보(선택)</h2>
                 </div>
                 <div className="mt-3.5 grid gap-3.5">
-                  <Field error={fieldError('telno')} label="전화번호(선택)">
-                    <input
-                      className={INPUT_CLASS}
-                      onBlur={handleFieldBlur('telno')}
-                      onChange={handleFieldChange('telno')}
-                      placeholder="010-1234-5678"
-                      type="tel"
-                      value={form.telno}
-                    />
-                  </Field>
-
                   <Field error={fieldError('address') || fieldError('zip')} label="주소(선택)">
                     <div className="grid gap-2 min-[769px]:grid-cols-[minmax(0,1fr)_auto]">
                       <input

@@ -221,7 +221,12 @@ const OAuthOnboardingPage = () => {
       return;
     }
 
-    if (optionalInfo.telno && !isValidPhoneNumber(optionalInfo.telno)) {
+    // @ai_generated: ISS-023 - 전화번호가 선택에서 필수로 전환됐다.
+    if (!optionalInfo.telno.trim()) {
+      setOptionalInfoError('전화번호를 입력해주세요.');
+      return;
+    }
+    if (!isValidPhoneNumber(optionalInfo.telno)) {
       setOptionalInfoError('전화번호는 0으로 시작하는 11자리 숫자를 입력해주세요.');
       return;
     }
@@ -380,11 +385,10 @@ const OAuthOnboardingPage = () => {
               <section aria-labelledby="additional-info-title" className="rounded-2xl border border-[#f0efec] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,.04),0_2px_8px_rgba(0,0,0,.06)]">
                 <div className="flex items-center gap-2">
                   <h2 className="m-0 text-lg" id="additional-info-title">추가 정보</h2>
-                  <span className="rounded-full bg-[#f0f0ee] px-2 py-0.5 text-xs text-[#5f5e5a]">모두 선택</span>
                 </div>
                 <div className="mt-3.5 grid gap-3.5">
-                  <label className="text-sm text-gray-700" htmlFor="oauth-telno">전화번호
-                    <input id="oauth-telno" type="tel" value={optionalInfo.telno} onChange={handleOptionalInfoChange('telno')} placeholder="010-1234-5678" className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />
+                  <label className="text-sm text-gray-700" htmlFor="oauth-telno">전화번호<span className="ml-1 text-[#a32d2d]">*</span>
+                    <input id="oauth-telno" type="tel" required value={optionalInfo.telno} onChange={handleOptionalInfoChange('telno')} placeholder="010-1234-5678" className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />
                   </label>
                   <label className="text-sm text-gray-700" htmlFor="oauth-address">주소
                     <input id="oauth-address" value={optionalInfo.address} onChange={handleOptionalInfoChange('address')} maxLength={200} className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />

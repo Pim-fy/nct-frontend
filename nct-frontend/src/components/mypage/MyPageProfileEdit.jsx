@@ -227,6 +227,11 @@ export default function MyPageProfileEdit({ user }) {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    // @ai_generated: ISS-023 - 전화번호가 선택에서 필수로 전환됐다.
+    if (!form.phone.trim()) {
+      toast({ icon: "error", title: "전화번호를 입력해주세요." });
+      return;
+    }
     try {
       // email은 이 화면에서 수정하지 않지만 백엔드가 필수값으로 요구해 현재 값을 그대로 함께 보낸다.
       const res = await updateProfile({
@@ -333,11 +338,14 @@ export default function MyPageProfileEdit({ user }) {
               </div>
             </div>
             <div>
-              <label className="block font-bold text-[14px] text-[#404040] mb-0.5">전화번호</label>
+              <label className="block font-bold text-[14px] text-[#404040] mb-0.5">
+                전화번호<span className="ml-1 text-[#a32d2d]">*</span>
+              </label>
               <input
                 className={FIELD_CLASS}
                 type="tel"
                 placeholder="01012345678"
+                required
                 value={form.phone}
                 onChange={handleChange("phone")}
               />
