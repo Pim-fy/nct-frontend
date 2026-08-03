@@ -120,6 +120,10 @@ const Header = () => {
   const isServiceSearchRoute = pathname === '/service'
     || /^\/service-requests\/\d+$/.test(pathname);
   const hasHeaderSearch = isAuctionSearchRoute || isServiceSearchRoute;
+  // 현재 보고 있는 화면이 헤더의 어느 메뉴에 속하는지 — 호버와 무관하게 항상 활성 색상을 보여준다.
+  const isAuctionMenuActive = pathname.startsWith('/auction');
+  const isServiceMenuActive = pathname.startsWith('/service') || pathname.startsWith('/provider/quotes');
+  const isCustomerMenuActive = pathname.startsWith('/customersupport') || pathname.startsWith('/guide');
   let headerCreateActionType = null;
   const canShowCreateAction = !authLoading && (!user || user.role === 'ROLE_USER');
   if (canShowCreateAction) {
@@ -311,7 +315,7 @@ const Header = () => {
               >
                 <Link
                   to="/auction"
-                  className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${categoryOpen ? 'text-primary' : 'text-[#333333]'}`}
+                  className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${categoryOpen || isAuctionMenuActive ? 'text-primary' : 'text-[#333333]'}`}
                   onClick={() => setCategoryHovered(false)}
                 >
                   경매
@@ -353,7 +357,7 @@ const Header = () => {
             >
               <Link
                 to="/service"
-                className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${serviceMenuOpen ? 'text-primary' : 'text-[#333333]'}`}
+                className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${serviceMenuOpen || isServiceMenuActive ? 'text-primary' : 'text-[#333333]'}`}
                 onClick={() => setServiceHovered(false)}
               >
                 {isProvider ? '견적 목록' : '견적 요청'}
@@ -393,7 +397,7 @@ const Header = () => {
             >
               <Link
                 to="/customersupport/notice"
-                className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${customerOpen ? 'text-primary' : 'text-[#333333]'}`}
+                className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${customerOpen || isCustomerMenuActive ? 'text-primary' : 'text-[#333333]'}`}
                 onClick={() => setCustomerHovered(false)}
               >
                 고객센터
