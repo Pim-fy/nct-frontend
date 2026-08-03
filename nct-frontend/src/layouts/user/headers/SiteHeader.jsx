@@ -91,8 +91,9 @@ const SiteHeader = () => {
   // 안읽은 알림: 배지 숫자와 드롭다운 목록의 공통 원천
   const unreadNotis = (notiQuery.data ?? []).filter((n) => !n.read);
   const notiCount = user ? unreadNotis.length : 0;
-  // 안읽은 알림이 없을 때 드롭다운에 대신 보여줄 과거(읽은) 알림
-  const pastNotis = (notiQuery.data ?? []).filter((n) => n.read).slice(0, NOTI_PREVIEW_MAX);
+  // 안읽은 우선 + 읽은 알림을 합쳐 드롭다운에 최대 NOTI_PREVIEW_MAX(5)개만 미리보기
+  const readNotis = (notiQuery.data ?? []).filter((n) => n.read);
+  const previewNotis = [...unreadNotis, ...readNotis].slice(0, NOTI_PREVIEW_MAX);
   // 잔액은 조회 전(로딩·비로그인)에는 0으로 표시 — 임의 기본값이 아니라 "아직 모름"의 화면 표기
   const pointBalance = balanceQuery.data ?? { total: 0, available: 0 };
   const [categoryHovered, setCategoryHovered] = useState(false);
@@ -468,23 +469,25 @@ const SiteHeader = () => {
                   </span>
                 </div>
                 <div className="my-3 h-px bg-[#e5e5e5]" />
-                {/* 안읽은 알림 */}
-                {unreadNotis.length === 0 ? (
+                {/* 안읽은 우선 + 읽은 알림 통합, 최대 5개 미리보기 */}
+                {previewNotis.length === 0 ? (
                   <p className="py-2 text-center text-[13px] text-[#969696]">새 알림이 없습니다.</p>
                 ) : (
                   <ul className="flex flex-col gap-1.5">
-                    {unreadNotis.slice(0, NOTI_PREVIEW_MAX).map((item) => (
+                    {previewNotis.map((item) => (
                       <li key={item.id}>
                         <button
                           type="button"
                           className="flex w-full items-start gap-2 text-left"
                           onClick={() => {
-                            markReadMutation.mutate(item.id);
+                            if (!item.read) markReadMutation.mutate(item.id);
                             setSelectedNoti({ ...item, time: relativeTime(item.regDt) });
                             setNotiOpen(false);
                           }}
                         >
-                          <span className="mt-[6px] size-[6px] shrink-0 rounded-full bg-primary" />
+                          <span
+                            className={`mt-[6px] size-[6px] shrink-0 rounded-full ${item.read ? 'bg-[#d9d9d9]' : 'bg-primary'}`}
+                          />
                           <div className="min-w-0">
                             <p className="truncate text-[13px] text-[#333]">
                               {item.title}
@@ -496,35 +499,6 @@ const SiteHeader = () => {
                       </li>
                     ))}
                   </ul>
-                )}
-                {/* 과거(읽은) 알림 — 안읽은 알림 유무와 관계없이 항상 표시 */}
-                {pastNotis.length > 0 && (
-                  <>
-                    <div className="my-3 h-px bg-[#e5e5e5]" />
-                    <ul className="flex flex-col gap-3">
-                      {pastNotis.map((item) => (
-                        <li key={item.id}>
-                          <button
-                            type="button"
-                            className="flex w-full items-start gap-2 text-left"
-                            onClick={() => {
-                              setSelectedNoti({ ...item, time: relativeTime(item.regDt) });
-                              setNotiOpen(false);
-                            }}
-                          >
-                            <span className="mt-[6px] size-[6px] shrink-0 rounded-full bg-[#d9d9d9]" />
-                            <div className="min-w-0">
-                              <p className="truncate text-[13px] text-[#333]">
-                                {item.title}
-                                {item.content && <span className="text-[#969696]"> · {item.content}</span>}
-                              </p>
-                              <p className="text-[11px] text-[#969696]">{relativeTime(item.regDt)}</p>
-                            </div>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </>
                 )}
                 {/* 전체보기 */}
                 <button
