@@ -8,6 +8,7 @@ import { ChevronUp, ChevronDown } from "lucide-react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import DaumPostcode from "react-daum-postcode";
 import { toast, confirm } from "@utils/common";
+import { formatPhoneNumber, toPhoneDigits } from "@utils/phoneNumber";
 import AlertModal from "@components/common/AlertModal";
 import { assets } from "@components/mypage/assets";
 import { updateProfile, changePassword, getOauthLinks, unlinkOauth } from "@api/memberApi";
@@ -77,7 +78,7 @@ export default function MyPageProfileEdit({ user }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setForm((prev) => ({
       ...prev,
-      phone: profileQuery.data.phone || "",
+      phone: formatPhoneNumber(profileQuery.data.phone || ""),
       zip: profileQuery.data.zip || "",
       address: profileQuery.data.address || "",
       addressDetail: profileQuery.data.addressDetail || "",
@@ -237,7 +238,7 @@ export default function MyPageProfileEdit({ user }) {
       const res = await updateProfile({
         nickname: form.nickname,
         email: user?.email,
-        phone: form.phone.trim(),
+        phone: toPhoneDigits(form.phone),
         zip: form.zip.trim(),
         address: form.address.trim(),
         addressDetail: form.addressDetail.trim(),
@@ -346,8 +347,9 @@ export default function MyPageProfileEdit({ user }) {
                 type="tel"
                 placeholder="01012345678"
                 required
+                maxLength={13}
                 value={form.phone}
-                onChange={handleChange("phone")}
+                onChange={(e) => setForm((prev) => ({ ...prev, phone: formatPhoneNumber(e.target.value) }))}
               />
             </div>
           </div>
@@ -412,7 +414,9 @@ export default function MyPageProfileEdit({ user }) {
             <label className="block font-bold text-[14px] text-[#404040] mb-0.5">주소</label>
             <div className="flex gap-2">
               <input
-                className={FIELD_CLASS + " flex-1"}
+                className={FIELD_CLASS + " flex-1 cursor-pointer"}
+                onClick={() => setAddressSearchOpen(true)}
+                onFocus={(e) => e.target.blur()}
                 placeholder="주소 검색을 눌러주세요."
                 readOnly
                 value={form.address}

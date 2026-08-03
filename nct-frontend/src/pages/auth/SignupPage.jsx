@@ -735,7 +735,7 @@ const SignupPage = () => {
                       className={INPUT_CLASS}
                       onBlur={handleFieldBlur('telno')}
                       onChange={handleFieldChange('telno')}
-                      placeholder="010-1234-5678"
+                      placeholder="-를 제외한 숫자만 입력해주세요"
                       type="tel"
                       value={form.telno}
                     />
@@ -817,7 +817,9 @@ const SignupPage = () => {
                   <Field error={fieldError('address') || fieldError('zip')} label="주소(선택)">
                     <div className="grid gap-2 min-[769px]:grid-cols-[minmax(0,1fr)_auto]">
                       <input
-                        className={INPUT_CLASS}
+                        className={`${INPUT_CLASS} cursor-pointer`}
+                        onClick={() => setAddressSearchOpen(true)}
+                        onFocus={(e) => e.target.blur()}
                         placeholder="주소 검색을 눌러주세요."
                         readOnly
                         value={form.address}
@@ -827,7 +829,9 @@ const SignupPage = () => {
                       </button>
                     </div>
                     <input
-                      className={INPUT_CLASS}
+                      className={`${INPUT_CLASS} cursor-pointer`}
+                      onClick={() => setAddressSearchOpen(true)}
+                      onFocus={(e) => e.target.blur()}
                       placeholder="우편번호"
                       readOnly
                       value={form.zip}

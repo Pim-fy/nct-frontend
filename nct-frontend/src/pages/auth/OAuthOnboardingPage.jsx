@@ -388,7 +388,7 @@ const OAuthOnboardingPage = () => {
                 </div>
                 <div className="mt-3.5 grid gap-3.5">
                   <label className="text-sm text-gray-700" htmlFor="oauth-telno">전화번호<span className="ml-1 text-[#a32d2d]">*</span>
-                    <input id="oauth-telno" type="tel" required value={optionalInfo.telno} onChange={handleOptionalInfoChange('telno')} placeholder="010-1234-5678" className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />
+                    <input id="oauth-telno" type="tel" required value={optionalInfo.telno} onChange={handleOptionalInfoChange('telno')} placeholder="-를 제외한 숫자만 입력해주세요" className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />
                   </label>
                   <label className="text-sm text-gray-700" htmlFor="oauth-address">주소
                     <input id="oauth-address" value={optionalInfo.address} onChange={handleOptionalInfoChange('address')} maxLength={200} className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />
