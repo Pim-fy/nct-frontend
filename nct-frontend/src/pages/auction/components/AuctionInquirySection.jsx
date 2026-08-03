@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { RotateCcw, Send } from 'lucide-react';
 import { fetchActiveManualAbuseReportReferences } from '@api/abuseReportApi';
@@ -50,7 +50,6 @@ const AuctionInquirySection = ({
   isAuthenticated,
   isOwnAuction,
   enabled = true,
-  onLoadSettled,
   onLoginRequired,
   onToast,
 }) => {
@@ -125,24 +124,10 @@ const AuctionInquirySection = ({
   const isSubmitDisabled = isOwnAuction
     || inquiryMutation.isPending
     || (isAuthenticated && !trimmedContent);
-  const isWaiting = !enabled || inquiryQuery.isLoading;
-
-  useEffect(() => {
-    if (!enabled || (!inquiryQuery.isSuccess && !inquiryQuery.isError)) return;
-    if (inquiryQuery.isSuccess
-      && inquiryReferenceSns.length > 0
-      && !activeReportStatusQuery.isSuccess
-      && !activeReportStatusQuery.isError) return;
-    onLoadSettled?.();
-  }, [
-    activeReportStatusQuery.isError,
-    activeReportStatusQuery.isSuccess,
-    enabled,
-    inquiryQuery.isError,
-    inquiryQuery.isSuccess,
-    inquiryReferenceSns.length,
-    onLoadSettled,
-  ]);
+  const isReportStatusWaiting = inquiryQuery.isSuccess
+    && inquiryReferenceSns.length > 0
+    && activeReportStatusQuery.isPending;
+  const isWaiting = !enabled || inquiryQuery.isLoading || isReportStatusWaiting;
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -213,8 +198,8 @@ const AuctionInquirySection = ({
       <div className="mt-6 grid gap-3" aria-live="polite">
         {isWaiting && (
           <>
-            {Array.from({ length: 3 }).map((_, index) => (
-              <Skeleton height={90} key={index} style={{ borderRadius: 8 }} />
+            {Array.from({ length: INQUIRIES_PER_PAGE }).map((_, index) => (
+              <Skeleton height={148} key={index} style={{ borderRadius: 8 }} />
             ))}
           </>
         )}
