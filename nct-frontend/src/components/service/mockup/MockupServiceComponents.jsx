@@ -2,6 +2,7 @@ import {
   BadgeCheck,
   BriefcaseBusiness,
   Clock3,
+  Flag,
   MapPin,
   MessageSquareText,
   Search,
@@ -196,11 +197,22 @@ export const MockupServiceEmptyState = ({ view }) => (
 export const MockupProviderProfile = ({
   activeTab,
   onOpenPortfolio,
+  onReport,
   onTabChange,
   provider,
 }) => (
   <div className="provider-public-layout">
     <aside className="provider-public-card">
+      {/* 담당자 7 · F-COM-015: 공개 제공자 프로필에서 공통 신고 접수 모달을 엽니다. */}
+      <button
+        aria-label={`${provider.name} 제공자 신고하기`}
+        className="provider-public-report-button"
+        onClick={onReport}
+        type="button"
+      >
+        <Flag aria-hidden="true" />
+        신고
+      </button>
       <div className="provider-public-avatar" aria-hidden="true">
         {provider.profileImageUrl
           ? <img src={toImageUrl(provider.profileImageUrl)} alt="" />
