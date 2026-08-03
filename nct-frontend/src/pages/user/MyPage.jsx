@@ -30,6 +30,7 @@ import SettlementListPage from "@pages/user/settlement/SettlementListPage";
 import MyReportListPage from "@pages/user/report/MyReportListPage";
 import ReportFormPage from "@pages/user/report/ReportFormPage";
 import MyQuoteListPage from "@pages/provider/MyQuoteListPage";
+import MyServiceRequestListPage from "@pages/service/MyServiceRequestListPage";
 import ReviewListPage from "@pages/user/ReviewListPage";
 import { useAuth } from "@hooks/useAuth";
 import { useMyProviderApplications } from "@hooks/useProviderApplications";
@@ -39,6 +40,7 @@ const MYPAGE_SECTION_QUERY_VALUES = new Set([
   "active-auctions",
   "auction-bids",
   "auction-sales",
+  "service-requests",
   "wishlist",
   "chat",
   "wallet",
@@ -247,6 +249,7 @@ export default function MyPage({
               <MyProductList embedded onOpenTradeDetail={handleOpenSalesTradeDetail} />
             )
           )}
+          {activeSection === "service-requests" && <MyServiceRequestListPage embedded />}
           {activeSection === "wishlist" && <AuctionFavoritesPage />}
           {activeSection === "wallet" && <PointWalletPage embedded />}
           {activeSection === "quote" && isProvider && <MyQuoteListPage embedded />}

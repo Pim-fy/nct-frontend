@@ -157,6 +157,7 @@ export const WIZARD_STEPS = {
     fields: [
       { key: '지역', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'cl_home_addr' },
       { key: '지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'cl_home_addr', wide: true, required: true },
+      { key: '층수', type: 'text', placeholder: '예: 3층', row: 'cl_home_addr', required: true, compact: true },
     ],
   },
   cl_home_size: {
@@ -182,6 +183,15 @@ export const WIZARD_STEPS = {
       { label: '새집증후군 제거' }, { label: '스티커·시트지 제거' }, { label: '기타' },
     ],
   },
+  cl_home_date: {
+    title: '희망일', type: 'form', next: 'budget',
+    fields: [
+      { key: '희망일', type: 'calendar', embed: ['날짜 협의', '시간 협의'], required: true },
+      { key: '날짜 협의', type: 'choice', options: ['협의 가능', '협의 불가'], required: true },
+      { key: '시간 협의', type: 'choice', options: ['오전', '오후', '저녁', '협의 가능'], required: true },
+    ],
+  },
+
   cl_biz_type: {
     title: '청소 유형', type: 'single',
     options: [
@@ -215,6 +225,7 @@ export const WIZARD_STEPS = {
     fields: [
       { key: '지역', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'cl_biz_addr' },
       { key: '지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'cl_biz_addr', wide: true, required: true },
+      { key: '층수', type: 'text', placeholder: '예: 3층', row: 'cl_biz_addr', required: true, compact: true },
     ],
   },
   cl_biz_size: {
@@ -307,7 +318,7 @@ export const WIZARD_STEPS = {
     ],
   },
   ir_ap_space: {
-    title: '사용 공간', type: 'single', next: 'svc_date',
+    title: '사용 공간', type: 'single', next: 'ir_extra',
     options: [
       { label: '가정집' }, { label: '사무공간' }, { label: '상업공간' },
     ],
@@ -329,14 +340,14 @@ export const WIZARD_STEPS = {
     ],
   },
   ir_fn_qty_price: {
-    title: '수량·금액대', type: 'form', next: 'svc_date',
+    title: '수량·금액대', type: 'form', next: 'ir_extra',
     fields: [
       { key: '가구 수량', type: 'text', placeholder: '예: 2개', required: true },
       { key: '가구 금액대', type: 'choice', options: ['25만원 미만', '50만원 미만', '75만원 미만', '100만원 미만'] },
     ],
   },
   ir_fn_move: {
-    title: '이동 방식', type: 'form', next: 'svc_date',
+    title: '이동 방식', type: 'form', next: 'ir_extra',
     fields: [
       { key: '이동 유형', type: 'choice', options: ['방 → 방', '층 → 층'], required: true },
       { key: '분해 후 설치', type: 'choice', options: ['필요', '불필요'], required: true },
@@ -350,7 +361,7 @@ export const WIZARD_STEPS = {
     ],
   },
   ir_fn_material: {
-    title: '재질·리폼 종류', type: 'form', next: 'svc_date',
+    title: '재질·리폼 종류', type: 'form', next: 'ir_extra',
     fields: [
       { key: '가구 재질', type: 'choice', options: ['원목', '합판·MDF', '가죽', '금속', '천'], required: true },
       { key: '원하는 리폼', type: 'choice', options: ['천갈이', '시트지 부착', '페인팅', '가구 축소', '가구 확장'], required: true },
@@ -378,7 +389,7 @@ export const WIZARD_STEPS = {
     ],
   },
   ir_pb_detail_water: {
-    title: '세부 부분', type: 'form', next: 'svc_date',
+    title: '세부 부분', type: 'form', next: 'ir_extra',
     fields: [
       { key: '세부 부분', type: 'choice', options: ['수도꼭지·수전', '배관', '하수구', '세면대', '변기'], required: true },
       { key: '제품 보유 여부', type: 'choice', options: ['네', '아니요(구매 필요)', '기타'], required: true },
@@ -393,7 +404,7 @@ export const WIZARD_STEPS = {
     options: [{ label: '가스 보일러' }, { label: '기름 보일러' }, { label: '전기 보일러' }, { label: '잘 모르겠음' }],
   },
   ir_pb_area_boiler: {
-    title: '난방 면적', type: 'single', next: 'svc_date',
+    title: '난방 면적', type: 'single', next: 'ir_extra',
     options: [
       { label: '10평 미만' }, { label: '10평대' }, { label: '20평대' },
       { label: '30평대' }, { label: '40평대' }, { label: '50평대' },
@@ -407,18 +418,25 @@ export const WIZARD_STEPS = {
     ],
   },
   ir_pb_part_electric: {
-    title: '작업 부분', type: 'single', next: 'svc_date',
+    title: '작업 부분', type: 'single', next: 'ir_extra',
     options: [
       { label: '콘센트' }, { label: 'LED·조명' }, { label: '스위치' },
       { label: '배선' }, { label: '증설·승압' }, { label: '소방공사(차단기·감지기 등)' },
     ],
   },
 
+  ir_extra: {
+    title: '추가 서비스 (복수 선택)', type: 'multi', next: 'svc_date',
+    options: [
+      { label: '해당없음' }, { label: '해체·철거' }, { label: '이전 설치' },
+    ],
+  },
   svc_date: {
-    title: '요청사항', type: 'form', next: 'budget',
+    title: '희망일', type: 'form', next: 'ir_location',
     fields: [
       { key: '희망 지역', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'ir_addr' },
       { key: '희망 지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'ir_addr', wide: true, required: true },
+      { key: '층수', type: 'text', placeholder: '예: 3층', row: 'ir_addr', required: true, compact: true },
       { key: '폐기물 처리', type: 'choice', options: ['필요', '불필요'] },
     ],
   },
