@@ -16,7 +16,23 @@ import AuctionCard from "./AuctionCard";
 import ServiceRequestCard from "./ServiceRequestCard";
 import { SERVICE_MENU_ITEMS } from "./serviceMenuData";
 
-const SEARCH_TAGS = ["#마감임박경매", "#청소견적", "#전자기기", "#이사도움", "#직거래"];
+const SEARCH_PLACEHOLDERS = {
+  경매: "원하는 경매 상품을 검색하세요.",
+  견적요청: "필요한 서비스 요청을 검색하세요.",
+};
+
+const BANNER_SLIDES = [
+  {
+    eyebrow: "START GUIDE",
+    title1: "처음이어도 흐름만 알면",
+    title2: "어렵지 않아요",
+    sub: "경매와 서비스 요청, 시작부터 완료까지 한눈에",
+    btnLabel: "이용가이드 보기",
+    btnRoute: "/guide",
+    tags: ["경매 거래", "서비스 요청", "안전 거래"],
+    rightImg: "heroSectionImg",
+  },
+];
 
 export default function MobileLandingSections({
   closingAuctionItems,
@@ -34,6 +50,8 @@ export default function MobileLandingSections({
 }) {
   const navigate = useNavigate();
   const [keyword, setKeyword] = useState("");
+  const [searchType, setSearchType] = useState("경매");
+  const [bannerIdx, setBannerIdx] = useState(0);
   const [activeTab, setActiveTab] = useState("new");
   const auctionScrollRef = useRef(null);
   const serviceScrollRef = useRef(null);
@@ -44,7 +62,12 @@ export default function MobileLandingSections({
 
   const runSearch = (value) => {
     const trimmed = value.trim();
-    if (trimmed) navigate(`/search/${encodeURIComponent(trimmed)}`);
+    if (!trimmed) return;
+    if (searchType === "경매") {
+      navigate(`/auction?keyword=${encodeURIComponent(trimmed)}`);
+    } else {
+      navigate(`/service?keyword=${encodeURIComponent(trimmed)}`);
+    }
   };
 
   const auctionItems = activeTab === "new" ? newAuctionItems : closingAuctionItems;
@@ -70,31 +93,40 @@ export default function MobileLandingSections({
             <span className="text-white">를 한 화면에서</span>
           </h1>
 
-          {/* 검색 태그 */}
+          {/* 검색 태그 — hot item 목록 */}
           <div className="mt-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden justify-start">
-            {SEARCH_TAGS.map((tag) => (
+            {hotItems.slice(0, 5).map((item) => (
               <button
-                key={tag}
+                key={item.id}
                 type="button"
-                onClick={() => setKeyword(tag.replace(/^#/, ""))}
+                onClick={() => navigate(`/auction/${item.id}`)}
                 className="shrink-0 rounded-full bg-white/20 border border-white/40 px-3 py-1.5 text-[13px] text-white backdrop-blur-sm"
               >
-                {tag}
+                #{item.name.length > 8 ? item.name.slice(0, 7) + "…" : item.name}
               </button>
             ))}
           </div>
 
           {/* 검색 입력 */}
           <div className="mt-3 flex items-center gap-2 rounded-full bg-white px-4 py-3 shadow-md">
-            <span className="shrink-0 text-[14px] font-bold text-black">통합검색</span>
-            <span className="text-[#b1b1b1] text-[12px]">▼</span>
-            <div className="mx-1 h-4 w-px bg-[#d9d9d9]" />
+            <div className="relative shrink-0 flex items-center">
+              <select
+                value={searchType}
+                onChange={(e) => { setSearchType(e.target.value); setKeyword(""); }}
+                className="appearance-none bg-transparent border-none outline-none text-[14px] font-bold text-black cursor-pointer pr-4"
+              >
+                <option value="경매">경매</option>
+                <option value="견적요청">견적요청</option>
+              </select>
+              <span className="absolute right-0 text-[10px] text-[#b1b1b1] pointer-events-none">▼</span>
+            </div>
+            <div className="h-4 w-px bg-[#d9d9d9]" />
             <input
               type="text"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") runSearch(keyword); }}
-              placeholder="검색어를 입력하세요."
+              placeholder={SEARCH_PLACEHOLDERS[searchType]}
               className="min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-[#b1b1b1]"
             />
             <button type="button" onClick={() => runSearch(keyword)} aria-label="검색">
@@ -104,30 +136,50 @@ export default function MobileLandingSections({
 
           {/* 슬라이드 배너 */}
           <div className="mt-4 relative">
-            <div className="relative overflow-hidden rounded-[20px] bg-white shadow-[0px_4px_10px_0px_rgba(0,0,0,0.2)]">
-              {/* 배경 패턴(슬라이드 이미지) */}
-              <img src={assets.slide} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30 pointer-events-none" />
-              {/* 배너 콘텐츠 */}
-              <div className="relative z-10 flex items-center gap-2 px-5 py-5">
-                <div className="flex-1 text-left">
-                  <p className="font-bold text-[20px] text-black leading-snug tracking-tight">
-                    서비스 요청만 해도<br />쿠폰 100% 당첨
-                  </p>
-                  <div className="h-[7px] bg-[#ffd900] w-[110px] mt-1 mb-2" />
-                  <p className="text-[12px] text-black">회원가입시에 최대 쿠폰 10,000원 증정</p>
-                  <button
-                    type="button"
-                    className="mt-3 bg-[#0064ff] text-white font-bold text-[14px] px-5 py-[9px] rounded-[10px] cursor-pointer border-none"
-                  >
-                    응모하기
-                  </button>
-                </div>
-                <img src={assets.giftVoucher} alt="기프트 쿠폰" className="w-[110px] object-contain shrink-0" />
+            <div className="relative overflow-hidden rounded-[20px] bg-white/90">
+              {/* 슬라이드 트랙 */}
+              <div
+                className="flex transition-transform duration-500 ease-in-out"
+                style={{ transform: `translateX(${-bannerIdx * 100}%)` }}
+              >
+                {BANNER_SLIDES.map((s, i) => (
+                  <div key={i} className="relative shrink-0 w-full">
+                    <div className="flex items-center gap-2 px-5 py-5">
+                      <div className="flex-1 text-left min-w-0">
+                        {s.eyebrow && (
+                          <p className="text-[11px] font-bold text-[#0064ff] tracking-[2px] mb-1">{s.eyebrow}</p>
+                        )}
+                        <p className="font-bold text-[20px] text-black leading-snug tracking-tight">
+                          {s.title1}<br />{s.title2}
+                        </p>
+                        <p className="text-[12px] text-black mt-1">{s.sub}</p>
+                        {s.tags && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {s.tags.map((tag) => (
+                              <span key={tag} className="bg-[#eef3ff] text-[#0064ff] text-[11px] font-bold px-2 py-0.5 rounded-full">{tag}</span>
+                            ))}
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => s.btnRoute && navigate(s.btnRoute)}
+                          className="mt-3 bg-[#0064ff] text-white font-bold text-[14px] px-5 py-[9px] rounded-[10px] cursor-pointer border-none"
+                        >
+                          {s.btnLabel}
+                        </button>
+                      </div>
+                      {s.rightImg && (
+                        <img src={assets[s.rightImg]} alt="" className="w-[100px] object-contain shrink-0 pointer-events-none mr-4" />
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
             {/* 좌우 화살표 */}
             <button
               type="button"
+              onClick={() => setBannerIdx((i) => (i === 0 ? BANNER_SLIDES.length - 1 : i - 1))}
               className="absolute -left-1 top-1/2 -translate-y-1/2 flex size-[32px] items-center justify-center text-[28px] text-[#7b8290] font-light leading-none bg-transparent border-none cursor-pointer"
               aria-label="이전"
             >
@@ -135,6 +187,7 @@ export default function MobileLandingSections({
             </button>
             <button
               type="button"
+              onClick={() => setBannerIdx((i) => (i === BANNER_SLIDES.length - 1 ? 0 : i + 1))}
               className="absolute -right-1 top-1/2 -translate-y-1/2 flex size-[32px] items-center justify-center text-[28px] text-[#7b8290] font-light leading-none bg-transparent border-none cursor-pointer"
               aria-label="다음"
             >

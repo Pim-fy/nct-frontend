@@ -9,7 +9,7 @@ import ReportModal from "@components/common/ReportModal";
 
 const STATUS_LABEL = {
   ABRC0005: "접수됨",
-  ABRC0006: "검토중",
+  ABRC0006: "처리중",
   ABRC0007: "처리완료",
   ABRC0008: "반려",
 };
@@ -21,14 +21,25 @@ const STATUS_BADGE_CLS = {
   ABRC0008: "badge-danger",    // 반려    → 빨강 채움
 };
 
-const getTypeNames = (report) =>
-  report.reportTypeNames ?? (report.reportTypeName ? [report.reportTypeName] : []);
+const TYPE_LABEL = {
+  ABRC0001: "사기·기만",
+  ABRC0002: "허위 정보",
+  ABRC0003: "욕설·비방",
+  ABRC0004: "기타",
+};
+
+const getTypeNames = (report) => {
+  if (report.reportTypeNames?.length) return report.reportTypeNames;
+  const code = report.reportTypeCode;
+  const name = TYPE_LABEL[code] ?? report.reportTypeName;
+  return name ? [name] : [];
+};
 
 const STATUS_TABS = [
   { label: "전체",    status: null },
   { label: "접수됨",  status: "ABRC0005" },
-  { label: "검토중",  status: "ABRC0006" },
-  { label: "처리완료", status: "FINISHED" },
+  { label: "처리중",  status: "ABRC0006" },
+  { label: "완료/반려", status: "FINISHED" },
 ];
 
 const PAGE_SIZE = 5;
@@ -50,7 +61,7 @@ function TypeBadge({ typeName, style }) {
 function ReportCard({ report, isOpen, onToggle, number }) {
   const [hovered, setHovered] = React.useState(false);
   return (
-    <div className="transition-all bg-white overflow-hidden rounded-[20px] shadow-[0_2px_12px_rgba(0,0,0,0.05)] border border-[#e4e9f2] hover:border-[#a0aec0] cursor-pointer">
+    <div className="transition-all bg-white overflow-hidden rounded-[15px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] border border-[#e4e9f2] hover:border-[#a0aec0] cursor-pointer">
       {/* 헤더 행 */}
       <button
         type="button"
@@ -62,12 +73,12 @@ function ReportCard({ report, isOpen, onToggle, number }) {
         <div className="flex items-center py-6 px-5 gap-4">
           <span className="shrink-0 text-[14px] font-medium text-[#969696] w-6 text-center">{number}</span>
           <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-1.5 mb-2">
+            <div className="flex items-center gap-2 min-w-0">
               {getTypeNames(report).map((name) => (
-                <TypeBadge key={name} typeName={name} style={{ borderRadius: "5px", fontSize: "14px", fontWeight: 400 }} />
+                <TypeBadge key={name} typeName={name} style={{ borderRadius: "5px", fontSize: "14px", fontWeight: 400, flexShrink: 0, height: "28px", paddingLeft: "5px", paddingRight: "5px", display: "inline-flex", alignItems: "center", color: "#333333", borderColor: "#555555" }} />
               ))}
+              <p className="font-bold text-[18px] text-[#333] truncate mb-0 min-w-0">{report.title}</p>
             </div>
-            <p className="font-bold text-[18px] text-[#333] truncate mb-0">{report.title}</p>
             {report.processReason && !isOpen && (
               <div className="flex items-center gap-1 mt-1.5">
                 <svg className="size-3.5 shrink-0 text-[#0064ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -94,22 +105,23 @@ function ReportCard({ report, isOpen, onToggle, number }) {
       {/* 아코디언 상세 내용 */}
       {isOpen && (
         <div className="pb-5 space-y-4 border-t border-[#e8e9ec] pr-5 pl-[60px]" style={{ background: "#F8FAFC" }}>
-          <p className="text-[13px] text-[#969696] pt-4 m-0 text-right">
-            접수번호 <strong className="text-[#333] font-medium">#{report.reportSn}</strong>
-          </p>
-
-          <div className="pb-1 flex items-center gap-3">
-            <p className="font-bold m-0 shrink-0" style={{ fontSize: "16px", color: "#333333" }}>신고 대상</p>
-            <p className="font-bold text-[16px] text-[#1a1a18] m-0 truncate">{report.targetName || "-"}</p>
+          <div className="flex items-center justify-between pt-4 gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <p className="font-bold m-0 shrink-0" style={{ fontSize: "16px", color: "#333333" }}>신고 대상</p>
+              <p className="font-bold text-[16px] text-[#1a1a18] m-0 truncate">{report.targetName || "-"}</p>
+            </div>
+            <p className="text-[13px] text-[#969696] m-0 shrink-0">
+              접수번호 <strong className="text-[#333] font-medium">#{report.reportSn}</strong>
+            </p>
           </div>
 
-          <div className="pb-4">
+          <div className="pb-1">
             <p className="font-bold m-0 mb-2" style={{ fontSize: "16px", color: "#333333" }}>신고 내용</p>
             <p className="text-[16px] text-[#444] leading-relaxed m-0">{report.content}</p>
           </div>
 
           {report.processReason && (
-            <div className="rounded-[8px] p-4 border border-[#e8e9ec]" style={{ background: "#F8FAFC" }}>
+            <div className="rounded-[8px] p-4 border border-[#e8e9ec]" style={{ background: "#ffffff" }}>
               <div className="flex items-center gap-1.5 mb-2">
                 <svg className="size-4 text-[#0064ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -144,6 +156,18 @@ export default function MyReportListPage({ embedded = false }) {
     size: PAGE_SIZE,
   });
 
+  const { data: countAll }      = useMyReports({ status: null,       page: 1, size: 1 });
+  const { data: countReceived } = useMyReports({ status: "ABRC0005", page: 1, size: 1 });
+  const { data: countReview }   = useMyReports({ status: "ABRC0006", page: 1, size: 1 });
+  const { data: countFinished } = useMyReports({ status: "FINISHED", page: 1, size: 1 });
+
+  const TAB_COUNTS = [
+    countAll?.totalCount,
+    countReceived?.totalCount,
+    countReview?.totalCount,
+    countFinished?.totalCount,
+  ];
+
   const reports    = data?.content ?? [];
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
@@ -170,19 +194,20 @@ export default function MyReportListPage({ embedded = false }) {
       />
 
       <div className="tab-group-1 mb-5">
-        {STATUS_TABS.map((tab, idx) => (
-          <button
-            key={tab.label}
-            type="button"
-            onClick={() => handleTab(idx)}
-            className={`tab-pill${activeTabIdx === idx ? " active" : ""}`}
-          >
-            {tab.label}
-            {activeTabIdx === idx && totalCount > 0 && (
-              <span className="tab-count">{totalCount}</span>
-            )}
-          </button>
-        ))}
+        {STATUS_TABS.map((tab, idx) => {
+          const cnt = TAB_COUNTS[idx];
+          return (
+            <button
+              key={tab.label}
+              type="button"
+              onClick={() => handleTab(idx)}
+              className={`tab-pill${activeTabIdx === idx ? " active" : ""}`}
+            >
+              {tab.label}
+              {cnt > 0 && <span className="tab-count">{cnt}</span>}
+            </button>
+          );
+        })}
       </div>
 
       {isLoading ? (
@@ -194,7 +219,7 @@ export default function MyReportListPage({ embedded = false }) {
           <p className="text-[16px] text-[#969696] m-0">목록을 불러오지 못했습니다.</p>
         </div>
       ) : reports.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center rounded-[20px] bg-white border border-[#e4e9f2] shadow-[0_2px_12px_rgba(0,0,0,0.05)]">
+        <div className="flex flex-col items-center justify-center py-20 text-center rounded-[15px] bg-white border border-[#e4e9f2] shadow-[0_2px_12px_rgba(0,0,0,0.05)]">
           <svg className="size-12 text-[#d9d9d9] mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

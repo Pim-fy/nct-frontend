@@ -4,18 +4,25 @@
 // TODO: 포인트(F-PNT)/경매(F-AUC)/서비스거래(F-SVC)/관심상품(F-WISH) API가 준비되면
 //       STAT_CARDS/TODAY_ITEMS/WISH_ITEMS를 각 도메인 조회 결과로 교체한다.
 import React, { useState } from "react";
+import { ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchMyFavoriteAuctions } from "@api/auctionApi";
+import { getMyBidHistory } from "@api/bidApi";
+import { getMyServiceRequests } from "@api/serviceRequestApi";
+import { getMyQuotes } from "@api/quoteApi";
+import { getMyProducts } from "@api/productApi";
+import { getTradeHistory } from "@api/tradeApi";
+import { getTradeListItems, toTradeHistoryItem } from "@api/tradeAdapter";
+import { getWritableReviews } from "@api/reviewApi";
+import { getTradeChatRooms } from "@api/tradeChatApi";
+import { toTradeChatRooms } from "@api/tradeChatAdapter";
+import { usePointBalance } from "@hooks/usePoint";
+import { useNotifications } from "@hooks/useNotification";
+import { useMemberProfile } from "@hooks/useMemberProfile";
+import relativeTime from "@utils/relativeTime";
 import { assets } from "@components/mypage/assets";
 import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
-
-const TODAY_TABS = [
-  { label: "전체",     section: "auction-bids" },
-  { label: "거래",     section: "auction-bids" },
-  { label: "서비스요청", section: "service-trade" },
-  { label: "입찰",     section: "active-auctions" },
-];
 
 const WISH_TABS = [
   { label: "전체",     section: "wishlist" },
@@ -24,33 +31,29 @@ const WISH_TABS = [
   { label: "입찰",     section: "wishlist" },
 ];
 
-const TODAY_ITEMS = [
-  {
-    badges: [{ label: "거래", cls: "badge-blue" }, { label: "구매확정 대기", cls: "badge-danger" }],
-    title: "[거래 구매확정] 다이슨 V11",
-    meta: "거래 금액 148,000원 · 배송완료 후 3일째",
-    section: "auction-bids",
-  },
-  {
-    badges: [{ label: "서비스요청", cls: "badge-success" }],
-    title: "[견적비교] 성수동 원룸 이사 운반",
-    meta: "청년이사·바로운반 · 새 견적 도착",
-    section: "service-trade",
-  },
-  {
-    badges: [{ label: "거래", cls: "badge-blue" }, { label: "구매확정 대기", cls: "badge-danger" }],
-    title: "[거래 구매확정] 미니 보온 텀블러 세트",
-    meta: "거래 금액 148,000원 · 배송완료 후 3일째",
-    section: "auction-bids",
-  },
-];
+const NOTIF_TABS = ["전체", "경매·거래", "서비스", "운영·기타"];
+
+const DOMAIN_BADGE = {
+  NTFC0010: "badge-urgent",
+  NTFC0011: "badge-blue",
+  NTFC0012: "badge-success",
+  NTFC0013: "badge-primary",
+  NTFC0014: "badge-gray",
+};
+
+const DOMAIN_TO_SECTION = {
+  NTFC0010: "active-auctions",
+  NTFC0011: "auction-bids",
+  NTFC0012: "service-trade",
+  NTFC0013: "wallet",
+  NTFC0014: "chat",
+};
 
 
-const NOTICES = ["입찰가가 갱신되었습니다.", "관심 상품 마감 10분 전입니다", "새 견적이 도착했습니다"];
 
 function StatCard({ color, icon, label, value, unit, meta, onMore }) {
   return (
-    <div className="relative rounded-[10px] text-white p-5 md:mb-5 md:mt-5" style={{ backgroundColor: color }}>
+    <div className="relative rounded-[15px] text-white p-5 md:mb-5 md:mt-5 h-[150px] flex flex-col justify-center" style={{ backgroundColor: color }}>
       {onMore && (
         <button
           type="button"
@@ -123,7 +126,7 @@ function ListPanel({ title, items, tabs, onTabClick, onMore, onItemMore }) {
           {items.map((item, i) => (
             <div
               key={`${item.title}-${i}`}
-              className="border border-[rgba(0,0,0,0.08)] rounded-[10px] bg-white p-4 cursor-pointer hover:border-[rgba(0,100,255,0.3)] transition-colors"
+              className="border border-[rgba(0,0,0,0.08)] rounded-[15px] bg-white p-4 cursor-pointer hover:border-[rgba(0,100,255,0.3)] transition-colors"
               style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
               onClick={() => onItemMore?.(item.section)}
             >
@@ -146,6 +149,202 @@ function ListPanel({ title, items, tabs, onTabClick, onMore, onItemMore }) {
   );
 }
 
+function NotificationPanel({ notifications = [], onItemClick, onMore }) {
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  const filtered = notifications.filter((n) => {
+    if (activeIdx === 1) return n.domainCd === "NTFC0010" || n.domainCd === "NTFC0011";
+    if (activeIdx === 2) return n.domainCd === "NTFC0012";
+    if (activeIdx === 3) return n.domainCd === "NTFC0013" || n.domainCd === "NTFC0014";
+    return true;
+  });
+
+  return (
+    <div className="bg-white rounded-[15px] shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-[#e4e9f2] overflow-hidden">
+      {/* 헤더 배경 영역 */}
+      <div className="bg-[#f5f7fc] px-5 border-b border-[#e8e9ec]">
+        <div className="flex items-end justify-between h-[60px] gap-4">
+          <div className="flex items-end gap-5">
+            <h3 className="font-bold text-[18px] text-[#1a1a1a] m-0 shrink-0 pb-[10px]">알림</h3>
+            {NOTIF_TABS.map((tab, i) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveIdx(i)}
+                className={`tab-underline${i === activeIdx ? " active" : ""}`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={onMore}
+            className="bg-transparent border-none cursor-pointer flex items-center gap-1 text-[14px] text-[#969696] shrink-0 pb-[10px]"
+          >
+            더보기 <ChevronRight size={14} className="text-[#969696]" />
+          </button>
+        </div>
+      </div>
+
+      {/* 리스트 영역 */}
+      <div className="px-5 pb-5 min-h-[122px]">
+        {filtered.length === 0 ? (
+          <div className="flex items-center justify-center py-10">
+            <p className="text-[15px] text-[#969696] m-0">알림이 없습니다.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-x-4">
+            {filtered.map((n) => (
+              <div
+                key={n.id}
+                onClick={() => onItemClick?.(DOMAIN_TO_SECTION[n.domainCd] ?? "home")}
+                className="flex items-center gap-3 py-3.5 cursor-pointer hover:opacity-70 transition-opacity border-b border-[#e8e9ec]"
+              >
+                <span className={`badge ${DOMAIN_BADGE[n.domainCd] ?? "badge-gray"} shrink-0`} style={{ borderRadius: 5, fontSize: 12 }}>
+                  {n.type}
+                </span>
+                <p className="flex-1 min-w-0 text-[15px] text-[#1a1a1a] m-0 leading-snug truncate">{n.title}</p>
+                <span className="text-[13px] text-[#b0aea8] shrink-0 ml-2">{relativeTime(n.regDt)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const REVIEW_DEAL_TYPE = {
+  goods:   { label: "물건거래", cls: "badge-blue" },
+  service: { label: "서비스",   cls: "badge-success" },
+};
+
+function ReviewablePanel({ items, onWrite, onMore }) {
+  const fmtDate = (str) => str?.slice(0, 10).replace(/-/g, ".") ?? "-";
+  const preview = items.slice(0, 3);
+
+  return (
+    <div className="bg-white rounded-[15px] shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-[#e4e9f2] overflow-hidden">
+      {/* 헤더 배경 영역 */}
+      <div className="bg-[#f5f7fc] px-5 border-b border-[#e8e9ec]">
+        <div className="flex items-end pb-3 justify-between h-[60px]">
+          <h3 className="font-bold text-[18px] text-[#1a1a1a] m-0">
+            거래 완료 리뷰작성
+            <span className="ml-2 text-[15px] text-[#0064ff] font-bold">{items.length}건</span>
+          </h3>
+          <button
+            type="button"
+            onClick={onMore}
+            className="bg-transparent border-none cursor-pointer flex items-center gap-1 text-[14px] text-[#969696] shrink-0"
+          >
+            더보기 <ChevronRight size={14} className="text-[#969696]" />
+          </button>
+        </div>
+      </div>
+
+      {/* 리스트 영역 */}
+      <div className="px-5 pb-5 min-h-[122px]">
+      <div className="divide-y divide-[#e8e9ec]">
+        {preview.map((item) => {
+          const type = REVIEW_DEAL_TYPE[item.dealType] ?? { label: item.dealType, cls: "badge-gray" };
+          return (
+            <div key={item.id} className="flex items-center gap-3 py-3.5">
+              <span className={`badge ${type.cls} shrink-0`} style={{ borderRadius: 5, fontSize: 12 }}>
+                {type.label}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[15px] font-bold text-[#1a1a1a] m-0 truncate">{item.title}</p>
+                <p className="text-[13px] text-[#969696] m-0 mt-0.5">
+                  {item.partyLabel} {item.partyName} · {fmtDate(item.completedDate)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onWrite(item)}
+                className="btn btn-sm btn-primary shrink-0"
+              >
+                리뷰작성
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {items.length > 3 && (
+        <button
+          type="button"
+          onClick={onMore}
+          className="w-full pt-3 text-[14px] text-[#969696] border-t border-[#e8e9ec] hover:text-[#0064ff] transition-colors"
+        >
+          {items.length - 3}건 더 보기
+        </button>
+      )}
+      </div>
+    </div>
+  );
+}
+
+function ActiveChatPanel({ rooms, onOpenChat, onMore }) {
+  return (
+    <div className="bg-white rounded-[15px] shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-[#e4e9f2] overflow-hidden">
+      {/* 헤더 배경 영역 */}
+      <div className="bg-[#f5f7fc] px-5 border-b border-[#e8e9ec]">
+        <div className="flex items-end pb-3 justify-between h-[60px]">
+          <h3 className="font-bold text-[18px] text-[#1a1a1a] m-0">
+            진행중인 채팅
+            {rooms.length > 0 && (
+              <span className="ml-2 text-[15px] text-[#0064ff] font-bold">{rooms.length}건</span>
+            )}
+          </h3>
+          <button
+            type="button"
+            onClick={onMore}
+            className="bg-transparent border-none cursor-pointer flex items-center gap-1 text-[14px] text-[#969696] shrink-0"
+          >
+            더보기 <ChevronRight size={14} className="text-[#969696]" />
+          </button>
+        </div>
+      </div>
+
+      {/* 리스트 영역 */}
+      <div className="px-5 pb-5 min-h-[122px]">
+      {rooms.length === 0 ? (
+        <div className="flex items-center justify-center py-10">
+          <p className="text-[15px] text-[#969696] m-0">진행중인 채팅이 없습니다.</p>
+        </div>
+      ) : (
+        <div className="divide-y divide-[#e8e9ec]">
+          {rooms.map((room) => (
+            <div
+              key={room.roomId}
+              onClick={() => onOpenChat?.(room)}
+              className="flex items-center gap-3 py-3.5 cursor-pointer hover:opacity-70 transition-opacity"
+            >
+              <div className="relative shrink-0">
+                <div className="size-[36px] rounded-full bg-[#e6f0ff] flex items-center justify-center text-[#0064ff] font-bold text-[15px]">
+                  {room.counterpartNickname?.[0] ?? "?"}
+                </div>
+                {room.unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-0.5 rounded-full bg-[#e63946] text-white text-[10px] font-bold flex items-center justify-center">
+                    {room.unreadCount > 99 ? "99+" : room.unreadCount}
+                  </span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[15px] font-bold text-[#1a1a1a] m-0 truncate">{room.productName}</p>
+                <p className="text-[13px] text-[#969696] m-0 mt-0.5 truncate">{room.lastMessage}</p>
+              </div>
+              <span className="text-[13px] text-[#b0aea8] shrink-0">{room.latestMessageAt}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      </div>
+    </div>
+  );
+}
+
 export default function MyPageDashboard({
   user,
   isProviderApproved,
@@ -156,6 +355,7 @@ export default function MyPageDashboard({
   const navigate = useNavigate();
   const nickname = user?.nickname || "고객";
   const email = user?.email || "";
+  const profileQuery = useMemberProfile();
 
   // 관심상품 실데이터 — 최대 3건만 미리보기
   const wishQuery = useQuery({
@@ -175,56 +375,161 @@ export default function MyPageDashboard({
     section: "active-auctions",
   }));
 
+  const nav = (section) => () => navigate(`/user/mypage?section=${section}`);
+
+  // ── 실데이터 조회 ──────────────────────────────────────────────────────────
+
+  // 포인트 잔액
+  const { data: pointBalance } = usePointBalance({ enabled: !!user });
+
+  // 알림 목록 — MY홈 패널에는 안읽은 것만 표시
+  const { data: allNotifications = [] } = useNotifications({ enabled: !!user });
+  const unreadNotifications = allNotifications.filter((n) => !n.read);
+
+  // 경매 입찰 전체 이력 (구매자)
+  const { data: bidHistory = [] } = useQuery({
+    queryKey: ["bids", "my"],
+    queryFn: getMyBidHistory,
+    select: (res) => res.data ?? [],
+    enabled: !!user,
+  });
+  const activeAuctionCnt = new Set(
+    bidHistory
+      .filter((b) => b.auctionStatusCode === "AUCC0002" && (b.displayStatus === "HIGHEST" || b.displayStatus === "OUTBID"))
+      .map((b) => b.aucSn)
+  ).size;
+  const wonCnt = new Set(bidHistory.filter((b) => b.displayStatus === "WON").map((b) => b.aucSn)).size;
+
+  // 구매 건수 — 상품 구매내역 페이지(TradeHistory fixedRole=BUYER)와 동일한 기준
+  const { data: allTradeItems = [] } = useQuery({
+    queryKey: ["trades", "my", "all"],
+    queryFn: async () => {
+      const res = await getTradeHistory({});
+      return getTradeListItems(res).map(toTradeHistoryItem);
+    },
+    enabled: !!user,
+  });
+  const purchaseCnt = allTradeItems.filter((t) => t.type === "BUYER").length;
+
+  // 서비스 요청 전체 건수 (구매자 입찰)
+  const { data: svcReqAll } = useQuery({
+    queryKey: ["serviceRequests", "me", "total"],
+    queryFn: () => getMyServiceRequests(1, 1),
+    select: (res) => res.data,
+    enabled: !!user,
+  });
+  const svcBidCnt = svcReqAll?.totalCount ?? 0;
+
+  // 서비스 요청 완료 건수
+  const { data: svcReqClosed } = useQuery({
+    queryKey: ["serviceRequests", "me", "closed"],
+    queryFn: () => getMyServiceRequests(1, 1, "CLOSED"),
+    select: (res) => res.data,
+    enabled: !!user,
+  });
+  const svcClosedCnt = svcReqClosed?.totalCount ?? 0;
+
+  // 견적 목록 건수 (제공자 판매)
+  const { data: quotePage } = useQuery({
+    queryKey: ["quotes", "my", { page: 1, size: 1 }],
+    queryFn: () => getMyQuotes({ page: 1, size: 1 }),
+    select: (res) => res.data,
+    enabled: !!user,
+  });
+  const svcSaleCnt = quotePage?.totalCount ?? 0;
+
+  // 경매 판매 건수 (진행 중 상태)
+  const { data: auctionActiveSummary } = useQuery({
+    queryKey: ["products", "my", 1, 1, "ACTIVE"],
+    queryFn: () => getMyProducts(1, 1, "ACTIVE"),
+    select: (res) => res.data,
+    enabled: !!user,
+  });
+  const auctionSaleCnt = auctionActiveSummary?.total ?? 0;
+
+  // 진행중인 채팅방 (ACTIVE 상태만)
+  const { data: activeChatRooms = [] } = useQuery({
+    queryKey: ["chatRooms", "active"],
+    queryFn: async () => {
+      const res = await getTradeChatRooms();
+      return toTradeChatRooms(res).filter((r) => r.roomStatus === "ACTIVE").slice(0, 3);
+    },
+    enabled: !!user,
+  });
+
+  // 미작성 리뷰 목록
+  const { data: writableReviews = [] } = useQuery({
+    queryKey: ["reviews", "writable"],
+    queryFn: getWritableReviews,
+    select: (res) => res.data ?? [],
+    enabled: !!user,
+  });
+
+  const fmtP = (n) => (n != null ? Number(n).toLocaleString() : "...");
+
+  // ── 통계 카드 ──────────────────────────────────────────────────────────────
+
+  const subBtn = "text-white/70 hover:text-white underline underline-offset-2 transition-colors";
+
   const statCards = [
     {
       key: "point",
       color: "#776bf8",
       icon: assets.iconPoint,
       label: "포인트 잔액",
-      value: "250,000",
-      unit: "",
-      meta: "거래가능 240,000   ㅣ   홀딩 10,000",
-      onMore: () => navigate("/user/mypage?section=wallet"),
+      value: fmtP(pointBalance?.total),
+      unit: "P",
+      meta: pointBalance
+        ? `사용가능 ${fmtP(pointBalance.available)}P   ㅣ   환전가능 ${fmtP(pointBalance.settleable)}P`
+        : "조회 중...",
+      onMore: nav("wallet"),
     },
     {
       key: "auction",
-      color: "#0064ff",
+      color: "#3B4DE3",
       icon: assets.iconAction,
       label: "경매 거래",
-      value: "21",
+      value: String(purchaseCnt),
       unit: "건",
-      meta: "입찰중 10건   ㅣ   진행중 9건   ㅣ   완료 2건",
-      // 경매 거래 카드의 + 버튼은 구매 거래가 표시되는 입찰 내역을 연다.
-      onMore: onOpenAuctionBids,
+      meta: (
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <button type="button" onClick={nav("active-auctions")} className={subBtn}>진행중 {activeAuctionCnt}건</button>
+          <span className="text-white/70">ㅣ</span>
+          <button type="button" onClick={nav("auction-bids")}    className={subBtn}>구매 {purchaseCnt}건</button>
+          <span className="text-white/70">ㅣ</span>
+          <button type="button" onClick={nav("auction-sales")}   className={subBtn}>판매 {auctionSaleCnt}건</button>
+        </span>
+      ),
+      onMore: nav("active-auctions"),
     },
     {
       key: "service",
-      color: "#005eb5",
+      color: "#0CB8BB",
       icon: assets.iconService,
       label: "서비스 거래",
-      value: "3",
+      value: String(svcBidCnt + svcSaleCnt),
       unit: "건",
-      meta: "등록 견적 1건   ㅣ   진행중 2건   ㅣ   완료 0건",
-      onMore: onOpenAuctionBids,
+      meta: (
+        <span className="flex items-center gap-x-2">
+          <button type="button" onClick={nav("service-bids")}  className={subBtn}>입찰 {svcBidCnt}건</button>
+          <span className="text-white/70">ㅣ</span>
+          <button type="button" onClick={nav("service-sales")} className={subBtn}>판매 {svcSaleCnt}건</button>
+        </span>
+      ),
+      onMore: nav("service-bids"),
     },
     {
       key: "done",
       color: "#e63946",
       icon: assets.iconEnd2,
       label: "거래 완료",
-      value: "5",
+      value: String(wonCnt + svcClosedCnt),
       unit: "건",
       meta: (
-        <span className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={onOpenAuctionBids}
-            className="text-white/70 hover:text-white underline underline-offset-2 transition-colors"
-          >
-            경매 2건
-          </button>
+        <span className="flex items-center gap-x-2">
+          <button type="button" onClick={nav("auction-bids")}  className={subBtn}>경매 {wonCnt}건</button>
           <span className="text-white/70">ㅣ</span>
-          <span className="text-white/70">서비스 3건</span>
+          <button type="button" onClick={nav("service-sales")} className={subBtn}>서비스 {svcClosedCnt}건</button>
         </span>
       ),
       onMore: undefined,
@@ -237,10 +542,10 @@ export default function MyPageDashboard({
 
       {/* 프로필 헤더 + 알림 배너 */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-4 lg:grid lg:grid-cols-4 lg:gap-3 lg:items-end">
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="size-[64px] rounded-full overflow-hidden bg-[#e6f0ff] shrink-0">
-            {user?.profileImageUrl ? (
-              <img src={user.profileImageUrl} alt="" className="size-full object-cover" />
+        <div className="flex items-center gap-5 shrink-0">
+          <div className="size-[72px] rounded-full overflow-hidden bg-[#e6f0ff] shrink-0">
+            {(profileQuery.data?.profileImageUrl || user?.profileImageUrl) ? (
+              <img src={profileQuery.data?.profileImageUrl || user.profileImageUrl} alt="" className="size-full object-cover" />
             ) : (
               <img src={assets.profile} alt="" className="size-full object-cover" />
             )}
@@ -275,16 +580,20 @@ export default function MyPageDashboard({
         {/* 안읽은 알림 배너 */}
         <div className="ml-auto w-full md:w-[600px] md:flex-none lg:col-span-3 lg:ml-0 lg:w-full min-h-[45px] rounded-[25px] border border-[rgba(0,100,255,0.28)] bg-white flex items-center px-4 gap-2 overflow-hidden">
           <span className="flex items-center justify-center size-[18px] rounded-full bg-[#0064ff] text-white text-[13px] font-bold shrink-0">
-            3
+            {unreadNotifications.length}
           </span>
           <span className="font-bold text-[#404040] shrink-0 mr-4">안읽은 알림</span>
-          <div className="flex-1 min-w-0 hidden sm:flex items-center gap-3 overflow-hidden ">
-            {NOTICES.map((notice) => (
-              <span key={notice} className=" text-[14px] text-[#404040] flex items-center gap-1 shrink-0 truncate">
-                <span className="text-[7px]">▶</span>
-                {notice}
-              </span>
-            ))}
+          <div className="flex-1 min-w-0 hidden sm:flex items-center gap-3 overflow-hidden">
+            {unreadNotifications.length === 0 ? (
+              <span className="text-[14px] text-[#969696]">새 알림이 없습니다.</span>
+            ) : (
+              unreadNotifications.slice(0, 5).map((n) => (
+                <span key={n.id} className="text-[14px] text-[#404040] flex items-center gap-1 shrink-0 truncate">
+                  <span className="text-[7px]">▶</span>
+                  {n.title}
+                </span>
+              ))
+            )}
           </div>
           <button
             type="button"
@@ -297,30 +606,32 @@ export default function MyPageDashboard({
       </div>
 
       {/* 통계 카드 4개 — 모바일: 4행 1열 / 태블릿: 2×2 / 데스크톱: 1행 4열 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {statCards.map(({ key, onMore, ...card }) => (
           <StatCard key={key} {...card} onMore={onMore} />
         ))}
       </div>
 
-      {/* 오늘 확인할 일 / 관심상품 */}
-      <div className="flex flex-col gap-8">
-        <ListPanel
-          title="오늘 확인할 일"
-          items={TODAY_ITEMS}
-          tabs={TODAY_TABS}
-          onTabClick={(section) => navigate(`/user/mypage?section=${section}`)}
-          onMore={() => navigate("/user/mypage?section=auction-bids")}
-          onItemMore={(section) => navigate(`/user/mypage?section=${section}`)}
+      {/* 알림 100% */}
+      <NotificationPanel
+        notifications={unreadNotifications}
+        onItemClick={(section) => navigate(`/user/mypage?section=${section}`)}
+        onMore={() => navigate("/user/notification")}
+      />
+      {/* 채팅 + 리뷰 2열 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+        <ActiveChatPanel
+          rooms={activeChatRooms}
+          onOpenChat={() => navigate("/user/mypage?section=chat")}
+          onMore={() => navigate("/user/mypage?section=chat")}
         />
-        <ListPanel
-          title="관심상품"
-          items={wishItems}
-          tabs={WISH_TABS}
-          onTabClick={(section) => navigate(`/user/mypage?section=${section}`)}
-          onMore={() => navigate("/user/mypage?section=wishlist")}
-          onItemMore={(section) => navigate(`/user/mypage?section=${section}`)}
-        />
+        {writableReviews.length > 0 && (
+          <ReviewablePanel
+            items={writableReviews}
+            onWrite={(item) => navigate(`/user/reviews/write/${item.id}`, { state: { item } })}
+            onMore={() => navigate("/user/mypage?section=review")}
+          />
+        )}
       </div>
     </div>
   );

@@ -17,10 +17,12 @@ import { useMyProviderApplications } from '@hooks/useProviderApplications';
 import { useMarkRead, useNotifications } from '@hooks/useNotification';
 import { useNotificationStream } from '@hooks/useNotificationStream';
 import { usePointBalance } from '@hooks/usePoint';
+import { usePublicNoticeList } from '@hooks/usePublicNotices';
 import relativeTime from '@utils/relativeTime';
 import { requestPointExchange } from '@api/pointApi';
 import { SITE_HEADER_VISIBILITY_EVENT } from '@/constants/layoutEvents';
 import { SITE_HEADER_SEARCH_SLOT_ID } from '@components/common/HeaderSearchPortal';
+import HeaderCreateAction from '@components/common/HeaderCreateAction';
 import ScrollToTopButton from '@components/common/ScrollToTopButton';
 import NotificationDetailModal from '@pages/user/notification/components/NotificationDetailModal';
 import PointChargeWidgetModal from '@pages/user/point/components/PointChargeWidgetModal';
@@ -31,14 +33,6 @@ import walletIcon from '@assets/img/walletIcon.png';
 import userIcon from '@assets/img/userIcon.png';
 import micIcon from '@assets/img/micIcon.png';
 
-// 스크롤해서 상단 공지 띠(NoticeStrip)가 화면 밖으로 나가면, 헤더 중앙에 같은 문구를
-// 연한 그레이 색상으로 자동 롤링(교체)해서 계속 보여준다.
-// TODO: 실제 공지 API가 붙으면 이 배열을 공지 목록 조회 결과로 교체한다.
-const SITE_NOTICES = [
-  '[점검] 서비스 점검 안내 · 6월 22일 02:00~04:00 포인트 충전 및 환전 메뉴 점검',
-  '경매/서비스 요청 시 실시간 알림을 받아보세요.',
-  '지금 회원가입하면 쿠폰을 드립니다.',
-];
 const NOTICE_ROTATE_MS = 3500;
 const NOTICE_SCROLL_THRESHOLD = 48; // NoticeStrip 높이 정도 스크롤하면 전환
 
@@ -60,9 +54,16 @@ const NOTI_PREVIEW_MAX = 5;
 const SiteHeader = () => {
   // isProvider·switchMode: 제공자 모드전환 실연동 (F-PROV-008, 담당자6 BJN, 2026-07-24)
   // — 종전 localStorage 가짜 플래그(@utils/providerMode) 대신 서버가 내려준 실제 역할 기준.
-  const { user, logout, isProvider, switchMode } = useAuth();
+  const {
+    user,
+    loading: authLoading,
+    logout,
+    isProvider,
+    switchMode,
+  } = useAuth();
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname } = location;
   const queryClient = useQueryClient();
 
   // 제공자 승인 여부 — 일반모드 로그인 상태일 때만 호출 (비로그인·이미 제공자 모드면 불필요)
@@ -70,6 +71,12 @@ const SiteHeader = () => {
     enabled: !!user && !isProvider,
   });
   const isProviderApproved = myProviderApps.some((app) => app.statusCode === 'PRVC0003');
+
+  // 공지사항 롤링 티커 — 비로그인 포함 모든 화면에서 표시
+  const { data: noticeData } = usePublicNoticeList({ page: 1, size: 5 });
+  const siteNotices = (noticeData?.items ?? []).map(
+    (n) => `[${n.typeName ?? '공지'}] ${n.title}`,
+  );
 
   // 알림·포인트 실데이터 — 로그인 상태일 때만 호출 (비로그인 401 방지)
   const notiQuery = useNotifications({ enabled: !!user });
@@ -112,6 +119,15 @@ const SiteHeader = () => {
   const isServiceSearchRoute = pathname === '/service'
     || /^\/service-requests\/\d+$/.test(pathname);
   const hasHeaderSearch = isAuctionSearchRoute || isServiceSearchRoute;
+  let headerCreateActionType = null;
+  const canShowCreateAction = !authLoading && (!user || user.role === 'ROLE_USER');
+  if (canShowCreateAction) {
+    if (isAuctionSearchRoute) {
+      headerCreateActionType = 'auction';
+    } else if (isServiceSearchRoute) {
+      headerCreateActionType = 'service';
+    }
+  }
 
   const utilRef = useRef(null);
   const navRef = useRef(null);
@@ -145,13 +161,14 @@ const SiteHeader = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 롤링 티커 자동 전환
+  // 롤링 티커 자동 전환 — siteNotices 길이 기준
   useEffect(() => {
+    if (siteNotices.length <= 1) return;
     const timer = setInterval(() => {
-      setNoticeIndex((i) => (i + 1) % SITE_NOTICES.length);
+      setNoticeIndex((i) => (i + 1) % siteNotices.length);
     }, NOTICE_ROTATE_MS);
     return () => clearInterval(timer);
-  }, []);
+  }, [siteNotices.length]);
 
   // 바깥을 클릭하면 열려 있던 팝업과 nav 드롭다운을 닫는다.
   useEffect(() => {
@@ -195,6 +212,22 @@ const SiteHeader = () => {
 
   // 한 팝업을 열면 나머지는 닫는다.
   const openOnly = (which) => {
+    // 담당자 7: 비회원은 알림·포인트 팝업을 열지 않고 로그인 후 현재 화면으로 돌아오게 한다.
+    if (which === 'noti' || which === 'point') {
+      if (authLoading) return;
+      if (!user) {
+        setNotiOpen(false);
+        setPointOpen(false);
+        setProfileOpen(false);
+        if (pathname === '/login') return;
+
+        const loginRedirectFrom = `${location.pathname}${location.search}${location.hash}`;
+        sessionStorage.setItem('loginRedirectFrom', loginRedirectFrom);
+        navigate('/login', { state: { from: location } });
+        return;
+      }
+    }
+
     setNotiOpen(which === 'noti' ? (v) => !v : false);
     setPointOpen(which === 'point' ? (v) => !v : false);
     setProfileOpen(which === 'profile' ? (v) => !v : false);
@@ -401,11 +434,15 @@ const SiteHeader = () => {
           style={{ opacity: scrolled ? 1 : 0 }}
         >
           <img src={micIcon} alt="" width={14} height={14} className="shrink-0 opacity-70" />
-          <span className="max-w-[420px] truncate">{SITE_NOTICES[noticeIndex]}</span>
+          <span className="max-w-[420px] truncate">
+            {siteNotices.length > 0
+              ? siteNotices[noticeIndex % siteNotices.length]
+              : '서비스 점검 안내'}
+          </span>
         </div>
 
         {/* 우측 유틸 영역 */}
-        <div ref={utilRef} className="flex items-center gap-3">
+        <div ref={utilRef} className="flex items-center gap-2 md:gap-3">
           {/* 알림 */}
           <div className="relative">
             <button
@@ -667,10 +704,12 @@ const SiteHeader = () => {
 
         <div
           className={hasHeaderSearch
-            ? 'absolute left-1/2 top-[92px] z-[1] w-[calc(100%-32px)] max-w-[548px] -translate-x-1/2 md:top-1/2 md:w-[min(38vw,548px)] md:-translate-y-1/2'
+            ? 'absolute left-1/2 top-[92px] z-[1] flex w-[calc(100%-32px)] max-w-[548px] -translate-x-1/2 items-center gap-2 md:top-1/2 md:w-[min(38vw,548px)] md:-translate-y-1/2'
             : 'hidden'}
-          id={SITE_HEADER_SEARCH_SLOT_ID}
-        />
+        >
+          <div className="min-w-0 flex-1" id={SITE_HEADER_SEARCH_SLOT_ID} />
+          <HeaderCreateAction type={headerCreateActionType} />
+        </div>
       </div>
 
       {/* 모바일 전체화면 메뉴 */}
