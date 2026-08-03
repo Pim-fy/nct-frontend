@@ -17,6 +17,10 @@ export const fetchActiveManualAbuseReportReferences = (
 export const submitCustomerReport = (data) =>
   api.post('/abuse-reports/customer', data).then((res) => res.data);
 
+/** 구매자 문의 신고 — targetType: 'INQUIRY', targetSn: prdCmtSn, reportContent */
+export const submitInquiryReport = (data) =>
+  api.post('/customer-support/reports', data).then((res) => res.data);
+
 /** F-COM-018: 내 신고 목록 (페이지네이션) — status: ABRC0005~0008 | FINISHED | null(전체) */
 export const getMyReports = (params) =>
   api.get('/abuse-reports/me', { params }).then((res) => res.data);
