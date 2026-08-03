@@ -25,8 +25,26 @@ const COLUMNS = [
   },
   { key: 'payMethod', header: '결제수단', cellClass: 'whitespace-nowrap text-gray-500', render: (r) => r.payMethod ?? '-' },
   { key: 'status', header: '상태', widthClass: 'min-w-[110px]', cellClass: 'whitespace-nowrap', render: (r) => badge(r.status) },
-  { key: 'failReason', header: '비고', cellClass: 'text-gray-500', render: (r) => r.failReason ?? '-' },
+  {
+    key: 'failReason', header: '비고', cellClass: 'max-w-[160px] truncate text-gray-500',
+    render: (r) => <span title={r.failReason}>{r.failReason ?? '-'}</span>,
+  },
 ];
+
+// 모바일 카드 한 장 — 배지+날짜 / 금액+결제수단 / 비고 순서로 배치 (2026-08-03)
+const renderCard = (r) => (
+  <>
+    <div className="flex items-center justify-between gap-2">
+      {badge(r.status)}
+      <span className="text-xs text-gray-400 whitespace-nowrap">{r.date}</span>
+    </div>
+    <div className="mt-1 flex items-baseline justify-between gap-2">
+      <span className="text-base font-bold text-gray-900">{r.amount.toLocaleString()}P</span>
+      <span className="text-xs text-gray-400 whitespace-nowrap">{r.payMethod ?? '-'}</span>
+    </div>
+    {r.failReason && <div className="mt-1 text-[13px] leading-snug text-gray-500">{r.failReason}</div>}
+  </>
+);
 
 // 완료(PCOC0002)·실패(PCOC0003)만 보여준다. 대기(PCOC0001)는 아직 결과가 안 나온 진행 중 건이라
 // 계속 쌓이면 목록만 어지럽히고, 취소(PCOC0004)는 실제로는 별도 사유가 있는 게 아니라 대기가
@@ -51,6 +69,7 @@ const PointChargeOrderTable = ({ rows, limit, onExpand, loading }) => {
       onExpand={limit ? onExpand : undefined}
       pageSize={limit ? undefined : 10}
       loading={loading}
+      renderCard={renderCard}
     />
   );
 };

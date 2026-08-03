@@ -29,10 +29,28 @@ const COLUMNS = [
   { key: 'status', header: '상태', widthClass: 'min-w-[110px]', cellClass: 'whitespace-nowrap', render: (r) => badge(r.status) },
   {
     // 반려면 사유, 처리됐으면 처리일, 둘 다 아니면(지급 대기) 안내 문구
-    key: 'note', header: '비고', cellClass: 'text-gray-500',
-    render: (r) => r.rejectReason ?? r.processedDate ?? '며칠 내 지급 예정',
+    key: 'note', header: '비고', cellClass: 'max-w-[160px] truncate text-gray-500',
+    render: (r) => {
+      const note = r.rejectReason ?? r.processedDate ?? '며칠 내 지급 예정';
+      return <span title={note}>{note}</span>;
+    },
   },
 ];
+
+// 모바일 카드 한 장 — 배지+날짜 / 금액+계좌 / 비고 순서로 배치 (2026-08-03)
+const renderCard = (r) => (
+  <>
+    <div className="flex items-center justify-between gap-2">
+      {badge(r.status)}
+      <span className="text-xs text-gray-400 whitespace-nowrap">{r.date}</span>
+    </div>
+    <div className="mt-1 flex items-baseline justify-between gap-2">
+      <span className="text-base font-bold text-gray-900">{r.amount.toLocaleString()}P</span>
+      <span className="text-xs text-gray-400 whitespace-nowrap">{r.bankName} {r.accountNo}</span>
+    </div>
+    <div className="mt-1 text-[13px] leading-snug text-gray-500">{r.rejectReason ?? r.processedDate ?? '며칠 내 지급 예정'}</div>
+  </>
+);
 
 /**
  * 환전 신청 이력 테이블 (F-PAY-012, D-026)
@@ -52,6 +70,7 @@ const PointExchangeOrderTable = ({ rows, limit, onExpand, loading }) => (
     onExpand={limit ? onExpand : undefined}
     pageSize={limit ? undefined : 10}
     loading={loading}
+    renderCard={renderCard}
   />
 );
 
