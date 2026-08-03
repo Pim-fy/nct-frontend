@@ -19,7 +19,7 @@ import { useNotificationStream } from '@hooks/useNotificationStream';
 import { usePointBalance } from '@hooks/usePoint';
 import { usePublicNoticeList } from '@hooks/usePublicNotices';
 import relativeTime from '@utils/relativeTime';
-import { requestPointExchange } from '@api/pointApi';
+import { requestPointExchange, convertPoint } from '@api/pointApi';
 import { SITE_HEADER_VISIBILITY_EVENT } from '@/constants/layoutEvents';
 import { SITE_HEADER_SEARCH_SLOT_ID } from '@components/common/HeaderSearchPortal';
 import HeaderCreateAction from '@components/common/HeaderCreateAction';
@@ -87,7 +87,7 @@ const SiteHeader = () => {
   // 헤더 POINT 드롭다운의 충전/환전 버튼 → 마이페이지로 이동하지 않고 이 자리에서 바로 모달을 띄운다
   // (종전엔 /user/mypage?section=wallet&action=... 로 이동시켜 페이지 도착 후 모달을 열었으나,
   // 사용자 요청으로 페이지 이동 없이 헤더에서 바로 처리하도록 변경, 2026-07-24)
-  const [pointModal, setPointModal] = useState(null); // null | 'charge' | 'exchange'
+  const [pointModal, setPointModal] = useState(null); // null | 'charge' | 'exchange' | 'convert'
   // 안읽은 알림: 배지 숫자와 드롭다운 목록의 공통 원천
   const unreadNotis = (notiQuery.data ?? []).filter((n) => !n.read);
   const notiCount = user ? unreadNotis.length : 0;
@@ -229,9 +229,43 @@ const SiteHeader = () => {
       }
     }
 
+    closeMobileMenu(); // 모바일 전체메뉴가 열려 있으면 알림·지갑·프로필을 열 때 같이 닫는다 (겹침 방지)
+
     setNotiOpen(which === 'noti' ? (v) => !v : false);
     setPointOpen(which === 'point' ? (v) => !v : false);
     setProfileOpen(which === 'profile' ? (v) => !v : false);
+  };
+
+  // 헤더 POINT 드롭다운의 전환 모달 제출 — PointWalletPage의 submitAmount('convert')와 같은 로직
+  const submitHeaderConvert = (amount) => {
+    if (!Number.isInteger(amount) || amount <= 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: '금액을 확인해 주세요',
+        text: '전환 금액은 1P 이상의 정수만 가능합니다.',
+        confirmButtonColor: '#0064ff',
+      });
+      return;
+    }
+    setPointModal(null);
+    convertPoint(amount)
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ['point'] });
+        Swal.fire({
+          icon: 'success',
+          title: '전환 완료',
+          text: '정산 가능 포인트가 사용 가능 포인트로 전환되었습니다.',
+          confirmButtonColor: '#0064ff',
+        });
+      })
+      .catch((err) => {
+        Swal.fire({
+          icon: 'error',
+          title: '전환 실패',
+          text: err?.response?.data?.message ?? '처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
+          confirmButtonColor: '#0064ff',
+        });
+      });
   };
 
   // 헤더 POINT 드롭다운의 환전 모달 제출 — PointWalletPage의 submitAmount('exchange')와 같은 로직
@@ -460,7 +494,9 @@ const SiteHeader = () => {
               )}
             </button>
             {notiOpen && (
-              <div className="absolute right-0 top-[calc(100%+12px)] w-[280px] rounded-[10px] border border-[#434343] bg-white p-4 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)] z-50">
+              <div
+                className={`z-50 rounded-[10px] border border-[#434343] bg-white p-4 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)] fixed left-1/2 w-[calc(100vw-32px)] max-w-[320px] -translate-x-1/2 ${hasHeaderSearch ? 'top-[166px]' : 'top-[94px]'} sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+12px)] sm:w-[280px] sm:max-w-none sm:translate-x-0`}
+              >
                 {/* 헤더 */}
                 <div className="flex items-center justify-between">
                   <span className="flex items-baseline gap-1.5">
@@ -523,7 +559,9 @@ const SiteHeader = () => {
               <img src={walletIcon} alt="" className="size-[18px]" />
             </button>
             {pointOpen && (
-              <div className="absolute right-0 top-[calc(100%+12px)] w-[230px] rounded-[10px] border border-[#434343] bg-white p-4 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)] z-50">
+              <div
+                className={`z-50 rounded-[10px] border border-[#434343] bg-white p-4 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)] fixed left-1/2 w-[calc(100vw-32px)] max-w-[320px] -translate-x-1/2 ${hasHeaderSearch ? 'top-[166px]' : 'top-[94px]'} sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+12px)] sm:w-[230px] sm:max-w-none sm:translate-x-0`}
+              >
                 {/* 헤더 */}
                 <div className="flex items-center justify-between">
                   <span className="text-[15px] font-bold text-black tracking-[-0.5px]">POINT</span>
@@ -546,6 +584,13 @@ const SiteHeader = () => {
                     onClick={() => { setPointOpen(false); setPointModal('charge'); }}
                   >
                     충전
+                  </button>
+                  <button
+                    type="button"
+                    className="h-[34px] flex-1 rounded-[6px] bg-[#d9d9d9] text-[14px] font-bold text-[#4e4e4e] hover:bg-[#cfcfcf] transition-colors"
+                    onClick={() => { setPointOpen(false); setPointModal('convert'); }}
+                  >
+                    전환
                   </button>
                   <button
                     type="button"
@@ -852,6 +897,15 @@ const SiteHeader = () => {
     {pointModal === 'charge' && (
       <PointChargeWidgetModal
         infoRow={{ label: '사용가능 포인트', value: `${(pointBalance.available ?? 0).toLocaleString()} P` }}
+        onClose={() => setPointModal(null)}
+      />
+    )}
+    {pointModal === 'convert' && (
+      <PointAmountModal
+        title="포인트 전환"
+        submitLabel="전환"
+        infoRow={{ label: '전환 가능 포인트', value: `${(pointBalance.settleable ?? 0).toLocaleString()} P` }}
+        onSubmit={submitHeaderConvert}
         onClose={() => setPointModal(null)}
       />
     )}
