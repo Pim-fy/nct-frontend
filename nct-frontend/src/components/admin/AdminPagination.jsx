@@ -1,14 +1,24 @@
 // src/components/admin/AdminPagination.jsx
-const AdminPagination = ({ page, totalPages, onPageChange }) => {
-  if (!totalPages || totalPages <= 1) return null;
-  return (
-    <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', margin: '20px 0' }}>
-      <button className="btn btn-ghost" onClick={() => onPageChange(Math.max(1, page - 1))} disabled={page <= 1}>이전</button>
-      {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-        <button key={p} className={`btn ${p === page ? 'btn-primary' : 'btn-ghost'}`} style={{ minWidth: '36px', padding: '6px 10px' }} onClick={() => onPageChange(p)}>{p}</button>
-      ))}
-      <button className="btn btn-ghost" onClick={() => onPageChange(Math.min(totalPages, page + 1))} disabled={page >= totalPages}>다음</button>
-    </div>
-  );
-};
+import Pagination from '@components/common/Pagination';
+import './AdminPagination.css';
+
+/** 담당자 7: 관리자 목록도 전역 공용 페이지네이션을 사용하고 관리자용 간격만 덧씌웁니다. */
+const AdminPagination = ({
+  page,
+  totalPages,
+  onPageChange,
+  className = '',
+  ariaLabel = '관리자 목록 페이지 이동',
+  disabled = false,
+}) => (
+  <Pagination
+    ariaLabel={ariaLabel}
+    className={`admin-pagination${className ? ` ${className}` : ''}`}
+    disabled={disabled}
+    maxVisiblePages={5}
+    onPageChange={onPageChange}
+    page={page}
+    totalPages={totalPages}
+  />
+);
 export default AdminPagination;

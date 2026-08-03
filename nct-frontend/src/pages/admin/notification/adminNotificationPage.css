@@ -21,3 +21,15 @@
 .admin-noti-card p { margin: 4px 0 0; font-size: 13px; color: #5b6486; }
 .admin-noti-card.is-clickable { cursor: pointer; }
 .admin-noti-card.is-clickable:hover { border-color: #2f5bff; background: #f0f4ff; }
+
+/* 담당자 7: 알림 로딩도 실제 그룹·카드 자리에서만 지연 노출합니다. */
+.admin-noti-grid--skeleton {
+  opacity: 0;
+  animation: admin-noti-skeleton-reveal 0s linear 250ms forwards;
+}
+
+.admin-noti-grid--skeleton .admin-noti-card { min-height: 64px; box-sizing: border-box; }
+
+@keyframes admin-noti-skeleton-reveal {
+  to { opacity: 1; }
+}

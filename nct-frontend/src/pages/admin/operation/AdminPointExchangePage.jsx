@@ -6,15 +6,18 @@ import {
   rejectAdminPointExchange,
 } from '@api/adminPointExchangeApi';
 import AdminModal from '@components/admin/AdminModal';
+import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
 import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
 import PageMeta from '@components/admin/PageMeta';
+import useClientPagination from '@hooks/useClientPagination';
 import '../audit/adminAuditPage.css';
 import './adminOperationPages.css';
 
 const formatAmount = (value) => `${Number(value ?? 0).toLocaleString('ko-KR')}P`;
+const PAGE_SIZE = 20;
 
 const maskAccount = (value) => {
   const normalized = String(value ?? '').replace(/\s/g, '');
@@ -54,6 +57,14 @@ const AdminPointExchangePage = () => {
       ordersQuery.refetch();
     },
   });
+  const orders = ordersQuery.data ?? [];
+  const {
+    page,
+    pagedItems: pagedOrders,
+    setPage,
+    totalItems,
+    totalPages,
+  } = useClientPagination(orders, PAGE_SIZE);
 
   const columns = useMemo(() => [
     { key: 'id', label: '신청 번호', render: (value) => `#${value}` },
@@ -80,8 +91,7 @@ const AdminPointExchangePage = () => {
       render: (_, row) => (
         <button
           className="btn btn-primary admin-operation-table__action"
-          onClick={(event) => {
-            event.stopPropagation();
+          onClick={() => {
             setSelected(row);
             setReason('');
             setAccountRevealed(false);
@@ -116,7 +126,6 @@ const AdminPointExchangePage = () => {
       <MockupAdminPageHeader title="환전 관리" />
 
       {feedback && <p className="admin-operation-feedback" role="status">{feedback}</p>}
-      {ordersQuery.isLoading && <div className="admin-bjn-state">환전 신청을 불러오는 중입니다.</div>}
       {ordersQuery.isError && (
         <div className="admin-bjn-state is-error">
           환전 신청을 불러오지 못했습니다.
@@ -125,23 +134,26 @@ const AdminPointExchangePage = () => {
           </button>
         </div>
       )}
-      {!ordersQuery.isLoading && !ordersQuery.isError && (
+      {!ordersQuery.isError && (
         <AdminSectionCard
-          action={<span>지급 대기 {(ordersQuery.data ?? []).length}건</span>}
+          action={!ordersQuery.isLoading && <span>지급 대기 {totalItems}건</span>}
           title="환전 지급 대기"
         >
           <div className="admin-bjn-table-scroll">
             <AdminTable
               columns={columns}
-              data={ordersQuery.data ?? []}
-              onRowClick={(row) => {
-                setSelected(row);
-                setReason('');
-                setAccountRevealed(false);
-                setTransferConfirmed(false);
-              }}
+              data={pagedOrders}
+              loading={ordersQuery.isLoading}
+              rowKey={(row) => row.id}
             />
           </div>
+          <AdminPagination
+            ariaLabel="환전 신청 목록 페이지 이동"
+            disabled={ordersQuery.isFetching}
+            onPageChange={setPage}
+            page={page}
+            totalPages={totalPages}
+          />
         </AdminSectionCard>
       )}
 

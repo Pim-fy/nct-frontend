@@ -132,7 +132,14 @@
   border-radius: 7px;
   background: linear-gradient(90deg, #f2f4f7 25%, #e4e7ec 50%, #f2f4f7 75%);
   background-size: 200% 100%;
-  animation: admin-dashboard-shimmer 1.2s infinite;
+  opacity: 0;
+  animation:
+    admin-dashboard-skeleton-reveal 0s linear 250ms forwards,
+    admin-dashboard-shimmer 1.2s 250ms infinite;
+}
+
+@keyframes admin-dashboard-skeleton-reveal {
+  to { opacity: 1; }
 }
 
 .admin-dashboard__content {

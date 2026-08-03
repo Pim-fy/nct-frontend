@@ -70,6 +70,31 @@
 .faq-item__answer > span { background: #0064ff; color: #fff; }
 .faq-item__answer p { margin: 4px 0 0; color: #475467; line-height: 1.75; white-space: pre-wrap; }
 
+/* 담당자 7: FAQ 로딩도 실제 질문 행과 같은 배지·제목·화살표 배치로 표시합니다. */
+.faq-list--skeleton {
+  opacity: 0;
+  animation: public-notice-skeleton-reveal 0s linear 250ms forwards;
+}
+
+.faq-item--skeleton {
+  display: grid;
+  min-height: 76px;
+  box-sizing: border-box;
+  grid-template-columns: 34px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 22px;
+}
+
+.faq-item--skeleton:hover {
+  border-color: #e1e6ef;
+  transform: none;
+}
+
+.faq-item--skeleton > span:nth-child(2) { min-width: 0; }
+
+.public-notice-list-toolbar--loading,
+.public-notice-skeleton,
 .public-notice-detail-skeleton {
   --notice-skeleton-base: #f0f2f5;
   --notice-skeleton-highlight: #fafafa;
@@ -78,6 +103,26 @@
   animation: public-notice-skeleton-reveal 0s linear 250ms forwards;
 }
 
+.public-notice-skeleton {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  gap: 12px;
+}
+
+.public-notice-skeleton__search {
+  display: flex;
+  width: clamp(320px, 40%, 440px);
+  min-width: 0;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.public-notice-skeleton__summary,
+.public-notice-skeleton__search span,
+.public-notice-skeleton__row span,
 .public-notice-detail-skeleton__back,
 .public-notice-detail-skeleton__header span,
 .public-notice-detail-skeleton__header strong,
@@ -93,6 +138,66 @@
   background-size: 220% 100%;
   animation: public-notice-skeleton-shimmer 1.25s ease-in-out infinite;
 }
+
+.public-notice-skeleton__summary {
+  display: block;
+  width: 120px;
+  max-width: 100%;
+  height: 18px;
+  flex: 0 1 120px;
+}
+
+.public-notice-skeleton__search span {
+  display: block;
+  min-width: 0;
+  height: 42px;
+  box-sizing: border-box;
+}
+
+.public-notice-skeleton__search span:first-child { flex: 1 1 auto; }
+.public-notice-skeleton__search span:last-child { width: 68px; flex: 0 0 68px; }
+
+.public-notice-skeleton__table {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid #f0efec;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.public-notice-skeleton__row {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  grid-template-columns: 74px 92px minmax(0, 1fr) 124px 64px;
+  align-items: center;
+  min-height: 62px;
+  border-top: 1px solid #f0efec;
+}
+
+.public-notice-skeleton__row--head {
+  min-height: 42px;
+  border-top: 0;
+  background: #fafaf8;
+}
+
+.public-notice-skeleton__row span {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  height: 12px;
+  box-sizing: border-box;
+  margin: 0;
+}
+.public-notice-skeleton__row span:nth-child(1) { width: 42px; justify-self: center; }
+.public-notice-skeleton__row span:nth-child(2) { width: 58px; justify-self: center; }
+.public-notice-skeleton__row span:nth-child(3) { width: calc(100% - 24px); justify-self: center; }
+.public-notice-skeleton__row span:nth-child(4) { width: 86px; justify-self: center; }
+.public-notice-skeleton__row span:nth-child(5) { width: 38px; justify-self: center; }
 
 .public-notice-detail-skeleton {
   display: grid;
@@ -180,9 +285,24 @@
   .public-notice-search .btn {
     flex: 1;
   }
+  .public-notice-skeleton__summary { width: 120px; flex-basis: 120px; }
+  .public-notice-skeleton__search { width: 100%; flex-wrap: wrap; }
+  .public-notice-skeleton__search span:first-child { flex-basis: 100%; }
+  .public-notice-skeleton__search span:last-child { width: 100%; flex: 1 1 100%; }
+  .public-notice-skeleton__row {
+    grid-template-columns: 70px minmax(0, 1fr) 112px;
+    min-height: 46px;
+  }
+  .public-notice-skeleton__row--head { display: none; }
+  .public-notice-skeleton__row span:nth-child(1) { grid-column: 1; }
+  .public-notice-skeleton__row span:nth-child(2),
+  .public-notice-skeleton__row span:nth-child(5) { display: none; }
+  .public-notice-skeleton__row span:nth-child(3) { grid-column: 2; }
+  .public-notice-skeleton__row span:nth-child(4) { display: block; grid-column: 3; }
   .public-notice-detail-skeleton__header,
   .public-notice-detail-skeleton__content { padding: 20px; }
   .public-notice-detail-skeleton__header strong { width: 100%; }
   .faq-item summary,
   .faq-item__answer { padding: 16px; }
+  .faq-item--skeleton { padding: 16px; }
 }
