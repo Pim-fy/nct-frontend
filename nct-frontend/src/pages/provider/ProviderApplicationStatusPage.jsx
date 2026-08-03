@@ -67,10 +67,10 @@ const ProviderApplicationStatusPage = () => {
   return (
     <ContentPageShell className="provider-apply-page">
       <PageMeta title="제공자 신청 상태" />
-      <ContentPageHeader
-        description="카테고리별 제공자 권한 신청 결과를 백엔드 데이터 기준으로 보여줍니다."
-        title="제공자 신청 상태"
-      />
+      <section className="provider-apply-hero">
+        <ContentPageHeader title="제공자 신청 상태" />
+        <p>카테고리별 심사 진행 상황과 승인·반려 결과를 한눈에 확인하세요.</p>
+      </section>
 
       <section className={`provider-status-preview ${tone(latest.statusCode)}`}>
         <span>최근 신청 상태</span>

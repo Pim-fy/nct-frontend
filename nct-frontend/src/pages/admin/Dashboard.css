@@ -206,6 +206,16 @@
   color: #d97706;
 }
 
+.admin-dashboard-action__icon--blue {
+  background: #eaf2ff;
+  color: #2563eb;
+}
+
+.admin-dashboard-action__icon--indigo {
+  background: #eef0ff;
+  color: #4f46e5;
+}
+
 .admin-dashboard-action__icon--purple {
   background: #f5edff;
   color: #7c3aed;
@@ -243,7 +253,7 @@
 
 .admin-dashboard-shortcuts {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -325,16 +335,28 @@
   .admin-dashboard__summary {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .admin-dashboard-shortcuts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 900px) {
   .admin-dashboard__content {
     grid-template-columns: 1fr;
   }
+
+  .admin-dashboard-shortcuts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 720px) {
   .admin-dashboard__summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-dashboard-shortcuts {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

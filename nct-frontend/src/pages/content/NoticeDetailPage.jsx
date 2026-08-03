@@ -6,6 +6,7 @@ import {
   NoticeDetail,
 } from '@components/content/ContentUi';
 import { usePublicNoticeDetail } from '@hooks/usePublicNotices';
+import './noticePage.css';
 
 const NoticeDetailSkeleton = () => (
   <article className="content-page notice-detail public-notice-detail-skeleton" aria-label="공지사항 상세를 불러오는 중">

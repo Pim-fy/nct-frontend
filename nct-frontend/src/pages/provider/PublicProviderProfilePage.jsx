@@ -13,6 +13,7 @@ import {
 import ReportModal from '@components/common/ReportModal';
 import ProfileSkeleton from '@components/skeleton/ProfileSkeleton';
 import { usePublicProviderProfile } from '@hooks/useServiceDiscovery';
+import './publicProviderProfilePage.css';
 
 /** 담당자 7 · F-COM-002/F-COM-015: 공개 제공자 프로필 조회와 공통 신고 모달 진입을 연결합니다. */
 const PublicProviderProfilePage = () => {

@@ -109,6 +109,7 @@ export default function ProductRegisterPage() {
     prdIbyAmt: '',
     startNow: true,
     bidUnit: 1000,
+    tradeRegions: [], // 직거래(TRDC0010)·둘 다 가능(TRDC0020) 희망 거래지역, 최대 5곳 — [{code, name}]
   });
 
   // 폼·이미지·설명이 바뀔 때마다 모듈 캐시에 동기화 — 뒤로가기로 돌아왔을 때 복원할 원본
@@ -146,6 +147,7 @@ export default function ProductRegisterPage() {
               prdStartAmt:    p.prdStartAmt != null ? String(p.prdStartAmt) : '',
               prdIbyAmt:      p.prdIbyAmt  != null ? String(p.prdIbyAmt)  : '',
               bidUnit:        p.prdDraftBidUnit != null ? Number(p.prdDraftBidUnit) : prev.bidUnit,
+              tradeRegions:   p.tradeRegions ?? prev.tradeRegions,
               startNow:       p.prdDraftStartNowYn === 'Y' ? true
                             : p.prdDraftStartNowYn === 'N' ? false
                             : (p.prdDraftStartDt || p.prdDraftEndDt) ? false  // prdDraftStartNowYn 없는 이전 데이터 호환
@@ -153,10 +155,10 @@ export default function ProductRegisterPage() {
             }));
             if (p.prdDraftStartDt || p.prdDraftEndDt) {
               suppressRangeResetRef.current = true;
-              // 백엔드 LocalDateTime은 UTC 기준으로 저장되므로 'Z'를 붙여 UTC로 해석 후 로컬(KST) 시간으로 변환
+              // 백엔드는 오프셋 없는 로컬(KST) 시각 그대로 저장하므로 그대로 파싱한다 (toLocalIsoString과 짝)
               const splitDt = (iso) => {
                 if (!iso) return { date: '', time: '' };
-                const d = new Date(iso + 'Z');
+                const d = new Date(iso);
                 const pad = n => String(n).padStart(2, '0');
                 return {
                   date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
@@ -226,6 +228,26 @@ export default function ProductRegisterPage() {
 
   const set = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
 
+  // 서버(백엔드 LocalDateTime, 서버도 KST)로 보낼 때는 UTC로 변환하는 toISOString() 대신
+  // 화면에 보이는 시각 그대로(오프셋 없이) 보낸다 — toISOString()을 쓰면 백엔드가 오프셋을 무시하고
+  // 숫자만 그대로 읽어서(예: KST 12:00 → UTC 03:00 문자열 → LocalDateTime "03:00") 9시간 밀린 값이
+  // LocalDateTime.now()와 비교되어 이미 지난 시각으로 오판되는 문제가 있었다.
+  const toLocalIsoString = (date) => {
+    const pad = n => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  };
+
+  // 희망 거래지역 변경 — RegionSelector가 넘겨주는 선택 목록을 {code, name} 형태로 저장.
+  // 6곳째부터는 반영하지 않고 안내만 띄운다(해제는 계속 허용).
+  const MAX_TRADE_REGIONS = 5;
+  const handleTradeRegionsChange = (selections) => {
+    if (selections.length > MAX_TRADE_REGIONS) {
+      setAlertMsg(`희망 거래지역은 최대 ${MAX_TRADE_REGIONS}곳까지 선택할 수 있습니다.`);
+      return;
+    }
+    set('tradeRegions', selections.map(s => ({ code: s.code, name: s.label })));
+  };
+
   // ─── 종료일시 계산 ───────────────────────────────────────────────────────
   // 캘린더 직접 설정 > 예약 시작일 + 기간 > 즉시 시작 + 기간 순으로 우선 적용
   const calcEndDt = () => {
@@ -274,6 +296,12 @@ export default function ProductRegisterPage() {
         return;
       }
       const startDt = form.startNow ? new Date() : (auctionRange.start ? new Date(`${auctionRange.start}T${auctionRange.startTime || '00:00'}:00`) : new Date());
+      // 업로드하는 사이 시간이 흘러 작성 시작 시점엔 유효했던 예약 시작 시각이 이미 지나버렸을 수 있어
+      // endDt와 동일하게 실제 전송 직전(업로드 완료 후) 다시 한번 검증한다.
+      if (statusCd === 'PRDC0002' && !form.startNow && startDt.getTime() <= Date.now()) {
+        setAlertMsg('경매 시작 시각이 이미 지났습니다. 이전 단계에서 시작 시각을 다시 확인해 주세요.');
+        return;
+      }
       const payload = {
         catSn:          Number(form.catSn),
         prdNm:          form.prdNm.trim(),
@@ -285,12 +313,14 @@ export default function ProductRegisterPage() {
         // 수정 모드에서 새 이미지를 업로드하지 않으면 null → 백엔드에서 기존 이미지 유지
         flSnList:       uploadedImages.length > 0 ? uploadedImages.map(img => img.flSn) : null,
         // 임시저장이어도 값은 그대로 보낸다 — 백엔드가 prdStatusCd로 판단해 draft 보존 컬럼/AUCTION 중 알맞은 곳에 저장
-        aucStartDt:     startDt.toISOString(),
+        aucStartDt:     toLocalIsoString(startDt),
         startNow:       form.startNow,
-        aucEndDt:       endDt ? endDt.toISOString() : null,
+        aucEndDt:       endDt ? toLocalIsoString(endDt) : null,
         bidUnit:        form.bidUnit,
         // 임시저장일 때만 의미 있음 — 재개 시 등록확인 탭으로 바로 이동할지 판단하는 값
         policyAgreed:   policyAgreed,
+        // 직거래·둘 다 가능일 때만 의미 있음 — 그 외 거래방식이면 빈 배열
+        tradeRegions:   form.tradeRegions,
       };
       const result = editPrdSn
         ? await updateProduct(editPrdSn, payload)
@@ -346,6 +376,22 @@ export default function ProductRegisterPage() {
       auctionRangeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail('경매 기간을 지정해 주세요.');
     }
+    // 임시저장 재개 시 저장해뒀던 기간이 그대로 복원될 수 있어, 실제 등록으로 진행할 때(requirePolicyAgreed)만
+    // 이미 지난 날짜/시각인지 확인한다 — 임시저장은 지난 값이어도 그대로 보존하는 게 기존 정책이라 검사하지 않는다.
+    if (requirePolicyAgreed) {
+      const currentEndDt = calcEndDt();
+      if (currentEndDt && currentEndDt.getTime() <= Date.now()) {
+        auctionRangeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return fail('경매 종료 시각이 이미 지났습니다. 경매 기간을 다시 확인해 주세요.');
+      }
+      if (!form.startNow && auctionRange.start) {
+        const currentStartDt = new Date(`${auctionRange.start}T${auctionRange.startTime || '00:00'}:00`);
+        if (currentStartDt.getTime() <= Date.now()) {
+          auctionRangeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return fail('경매 시작 시각이 이미 지났습니다. 시작 시각을 다시 확인해 주세요.');
+        }
+      }
+    }
     if (Number(form.prdStartAmt) % form.bidUnit !== 0) {
       startAmtRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail(`시작가는 입찰 단위(${form.bidUnit.toLocaleString()}원)의 배수로 입력해 주세요.`);
@@ -375,7 +421,7 @@ export default function ProductRegisterPage() {
 
   return (
     <main className="container">
-<div className="page-title"><div><h1>{editPrdSn ? '경매 설정 완료' : '상품 등록'}</h1></div></div>
+<div className="page-title"><div><h1 style={{ fontWeight: 700 }}>{editPrdSn ? '경매 설정 완료' : '상품 등록'}</h1></div></div>
 
       {/* 스텝 인디케이터 */}
       <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 20 }}>
@@ -446,6 +492,7 @@ export default function ProductRegisterPage() {
                   prdNmRef={prdNmRef}
                   catRef={catRef}
                   tradeRef={tradeRef}
+                  onTradeRegionsChange={handleTradeRegionsChange}
                 />
               </div>
             </section>

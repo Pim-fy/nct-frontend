@@ -94,14 +94,14 @@ export const useAuth = () => {
       queryClient.setQueryData(['auth', 'user'], null);
       queryClient.clear();      // 앱 전체의 모든 쿼리 캐시를 지움.
 
-      // 인증이 필요한 페이지에서 로그아웃하면 랜딩으로, 그 외는 현재 페이지 유지
+      // 인증이 필요한 관리자 화면에서 로그아웃하면 로그인 화면으로, 그 외는 현재 페이지 유지
       // 로그아웃 시 접근 불가한 경로 목록을 배열로 정의함. 현재는 /admin뿐임.
       // 라우트가 많아지면 라우트 정의 쪽(routes/)에서 "보호된 경로" 목록을 따로 관리 고려.
       const restrictedPaths = ['/admin'];
       if (restrictedPaths.some((path) => currentPath.startsWith(path))) {   // .some: 배열 요소 중 하나라도 조건 만족 시 true 반환. Array.protorype.some()
-        // 랜딩 페이지로 이동.
+        // 담당자 7: 관리자 로그아웃 뒤 보호 라우트가 잠깐 로그인 화면을 거쳐 메인으로 이동하지 않도록 최종 목적지도 로그인으로 맞춘다.
         // window.location.href: 브라우저를 해당 주소로 강제 이동함. 페이지 전체 새로고침 방식이라 앱을 다시 로드함.
-        window.location.href = '/';
+        window.location.href = '/login';
       } else {
         window.location.href = currentPath; // 최근 경로로 이동.
       }
@@ -113,7 +113,7 @@ export const useAuth = () => {
       setConfig('user', {});
       queryClient.setQueryData(['auth', 'user'], null);
       queryClient.clear();
-      window.location.href = '/';     // 랜딩 페이지로 이동. 페이지 전체 새로고침 방식 -> 앱 다시 로드.
+      window.location.href = window.location.pathname.startsWith('/admin') ? '/login' : '/';
     },
   });
   // ==========================================
