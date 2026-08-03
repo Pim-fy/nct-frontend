@@ -64,6 +64,7 @@ export default function MyPageProfileEdit({ user }) {
   const [openDomains, setOpenDomains] = useState(new Set());
   const [saveAlertOpen, setSaveAlertOpen] = useState(false);
   const [profileSaveAlertOpen, setProfileSaveAlertOpen] = useState(false);
+  const [photoUploadAlertOpen, setPhotoUploadAlertOpen] = useState(false);
   const serverEvents = notifyQuery.data?.events ?? [];
   const notifyEvents = notifyEdits ?? serverEvents;
 
@@ -138,7 +139,7 @@ export default function MyPageProfileEdit({ user }) {
       const res = await uploadImage(file, "profile");
       setForm((prev) => ({ ...prev, profileFileSn: res.data.flSn }));
       setPreviewImageUrl(toImageUrl(res.data.url));
-      toast({ icon: "success", title: "사진이 업로드되었습니다. 저장을 눌러야 반영됩니다." });
+      setPhotoUploadAlertOpen(true);
     } catch (err) {
       const msg = err?.response?.data?.message || "사진 업로드에 실패했습니다.";
       toast({ icon: "error", title: msg });
@@ -639,6 +640,11 @@ export default function MyPageProfileEdit({ user }) {
         open={profileSaveAlertOpen}
         message="저장되었습니다."
         onClose={() => setProfileSaveAlertOpen(false)}
+      />
+      <AlertModal
+        open={photoUploadAlertOpen}
+        message={"사진이 업로드되었습니다.\n저장을 눌러야 반영됩니다."}
+        onClose={() => setPhotoUploadAlertOpen(false)}
       />
     </>
   );

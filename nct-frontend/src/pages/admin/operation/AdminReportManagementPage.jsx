@@ -7,11 +7,13 @@ import {
   getAdminReports,
 } from '@api/adminReportApi';
 import AdminModal from '@components/admin/AdminModal';
+import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
 import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
 import PageMeta from '@components/admin/PageMeta';
+import useClientPagination from '@hooks/useClientPagination';
 import '../audit/adminAuditPage.css';
 import './adminOperationPages.css';
 
@@ -30,6 +32,7 @@ const REPORT_STATUS = {
 };
 
 const formatDate = (value) => (value ? String(value).replace('T', ' ').slice(0, 16) : '-');
+const PAGE_SIZE = 20;
 const reportTypeName = (code) => REPORT_TYPE_NAMES[code] ?? code ?? '-';
 const reportStatus = (code) => REPORT_STATUS[code] ?? { label: code ?? '-', tone: 'neutral' };
 
@@ -77,6 +80,14 @@ const AdminReportManagementPage = () => {
       reportTypeName(report.reportTypeCode),
     ].join(' ').toLowerCase().includes(normalized));
   }, [keyword, reportsQuery.data]);
+  const {
+    page,
+    pagedItems: pagedReports,
+    resetPage,
+    setPage,
+    totalItems,
+    totalPages,
+  } = useClientPagination(rows, PAGE_SIZE);
 
   const columns = useMemo(() => [
     { key: 'reportSn', label: '신고 번호', render: (value) => `#${value}` },
@@ -111,8 +122,7 @@ const AdminReportManagementPage = () => {
       render: (_, row) => (
         <button
           className="btn btn-primary admin-operation-table__action"
-          onClick={(event) => {
-            event.stopPropagation();
+          onClick={() => {
             setSelectedReportSn(row.reportSn);
             setReason('');
           }}
@@ -147,7 +157,10 @@ const AdminReportManagementPage = () => {
           <span>
             <Search aria-hidden="true" />
             <input
-              onChange={(event) => setKeyword(event.target.value)}
+              onChange={(event) => {
+                setKeyword(event.target.value);
+                resetPage();
+              }}
               placeholder="신고 번호·회원 번호·내용"
               value={keyword}
             />
@@ -156,7 +169,6 @@ const AdminReportManagementPage = () => {
       </form>
 
       {feedback && <p className="admin-operation-feedback" role="status">{feedback}</p>}
-      {reportsQuery.isLoading && <div className="admin-bjn-state">신고 목록을 불러오는 중입니다.</div>}
       {reportsQuery.isError && (
         <div className="admin-bjn-state is-error">
           신고 목록을 불러오지 못했습니다.
@@ -165,21 +177,26 @@ const AdminReportManagementPage = () => {
           </button>
         </div>
       )}
-      {!reportsQuery.isLoading && !reportsQuery.isError && (
+      {!reportsQuery.isError && (
         <AdminSectionCard
-          action={<span>처리 대기 {rows.length}건</span>}
+          action={!reportsQuery.isLoading && <span>처리 대기 {totalItems}건</span>}
           title="접수·처리 중 신고"
         >
           <div className="admin-bjn-table-scroll">
             <AdminTable
               columns={columns}
-              data={rows}
-              onRowClick={(row) => {
-                setSelectedReportSn(row.reportSn);
-                setReason('');
-              }}
+              data={pagedReports}
+              loading={reportsQuery.isLoading}
+              rowKey={(row) => row.reportSn}
             />
           </div>
+          <AdminPagination
+            ariaLabel="신고 목록 페이지 이동"
+            disabled={reportsQuery.isFetching}
+            onPageChange={setPage}
+            page={page}
+            totalPages={totalPages}
+          />
         </AdminSectionCard>
       )}
 

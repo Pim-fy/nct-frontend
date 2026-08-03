@@ -13,6 +13,18 @@ import './noticePage.css';
 const FAQ_TYPE_CODE = 'NTCC0008';
 const PAGE_SIZE = 10;
 
+const FaqListSkeleton = () => (
+  <section className="faq-list faq-list--skeleton" aria-label="FAQ를 불러오는 중">
+    {Array.from({ length: 5 }).map((_, index) => (
+      <div className="faq-item faq-item--skeleton" key={index}>
+        <Skeleton borderRadius={10} height={34} width={34} />
+        <Skeleton height={18} width={`${72 - index * 7}%`} />
+        <Skeleton circle height={20} width={20} />
+      </div>
+    ))}
+  </section>
+);
+
 /** 담당자 7 | F-COM-013 확장: 질문을 열 때만 기존 공지 상세 API로 답변 본문을 읽는다. */
 const FaqItem = ({ faq }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -58,13 +70,7 @@ const FaqPage = () => {
         <p>궁금한 내용을 빠르게 확인해 보세요. 질문을 누르면 답변을 확인할 수 있습니다.</p>
       </header>
 
-      {faqQuery.isLoading && (
-        <section className="faq-list" aria-label="FAQ를 불러오는 중">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <Skeleton borderRadius={10} height={68} key={index} />
-          ))}
-        </section>
-      )}
+      {faqQuery.isLoading && <FaqListSkeleton />}
 
       {faqQuery.isError && (
         <ContentState
@@ -93,6 +99,7 @@ const FaqPage = () => {
 
       {faqPage?.totalPages > 1 && (
         <ContentPagination
+          ariaLabel="FAQ 페이지 이동"
           onChange={setPage}
           page={page}
           totalPages={faqPage.totalPages}

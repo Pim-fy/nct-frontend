@@ -4,9 +4,11 @@
 // 거래 분쟁 상세의 대상 채팅·첨부자료에서 실행하도록 연결한다.
 import { useMemo, useState } from 'react';
 import { Search, X } from 'lucide-react';
+import AdminPagination from '@components/admin/AdminPagination';
 import AdminTable from '@components/admin/AdminTable';
 import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
 import { useAuditLogs } from '@hooks/useAdminAudit';
+import useClientPagination from '@hooks/useClientPagination';
 import './adminAuditPage.css';
 
 // 감사 행위 유형 필터 옵션 — 공통코드 AUDG01(기초데이터 v3)과 일치해야 한다
@@ -20,6 +22,7 @@ const TYPE_OPTIONS = [
   { value: 'AUDC0006', label: '관리자반려' },
   { value: 'AUDC0007', label: '상태변경' },
 ];
+const PAGE_SIZE = 20;
 
 const auditDetails = (value) => {
   const raw = value?.trim() || '-';
@@ -52,6 +55,14 @@ const AdminAuditLogPage = () => {
   const [filters, setFilters] = useState({});
   const [selectedLog, setSelectedLog] = useState(null);
   const logsQuery = useAuditLogs(filters);
+  const logs = logsQuery.data ?? [];
+  const {
+    page,
+    pagedItems: pagedLogs,
+    resetPage,
+    setPage,
+    totalPages,
+  } = useClientPagination(logs, PAGE_SIZE);
 
   const submitSearch = (event) => {
     event.preventDefault();
@@ -60,10 +71,9 @@ const AdminAuditLogPage = () => {
     if (form.typeCd) next.typeCd = form.typeCd;
     if (form.from) next.from = form.from;
     if (form.to) next.to = form.to;
+    resetPage();
     setFilters(next);
   };
-
-  const logs = logsQuery.data ?? [];
 
   const columns = useMemo(() => [
     { key: 'date', label: '일시' },
@@ -139,12 +149,21 @@ const AdminAuditLogPage = () => {
         <div className="admin-bjn-table-scroll">
           <AdminTable
             columns={columns}
-            data={logs}
+            data={pagedLogs}
             emptyMessage="조건에 맞는 감사로그가 없습니다."
             loading={logsQuery.isLoading}
             rowKey={(log) => log.id}
           />
         </div>
+      )}
+      {!logsQuery.isError && (
+        <AdminPagination
+          ariaLabel="감사 로그 목록 페이지 이동"
+          disabled={logsQuery.isFetching}
+          onPageChange={setPage}
+          page={page}
+          totalPages={totalPages}
+        />
       )}
 
       {selectedLog && (

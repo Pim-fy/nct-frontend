@@ -55,8 +55,12 @@ export default function LoginPage() {
   const location  = useLocation();
   const { login } = useAuth();
 
-  // 로그인 성공 후 돌아갈 경로
-  const from = location.state?.from?.pathname
+  // 담당자 7: 헤더의 로그인 게이트에서 전달한 검색조건·해시까지 로그인 후 복원한다.
+  const returnLocation = location.state?.from;
+  const stateReturnPath = returnLocation?.pathname
+    ? `${returnLocation.pathname}${returnLocation.search ?? ''}${returnLocation.hash ?? ''}`
+    : null;
+  const from = stateReturnPath
     || sessionStorage.getItem('loginRedirectFrom')
     || '/';
 
@@ -112,6 +116,7 @@ export default function LoginPage() {
 
   // ── 소셜 로그인 ───────────────────────────────────────
   const handleSocialLogin = (provider) => {
+    sessionStorage.setItem('loginRedirectFrom', from);
     window.location.assign(provider.href());
   };
 

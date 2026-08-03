@@ -19,6 +19,7 @@ import { getTradeChatRooms } from "@api/tradeChatApi";
 import { toTradeChatRooms } from "@api/tradeChatAdapter";
 import { usePointBalance } from "@hooks/usePoint";
 import { useNotifications } from "@hooks/useNotification";
+import { useMemberProfile } from "@hooks/useMemberProfile";
 import relativeTime from "@utils/relativeTime";
 import { assets } from "@components/mypage/assets";
 import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
@@ -52,7 +53,7 @@ const DOMAIN_TO_SECTION = {
 
 function StatCard({ color, icon, label, value, unit, meta, onMore }) {
   return (
-    <div className="relative rounded-[10px] text-white p-5 md:mb-5 md:mt-5" style={{ backgroundColor: color }}>
+    <div className="relative rounded-[15px] text-white p-5 md:mb-5 md:mt-5 h-[150px] flex flex-col justify-center" style={{ backgroundColor: color }}>
       {onMore && (
         <button
           type="button"
@@ -125,7 +126,7 @@ function ListPanel({ title, items, tabs, onTabClick, onMore, onItemMore }) {
           {items.map((item, i) => (
             <div
               key={`${item.title}-${i}`}
-              className="border border-[rgba(0,0,0,0.08)] rounded-[10px] bg-white p-4 cursor-pointer hover:border-[rgba(0,100,255,0.3)] transition-colors"
+              className="border border-[rgba(0,0,0,0.08)] rounded-[15px] bg-white p-4 cursor-pointer hover:border-[rgba(0,100,255,0.3)] transition-colors"
               style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
               onClick={() => onItemMore?.(item.section)}
             >
@@ -159,7 +160,7 @@ function NotificationPanel({ notifications = [], onItemClick, onMore }) {
   });
 
   return (
-    <div className="bg-white rounded-[20px] shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-[#e4e9f2] overflow-hidden">
+    <div className="bg-white rounded-[15px] shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-[#e4e9f2] overflow-hidden">
       {/* 헤더 배경 영역 */}
       <div className="bg-[#f5f7fc] px-5 border-b border-[#e8e9ec]">
         <div className="flex items-end justify-between h-[60px] gap-4">
@@ -224,7 +225,7 @@ function ReviewablePanel({ items, onWrite, onMore }) {
   const preview = items.slice(0, 3);
 
   return (
-    <div className="bg-white rounded-[20px] shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-[#e4e9f2] overflow-hidden">
+    <div className="bg-white rounded-[15px] shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-[#e4e9f2] overflow-hidden">
       {/* 헤더 배경 영역 */}
       <div className="bg-[#f5f7fc] px-5 border-b border-[#e8e9ec]">
         <div className="flex items-end pb-3 justify-between h-[60px]">
@@ -286,7 +287,7 @@ function ReviewablePanel({ items, onWrite, onMore }) {
 
 function ActiveChatPanel({ rooms, onOpenChat, onMore }) {
   return (
-    <div className="bg-white rounded-[20px] shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-[#e4e9f2] overflow-hidden">
+    <div className="bg-white rounded-[15px] shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-[#e4e9f2] overflow-hidden">
       {/* 헤더 배경 영역 */}
       <div className="bg-[#f5f7fc] px-5 border-b border-[#e8e9ec]">
         <div className="flex items-end pb-3 justify-between h-[60px]">
@@ -354,6 +355,7 @@ export default function MyPageDashboard({
   const navigate = useNavigate();
   const nickname = user?.nickname || "고객";
   const email = user?.email || "";
+  const profileQuery = useMemberProfile();
 
   // 관심상품 실데이터 — 최대 3건만 미리보기
   const wishQuery = useQuery({
@@ -484,7 +486,7 @@ export default function MyPageDashboard({
     },
     {
       key: "auction",
-      color: "#0064ff",
+      color: "#3B4DE3",
       icon: assets.iconAction,
       label: "경매 거래",
       value: String(purchaseCnt),
@@ -502,7 +504,7 @@ export default function MyPageDashboard({
     },
     {
       key: "service",
-      color: "#005eb5",
+      color: "#0CB8BB",
       icon: assets.iconService,
       label: "서비스 거래",
       value: String(svcBidCnt + svcSaleCnt),
@@ -540,10 +542,10 @@ export default function MyPageDashboard({
 
       {/* 프로필 헤더 + 알림 배너 */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-4 lg:grid lg:grid-cols-4 lg:gap-3 lg:items-end">
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="size-[64px] rounded-full overflow-hidden bg-[#e6f0ff] shrink-0">
-            {user?.profileImageUrl ? (
-              <img src={user.profileImageUrl} alt="" className="size-full object-cover" />
+        <div className="flex items-center gap-5 shrink-0">
+          <div className="size-[72px] rounded-full overflow-hidden bg-[#e6f0ff] shrink-0">
+            {(profileQuery.data?.profileImageUrl || user?.profileImageUrl) ? (
+              <img src={profileQuery.data?.profileImageUrl || user.profileImageUrl} alt="" className="size-full object-cover" />
             ) : (
               <img src={assets.profile} alt="" className="size-full object-cover" />
             )}
@@ -604,7 +606,7 @@ export default function MyPageDashboard({
       </div>
 
       {/* 통계 카드 4개 — 모바일: 4행 1열 / 태블릿: 2×2 / 데스크톱: 1행 4열 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {statCards.map(({ key, onMore, ...card }) => (
           <StatCard key={key} {...card} onMore={onMore} />
         ))}

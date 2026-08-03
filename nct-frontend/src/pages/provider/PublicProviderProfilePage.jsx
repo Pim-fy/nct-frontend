@@ -10,16 +10,18 @@ import {
   PortfolioModal,
   ProviderProfile,
 } from '@components/service/ServiceUi';
+import ReportModal from '@components/common/ReportModal';
 import ProfileSkeleton from '@components/skeleton/ProfileSkeleton';
 import { usePublicProviderProfile } from '@hooks/useServiceDiscovery';
 
-/** F-COM-002: 실제 공개 계약으로 제공자 프로필과 포트폴리오를 조회합니다. */
+/** 담당자 7 · F-COM-002/F-COM-015: 공개 제공자 프로필 조회와 공통 신고 모달 진입을 연결합니다. */
 const PublicProviderProfilePage = () => {
   const { providerId: rawProviderId } = useParams();
   const providerId = Number(rawProviderId);
   const validProviderId = Number.isSafeInteger(providerId) && providerId > 0;
   const providerQuery = usePublicProviderProfile(providerId);
   const [activeTab, setActiveTab] = useState('reviews');
+  const [reportOpen, setReportOpen] = useState(false);
   const [selectedPortfolio, setSelectedPortfolio] = useState(null);
   const modalCloseRef = useRef(null);
   const previousFocusRef = useRef(null);
@@ -91,8 +93,19 @@ const PublicProviderProfilePage = () => {
       <ProviderProfile
         activeTab={activeTab}
         onOpenPortfolio={setSelectedPortfolio}
+        onReport={() => setReportOpen(true)}
         onTabChange={setActiveTab}
         provider={provider}
+      />
+
+      <ReportModal
+        contextLabel={`제공자: ${provider.name}`}
+        onClose={() => setReportOpen(false)}
+        open={reportOpen}
+        referenceSn={provider.id}
+        reportedUserSn={provider.id}
+        targetName={provider.name}
+        targetType="provider"
       />
 
       {selectedPortfolio && (
