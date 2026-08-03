@@ -59,7 +59,7 @@ export const WIZARD_STEPS = {
     type: 'form', next: 'mv_appliance',
     layout: 'row',
     fields: [
-      { key: '평수', type: 'text', placeholder: '예: 8평', required: true, requireDigit: true },
+      { key: '평수', type: 'text', placeholder: '예: 8평', required: true, requireDigit: true, tooltip: '평수를 모를땐 예상평수로 기입해주세요.' },
       { key: '거주 인원', type: 'text', placeholder: '예: 1명', required: true, requireDigit: true },
     ],
   },
@@ -85,21 +85,23 @@ export const WIZARD_STEPS = {
     title: '출발지·도착지',
     type: 'form', next: 'mv_date',
     fields: [
-      { key: '출발지 주소', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true },
-      { key: '출발지 층수', type: 'text', placeholder: '예: 3층' },
-      { key: '출발지 엘리베이터', type: 'choice', options: ['있음', '없음'] },
-      { key: '도착지 주소', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true },
-      { key: '도착지 층수', type: 'text', placeholder: '예: 5층' },
-      { key: '도착지 엘리베이터', type: 'choice', options: ['있음', '없음'] },
+      { key: '출발지 주소', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'origin_addr' },
+      { key: '출발지 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'origin_addr', wide: true, required: true },
+      { key: '출발지 층수', type: 'text', placeholder: '예: 3층', row: 'origin_floor', required: true },
+      { key: '출발지 엘리베이터', type: 'choice', options: ['있음', '없음'], row: 'origin_floor', required: true },
+      { key: '도착지 주소', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'dest_addr' },
+      { key: '도착지 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'dest_addr', wide: true, required: true },
+      { key: '도착지 층수', type: 'text', placeholder: '예: 5층', row: 'dest_floor', required: true },
+      { key: '도착지 엘리베이터', type: 'choice', options: ['있음', '없음'], row: 'dest_floor', required: true },
     ],
   },
   mv_date: {
     title: '이사 희망일',
     type: 'form', next: 'mv_extra',
     fields: [
-      { key: '희망일', type: 'date' },
-      { key: '날짜 협의', type: 'choice', options: ['협의 가능', '협의 불가'] },
-      { key: '시간대', type: 'choice', options: ['오전', '오후', '저녁', '협의 가능'] },
+      { key: '희망일', type: 'calendar', embed: ['날짜 협의', '시간대'], required: true },
+      { key: '날짜 협의', type: 'choice', options: ['협의 가능', '협의 불가'], required: true },
+      { key: '시간대', type: 'choice', options: ['오전', '오후', '저녁', '협의 가능'], required: true },
     ],
   },
   mv_extra: {
@@ -152,23 +154,26 @@ export const WIZARD_STEPS = {
     ],
   },
   cl_home_region: {
-    title: '지역', desc: '실제 화면에서는 주소 검색(주소 API)으로 입력받을 예정입니다.',
+    title: '지역',
     type: 'form', next: 'cl_home_size',
-    fields: [{ key: '지역', type: 'text', placeholder: '주소 검색 (주소 API 연동 예정)' }],
+    fields: [
+      { key: '지역', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'cl_home_addr' },
+      { key: '지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'cl_home_addr', wide: true, required: true },
+    ],
   },
   cl_home_size: {
     title: '공간 정보', type: 'form', next: 'cl_home_furniture',
     fields: [
-      { key: '평수', type: 'text', placeholder: '예: 24평' },
-      { key: '방 개수', type: 'text', placeholder: '예: 3개' },
-      { key: '화장실 개수', type: 'text', placeholder: '예: 2개' },
-      { key: '베란다 개수', type: 'text', placeholder: '예: 1개' },
+      { key: '평수', type: 'text', placeholder: '예: 24평', required: true, requireDigit: true, row: 'size_line1', wide: true },
+      { key: '방 개수', type: 'text', placeholder: '예: 3개', required: true, requireDigit: true, row: 'size_line1', wide: true },
+      { key: '화장실 개수', type: 'text', placeholder: '예: 2개', required: true, requireDigit: true, row: 'size_line2', wide: true },
+      { key: '베란다 개수', type: 'text', placeholder: '예: 1개', required: true, requireDigit: true, row: 'size_line2', wide: true },
     ],
   },
   cl_home_furniture: {
     title: '가구 항목 (복수 선택)', type: 'multi', next: 'cl_home_extra',
     options: [
-      { label: '의자' }, { label: '소파' }, { label: '책상' },
+      { label: '없음' }, { label: '의자' }, { label: '소파' }, { label: '책상' },
       { label: '매트리스' }, { label: '붙박이장' }, { label: '기타' },
     ],
   },
@@ -180,10 +185,10 @@ export const WIZARD_STEPS = {
     ],
   },
   cl_home_date: {
-    title: '청소 희망일', type: 'form', next: 'budget',
+    title: '희망일', type: 'form', next: 'budget',
     fields: [
-      { key: '희망일', type: 'date' },
-      { key: '날짜 협의', type: 'choice', options: ['협의 가능', '협의 불가'] },
+      { key: '희망일', type: 'calendar', embed: ['날짜 협의'], required: true },
+      { key: '날짜 협의', type: 'choice', options: ['협의 가능', '협의 불가'], required: true },
     ],
   },
 
@@ -215,22 +220,25 @@ export const WIZARD_STEPS = {
     ],
   },
   cl_biz_region: {
-    title: '지역', desc: '실제 화면에서는 주소 검색(주소 API)으로 입력받을 예정입니다.',
+    title: '지역',
     type: 'form', next: 'cl_biz_size',
-    fields: [{ key: '지역', type: 'text', placeholder: '주소 검색 (주소 API 연동 예정)' }],
+    fields: [
+      { key: '지역', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'cl_biz_addr' },
+      { key: '지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'cl_biz_addr', wide: true, required: true },
+    ],
   },
   cl_biz_size: {
     title: '공간 정보', type: 'form', next: 'cl_biz_furniture',
     fields: [
-      { key: '평수', type: 'text', placeholder: '예: 40평' },
-      { key: '방 개수', type: 'text', placeholder: '예: 3개' },
-      { key: '화장실 개수', type: 'text', placeholder: '예: 2개' },
+      { key: '평수', type: 'text', placeholder: '예: 40평', required: true, requireDigit: true, row: 'size_line1', wide: true },
+      { key: '방 개수', type: 'text', placeholder: '예: 3개', required: true, requireDigit: true, row: 'size_line1', wide: true },
+      { key: '화장실 개수', type: 'text', placeholder: '예: 2개', required: true, requireDigit: true, row: 'size_line2', wide: true },
     ],
   },
   cl_biz_furniture: {
     title: '가구 항목 (복수 선택)', type: 'multi', next: 'cl_biz_extra',
     options: [
-      { label: '의자' }, { label: '소파' }, { label: '쿠션' }, { label: '책상' }, { label: '기타' },
+      { label: '없음' }, { label: '의자' }, { label: '소파' }, { label: '쿠션' }, { label: '책상' }, { label: '기타' },
     ],
   },
   cl_biz_extra: {
@@ -241,10 +249,10 @@ export const WIZARD_STEPS = {
     ],
   },
   cl_biz_date: {
-    title: '청소 희망일', type: 'form', next: 'budget',
+    title: '희망일', type: 'form', next: 'budget',
     fields: [
-      { key: '희망일', type: 'date' },
-      { key: '날짜 협의', type: 'choice', options: ['협의 가능', '협의 불가'] },
+      { key: '희망일', type: 'calendar', embed: ['날짜 협의'], required: true },
+      { key: '날짜 협의', type: 'choice', options: ['협의 가능', '협의 불가'], required: true },
     ],
   },
 
@@ -341,15 +349,15 @@ export const WIZARD_STEPS = {
   ir_fn_qty_price: {
     title: '수량·금액대', type: 'form', next: 'svc_date',
     fields: [
-      { key: '가구 수량', type: 'text', placeholder: '예: 2개' },
+      { key: '가구 수량', type: 'text', placeholder: '예: 2개', required: true },
       { key: '가구 금액대', type: 'choice', options: ['25만원 미만', '50만원 미만', '75만원 미만', '100만원 미만'] },
     ],
   },
   ir_fn_move: {
     title: '이동 방식', type: 'form', next: 'svc_date',
     fields: [
-      { key: '이동 유형', type: 'choice', options: ['방 → 방', '층 → 층'] },
-      { key: '분해 후 설치', type: 'choice', options: ['필요', '불필요'] },
+      { key: '이동 유형', type: 'choice', options: ['방 → 방', '층 → 층'], required: true },
+      { key: '분해 후 설치', type: 'choice', options: ['필요', '불필요'], required: true },
     ],
   },
   ir_fn_kind_repair: {
@@ -362,8 +370,8 @@ export const WIZARD_STEPS = {
   ir_fn_material: {
     title: '재질·리폼 종류', type: 'form', next: 'svc_date',
     fields: [
-      { key: '가구 재질', type: 'choice', options: ['원목', '합판·MDF', '가죽', '금속', '천'] },
-      { key: '원하는 리폼', type: 'choice', options: ['천갈이', '시트지 부착', '페인팅', '가구 축소', '가구 확장'] },
+      { key: '가구 재질', type: 'choice', options: ['원목', '합판·MDF', '가죽', '금속', '천'], required: true },
+      { key: '원하는 리폼', type: 'choice', options: ['천갈이', '시트지 부착', '페인팅', '가구 축소', '가구 확장'], required: true },
       { key: '증상 상세', type: 'textarea', placeholder: '증상을 상세히 적어 주세요.' },
     ],
   },
@@ -390,8 +398,8 @@ export const WIZARD_STEPS = {
   ir_pb_detail_water: {
     title: '세부 부분', type: 'form', next: 'svc_date',
     fields: [
-      { key: '세부 부분', type: 'choice', options: ['수도꼭지·수전', '배관', '하수구', '세면대', '변기'] },
-      { key: '제품 보유 여부', type: 'choice', options: ['네', '아니요(구매 필요)', '기타'] },
+      { key: '세부 부분', type: 'choice', options: ['수도꼭지·수전', '배관', '하수구', '세면대', '변기'], required: true },
+      { key: '제품 보유 여부', type: 'choice', options: ['네', '아니요(구매 필요)', '기타'], required: true },
     ],
   },
   ir_pb_svc_boiler: {
@@ -427,11 +435,11 @@ export const WIZARD_STEPS = {
   svc_date: {
     title: '요청사항', type: 'form', next: 'budget',
     fields: [
-      { key: '서비스 희망일', type: 'date' },
-      { key: '날짜 협의', type: 'choice', options: ['협의 가능', '협의 불가'] },
-      { key: '희망 지역', type: 'text', placeholder: '예: 서울 강남구' },
+      { key: '희망일', type: 'calendar', embed: ['날짜 협의'], required: true },
+      { key: '날짜 협의', type: 'choice', options: ['협의 가능', '협의 불가'], required: true },
+      { key: '희망 지역', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'ir_addr' },
+      { key: '희망 지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'ir_addr', wide: true, required: true },
       { key: '폐기물 처리', type: 'choice', options: ['필요', '불필요'] },
-      { key: '요청 사항', type: 'textarea', placeholder: '추가로 알아야 할 내용을 자유롭게 적어 주세요. (선택)' },
     ],
   },
 
@@ -467,19 +475,22 @@ export const WIZARD_STEPS = {
     ],
   },
   it_home_budget: {
-    title: '예산', type: 'single', next: 'it_home_final',
-    options: [
-      { label: '500만 원 미만' }, { label: '1,000만 원 미만' }, { label: '1,000만 원대' },
-      { label: '2,000만 원대' }, { label: '3,000만 원대' }, { label: '4,000만 원대' }, { label: '5,000만 원대' },
+    title: '희망 예산', type: 'form', next: 'it_home_final',
+    fields: [
+      { key: '예상 금액대', type: 'choice', options: ['500만 원 미만', '1,000만 원 미만', '1,000만 원대', '2,000만 원대', '3,000만 원대', '4,000만 원대', '5,000만 원대'], required: true, toggleable: true },
+      { key: '예산', type: 'amount-toggle', placeholder: '예: 30,000,000원', disabledWhenFilled: '예상 금액대' },
     ],
   },
   it_home_final: {
     title: '요청사항', type: 'form', next: 'memo',
     fields: [
-      { key: '복층 유무', type: 'choice', options: ['있음', '없음'] },
-      { key: '공실 확인', type: 'choice', options: ['공실', '거주 중'] },
-      { key: '희망 지역', type: 'text', placeholder: '예: 서울 강남구' },
-      { key: '희망일', type: 'date' },
+      { key: '희망일', type: 'calendar', embed: ['날짜 협의'], required: true },
+      { key: '날짜 협의', type: 'choice', options: ['협의 가능', '협의 불가'], required: true },
+      { key: '주소', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'it_home_addr' },
+      { key: '상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'it_home_addr', wide: true, required: true },
+      { key: '층수', type: 'text', placeholder: '예: 3층', row: 'it_home_addr', required: true, compact: true },
+      { key: '복층 유무', type: 'choice', options: ['있음', '없음'], row: 'it_home_status' },
+      { key: '공실 확인', type: 'choice', options: ['공실', '거주 중'], row: 'it_home_status' },
     ],
   },
 
@@ -498,17 +509,20 @@ export const WIZARD_STEPS = {
     ],
   },
   it_biz_budget: {
-    title: '예산', type: 'single', next: 'it_biz_final',
-    options: [
-      { label: '1,000만 원 이하' }, { label: '2,000만 원 이하' }, { label: '3,000만 원 이하' },
-      { label: '4,000만 원 이하' }, { label: '5,000만 원 이하' },
+    title: '희망 예산', type: 'form', next: 'it_biz_final',
+    fields: [
+      { key: '예상 금액대', type: 'choice', options: ['1,000만 원 이하', '2,000만 원 이하', '3,000만 원 이하', '4,000만 원 이하', '5,000만 원 이하'], required: true, toggleable: true },
+      { key: '예산', type: 'amount-toggle', placeholder: '예: 30,000,000원', disabledWhenFilled: '예상 금액대' },
     ],
   },
   it_biz_final: {
     title: '요청사항', type: 'form', next: 'memo',
     fields: [
-      { key: '희망 지역', type: 'text', placeholder: '예: 서울 강남구' },
-      { key: '희망일', type: 'date' },
+      { key: '희망일', type: 'calendar', embed: ['날짜 협의'], required: true },
+      { key: '날짜 협의', type: 'choice', options: ['협의 가능', '협의 불가'], required: true },
+      { key: '주소', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'it_biz_addr' },
+      { key: '상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'it_biz_addr', wide: true, required: true },
+      { key: '층수', type: 'text', placeholder: '예: 3층', row: 'it_biz_addr', required: true, compact: true },
     ],
   },
 
@@ -530,9 +544,17 @@ export const WIZARD_STEPS = {
     ],
   },
   it_reno_status: {
-    title: '현재 공간 상태', type: 'single', next: 'memo',
+    title: '현재 공간 상태', type: 'single', next: 'it_reno_final',
     options: [
       { label: '현재 거주 중' }, { label: '계약 완료 · 공실' }, { label: '가계약 완료 · 계약 예정' },
+    ],
+  },
+  it_reno_final: {
+    title: '요청사항', type: 'form', next: 'memo',
+    fields: [
+      { key: '희망 지역', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'it_reno_addr' },
+      { key: '희망 지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'it_reno_addr', wide: true, required: true },
+      { key: '희망일', type: 'calendar', required: true },
     ],
   },
 
@@ -562,10 +584,18 @@ export const WIZARD_STEPS = {
     ],
   },
   it_wall_extra: {
-    title: '추가 조건 (복수 선택)', type: 'multi', next: 'memo',
+    title: '추가 조건 (복수 선택)', type: 'multi', next: 'it_wall_final',
     options: [
       { label: '해당없음' }, { label: '베란다 확장' }, { label: '복층형 구조' },
       { label: '우물형 천장' }, { label: '곰팡이 있음' },
+    ],
+  },
+  it_wall_final: {
+    title: '요청사항', type: 'form', next: 'memo',
+    fields: [
+      { key: '희망 지역', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'it_wall_addr' },
+      { key: '희망 지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'it_wall_addr', wide: true, required: true },
+      { key: '희망일', type: 'calendar', required: true },
     ],
   },
 
@@ -583,10 +613,10 @@ export const WIZARD_STEPS = {
   ls_field: {
     title: '분야 선택', type: 'single',
     options: [
-      { label: '음악', icon: '🎵', next: 'ls_music' },
-      { label: '미술', icon: '🖌️', next: 'ls_art' },
-      { label: '운동', icon: '🏋️', next: 'ls_fit' },
-      { label: '어학', icon: '🗣️', next: 'ls_lang' },
+      { label: '음악', next: 'ls_music' },
+      { label: '미술', next: 'ls_art' },
+      { label: '운동', next: 'ls_fit' },
+      { label: '어학', next: 'ls_lang' },
     ],
   },
   ls_music: {
@@ -600,13 +630,13 @@ export const WIZARD_STEPS = {
   ls_prep_instrument: {
     title: '기타(준비물)', type: 'form', next: 'ls_form',
     fields: [
-      { key: '악보를 읽을 줄 아는가', type: 'choice', options: ['네', '아니요'] },
-      { key: '악기 유무', type: 'choice', options: ['보유', '대여 필요'] },
+      { key: '악보를 읽을 줄 아는가', type: 'choice', options: ['네', '아니요'], row: 'prep_line', required: true },
+      { key: '악기 유무', type: 'choice', options: ['보유', '미보유'], row: 'prep_line', required: true },
     ],
   },
   ls_prep_theory: {
     title: '기타(준비물)', type: 'form', next: 'ls_form',
-    fields: [{ key: '악보를 읽을 줄 아는가', type: 'choice', options: ['네', '아니요'] }],
+    fields: [{ key: '악보를 읽을 줄 아는가', type: 'choice', options: ['네', '아니요'], required: true }],
   },
   ls_art: {
     title: '세부 분야', type: 'single',
@@ -618,7 +648,7 @@ export const WIZARD_STEPS = {
   },
   ls_prep_tablet: {
     title: '기타(준비물)', type: 'form', next: 'ls_form',
-    fields: [{ key: '태블릿 유무', type: 'choice', options: ['보유', '대여 필요'] }],
+    fields: [{ key: '태블릿 유무', type: 'choice', options: ['보유', '미보유'], required: true }],
   },
   ls_fit: {
     title: '세부 분야', type: 'single',
@@ -629,7 +659,7 @@ export const WIZARD_STEPS = {
   },
   ls_prep_equipment: {
     title: '기타(준비물)', type: 'form', next: 'ls_form',
-    fields: [{ key: '장비 유무', type: 'choice', options: ['보유', '대여 필요'] }],
+    fields: [{ key: '장비 유무', type: 'choice', options: ['보유', '미보유'], required: true }],
   },
   ls_lang: {
     title: '세부 분야', type: 'single', next: 'ls_form',
@@ -642,15 +672,8 @@ export const WIZARD_STEPS = {
   ls_target_class: {
     title: '과외 분류', type: 'single',
     options: [
-      { label: '국내 입시', next: 'ls_target' },
+      { label: '국내 입시', next: 'ls_subject' },
       { label: '유학', next: 'ls_abroad_kind' },
-    ],
-  },
-  ls_target: {
-    title: '과외 대상', type: 'single', next: 'ls_subject',
-    options: [
-      { label: '미취학 · 초등 저학년' }, { label: '초등 고학년 · 중학생' },
-      { label: '고등학생 · 재수생' }, { label: '성인' },
     ],
   },
   ls_subject: {
@@ -668,9 +691,11 @@ export const WIZARD_STEPS = {
   },
 
   ls_form: {
-    title: '레슨 형태', type: 'single', next: 'ls_visit',
+    title: '레슨 형태', type: 'single',
     options: [
-      { label: '개인 레슨' }, { label: '그룹 레슨' }, { label: '학원' },
+      { label: '개인 레슨', next: 'ls_visit' },
+      { label: '그룹 레슨', next: 'ls_info' },
+      { label: '학원', next: 'ls_info' },
     ],
   },
   ls_visit: {
@@ -682,10 +707,12 @@ export const WIZARD_STEPS = {
   ls_info: {
     title: '레슨생 정보', type: 'form', next: 'budget',
     fields: [
-      { key: '레슨생 성별', type: 'choice', options: ['남', '여', '무관'] },
-      { key: '레슨생 나이대', type: 'text', placeholder: '예: 20대' },
-      { key: '희망 요일·시간대', type: 'text', placeholder: '예: 주말 오후' },
-      { key: '희망 지역', type: 'text', placeholder: '예: 서울 강남구' },
+      { key: '레슨생 성별', type: 'choice', options: ['남', '여'], row: 'info_line1', narrow: true, required: true },
+      { key: '레슨생 연령대', type: 'select', options: ['10대', '20대', '30대', '40대', '50대', '60대 이상'], row: 'info_line1', required: true },
+      { key: '희망 요일', type: 'select', options: ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일', '협의 가능'], row: 'info_line1', required: true },
+      { key: '희망 시간대', type: 'select', options: ['오전', '오후', '협의 가능'], row: 'info_line1', required: true },
+      { key: '희망 지역', type: 'region', placeholder: '지역을 선택해 주세요', required: true, row: 'ls_region', maxSelections: 3, desc: '최대 3개까지 선택할 수 있어요.', hideWhen: { step: 'ls_visit', equals: '온라인·화상' } },
+      { key: '희망 지역 상세주소', type: 'text', placeholder: '예: OO동, OO아파트 인근 등', row: 'ls_region', wide: true, required: true, hideWhen: { step: 'ls_visit', equals: '온라인·화상' } },
     ],
   },
 
@@ -693,8 +720,7 @@ export const WIZARD_STEPS = {
   budget: {
     title: '희망 예산', type: 'form', next: 'memo',
     fields: [
-      { key: '예산', type: 'choice', options: ['금액 입력', '미정'] },
-      { key: '금액', type: 'text', placeholder: '예: 300,000원 (미정이면 비워두세요)' },
+      { key: '예산', type: 'amount-toggle', placeholder: '예: 300,000원', required: true },
     ],
   },
   memo: {

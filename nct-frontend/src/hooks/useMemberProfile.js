@@ -13,7 +13,7 @@ export const memberProfileQueryOptions = {
 };
 
 export const hasDeliveryAddress = (profile) => (
-  [profile?.zip, profile?.address, profile?.addressDetail]
+  [profile?.zip, profile?.address]
     .every((value) => typeof value === 'string' && value.trim())
 );
 
