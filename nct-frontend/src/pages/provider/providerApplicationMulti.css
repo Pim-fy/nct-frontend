@@ -178,3 +178,90 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* 담당자 7 · F-PROV-003: 카테고리별 증빙 묶음과 이미지 미리보기를 카드형으로 정돈합니다. */
+.provider-apply-file-group {
+  gap: 12px;
+  border-color: #dfe6f0;
+  border-radius: 16px;
+  padding: 18px;
+  background: #fbfcfe;
+}
+
+.provider-apply-file-group > strong {
+  color: #101828;
+  font-size: 16px;
+}
+
+.provider-apply-upload {
+  grid-template-rows: auto 112px auto;
+  gap: 8px;
+  border-color: #dbe2ec;
+  border-radius: 13px;
+  padding: 12px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgb(16 24 40 / 3%);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.provider-apply-upload:hover {
+  border-color: #91b7fb;
+  box-shadow: 0 10px 24px rgb(0 100 255 / 8%);
+  transform: translateY(-1px);
+}
+
+.provider-apply-upload.is-uploaded {
+  border-color: #77a9ff;
+  background: #f7faff;
+}
+
+.provider-apply-upload img,
+.provider-apply-upload__placeholder {
+  height: 112px;
+  border-radius: 9px;
+}
+
+.provider-apply-upload__placeholder {
+  border-color: #b9c9e0;
+  background: #f8faff;
+  color: #5d6f8f;
+  font-size: 13px;
+}
+
+.provider-apply-upload__name {
+  color: #475467;
+  font-size: 12px;
+}
+
+.provider-apply-account {
+  border: 1px solid #dfe6f0;
+  border-radius: 16px;
+  padding: 20px;
+  background: #fbfcfe;
+}
+
+.provider-apply-account strong {
+  color: #101828;
+  font-size: 17px;
+}
+
+.provider-apply-account p {
+  color: #667085;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+@media (max-width: 650px) {
+  .provider-apply-file-group {
+    grid-template-columns: 1fr;
+  }
+
+  .provider-apply-upload {
+    grid-template-rows: auto 150px auto;
+  }
+
+  .provider-apply-upload img,
+  .provider-apply-upload__placeholder {
+    height: 150px;
+  }
+}

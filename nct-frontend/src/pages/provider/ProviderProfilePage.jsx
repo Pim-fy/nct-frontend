@@ -10,7 +10,9 @@ import {
   useUpdateMyProviderProfile,
   useUpdatePortfolio,
 } from '@hooks/useProviderProfile';
+import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
 import FormSkeleton from '@components/skeleton/FormSkeleton';
+import './providerProfilePage.css';
 
 const fieldClass = 'w-full rounded-md border border-[#d9d9d9] px-3 py-2 text-sm text-[#404040] focus:border-[#0064ff] focus:outline-none';
 
@@ -23,28 +25,34 @@ export default function ProviderProfilePage({ embedded = false } = {}) {
     : 'mx-auto max-w-3xl px-4 py-12 text-center';
 
   if (profileQuery.isLoading) return (
-    <main className={embedded ? 'w-full py-8' : 'mx-auto max-w-3xl px-4 py-8'}>
+    <main className={`provider-profile-editor ${embedded ? 'w-full py-8' : 'mx-auto max-w-3xl px-4 py-8'}`}>
+      {embedded && <MyPageContentHeader title="프로필" />}
       <FormSkeleton fields={6} />
     </main>
   );
   if (profileQuery.isError) return (
-    <div className={statusClass}>
-      <p className="text-[#d9363e]">제공자 프로필을 불러올 수 없습니다.</p>
-      <button type="button" className="btn btn-outline mt-4" onClick={() => profileQuery.refetch()}>다시 시도</button>
-    </div>
+    <main className={`provider-profile-editor ${embedded ? 'w-full' : 'mx-auto max-w-3xl px-4 py-8'}`}>
+      {embedded && <MyPageContentHeader title="프로필" />}
+      <div className={statusClass}>
+        <p className="text-[#d9363e]">제공자 프로필을 불러올 수 없습니다.</p>
+        <button type="button" className="btn btn-outline mt-4" onClick={() => profileQuery.refetch()}>다시 시도</button>
+      </div>
+    </main>
   );
 
   return (
-    <main className={embedded ? "w-full" : "mx-auto max-w-3xl px-4 py-8"}>
-      <div className="mb-6 flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-[#252525]">제공자 프로필 관리</h1>
-          <p className="mt-1 text-sm text-[#666]">공개 프로필에 표시할 소개와 가능 지역을 관리합니다.</p>
-        </div>
-        {!embedded && (
+    <main className={`provider-profile-editor ${embedded ? 'w-full' : 'mx-auto max-w-3xl px-4 py-8'}`}>
+      {embedded ? (
+        <MyPageContentHeader title="프로필" />
+      ) : (
+        <div className="mb-6 flex items-center justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-bold text-[#252525]">제공자 프로필 관리</h1>
+            <p className="mt-1 text-sm text-[#666]">공개 프로필에 표시할 소개와 가능 지역을 관리합니다.</p>
+          </div>
           <button type="button" className="btn btn-outline" onClick={() => navigate('/user/mypage')}>대시보드</button>
-        )}
-      </div>
+        </div>
+      )}
       <div className="space-y-6">
         <ProviderProfileForm key={profileQuery.data.userSn} profile={profileQuery.data} />
         <PortfolioRegistrationSection />
@@ -210,7 +218,7 @@ function PortfolioRegistrationSection() {
   };
 
   return (
-    <section className="space-y-5 rounded-xl border border-[#e5e5e5] bg-white p-6" aria-labelledby="portfolio-registration-title">
+    <section className="provider-profile-editor__card space-y-5 rounded-xl border border-[#e5e5e5] bg-white p-6" aria-labelledby="portfolio-registration-title">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 id="portfolio-registration-title" className="text-lg font-bold text-[#252525]">포트폴리오 관리</h2>
@@ -358,7 +366,11 @@ function ProviderProfileForm({ profile }) {
   };
 
   return (
-      <form className="rounded-xl border border-[#e5e5e5] bg-white p-6" onSubmit={submit}>
+      <form className="provider-profile-editor__card provider-profile-editor__form rounded-xl border border-[#e5e5e5] bg-white p-6" onSubmit={submit}>
+        <div className="provider-profile-editor__section-heading">
+          <h2>기본 프로필</h2>
+          <p>고객에게 공개되는 활동 지역과 서비스 소개를 관리합니다.</p>
+        </div>
         <label className="mb-2 block text-sm font-bold text-[#404040]" htmlFor="provider-area">가능 지역</label>
         <input id="provider-area" className={fieldClass} maxLength={200} value={form.availableArea}
           onChange={(event) => setForm((current) => ({ ...current, availableArea: event.target.value }))}

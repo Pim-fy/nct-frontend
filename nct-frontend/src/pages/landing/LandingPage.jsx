@@ -55,6 +55,8 @@ const LandingPage = () => {
     queryKey: ['landing-curation', 'auctions', 'popular'],
     queryFn: () => fetchAuctions({ status: 'AUCC0002', sort: 'popular', page: 1, size: 10 }),
     staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
+    refetchIntervalInBackground: false,
     enabled: !isProvider,
   });
   const latestServiceQuery = useServiceDiscovery({

@@ -171,7 +171,7 @@ export default function MyActiveAuctionPage() {
       />
 
       {isLoading ? (
-        <MyPageListSkeleton count={4} />
+        <MyPageListSkeleton count={PAGE_SIZE} />
       ) : filteredAuctions.length === 0 ? (
         <MyPageListEmpty message="해당 조건의 진행 중인 경매가 없습니다." />
       ) : (
