@@ -38,7 +38,7 @@ const toPage = (value) => {
 
 const toRequestSort = (value) => (value === 'budget' ? 'budget' : 'latest');
 
-/** F-COM-002: 공개 중인 서비스 요청을 검색하는 목록 화면입니다. */
+/** 담당자 7 통합 · F-COM-002: 제공자가 공개 서비스 요청을 검색하는 목록 화면입니다. */
 const ServiceListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -155,7 +155,7 @@ const ServiceListPage = () => {
 
   return (
     <ContentPageShell className="service-discovery-page service-list-page">
-      <Helmet><title>서비스 찾기 | 에누리컷</title></Helmet>
+      <Helmet><title>견적 목록 | 에누리컷</title></Helmet>
 
       <HeaderSearchPortal>
         <ServiceSearchBar
@@ -173,7 +173,7 @@ const ServiceListPage = () => {
               <strong>{discoveryQuery.isLoading ? '조회 중' : `${Number(result?.total || 0).toLocaleString('ko-KR')}건`}</strong>
             </div>
           )}
-          title="서비스 요청 찾기"
+          title="견적 요청 목록"
         />
         <p>필요한 분야와 예산을 비교하고, 내 경험에 맞는 서비스 요청을 찾아보세요.</p>
       </section>
