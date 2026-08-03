@@ -407,9 +407,9 @@ export default function ServiceRequestDetailPage() {
             )}
 
             {/* 첨부사진 — 요청 원문은 위 "요청 항목" 표의 "특이사항 메모" 행으로 이동함 */}
-            {request.imageList?.length > 0 && (
-              <div className="px-6 py-5">
-                <h2 className="mb-4 text-lg font-semibold text-[#5f5e5a]">첨부사진</h2>
+            <div className="px-6 py-5">
+              <h2 className="mb-4 text-lg font-semibold text-[#5f5e5a]">첨부사진</h2>
+              {request.imageList?.length > 0 ? (
                 <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
                   {request.imageList.map(img => (
                     <img
@@ -420,8 +420,19 @@ export default function ServiceRequestDetailPage() {
                     />
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <div
+                      key={i}
+                      className="flex aspect-square w-full items-center justify-center rounded-lg border border-dashed border-[#d8d6cf] bg-[#fafaf8] text-center text-sm text-[#888780]"
+                    >
+                      {i === 0 && '등록된 사진이 없습니다'}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </article>
 
           {/* ── 오른쪽: 견적 패널 ── */}

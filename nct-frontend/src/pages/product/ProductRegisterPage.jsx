@@ -424,7 +424,7 @@ export default function ProductRegisterPage() {
 <div className="page-title"><div><h1 style={{ fontWeight: 700 }}>{editPrdSn ? '경매 설정 완료' : '상품 등록'}</h1></div></div>
 
       {/* 스텝 인디케이터 */}
-      <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 20 }}>
+      <div className="card product-register-steps" style={{ padding: 0, overflow: 'hidden', marginBottom: 20 }}>
         <div style={{ background: '#eef2fb', padding: '14px 20px' }}>
           <div className="steps" style={{ margin: 0 }}>
             {STEP_LABELS.map((label, i) => (
@@ -468,11 +468,11 @@ export default function ProductRegisterPage() {
 
       {/* step 0: 상품 정보 + 경매 설정 카드 나란히 */}
       {step === 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'stretch' }}>
-          {/* 래퍼: grid row 높이(경매설정 카드 기준)만큼 늘어나는 빈 셀 */}
-          <div style={{ position: 'relative' }}>
-            {/* 카드 자체는 absolute로 띄워 grid row 높이 계산에 관여하지 않음 */}
-            <section className="card" style={{ position: 'absolute', inset: 0, padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div className="product-register-grid">
+          {/* 래퍼: grid row 높이(경매설정 카드 기준)만큼 늘어나는 빈 셀 — 모바일에서는 일반 흐름으로 전환(common.css) */}
+          <div className="product-info-cell">
+            {/* 카드 자체는 absolute로 띄워 grid row 높이 계산에 관여하지 않음 — 모바일에서는 static으로 전환(common.css) */}
+            <section className="card product-info-card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
               <div style={{ background: '#eef2fb', padding: '14px 20px', flexShrink: 0 }}>
                 <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>상품 정보</h3>
               </div>
