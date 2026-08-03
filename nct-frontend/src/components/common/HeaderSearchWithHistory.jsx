@@ -59,18 +59,11 @@ const HeaderSearchWithHistory = ({
   return (
     <div ref={containerRef} className="relative mx-auto w-full">
       <form
-        className={HEADER_SEARCH_FORM_CLASS}
-        style={
+        className={`${HEADER_SEARCH_FORM_CLASS} relative z-[141] ${
           showHistory
-            ? {
-                borderTopLeftRadius: 20,
-                borderTopRightRadius: 20,
-                borderBottomLeftRadius: 0,
-                borderBottomRightRadius: 0,
-                borderBottomColor: 'transparent',
-              }
-            : undefined
-        }
+            ? '![border-radius:22px_22px_0_0] !border-b-transparent'
+            : ''
+        }`}
         onSubmit={handleSubmit}
       >
         <input
@@ -102,10 +95,8 @@ const HeaderSearchWithHistory = ({
       {showHistory && (
         <div
           id={dropdownId}
-          className="absolute inset-x-0 top-[calc(100%-2px)] z-[140] overflow-hidden rounded-b-lg border-2 border-t-0 border-primary bg-white shadow-[0_12px_24px_rgba(0,0,0,0.14)]"
+          className="absolute inset-x-0 top-[calc(100%_-_2px)] z-[142] overflow-hidden rounded-b-[22px] border-2 border-t-0 border-primary bg-white shadow-[0_12px_24px_rgba(0,0,0,0.14)]"
         >
-          <div className="mx-4 border-t border-[#e2e1dc]" />
-
           <ul className="m-0 list-none p-0">
             {history.map((term) => (
               <li
