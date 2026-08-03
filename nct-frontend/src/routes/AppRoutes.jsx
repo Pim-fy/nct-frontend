@@ -98,10 +98,10 @@ const PointWalletRedirect = () => {
 // Admin 페이지
 // ──────────────────────────────────────────
 import Dashboard        from '@pages/admin/Dashboard';
+import AdminMemberList from '@pages/admin/AdminMemberList';
 import OperationsIntegrationPreview from '@pages/admin/OperationsIntegrationPreview';
 import AdminNoticeListPage from '@pages/admin/notice/AdminNoticeListPage';
 import AdminNoticeFormPage from '@pages/admin/notice/AdminNoticeFormPage';
-import AdminGuidePage from '@pages/admin/guide/AdminGuidePage';
 import AdminCategoryPage from '@pages/admin/category/AdminCategoryPage';
 import AdminServiceRequestPage from '@pages/admin/service/AdminServiceRequestPage';
 import AdminProviderApprovalPage from '@pages/admin/provider/AdminProviderApprovalPage';
@@ -200,6 +200,9 @@ const AppRoutes = () => {
           <Route path="/user/point" element={<PointWalletRedirect />} />
           <Route path="/user/notification" element={<NotificationPage />} />
           <Route path="/user/settlement" element={<SettlementListPage />} />
+          {/* 담당자 7 · F-PROV-006/012~014: 제공자 모드에서도 추가 분야 심사 신청·상태 조회를 허용합니다. */}
+          <Route path="/provider/apply" element={<ProviderApplyPage />} />
+          <Route path="/provider/applications/status" element={<ProviderApplicationStatusPage />} />
         </Route>
       </Route>
 
@@ -227,10 +230,6 @@ const AppRoutes = () => {
           />
 
           {/* 상품 — 로그인 필요 */}
-          {/* 담당자 7 · F-PROV-001/006: 마이페이지의 제공자 권한 신청 메뉴 목적지 */}
-          <Route path="/provider/apply"              element={<ProviderApplyPage />} />
-          {/* 담당자 7 · F-PROV-012/014: 신청 완료 후 내 심사 상태 확인 화면. 라우트 소유자에게 전달 필요. */}
-          <Route path="/provider/applications/status" element={<ProviderApplicationStatusPage />} />
           <Route path="/product/register"        element={<ProductRegisterPage key={location.key} />} />
           <Route path="/product/me"              element={<MyProductListPage />} />
           <Route path="/product/:prdSn/seller"   element={<ProductDetailSellerPage />} />
@@ -251,10 +250,11 @@ const AppRoutes = () => {
         <Route path="/admin" element={<AdminLayout />}>
           {/* 대시보드 */}
           <Route index element={<Dashboard />} />
+          <Route path="members" element={<AdminMemberList />} />
           <Route path="notices" element={<AdminNoticeListPage />} />
           <Route path="notices/new" element={<AdminNoticeFormPage />} />
           <Route path="notices/:noticeId" element={<AdminNoticeFormPage />} />
-          <Route path="guides" element={<AdminGuidePage />} />
+          <Route path="guides" element={<Navigate replace to="/guide" />} />
           <Route path="categories" element={<AdminCategoryPage />} />
           <Route path="services" element={<AdminServiceRequestPage />} />
           <Route path="provider-applications" element={<AdminProviderApprovalPage />} />

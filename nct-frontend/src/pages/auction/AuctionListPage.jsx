@@ -25,6 +25,7 @@ import HeaderSearchPortal, {
   HEADER_SEARCH_FORM_CLASS,
   HEADER_SEARCH_INPUT_CLASS,
 } from '@components/common/HeaderSearchPortal';
+import useBodyScrollLock from '@hooks/useBodyScrollLock';
 import AuctionCard from './components/AuctionCard';
 import {
   addAuctionSearchHistory,
@@ -147,19 +148,18 @@ const AuctionListPage = () => {
       return undefined;
     }
 
-    const previousOverflow = document.body.style.overflow;
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') setFilterOpen(false);
     };
 
-    document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [filterOpen]);
+
+  useBodyScrollLock(filterOpen);
 
   const selectedCategories = getSelectedValues(searchParams, 'category');
   const selectedStatuses = getSelectedValues(searchParams, 'status');
@@ -359,9 +359,9 @@ const AuctionListPage = () => {
         className="relative mx-auto w-full"
       >
         <form
-          className={`${HEADER_SEARCH_FORM_CLASS} ${
+          className={`${HEADER_SEARCH_FORM_CLASS} relative z-[141] ${
             showSearchHistory
-              ? 'rounded-b-none border-b-transparent'
+              ? '![border-radius:22px_22px_0_0] !border-b-transparent'
               : ''
           }`}
           onSubmit={handleSearch}
@@ -395,10 +395,8 @@ const AuctionListPage = () => {
         {showSearchHistory && (
           <div
             id="auction-search-history"
-            className="absolute inset-x-0 top-[calc(100%-3px)] z-[140] overflow-hidden rounded-b-lg border-[3px] border-t-0 border-primary bg-white shadow-[0_12px_24px_rgba(0,0,0,0.14)]"
+            className="absolute inset-x-0 top-[calc(100%_-_2px)] z-[142] overflow-hidden rounded-b-[22px] border-2 border-t-0 border-primary bg-white shadow-[0_12px_24px_rgba(0,0,0,0.14)]"
           >
-            <div className="mx-4 border-t border-[#e2e1dc]" />
-
             <ul className="m-0 list-none p-0">
               {searchHistory.map((term) => (
                 <li
@@ -450,7 +448,7 @@ const AuctionListPage = () => {
             onClick={() => setFilterOpen(false)}
           />
           <aside
-            className={`fixed inset-x-0 bottom-0 z-[220] grid max-h-[88dvh] w-full transform-gpu gap-[18px] overflow-y-auto overscroll-contain rounded-t-2xl border border-[#f0efec] bg-white p-5 shadow-[0_-8px_28px_rgba(0,0,0,0.18)] transition-transform duration-[420ms] ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform [backface-visibility:hidden] [scrollbar-color:#c8ced8_transparent] [scrollbar-width:thin] motion-reduce:transition-none [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#c8ced8] [&::-webkit-scrollbar-track]:bg-transparent ${
+            className={`fixed inset-x-0 bottom-0 z-[220] grid h-[88dvh] max-h-[88dvh] w-full transform-gpu gap-[18px] overflow-y-auto overscroll-contain rounded-t-2xl border border-[#f0efec] bg-white p-5 shadow-[0_-8px_28px_rgba(0,0,0,0.18)] transition-transform duration-[420ms] ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform [backface-visibility:hidden] [scrollbar-color:#c8ced8_transparent] [scrollbar-width:thin] motion-reduce:transition-none [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#c8ced8] [&::-webkit-scrollbar-track]:bg-transparent ${
               filterOpen
                 ? 'pointer-events-auto translate-y-0'
                 : 'pointer-events-none translate-y-[101%]'
@@ -481,7 +479,7 @@ const AuctionListPage = () => {
             </div>
 
             <fieldset
-              className={FILTER_GROUP_CLASS}
+              className={`${FILTER_GROUP_CLASS} min-h-[214px]`}
               disabled={categoriesQuery.isLoading || categoriesQuery.isError}
             >
               <legend className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">카테고리</legend>
@@ -546,7 +544,7 @@ const AuctionListPage = () => {
             </fieldset>
 
             <fieldset
-              className={FILTER_GROUP_CLASS}
+              className={`${FILTER_GROUP_CLASS} min-h-[88px]`}
               disabled={auctionStatusesQuery.isLoading || auctionStatusesQuery.isError}
             >
               <legend className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">진행 상태</legend>
@@ -574,7 +572,7 @@ const AuctionListPage = () => {
             </fieldset>
 
             <fieldset
-              className={FILTER_GROUP_CLASS}
+              className={`${FILTER_GROUP_CLASS} min-h-[120px]`}
               disabled={tradeMethodsQuery.isLoading || tradeMethodsQuery.isError}
             >
               <legend className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">거래 방식</legend>

@@ -1,0 +1,82 @@
+/* 담당자 7 · F-PROV-004/005: 공통 마이페이지 틀 안에서 프로필·포트폴리오 편집 영역만 정돈합니다. */
+.provider-profile-editor {
+  color: #101828;
+}
+
+.provider-profile-editor > .space-y-6 {
+  display: grid;
+  gap: 22px;
+}
+
+.provider-profile-editor > .space-y-6 > * {
+  margin-block: 0 !important;
+}
+
+.provider-profile-editor__card {
+  border-color: #dfe5ee !important;
+  border-radius: 20px !important;
+  padding: 28px !important;
+  box-shadow: 0 10px 28px rgb(16 24 40 / 5%);
+}
+
+.provider-profile-editor__section-heading {
+  margin-bottom: 24px;
+  border-bottom: 1px solid #e9edf3;
+  padding-bottom: 18px;
+}
+
+.provider-profile-editor__section-heading h2 {
+  margin: 0;
+  color: #101828;
+  font-size: 20px;
+  letter-spacing: -.015em;
+}
+
+.provider-profile-editor__section-heading p {
+  margin: 7px 0 0;
+  color: #667085;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.provider-profile-editor__card input,
+.provider-profile-editor__card textarea {
+  border-color: #d8e0eb;
+  border-radius: 10px;
+  background: #fbfcfe;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.provider-profile-editor__card input:focus,
+.provider-profile-editor__card textarea:focus {
+  border-color: #6ca0fb;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgb(0 100 255 / 11%);
+}
+
+.provider-profile-editor__card > ul > li {
+  border-color: #dfe5ee !important;
+  border-radius: 14px !important;
+  background: #fff;
+  box-shadow: 0 4px 14px rgb(16 24 40 / 4%);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.provider-profile-editor__card > ul > li:hover {
+  border-color: #9fc0fb !important;
+  box-shadow: 0 11px 24px rgb(0 100 255 / 8%);
+  transform: translateY(-1px);
+}
+
+.provider-profile-editor__card [class*='border-dashed'] {
+  border-color: #b9c9e0;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #f7faff, #fcfdff);
+}
+
+@media (max-width: 640px) {
+  .provider-profile-editor__card {
+    border-radius: 17px !important;
+    padding: 21px 18px !important;
+  }
+}

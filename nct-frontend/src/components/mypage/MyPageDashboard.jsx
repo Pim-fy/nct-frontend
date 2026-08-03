@@ -23,6 +23,10 @@ import { useMemberProfile } from "@hooks/useMemberProfile";
 import relativeTime from "@utils/relativeTime";
 import { assets } from "@components/mypage/assets";
 import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
+import {
+  MyPageDashboardSummaryCards,
+  MyPageDashboardTop,
+} from "@components/mypage/MyPageDashboardCommon";
 
 const WISH_TABS = [
   { label: "전체",     section: "wishlist" },
@@ -50,35 +54,6 @@ const DOMAIN_TO_SECTION = {
 };
 
 
-
-function StatCard({ color, icon, label, value, unit, meta, onMore }) {
-  return (
-    <div className="relative rounded-[15px] text-white p-5 md:mb-5 md:mt-5 h-[150px] flex flex-col justify-center" style={{ backgroundColor: color }}>
-      {onMore && (
-        <button
-          type="button"
-          onClick={onMore}
-          className="absolute right-4 top-4 bg-transparent border-none cursor-pointer"
-          aria-label={`${label} 더보기`}
-        >
-          <img src={assets.iconMoreWhite} alt="" className="size-[20px] object-contain" />
-        </button>
-      )}
-      <div className="flex items-start gap-3 mb-3">
-        <img src={icon} alt="" className="size-[40px] object-contain shrink-0 mt-0.5" />
-        <div className="min-w-0 pr-6 pl-4">
-          <p className="font-bold text-[16px] opacity-90 leading-tight">{label}</p>
-          <p className="font-bold text-[30px] leading-tight mt-0.5">{value}{unit}</p>
-        </div>
-      </div>
-      {typeof meta === 'string' ? (
-        <p className="text-[16px] opacity-80 truncate">{meta}</p>
-      ) : (
-        <div className="text-[16px]">{meta}</div>
-      )}
-    </div>
-  );
-}
 
 function ListPanel({ title, items, tabs, onTabClick, onMore, onItemMore }) {
   const [activeIdx, setActiveIdx] = useState(0);
@@ -383,7 +358,8 @@ export default function MyPageDashboard({
   const { data: pointBalance } = usePointBalance({ enabled: !!user });
 
   // 알림 목록 — MY홈 패널에는 안읽은 것만 표시
-  const { data: allNotifications = [] } = useNotifications({ enabled: !!user });
+  const notificationsQuery = useNotifications({ enabled: !!user });
+  const allNotifications = notificationsQuery.data ?? [];
   const unreadNotifications = allNotifications.filter((n) => !n.read);
 
   // 경매 입찰 전체 이력 (구매자)
@@ -418,7 +394,7 @@ export default function MyPageDashboard({
     select: (res) => res.data,
     enabled: !!user,
   });
-  const svcBidCnt = svcReqAll?.totalCount ?? 0;
+  const svcBidCnt = svcReqAll?.total ?? 0;
 
   // 서비스 요청 완료 건수
   const { data: svcReqClosed } = useQuery({
@@ -427,7 +403,7 @@ export default function MyPageDashboard({
     select: (res) => res.data,
     enabled: !!user,
   });
-  const svcClosedCnt = svcReqClosed?.totalCount ?? 0;
+  const svcClosedCnt = svcReqClosed?.total ?? 0;
 
   // 견적 목록 건수 (제공자 판매)
   const { data: quotePage } = useQuery({
@@ -511,12 +487,12 @@ export default function MyPageDashboard({
       unit: "건",
       meta: (
         <span className="flex items-center gap-x-2">
-          <button type="button" onClick={nav("service-bids")}  className={subBtn}>입찰 {svcBidCnt}건</button>
+          <button type="button" onClick={nav("service-requests")} className={subBtn}>입찰 {svcBidCnt}건</button>
           <span className="text-white/70">ㅣ</span>
           <button type="button" onClick={nav("service-sales")} className={subBtn}>판매 {svcSaleCnt}건</button>
         </span>
       ),
-      onMore: nav("service-bids"),
+      onMore: nav("service-requests"),
     },
     {
       key: "done",
@@ -540,77 +516,35 @@ export default function MyPageDashboard({
     <div className="space-y-5">
       <MyPageContentHeader title="MY 홈" />
 
-      {/* 프로필 헤더 + 알림 배너 */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 lg:grid lg:grid-cols-4 lg:gap-3 lg:items-end">
-        <div className="flex items-center gap-5 shrink-0">
-          <div className="size-[72px] rounded-full overflow-hidden bg-[#e6f0ff] shrink-0">
-            {(profileQuery.data?.profileImageUrl || user?.profileImageUrl) ? (
-              <img src={profileQuery.data?.profileImageUrl || user.profileImageUrl} alt="" className="size-full object-cover" />
-            ) : (
-              <img src={assets.profile} alt="" className="size-full object-cover" />
-            )}
-          </div>
-          <div>
-            <p className="font-bold text-[16px] text-[#4e4e4e] flex items-center gap-1.5">
-              <span className="inline-block size-[8px] rounded-full bg-[#2ecc71]" />
-              {nickname}님
-            </p>
-            <p className="text-[14px] text-[#969696] mt-0.5">{email}</p>
-            <div className="flex gap-2 mt-2">
-              <button
-                type="button"
-                onClick={onLogout}
-                className="btn btn-ghost btn-sm"
-              >
-                <img src={assets.iconLogout} alt="" className="size-[12px]" />
-                로그아웃
-              </button>
-              <button
-                type="button"
-                onClick={onRequestProviderSwitch}
-                className="btn btn-ghost btn-sm"
-              >
-                <img src={assets.iconSwitch1} alt="" className="size-[10px]" />
-                {isProviderApproved ? '제공자 전환' : '제공자 신청'}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* 안읽은 알림 배너 */}
-        <div className="ml-auto w-full md:w-[600px] md:flex-none lg:col-span-3 lg:ml-0 lg:w-full min-h-[45px] rounded-[25px] border border-[rgba(0,100,255,0.28)] bg-white flex items-center px-4 gap-2 overflow-hidden">
-          <span className="flex items-center justify-center size-[18px] rounded-full bg-[#0064ff] text-white text-[13px] font-bold shrink-0">
-            {unreadNotifications.length}
-          </span>
-          <span className="font-bold text-[#404040] shrink-0 mr-4">안읽은 알림</span>
-          <div className="flex-1 min-w-0 hidden sm:flex items-center gap-3 overflow-hidden">
-            {unreadNotifications.length === 0 ? (
-              <span className="text-[14px] text-[#969696]">새 알림이 없습니다.</span>
-            ) : (
-              unreadNotifications.slice(0, 5).map((n) => (
-                <span key={n.id} className="text-[14px] text-[#404040] flex items-center gap-1 shrink-0 truncate">
-                  <span className="text-[7px]">▶</span>
-                  {n.title}
-                </span>
-              ))
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => navigate("/user/notification")}
-            className="ml-auto bg-transparent border-none cursor-pointer shrink-0"
-          >
-            <img src={assets.iconMore} alt="" className="size-[14px] object-contain opacity-40" />
-          </button>
-        </div>
-      </div>
+      <MyPageDashboardTop
+        profileImageUrl={profileQuery.data?.profileImageUrl || user?.profileImageUrl}
+        nickname={nickname}
+        email={email}
+        actions={[
+          {
+            key: 'logout',
+            label: '로그아웃',
+            icon: assets.iconLogout,
+            onClick: onLogout,
+          },
+          {
+            key: 'provider-switch',
+            label: isProviderApproved ? '제공자 전환' : '제공자 신청',
+            icon: assets.iconSwitch1,
+            iconClassName: 'size-[10px]',
+            onClick: onRequestProviderSwitch,
+          },
+        ]}
+        notifications={unreadNotifications}
+        notificationsLoading={notificationsQuery.isLoading}
+        onOpenNotifications={() => navigate('/user/notification')}
+      />
 
       {/* 통계 카드 4개 — 모바일: 4행 1열 / 태블릿: 2×2 / 데스크톱: 1행 4열 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        {statCards.map(({ key, onMore, ...card }) => (
-          <StatCard key={key} {...card} onMore={onMore} />
-        ))}
-      </div>
+      <MyPageDashboardSummaryCards
+        items={statCards}
+        ariaLabel="일반회원 거래 요약"
+      />
 
       {/* 알림 100% */}
       <NotificationPanel

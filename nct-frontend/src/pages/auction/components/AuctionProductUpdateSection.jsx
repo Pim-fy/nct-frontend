@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { History, RotateCcw } from 'lucide-react';
 import { fetchProductComments } from '@api/productApi';
@@ -27,7 +27,6 @@ const AuctionProductUpdateSection = ({
   sectionId,
   productId,
   enabled = true,
-  onLoadSettled,
 }) => {
   const [page, setPage] = useState(1);
   const updateQuery = useQuery({
@@ -55,11 +54,6 @@ const AuctionProductUpdateSection = ({
   }, [currentPage, updates]);
   const isWaiting = !enabled || updateQuery.isLoading;
 
-  useEffect(() => {
-    if (!enabled || (!updateQuery.isSuccess && !updateQuery.isError)) return;
-    onLoadSettled?.();
-  }, [enabled, onLoadSettled, updateQuery.isError, updateQuery.isSuccess]);
-
   return (
     <section
       className="scroll-mt-[136px] border-b border-[#e2e5ea] py-10 md:scroll-mt-[82px] md:py-14"
@@ -78,8 +72,8 @@ const AuctionProductUpdateSection = ({
 
       {isWaiting && (
         <div className="grid gap-3 border-y border-[#e2e5ea] py-4" aria-label="변경 내역을 불러오는 중">
-          {Array.from({ length: 2 }).map((_, index) => (
-            <div className="grid grid-cols-[40px_minmax(0,1fr)] items-center gap-4 px-1 py-4" key={index}>
+          {Array.from({ length: UPDATES_PER_PAGE }).map((_, index) => (
+            <div className="grid min-h-[92px] grid-cols-[40px_minmax(0,1fr)] items-center gap-4 px-1 py-4" key={index}>
               <SkeletonBlock className="size-10 rounded-full" />
               <div className="grid gap-2">
                 <SkeletonBlock className="h-5 w-[42%]" />

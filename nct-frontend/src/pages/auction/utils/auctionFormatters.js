@@ -10,8 +10,15 @@ const AUCTION_STATUS = {
 };
 
 const DETAIL_SECOND_THRESHOLD = 10 * 60;
+const BOTH_TRADE_METHOD_CODE = 'TRDC0020';
 
 export const parseAmount = (value) => Number(String(value || '').replace(/[^0-9]/g, '')) || 0;
+
+export const resolveTradeMethodLabel = (tradeMethodCode, tradeMethodName) => (
+  tradeMethodCode === BOTH_TRADE_METHOD_CODE
+    ? '배송, 직거래'
+    : (tradeMethodName || '정보 없음')
+);
 
 export const createImageItems = (images = []) => images.map((image, index) => ({
   id: image.imageId || `image-${index}`,

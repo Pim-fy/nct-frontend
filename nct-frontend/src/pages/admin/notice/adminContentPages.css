@@ -243,15 +243,6 @@
   text-align: center;
 }
 
-.admin-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  padding: 18px;
-  border-top: 1px solid #f0efec;
-}
-
 .admin-notice-form {
   padding: 24px;
 }
@@ -449,131 +440,6 @@
   background: #fff1f0;
 }
 
-.admin-guide-policy {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 18px;
-  padding: 18px;
-  border-color: #f1d49a;
-  background: #fffaf0;
-}
-
-.admin-guide-policy > svg {
-  width: 24px;
-  height: 24px;
-  color: #a56700;
-}
-
-.admin-guide-policy strong {
-  color: #7a4d00;
-}
-
-.admin-guide-policy p {
-  margin: 4px 0 0;
-  color: #765f39;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.admin-guide-journeys {
-  display: grid;
-  gap: 18px;
-}
-
-.admin-guide-journey {
-  overflow: hidden;
-}
-
-.admin-guide-journey__heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 22px;
-  border-bottom: 1px solid #f0efec;
-}
-
-.admin-guide-journey__heading span:first-child {
-  color: var(--color-primary-dark, #0048bf);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: .12em;
-}
-
-.admin-guide-journey__heading h2 {
-  margin: 4px 0 6px;
-  font-size: 21px;
-}
-
-.admin-guide-journey__heading p {
-  margin: 0;
-  color: #5f5e5a;
-  font-size: 13px;
-}
-
-.admin-guide-steps {
-  display: grid;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.admin-guide-steps li {
-  display: grid;
-  grid-template-columns: auto minmax(240px, 1fr) auto;
-  align-items: center;
-  gap: 16px;
-  padding: 18px 22px;
-  border-top: 1px solid #f0efec;
-}
-
-.admin-guide-steps li:first-child {
-  border-top: 0;
-}
-
-.admin-guide-steps__number {
-  display: inline-flex;
-  width: 34px;
-  height: 34px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  background: var(--color-primary-light, #e5efff);
-  color: var(--color-primary-dark, #0048bf);
-  font-weight: 800;
-}
-
-.admin-guide-steps__content h3 {
-  margin: 0 0 4px;
-  font-size: 16px;
-}
-
-.admin-guide-steps__content p {
-  margin: 0 0 5px;
-  color: #5f5e5a;
-  font-size: 13px;
-}
-
-.admin-guide-steps__content small {
-  color: #888780;
-}
-
-.admin-guide-steps__actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.admin-guide-steps__actions .btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  text-decoration: none;
-}
-
 @media (max-width: 900px) {
   .admin-notice-filters {
     grid-template-columns: 1fr 1fr;
@@ -581,15 +447,6 @@
 
   .admin-notice-filters__search {
     grid-column: 1 / -1;
-  }
-
-  .admin-guide-steps li {
-    grid-template-columns: auto 1fr;
-  }
-
-  .admin-guide-steps__actions {
-    grid-column: 2;
-    justify-content: flex-start;
   }
 }
 
@@ -605,29 +462,9 @@
     grid-column: auto;
   }
 
-  .admin-notice-list__summary,
-  .admin-guide-journey__heading {
+  .admin-notice-list__summary {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .admin-guide-policy {
-    grid-template-columns: auto 1fr;
-  }
-
-  .admin-guide-policy .badge {
-    grid-column: 2;
-    justify-self: start;
-  }
-
-  .admin-guide-steps li {
-    grid-template-columns: auto 1fr;
-    align-items: flex-start;
-  }
-
-  .admin-guide-steps__actions {
-    grid-column: 1 / -1;
-    justify-content: flex-start;
   }
 
   .admin-notice-preview {

@@ -26,7 +26,7 @@ const GENERAL_MENU_ITEMS = [
     label: "서비스 요청",
     type: "accordion",
     children: [
-      { key: "service-requests", label: "내 서비스 요청 목록", type: "todo" },
+      { key: "service-requests", label: "내 서비스 요청 목록", type: "section" },
       { key: "received-quotes",  label: "받은 견적 관리",      type: "todo" },
     ],
   },
@@ -39,22 +39,20 @@ const GENERAL_MENU_ITEMS = [
 
 const PROVIDER_MENU_ITEMS = [
   { key: "home",              label: "MY 홈",        type: "section" },
-  { key: "profile",           label: "프로필",        type: "section" },
+  { key: "profile",           label: "프로필 관리",   type: "section" },
   { key: "quote",             label: "내 견적",        type: "section" },
   { key: "service-trade",     label: "서비스 거래",   type: "section" },
   { key: "settlement",        label: "정산 관리",     type: "section" },
   { key: "service-chat",      label: "서비스 채팅",   type: "section" },
   { key: "wallet",            label: "포인트 지갑",   type: "section" },
-  { key: "approval-category", label: "승인 카테고리", type: "section" },
   { key: "received-review",   label: "받은 리뷰",     type: "section" },
-  { key: "review",            label: "내 리뷰",       type: "section" },
   { key: "report-list",       label: "내 신고 목록",  type: "section" },
 ];
 
 // 아코디언 key → 포함되는 child key 목록
 const ACCORDION_CHILDREN = {
   "auction-history":  ["active-auctions", "auction-bids", "auction-sales"],
-  "service-history":  ["service-bids", "service-sales"],
+  "service-history":  ["service-requests", "received-quotes"],
 };
 
 function getParentAccordion(sectionKey) {
@@ -115,10 +113,10 @@ export default function MyPageSidebar({
   return (
     <nav className="lg:w-[210px] lg:shrink-0" aria-label={`${sidebarTitle} 메뉴`}>
       {/* 타이틀 (데스크톱) */}
-      <h2 className="hidden lg:block font-bold text-[25px] leading-[36px] text-black mb-5 px-2">
+      <h2 className="hidden h-9 items-center px-2 text-[25px] font-bold leading-none text-black lg:flex mb-5">
         {sidebarTitle}
         {!title && mode === "provider" && (
-          <span className="text-[14px] text-[#0064ff] ml-1">(제공자)</span>
+          <span className="ml-1 text-[14px] leading-none text-[#0064ff]">(제공자)</span>
         )}
       </h2>
 

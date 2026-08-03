@@ -777,7 +777,7 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  margin-top: 22px;
+  margin: 22px 0 0;
 }
 
 .content-pagination button:disabled {
@@ -788,6 +788,11 @@
 .content-pagination span {
   color: #5f5e5a;
   font-size: 13px;
+}
+
+@media (max-width: 620px) {
+  .content-pagination { gap: 7px; }
+  .content-pagination .pagination__boundary { display: none; }
 }
 
 .notice-detail__back {

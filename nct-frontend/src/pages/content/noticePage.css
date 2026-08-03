@@ -54,6 +54,127 @@
 .public-notice-search__result { margin: 0 0 12px; color: #5f5e5a; font-size: 15px; }
 .public-notice-search__result strong { color: var(--color-primary-dark, #0048bf); }
 
+/* 담당자 7 · F-COM-013: 공통 공지 상세 구조는 유지하고 목록 화면과 같은 카드 체계로 맞춥니다. */
+.notice-detail {
+  position: relative;
+}
+
+.notice-detail .notice-detail__back {
+  min-height: 38px;
+  margin-bottom: 16px;
+  border: 1px solid #e1e7f0;
+  border-radius: 999px;
+  padding: 0 14px;
+  background: #fff;
+  color: #475467;
+  box-shadow: 0 4px 12px rgb(16 24 40 / 4%);
+  transition: border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.notice-detail .notice-detail__back:hover {
+  border-color: #9fc0fb;
+  color: #0057dc;
+  transform: translateX(-2px);
+}
+
+.notice-detail .notice-detail__header {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #dbe8ff;
+  border-radius: 20px;
+  padding: 30px 32px;
+  background:
+    radial-gradient(circle at 92% 8%, rgb(0 100 255 / 13%), transparent 30%),
+    linear-gradient(135deg, #f3f7ff 0%, #fff 72%);
+  box-shadow: 0 12px 30px rgb(16 24 40 / 6%);
+}
+
+.notice-detail .notice-detail__header::after {
+  position: absolute;
+  right: -46px;
+  bottom: -78px;
+  width: 190px;
+  height: 190px;
+  border: 1px solid rgb(0 100 255 / 10%);
+  border-radius: 50%;
+  content: '';
+}
+
+.notice-detail .notice-detail__header > * {
+  position: relative;
+  z-index: 1;
+}
+
+.notice-detail .notice-detail__header h1 {
+  max-width: 960px;
+  margin: 0 0 17px;
+  font-size: clamp(26px, 3vw, 34px);
+  line-height: 1.35;
+  letter-spacing: -.025em;
+}
+
+.notice-detail .notice-detail__meta {
+  flex-wrap: wrap;
+  gap: 8px 0;
+  color: #667085;
+  font-size: 13px;
+}
+
+.notice-detail .notice-detail__meta span + span::before {
+  width: 3px;
+  height: 3px;
+  margin: 0 11px;
+  border-radius: 50%;
+  background: #b6c0cf;
+  content: '';
+}
+
+.notice-detail .notice-detail__content {
+  min-height: 340px;
+  margin-top: 16px;
+  border: 1px solid #e1e6ef;
+  border-radius: 20px;
+  padding: 34px 32px;
+  background: #fff;
+  color: #344054;
+  font-size: 16px;
+  line-height: 1.9;
+  box-shadow: 0 10px 28px rgb(16 24 40 / 5%);
+}
+
+/* 담당자 7 · F-COM-014: 공통 가이드 구성은 그대로 두고 카드 깊이와 초점만 보강합니다. */
+.public-guide-page .guide-hero,
+.public-guide-page .guide-feature,
+.public-guide-page .guide-trust {
+  box-shadow: 0 16px 38px rgb(16 24 40 / 7%);
+}
+
+.public-guide-page .guide-mode-tabs button {
+  box-shadow: 0 5px 16px rgb(16 24 40 / 4%);
+}
+
+.public-guide-page .guide-mode-tabs button.is-active {
+  box-shadow: 0 12px 28px rgb(0 100 255 / 10%);
+}
+
+.public-guide-page .guide-feature__steps li {
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.public-guide-page .guide-feature__steps li:hover {
+  border-color: #b9cff5;
+  box-shadow: 0 7px 18px rgb(16 24 40 / 5%);
+  transform: translateY(-1px);
+}
+
+.public-guide-page .guide-feature__copy > span:empty {
+  display: none;
+}
+
+.public-guide-page .guide-feature__copy > span:empty + h2 {
+  margin-top: 0;
+}
+
 /* 담당자 7 | F-COM-013 확장: FAQ는 공지 데이터를 질문·답변 아코디언으로 표시한다. */
 .faq-list { display: grid; gap: 14px; }
 .faq-item { overflow: hidden; border: 1px solid #e1e6ef; border-radius: 16px; background: #fff; box-shadow: 0 5px 16px rgb(16 24 40 / 4%); transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease; }
@@ -70,6 +191,31 @@
 .faq-item__answer > span { background: #0064ff; color: #fff; }
 .faq-item__answer p { margin: 4px 0 0; color: #475467; line-height: 1.75; white-space: pre-wrap; }
 
+/* 담당자 7: FAQ 로딩도 실제 질문 행과 같은 배지·제목·화살표 배치로 표시합니다. */
+.faq-list--skeleton {
+  opacity: 0;
+  animation: public-notice-skeleton-reveal 0s linear 250ms forwards;
+}
+
+.faq-item--skeleton {
+  display: grid;
+  min-height: 76px;
+  box-sizing: border-box;
+  grid-template-columns: 34px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 22px;
+}
+
+.faq-item--skeleton:hover {
+  border-color: #e1e6ef;
+  transform: none;
+}
+
+.faq-item--skeleton > span:nth-child(2) { min-width: 0; }
+
+.public-notice-list-toolbar--loading,
+.public-notice-skeleton,
 .public-notice-detail-skeleton {
   --notice-skeleton-base: #f0f2f5;
   --notice-skeleton-highlight: #fafafa;
@@ -78,6 +224,26 @@
   animation: public-notice-skeleton-reveal 0s linear 250ms forwards;
 }
 
+.public-notice-skeleton {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  gap: 12px;
+}
+
+.public-notice-skeleton__search {
+  display: flex;
+  width: clamp(320px, 40%, 440px);
+  min-width: 0;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.public-notice-skeleton__summary,
+.public-notice-skeleton__search span,
+.public-notice-skeleton__row span,
 .public-notice-detail-skeleton__back,
 .public-notice-detail-skeleton__header span,
 .public-notice-detail-skeleton__header strong,
@@ -94,6 +260,66 @@
   animation: public-notice-skeleton-shimmer 1.25s ease-in-out infinite;
 }
 
+.public-notice-skeleton__summary {
+  display: block;
+  width: 120px;
+  max-width: 100%;
+  height: 18px;
+  flex: 0 1 120px;
+}
+
+.public-notice-skeleton__search span {
+  display: block;
+  min-width: 0;
+  height: 42px;
+  box-sizing: border-box;
+}
+
+.public-notice-skeleton__search span:first-child { flex: 1 1 auto; }
+.public-notice-skeleton__search span:last-child { width: 68px; flex: 0 0 68px; }
+
+.public-notice-skeleton__table {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid #f0efec;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.public-notice-skeleton__row {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  grid-template-columns: 74px 92px minmax(0, 1fr) 124px 64px;
+  align-items: center;
+  min-height: 62px;
+  border-top: 1px solid #f0efec;
+}
+
+.public-notice-skeleton__row--head {
+  min-height: 42px;
+  border-top: 0;
+  background: #fafaf8;
+}
+
+.public-notice-skeleton__row span {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  height: 12px;
+  box-sizing: border-box;
+  margin: 0;
+}
+.public-notice-skeleton__row span:nth-child(1) { width: 42px; justify-self: center; }
+.public-notice-skeleton__row span:nth-child(2) { width: 58px; justify-self: center; }
+.public-notice-skeleton__row span:nth-child(3) { width: calc(100% - 24px); justify-self: center; }
+.public-notice-skeleton__row span:nth-child(4) { width: 86px; justify-self: center; }
+.public-notice-skeleton__row span:nth-child(5) { width: 38px; justify-self: center; }
+
 .public-notice-detail-skeleton {
   display: grid;
   gap: 18px;
@@ -109,8 +335,9 @@
   gap: 14px;
   padding: 28px 30px;
   border: 1px solid var(--notice-skeleton-border);
-  border-radius: 8px;
+  border-radius: 20px;
   background: #fff;
+  box-shadow: 0 12px 30px rgb(16 24 40 / 5%);
 }
 
 .public-notice-detail-skeleton__header > span {
@@ -139,8 +366,9 @@
   gap: 12px;
   padding: 30px;
   border: 1px solid var(--notice-skeleton-border);
-  border-radius: 8px;
+  border-radius: 20px;
   background: #fff;
+  box-shadow: 0 10px 28px rgb(16 24 40 / 4%);
 }
 
 .public-notice-detail-skeleton__content span {
@@ -180,9 +408,28 @@
   .public-notice-search .btn {
     flex: 1;
   }
+  .public-notice-skeleton__summary { width: 120px; flex-basis: 120px; }
+  .public-notice-skeleton__search { width: 100%; flex-wrap: wrap; }
+  .public-notice-skeleton__search span:first-child { flex-basis: 100%; }
+  .public-notice-skeleton__search span:last-child { width: 100%; flex: 1 1 100%; }
+  .public-notice-skeleton__row {
+    grid-template-columns: 70px minmax(0, 1fr) 112px;
+    min-height: 46px;
+  }
+  .public-notice-skeleton__row--head { display: none; }
+  .public-notice-skeleton__row span:nth-child(1) { grid-column: 1; }
+  .public-notice-skeleton__row span:nth-child(2),
+  .public-notice-skeleton__row span:nth-child(5) { display: none; }
+  .public-notice-skeleton__row span:nth-child(3) { grid-column: 2; }
+  .public-notice-skeleton__row span:nth-child(4) { display: block; grid-column: 3; }
   .public-notice-detail-skeleton__header,
   .public-notice-detail-skeleton__content { padding: 20px; }
   .public-notice-detail-skeleton__header strong { width: 100%; }
+  .notice-detail .notice-detail__header,
+  .notice-detail .notice-detail__content { padding: 22px 20px; }
+  .notice-detail .notice-detail__header h1 { font-size: 25px; }
+  .notice-detail .notice-detail__meta span + span::before { margin: 0 8px; }
   .faq-item summary,
   .faq-item__answer { padding: 16px; }
+  .faq-item--skeleton { padding: 16px; }
 }

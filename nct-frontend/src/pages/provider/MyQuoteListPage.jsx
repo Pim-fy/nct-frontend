@@ -5,6 +5,7 @@ import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { confirm, toast } from "@utils/common";
 import { useMyQuotes, useWithdrawQuote } from "@hooks/useQuote";
+import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
 
 // ─── 상태 매핑 ────────────────────────────────────────────────────────────────
 
@@ -97,7 +98,7 @@ function QuoteCard({ quote, onEdit, onCancel }) {
 
 // ─── 메인 ────────────────────────────────────────────────────────────────────
 
-export default function MyQuoteListPage() {
+export default function MyQuoteListPage({ embedded = false } = {}) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("대기중");
 
@@ -128,6 +129,9 @@ export default function MyQuoteListPage() {
 
   const countOf = (s) => quotes.filter((q) => q.status === s).length;
   const totalCount = quotes.length;
+  const pageHeader = embedded
+    ? <MyPageContentHeader title="내 견적" />
+    : <h2 className="m-0 text-[22px] font-bold text-[#1a1a1a]">내 견적</h2>;
 
   const handleEdit = (quote) => {
     if (quote.editCount >= 3) {
@@ -166,7 +170,7 @@ export default function MyQuoteListPage() {
   if (isLoading) {
     return (
       <div className="flex flex-col gap-5">
-        <h2 className="text-[22px] font-bold text-[#1a1a1a] m-0">내 견적</h2>
+        {pageHeader}
         <div className="flex items-center justify-center py-20">
           <p className="text-[15px] text-[#969696]">불러오는 중...</p>
         </div>
@@ -177,7 +181,7 @@ export default function MyQuoteListPage() {
   if (isError) {
     return (
       <div className="flex flex-col gap-5">
-        <h2 className="text-[22px] font-bold text-[#1a1a1a] m-0">내 견적</h2>
+        {pageHeader}
         <div className="flex items-center justify-center py-20">
           <p className="text-[15px] text-[#969696]">견적 목록을 불러올 수 없습니다.</p>
         </div>
@@ -189,7 +193,7 @@ export default function MyQuoteListPage() {
     <div className="flex flex-col gap-5">
 
       {/* 헤더 */}
-      <h2 className="text-[22px] font-bold text-[#1a1a1a] m-0">내 견적</h2>
+      {pageHeader}
 
       {/* 탭 */}
       <div className="tab-group-1">

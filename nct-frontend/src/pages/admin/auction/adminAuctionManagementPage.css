@@ -15,5 +15,7 @@
 .admin-auction-cancellation textarea { min-height: 88px; resize: vertical; padding: 10px; border: 1px solid #d8ddeb; border-radius: 8px; font: inherit; }
 .admin-auction-cancellation__notice { margin: 10px 0 0; color: #68718d; font-size: 13px; line-height: 1.55; }
 .admin-auction-cancellation__validation { margin: 8px 0 0; color: #d92d20; font-size: 13px; font-weight: 600; }
+.admin-auction-cancellation__sync-status { margin: 14px 0 0; padding: 10px 12px; border-radius: 8px; background: #f3f5fa; color: #53607d; font-size: 13px; line-height: 1.5; }
+.admin-auction-cancellation__sync-status.is-error { background: #fff1f0; color: #b42318; }
 .admin-auction-cancellation__actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
 .admin-auction-cancellation__result { margin: 20px 0 0; padding: 12px; border-radius: 8px; background: #f3f5fa; color: #3d4665; line-height: 1.6; }

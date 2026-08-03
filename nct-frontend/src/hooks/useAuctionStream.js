@@ -19,6 +19,7 @@ export function useAuctionStream(auctionId) {
         type: 'active',
       });
       queryClient.invalidateQueries({ queryKey: ['auctions'] });
+      queryClient.invalidateQueries({ queryKey: ['landing-curation', 'auctions'] });
       queryClient.invalidateQueries({ queryKey: ['bids', 'my'] });
       queryClient.invalidateQueries({ queryKey: ['point', 'balance'] });
     };

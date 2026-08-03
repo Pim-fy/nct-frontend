@@ -221,21 +221,21 @@ const PointWalletPage = ({ embedded = false } = {}) => {
           <>
             <button
               type="button"
-              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg px-5 py-2.5 transition-colors"
+              className="whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium rounded-lg px-3 py-2 sm:px-5 sm:py-2.5 transition-colors"
               onClick={() => setOpenModal('charge')}
             >
               충전
             </button>
             <button
               type="button"
-              className="border border-blue-600 text-blue-600 hover:bg-blue-50 text-sm font-medium rounded-lg px-5 py-2.5 transition-colors"
+              className="whitespace-nowrap border border-blue-600 text-blue-600 hover:bg-blue-50 text-xs sm:text-sm font-medium rounded-lg px-3 py-2 sm:px-5 sm:py-2.5 transition-colors"
               onClick={() => setOpenModal('convert')}
             >
               전환
             </button>
             <button
               type="button"
-              className="border border-blue-600 text-blue-600 hover:bg-blue-50 text-sm font-medium rounded-lg px-5 py-2.5 transition-colors"
+              className="whitespace-nowrap border border-blue-600 text-blue-600 hover:bg-blue-50 text-xs sm:text-sm font-medium rounded-lg px-3 py-2 sm:px-5 sm:py-2.5 transition-colors"
               onClick={() => setOpenModal('exchange')}
             >
               환전

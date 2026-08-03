@@ -12,6 +12,7 @@
 //     targetName="홍길동"              // (선택) 신고 대상 이름 pre-fill
 //     targetType="provider"           // (선택) 'provider'|'trade'|'service'|'review'|'direct'
 //     referenceSn={123}               // (선택) 거래번호 등 참조 ID
+//     reportedUserSn={123}            // (선택) 피신고자 회원번호
 //     reportTypeLabel="제공자 프로필"   // (선택) 신고 유형 pre-fill
 //     contextLabel="제공자: 홍길동"     // (선택) 모달 상단에 컨텍스트 표시
 //   />
@@ -52,6 +53,7 @@ export default function ReportModal({
   targetName: initialTargetName = "",
   targetType = "direct",
   referenceSn,
+  reportedUserSn,
   reportTypeLabel = "",
   contextLabel = "",
 }) {
@@ -123,8 +125,10 @@ export default function ReportModal({
     if (Object.keys(errs).length) { setErrors(errs); return; }
 
     try {
+      // 담당자 7 · F-COM-015: 제공자 신고 대상 회원번호를 공통 신고 계약에 전달합니다.
       await mutateAsync({
         reportTypeCode:    TYPE_CODE_MAP[form.types[0]] ?? "ABRC0004",
+        reportedUserSn:    reportedUserSn ?? null,
         referenceTypeCode: REF_TYPE_CODE_MAP[targetType] ?? null,
         referenceSn:       referenceSn ?? null,
         targetName:        form.targetName.trim() || null,

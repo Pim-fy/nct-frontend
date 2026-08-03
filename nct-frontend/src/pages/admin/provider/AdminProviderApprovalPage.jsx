@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import AdminModal from '@components/admin/AdminModal';
+import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminTable from '@components/admin/AdminTable';
 import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
@@ -11,6 +12,7 @@ import {
   useApproveProviderApplication,
   useRejectProviderApplication,
 } from '@hooks/useAdminProviderApplications';
+import useClientPagination from '@hooks/useClientPagination';
 import { getAdminProviderApplicationFileDownloadUrl } from '@api/providerApplicationApi';
 import '../notice/adminContentPages.css';
 import './adminProviderApprovalPage.css';
@@ -40,6 +42,7 @@ const TYPE_NAMES = {
   PRVC0010: '추가',
   PRVC0011: '갱신',
 };
+const PAGE_SIZE = 20;
 
 const toDisplayItem = (item) => ({
   ...item,
@@ -96,8 +99,19 @@ const AdminProviderApprovalPage = () => {
     }),
     [applies, filter],
   );
+  const {
+    page,
+    pagedItems: pagedApplications,
+    resetPage,
+    setPage,
+    totalItems,
+    totalPages,
+  } = useClientPagination(filtered, PAGE_SIZE);
 
-  const change = ({ target }) => setFilter((current) => ({ ...current, [target.name]: target.value }));
+  const change = ({ target }) => {
+    setFilter((current) => ({ ...current, [target.name]: target.value }));
+    resetPage();
+  };
 
   const open = (item) => {
     setSelected(item);
@@ -194,7 +208,7 @@ const AdminProviderApprovalPage = () => {
 
       {!applicationsQuery.isError && (
         <AdminSectionCard
-          action={!applicationsQuery.isLoading && <span>총 {filtered.length}건</span>}
+          action={!applicationsQuery.isLoading && <span>총 {totalItems}건</span>}
           className="admin-notice-list admin-provider-list"
           description="기본은 심사 대기 건만 보여 주며, 승인·반려 이력은 심사 상태 필터에서 조회합니다."
           title="제공자 신청 목록"
@@ -202,12 +216,19 @@ const AdminProviderApprovalPage = () => {
           <div className="admin-table-scroll">
             <AdminTable
               columns={columns}
-              data={filtered}
+              data={pagedApplications}
               emptyMessage="조건에 맞는 신청 자료가 없습니다."
               loading={applicationsQuery.isLoading}
               rowKey={(item) => item.id}
             />
           </div>
+          <AdminPagination
+            ariaLabel="제공자 신청 목록 페이지 이동"
+            disabled={applicationsQuery.isFetching}
+            onPageChange={setPage}
+            page={page}
+            totalPages={totalPages}
+          />
         </AdminSectionCard>
       )}
 

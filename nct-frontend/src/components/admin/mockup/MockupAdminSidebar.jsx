@@ -1,13 +1,14 @@
 import { createElement } from 'react';
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '@hooks/useAuth';
 import {
   Bell,
-  BookOpenCheck,
   BriefcaseBusiness,
   ClipboardCheck,
   Gavel,
   Grid2X2,
   LayoutDashboard,
+  LogOut,
   Megaphone,
   ScrollText,
   Settings,
@@ -25,7 +26,7 @@ const MENU_SECTIONS = [
     { label: '알림', icon: Bell, to: '/admin/notifications' },
   ],
   [
-    { label: '회원 관리', icon: Users },
+    { label: '회원 관리', icon: Users, to: '/admin/members' },
     { label: '제공자 심사', icon: ClipboardCheck, to: '/admin/provider-applications' },
   ],
   [{ label: '경매 관리', icon: Gavel, to: '/admin/auctions' }],
@@ -36,7 +37,6 @@ const MENU_SECTIONS = [
   [{ label: '환전 관리', icon: WalletCards, to: '/admin/exchanges' }],
   [
     { label: '공지 관리', icon: Megaphone, to: '/admin/notices' },
-    { label: '이용가이드 관리', icon: BookOpenCheck, to: '/admin/guides' },
   ],
   [{ label: '신고 처리', icon: Siren, to: '/admin/reports' }],
   [
@@ -45,56 +45,75 @@ const MENU_SECTIONS = [
   ],
 ];
 
-const MockupAdminSidebar = ({ collapsed = false, id, onNavigate }) => (
-  <aside
-    aria-label="관리자 메뉴 미리보기"
-    className={`mockup-admin-sidebar${collapsed ? ' is-collapsed' : ''}`}
-    id={id}
-  >
-    <nav className="mockup-admin-nav" aria-label="관리자 화면 목록">
-      {MENU_SECTIONS.map((section, sectionIndex) => (
-        <div className="mockup-admin-nav__section" key={`admin-menu-${sectionIndex}`}>
-          {section.map(({ label, icon: Icon, to }) => (
-            to ? (
-              <NavLink
-                className={({ isActive }) => `mockup-admin-nav__item${isActive ? ' is-active' : ''}`}
-                end={to === '/admin'}
-                key={label}
-                onClick={onNavigate}
-                title={collapsed ? label : undefined}
-                to={to}
-              >
-                {createElement(Icon, { 'aria-hidden': true })}
-                <span><strong>{label}</strong></span>
-              </NavLink>
-            ) : (
-              <div
-                aria-disabled="true"
-                className="mockup-admin-nav__item is-pending"
-                key={label}
-                title={collapsed ? label : undefined}
-              >
-                {createElement(Icon, { 'aria-hidden': true })}
-                <span><strong>{label}</strong></span>
-              </div>
-            )
-          ))}
-        </div>
-      ))}
+const MockupAdminSidebar = ({ collapsed = false, id, onNavigate }) => {
+  // 담당자 7: 관리자 공통 화면에서 기존 인증 계약을 소비해 로그아웃 진입점만 제공합니다.
+  const { logout, loading } = useAuth();
 
-      <div className="mockup-admin-nav__section is-preview">
-        <NavLink
-          className={({ isActive }) => `mockup-admin-nav__item${isActive ? ' is-active' : ''}`}
-          onClick={onNavigate}
-          title={collapsed ? '위험 이벤트' : undefined}
-          to="/admin/risk-events"
+  return (
+    <aside
+      aria-label="관리자 메뉴 미리보기"
+      className={`mockup-admin-sidebar${collapsed ? ' is-collapsed' : ''}`}
+      id={id}
+    >
+      <nav className="mockup-admin-nav" aria-label="관리자 화면 목록">
+        {MENU_SECTIONS.map((section, sectionIndex) => (
+          <div className="mockup-admin-nav__section" key={`admin-menu-${sectionIndex}`}>
+            {section.map(({ label, icon: Icon, to }) => (
+              to ? (
+                <NavLink
+                  className={({ isActive }) => `mockup-admin-nav__item${isActive ? ' is-active' : ''}`}
+                  end={to === '/admin'}
+                  key={label}
+                  onClick={onNavigate}
+                  title={collapsed ? label : undefined}
+                  to={to}
+                >
+                  {createElement(Icon, { 'aria-hidden': true })}
+                  <span><strong>{label}</strong></span>
+                </NavLink>
+              ) : (
+                <div
+                  aria-disabled="true"
+                  className="mockup-admin-nav__item is-pending"
+                  key={label}
+                  title={collapsed ? label : undefined}
+                >
+                  {createElement(Icon, { 'aria-hidden': true })}
+                  <span><strong>{label}</strong></span>
+                </div>
+              )
+            ))}
+          </div>
+        ))}
+
+        <div className="mockup-admin-nav__section is-preview">
+          <NavLink
+            className={({ isActive }) => `mockup-admin-nav__item${isActive ? ' is-active' : ''}`}
+            onClick={onNavigate}
+            title={collapsed ? '위험 이벤트' : undefined}
+            to="/admin/risk-events"
+          >
+            <Siren aria-hidden="true" />
+            <span><strong>위험 이벤트</strong></span>
+          </NavLink>
+        </div>
+      </nav>
+
+      <div className="mockup-admin-sidebar__footer">
+        <button
+          aria-label="관리자 로그아웃"
+          className="mockup-admin-nav__item mockup-admin-sidebar__logout"
+          disabled={loading}
+          onClick={() => void logout()}
+          title={collapsed ? '로그아웃' : undefined}
+          type="button"
         >
-          <Siren aria-hidden="true" />
-          <span><strong>위험 이벤트</strong></span>
-        </NavLink>
+          <LogOut aria-hidden="true" />
+          <span><strong>{loading ? '로그아웃 중...' : '로그아웃'}</strong></span>
+        </button>
       </div>
-    </nav>
-  </aside>
-);
+    </aside>
+  );
+};
 
 export default MockupAdminSidebar;
