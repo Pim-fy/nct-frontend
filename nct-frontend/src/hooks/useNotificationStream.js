@@ -1,7 +1,7 @@
 // src/hooks/useNotificationStream.js
 // 알림 실시간 push 구독 훅 (SSE)
 // - EventSource로 백엔드 /api/notification/stream을 열어두고, 'notification' 이벤트가 오면
-//   알림 목록 쿼리(['notification','list'])를 invalidate한다 — SiteHeader 배지와 알림함
+//   알림 목록 쿼리(['notification','list'])를 invalidate한다 — Header 배지와 알림함
 //   페이지가 같은 queryKey를 공유하므로 이 한 줄로 둘 다 갱신된다.
 // - Access Token(쿠키) 수명이 30분이고 EventSource 재연결은 axios의 401→refresh 인터셉터를
 //   타지 않으므로, 구독 중엔 주기적으로 /auth/refresh를 백그라운드 호출해 쿠키를 계속 갱신한다.
