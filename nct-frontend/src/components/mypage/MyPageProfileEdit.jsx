@@ -353,60 +353,59 @@ export default function MyPageProfileEdit({ user }) {
           </div>
 
           {/* 비밀번호 */}
-          <div>
-            <label className="block font-bold text-[14px] text-[#404040] mb-0.5">현재 비밀번호</label>
-            <input
-              type="password"
-              className={FIELD_CLASS}
-              value={form.currentPassword}
-              onChange={handleChange("currentPassword")}
-              readOnly={!passwordChangeable}
-              onFocus={handlePasswordFieldBlocked}
-              onClick={handlePasswordFieldBlocked}
-              placeholder={passwordChangeable ? "********" : "소셜 로그인 계정은 비밀번호가 없습니다"}
-            />
-          </div>
-          <div>
-            <label className="block font-bold text-[14px] text-[#404040] mb-0.5">새 비밀번호</label>
-            <input
-              type="password"
-              className={FIELD_CLASS}
-              value={form.newPassword}
-              onChange={handleChange("newPassword")}
-              readOnly={!passwordChangeable}
-              onFocus={handlePasswordFieldBlocked}
-              onClick={handlePasswordFieldBlocked}
-              placeholder={passwordChangeable ? "********" : "소셜 로그인 계정은 비밀번호가 없습니다"}
-            />
-          </div>
-          <div>
-            <label className="block font-bold text-[14px] text-[#404040] mb-0.5">새 비밀번호 확인</label>
-            <input
-              type="password"
-              className={FIELD_CLASS}
-              value={form.newPasswordConfirm}
-              onChange={handleChange("newPasswordConfirm")}
-              readOnly={!passwordChangeable}
-              onFocus={handlePasswordFieldBlocked}
-              onClick={handlePasswordFieldBlocked}
-              placeholder={passwordChangeable ? "********" : "소셜 로그인 계정은 비밀번호가 없습니다"}
-            />
-          </div>
-          {!passwordChangeable && (
-            <p className="text-[12px] text-[#969696]">
-              소셜 로그인(카카오·네이버·구글)으로 가입한 계정은 비밀번호를 생성·저장할 수 없습니다.
-            </p>
+          {passwordChangeable ? (
+            <>
+              <div>
+                <label className="block font-bold text-[14px] text-[#404040] mb-0.5">현재 비밀번호</label>
+                <input
+                  type="password"
+                  className={FIELD_CLASS}
+                  value={form.currentPassword}
+                  onChange={handleChange("currentPassword")}
+                  placeholder="********"
+                />
+              </div>
+              <div>
+                <label className="block font-bold text-[14px] text-[#404040] mb-0.5">새 비밀번호</label>
+                <input
+                  type="password"
+                  className={FIELD_CLASS}
+                  value={form.newPassword}
+                  onChange={handleChange("newPassword")}
+                  placeholder="********"
+                />
+              </div>
+              <div>
+                <label className="block font-bold text-[14px] text-[#404040] mb-0.5">새 비밀번호 확인</label>
+                <input
+                  type="password"
+                  className={FIELD_CLASS}
+                  value={form.newPasswordConfirm}
+                  onChange={handleChange("newPasswordConfirm")}
+                  placeholder="********"
+                />
+              </div>
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleChangePassword}
+                  disabled={isChangingPassword}
+                  className="btn btn-outline btn-sm"
+                >
+                  {isChangingPassword ? "변경 중..." : "비밀번호 변경"}
+                </button>
+              </div>
+            </>
+          ) : (
+            <div>
+              <label className="block font-bold text-[14px] text-[#404040] mb-0.5">비밀번호</label>
+              <div className="rounded-[5px] border border-[#e8e9ec] bg-[#f5f7fc] px-3.5 py-3">
+                <p className="m-0 text-[13px] text-[#767676]">
+                  소셜 로그인(카카오·네이버·구글)으로 가입한 계정은 비밀번호가 없어 변경할 수 없습니다.
+                </p>
+              </div>
+            </div>
           )}
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={handleChangePassword}
-              disabled={isChangingPassword || !passwordChangeable}
-              className="btn btn-outline btn-sm"
-            >
-              {isChangingPassword ? "변경 중..." : "비밀번호 변경"}
-            </button>
-          </div>
 
           {/* 주소 */}
           <div>
@@ -555,8 +554,8 @@ export default function MyPageProfileEdit({ user }) {
                       className="flex-1 flex items-center gap-1.5 h-full text-left min-w-0"
                     >
                       {isOpen
-                        ? <ChevronDown size={14} className="text-[#0064ff] shrink-0" />
-                        : <ChevronUp   size={14} className="text-[#0064ff] shrink-0" />
+                        ? <ChevronUp   size={14} className="text-[#0064ff] shrink-0" />
+                        : <ChevronDown size={14} className="text-[#0064ff] shrink-0" />
                       }
                       <span>
                         <span className="text-[15px] font-semibold text-[#1a1a1a]">{domainLabel}</span>
