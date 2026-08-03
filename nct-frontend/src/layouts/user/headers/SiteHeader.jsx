@@ -100,7 +100,8 @@ const SiteHeader = () => {
   const categoryOpen = categoryHovered;
 
   const [serviceHovered, setServiceHovered] = useState(false);
-  const serviceMenuOpen = serviceHovered;
+  const serviceMenuOpen = isProvider && serviceHovered;
+  const serviceMenuPath = isProvider ? '/service' : '/service-requests/new';
 
   const [customerHovered, setCustomerHovered] = useState(false);
   const customerOpen = customerHovered;
@@ -117,8 +118,9 @@ const SiteHeader = () => {
   const [isPageHidden, setIsPageHidden] = useState(false);
   const isAuctionSearchRoute = pathname === '/auction'
     || /^\/auction\/[^/]+$/.test(pathname);
-  const isServiceSearchRoute = pathname === '/service'
-    || /^\/service-requests\/\d+$/.test(pathname);
+  const isServiceSearchRoute = isProvider && (
+    pathname === '/service' || /^\/service-requests\/\d+$/.test(pathname)
+  );
   const hasHeaderSearch = isAuctionSearchRoute || isServiceSearchRoute;
   let headerCreateActionType = null;
   const canShowCreateAction = !authLoading && (!user || user.role === 'ROLE_USER');
@@ -380,13 +382,13 @@ const SiteHeader = () => {
               className="relative"
               onMouseEnter={() => {
                 setCategoryHovered(false);
-                setServiceHovered(true);
+                setServiceHovered(isProvider);
                 setCustomerHovered(false);
               }}
               onMouseLeave={() => setServiceHovered(false)}
             >
               <Link
-                to="/service"
+                to={serviceMenuPath}
                 className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${serviceMenuOpen ? 'text-primary' : 'text-[#333333]'}`}
                 onClick={() => setServiceHovered(false)}
               >
@@ -823,34 +825,47 @@ const SiteHeader = () => {
               </div>
             )}
 
-            {/* 서비스 (아코디언) */}
-            <div className="border-b border-[#f0f0f0]">
-              <button
-                type="button"
-                className="flex w-full items-center justify-between py-4 text-[20px] font-bold text-[#333333]"
-                onClick={() => setMobileServiceOpen((v) => !v)}
-              >
-                {isProvider ? '견적 목록' : '견적 요청'}
-                <ChevronRight size={20} className={`transition-transform ${mobileServiceOpen ? 'rotate-90' : ''}`} />
-              </button>
-              {mobileServiceOpen && (
-                <div className="flex flex-col gap-1 pb-3 pl-2">
-                  <Link to="/service" className="py-2 text-[16px] font-bold text-primary" onClick={closeMobileMenu}>
-                    전체보기
-                  </Link>
-                  {SERVICE_CATEGORIES.map((label) => (
-                    <Link
-                      key={label}
-                      to={`/service?category=${encodeURIComponent(label)}`}
-                      className="py-2 text-[15px] text-[#4e4e4e]"
-                      onClick={closeMobileMenu}
-                    >
-                      {label}
+            {/* 담당자 7 통합: 일반회원은 작성으로, 제공자는 요청 목록으로 이동합니다. */}
+            {isProvider ? (
+              <div className="border-b border-[#f0f0f0]">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between py-4 text-[20px] font-bold text-[#333333]"
+                  onClick={() => setMobileServiceOpen((v) => !v)}
+                >
+                  견적 목록
+                  <ChevronRight size={20} className={`transition-transform ${mobileServiceOpen ? 'rotate-90' : ''}`} />
+                </button>
+                {mobileServiceOpen && (
+                  <div className="flex flex-col gap-1 pb-3 pl-2">
+                    <Link to="/service" className="py-2 text-[16px] font-bold text-primary" onClick={closeMobileMenu}>
+                      전체보기
                     </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+                    {SERVICE_CATEGORIES.map((label) => (
+                      <Link
+                        key={label}
+                        to={`/service?category=${encodeURIComponent(label)}`}
+                        className="py-2 text-[15px] text-[#4e4e4e]"
+                        onClick={closeMobileMenu}
+                      >
+                        {label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="border-b border-[#f0f0f0]">
+                <Link
+                  to="/service-requests/new"
+                  className="flex w-full items-center justify-between py-4 text-[20px] font-bold text-[#333333]"
+                  onClick={closeMobileMenu}
+                >
+                  견적 요청
+                  <ChevronRight size={20} />
+                </Link>
+              </div>
+            )}
 
             <div className="border-b border-[#f0f0f0]">
               <button

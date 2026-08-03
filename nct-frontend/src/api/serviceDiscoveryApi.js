@@ -126,7 +126,8 @@ export const fetchServiceDiscovery = async ({
       page: isProviderView ? Math.max(0, page - 1) : Math.max(1, page),
       size,
     },
-    skipAuthRefresh: true,
+    // 제공자 프로필 검색은 공개 계약이고, 서비스 요청 검색은 제공자 인증 계약이다.
+    skipAuthRefresh: isProviderView,
     skipServerErrorRedirect: true,
   });
   return normalizeDiscoveryResult(response.data.data, view, page, size);

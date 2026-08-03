@@ -55,7 +55,7 @@ export default function ServiceMenuSection({ hotItems = [], isError, isLoading }
     <section className="bg-white py-10">
       <div className="max-w-[1600px] mx-auto px-8 flex items-start gap-8">
 
-        {/* 서비스 아이콘 메뉴 */}
+        {/* 담당자 7 통합: 서비스 카테고리는 검색이 아니라 견적 요청서 작성 진입점입니다. */}
         <div className="flex items-center gap-8 flex-1 min-w-0 pt-4">
           <h2 className="text-[22px] font-bold text-black leading-tight shrink-0">
             SERVICE<br />MENU
@@ -65,7 +65,7 @@ export default function ServiceMenuSection({ hotItems = [], isError, isLoading }
               <button
                 key={item.label}
                 type="button"
-                onClick={() => navigate(`/service?category=${encodeURIComponent(item.category)}`)}
+                onClick={() => navigate('/service-requests/new')}
                 className="flex flex-col items-center justify-center bg-white border border-[rgba(0,0,0,0.1)] rounded-[20px] size-[150px] hover:shadow-md transition-shadow shrink-0"
               >
                 <img src={item.image} alt={item.label} className="w-[53px] h-[47px] object-contain mb-2" />

@@ -3,22 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { assets } from "./assets";
 
-const SEARCH_TARGETS = [
-  {
-    id: "auction",
-    label: "경매 상품",
-    toggleLabel: "경매",
-    path: "/auction",
-    placeholder: "원하는 경매 상품을 검색하세요.",
-  },
-  {
-    id: "service",
-    label: "견적 요청",
-    toggleLabel: "견적",
-    path: "/service",
-    placeholder: "필요한 서비스 요청을 검색하세요.",
-  },
-];
+const AUCTION_SEARCH = {
+  label: "경매 상품",
+  path: "/auction",
+  placeholder: "원하는 경매 상품을 검색하세요.",
+};
 
 const SLIDE = {
   eyebrow: "START GUIDE",
@@ -33,21 +22,17 @@ const SLIDE = {
 export default function HeroSection({ hotItems = [] }) {
   const navigate = useNavigate();
   const [keyword, setKeyword] = useState("");
-  const [searchTarget, setSearchTarget] = useState("auction");
-
-  const selectedSearchTarget = SEARCH_TARGETS.find((item) => item.id === searchTarget)
-    ?? SEARCH_TARGETS[0];
   const hotTags = hotItems.slice(0, 5);
 
   const runSearch = (value) => {
     const trimmed = value.trim();
     if (!trimmed) return;
-    navigate(`${selectedSearchTarget.path}?keyword=${encodeURIComponent(trimmed)}`);
+    navigate(`${AUCTION_SEARCH.path}?keyword=${encodeURIComponent(trimmed)}`);
   };
 
   return (
     <>
-      {/* 담당자 7: develop 반응형 히어로에 경매·견적 검색 전환 계약을 통합합니다. */}
+      {/* 담당자 7 통합: 비회원·일반회원 홈 검색은 공개 경매만 제공합니다. */}
       <div className="relative z-10 pt-10">
         <div className="w-[95%] max-w-[880px] mx-auto">
           <h1 className="text-center text-[50px] font-bold leading-tight tracking-[-2.5px] mb-5">
@@ -75,47 +60,20 @@ export default function HeroSection({ hotItems = [] }) {
 
         <div className="w-[95%] max-w-[880px] mx-auto">
           <div className="flex items-center bg-white rounded-full shadow-[0px_4px_20px_0px_rgba(0,0,0,0.15)] border-2 border-[#0064ff] px-6 h-[73px]">
-            <button
-              aria-checked={searchTarget === "service"}
-              aria-label={`검색 종류 전환, 현재 ${selectedSearchTarget.label}`}
-              className={`relative h-[36px] w-[92px] shrink-0 cursor-pointer overflow-hidden rounded-[18px] text-[15px] font-bold text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16),0_2px_5px_rgba(17,24,39,0.14)] outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[#0064ff]/25 ${
-                searchTarget === "service"
-                  ? "bg-gradient-to-r from-[#00bfc9] to-[#0099a6]"
-                  : "bg-gradient-to-r from-[#0064ff] to-[#0048d9]"
-              }`}
-              onClick={() => setSearchTarget((current) => (
-                current === "auction" ? "service" : "auction"
-              ))}
-              role="switch"
-              type="button"
-            >
-              <span
-                aria-hidden="true"
-                className={`absolute left-[4px] top-[4px] h-[28px] w-[28px] rounded-full border border-white/80 bg-white shadow-[0_1px_4px_rgba(17,24,39,0.2)] transition-transform duration-200 ease-out ${
-                  searchTarget === "service" ? "translate-x-[56px]" : "translate-x-0"
-                }`}
-              />
-              <span
-                className={`absolute top-1/2 -translate-y-1/2 whitespace-nowrap text-center tracking-[-0.5px] ${
-                  searchTarget === "service"
-                    ? "left-[4px] right-[36px]"
-                    : "left-[36px] right-[4px]"
-                }`}
-              >
-                {selectedSearchTarget.toggleLabel}
-              </span>
-            </button>
+            <span className="inline-flex h-[36px] w-[72px] shrink-0 items-center justify-center rounded-[18px] bg-gradient-to-r from-[#0064ff] to-[#0048d9] text-[15px] font-bold text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16),0_2px_5px_rgba(17,24,39,0.14)]">
+              경매
+            </span>
 
             <div className="w-px h-[32px] bg-[#d9d9d9] mx-4 shrink-0" />
             <input
-              aria-label={`${selectedSearchTarget.label} 검색어`}
+              aria-label={`${AUCTION_SEARCH.label} 검색어`}
               type="text"
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Enter") runSearch(keyword);
               }}
-              placeholder={selectedSearchTarget.placeholder}
+              placeholder={AUCTION_SEARCH.placeholder}
               className="flex-1 bg-transparent text-[18px] text-black placeholder:text-[#b1b1b1] outline-none"
             />
             <button
