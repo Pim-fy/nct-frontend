@@ -16,8 +16,16 @@ import { Skeleton } from '@components/skeleton/BaseSkeleton';
  *
  * pageSize를 주면(전체보기 모달) 내부에서 페이지네이션한다 — 요약 카드(최근 5건)는 pageSize
  * 없이 불러서 그대로 다 보여준다 (2026-07-29, "+" 전체보기 모달을 10건씩 페이지로 보여달라는 요청).
+ *
+ * renderCard(row)를 주면 모바일(sm 미만)에서는 표 대신 카드 목록을 보여준다 — 사유·비고처럼
+ * 폭이 일정치 않은 컬럼이 있는 표를 좁은 화면에서 가로 스크롤 없이 보여주기 위한 것
+ * (사용자 요청, 2026-08-03). 카드의 겉모양(테두리·둥근 모서리·여백)은 셸이 통일해서 책임지고,
+ * renderCard는 안쪽 내용(배지·금액·부가정보 배치)만 반환한다 — 셸이 컬럼 render를 책임지는
+ * 것과 같은 분리. 안 주면 기존처럼 표만 항상 보여준다(하위 호환).
  */
-const PointTable = ({ title, columns, rows, emptyText, onExpand, pageSize, loading = false, loadingRows = 5 }) => {
+const PointTable = ({
+  title, columns, rows, emptyText, onExpand, pageSize, loading = false, loadingRows = 5, renderCard,
+}) => {
   const [page, setPage] = useState(1);
   const pageCount = pageSize ? Math.max(1, Math.ceil(rows.length / pageSize)) : 1;
 
@@ -43,7 +51,31 @@ const PointTable = ({ title, columns, rows, emptyText, onExpand, pageSize, loadi
         )}
       </div>
 
-      <div className="overflow-x-auto bg-white border border-gray-100 rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)]">
+      {renderCard && (
+        <div className="sm:hidden space-y-1.5">
+          {loading && Array.from({ length: loadingRows }).map((_, cardIndex) => (
+            <div key={cardIndex} className="bg-white border border-gray-100 rounded-xl p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)]">
+              <Skeleton height={14} />
+              <Skeleton height={20} className="mt-2" />
+            </div>
+          ))}
+          {!loading && pagedRows.length === 0 && (
+            <div className="text-center text-gray-400 py-10 bg-white border border-gray-100 rounded-xl">
+              {emptyText}
+            </div>
+          )}
+          {!loading && pagedRows.map((row) => (
+            <div
+              key={row.id}
+              className="bg-white border border-gray-100 rounded-xl p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)]"
+            >
+              {renderCard(row)}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className={`${renderCard ? 'hidden sm:block ' : ''}overflow-x-auto bg-white border border-gray-100 rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)]`}>
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 text-gray-500">
