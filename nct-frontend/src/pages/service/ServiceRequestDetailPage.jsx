@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
 import { getServiceRequest, closeServiceRequest } from '@api/serviceRequestApi';
+import { getReceivedQuotes } from '@api/quoteApi';
+import { toImageUrl } from '@api/fileApi';
 import ErrorMessage from '@components/common/ErrorMessage';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
 import Toast from '@components/common/Toast';
@@ -25,6 +27,13 @@ const STATUS_BADGE_CLASS = {
   SVCC0002: 'bg-[#e5efff] text-[#0048bf]',
   SVCC0003: 'bg-[#e8f0fe] text-[#1a56a4]',
   SVCC0004: 'bg-[#f0f0ee] text-[#5f5e5a]',
+};
+
+const QUOTE_STATUS_LABEL = {
+  QUTC0001: '제출됨',
+  QUTC0002: '수정됨',
+  QUTC0004: '선택됨',
+  QUTC0005: '철회됨',
 };
 
 function parseItem(raw) {
@@ -189,6 +198,8 @@ export default function ServiceRequestDetailPage() {
   const [error, setError] = useState('');
   const [closing, setClosing] = useState(false);
   const [toast, setToast] = useState('');
+  const [quotes, setQuotes] = useState([]);
+  const [quotesLoading, setQuotesLoading] = useState(false);
   const headerSearch = (
     <HeaderSearchPortal>
       <SimpleHeaderSearch
@@ -205,6 +216,18 @@ export default function ServiceRequestDetailPage() {
       .catch(() => setError('요청서 정보를 불러오지 못했습니다.'))
       .finally(() => setLoading(false));
   }, [svcReqSn]);
+
+  // 견적 목록은 요청서 본인만 조회 가능(백엔드에서 NOT_RESOURCE_OWNER로 차단) — 요청서 로드 후 본인 확인되면 조회
+  useEffect(() => {
+    if (!request) return;
+    const owner = authenticatedUserId != null && String(authenticatedUserId) === String(request.usrSn);
+    if (!owner) return;
+    setQuotesLoading(true);
+    getReceivedQuotes(svcReqSn)
+      .then(res => setQuotes(res.data ?? []))
+      .catch(() => setQuotes([]))
+      .finally(() => setQuotesLoading(false));
+  }, [request, svcReqSn, authenticatedUserId]);
 
   const handleClose = async () => {
     setClosing(true);
@@ -383,8 +406,22 @@ export default function ServiceRequestDetailPage() {
               </div>
             )}
 
-            {/* TODO: SERVICE_REQUEST_FILE 백엔드 나오면 여기에 등록된 사진 목록 표시 (요청 원문은 위 "요청 항목" 표의
-                "특이사항 메모" 행으로 이동함) */}
+            {/* 첨부사진 — 요청 원문은 위 "요청 항목" 표의 "특이사항 메모" 행으로 이동함 */}
+            {request.imageList?.length > 0 && (
+              <div className="px-6 py-5">
+                <h2 className="mb-4 text-lg font-semibold text-[#5f5e5a]">첨부사진</h2>
+                <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
+                  {request.imageList.map(img => (
+                    <img
+                      key={img.flSn}
+                      src={toImageUrl(img.url)}
+                      alt="요청 사진"
+                      className="aspect-square w-full rounded-lg border border-[#e2e1dc] object-cover"
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </article>
 
           {/* ── 오른쪽: 견적 패널 ── */}
@@ -433,10 +470,36 @@ export default function ServiceRequestDetailPage() {
               </div>
             )}
 
-            {/* 견적 목록 자리 — 황성경(3) QUOTE API 구현 후 연동 */}
-            <div className="px-5 py-6 text-center text-lg text-[#888780]">
-              아직 도착한 견적이 없습니다.
-            </div>
+            {/* 견적 목록 — 본인 요청서일 때만 조회(GET /quotes/service-request/{svcReqSn}) */}
+            {isOwner && (
+              quotesLoading ? (
+                <div className="px-5 py-6 text-center text-lg text-[#888780]">불러오는 중...</div>
+              ) : quotes.length === 0 ? (
+                <div className="px-5 py-6 text-center text-lg text-[#888780]">
+                  아직 도착한 견적이 없습니다.
+                </div>
+              ) : (
+                <ul className="divide-y divide-[#e8e8e8]">
+                  {quotes.map(q => (
+                    <li key={q.qutSn} className="px-5 py-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <span className="font-semibold text-[#1d1d1f]">{q.providerNm}</span>
+                        <span className="shrink-0 rounded-lg bg-[#f0f0ee] px-3 py-1 text-sm font-medium text-[#5f5e5a]">
+                          {QUOTE_STATUS_LABEL[q.statusCode] ?? q.statusCode}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xl font-bold text-primary">{fmtBudget(q.amount)}</p>
+                      {q.content && (
+                        <p className="mt-1 line-clamp-2 text-base text-[#5f5e5a]">{q.content}</p>
+                      )}
+                      {q.registeredAt && (
+                        <p className="mt-1 text-sm text-[#9a9ba5]">{fmtDate(q.registeredAt)} 제출</p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )
+            )}
           </aside>
         </div>
       </div>
