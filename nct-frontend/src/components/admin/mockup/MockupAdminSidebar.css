@@ -2,6 +2,8 @@
   position: fixed;
   inset: 0 auto 0 0;
   z-index: 30;
+  display: flex;
+  flex-direction: column;
   width: 220px;
   overflow-y: auto;
   padding: 12px 10px 16px;
@@ -12,6 +14,8 @@
 }
 
 .mockup-admin-sidebar::-webkit-scrollbar { display: none; }
+
+.mockup-admin-nav { flex: 1 0 auto; }
 
 .mockup-admin-nav__item > svg {
   width: 20px;
@@ -44,6 +48,25 @@
 .mockup-admin-nav__item.is-active { background: var(--color-primary, #0064ff); color: #fff; }
 .mockup-admin-nav__item.is-pending { cursor: not-allowed; opacity: 0.68; }
 .mockup-admin-nav__item.is-pending:hover { background: transparent; color: #d3d1c7; }
+
+.mockup-admin-sidebar__footer {
+  flex: 0 0 auto;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgb(255 255 255 / 13%);
+}
+
+.mockup-admin-sidebar__logout {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mockup-admin-sidebar__logout:hover { background: rgb(239 68 68 / 16%); color: #fecaca; }
+.mockup-admin-sidebar__logout:disabled { cursor: wait; opacity: 0.58; }
 
 .mockup-admin-nav__item span { display: grid; min-width: 0; gap: 2px; }
 .mockup-admin-nav__item strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }

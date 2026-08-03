@@ -1,0 +1,123 @@
+/* 담당자 7 · F-COM-002: 공통 서비스 검색 부품은 유지하고 목록 페이지의 정보 위계만 정리합니다. */
+.service-list-page {
+  position: relative;
+  color: #101828;
+}
+
+.service-list-page__hero {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 28px;
+  border: 1px solid #dbe8ff;
+  border-radius: 22px;
+  padding: 28px 30px;
+  background:
+    radial-gradient(circle at 90% 5%, rgb(0 100 255 / 14%), transparent 31%),
+    linear-gradient(135deg, #f2f7ff 0%, #fff 72%);
+  box-shadow: 0 14px 36px rgb(16 24 40 / 6%);
+}
+
+.service-list-page__hero::after {
+  position: absolute;
+  right: 15%;
+  bottom: -82px;
+  width: 180px;
+  height: 180px;
+  border: 1px solid rgb(0 100 255 / 10%);
+  border-radius: 50%;
+  content: '';
+}
+
+.service-list-page__hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.service-list-page__hero .mockup-content-page-header {
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.service-list-page__hero .mockup-content-page-header h1 {
+  color: #101828;
+  font-size: clamp(28px, 3vw, 36px);
+  letter-spacing: -.025em;
+}
+
+.service-list-page__hero > p {
+  max-width: 680px;
+  margin: 10px 0 0;
+  color: #667085;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.service-list-page__summary {
+  display: grid;
+  min-width: 136px;
+  justify-items: end;
+  gap: 2px;
+  border: 1px solid rgb(0 100 255 / 16%);
+  border-radius: 14px;
+  padding: 11px 14px;
+  background: rgb(255 255 255 / 82%);
+  box-shadow: 0 8px 20px rgb(0 100 255 / 7%);
+}
+
+.service-list-page__summary span {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.service-list-page__summary strong {
+  color: #0057dc;
+  font-size: 19px;
+}
+
+.service-list-page__layout {
+  min-height: 440px;
+}
+
+.service-list-page__layout > section > div[aria-label='서비스 요청 검색 결과'] > a {
+  box-shadow: 0 5px 18px rgb(16 24 40 / 5%);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.service-list-page__layout > section > div[aria-label='서비스 요청 검색 결과'] > a:hover {
+  box-shadow: 0 14px 30px rgb(0 100 255 / 10%);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 760px) {
+  .service-list-page__hero {
+    margin-bottom: 20px;
+    border-radius: 18px;
+    padding: 22px 20px;
+  }
+
+  .service-list-page__hero .mockup-content-page-header {
+    align-items: flex-start;
+  }
+
+  .service-list-page__hero .mockup-content-page-header h1 {
+    font-size: 27px;
+  }
+
+  .service-list-page__summary {
+    min-width: 112px;
+    padding: 9px 11px;
+  }
+}
+
+@media (max-width: 520px) {
+  .service-list-page__hero .mockup-content-page-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .service-list-page__summary {
+    width: fit-content;
+    justify-items: start;
+  }
+}

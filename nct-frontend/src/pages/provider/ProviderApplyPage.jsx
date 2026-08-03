@@ -57,14 +57,16 @@ const ProviderApplyPage = () => {
   const hasSettlementAccount = Boolean(profileQuery.data?.bankName && profileQuery.data?.accountNo);
 
   const applications = useMemo(() => applicationsQuery.data ?? [], [applicationsQuery.data]);
-  const states = useMemo(
-    () => Object.fromEntries(applications.map((item) => [
-      item.categorySn,
-      statusLabel(item.statusCode, item.statusName),
-    ])),
-    [applications],
-  );
-  const unavailable = (category) => ['심사 대기', '승인됨'].includes(states[category.catSn]);
+  const latestApplicationByCategory = useMemo(() => {
+    const latest = new Map();
+    applications.forEach((application) => {
+      const categorySn = Number(application.categorySn);
+      if (!latest.has(categorySn)) latest.set(categorySn, application);
+    });
+    return latest;
+  }, [applications]);
+  const unavailable = (category) => ['PRVC0002', 'PRVC0003']
+    .includes(latestApplicationByCategory.get(Number(category.catSn))?.statusCode);
 
   useEffect(() => {
     uploadedFilesRef.current = uploadedFiles;
@@ -152,10 +154,10 @@ const ProviderApplyPage = () => {
   return (
     <ContentPageShell className="provider-apply-page">
       <PageMeta title="제공자 권한 신청" />
-      <ContentPageHeader
-        description="여러 서비스 카테고리를 함께 선택할 수 있으며, 제출 뒤에는 카테고리별로 따로 심사됩니다."
-        title="제공자 권한 신청"
-      />
+      <section className="provider-apply-hero">
+        <ContentPageHeader title="제공자 권한 신청" />
+        <p>활동할 서비스 분야를 선택하고, 카테고리별 증빙 서류를 한 번에 제출하세요.</p>
+      </section>
 
       <section className="provider-status-preview">
         <span>내 카테고리별 신청 현황</span>
@@ -213,6 +215,7 @@ const ProviderApplyPage = () => {
           <div className="provider-apply-category-grid">
             {categoriesQuery.data.map((category) => {
               const isSelected = selectedCategories.some((item) => item.catSn === category.catSn);
+              const application = latestApplicationByCategory.get(Number(category.catSn));
 
               return (
                 <button
@@ -223,7 +226,9 @@ const ProviderApplyPage = () => {
                   type="button"
                 >
                   {category.catNm}
-                  <small>{states[category.catSn] ?? '신청 가능'}</small>
+                  <small>{application
+                    ? statusLabel(application.statusCode, application.statusName)
+                    : '신청 가능'}</small>
                 </button>
               );
             })}

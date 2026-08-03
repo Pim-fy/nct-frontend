@@ -89,7 +89,6 @@ const NoticeListPage = () => {
     <ContentPageShell className="public-notice-page">
       <Helmet><title>공지사항 | 네고컷</title></Helmet>
       <header className="customer-support-page-header">
-        <span>NOTICE</span>
         <h1>공지사항</h1>
         <p>서비스 점검, 정책 변경, 이용 안내와 이벤트 소식을 확인하세요.</p>
       </header>

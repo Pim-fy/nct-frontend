@@ -54,6 +54,127 @@
 .public-notice-search__result { margin: 0 0 12px; color: #5f5e5a; font-size: 15px; }
 .public-notice-search__result strong { color: var(--color-primary-dark, #0048bf); }
 
+/* 담당자 7 · F-COM-013: 공통 공지 상세 구조는 유지하고 목록 화면과 같은 카드 체계로 맞춥니다. */
+.notice-detail {
+  position: relative;
+}
+
+.notice-detail .notice-detail__back {
+  min-height: 38px;
+  margin-bottom: 16px;
+  border: 1px solid #e1e7f0;
+  border-radius: 999px;
+  padding: 0 14px;
+  background: #fff;
+  color: #475467;
+  box-shadow: 0 4px 12px rgb(16 24 40 / 4%);
+  transition: border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.notice-detail .notice-detail__back:hover {
+  border-color: #9fc0fb;
+  color: #0057dc;
+  transform: translateX(-2px);
+}
+
+.notice-detail .notice-detail__header {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #dbe8ff;
+  border-radius: 20px;
+  padding: 30px 32px;
+  background:
+    radial-gradient(circle at 92% 8%, rgb(0 100 255 / 13%), transparent 30%),
+    linear-gradient(135deg, #f3f7ff 0%, #fff 72%);
+  box-shadow: 0 12px 30px rgb(16 24 40 / 6%);
+}
+
+.notice-detail .notice-detail__header::after {
+  position: absolute;
+  right: -46px;
+  bottom: -78px;
+  width: 190px;
+  height: 190px;
+  border: 1px solid rgb(0 100 255 / 10%);
+  border-radius: 50%;
+  content: '';
+}
+
+.notice-detail .notice-detail__header > * {
+  position: relative;
+  z-index: 1;
+}
+
+.notice-detail .notice-detail__header h1 {
+  max-width: 960px;
+  margin: 0 0 17px;
+  font-size: clamp(26px, 3vw, 34px);
+  line-height: 1.35;
+  letter-spacing: -.025em;
+}
+
+.notice-detail .notice-detail__meta {
+  flex-wrap: wrap;
+  gap: 8px 0;
+  color: #667085;
+  font-size: 13px;
+}
+
+.notice-detail .notice-detail__meta span + span::before {
+  width: 3px;
+  height: 3px;
+  margin: 0 11px;
+  border-radius: 50%;
+  background: #b6c0cf;
+  content: '';
+}
+
+.notice-detail .notice-detail__content {
+  min-height: 340px;
+  margin-top: 16px;
+  border: 1px solid #e1e6ef;
+  border-radius: 20px;
+  padding: 34px 32px;
+  background: #fff;
+  color: #344054;
+  font-size: 16px;
+  line-height: 1.9;
+  box-shadow: 0 10px 28px rgb(16 24 40 / 5%);
+}
+
+/* 담당자 7 · F-COM-014: 공통 가이드 구성은 그대로 두고 카드 깊이와 초점만 보강합니다. */
+.public-guide-page .guide-hero,
+.public-guide-page .guide-feature,
+.public-guide-page .guide-trust {
+  box-shadow: 0 16px 38px rgb(16 24 40 / 7%);
+}
+
+.public-guide-page .guide-mode-tabs button {
+  box-shadow: 0 5px 16px rgb(16 24 40 / 4%);
+}
+
+.public-guide-page .guide-mode-tabs button.is-active {
+  box-shadow: 0 12px 28px rgb(0 100 255 / 10%);
+}
+
+.public-guide-page .guide-feature__steps li {
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.public-guide-page .guide-feature__steps li:hover {
+  border-color: #b9cff5;
+  box-shadow: 0 7px 18px rgb(16 24 40 / 5%);
+  transform: translateY(-1px);
+}
+
+.public-guide-page .guide-feature__copy > span:empty {
+  display: none;
+}
+
+.public-guide-page .guide-feature__copy > span:empty + h2 {
+  margin-top: 0;
+}
+
 /* 담당자 7 | F-COM-013 확장: FAQ는 공지 데이터를 질문·답변 아코디언으로 표시한다. */
 .faq-list { display: grid; gap: 14px; }
 .faq-item { overflow: hidden; border: 1px solid #e1e6ef; border-radius: 16px; background: #fff; box-shadow: 0 5px 16px rgb(16 24 40 / 4%); transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease; }
@@ -214,8 +335,9 @@
   gap: 14px;
   padding: 28px 30px;
   border: 1px solid var(--notice-skeleton-border);
-  border-radius: 8px;
+  border-radius: 20px;
   background: #fff;
+  box-shadow: 0 12px 30px rgb(16 24 40 / 5%);
 }
 
 .public-notice-detail-skeleton__header > span {
@@ -244,8 +366,9 @@
   gap: 12px;
   padding: 30px;
   border: 1px solid var(--notice-skeleton-border);
-  border-radius: 8px;
+  border-radius: 20px;
   background: #fff;
+  box-shadow: 0 10px 28px rgb(16 24 40 / 4%);
 }
 
 .public-notice-detail-skeleton__content span {
@@ -302,6 +425,10 @@
   .public-notice-detail-skeleton__header,
   .public-notice-detail-skeleton__content { padding: 20px; }
   .public-notice-detail-skeleton__header strong { width: 100%; }
+  .notice-detail .notice-detail__header,
+  .notice-detail .notice-detail__content { padding: 22px 20px; }
+  .notice-detail .notice-detail__header h1 { font-size: 25px; }
+  .notice-detail .notice-detail__meta span + span::before { margin: 0 8px; }
   .faq-item summary,
   .faq-item__answer { padding: 16px; }
   .faq-item--skeleton { padding: 16px; }

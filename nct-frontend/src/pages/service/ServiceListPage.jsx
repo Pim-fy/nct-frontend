@@ -5,6 +5,8 @@ import { SlidersHorizontal } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { getCategories } from '@api/categoryApi';
 import {
+  ContentPageHeader,
+  ContentPageShell,
   ContentState,
 } from '@components/content/ContentUi';
 import {
@@ -21,6 +23,7 @@ import {
   SERVICE_DISCOVERY_PAGE_SIZE,
 } from '@/constants/serviceDiscovery';
 import { useServiceDiscovery } from '@hooks/useServiceDiscovery';
+import './serviceListPage.css';
 
 const toBudget = (value) => {
   const parsed = Number(value || 0);
@@ -151,7 +154,7 @@ const ServiceListPage = () => {
       : '서비스 검색 결과를 불러오지 못했습니다.';
 
   return (
-    <div className="min-h-full bg-white text-body-sm text-[#1a1a18] md:text-body-md">
+    <ContentPageShell className="service-discovery-page service-list-page">
       <Helmet><title>서비스 찾기 | 에누리컷</title></Helmet>
 
       <HeaderSearchPortal>
@@ -162,8 +165,20 @@ const ServiceListPage = () => {
         />
       </HeaderSearchPortal>
 
-      <main className="mx-auto my-0 w-full max-w-[1600px] py-10">
-      <div className="flex items-start gap-6 max-md:block">
+      <section className="service-list-page__hero">
+        <ContentPageHeader
+          action={(
+            <div className="service-list-page__summary" aria-live="polite">
+              <span>현재 공개 요청</span>
+              <strong>{discoveryQuery.isLoading ? '조회 중' : `${Number(result?.total || 0).toLocaleString('ko-KR')}건`}</strong>
+            </div>
+          )}
+          title="서비스 요청 찾기"
+        />
+        <p>필요한 분야와 예산을 비교하고, 내 경험에 맞는 서비스 요청을 찾아보세요.</p>
+      </section>
+
+      <div className="service-list-page__layout flex items-start gap-6 max-md:block">
         <ServiceFilterPanel
           categories={categories}
           categoriesError={categoriesQuery.isError}
@@ -209,8 +224,7 @@ const ServiceListPage = () => {
           />
         </section>
       </div>
-      </main>
-    </div>
+    </ContentPageShell>
   );
 };
 
