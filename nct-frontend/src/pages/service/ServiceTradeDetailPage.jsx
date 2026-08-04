@@ -46,6 +46,7 @@ export default function ServiceTradeDetailPage({
   scheduleHistory = [],
   onRequestScheduleChange = null,
   onRequestScheduleCancellation = null,
+  chatPath = null,
 }) {
   const [isDisputeDialogOpen, setIsDisputeDialogOpen] = useState(false);
   const [disputeTypeCode, setDisputeTypeCode] = useState('');
@@ -92,6 +93,7 @@ export default function ServiceTradeDetailPage({
   const canRequestCompletion = isProvider && trade.availableActions?.includes('REQUEST_COMPLETION');
   const canConfirmCompletion = isRequester && trade.availableActions?.includes('CONFIRM_COMPLETION');
   const canSubmitDispute = trade.availableActions?.includes('SUBMIT_DISPUTE');
+  const canOpenChat = trade.chatAvailable === true || trade.availableActions?.includes('OPEN_CHAT');
   const canRequestScheduleChange = trade.availableActions?.includes('REQUEST_SCHEDULE_CHANGE');
   const canRequestScheduleCancellation = trade.availableActions?.includes('REQUEST_SCHEDULE_CANCELLATION');
   const hasDisputeTypes = disputeTypes.length > 0;
@@ -291,6 +293,7 @@ export default function ServiceTradeDetailPage({
 
         {(canRequestCompletion || canConfirmCompletion || canSubmitDispute || canRequestScheduleChange || canRequestScheduleCancellation) && (
           <section className="service-trade-detail-actions" aria-label="서비스 거래 처리">
+            {canOpenChat && <Link className="btn btn-ghost" to={chatPath ?? `/service-trades/${trade.tradeId}/chat`}>거래 채팅</Link>}
             {canRequestCompletion && <button className="btn btn-success" type="button" onClick={() => openCompletionDialog('REQUEST')}>완료 요청 작성</button>}
             {canConfirmCompletion && <button className="btn btn-primary" type="button" onClick={() => openCompletionDialog('CONFIRM')}>완료 확인</button>}
             {canRequestScheduleChange && <button className="btn btn-ghost" type="button" onClick={() => openScheduleDialog('CHANGE')}>일정 변경 요청</button>}

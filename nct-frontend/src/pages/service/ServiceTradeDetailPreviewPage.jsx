@@ -14,6 +14,7 @@ const PREVIEW_TRADE = {
   tradeStatusCode: 'TRDC0003',
   viewerRole: 'PROVIDER',
   availableActions: [
+    'OPEN_CHAT',
     'REQUEST_COMPLETION',
     'REQUEST_SCHEDULE_CHANGE',
     'REQUEST_SCHEDULE_CANCELLATION',
@@ -49,6 +50,7 @@ export default function ServiceTradeDetailPreviewPage() {
       onRequestCompletion={resolvePreviewAction}
       onRequestScheduleChange={resolvePreviewAction}
       onRequestScheduleCancellation={resolvePreviewAction}
+      chatPath={`/service-trades/preview/${Number(tradeId) || PREVIEW_TRADE.tradeId}/chat`}
     />
   );
 }
