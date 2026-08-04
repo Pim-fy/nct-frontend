@@ -6,7 +6,7 @@ import React, { useState } from "react";
  * 이전에는 캔버스 절대좌표(item.left + 1920 캔버스 기준 top)로 그려서 캐러셀처럼
  * 옆으로 슬라이드시킬 수 없었다. 카드 자신을 기준으로 한 상대좌표로 다시 짜서
  * flex 트랙 안에 나란히 놓고 translateX로 슬라이드할 수 있게 했다.
- * "마감 임박"/"D-day" 배지가 카드 상단 테두리보다 25px 위로 튀어나오는 디자인이라
+ * "마감임박"/"D-day" 배지가 카드 상단 테두리보다 25px 위로 튀어나오는 디자인이라
  * 카드 높이에 그만큼 여유(OVERHANG)를 둔다.
  */
 const OVERHANG = 25;
@@ -53,7 +53,7 @@ export default function AuctionCard({ fluid = false, item, onClick }) {
         </>
       )}
 
-      {/* 마감 임박(빨강) - urgent 플래그가 있고 D-day 표기가 없을 때만 */}
+      {/* 마감임박(빨강) - urgent 플래그가 있고 D-day 표기가 없을 때만 */}
       {item.urgent && !item.dday && (
         <div className="absolute" style={{ top: 0, left: 22 }}>
           <div className="bg-[#e63946] rounded-[25px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.15)] size-[50px]" />
