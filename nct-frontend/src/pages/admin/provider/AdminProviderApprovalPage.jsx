@@ -4,8 +4,8 @@ import AdminModal from '@components/admin/AdminModal';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminTable from '@components/admin/AdminTable';
-import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
-import MockupAdminStatusBadge from '@components/admin/mockup/MockupAdminStatusBadge';
+import AdminPageHeader from '@components/admin/AdminPageHeader';
+import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
 import {
   useAdminProviderApplications,
@@ -148,7 +148,7 @@ const AdminProviderApprovalPage = () => {
     { key: 'date', label: '신청일' },
     {
       key: 'status', label: '심사 상태',
-      render: (value, row) => <MockupAdminStatusBadge tone={row.tone}>{value}</MockupAdminStatusBadge>,
+      render: (value, row) => <AdminStatusBadge tone={row.tone}>{value}</AdminStatusBadge>,
     },
     { key: 'files', label: '서류', render: (value) => (value.length ? `${value.length}건` : '-') },
     {
@@ -164,8 +164,8 @@ const AdminProviderApprovalPage = () => {
   return (
     <div className="admin-content-page admin-provider-approval-page">
       <PageMeta title="제공자 심사" />
-      <MockupAdminPageHeader
-        action={<MockupAdminStatusBadge tone="success">실제 API 연결</MockupAdminStatusBadge>}
+      <AdminPageHeader
+        action={<AdminStatusBadge tone="success">실제 API 연결</AdminStatusBadge>}
         description="신청 내용을 확인한 뒤 승인 또는 반려합니다. 목록과 처리 결과는 백엔드 상태를 다시 조회합니다."
         title="제공자 심사"
       />
@@ -273,9 +273,9 @@ const AdminProviderApprovalPage = () => {
 
               <dt>심사 상태</dt>
               <dd>
-                <MockupAdminStatusBadge tone={selected.tone}>
+                <AdminStatusBadge tone={selected.tone}>
                   {selected.status}
-                </MockupAdminStatusBadge>
+                </AdminStatusBadge>
               </dd>
             </dl>
 

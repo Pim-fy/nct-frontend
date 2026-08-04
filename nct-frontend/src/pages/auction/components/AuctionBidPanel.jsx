@@ -102,7 +102,7 @@ const AuctionBidPanel = ({
     || requiresDeliveryAddressRegistration;
   const favoriteButtonStateClass = isAuthLoading || !isAuthenticated || isOwnAuction
     ? 'cursor-not-allowed opacity-45'
-    : (isFavoritePending ? 'cursor-wait opacity-55' : 'cursor-pointer');
+    : 'cursor-pointer active:scale-[0.96]';
   const pointBalanceLabel = !isAuthenticated
     ? '-'
     : (hasAvailablePoint
@@ -175,14 +175,15 @@ const AuctionBidPanel = ({
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <button
-            className={`inline-flex min-h-6 shrink-0 items-center gap-1 rounded-full border px-3 py-0.5 text-[13px] leading-[1.4] font-bold transition-colors ${favoriteButtonStateClass} ${
+            className={`inline-flex min-h-6 shrink-0 items-center gap-1 rounded-full border px-3 py-0.5 text-[13px] leading-[1.4] font-bold transition-[border-color,background-color,color,transform] duration-300 ease-out ${favoriteButtonStateClass} ${
               auction.favorite
                 ? 'border-[#f6c6d2] bg-[#fff0f4] text-[#c0184a]'
                 : 'border-[#dadada] bg-white text-[#666]'
             }`}
             type="button"
             aria-pressed={Boolean(auction.favorite)}
-            disabled={isAuthLoading || !isAuthenticated || isOwnAuction || isFavoritePending}
+            aria-busy={isFavoritePending}
+            disabled={isAuthLoading || !isAuthenticated || isOwnAuction}
             title={isOwnAuction
               ? '본인 경매 상품은 관심 상품으로 등록할 수 없습니다'
               : (isAuthLoading
@@ -190,7 +191,19 @@ const AuctionBidPanel = ({
                 : (!isAuthenticated ? '로그인 후 관심 상품을 등록할 수 있습니다' : undefined))}
             onClick={onFavoriteToggle}
           >
-            <Heart size={14} fill={auction.favorite ? 'currentColor' : 'none'} aria-hidden="true" />
+            <span
+              className={`inline-grid size-4 place-items-center transition-transform duration-300 ease-out ${
+                auction.favorite ? 'scale-110' : 'scale-100'
+              }`}
+              aria-hidden="true"
+            >
+              <Heart
+                size={14}
+                className={`transition-[fill,stroke] duration-300 ease-out ${
+                  auction.favorite ? 'fill-current' : 'fill-transparent'
+                }`}
+              />
+            </span>
             관심
           </button>
           <button

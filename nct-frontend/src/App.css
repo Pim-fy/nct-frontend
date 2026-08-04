@@ -15,7 +15,7 @@ body { font-family: 'Pretendard', 'Noto Sans KR', 'Malgun Gothic', sans-serif !i
    미세하게 어긋난다 — 스크롤바 자리를 항상 미리 확보해 모든 페이지의 가용 너비를 통일한다. */
 html { scrollbar-gutter: stable; }
 
-/* 공통 레이아웃 — .content-page(mockupContentPages.css)와 동일한 폭 공식.
+/* 공통 레이아웃 — .content-page(ContentPages.css)와 동일한 폭 공식.
    max-width+padding 대신 width:min()을 써서 모든 뷰포트에서 두 시스템이 정확히 일치하고,
    padding 선언 자체가 없어 Tailwind py-*와의 레이어 충돌 위험도 사라진다.
    max-width:none은 필수 — Tailwind v4가 "container"라는 같은 이름의 내장 유틸리티를 갖고 있어서

@@ -6,7 +6,7 @@ import { useMemo, useState } from 'react';
 import { Search, X } from 'lucide-react';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminTable from '@components/admin/AdminTable';
-import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
+import AdminPageHeader from '@components/admin/AdminPageHeader';
 import { useAuditLogs } from '@hooks/useAdminAudit';
 import useClientPagination from '@hooks/useClientPagination';
 import './adminAuditPage.css';
@@ -104,7 +104,7 @@ const AdminAuditLogPage = () => {
 
   return (
     <div className="admin-bjn-page">
-      <MockupAdminPageHeader
+      <AdminPageHeader
         eyebrow="보안/감사"
         title="감사 로그"
         description="포인트·정산·관리자 조치·민감정보 접근 기록을 조건별로 조회합니다. 감사로그는 3년 보존 대상입니다."

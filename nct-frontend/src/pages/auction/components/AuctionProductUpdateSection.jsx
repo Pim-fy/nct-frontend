@@ -56,7 +56,7 @@ const AuctionProductUpdateSection = ({
 
   return (
     <section
-      className="scroll-mt-[136px] border-b border-[#e2e5ea] py-10 md:scroll-mt-[82px] md:py-14"
+      className="scroll-mt-[208px] border-b border-[#e2e5ea] py-10 md:scroll-mt-[82px] md:py-14"
       id={sectionId}
       aria-labelledby={`${sectionId}-title`}
     >

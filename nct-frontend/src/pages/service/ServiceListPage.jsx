@@ -126,6 +126,9 @@ const ServiceListPage = () => {
 
   const handleSearch = (keyword) => {
     updateParams({ keyword: keyword.trim(), page: null });
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   };
 
   const handleFilterChange = (name, value) => {

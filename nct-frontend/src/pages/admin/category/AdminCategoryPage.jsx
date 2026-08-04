@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react';
 import { PencilLine, Plus, Save, X } from 'lucide-react';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminTable from '@components/admin/AdminTable';
-import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
-import MockupAdminStatusBadge from '@components/admin/mockup/MockupAdminStatusBadge';
+import AdminPageHeader from '@components/admin/AdminPageHeader';
+import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
 import { useAdminCategories, useSaveAdminCategory } from '@hooks/useAdminCategories';
 import useClientPagination from '@hooks/useClientPagination';
@@ -78,7 +78,7 @@ const AdminCategoryPage = () => {
     { key: 'professional', label: '전문 서비스', render: (value) => (value ? '예' : '아니오') },
     {
       key: 'active', label: '상태',
-      render: (value) => <MockupAdminStatusBadge tone={value ? 'success' : 'neutral'}>{value ? '사용 중' : '사용 중지'}</MockupAdminStatusBadge>,
+      render: (value) => <AdminStatusBadge tone={value ? 'success' : 'neutral'}>{value ? '사용 중' : '사용 중지'}</AdminStatusBadge>,
     },
     {
       key: 'manage', label: '관리',
@@ -89,7 +89,7 @@ const AdminCategoryPage = () => {
   return (
     <div className="admin-content-page admin-category-page">
       <PageMeta title="카테고리 관리" />
-      <MockupAdminPageHeader
+      <AdminPageHeader
         action={<button className="btn btn-primary" onClick={reset} type="button"><Plus /> 새 카테고리</button>}
         description="상품과 서비스 카테고리를 분리해 관리합니다. 사용 중지는 기존 상품·요청의 연결을 보존합니다."
         eyebrow="F-COM-003 · REQ-COM-003"

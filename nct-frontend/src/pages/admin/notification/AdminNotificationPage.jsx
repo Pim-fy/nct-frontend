@@ -6,7 +6,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminPagination from '@components/admin/AdminPagination';
-import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
+import AdminPageHeader from '@components/admin/AdminPageHeader';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import { useAdminNotificationSummary } from '@hooks/useAdminNotification';
 import useClientPagination from '@hooks/useClientPagination';
@@ -106,7 +106,7 @@ const AdminNotificationPage = () => {
 
   return (
     <div className="admin-bjn-page">
-      <MockupAdminPageHeader
+      <AdminPageHeader
         eyebrow="운영"
         title="알림"
         description={data ? `확인이 필요한 운영 알림 ${totalCount}건` : '운영 알림을 불러오는 중입니다'}

@@ -46,7 +46,8 @@ export default function MobileLandingSections({
   const auctionScrollRef = useRef(null);
 
   const scrollCarousel = (ref, dir) => {
-    ref.current?.scrollBy({ left: dir * 311, behavior: "smooth" });
+    if (!ref.current) return;
+    ref.current.scrollBy({ left: dir * ref.current.clientWidth, behavior: "smooth" });
   };
 
   const runSearch = (value) => {
@@ -240,7 +241,7 @@ export default function MobileLandingSections({
               onClick={() => setActiveTab("closing")}
               className={`rounded-full px-4 py-2 text-[15px] font-bold transition-colors ${activeTab === "closing" ? "bg-[#0064ff] text-white" : "bg-[#ebebeb] text-[#969696]"}`}
             >
-              마감임박 경매
+              마감 임박 경매
             </button>
           </div>
           <div className="flex items-center gap-1">
@@ -264,11 +265,18 @@ export default function MobileLandingSections({
         </div>
         <div
           ref={auctionScrollRef}
-          className="flex snap-x snap-mandatory gap-4 overflow-x-auto pl-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [scroll-padding-left:16px]"
+          className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [scroll-padding-left:16px]"
         >
           {!isAuctionLoading && !isAuctionError && auctionItems.map((item) => (
-            <div key={item.id} className="snap-start">
-              <AuctionCard item={item} onClick={() => navigate(`/auction/${item.id}`)} />
+            <div
+              key={item.id}
+              className="w-full shrink-0 snap-start min-[480px]:w-[calc(50%_-_8px)]"
+            >
+              <AuctionCard
+                fluid
+                item={item}
+                onClick={() => navigate(`/auction/${item.id}`)}
+              />
             </div>
           ))}
           {isAuctionLoading && <p className="w-full px-4 py-14 text-center text-[16px] text-[#666]">경매를 불러오는 중입니다.</p>}

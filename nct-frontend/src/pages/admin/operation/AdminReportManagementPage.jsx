@@ -11,7 +11,7 @@ import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
-import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
+import AdminPageHeader from '@components/admin/AdminPageHeader';
 import PageMeta from '@components/admin/PageMeta';
 import useClientPagination from '@hooks/useClientPagination';
 import '../audit/adminAuditPage.css';
@@ -149,7 +149,7 @@ const AdminReportManagementPage = () => {
   return (
     <div className="admin-bjn-page admin-operation-page">
       <PageMeta title="신고 처리" />
-      <MockupAdminPageHeader title="신고 처리" />
+      <AdminPageHeader title="신고 처리" />
 
       <form className="admin-bjn-filters admin-operation-search" onSubmit={(event) => event.preventDefault()}>
         <label>

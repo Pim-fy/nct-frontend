@@ -148,11 +148,9 @@ export default function ReportModal({
       role="dialog"
       aria-modal="true"
       className="fixed inset-0 z-[500] flex items-center justify-center bg-black/40 p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
         className="bg-white rounded-[16px] w-full max-w-[520px] max-h-[90vh] flex flex-col overflow-hidden shadow-[0_8px_40px_rgba(0,0,0,0.18)]"
-        onClick={(e) => e.stopPropagation()}
       >
         {/* 헤더 */}
         <div className="px-6 pt-5 pb-4 flex items-center justify-between shrink-0" style={{ backgroundColor: "#0064ff" }}>

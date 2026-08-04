@@ -12,7 +12,7 @@ import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
-import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
+import AdminPageHeader from '@components/admin/AdminPageHeader';
 import PageMeta from '@components/admin/PageMeta';
 import { formatDateTime } from '@utils/common';
 import '../audit/adminAuditPage.css';
@@ -137,7 +137,7 @@ const AdminAuctionManagementPage = () => {
   return (
     <div className="admin-bjn-page admin-auction-page">
       <PageMeta title="상품·경매 조회" />
-      <MockupAdminPageHeader title="상품·경매 조회" />
+      <AdminPageHeader title="상품·경매 조회" />
       <form className="admin-bjn-filters admin-auction-filters" onSubmit={submitSearch}>
         <label>경매 상태
           <select onChange={(event) => setFilterForm({ ...filterForm, auctionStatusCode: event.target.value })} value={filterForm.auctionStatusCode}>

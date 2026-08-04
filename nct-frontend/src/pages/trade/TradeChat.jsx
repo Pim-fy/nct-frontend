@@ -55,6 +55,8 @@ const TradeChat = ({
   const tradeId = selectedTradeId ?? routeTradeId;
   const [rooms, setRooms] = useState([]);
   const [activeRoomId, setActiveRoomId] = useState('');
+  // 거래 상세에서 진입한 모바일 채팅은 대화부터, 마이페이지 채팅은 목록부터 연다.
+  const [isMobileConversationOpen, setIsMobileConversationOpen] = useState(() => Boolean(tradeId));
   const [roomFilter, setRoomFilter] = useState('ALL');
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
@@ -153,6 +155,7 @@ const TradeChat = ({
       const loadedMessages = toTradeChatMessages(messageResponse);
 
       setActiveRoomId(roomId);
+      setIsMobileConversationOpen(true);
       setMessages(loadedMessages);
       setRooms((currentRooms) => currentRooms.map((currentRoom) => {
         if (currentRoom.roomId !== roomId) {
@@ -457,6 +460,7 @@ const TradeChat = ({
     setActiveRoomId('');
     setMessages([]);
     setMessageInput('');
+    setIsMobileConversationOpen(false);
   };
 
   return (
@@ -469,7 +473,7 @@ const TradeChat = ({
         <header className="trade-chat-page__header">
           <div>
             <h1>거래 채팅</h1>
-            <p>대면 거래 당사자만 이용할 수 있는 1:1 채팅입니다.</p>
+            <p>거래 당사자만 이용할 수 있는 1:1 채팅입니다.</p>
           </div>
         </header>
 
@@ -498,7 +502,7 @@ const TradeChat = ({
         {!isLoading && !error && (
           <div
             className={showRoomList
-              ? 'trade-chat-layout trade-chat-layout--with-room-list'
+              ? `trade-chat-layout trade-chat-layout--with-room-list${isMobileConversationOpen ? ' trade-chat-layout--mobile-conversation' : ''}`
               : 'trade-chat-layout trade-chat-layout--conversation-only'}
           >
             {showRoomList && (
@@ -570,9 +574,13 @@ const TradeChat = ({
                           <span className="trade-chat-room__preview">
                             {room.lastMessage}
                           </span>
-                          {isCompleted && (
-                            <span className="trade-chat-room__closed">채팅 불가</span>
-                          )}
+                          <span
+                            className={isCompleted
+                              ? 'trade-chat-room__closed'
+                              : 'trade-chat-room__available'}
+                          >
+                            {isCompleted ? '채팅 불가' : '대화 가능'}
+                          </span>
                           {room.unreadCount > 0 && (
                             <span className="trade-chat-room__unread">
                               새 메시지 {room.unreadCount}개
@@ -616,27 +624,30 @@ const TradeChat = ({
                       <p>{activeRoom.productName}</p>
                     </div>
                     <div className="trade-chat-conversation__actions">
-                      <span className="trade-chat-status">
+                      <span
+                        className={activeRoom.roomStatus === 'ACTIVE'
+                          ? 'trade-chat-status'
+                          : 'trade-chat-status trade-chat-status--closed'}
+                      >
                         {activeRoom.roomStatus === 'ACTIVE' ? '대화 가능' : '채팅 불가'}
                       </span>
-                      {!preview && !isActiveRoomClosed && (
-                        <span
-                          className={realtimeStatus === 'CONNECTED'
-                            ? 'trade-chat-realtime trade-chat-realtime--connected'
-                            : 'trade-chat-realtime'}
-                        >
-                          {realtimeStatus === 'CONNECTED'
-                            ? '실시간 연결됨'
-                            : '실시간 재연결 중'}
-                        </span>
-                      )}
                       {showRoomList && (
                         <button
-                          className="btn btn-ghost trade-chat-conversation__close"
+                          className="btn btn-ghost trade-chat-conversation__close trade-chat-conversation__close--desktop"
                           type="button"
                           onClick={clearSelectedChatRoom}
                         >
                           닫기
+                        </button>
+                      )}
+                      {showRoomList && (
+                        <button
+                          className="btn btn-ghost trade-chat-conversation__close trade-chat-conversation__close--mobile"
+                          type="button"
+                          aria-label="채팅 목록으로"
+                          onClick={clearSelectedChatRoom}
+                        >
+                          목록
                         </button>
                       )}
                     </div>
@@ -700,7 +711,7 @@ const TradeChat = ({
                 <div className="trade-chat-conversation__empty">
                   {rooms.length > 0
                     ? '좌측 목록에서 채팅방을 선택해 주세요.'
-                    : '선택할 수 있는 대면 거래 채팅방이 없습니다.'}
+                    : '선택할 수 있는 거래 채팅방이 없습니다.'}
                 </div>
               )}
             </section>
