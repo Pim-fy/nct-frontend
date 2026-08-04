@@ -22,6 +22,7 @@ import {
 import {
   deleteImage,
   uploadDeliveryProof,
+  toImageUrl,
 } from '@api/fileApi';
 import { toTradeDetail } from '@api/tradeAdapter';
 import TradeTrustSummary from '@components/trade/TradeTrustSummary';
@@ -53,6 +54,26 @@ const MEETING_TIME_SLOTS = Array.from({ length: 48 }, (_, index) => {
 
   return `${hour}:${minute}`;
 });
+
+const formatDateValue = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+};
+
+const formatDateLabel = (dateValue) => {
+  if (!dateValue) return '날짜 선택';
+
+  const [year, month, day] = dateValue.split('-');
+  return `${year}. ${month}. ${day}.`;
+};
+
+const createCalendarMonth = (dateValue = null) => {
+  const source = dateValue ? new Date(`${dateValue}T00:00:00`) : new Date();
+  return new Date(source.getFullYear(), source.getMonth(), 1);
+};
 
 const MAX_SHIPPING_PROOF_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_SHIPPING_PROOF_FILES = 5;
@@ -91,7 +112,9 @@ const TradeDetailSeller = ({
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [timeRefreshSignal, setTimeRefreshSignal] = useState(0);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => createCalendarMonth());
   const shippingProofFilesRef = useRef(shippingProofFiles);
 
   // 렌더 중이 아니라 커밋 이후에 ref를 최신 shippingProofFiles로 동기화한다(react-hooks/refs 규칙 준수).
@@ -112,6 +135,20 @@ const TradeDetailSeller = ({
 
     return MEETING_TIME_SLOTS.filter((time) => time >= minimumTime);
   }, [meetingDate, timeRefreshSignal, todayDate]);
+  const calendarDays = useMemo(() => {
+    const firstWeekday = calendarMonth.getDay();
+    const lastDate = new Date(
+      calendarMonth.getFullYear(),
+      calendarMonth.getMonth() + 1,
+      0,
+    ).getDate();
+
+    return Array.from({ length: firstWeekday + lastDate }, (_, index) => {
+      if (index < firstWeekday) return null;
+
+      return new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), index - firstWeekday + 1);
+    });
+  }, [calendarMonth]);
   const isPreview = pathname.startsWith('/trades/preview');
   const offlineTradeStatusLabel = (() => {
     if (!meetingProposed) {
@@ -140,6 +177,16 @@ const TradeDetailSeller = ({
     (trade?.method === 'DELIVERY' && isDeliveryProofSubmitted)
     || (trade?.method === 'OFFLINE' && meetingProposed)
   );
+
+  const selectMeetingDate = (date) => {
+    const nextDate = formatDateValue(date);
+    setMeetingDate(nextDate);
+    setIsDatePickerOpen(false);
+    setIsTimePickerOpen(false);
+    if (nextDate === todayDate && meetingTime < getNextAvailableTime()) {
+      setMeetingTime('');
+    }
+  };
   const canRequestSellerCompletion = isSellerCompletionReady
     && (
       ['IN_PROGRESS', 'DELIVERING'].includes(trade?.status)
@@ -487,7 +534,11 @@ const TradeDetailSeller = ({
             <section className="trade-detail-card">
               <h2>상품 정보</h2>
               <div className="trade-product">
-                <div className="trade-product__image">상품 이미지</div>
+                <div className="trade-product__image">
+                  {trade.productImageUrl
+                    ? <img src={toImageUrl(trade.productImageUrl)} alt={trade.productName} />
+                    : '상품 이미지'}
+                </div>
                 <div>
                   <strong>{trade.productName}</strong>
                   <p>
@@ -545,24 +596,78 @@ const TradeDetailSeller = ({
                 구매자가 찾기 쉬운 공개 장소와 거래 가능 시간을 제안해 주세요.
               </p>
               <div className="trade-address-grid">
-                <label className="trade-form-field">
-                  거래 날짜
-                  <input
-                    className="input"
-                    type="date"
-                    value={meetingDate}
-                    min={todayDate}
-                    onChange={(event) => {
-                      const nextDate = event.target.value;
-                      setMeetingDate(nextDate);
-                      setIsTimePickerOpen(false);
-                      if (nextDate === todayDate && meetingTime < getNextAvailableTime()) {
-                        setMeetingTime('');
-                      }
-                    }}
+                <fieldset className="trade-form-field trade-date-picker-field">
+                  <legend>거래 날짜</legend>
+                  <button
+                    aria-expanded={isDatePickerOpen}
+                    className="trade-date-picker-trigger"
+                    type="button"
                     disabled={isSubmitting}
-                  />
-                </label>
+                    onClick={() => {
+                      setCalendarMonth(createCalendarMonth(meetingDate));
+                      setIsDatePickerOpen((isOpen) => !isOpen);
+                      setIsTimePickerOpen(false);
+                    }}
+                  >
+                    <span>{formatDateLabel(meetingDate)}</span>
+                    <span aria-hidden="true" className="trade-picker-icon">
+                      <svg viewBox="0 0 24 24" focusable="false">
+                        <rect x="3.5" y="5.5" width="17" height="15" rx="2" />
+                        <path d="M7.5 3.5v4M16.5 3.5v4M3.5 10h17" />
+                      </svg>
+                    </span>
+                  </button>
+                  {isDatePickerOpen && (
+                    <div className="trade-date-picker" role="dialog" aria-label="거래 날짜 선택">
+                      <div className="trade-date-picker__header">
+                        <button
+                          aria-label="이전 달"
+                          className="trade-date-picker__month-button"
+                          type="button"
+                          onClick={() => setCalendarMonth((month) => new Date(month.getFullYear(), month.getMonth() - 1, 1))}
+                        >
+                          ‹
+                        </button>
+                        <strong>{calendarMonth.getFullYear()}년 {calendarMonth.getMonth() + 1}월</strong>
+                        <button
+                          aria-label="다음 달"
+                          className="trade-date-picker__month-button"
+                          type="button"
+                          onClick={() => setCalendarMonth((month) => new Date(month.getFullYear(), month.getMonth() + 1, 1))}
+                        >
+                          ›
+                        </button>
+                      </div>
+                      <div className="trade-date-picker__weekdays" aria-hidden="true">
+                        {['일', '월', '화', '수', '목', '금', '토'].map((day) => <span key={day}>{day}</span>)}
+                      </div>
+                      <div className="trade-date-picker__days" role="grid" aria-label="거래 날짜">
+                        {calendarDays.map((date, index) => {
+                          if (!date) return <span aria-hidden="true" key={`empty-${index}`} />;
+
+                          const dateValue = formatDateValue(date);
+                          const isPastDate = dateValue < todayDate;
+                          const isSelected = dateValue === meetingDate;
+                          return (
+                            <button
+                              aria-pressed={isSelected}
+                              className={isSelected
+                                ? 'trade-date-picker__day trade-date-picker__day--selected'
+                                : 'trade-date-picker__day'}
+                              disabled={isPastDate || isSubmitting}
+                              key={dateValue}
+                              role="gridcell"
+                              type="button"
+                              onClick={() => selectMeetingDate(date)}
+                            >
+                              {date.getDate()}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </fieldset>
                 <fieldset className="trade-form-field trade-time-slots-field">
                   <legend>거래 시간</legend>
                   <button
@@ -573,7 +678,12 @@ const TradeDetailSeller = ({
                     onClick={() => setIsTimePickerOpen((isOpen) => !isOpen)}
                   >
                     <span>{meetingTime || '시간 선택'}</span>
-                    <span aria-hidden="true">⌄</span>
+                    <span aria-hidden="true" className="trade-picker-icon">
+                      <svg viewBox="0 0 24 24" focusable="false">
+                        <circle cx="12" cy="12" r="8.5" />
+                        <path d="M12 7v5l3.5 2" />
+                      </svg>
+                    </span>
                   </button>
                   {!meetingDate && (
                     <p className="trade-time-slots__hint">
@@ -756,7 +866,11 @@ const TradeDetailSeller = ({
           <section className="trade-detail-card">
             <h2>상품 정보</h2>
             <div className="trade-product">
-              <div className="trade-product__image">상품 이미지</div>
+              <div className="trade-product__image">
+                {trade.productImageUrl
+                  ? <img src={toImageUrl(trade.productImageUrl)} alt={trade.productName} />
+                  : '상품 이미지'}
+              </div>
               <div>
                 <strong>{trade.productName}</strong>
                 <p>

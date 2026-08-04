@@ -6,6 +6,7 @@ import {
   useParams,
 } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft } from 'lucide-react';
 import {
   addAuctionFavorite,
   buyNowAuction,
@@ -61,6 +62,7 @@ const DETAIL_EMPTY_CLASS = 'grid min-h-[340px] place-content-center justify-item
 const DELIVERY_TRADE_METHOD_CODE = 'TRDC0009';
 const OFFLINE_TRADE_METHOD_CODE = 'TRDC0010';
 const BOTH_TRADE_METHOD_CODE = 'TRDC0020';
+const FAVORITE_SYNC_DELAY_MS = 300;
 const DETAIL_SECTION_ITEMS = [
   { id: 'auction-product-description', label: '상품설명' },
   { id: 'auction-product-updates', label: '변경 내역' },
@@ -100,6 +102,13 @@ const AuctionDetailPage = () => {
   const requestedDetailSectionIdRef = useRef(null);
   const detailSectionUnlockTimerRef = useRef(null);
   const detailNavigationRef = useRef(null);
+  const favoriteSyncTimerRef = useRef(null);
+  const favoriteMutateRef = useRef(null);
+  const favoriteRequestPendingRef = useRef(false);
+  const favoriteLastInteractionAtRef = useRef(0);
+  const confirmedFavoriteRef = useRef(null);
+  const confirmedFavoriteCountRef = useRef(0);
+  const desiredFavoriteRef = useRef(null);
   const [failedImageUrls, setFailedImageUrls] = useState(() => new Set());
   useBodyScrollLock(isBuyNowOpen || isDeliveryAddressModalOpen || isChargeModalOpen);
   const requestedReturnPath = location.state?.from;
@@ -239,6 +248,32 @@ const AuctionDetailPage = () => {
     });
   }, [detailQueryKey, queryClient]);
 
+  const runFavoriteSync = useCallback(() => {
+    if (favoriteRequestPendingRef.current) return;
+
+    const nextFavorite = desiredFavoriteRef.current;
+    if (typeof nextFavorite !== 'boolean'
+      || nextFavorite === confirmedFavoriteRef.current) return;
+
+    favoriteMutateRef.current?.({ nextFavorite });
+  }, []);
+
+  const scheduleFavoriteSync = useCallback((delay = FAVORITE_SYNC_DELAY_MS) => {
+    if (favoriteSyncTimerRef.current !== null) {
+      window.clearTimeout(favoriteSyncTimerRef.current);
+    }
+
+    if (desiredFavoriteRef.current === confirmedFavoriteRef.current) {
+      favoriteSyncTimerRef.current = null;
+      return;
+    }
+
+    favoriteSyncTimerRef.current = window.setTimeout(() => {
+      favoriteSyncTimerRef.current = null;
+      runFavoriteSync();
+    }, delay);
+  }, [runFavoriteSync]);
+
   const bidMutation = useMutation({
     mutationFn: (payload) => placeAuctionBid(auctionId, payload),
     onSuccess: (updatedAuction) => {
@@ -270,17 +305,105 @@ const AuctionDetailPage = () => {
     onError: handleAuctionMutationError,
   });
   const favoriteMutation = useMutation({
-    mutationFn: () => (auction?.favorite
-      ? removeAuctionFavorite(auctionId)
-      : addAuctionFavorite(auctionId)),
+    mutationFn: ({ nextFavorite }) => (nextFavorite
+      ? addAuctionFavorite(auctionId)
+      : removeAuctionFavorite(auctionId)),
+    onMutate: () => {
+      favoriteRequestPendingRef.current = true;
+    },
     onSuccess: (status) => {
-      applyFavoriteStatus(status);
+      const confirmedFavorite = Boolean(status.favorite);
+      const confirmedFavoriteCount = Number(status.favoriteCount) || 0;
+      confirmedFavoriteRef.current = confirmedFavorite;
+      confirmedFavoriteCountRef.current = confirmedFavoriteCount;
+
+      if (desiredFavoriteRef.current === confirmedFavorite) {
+        applyFavoriteStatus(status);
+        showToast(confirmedFavorite
+          ? '관심 상품에 추가되었습니다'
+          : '관심 상품에서 해제되었습니다');
+        return;
+      }
+
+      queryClient.setQueryData(detailQueryKey, (currentAuction) => (
+        currentAuction
+          ? {
+            ...currentAuction,
+            favorite: desiredFavoriteRef.current,
+            favoriteCount: Math.max(
+              0,
+              confirmedFavoriteCount + (desiredFavoriteRef.current ? 1 : -1),
+            ),
+          }
+          : currentAuction
+      ));
+    },
+    onError: (error, { nextFavorite }) => {
+      if (desiredFavoriteRef.current !== nextFavorite) return;
+
+      desiredFavoriteRef.current = confirmedFavoriteRef.current;
+      queryClient.setQueryData(detailQueryKey, (currentAuction) => (
+        currentAuction
+          ? {
+            ...currentAuction,
+            favorite: confirmedFavoriteRef.current,
+            favoriteCount: confirmedFavoriteCountRef.current,
+          }
+          : currentAuction
+      ));
+      showToast(getErrorMessage(error));
+    },
+    onSettled: () => {
+      favoriteRequestPendingRef.current = false;
       queryClient.invalidateQueries({ queryKey: ['auctionFavorites'] });
       queryClient.invalidateQueries({ queryKey: ['landing-curation', 'auctions', 'popular'] });
-      showToast(status.favorite ? '관심 상품에 추가되었습니다' : '관심 상품에서 해제되었습니다');
+
+      if (desiredFavoriteRef.current !== confirmedFavoriteRef.current) {
+        const elapsed = Date.now() - favoriteLastInteractionAtRef.current;
+        scheduleFavoriteSync(Math.max(0, FAVORITE_SYNC_DELAY_MS - elapsed));
+      }
     },
-    onError: (error) => showToast(getErrorMessage(error)),
   });
+
+  useEffect(() => {
+    favoriteMutateRef.current = favoriteMutation.mutate;
+  }, [favoriteMutation.mutate]);
+
+  useEffect(() => {
+    if (typeof auction?.favorite !== 'boolean') return;
+    if (favoriteSyncTimerRef.current !== null || favoriteMutation.isPending) return;
+
+    confirmedFavoriteRef.current = auction.favorite;
+    confirmedFavoriteCountRef.current = Number(auction.favoriteCount) || 0;
+    desiredFavoriteRef.current = auction.favorite;
+  }, [auction?.favorite, auction?.favoriteCount, favoriteMutation.isPending]);
+
+  useEffect(() => {
+    confirmedFavoriteRef.current = null;
+    confirmedFavoriteCountRef.current = 0;
+    desiredFavoriteRef.current = null;
+
+    return () => {
+      if (favoriteSyncTimerRef.current !== null) {
+        window.clearTimeout(favoriteSyncTimerRef.current);
+        favoriteSyncTimerRef.current = null;
+
+        const pendingFavorite = desiredFavoriteRef.current;
+        if (typeof pendingFavorite === 'boolean'
+          && pendingFavorite !== confirmedFavoriteRef.current) {
+          const syncRequest = pendingFavorite
+            ? addAuctionFavorite(auctionId)
+            : removeAuctionFavorite(auctionId);
+          void syncRequest
+            .catch(() => undefined)
+            .finally(() => {
+              queryClient.invalidateQueries({ queryKey: ['auctionFavorites'] });
+              queryClient.invalidateQueries({ queryKey: ['landing-curation', 'auctions', 'popular'] });
+            });
+        }
+      }
+    };
+  }, [auctionId, queryClient]);
 
   useEffect(() => {
     if (favoriteStatusQuery.data) {
@@ -299,8 +422,8 @@ const AuctionDetailPage = () => {
 
     let animationFrameId = null;
     const updateActiveSection = () => {
-      const stickyOffset = window.innerWidth < 768 ? 136 : 82;
-      const navigationStickyTop = window.innerWidth < 768 ? 82 : 0;
+      const stickyOffset = window.innerWidth < 768 ? 208 : 82;
+      const navigationStickyTop = window.innerWidth < 768 ? 154 : 0;
       const activationOffset = stickyOffset + 12;
       const navigationTop = detailNavigationRef.current?.getBoundingClientRect().top;
       const navigationIsStuck = navigationTop != null
@@ -694,7 +817,33 @@ const AuctionDetailPage = () => {
       showToast('본인 경매 상품은 관심 상품으로 등록할 수 없습니다');
       return;
     }
-    favoriteMutation.mutate();
+    const currentFavorite = typeof desiredFavoriteRef.current === 'boolean'
+      ? desiredFavoriteRef.current
+      : Boolean(auction.favorite);
+    if (confirmedFavoriteRef.current === null) {
+      confirmedFavoriteRef.current = currentFavorite;
+      confirmedFavoriteCountRef.current = Number(auction.favoriteCount) || 0;
+    }
+
+    const nextFavorite = !currentFavorite;
+    desiredFavoriteRef.current = nextFavorite;
+    favoriteLastInteractionAtRef.current = Date.now();
+
+    void queryClient.cancelQueries({ queryKey: detailQueryKey });
+    queryClient.setQueryData(detailQueryKey, (currentAuction) => {
+      if (!currentAuction) return currentAuction;
+
+      return {
+        ...currentAuction,
+        favorite: nextFavorite,
+        favoriteCount: Math.max(
+          0,
+          (Number(currentAuction.favoriteCount) || 0) + (nextFavorite ? 1 : -1),
+        ),
+      };
+    });
+
+    scheduleFavoriteSync();
   };
   const handleHoldAgreedChange = (checked) => {
     setHoldAgreed(checked);
@@ -758,13 +907,27 @@ const AuctionDetailPage = () => {
     targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  const handleBack = () => {
+    navigate(returnPath);
+  };
+
   return (
     <>
       {headerSearch}
       <main className={DETAIL_PAGE_CLASS}>
         <div className={DETAIL_CONTAINER_CLASS}>
           <section className="mt-[34px] grid items-stretch gap-2 lg:grid-cols-[minmax(360px,0.78fr)_minmax(560px,1.22fr)] max-lg:mt-4">
-            <div className="grid min-h-[498px] min-w-0 grid-rows-[minmax(0,1fr)_auto] gap-2 max-lg:min-h-0">
+            <div className="relative grid min-h-0 min-w-0 grid-rows-[minmax(0,1fr)_auto] gap-2 max-lg:grid-rows-[auto_auto]">
+              <button
+                type="button"
+                className="absolute top-4 left-4 z-20 inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-md border border-[#d5d5d5] bg-white/95 px-3 text-body-sm font-bold text-[#252525] shadow-[0_2px_10px_rgba(0,0,0,0.14)] backdrop-blur-sm transition-colors hover:border-primary hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                aria-label="목록으로 돌아가기"
+                title="목록으로"
+                onClick={handleBack}
+              >
+                <ArrowLeft aria-hidden="true" size={18} strokeWidth={2} />
+                <span>목록으로</span>
+              </button>
               <AuctionImageGallery
                 auction={auction}
                 imageItems={imageItems}
@@ -837,9 +1000,9 @@ const AuctionDetailPage = () => {
 
         <nav
           ref={detailNavigationRef}
-          className={`sticky top-[82px] mt-7 h-[54px] border-y border-[#e2e5ea] bg-white transition-shadow md:top-0 md:h-[82px] ${
+          className={`sticky top-[154px] mt-7 h-[54px] border-y border-[#e2e5ea] bg-white transition-shadow md:top-0 md:h-[82px] ${
             isDetailNavigationStuck
-              ? 'z-[90] shadow-[0_5px_14px_rgba(0,0,0,0.14)] md:z-[110]'
+              ? 'z-[110] shadow-[0_5px_14px_rgba(0,0,0,0.14)]'
               : 'z-0 shadow-none'
           }`}
           aria-label="경매 상세 구역"

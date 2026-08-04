@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import {
   ChevronDown,
@@ -8,6 +8,7 @@ import {
   ChevronUp,
   ChevronsLeft,
   ChevronsRight,
+  Gavel,
   RotateCcw,
   SlidersHorizontal,
   X,
@@ -32,6 +33,7 @@ const COLLAPSED_CATEGORY_COUNT = 5;
 const AUCTION_STATUS_FILTERS = [
   { code: 'AUCC0001', label: '진행 예정' },
   { code: 'AUCC0002', label: '진행 중' },
+  { code: 'AUCC0003', label: '종료' },
 ];
 const TRADE_METHOD_FILTERS = [
   { value: 'delivery', sourceCodes: ['TRDC0009', 'TRDC0020'], label: '배송' },
@@ -275,6 +277,9 @@ const AuctionListPage = () => {
 
   const handleSearch = (keyword) => {
     setSearchParams(createSearchParamsFromDraft(keyword), { replace: false });
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   };
 
   const handleFilterSearch = () => {
@@ -327,7 +332,7 @@ const AuctionListPage = () => {
   </HeaderSearchPortal>
 
      {/* .container에 Tailwind py-*를 같이 쓰면 App.css의 padding shorthand가 레이어 충돌로 상하 패딩을 0으로 무력화한다 — 인라인 style로 우회 */}
-      <main className="mx-auto my-0 w-full max-w-[1600px] py-10">
+      <main className="mx-auto my-0 w-full max-w-[1600px] py-10 max-md:px-4 max-md:py-6">
         <div className="flex items-start gap-6 max-md:block">
           <button
             className={`fixed inset-0 z-[210] cursor-default border-0 bg-black/25 transition-opacity duration-200 ease-linear motion-reduce:transition-none md:hidden ${
@@ -339,7 +344,7 @@ const AuctionListPage = () => {
             onClick={() => setFilterOpen(false)}
           />
           <aside
-            className={`fixed inset-x-0 bottom-0 z-[220] grid h-[88dvh] max-h-[88dvh] w-full transform-gpu gap-[18px] overflow-y-auto overscroll-contain rounded-t-2xl border border-[#f0efec] bg-white p-5 shadow-[0_-8px_28px_rgba(0,0,0,0.18)] transition-transform duration-[420ms] ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform [backface-visibility:hidden] [scrollbar-color:#c8ced8_transparent] [scrollbar-width:thin] motion-reduce:transition-none [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#c8ced8] [&::-webkit-scrollbar-track]:bg-transparent ${
+            className={`fixed inset-x-0 bottom-0 z-[220] flex h-[88dvh] max-h-[88dvh] w-full transform-gpu flex-col gap-[18px] overflow-y-auto overscroll-contain rounded-t-2xl border border-[#f0efec] bg-white p-5 shadow-[0_-8px_28px_rgba(0,0,0,0.18)] transition-transform duration-[420ms] ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform [backface-visibility:hidden] [scrollbar-color:#c8ced8_transparent] [scrollbar-width:thin] motion-reduce:transition-none [&>*]:shrink-0 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#c8ced8] [&::-webkit-scrollbar-track]:bg-transparent ${
               filterOpen
                 ? 'pointer-events-auto translate-y-0'
                 : 'pointer-events-none translate-y-[101%]'
@@ -435,7 +440,7 @@ const AuctionListPage = () => {
             </fieldset>
 
             <fieldset
-              className={`${FILTER_GROUP_CLASS} min-h-[88px]`}
+              className={`${FILTER_GROUP_CLASS} min-h-[120px]`}
               disabled={auctionStatusesQuery.isLoading || auctionStatusesQuery.isError}
             >
               <legend className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">진행 상태</legend>
@@ -558,16 +563,25 @@ const AuctionListPage = () => {
 
           {/* aside(필터 패널)와 flex 형제로 items-start라 테두리 자체는 이미 같은 높이에서 시작 — 추가 여백 없음 */}
           <section className="min-w-0 flex-1">
-            <button
-              className="mb-3 hidden min-h-[42px] w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-primary bg-white font-bold text-primary max-md:inline-flex"
-              type="button"
-              aria-haspopup="dialog"
-              aria-expanded={filterOpen}
-              onClick={() => setFilterOpen(true)}
+            <Link
+              className="mb-3 hidden min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-primary bg-primary px-4 font-bold text-white no-underline transition-colors hover:border-primary-dark hover:bg-primary-dark max-md:inline-flex"
+              to="/product/register"
             >
-              <SlidersHorizontal size={18} />
-              필터
-            </button>
+              <Gavel aria-hidden="true" size={18} strokeWidth={2.2} />
+              경매 등록
+            </Link>
+            <div className="max-md:sticky max-md:top-[154px] max-md:z-[110] max-md:-mx-4 max-md:mb-3 max-md:bg-white/95 max-md:px-4 max-md:py-2 max-md:backdrop-blur-sm">
+              <button
+                className="hidden min-h-[42px] w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-primary bg-white font-bold text-primary max-md:inline-flex"
+                type="button"
+                aria-haspopup="dialog"
+                aria-expanded={filterOpen}
+                onClick={() => setFilterOpen(true)}
+              >
+                <SlidersHorizontal size={18} />
+                필터
+              </button>
+            </div>
 
             {isLoading ? (
               <CardGridSkeleton cardHeight={410} columns={3} count={6} />

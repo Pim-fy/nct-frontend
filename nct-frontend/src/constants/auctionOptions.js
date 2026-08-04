@@ -1,7 +1,7 @@
 export const SORT_OPTIONS = [
   { value: 'deadline', label: '마감 임박순' },
-  { value: 'popular', label: '인기 순' },
-  { value: 'priceAsc', label: '최저가순' },
+  { value: 'latest', label: '최신 등록순' },
+  { value: 'priceAsc', label: '가격 낮은순' },
   { value: 'bidsDesc', label: '입찰 많은순' },
-  { value: 'latest', label: '최신순' },
+  { value: 'favoritesDesc', label: '관심 많은순' },
 ];

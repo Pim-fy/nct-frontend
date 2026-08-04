@@ -7,7 +7,7 @@ import {
 
 const CHAT_ROOM_ENDPOINT = '/chat-rooms';
 
-/** 로그인한 거래 당사자의 대면 거래 채팅방을 조회한다. */
+/** 로그인한 물건·서비스 거래 당사자의 채팅방을 조회한다. */
 export const getTradeChatRooms = async (params = {}, options = {}) => {
   if (options.preview || shouldUseTradePreview()) {
     return getTradePreviewChatRooms(params);

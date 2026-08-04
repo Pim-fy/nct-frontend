@@ -30,7 +30,7 @@ const GENERAL_MENU_ITEMS = [
       { key: "received-quotes",  label: "받은 견적 관리",      type: "todo" },
     ],
   },
-  { key: "wishlist",     label: "관심 상품",    type: "section" },
+  { key: "wishlist",     label: "관심 경매",    type: "section" },
   { key: "chat",         label: "채팅",         type: "section" },
   { key: "wallet",       label: "포인트 지갑",  type: "section" },
   { key: "review",       label: "내 리뷰",      type: "section" },

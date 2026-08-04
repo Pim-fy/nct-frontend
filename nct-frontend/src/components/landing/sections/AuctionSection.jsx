@@ -1,33 +1,64 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import AuctionCard from "./AuctionCard";
 
-const VISIBLE_COUNT = 5;
-const CARD_WIDTH    = 295;
-const CARD_GAP      = 24;
-const CARD_STEP     = CARD_WIDTH + CARD_GAP;
+const CARD_GAP = 20;
 
 export default function AuctionSection({
   closingError, closingItems, closingLoading,
   newError, newItems, newLoading,
 }) {
   const navigate = useNavigate();
-  const [activeTab,   setActiveTab]   = useState("new");
-  const [slideIndex,  setSlideIndex]  = useState(0);
+  const carouselRef = useRef(null);
+  const [activeTab, setActiveTab] = useState("new");
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(false);
 
   const items     = activeTab === "new" ? newItems     : closingItems;
   const isError   = activeTab === "new" ? newError     : closingError;
   const isLoading = activeTab === "new" ? newLoading   : closingLoading;
-  const maxIndex  = Math.max(0, items.length - VISIBLE_COUNT);
 
-  const handleTabChange = (tab) => { setActiveTab(tab); setSlideIndex(0); };
-  const goPrev = () => setSlideIndex((i) => Math.max(0, i - 1));
-  const goNext = () => setSlideIndex((i) => Math.min(maxIndex, i + 1));
+  const updateNavigation = useCallback(() => {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+    const maxScrollLeft = Math.max(0, carousel.scrollWidth - carousel.clientWidth);
+    setCanScrollPrev(carousel.scrollLeft > 1);
+    setCanScrollNext(carousel.scrollLeft < maxScrollLeft - 1);
+  }, []);
+
+  useEffect(() => {
+    const carousel = carouselRef.current;
+    if (!carousel) return undefined;
+
+    const frameId = window.requestAnimationFrame(updateNavigation);
+    const resizeObserver = new ResizeObserver(updateNavigation);
+    resizeObserver.observe(carousel);
+    carousel.addEventListener("scroll", updateNavigation, { passive: true });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      resizeObserver.disconnect();
+      carousel.removeEventListener("scroll", updateNavigation);
+    };
+  }, [activeTab, items.length, updateNavigation]);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    carouselRef.current?.scrollTo({ left: 0, behavior: "auto" });
+  };
+
+  const scrollCarousel = (direction) => {
+    const carousel = carouselRef.current;
+    const firstSlide = carousel?.querySelector("[data-auction-slide]");
+    if (!carousel || !firstSlide) return;
+    const slideWidth = firstSlide.getBoundingClientRect().width;
+    carousel.scrollBy({ left: direction * (slideWidth + CARD_GAP), behavior: "smooth" });
+  };
 
   return (
     <section className="py-12 border-t border-[#e0e0e0]">
-      <div className="max-w-[1600px] mx-auto px-8">
+      <div className="mx-auto max-w-[1600px] px-8">
 
         {/* 탭 */}
         <div className="flex justify-center gap-4 mb-8">
@@ -47,7 +78,7 @@ export default function AuctionSection({
               activeTab === "closing" ? "bg-[#0064ff] text-white" : "bg-[#ebebeb] text-[#969696]"
             }`}
           >
-            마감임박 경매
+            마감 임박 경매
           </button>
         </div>
 
@@ -56,16 +87,19 @@ export default function AuctionSection({
           {/* 좌 화살표 */}
           <button
             type="button"
-            onClick={goPrev}
-            disabled={slideIndex === 0}
+            onClick={() => scrollCarousel(-1)}
+            disabled={!canScrollPrev}
             aria-label="이전"
-            className="absolute left-[-52px] top-1/2 -translate-y-1/2 flex items-center justify-center size-[44px] rounded-full border border-[#e0e0e0] bg-white hover:bg-[#f3f5fa] disabled:opacity-30 disabled:cursor-not-allowed transition-colors z-10"
+            className="absolute top-1/2 left-2 z-10 flex size-[44px] -translate-y-1/2 items-center justify-center rounded-full border border-[#e0e0e0] bg-white transition-colors hover:bg-[#f3f5fa] disabled:cursor-not-allowed disabled:opacity-30 min-[1720px]:left-[-52px]"
           >
             <ChevronLeft size={22} />
           </button>
 
           {/* 카드 영역 */}
-          <div className="overflow-hidden">
+          <div
+            ref={carouselRef}
+            className="snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
             {isLoading && (
               <p className="grid h-[373px] place-items-center text-[18px] text-[#666]">경매를 불러오는 중입니다.</p>
             )}
@@ -76,16 +110,19 @@ export default function AuctionSection({
               <p className="grid h-[373px] place-items-center text-[18px] text-[#666]">표시할 경매가 없습니다.</p>
             )}
             {!isLoading && !isError && items.length > 0 && (
-              <div
-                className="flex gap-[24px] transition-transform duration-300 ease-out"
-                style={{ transform: `translateX(${-slideIndex * CARD_STEP}px)` }}
-              >
+              <div className="flex gap-5">
                 {items.map((item) => (
-                  <AuctionCard
+                  <div
                     key={`${activeTab}-${item.id}`}
-                    item={item}
-                    onClick={() => navigate(`/auction/${item.id}`)}
-                  />
+                    data-auction-slide
+                    className="w-[calc((100%_-_40px)/3)] shrink-0 snap-start xl:w-[calc((100%_-_60px)/4)] 2xl:w-[calc((100%_-_80px)/5)]"
+                  >
+                    <AuctionCard
+                      fluid
+                      item={item}
+                      onClick={() => navigate(`/auction/${item.id}`)}
+                    />
+                  </div>
                 ))}
               </div>
             )}
@@ -94,10 +131,10 @@ export default function AuctionSection({
           {/* 우 화살표 */}
           <button
             type="button"
-            onClick={goNext}
-            disabled={slideIndex >= maxIndex}
+            onClick={() => scrollCarousel(1)}
+            disabled={!canScrollNext}
             aria-label="다음"
-            className="absolute right-[-52px] top-1/2 -translate-y-1/2 flex items-center justify-center size-[44px] rounded-full border border-[#e0e0e0] bg-white hover:bg-[#f3f5fa] disabled:opacity-30 disabled:cursor-not-allowed transition-colors z-10"
+            className="absolute top-1/2 right-2 z-10 flex size-[44px] -translate-y-1/2 items-center justify-center rounded-full border border-[#e0e0e0] bg-white transition-colors hover:bg-[#f3f5fa] disabled:cursor-not-allowed disabled:opacity-30 min-[1720px]:right-[-52px]"
           >
             <ChevronRight size={22} />
           </button>
