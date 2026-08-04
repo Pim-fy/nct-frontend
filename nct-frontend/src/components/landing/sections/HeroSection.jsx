@@ -98,14 +98,15 @@ export default function HeroSection({ hotItems = [] }) {
             <button
               aria-label="이전 안내"
               type="button"
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center size-[36px] rounded-full bg-white/70 hover:bg-white transition-colors"
+              className="absolute -left-12 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center size-[36px] rounded-full bg-white/70 hover:bg-white transition-colors"
             >
               <ChevronLeft size={20} className="text-[#333]" />
             </button>
 
             <div
-              className="bg-white/90 rounded-[41px] overflow-hidden flex items-center px-12 gap-8"
-              style={{ height: 303 }}
+            className="bg-white/90 rounded-[41px] overflow-hidden flex items-center px-12 gap-8 cursor-pointer"
+            style={{ height: 303 }}
+            onClick={() => navigate(SLIDE.btnRoute)}
             >
               <div className="flex-1 min-w-0 text-center">
                 <p className="text-[14px] font-bold text-[#0064ff] tracking-[3px] mb-3 leading-normal">
@@ -142,7 +143,7 @@ export default function HeroSection({ hotItems = [] }) {
             <button
               aria-label="다음 안내"
               type="button"
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center size-[36px] rounded-full bg-white/70 hover:bg-white transition-colors"
+              className="absolute -right-12 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center size-[36px] rounded-full bg-white/70 hover:bg-white transition-colors"
             >
               <ChevronRight size={20} className="text-[#333]" />
             </button>
