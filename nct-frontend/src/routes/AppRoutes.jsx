@@ -60,7 +60,6 @@ import ProviderApplyPage from '@pages/provider/ProviderApplyPage';
 import ProviderApplicationStatusPage from '@pages/provider/ProviderApplicationStatusPage';
 import ProviderProfilePage from '@pages/provider/ProviderProfilePage';
 import NotificationPage from '@pages/user/notification/NotificationPage';
-import SettlementListPage from '@pages/user/settlement/SettlementListPage';
 import AuctionFavoritesPage from '@pages/auction/AuctionFavoritesPage';
 import QuoteFormPage from '@pages/provider/QuoteFormPage';
 import MyQuoteListPage from '@pages/provider/MyQuoteListPage';
@@ -202,7 +201,6 @@ const AppRoutes = () => {
           <Route path="/user/mypage" element={<MyPage />} />
           <Route path="/user/point" element={<PointWalletRedirect />} />
           <Route path="/user/notification" element={<NotificationPage />} />
-          <Route path="/user/settlement" element={<SettlementListPage />} />
           {/* 담당자 7 · F-PROV-006/012~014: 제공자 모드에서도 추가 분야 심사 신청·상태 조회를 허용합니다. */}
           <Route path="/provider/apply" element={<ProviderApplyPage />} />
           <Route path="/provider/applications/status" element={<ProviderApplicationStatusPage />} />

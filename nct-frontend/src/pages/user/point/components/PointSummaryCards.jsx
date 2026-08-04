@@ -2,41 +2,25 @@
 import iconPoint from '@assets/img/icon_point.png';
 
 /**
- * 포인트 잔액 요약 카드 4종 (총 보유 / 사용 가능 / 전환 가능 / 환전 가능)
- * 목업 17_point_wallet.html 기준에서, 제공자모드 지갑에 전환 가능(정산가능) 포인트가 눈에
- * 안 띈다는 요청에 따라 '홀딩 포인트' 카드를 '전환 가능 포인트' 카드로 교체했다 — 홀딩은
- * 버튼 액션이 없는 단순 참고값이라 사용가능 카드 서브텍스트로 내리고, 전환 버튼과 바로
- * 연결되는 정산가능 포인트를 헤드라인 카드로 올렸다 (2026-07-30)
+ * 포인트 잔액 요약 카드 4종 — 총 보유 + 실제 버킷 3개(사용가능/홀딩/정산가능) (2026-08-04 재정리)
+ * 예전엔 총보유/사용가능/전환가능(정산가능)/환전가능(사용가능+정산가능 합) 조합이었는데,
+ * 환전가능이 이미 다른 카드에 들어간 값을 또 합친 파생값이라 "왜 겹쳐 보이지" 혼란을 줬다.
+ * 이제 4칸은 겹치지 않는다 — 총 보유 하나만 나머지 3개(사용가능+홀딩+정산가능)의 합이고,
+ * 나머지 3개는 서로 배타적인 실제 버킷이다. 라벨도 포인트 내역 표의 "유형" 배지와 같은
+ * 이름(사용가능/홀딩/정산가능)을 그대로 써서 화면마다 같은 돈을 다른 이름으로 부르지 않게 했다.
+ * "전환 가능"이라는 문구는 뺐다 — 그 동작은 옆의 전환 버튼이 이미 말해주고 있어 카드까지
+ * 반복할 필요가 없었고, 결국 부제 문구 자체를 4칸 다 빼는 게 여백도 맞고 더 깔끔했다(사용자 결정).
+ * 환전 가능(파생 합계)은 요약 카드에서 빠졌다 — 필요하면 환전 버튼/모달 쪽에 다시 붙일 수 있다.
  * 총 보유는 서버가 내려준 total을 그대로 쓴다 — 헤더와 같은 출처(서버 원장 SUM 단일 진실)라
  * "총 보유"의 정의가 바뀌어도 화면끼리 숫자가 어긋날 수 없다 (프론트 재계산 제거, 2026-07-20)
  * 카드 스타일은 마이페이지 대시보드(MyPageDashboard StatCard)와 톤을 맞췄다 (2026-07-24)
  */
 const PointSummaryCards = ({ balance }) => {
   const cards = [
-    {
-      label: '총 보유 포인트',
-      value: balance.total,
-      color: '#0064ff',
-      meta: `사용가능 ${balance.available.toLocaleString()}   ㅣ   홀딩 ${balance.hold.toLocaleString()}`,
-    },
-    {
-      label: '사용 가능 포인트',
-      value: balance.available,
-      color: '#005eb5',
-      meta: `홀딩 ${balance.hold.toLocaleString()}`,
-    },
-    {
-      label: '전환 가능 포인트',
-      value: balance.settleable,
-      color: '#d97706',
-      meta: '판매·서비스 정산 포인트',
-    },
-    {
-      label: '환전 가능 포인트',
-      value: balance.exchangeable,
-      color: '#776bf8',
-      meta: '사용가능 + 정산가능 합계',
-    },
+    { label: '총 보유 포인트', value: balance.total, color: '#0064ff' },
+    { label: '사용 가능 포인트', value: balance.available, color: '#005eb5' },
+    { label: '홀딩 포인트', value: balance.hold, color: '#776bf8' },
+    { label: '정산가능 포인트', value: balance.settleable, color: '#d97706' },
   ];
 
   const [hero, ...rest] = cards;
@@ -47,14 +31,13 @@ const PointSummaryCards = ({ balance }) => {
           다 차서 스크롤이 길어진다는 지적에 따라 위계를 나눔 (사용자 결정, 2026-08-03) */}
       <div className="sm:hidden">
         <div className="rounded-[10px] text-white p-5 mb-2.5" style={{ backgroundColor: hero.color }}>
-          <div className="flex items-start gap-3 mb-3">
+          <div className="flex items-start gap-3">
             <img src={iconPoint} alt="" className="size-[36px] object-contain shrink-0 mt-0.5" />
             <div className="min-w-0">
               <p className="font-bold text-[14px] opacity-90 leading-tight m-0">{hero.label}</p>
               <p className="font-bold text-[26px] leading-tight mt-0.5 mb-0">{hero.value.toLocaleString()} P</p>
             </div>
           </div>
-          <p className="text-[13px] opacity-80 truncate m-0">{hero.meta}</p>
         </div>
         <div className="grid grid-cols-3 gap-2">
           {rest.map((card) => (
@@ -63,7 +46,6 @@ const PointSummaryCards = ({ balance }) => {
                 {card.label.replace(' 포인트', '').replace(' 가능', '가능')}
               </p>
               <p className="font-bold text-[16px] leading-tight mt-1 mb-0">{card.value.toLocaleString()}P</p>
-              <p className="text-[10px] opacity-75 truncate mt-0.5 mb-0">{card.meta}</p>
             </div>
           ))}
         </div>
@@ -77,14 +59,13 @@ const PointSummaryCards = ({ balance }) => {
             className="rounded-[10px] text-white p-5"
             style={{ backgroundColor: card.color }}
           >
-            <div className="flex items-start gap-3 mb-3">
+            <div className="flex items-start gap-3">
               <img src={iconPoint} alt="" className="size-[40px] object-contain shrink-0 mt-0.5" />
               <div className="min-w-0">
                 <p className="font-bold text-[16px] opacity-90 leading-tight m-0">{card.label}</p>
                 <p className="font-bold text-[30px] leading-tight mt-0.5 mb-0">{card.value.toLocaleString()} P</p>
               </div>
             </div>
-            <p className="text-[14px] opacity-80 truncate m-0">{card.meta}</p>
           </div>
         ))}
       </div>
