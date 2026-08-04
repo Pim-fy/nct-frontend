@@ -8,14 +8,8 @@ import {
   Search,
   X,
 } from 'lucide-react';
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SERVICE_REQUEST_SORT_OPTIONS } from '@/constants/serviceDiscovery';
-import {
-  HEADER_SEARCH_BUTTON_CLASS,
-  HEADER_SEARCH_FORM_CLASS,
-  HEADER_SEARCH_INPUT_CLASS,
-} from '@components/common/HeaderSearchPortal';
 
 const FILTER_GROUP_CLASS = 'm-0 grid gap-2 border-0 p-0 disabled:opacity-60';
 const FILTER_INPUT_CLASS = 'min-h-10 w-full rounded-lg border border-[#e2e1dc] bg-white px-3 text-body-sm text-[#1a1a18] outline-none transition-colors focus:border-primary md:text-body-md';
@@ -45,28 +39,6 @@ const getPageNumbers = (page, totalPages) => {
     Math.max(1, totalPages - visibleCount + 1),
   );
   return Array.from({ length: visibleCount }, (_, index) => start + index);
-};
-
-export const ServiceSearchBar = ({ initialKeyword, onSubmit }) => {
-  const [keyword, setKeyword] = useState(initialKeyword);
-
-  return (
-    <form className={HEADER_SEARCH_FORM_CLASS} onSubmit={(event) => onSubmit(event, keyword)} role="search">
-      <label className="sr-only" htmlFor="service-keyword">서비스 검색어</label>
-      <input
-        className={HEADER_SEARCH_INPUT_CLASS}
-        id="service-keyword"
-        onChange={(event) => setKeyword(event.target.value)}
-        placeholder="필요한 서비스 요청을 검색하세요"
-        type="search"
-        value={keyword}
-      />
-      <button className={HEADER_SEARCH_BUTTON_CLASS} title="검색" type="submit">
-        <Search aria-hidden="true" size={23} />
-        <span className="sr-only">검색</span>
-      </button>
-    </form>
-  );
 };
 
 const FilterFields = ({
@@ -196,16 +168,41 @@ export const ServiceFilterPanel = ({
 };
 
 const ServiceRequestCard = ({ request }) => (
-  <Link className="group flex min-h-[250px] flex-col rounded-lg border border-[#dededc] bg-white p-5 transition-colors hover:border-primary" to={`/service-requests/${request.id}`}>
-    <div className="flex items-start justify-between gap-3">
-      <span className="text-base font-semibold text-primary">{request.categoryName || '서비스'}</span>
-      {request.statusName && <span className="text-base font-semibold text-[#555552]">{request.statusName}</span>}
+  <Link
+    className="group flex h-full min-w-0 flex-col overflow-hidden rounded-lg border border-[#dededc] bg-white transition-[border-color,box-shadow] hover:border-primary hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]"
+    to={`/service-requests/${request.id}`}
+  >
+    <div className="relative aspect-[3/2] w-full overflow-hidden bg-[#f1f3f6]">
+      <span className="absolute inset-0 grid place-items-center text-body-sm font-semibold text-[#858783]">
+        등록된 이미지가 없습니다.
+      </span>
+      {request.imageUrl && (
+        <img
+          alt=""
+          className="absolute inset-0 size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+          src={request.imageUrl}
+          onError={(event) => {
+            event.currentTarget.style.display = 'none';
+          }}
+        />
+      )}
     </div>
-    <h3 className="mt-4 line-clamp-2 text-xl font-bold leading-7 text-[#1a1a18] group-hover:text-primary">{request.title}</h3>
-    {request.description && <p className="mt-3 line-clamp-2 text-base leading-7 text-[#62625f]">{request.description}</p>}
-    {request.registeredAt && <p className="mt-auto flex items-center gap-2 pt-5 text-base text-[#555552]"><Clock3 aria-hidden="true" size={18} />{formatDate(request.registeredAt)}</p>}
-    <div className="mt-5 flex items-end justify-between border-t border-[#ececea] pt-4">
-      <strong className="text-lg text-[#1a1a18]">{request.budgetLabel || formatAmount(request.budgetAmount)}</strong>
+    <div className="flex min-h-[230px] flex-1 flex-col p-5">
+      <div className="flex items-start justify-between gap-3">
+        <span className="text-body-sm font-semibold text-primary">{request.categoryName || '서비스'}</span>
+        {request.statusName && <span className="text-body-sm font-semibold text-[#555552]">{request.statusName}</span>}
+      </div>
+      <h3 className="mt-3 line-clamp-2 text-h3 font-bold leading-[1.45] text-[#1a1a18] group-hover:text-primary">{request.title}</h3>
+      {request.description && <p className="mt-2 line-clamp-2 text-body-md leading-[1.65] text-[#62625f]">{request.description}</p>}
+      <div className="mt-auto flex items-end justify-between gap-3 border-t border-[#ececea] pt-4">
+        <strong className="text-body-lg text-[#1a1a18]">{request.budgetLabel || formatAmount(request.budgetAmount)}</strong>
+        {request.registeredAt && (
+          <span className="inline-flex shrink-0 items-center gap-1.5 text-caption text-[#666663]">
+            <Clock3 aria-hidden="true" size={15} />
+            {formatDate(request.registeredAt)}
+          </span>
+        )}
+      </div>
     </div>
   </Link>
 );

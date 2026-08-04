@@ -73,11 +73,11 @@ const AuctionImageGallery = ({
   };
 
   return (
-    <div className="relative flex h-full min-h-0 max-h-full w-full items-center justify-center overflow-hidden rounded-lg border border-[#e8e8e8] bg-[#e9e9e9] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)] max-lg:h-auto max-lg:max-h-none max-lg:aspect-4/3">
+    <div className="relative flex h-full min-h-0 w-full items-center justify-center overflow-hidden rounded-lg border border-[#e8e8e8] bg-[#e9e9e9] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)] max-lg:h-auto max-lg:aspect-4/3">
       {slideCount > 0 ? (
         <>
           <div
-            className={`flex size-full ${
+            className={`absolute inset-0 flex ${
               isTransitionEnabled
                 ? 'transition-transform duration-[450ms] ease-in-out'
                 : 'transition-none'
@@ -94,7 +94,7 @@ const AuctionImageGallery = ({
               >
                 {item.url && !failedImageUrls.has(item.url) ? (
                   <img
-                    className="block size-full bg-[#e9e9e9] object-contain"
+                    className="block size-full bg-[#e9e9e9] object-cover"
                     src={item.url}
                     alt={item.alt || `${auction.title} 상품 이미지`}
                     onError={() => onImageError(item.url)}
@@ -130,7 +130,7 @@ const AuctionImageGallery = ({
           )}
         </>
       ) : (
-        <span className="text-body-lg font-extrabold text-[#666]">
+        <span className="absolute inset-0 grid place-items-center text-body-lg font-extrabold text-[#666]">
           {auction.categoryName || '상품 이미지'}
         </span>
       )}

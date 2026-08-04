@@ -172,7 +172,7 @@ function BidHistoryTab() {
                       {/* 뱃지 행 */}
                       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                         <span className={`badge ${statusMeta.badge}`}>{statusMeta.label}</span>
-                        {urgent && <span className="badge badge-urgent">마감임박</span>}
+                        {urgent && <span className="badge badge-urgent">마감 임박</span>}
                         {isWon  && <span className="badge badge-teal">거래진행중</span>}
                       </div>
                       <h4>{item.auctionTitle ?? `경매 #${item.aucSn}`}</h4>

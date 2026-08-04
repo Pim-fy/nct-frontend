@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Search } from 'lucide-react';
+import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminModal from '@components/admin/AdminModal';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminTable from '@components/admin/AdminTable';
-import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
-import MockupAdminStatusBadge from '@components/admin/mockup/MockupAdminStatusBadge';
+import AdminPageHeader from '@components/admin/AdminPageHeader';
+import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
 import {
   useAdminProviderApplications,
@@ -14,6 +14,7 @@ import {
 } from '@hooks/useAdminProviderApplications';
 import useClientPagination from '@hooks/useClientPagination';
 import { getAdminProviderApplicationFileDownloadUrl } from '@api/providerApplicationApi';
+import { toast } from '@utils/common';
 import '../notice/adminContentPages.css';
 import './adminProviderApprovalPage.css';
 
@@ -74,6 +75,7 @@ const toDisplayItem = (item) => ({
 });
 
 const AdminProviderApprovalPage = () => {
+  const [filterForm, setFilterForm] = useState(EMPTY_FILTER);
   const [filter, setFilter] = useState(EMPTY_FILTER);
   const [selected, setSelected] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
@@ -109,7 +111,18 @@ const AdminProviderApprovalPage = () => {
   } = useClientPagination(filtered, PAGE_SIZE);
 
   const change = ({ target }) => {
-    setFilter((current) => ({ ...current, [target.name]: target.value }));
+    setFilterForm((current) => ({ ...current, [target.name]: target.value }));
+  };
+
+  const submitSearch = (event) => {
+    event.preventDefault();
+    setFilter({ ...filterForm, keyword: filterForm.keyword.trim() });
+    resetPage();
+  };
+
+  const resetFilters = () => {
+    setFilterForm(EMPTY_FILTER);
+    setFilter(EMPTY_FILTER);
     resetPage();
   };
 
@@ -133,6 +146,11 @@ const AdminProviderApprovalPage = () => {
         });
       }
 
+      toast({
+        icon: 'success',
+        title: `제공자 신청을 ${decision === 'approve' ? '승인' : '반려'}했습니다.`,
+        timer: 1800,
+      });
       setRejectReason('');
       setSelected(null);
     } catch (error) {
@@ -148,7 +166,7 @@ const AdminProviderApprovalPage = () => {
     { key: 'date', label: '신청일' },
     {
       key: 'status', label: '심사 상태',
-      render: (value, row) => <MockupAdminStatusBadge tone={row.tone}>{value}</MockupAdminStatusBadge>,
+      render: (value, row) => <AdminStatusBadge tone={row.tone}>{value}</AdminStatusBadge>,
     },
     { key: 'files', label: '서류', render: (value) => (value.length ? `${value.length}건` : '-') },
     {
@@ -164,17 +182,17 @@ const AdminProviderApprovalPage = () => {
   return (
     <div className="admin-content-page admin-provider-approval-page">
       <PageMeta title="제공자 심사" />
-      <MockupAdminPageHeader
-        action={<MockupAdminStatusBadge tone="success">실제 API 연결</MockupAdminStatusBadge>}
-        description="신청 내용을 확인한 뒤 승인 또는 반려합니다. 목록과 처리 결과는 백엔드 상태를 다시 조회합니다."
-        title="제공자 심사"
-      />
+      <AdminPageHeader title="제공자 심사" />
 
-      <section className="card admin-provider-filter" aria-label="제공자 심사 필터">
+      <form
+        aria-label="제공자 심사 필터"
+        className="card admin-provider-filter"
+        onSubmit={submitSearch}
+      >
         {['status', 'category', 'type'].map((name) => (
           <label key={name}>
             {({ status: '심사 상태', category: '카테고리', type: '신청 유형' })[name]}
-            <select name={name} onChange={change} value={filter[name]}>
+            <select name={name} onChange={change} value={filterForm[name]}>
               {FILTERS[name].map((item) => (
                 <option key={item}>{item}</option>
               ))}
@@ -184,17 +202,15 @@ const AdminProviderApprovalPage = () => {
 
         <label className="admin-provider-filter__search">
           검색
-          <div>
-            <Search aria-hidden="true" />
-            <input
-              name="keyword"
-              onChange={change}
-              placeholder="신청번호 또는 신청자"
-              value={filter.keyword}
-            />
-          </div>
+          <input
+            name="keyword"
+            onChange={change}
+            placeholder="신청번호 또는 신청자"
+            value={filterForm.keyword}
+          />
         </label>
-      </section>
+        <AdminFilterActions disabled={applicationsQuery.isFetching} onReset={resetFilters} />
+      </form>
 
       {applicationsQuery.isError && (
         <div className="card admin-content-state is-error">
@@ -236,7 +252,7 @@ const AdminProviderApprovalPage = () => {
         <AdminModal onClose={() => setSelected(null)} title="제공자 심사">
           <section className="admin-provider-detail">
             <div>
-              <span>심사 상세 · API</span>
+              <span>심사 상세</span>
               <h2>{selected.name}</h2>
               <p>
                 {selected.reason
@@ -273,9 +289,9 @@ const AdminProviderApprovalPage = () => {
 
               <dt>심사 상태</dt>
               <dd>
-                <MockupAdminStatusBadge tone={selected.tone}>
+                <AdminStatusBadge tone={selected.tone}>
                   {selected.status}
-                </MockupAdminStatusBadge>
+                </AdminStatusBadge>
               </dd>
             </dl>
 

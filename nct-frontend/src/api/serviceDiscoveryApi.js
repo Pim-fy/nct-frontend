@@ -36,6 +36,7 @@ const normalizeRequest = (item) => ({
   statusName: firstDefined(item.svcReqStatusNm, item.statusName, item.status, ''),
   quoteCount: firstDefined(item.quoteCount, item.quotationCount),
   registeredAt: firstDefined(item.svcReqRegDt, item.registeredAt, item.createdAt),
+  imageUrl: firstDefined(item.thumbnailUrl, item.imageUrl, item.imageList?.[0]?.url, ''),
 });
 
 const normalizeProvider = (item) => ({
@@ -126,7 +127,8 @@ export const fetchServiceDiscovery = async ({
       page: isProviderView ? Math.max(0, page - 1) : Math.max(1, page),
       size,
     },
-    skipAuthRefresh: true,
+    // 제공자 프로필 검색은 공개 계약이고, 서비스 요청 검색은 제공자 인증 계약이다.
+    skipAuthRefresh: isProviderView,
     skipServerErrorRedirect: true,
   });
   return normalizeDiscoveryResult(response.data.data, view, page, size);

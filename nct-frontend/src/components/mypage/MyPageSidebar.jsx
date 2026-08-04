@@ -26,11 +26,11 @@ const GENERAL_MENU_ITEMS = [
     label: "서비스 요청",
     type: "accordion",
     children: [
-      { key: "service-requests", label: "내 서비스 요청 목록", type: "todo" },
+      { key: "service-requests", label: "내 서비스 요청 목록", type: "section" },
       { key: "received-quotes",  label: "받은 견적 관리",      type: "todo" },
     ],
   },
-  { key: "wishlist",     label: "관심 상품",    type: "section" },
+  { key: "wishlist",     label: "관심 경매",    type: "section" },
   { key: "chat",         label: "채팅",         type: "section" },
   { key: "wallet",       label: "포인트 지갑",  type: "section" },
   { key: "review",       label: "내 리뷰",      type: "section" },
@@ -52,7 +52,7 @@ const PROVIDER_MENU_ITEMS = [
 // 아코디언 key → 포함되는 child key 목록
 const ACCORDION_CHILDREN = {
   "auction-history":  ["active-auctions", "auction-bids", "auction-sales"],
-  "service-history":  ["service-bids", "service-sales"],
+  "service-history":  ["service-requests", "received-quotes"],
 };
 
 function getParentAccordion(sectionKey) {

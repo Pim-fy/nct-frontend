@@ -3,6 +3,48 @@ import { formatNumber, formatPrice } from '@utils/common';
 import { resolveTradeMethodLabel } from '../utils/auctionFormatters';
 
 const BID_UNIT_MULTIPLIERS = [1, 5, 10];
+const AUCTION_STATUS = {
+  ENDED: 'AUCC0003',
+  FAILED: 'AUCC0004',
+  CANCELLED: 'AUCC0005',
+  CANCELLATION_REQUESTED: 'AUCC0006',
+};
+
+const resolveClosedAuctionContent = (statusCode, isCurrentHighestBidder) => {
+  if (statusCode === AUCTION_STATUS.ENDED) {
+    return isCurrentHighestBidder
+      ? {
+          title: '낙찰되었습니다',
+          description: '거래 내역에서 후속 절차를 확인해 주세요.',
+        }
+      : {
+          title: '경매가 종료되었습니다',
+          description: '입찰과 즉시구매가 모두 종료되었습니다.',
+        };
+  }
+  if (statusCode === AUCTION_STATUS.FAILED) {
+    return {
+      title: '유찰된 경매입니다',
+      description: '유효한 낙찰자가 없어 경매가 종료되었습니다.',
+    };
+  }
+  if (statusCode === AUCTION_STATUS.CANCELLED) {
+    return {
+      title: '취소된 경매입니다',
+      description: '판매자 또는 관리자 처리로 경매가 취소되었습니다.',
+    };
+  }
+  if (statusCode === AUCTION_STATUS.CANCELLATION_REQUESTED) {
+    return {
+      title: '취소 요청 처리 중입니다',
+      description: '관리자 검토가 완료될 때까지 입찰할 수 없습니다.',
+    };
+  }
+  return {
+    title: '경매 종료 처리 중입니다',
+    description: '낙찰 결과를 처리하고 있습니다. 잠시 후 다시 확인해 주세요.',
+  };
+};
 
 const AuctionBidPanel = ({
   auction,
@@ -60,7 +102,7 @@ const AuctionBidPanel = ({
     || requiresDeliveryAddressRegistration;
   const favoriteButtonStateClass = isAuthLoading || !isAuthenticated || isOwnAuction
     ? 'cursor-not-allowed opacity-45'
-    : (isFavoritePending ? 'cursor-wait opacity-55' : 'cursor-pointer');
+    : 'cursor-pointer active:scale-[0.96]';
   const pointBalanceLabel = !isAuthenticated
     ? '-'
     : (hasAvailablePoint
@@ -71,7 +113,14 @@ const AuctionBidPanel = ({
   const currentPriceLabel = formatPrice(currentPrice);
   const currentPriceSize = `${100 / Math.max(currentPriceLabel.length * 0.62, 1)}cqi`;
   const remainingTimeSize = `${100 / Math.max(String(remainingTime).length * 0.66, 1)}cqi`;
-  const isCurrentHighestTradeMethodControl = isCurrentHighestBidder && isMixedTradeMethod;
+  const isEndedAuction = auction.auctionStatusCode === AUCTION_STATUS.ENDED;
+  const closedAuctionContent = resolveClosedAuctionContent(
+    auction.auctionStatusCode,
+    isCurrentHighestBidder,
+  );
+  const isCurrentHighestTradeMethodControl = isAuctionOpen
+    && isCurrentHighestBidder
+    && isMixedTradeMethod;
   const isPrimaryActionPending = isCurrentHighestTradeMethodControl
     ? isTradeMethodChangePending
     : isBidPending;
@@ -83,11 +132,11 @@ const AuctionBidPanel = ({
       || isBidPointInsufficient
       || !isBidAmountUnitValid);
   const resolvePrimaryActionLabel = () => {
+    if (!isAuctionOpen) return isEndedAuction && isCurrentHighestBidder ? '낙찰 완료' : '입찰 종료';
     if (isCurrentHighestTradeMethodControl) {
       if (!hasTradeMethodChange) return '최고입찰 중';
       return `${selectedTradeName}으로 변경${isTradeMethodChangePending ? ' 중' : ''}`;
     }
-    if (!isAuctionOpen) return '입찰 종료';
     if (isInstantBuyAmountSelected) {
       return isBidPointInsufficient ? '포인트 부족' : '즉시구매 진행';
     }
@@ -121,19 +170,20 @@ const AuctionBidPanel = ({
             }`}
             role={isCurrentHighestBidder ? 'status' : undefined}
           >
-            최고입찰자
+            {isEndedAuction ? '낙찰자' : '최고입찰자'}
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <button
-            className={`inline-flex min-h-6 shrink-0 items-center gap-1 rounded-full border px-3 py-0.5 text-[13px] leading-[1.4] font-bold transition-colors ${favoriteButtonStateClass} ${
+            className={`inline-flex min-h-6 shrink-0 items-center gap-1 rounded-full border px-3 py-0.5 text-[13px] leading-[1.4] font-bold transition-[border-color,background-color,color,transform] duration-300 ease-out ${favoriteButtonStateClass} ${
               auction.favorite
                 ? 'border-[#f6c6d2] bg-[#fff0f4] text-[#c0184a]'
                 : 'border-[#dadada] bg-white text-[#666]'
             }`}
             type="button"
             aria-pressed={Boolean(auction.favorite)}
-            disabled={isAuthLoading || !isAuthenticated || isOwnAuction || isFavoritePending}
+            aria-busy={isFavoritePending}
+            disabled={isAuthLoading || !isAuthenticated || isOwnAuction}
             title={isOwnAuction
               ? '본인 경매 상품은 관심 상품으로 등록할 수 없습니다'
               : (isAuthLoading
@@ -141,7 +191,19 @@ const AuctionBidPanel = ({
                 : (!isAuthenticated ? '로그인 후 관심 상품을 등록할 수 있습니다' : undefined))}
             onClick={onFavoriteToggle}
           >
-            <Heart size={14} fill={auction.favorite ? 'currentColor' : 'none'} aria-hidden="true" />
+            <span
+              className={`inline-grid size-4 place-items-center transition-transform duration-300 ease-out ${
+                auction.favorite ? 'scale-110' : 'scale-100'
+              }`}
+              aria-hidden="true"
+            >
+              <Heart
+                size={14}
+                className={`transition-[fill,stroke] duration-300 ease-out ${
+                  auction.favorite ? 'fill-current' : 'fill-transparent'
+                }`}
+              />
+            </span>
             관심
           </button>
           <button
@@ -159,8 +221,8 @@ const AuctionBidPanel = ({
         {auction.title}
       </h1>
 
-      <div className="grid items-stretch gap-4 xl:grid-cols-[minmax(0,1.03fr)_minmax(280px,0.82fr)]">
-        <section className="grid min-w-0 grid-rows-[auto_auto_1fr] gap-3" aria-label="경매 현황">
+      <div className="grid items-stretch gap-4 xl:h-96 xl:grid-cols-[minmax(0,1.03fr)_minmax(280px,0.82fr)]">
+        <section className="grid min-w-0 grid-rows-[auto_auto_1fr] gap-3 xl:h-full" aria-label="경매 현황">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid min-h-[106px] content-center rounded-lg border border-[#e8e8e8] bg-white px-5 py-4 [container-type:inline-size]">
               <p className="mt-0 mb-2 text-body-md font-bold text-[#3f3f46]">
@@ -213,26 +275,17 @@ const AuctionBidPanel = ({
             </div>
           </div>
 
-          <div className="grid gap-3 rounded-lg border border-[#e8e8e8] bg-[#fafafa] px-4 py-3">
+          <div className="grid grid-rows-[40px_auto] content-start rounded-lg border border-[#e8e8e8] bg-[#fafafa] px-4 py-3">
             {isMixedTradeMethod ? (
-              <div className={`grid gap-2 rounded-lg border px-3 py-2 transition-colors ${
+              <div className={`flex min-h-10 items-center justify-between gap-3 rounded-md transition-colors ${
                 showTradeMethodError
-                  ? 'border-[#f0aaa4] bg-[#fff4f3]'
-                  : 'border-transparent'
+                  ? 'bg-[#fff4f3] outline outline-1 outline-[#f0aaa4] outline-offset-2'
+                  : ''
               }`}>
-                <div className="flex items-center justify-between gap-4">
-                  <span className={`text-caption font-bold ${showTradeMethodError ? 'text-[#b42318]' : 'text-[#666]'}`}>
-                    거래 방식 선택
-                  </span>
-                  <strong className={`text-body-sm ${
-                    selectedTradeMethodCode
-                      ? 'text-[#1d1d1f]'
-                      : (showTradeMethodError ? 'text-[#b42318]' : 'text-[#666]')
-                  }`}>
-                    {selectedTradeName}
-                  </strong>
-                </div>
-                <div className="grid grid-cols-2 gap-2" role="group" aria-label="거래 방식 선택">
+                <span className={`text-caption font-bold ${showTradeMethodError ? 'text-[#b42318]' : 'text-[#666]'}`}>
+                  거래 방식
+                </span>
+                <div className="grid w-full max-w-[220px] grid-cols-2 gap-1.5" role="group" aria-label="거래 방식 선택">
                   {[
                     { code: 'TRDC0009', label: '배송' },
                     { code: 'TRDC0010', label: '직거래' },
@@ -240,10 +293,12 @@ const AuctionBidPanel = ({
                     const selected = selectedTradeMethodCode === method.code;
                     return (
                       <button
-                        className={`min-h-10 cursor-pointer rounded-lg border text-body-sm font-bold transition-colors ${
+                        className={`min-h-8 cursor-pointer rounded-md border px-3 text-caption font-bold transition-colors ${
                           selected
                             ? 'border-primary bg-primary-light text-primary-dark'
-                            : 'border-[#dadada] bg-white text-[#666] hover:border-primary hover:text-primary-dark'
+                            : (showTradeMethodError
+                              ? 'border-[#e58d86] bg-white text-[#b42318]'
+                              : 'border-[#dadada] bg-white text-[#666] hover:border-primary hover:text-primary-dark')
                         }`}
                         key={method.code}
                         type="button"
@@ -256,23 +311,17 @@ const AuctionBidPanel = ({
                     );
                   })}
                 </div>
-                <p
-                  aria-hidden={!showTradeMethodError}
-                  className={`m-0 min-h-5 text-caption font-bold text-[#b42318] transition-opacity ${
-                    showTradeMethodError ? 'visible opacity-100' : 'invisible opacity-0'
-                  }`}
-                  role={showTradeMethodError ? 'alert' : undefined}
-                >
-                  배송 또는 직거래 방식을 선택해 주세요
-                </p>
+                {showTradeMethodError && (
+                  <span className="sr-only" role="alert">배송 또는 직거래 방식을 선택해 주세요</span>
+                )}
               </div>
             ) : (
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex min-h-10 items-center justify-between gap-4">
                 <span className="text-caption font-bold text-[#666]">거래 방식</span>
                 <strong className="text-body-sm text-[#1d1d1f]">{selectedTradeName}</strong>
               </div>
             )}
-            <div className="border-t border-[#e8e8e8] pt-3">
+            <div className="mt-6 border-t border-[#e8e8e8] pt-6">
               <p className="m-0 text-caption font-bold text-[#666]">안내사항</p>
               <ul className="mt-2 mb-0 list-disc space-y-1 pl-4 text-caption text-[#666]">
                 <li>마감 10분 이내 유효 입찰 시 종료 시간이 자동 연장됩니다.</li>
@@ -282,7 +331,7 @@ const AuctionBidPanel = ({
           </div>
         </section>
 
-        <section className="flex min-w-0 flex-col rounded-lg border border-[#e8e8e8] bg-white px-5 py-4" aria-label="입찰 및 즉시구매">
+        <section className="flex min-w-0 flex-col rounded-lg border border-[#e8e8e8] bg-white px-5 py-3 xl:h-full" aria-label="입찰 및 즉시구매">
           {isAuctionReady ? (
             <div className="grid min-h-36 flex-1 place-items-center content-center gap-2 text-center text-[#1d1d1f]" role="status">
               <strong className="text-h3 font-bold">경매 시작 전입니다</strong>
@@ -292,13 +341,25 @@ const AuctionBidPanel = ({
             <div className="grid min-h-36 flex-1 place-items-center text-body-md font-bold text-[#666]" role="status">
               로그인 정보를 확인하는 중입니다.
             </div>
+          ) : !isAuctionOpen ? (
+            <div className="grid min-h-36 flex-1 place-items-center px-3 text-center text-[#1d1d1f]" role="status">
+              <div className="grid max-w-[320px] gap-2">
+                <span className="mx-auto inline-flex min-h-7 items-center rounded-full bg-[#f1f4f8] px-3 text-caption font-bold text-[#586174]">
+                  {auction.auctionStatusName || '종료'}
+                </span>
+                <strong className="text-h3 font-bold text-[#1d1d1f]">{closedAuctionContent.title}</strong>
+                <p className="m-0 text-body-sm leading-6 text-[#666] md:text-body-md">
+                  {closedAuctionContent.description}
+                </p>
+              </div>
+            </div>
           ) : isOwnAuction ? (
             <div className="grid min-h-36 flex-1 place-items-center text-h3 font-bold text-primary-dark" role="status">
               본인 경매 상품
             </div>
           ) : (
             <>
-              <div className="mb-2.5 grid gap-2">
+              <div className="mb-1.5 grid gap-2">
                 <label className="text-body-md font-bold text-[#666]" htmlFor="bidAmount">입찰 금액</label>
                 <input
                   className="min-h-11 w-full rounded-lg border border-[#dadada] bg-white px-3.5 text-body-md text-[#1d1d1f] outline-none transition-colors focus:border-primary disabled:cursor-not-allowed disabled:bg-[#f3f3f3]"
@@ -313,7 +374,7 @@ const AuctionBidPanel = ({
                   onBlur={onBidInputBlur}
                 />
               </div>
-              <div className="grid gap-2">
+              <div className="grid gap-1.5">
                 <span className="text-caption text-[#666]">
                   입찰 단위 <strong className="ml-1 text-[#1d1d1f]">{formatPrice(bidUnitPrice)}</strong>
                 </span>
@@ -334,7 +395,7 @@ const AuctionBidPanel = ({
               </div>
               <p
                 aria-hidden={!showBidAmountUnitError}
-                className={`mt-2 mb-0 min-h-5 text-caption text-[#b42318] transition-opacity ${
+                className={`mt-1 mb-0 min-h-5 text-caption text-[#b42318] transition-opacity ${
                   showBidAmountUnitError ? 'visible opacity-100' : 'invisible opacity-0'
                 }`}
                 id="bidAmountPolicy"
@@ -359,7 +420,7 @@ const AuctionBidPanel = ({
                   로그인이 필요한 서비스입니다.
                 </p>
               ) : (
-                <div className="mt-auto grid gap-1.5 pt-4">
+                <div className="mt-auto grid gap-1.5 pt-2">
                   {showDeliveryAddressGate ? (
                     <>
                       {requiresBidHoldConsent && (

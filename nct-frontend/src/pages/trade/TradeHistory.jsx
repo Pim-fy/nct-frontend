@@ -5,6 +5,7 @@ import {
   useState,
 } from 'react';
 import { useLocation } from 'react-router-dom';
+import { toImageUrl } from '@api/fileApi';
 import { getTradeHistory } from '@api/tradeApi';
 import {
   getTradeListItems,
@@ -410,6 +411,8 @@ const TradeHistory = ({
               <MyPageListItem
                 key={trade.id}
                 to={onOpenTradeDetail ? undefined : detailTarget}
+                imageSrc={toImageUrl(trade.productImageUrl)}
+                imageAlt={trade.productName}
                 imageFallback="상품 이미지"
                 badge={<MyPageStatusBadge className={status.badgeClass}>{status.label}</MyPageStatusBadge>}
                 title={trade.productName}

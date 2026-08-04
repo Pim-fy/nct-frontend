@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import {
   ChevronDown,
@@ -8,9 +8,8 @@ import {
   ChevronUp,
   ChevronsLeft,
   ChevronsRight,
-  History,
+  Gavel,
   RotateCcw,
-  Search,
   SlidersHorizontal,
   X,
 } from 'lucide-react';
@@ -20,18 +19,10 @@ import { fetchReferenceCodes } from '@api/referenceApi';
 import { SORT_OPTIONS } from '@/constants/auctionOptions';
 import CardGridSkeleton from '@components/skeleton/CardGridSkeleton';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
-import HeaderSearchPortal, {
-  HEADER_SEARCH_BUTTON_CLASS,
-  HEADER_SEARCH_FORM_CLASS,
-  HEADER_SEARCH_INPUT_CLASS,
-} from '@components/common/HeaderSearchPortal';
+import HeaderSearchPortal from '@components/common/HeaderSearchPortal';
+import HeaderSearchWithHistory from '@components/common/HeaderSearchWithHistory';
 import useBodyScrollLock from '@hooks/useBodyScrollLock';
 import AuctionCard from './components/AuctionCard';
-import {
-  addAuctionSearchHistory,
-  getAuctionSearchHistory,
-  removeAuctionSearchHistory,
-} from '@utils/auctionSearchHistory';
 
 const getSelectedValues = (searchParams, key) => searchParams.getAll(key);
 const DEFAULT_PAGE_SIZE = 12;
@@ -42,6 +33,7 @@ const COLLAPSED_CATEGORY_COUNT = 5;
 const AUCTION_STATUS_FILTERS = [
   { code: 'AUCC0001', label: '진행 예정' },
   { code: 'AUCC0002', label: '진행 중' },
+  { code: 'AUCC0003', label: '종료' },
 ];
 const TRADE_METHOD_FILTERS = [
   { value: 'delivery', sourceCodes: ['TRDC0009', 'TRDC0020'], label: '배송' },
@@ -53,6 +45,7 @@ const FILTER_MESSAGE_CLASS = 'm-0 min-h-5 text-caption text-[#5f5e5a]';
 const FILTER_INPUT_CLASS = 'min-h-10 w-full rounded-lg border border-[#e2e1dc] bg-white px-3 text-body-sm text-[#1a1a18] outline-none transition-colors focus:border-primary md:text-body-md';
 const PAGINATION_BUTTON_CLASS = 'min-h-10 rounded-lg border border-[#e2e1dc] bg-white px-3.5 text-body-md font-semibold text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-45 max-sm:min-h-9 max-sm:min-w-9 max-sm:px-1.5 max-sm:text-caption';
 const PAGINATION_WINDOW_SIZE = 5;
+const MOBILE_HEADER_HEIGHT = 154;
 
 const getPaginationItems = (currentPage, totalPages) => {
   const halfWindow = Math.floor(PAGINATION_WINDOW_SIZE / 2);
@@ -92,9 +85,9 @@ const createDraftFromSearchParams = (searchParams) => ({
 const AuctionListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const shouldScrollAfterPageChangeRef = useRef(false);
+  const filterBarAnchorRef = useRef(null);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [searchHistoryOpen, setSearchHistoryOpen] = useState(false);
-  const [searchHistory, setSearchHistory] = useState(() => getAuctionSearchHistory());
+  const [filterBarFixed, setFilterBarFixed] = useState(false);
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [keywordDraft, setKeywordDraft] = useState(searchParams.get('keyword') || '');
   const [categoryDraft, setCategoryDraft] = useState(() => getSelectedValues(searchParams, 'category'));
@@ -113,8 +106,6 @@ const AuctionListPage = () => {
   );
   const [previewQueryParams, setPreviewQueryParams] = useState(null);
   const searchParamsKey = searchParams.toString();
-  const searchContainerRef = useRef(null);
-  const showSearchHistory = searchHistoryOpen && searchHistory.length > 0;
 
   useEffect(() => {
     const animationFrameId = window.requestAnimationFrame(() => {
@@ -134,16 +125,6 @@ const AuctionListPage = () => {
   }, [searchParamsKey]);
 
   useEffect(() => {
-    const handlePointerDown = (event) => {
-      if (searchContainerRef.current?.contains(event.target)) return;
-      setSearchHistoryOpen(false);
-    };
-
-    document.addEventListener('mousedown', handlePointerDown);
-    return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, []);
-
-  useEffect(() => {
     if (!filterOpen || !window.matchMedia('(max-width: 767px)').matches) {
       return undefined;
     }
@@ -160,6 +141,26 @@ const AuctionListPage = () => {
   }, [filterOpen]);
 
   useBodyScrollLock(filterOpen);
+
+  useEffect(() => {
+    const anchor = filterBarAnchorRef.current;
+    if (!anchor) return undefined;
+
+    const mobileQuery = window.matchMedia('(max-width: 767px)');
+    const observer = new IntersectionObserver(([entry]) => {
+      const shouldFix = mobileQuery.matches
+        && !entry.isIntersecting
+        && entry.boundingClientRect.top < MOBILE_HEADER_HEIGHT;
+      setFilterBarFixed(shouldFix);
+    }, {
+      rootMargin: `-${MOBILE_HEADER_HEIGHT}px 0px 0px 0px`,
+      threshold: 0,
+    });
+
+    observer.observe(anchor);
+
+    return () => observer.disconnect();
+  }, []);
 
   const selectedCategories = getSelectedValues(searchParams, 'category');
   const selectedStatuses = getSelectedValues(searchParams, 'status');
@@ -297,23 +298,11 @@ const AuctionListPage = () => {
     return next;
   };
 
-  const handleSearch = (event) => {
-    event.preventDefault();
-    const keyword = keywordDraft.trim();
-    if (keyword) setSearchHistory(addAuctionSearchHistory(keyword));
-    setSearchHistoryOpen(false);
+  const handleSearch = (keyword) => {
     setSearchParams(createSearchParamsFromDraft(keyword), { replace: false });
-  };
-
-  const handleRecentSearch = (term) => {
-    setKeywordDraft(term);
-    setSearchHistory(addAuctionSearchHistory(term));
-    setSearchHistoryOpen(false);
-    setSearchParams(createSearchParamsFromDraft(term), { replace: false });
-  };
-
-  const handleRemoveRecentSearch = (term) => {
-    setSearchHistory(removeAuctionSearchHistory(term));
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   };
 
   const handleFilterSearch = () => {
@@ -354,89 +343,19 @@ const AuctionListPage = () => {
   return (
     <div className="min-h-full bg-white text-body-sm text-[#1a1a18] md:text-body-md">
   <HeaderSearchPortal>
-      <div
-        ref={searchContainerRef}
-        className="relative mx-auto w-full"
-      >
-        <form
-          className={`${HEADER_SEARCH_FORM_CLASS} relative z-[141] ${
-            showSearchHistory
-              ? '![border-radius:22px_22px_0_0] !border-b-transparent'
-              : ''
-          }`}
-          onSubmit={handleSearch}
-        >
-          <input
-            className={HEADER_SEARCH_INPUT_CLASS}
-            type="search"
-            value={keywordDraft}
-            onChange={(event) => setKeywordDraft(event.target.value)}
-            onFocus={() => setSearchHistoryOpen(true)}
-            onClick={() => setSearchHistoryOpen(true)}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') setSearchHistoryOpen(false);
-            }}
-            placeholder="원하는 경매 상품을 검색하세요"
-            aria-label="경매 검색어"
-            aria-controls="auction-search-history"
-            aria-expanded={showSearchHistory}
-            autoComplete="off"
-          />
-
-          <button
-            className={HEADER_SEARCH_BUTTON_CLASS}
-            type="submit"
-            aria-label="검색"
-          >
-            <Search size={24} strokeWidth={2.4} />
-          </button>
-        </form>
-
-        {showSearchHistory && (
-          <div
-            id="auction-search-history"
-            className="absolute inset-x-0 top-[calc(100%_-_2px)] z-[142] overflow-hidden rounded-b-[22px] border-2 border-t-0 border-primary bg-white shadow-[0_12px_24px_rgba(0,0,0,0.14)]"
-          >
-            <ul className="m-0 list-none p-0">
-              {searchHistory.map((term) => (
-                <li
-                  className="flex min-h-11 items-center hover:bg-[#f7f8fa]"
-                  key={term}
-                >
-                  <button
-                    className="flex min-w-0 flex-1 cursor-pointer items-center self-stretch overflow-hidden border-0 bg-transparent text-left text-body-sm text-[#333] md:text-body-md"
-                    type="button"
-                    onClick={() => handleRecentSearch(term)}
-                  >
-                    <History
-                      className="ml-3 shrink-0 text-[#777]"
-                      size={17}
-                      aria-hidden="true"
-                    />
-
-                    <span className="min-w-0 overflow-hidden px-3 text-ellipsis whitespace-nowrap">
-                      {term}
-                    </span>
-                  </button>
-
-                  <button
-                    className="mr-1 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-[#999] hover:bg-white hover:text-[#333]"
-                    type="button"
-                    onClick={() => handleRemoveRecentSearch(term)}
-                    aria-label={`${term} 검색 기록 삭제`}
-                  >
-                    <X size={16} aria-hidden="true" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
+      <HeaderSearchWithHistory
+        storageKey="nct:auction-search-history"
+        dropdownId="auction-search-history"
+        value={keywordDraft}
+        onChange={setKeywordDraft}
+        onSubmit={handleSearch}
+        placeholder="원하는 경매 상품을 검색하세요"
+        ariaLabel="경매 검색어"
+      />
   </HeaderSearchPortal>
 
      {/* .container에 Tailwind py-*를 같이 쓰면 App.css의 padding shorthand가 레이어 충돌로 상하 패딩을 0으로 무력화한다 — 인라인 style로 우회 */}
-      <main className="mx-auto my-0 w-full max-w-[1600px] py-10">
+      <main className="mx-auto my-0 w-full max-w-[1600px] py-10 max-md:px-4 max-md:py-6">
         <div className="flex items-start gap-6 max-md:block">
           <button
             className={`fixed inset-0 z-[210] cursor-default border-0 bg-black/25 transition-opacity duration-200 ease-linear motion-reduce:transition-none md:hidden ${
@@ -448,14 +367,14 @@ const AuctionListPage = () => {
             onClick={() => setFilterOpen(false)}
           />
           <aside
-            className={`fixed inset-x-0 bottom-0 z-[220] grid h-[88dvh] max-h-[88dvh] w-full transform-gpu gap-[18px] overflow-y-auto overscroll-contain rounded-t-2xl border border-[#f0efec] bg-white p-5 shadow-[0_-8px_28px_rgba(0,0,0,0.18)] transition-transform duration-[420ms] ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform [backface-visibility:hidden] [scrollbar-color:#c8ced8_transparent] [scrollbar-width:thin] motion-reduce:transition-none [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#c8ced8] [&::-webkit-scrollbar-track]:bg-transparent ${
+            className={`fixed inset-x-0 bottom-0 z-[220] flex h-[88dvh] max-h-[88dvh] w-full transform-gpu flex-col overflow-hidden rounded-t-2xl border border-[#f0efec] bg-white shadow-[0_-8px_28px_rgba(0,0,0,0.18)] transition-transform duration-[420ms] ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform [backface-visibility:hidden] motion-reduce:transition-none ${
               filterOpen
                 ? 'pointer-events-auto translate-y-0'
                 : 'pointer-events-none translate-y-[101%]'
-            } md:sticky md:top-[82px] md:inset-x-auto md:bottom-auto md:z-auto md:mb-0 md:h-fit md:max-h-[calc(100dvh-122px)] md:w-[280px] md:flex-[0_0_280px] md:self-start md:translate-y-0 md:overflow-y-auto md:rounded-lg md:pointer-events-auto md:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)]`}
+            } md:sticky md:top-[82px] md:inset-x-auto md:bottom-auto md:z-auto md:mb-0 md:h-fit md:max-h-[calc(100dvh-122px)] md:w-[280px] md:flex-[0_0_280px] md:self-start md:translate-y-0 md:rounded-lg md:pointer-events-auto md:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)]`}
             aria-label="경매 목록 필터"
           >
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#f0efec] bg-white p-5 pb-3">
               <h2 className="m-0 text-h3 font-bold">필터</h2>
               <div className="flex items-center gap-2">
                 <button
@@ -478,6 +397,7 @@ const AuctionListPage = () => {
               </div>
             </div>
 
+            <div className="flex min-h-0 flex-1 flex-col gap-[18px] overflow-y-auto overscroll-contain p-5 [scrollbar-color:#c8ced8_transparent] [scrollbar-width:thin] [&>*]:shrink-0 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#c8ced8] [&::-webkit-scrollbar-track]:bg-transparent">
             <fieldset
               className={`${FILTER_GROUP_CLASS} min-h-[214px]`}
               disabled={categoriesQuery.isLoading || categoriesQuery.isError}
@@ -544,7 +464,7 @@ const AuctionListPage = () => {
             </fieldset>
 
             <fieldset
-              className={`${FILTER_GROUP_CLASS} min-h-[88px]`}
+              className={`${FILTER_GROUP_CLASS} min-h-[120px]`}
               disabled={auctionStatusesQuery.isLoading || auctionStatusesQuery.isError}
             >
               <legend className="mb-0.5 block text-body-lg font-extrabold text-[#1a1a18]">진행 상태</legend>
@@ -650,8 +570,9 @@ const AuctionListPage = () => {
                 ))}
               </select>
             </label>
+            </div>
 
-            <div className="sticky -bottom-5 z-10 -mx-5 -mb-5 border-t border-[#f0efec] bg-white p-5 pt-3">
+            <div className="shrink-0 border-t border-[#f0efec] bg-white p-5 pt-3">
               <button
                 className="inline-flex min-h-[46px] w-full cursor-pointer items-center justify-center rounded-lg border border-primary bg-primary px-3 text-body-md font-bold text-white transition-colors hover:border-primary-dark hover:bg-primary-dark"
                 type="button"
@@ -667,16 +588,36 @@ const AuctionListPage = () => {
 
           {/* aside(필터 패널)와 flex 형제로 items-start라 테두리 자체는 이미 같은 높이에서 시작 — 추가 여백 없음 */}
           <section className="min-w-0 flex-1">
-            <button
-              className="mb-3 hidden min-h-[42px] w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-primary bg-white font-bold text-primary max-md:inline-flex"
-              type="button"
-              aria-haspopup="dialog"
-              aria-expanded={filterOpen}
-              onClick={() => setFilterOpen(true)}
+            <Link
+              className="mb-3 hidden min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-primary bg-primary px-4 font-bold text-white no-underline transition-colors hover:border-primary-dark hover:bg-primary-dark max-md:inline-flex"
+              to="/product/register"
             >
-              <SlidersHorizontal size={18} />
-              필터
-            </button>
+              <Gavel aria-hidden="true" size={18} strokeWidth={2.2} />
+              경매 등록
+            </Link>
+            <div className="max-md:relative max-md:-mx-4 max-md:mb-3 max-md:h-[58px]">
+              <span
+                ref={filterBarAnchorRef}
+                aria-hidden="true"
+                className="pointer-events-none absolute left-0 top-0 h-px w-px md:hidden"
+              />
+              <div className={`max-md:z-[110] max-md:bg-white/95 max-md:px-4 max-md:py-2 max-md:backdrop-blur-sm ${
+                filterBarFixed
+                  ? 'max-md:fixed max-md:inset-x-0 max-md:top-[154px]'
+                  : 'max-md:absolute max-md:inset-0'
+              }`}>
+                <button
+                  className="hidden min-h-[42px] w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-primary bg-white font-bold text-primary max-md:inline-flex"
+                  type="button"
+                  aria-haspopup="dialog"
+                  aria-expanded={filterOpen}
+                  onClick={() => setFilterOpen(true)}
+                >
+                  <SlidersHorizontal size={18} />
+                  필터
+                </button>
+              </div>
+            </div>
 
             {isLoading ? (
               <CardGridSkeleton cardHeight={410} columns={3} count={6} />

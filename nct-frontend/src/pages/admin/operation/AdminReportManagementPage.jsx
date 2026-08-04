@@ -1,19 +1,20 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Search } from 'lucide-react';
 import {
   decideAdminReport,
   getAdminReport,
   getAdminReports,
 } from '@api/adminReportApi';
 import AdminModal from '@components/admin/AdminModal';
+import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
-import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
+import AdminPageHeader from '@components/admin/AdminPageHeader';
 import PageMeta from '@components/admin/PageMeta';
 import useClientPagination from '@hooks/useClientPagination';
+import { toast } from '@utils/common';
 import '../audit/adminAuditPage.css';
 import './adminOperationPages.css';
 
@@ -38,10 +39,10 @@ const reportStatus = (code) => REPORT_STATUS[code] ?? { label: code ?? '-', tone
 
 /** 담당자 7 · F-OPS-007: 서버의 신고 처리 계약을 관리자 화면에 연결합니다. */
 const AdminReportManagementPage = () => {
+  const [keywordInput, setKeywordInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const [selectedReportSn, setSelectedReportSn] = useState(null);
   const [reason, setReason] = useState('');
-  const [feedback, setFeedback] = useState('');
 
   const reportsQuery = useQuery({
     queryKey: ['admin', 'reports', 'pending'],
@@ -55,11 +56,13 @@ const AdminReportManagementPage = () => {
   const decisionMutation = useMutation({
     mutationFn: decideAdminReport,
     onSuccess: (_, variables) => {
-      setFeedback(
-        `신고 #${variables.reportSn}을 ${
+      toast({
+        icon: 'success',
+        title: `신고 #${variables.reportSn}을 ${
           variables.decision === 'PROCESSED' ? '처리 완료' : '반려'
         }했습니다.`,
-      );
+        timer: 2000,
+      });
       setSelectedReportSn(null);
       setReason('');
       reportsQuery.refetch();
@@ -88,6 +91,18 @@ const AdminReportManagementPage = () => {
     totalItems,
     totalPages,
   } = useClientPagination(rows, PAGE_SIZE);
+
+  const submitSearch = (event) => {
+    event.preventDefault();
+    setKeyword(keywordInput.trim());
+    resetPage();
+  };
+
+  const resetFilters = () => {
+    setKeywordInput('');
+    setKeyword('');
+    resetPage();
+  };
 
   const columns = useMemo(() => [
     { key: 'reportSn', label: '신고 번호', render: (value) => `#${value}` },
@@ -149,26 +164,20 @@ const AdminReportManagementPage = () => {
   return (
     <div className="admin-bjn-page admin-operation-page">
       <PageMeta title="신고 처리" />
-      <MockupAdminPageHeader title="신고 처리" />
+      <AdminPageHeader title="신고 처리" />
 
-      <form className="admin-bjn-filters admin-operation-search" onSubmit={(event) => event.preventDefault()}>
+      <form className="admin-bjn-filters admin-operation-search" onSubmit={submitSearch}>
         <label>
           신고 검색
-          <span>
-            <Search aria-hidden="true" />
-            <input
-              onChange={(event) => {
-                setKeyword(event.target.value);
-                resetPage();
-              }}
-              placeholder="신고 번호·회원 번호·내용"
-              value={keyword}
-            />
-          </span>
+          <input
+            onChange={(event) => setKeywordInput(event.target.value)}
+            placeholder="신고 번호·회원 번호·내용"
+            value={keywordInput}
+          />
         </label>
+        <AdminFilterActions disabled={reportsQuery.isFetching} onReset={resetFilters} />
       </form>
 
-      {feedback && <p className="admin-operation-feedback" role="status">{feedback}</p>}
       {reportsQuery.isError && (
         <div className="admin-bjn-state is-error">
           신고 목록을 불러오지 못했습니다.

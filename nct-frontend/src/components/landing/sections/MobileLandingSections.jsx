@@ -8,18 +8,12 @@
 //   "요즘 반응형 스타일"에 맞춰 통상적인 패턴(세로 스택, 스와이프 카드, 아이콘 가로 스크롤)으로 구성했다.
 import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search } from "lucide-react";
 import arrowDark from "@assets/img/arrowDark.png";
-import arrowWhite from "@assets/img/arrowWhite.png";
 import { assets } from "./assets";
 import AuctionCard from "./AuctionCard";
-import ServiceRequestCard from "./ServiceRequestCard";
 import { SERVICE_MENU_ITEMS } from "./serviceMenuData";
 
-const SEARCH_PLACEHOLDERS = {
-  경매: "원하는 경매 상품을 검색하세요.",
-  견적요청: "필요한 서비스 요청을 검색하세요.",
-};
+const AUCTION_SEARCH_PLACEHOLDER = "원하는 경매 상품을 검색하세요.";
 
 const BANNER_SLIDES = [
   {
@@ -41,33 +35,25 @@ export default function MobileLandingSections({
   hotItems,
   isHotAuctionError,
   isHotAuctionLoading,
-  isServiceError,
-  isServiceLoading,
   newAuctionItems,
   newAuctionError,
   newAuctionLoading,
-  serviceRequestItems,
 }) {
   const navigate = useNavigate();
   const [keyword, setKeyword] = useState("");
-  const [searchType, setSearchType] = useState("경매");
   const [bannerIdx, setBannerIdx] = useState(0);
   const [activeTab, setActiveTab] = useState("new");
   const auctionScrollRef = useRef(null);
-  const serviceScrollRef = useRef(null);
 
   const scrollCarousel = (ref, dir) => {
-    ref.current?.scrollBy({ left: dir * 311, behavior: "smooth" });
+    if (!ref.current) return;
+    ref.current.scrollBy({ left: dir * ref.current.clientWidth, behavior: "smooth" });
   };
 
   const runSearch = (value) => {
     const trimmed = value.trim();
     if (!trimmed) return;
-    if (searchType === "경매") {
-      navigate(`/auction?keyword=${encodeURIComponent(trimmed)}`);
-    } else {
-      navigate(`/service?keyword=${encodeURIComponent(trimmed)}`);
-    }
+    navigate(`/auction?keyword=${encodeURIComponent(trimmed)}`);
   };
 
   const auctionItems = activeTab === "new" ? newAuctionItems : closingAuctionItems;
@@ -109,24 +95,16 @@ export default function MobileLandingSections({
 
           {/* 검색 입력 */}
           <div className="mt-3 flex items-center gap-2 rounded-full bg-white px-4 py-3 shadow-md">
-            <div className="relative shrink-0 flex items-center">
-              <select
-                value={searchType}
-                onChange={(e) => { setSearchType(e.target.value); setKeyword(""); }}
-                className="appearance-none bg-transparent border-none outline-none text-[14px] font-bold text-black cursor-pointer pr-4"
-              >
-                <option value="경매">경매</option>
-                <option value="견적요청">견적요청</option>
-              </select>
-              <span className="absolute right-0 text-[10px] text-[#b1b1b1] pointer-events-none">▼</span>
-            </div>
+            <span className="inline-flex h-[30px] shrink-0 items-center justify-center rounded-full bg-[#0064ff] px-3 text-[14px] font-bold text-white">
+              경매
+            </span>
             <div className="h-4 w-px bg-[#d9d9d9]" />
             <input
               type="text"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") runSearch(keyword); }}
-              placeholder={SEARCH_PLACEHOLDERS[searchType]}
+              placeholder={AUCTION_SEARCH_PLACEHOLDER}
               className="min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-[#b1b1b1]"
             />
             <button type="button" onClick={() => runSearch(keyword)} aria-label="검색">
@@ -197,7 +175,7 @@ export default function MobileLandingSections({
         </div>
       </section>
 
-      {/* 서비스 메뉴 아이콘 (가로 스크롤) */}
+      {/* 담당자 7 통합: 서비스 메뉴는 견적 요청서 작성 진입점입니다. */}
       <section className="px-4">
         <h2 className="mb-3 text-[18px] font-bold">SERVICE MENU</h2>
         <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -205,7 +183,7 @@ export default function MobileLandingSections({
             <button
               key={item.label}
               type="button"
-              onClick={() => navigate("/service")}
+              onClick={() => navigate("/service-requests/new")}
               className="flex shrink-0 flex-col items-center justify-center gap-2 rounded-2xl border border-[rgba(0,0,0,0.1)] bg-white p-4 size-[92px]"
             >
               <img src={item.image} alt="" className="h-[36px] w-[36px] object-contain" />
@@ -263,7 +241,7 @@ export default function MobileLandingSections({
               onClick={() => setActiveTab("closing")}
               className={`rounded-full px-4 py-2 text-[15px] font-bold transition-colors ${activeTab === "closing" ? "bg-[#0064ff] text-white" : "bg-[#ebebeb] text-[#969696]"}`}
             >
-              마감임박 경매
+              마감 임박 경매
             </button>
           </div>
           <div className="flex items-center gap-1">
@@ -287,11 +265,18 @@ export default function MobileLandingSections({
         </div>
         <div
           ref={auctionScrollRef}
-          className="flex snap-x snap-mandatory gap-4 overflow-x-auto pl-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [scroll-padding-left:16px]"
+          className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [scroll-padding-left:16px]"
         >
           {!isAuctionLoading && !isAuctionError && auctionItems.map((item) => (
-            <div key={item.id} className="snap-start">
-              <AuctionCard item={item} onClick={() => navigate(`/auction/${item.id}`)} />
+            <div
+              key={item.id}
+              className="w-full shrink-0 snap-start min-[480px]:w-[calc(50%_-_8px)]"
+            >
+              <AuctionCard
+                fluid
+                item={item}
+                onClick={() => navigate(`/auction/${item.id}`)}
+              />
             </div>
           ))}
           {isAuctionLoading && <p className="w-full px-4 py-14 text-center text-[16px] text-[#666]">경매를 불러오는 중입니다.</p>}
@@ -311,51 +296,6 @@ export default function MobileLandingSections({
         </div>
       </section>
 
-      {/* 신규 서비스 요청 (가로 스와이프 카드) */}
-      <section
-        className="relative overflow-hidden pt-8 pb-8"
-        style={{ backgroundImage: `linear-gradient(rgba(0,0,0,0.45),rgba(0,0,0,0.45)), url(${assets.glennCarstensPeters})`, backgroundSize: "cover", backgroundPosition: "center" }}
-      >
-        <div className="mb-3 flex items-center justify-between px-4">
-          <h2 className="text-[18px] font-bold text-white">신규 서비스 요청</h2>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              aria-label="이전"
-              onClick={() => scrollCarousel(serviceScrollRef, -1)}
-              className="flex size-[32px] items-center justify-center"
-            >
-              <img src={arrowWhite} alt="이전" className="size-[20px] object-contain rotate-180" />
-            </button>
-            <button
-              type="button"
-              aria-label="다음"
-              onClick={() => scrollCarousel(serviceScrollRef, 1)}
-              className="flex size-[32px] items-center justify-center"
-            >
-              <img src={arrowWhite} alt="다음" className="size-[20px] object-contain" />
-            </button>
-          </div>
-        </div>
-        <div
-          ref={serviceScrollRef}
-          className="flex snap-x snap-mandatory gap-4 overflow-x-auto pl-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [scroll-padding-left:16px]"
-        >
-          {!isServiceLoading && !isServiceError && serviceRequestItems.map((item) => (
-            <div key={item.id} className="snap-start">
-              <ServiceRequestCard item={item} onClick={() => navigate(`/service-requests/${item.id}`)} />
-            </div>
-          ))}
-          {isServiceLoading && <p className="w-full px-4 py-14 text-center text-[16px] text-white">서비스 요청을 불러오는 중입니다.</p>}
-          {isServiceError && <p className="w-full px-4 py-14 text-center text-[16px] text-white">서비스 요청 조회 API 연결을 기다리고 있습니다.</p>}
-          {!isServiceLoading && !isServiceError && serviceRequestItems.length === 0 && <p className="w-full px-4 py-14 text-center text-[16px] text-white">표시할 서비스 요청이 없습니다.</p>}
-        </div>
-        <div className="mt-2 flex justify-center">
-          <button type="button" onClick={() => navigate("/service")} className="rounded-full border border-white/40 px-5 py-2 text-[13px] text-white">
-            더보기 ›
-          </button>
-        </div>
-      </section>
     </div>
   );
 }

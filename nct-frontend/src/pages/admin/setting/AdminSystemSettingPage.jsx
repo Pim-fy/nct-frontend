@@ -5,9 +5,10 @@
 // - 저장 성공 시 "무엇이 바뀌었는지" 감사로그가 자동으로 남는다 (감사 로그 화면에서 확인 가능)
 // - 카테고리 승인방식은 seed 고정 기준이라 이 화면에서 다루지 않는다 (정본 규칙)
 import { useState } from 'react';
-import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
+import AdminPageHeader from '@components/admin/AdminPageHeader';
 import FormSkeleton from '@components/skeleton/FormSkeleton';
 import { useSystemSetting, useUpdateSystemSetting } from '@hooks/useAdminSystemSetting';
+import { toast } from '@utils/common';
 import '../audit/adminAuditPage.css';
 
 // datetime-local 입력이 받는 형식(YYYY-MM-DDTHH:mm)으로 서버 일시 값을 자른다
@@ -42,7 +43,10 @@ const AdminSystemSettingPage = () => {
       mntncBgngDt: view.mntncYn === 'Y' ? view.mntncBgngDt || null : null,
       mntncEndDt: view.mntncYn === 'Y' ? view.mntncEndDt || null : null,
     }, {
-      onSuccess: () => setEdits({}), // 저장 성공 — 이후 화면 값은 재조회된 서버값을 따른다
+      onSuccess: () => {
+        setEdits({});
+        toast({ icon: 'success', title: '시스템 설정이 저장되었습니다.', timer: 1800 });
+      }, // 저장 성공 — 이후 화면 값은 재조회된 서버값을 따른다
     });
   };
 
@@ -55,10 +59,8 @@ const AdminSystemSettingPage = () => {
 
   return (
     <div className="admin-bjn-page">
-      <MockupAdminPageHeader
-        eyebrow="운영/관리자"
+      <AdminPageHeader
         title="시스템 설정"
-        description="경매·거래·견적·포인트·알림·점검 모드의 고정 운영 설정을 조회·수정합니다. 저장 시 변경 내용이 감사로그에 남습니다."
       />
 
       <form className="admin-bjn-setting-form" onSubmit={submit}>
@@ -161,9 +163,6 @@ const AdminSystemSettingPage = () => {
           <button type="submit" disabled={updateSetting.isPending}>
             {updateSetting.isPending ? '저장 중…' : '설정 저장'}
           </button>
-          {updateSetting.isSuccess && Object.keys(edits).length === 0 && (
-            <span className="is-saved">저장되었습니다. 변경 내용은 감사로그에 기록되었습니다.</span>
-          )}
           {updateSetting.isError && (
             <span className="is-error">
               {updateSetting.error?.response?.data?.message ?? '저장에 실패했습니다.'}

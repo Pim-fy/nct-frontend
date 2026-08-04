@@ -70,6 +70,7 @@ export const toTradeHistoryItem = (trade) => {
     id: trade.tradeId ?? trade.id,
     type: trade.userRole ?? trade.role ?? trade.type,
     productName: trade.productName ?? trade.itemName ?? '-',
+    productImageUrl: trade.productImageUrl ?? trade.imageUrl ?? trade.thumbnailUrl ?? '',
     counterpart: trade.counterpartNickname ?? trade.counterpart ?? '-',
     amount: formatPrice(trade.price ?? trade.amount ?? trade.tradeAmount),
     date: formatDate(trade.createdAt ?? trade.tradedAt ?? trade.tradeDate),
@@ -91,6 +92,7 @@ export const toTradeDetail = (response) => {
   return {
     id: trade.tradeId ?? trade.id,
     productName: trade.productName ?? trade.itemName ?? '-',
+    productImageUrl: trade.productImageUrl ?? trade.imageUrl ?? trade.thumbnailUrl ?? '',
     price: formatPrice(trade.price ?? trade.amount ?? trade.tradeAmount),
     method: trade.tradeMethod ?? trade.method ?? null,
     status: normalizeTradeStatus(trade.tradeStatus ?? trade.status),

@@ -776,8 +776,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
   margin: 22px 0 0;
+}
+
+.content-pagination .pagination__controls {
+  gap: 6px;
 }
 
 .content-pagination button:disabled {
@@ -791,7 +794,7 @@
 }
 
 @media (max-width: 620px) {
-  .content-pagination { gap: 7px; }
+  .content-pagination .pagination__controls { gap: 5px; }
   .content-pagination .pagination__boundary { display: none; }
 }
 
@@ -806,8 +809,7 @@
   text-decoration: none;
 }
 
-.notice-detail__back svg,
-.notice-detail__meta svg {
+.notice-detail__back svg {
   width: 16px;
 }
 

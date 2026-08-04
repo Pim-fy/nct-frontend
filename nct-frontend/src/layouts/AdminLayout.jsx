@@ -2,10 +2,11 @@
 import { useState } from 'react';
 import { Menu } from 'lucide-react';
 import { Outlet } from 'react-router-dom';
-import MockupAdminSidebar from '@components/admin/mockup/MockupAdminSidebar';
+import AdminSidebar from '@components/admin/AdminSidebar';
 import './AdminLayout.css';
+import '@components/admin/AdminDesignSystem.css';
 
-// 관리자 목업과 같은 저장 키를 사용해 화면을 다시 열어도 접힘 상태를 유지합니다.
+// 화면을 다시 열어도 관리자 사이드바의 접힘 상태를 유지합니다.
 const ADMIN_SIDEBAR_STORAGE_KEY = 'ksteam-admin-sidebar-collapsed';
 
 const getInitialSidebarState = () => {
@@ -50,11 +51,7 @@ const AdminLayout = () => {
         <span className="admin-layout__header-label">관리자 화면</span>
       </header>
 
-      {/*
-        develop의 공통 AdminSidebar가 완성되면 아래 임시 컴포넌트만 교체합니다.
-        접기/펼치기 상태는 AdminLayout이 관리하므로 공통 컴포넌트에도 그대로 전달할 수 있습니다.
-      */}
-      <MockupAdminSidebar
+      <AdminSidebar
         collapsed={isSidebarCollapsed}
         id="admin-navigation"
         onNavigate={closeSidebarAfterMobileNavigation}

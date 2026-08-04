@@ -1,7 +1,8 @@
-// src/layouts/user/headers/SiteHeader.jsx
+// src/layouts/user/headers/Header.jsx
 // Figma: 에누리컷_디자인시안 main.png HEADER (node 1:1362)
 // - 로그인 여부와 무관하게 모든 페이지에서 동일한 헤더 구조를 쓰는 것이 디자인 시안 기준이라,
-//   기존 LandingHeader/MainHeader(페이지별로 다르게 구현되어 있던 것)를 이 컴포넌트 하나로 통합했다.
+//   기존 LandingHeader/MainHeader(페이지별로 다르게 구현되어 있던 것)를 이 컴포넌트 하나로 통합했다
+//   (LandingHeader/MainHeader는 이후 완전히 제거되어, 이 컴포넌트도 SiteHeader에서 Header로 개명했다).
 // - 아이콘(알림/지갑/마이페이지)은 디자인 시안 원본 라인 아이콘 PNG를 그대로 쓴다
 //   (@assets/img/bellIcon.png, walletIcon.png, userIcon.png — main.png의 free-icon-font-* 에셋).
 // - 드롭다운(경매/서비스 카테고리 · POINT · 마이페이지)은 열림·닫힘 상태가 있는 UI라 절대좌표 포팅 대신
@@ -19,7 +20,7 @@ import { useNotificationStream } from '@hooks/useNotificationStream';
 import { usePointBalance } from '@hooks/usePoint';
 import { usePublicNoticeList } from '@hooks/usePublicNotices';
 import relativeTime from '@utils/relativeTime';
-import { requestPointExchange } from '@api/pointApi';
+import { requestPointExchange, convertPoint } from '@api/pointApi';
 import { SITE_HEADER_VISIBILITY_EVENT } from '@/constants/layoutEvents';
 import { SITE_HEADER_SEARCH_SLOT_ID } from '@components/common/HeaderSearchPortal';
 import HeaderCreateAction from '@components/common/HeaderCreateAction';
@@ -51,7 +52,7 @@ const SERVICE_CATEGORIES = ['이사', '청소', '레슨', '설치·수리', '인
 // 헤더 드롭다운에 보여줄 알림 최대 개수 (안읽은 알림 미리보기 · 과거 알림 목록 공통)
 const NOTI_PREVIEW_MAX = 5;
 
-const SiteHeader = () => {
+const Header = () => {
   // isProvider·switchMode: 제공자 모드전환 실연동 (F-PROV-008, 담당자6 BJN, 2026-07-24)
   // — 종전 localStorage 가짜 플래그(@utils/providerMode) 대신 서버가 내려준 실제 역할 기준.
   const {
@@ -74,7 +75,8 @@ const SiteHeader = () => {
 
   // 공지사항 롤링 티커 — 비로그인 포함 모든 화면에서 표시
   const { data: noticeData } = usePublicNoticeList({ page: 1, size: 5 });
-  const siteNotices = (noticeData?.items ?? []).map(
+  const siteNoticeItems = noticeData?.items ?? [];
+  const siteNotices = siteNoticeItems.map(
     (n) => `[${n.typeName ?? '공지'}] ${n.title}`,
   );
 
@@ -87,7 +89,7 @@ const SiteHeader = () => {
   // 헤더 POINT 드롭다운의 충전/환전 버튼 → 마이페이지로 이동하지 않고 이 자리에서 바로 모달을 띄운다
   // (종전엔 /user/mypage?section=wallet&action=... 로 이동시켜 페이지 도착 후 모달을 열었으나,
   // 사용자 요청으로 페이지 이동 없이 헤더에서 바로 처리하도록 변경, 2026-07-24)
-  const [pointModal, setPointModal] = useState(null); // null | 'charge' | 'exchange'
+  const [pointModal, setPointModal] = useState(null); // null | 'charge' | 'exchange' | 'convert'
   // 안읽은 알림: 배지 숫자와 드롭다운 목록의 공통 원천
   const unreadNotis = (notiQuery.data ?? []).filter((n) => !n.read);
   const notiCount = user ? unreadNotis.length : 0;
@@ -100,7 +102,8 @@ const SiteHeader = () => {
   const categoryOpen = categoryHovered;
 
   const [serviceHovered, setServiceHovered] = useState(false);
-  const serviceMenuOpen = serviceHovered;
+  const serviceMenuOpen = isProvider && serviceHovered;
+  const serviceMenuPath = isProvider ? '/service' : '/service-requests/new';
 
   const [customerHovered, setCustomerHovered] = useState(false);
   const customerOpen = customerHovered;
@@ -117,9 +120,14 @@ const SiteHeader = () => {
   const [isPageHidden, setIsPageHidden] = useState(false);
   const isAuctionSearchRoute = pathname === '/auction'
     || /^\/auction\/[^/]+$/.test(pathname);
-  const isServiceSearchRoute = pathname === '/service'
-    || /^\/service-requests\/\d+$/.test(pathname);
+  const isServiceSearchRoute = isProvider && (
+    pathname === '/service' || /^\/service-requests\/\d+$/.test(pathname)
+  );
   const hasHeaderSearch = isAuctionSearchRoute || isServiceSearchRoute;
+  // 현재 보고 있는 화면이 헤더의 어느 메뉴에 속하는지 — 호버와 무관하게 항상 활성 색상을 보여준다.
+  const isAuctionMenuActive = pathname.startsWith('/auction');
+  const isServiceMenuActive = pathname.startsWith('/service') || pathname.startsWith('/provider/quotes');
+  const isCustomerMenuActive = pathname.startsWith('/customersupport') || pathname.startsWith('/guide');
   let headerCreateActionType = null;
   const canShowCreateAction = !authLoading && (!user || user.role === 'ROLE_USER');
   if (canShowCreateAction) {
@@ -229,9 +237,43 @@ const SiteHeader = () => {
       }
     }
 
+    closeMobileMenu(); // 모바일 전체메뉴가 열려 있으면 알림·지갑·프로필을 열 때 같이 닫는다 (겹침 방지)
+
     setNotiOpen(which === 'noti' ? (v) => !v : false);
     setPointOpen(which === 'point' ? (v) => !v : false);
     setProfileOpen(which === 'profile' ? (v) => !v : false);
+  };
+
+  // 헤더 POINT 드롭다운의 전환 모달 제출 — PointWalletPage의 submitAmount('convert')와 같은 로직
+  const submitHeaderConvert = (amount) => {
+    if (!Number.isInteger(amount) || amount <= 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: '금액을 확인해 주세요',
+        text: '전환 금액은 1P 이상의 정수만 가능합니다.',
+        confirmButtonColor: '#0064ff',
+      });
+      return;
+    }
+    setPointModal(null);
+    convertPoint(amount)
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ['point'] });
+        Swal.fire({
+          icon: 'success',
+          title: '전환 완료',
+          text: '정산 가능 포인트가 사용 가능 포인트로 전환되었습니다.',
+          confirmButtonColor: '#0064ff',
+        });
+      })
+      .catch((err) => {
+        Swal.fire({
+          icon: 'error',
+          title: '전환 실패',
+          text: err?.response?.data?.message ?? '처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
+          confirmButtonColor: '#0064ff',
+        });
+      });
   };
 
   // 헤더 POINT 드롭다운의 환전 모달 제출 — PointWalletPage의 submitAmount('exchange')와 같은 로직
@@ -281,7 +323,7 @@ const SiteHeader = () => {
     <>
     <header
       aria-hidden={isPageHidden || undefined}
-      className={`sticky top-0 z-[100] bg-white shadow-[0px_5px_10px_0px_rgba(0,0,0,0.2)] ${
+      className={`sticky top-0 z-[100] bg-white shadow-[0px_5px_10px_0px_rgba(0,0,0,0.2)] max-md:fixed max-md:inset-x-0 ${
       hasHeaderSearch ? 'h-[154px] md:h-[82px]' : 'h-[82px]'
     } ${
       isPageHidden ? 'invisible pointer-events-none' : ''
@@ -311,7 +353,7 @@ const SiteHeader = () => {
               >
                 <Link
                   to="/auction"
-                  className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${categoryOpen ? 'text-primary' : 'text-[#333333]'}`}
+                  className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${categoryOpen || isAuctionMenuActive ? 'text-primary' : 'text-[#333333]'}`}
                   onClick={() => setCategoryHovered(false)}
                 >
                   경매
@@ -346,14 +388,14 @@ const SiteHeader = () => {
               className="relative"
               onMouseEnter={() => {
                 setCategoryHovered(false);
-                setServiceHovered(true);
+                setServiceHovered(isProvider);
                 setCustomerHovered(false);
               }}
               onMouseLeave={() => setServiceHovered(false)}
             >
               <Link
-                to="/service"
-                className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${serviceMenuOpen ? 'text-primary' : 'text-[#333333]'}`}
+                to={serviceMenuPath}
+                className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${serviceMenuOpen || isServiceMenuActive ? 'text-primary' : 'text-[#333333]'}`}
                 onClick={() => setServiceHovered(false)}
               >
                 {isProvider ? '견적 목록' : '견적 요청'}
@@ -393,7 +435,7 @@ const SiteHeader = () => {
             >
               <Link
                 to="/customersupport/notice"
-                className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${customerOpen ? 'text-primary' : 'text-[#333333]'}`}
+                className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${customerOpen || isCustomerMenuActive ? 'text-primary' : 'text-[#333333]'}`}
                 onClick={() => setCustomerHovered(false)}
               >
                 고객센터
@@ -429,18 +471,25 @@ const SiteHeader = () => {
           </nav>
         </div>
 
-        {/* 스크롤 시 헤더 중앙에 뜨는 연한 그레이 공지 롤링 티커 (NoticeStrip이 화면 밖으로 나간 뒤 대신 보여줌) */}
-        <div
-          className="pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-full bg-[#f3f5fa] px-4 py-2 text-[13px] text-[#4e4e4e] transition-opacity duration-300 md:flex"
-          style={{ opacity: scrolled ? 1 : 0 }}
-        >
-          <img src={micIcon} alt="" width={14} height={14} className="shrink-0 opacity-70" />
-          <span className="max-w-[420px] truncate">
-            {siteNotices.length > 0
-              ? siteNotices[noticeIndex % siteNotices.length]
-              : '서비스 점검 안내'}
-          </span>
-        </div>
+        {/* 스크롤 시 헤더 중앙에 뜨는 연한 그레이 공지 롤링 티커 (NoticeStrip이 화면 밖으로 나간 뒤 대신 보여줌)
+            검색창과 같은 자리(정중앙)를 쓰므로, 검색창이 있는 페이지에서는 아예 그리지 않는다
+            (기존엔 검색창의 z-[1]에 우연히 가려지는 것에 기대고 있었다). */}
+        {!hasHeaderSearch && (
+          <Link
+            to={siteNoticeItems.length > 0
+              ? `/customersupport/notice/${siteNoticeItems[noticeIndex % siteNoticeItems.length].id}`
+              : '/customersupport/notice'}
+            className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-full bg-[#f3f5fa] px-4 py-2 text-[13px] text-[#4e4e4e] transition-opacity duration-300 hover:bg-[#e9edf5] md:flex"
+            style={{ opacity: scrolled ? 1 : 0, pointerEvents: scrolled ? 'auto' : 'none' }}
+          >
+            <img src={micIcon} alt="" width={14} height={14} className="shrink-0 opacity-70" />
+            <span className="max-w-[420px] truncate">
+              {siteNotices.length > 0
+                ? siteNotices[noticeIndex % siteNotices.length]
+                : '서비스 점검 안내'}
+            </span>
+          </Link>
+        )}
 
         {/* 우측 유틸 영역 */}
         <div ref={utilRef} className="flex items-center gap-2 md:gap-3">
@@ -460,7 +509,9 @@ const SiteHeader = () => {
               )}
             </button>
             {notiOpen && (
-              <div className="absolute right-0 top-[calc(100%+12px)] w-[280px] rounded-[10px] border border-[#434343] bg-white p-4 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)] z-50">
+              <div
+                className={`z-50 rounded-[10px] border border-[#434343] bg-white p-4 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)] fixed left-1/2 w-[calc(100vw-32px)] max-w-[320px] -translate-x-1/2 ${hasHeaderSearch ? 'top-[166px]' : 'top-[94px]'} sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+12px)] sm:w-[280px] sm:max-w-none sm:translate-x-0`}
+              >
                 {/* 헤더 */}
                 <div className="flex items-center justify-between">
                   <span className="flex items-baseline gap-1.5">
@@ -523,7 +574,9 @@ const SiteHeader = () => {
               <img src={walletIcon} alt="" className="size-[18px]" />
             </button>
             {pointOpen && (
-              <div className="absolute right-0 top-[calc(100%+12px)] w-[230px] rounded-[10px] border border-[#434343] bg-white p-4 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)] z-50">
+              <div
+                className={`z-50 rounded-[10px] border border-[#434343] bg-white p-4 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)] fixed left-1/2 w-[calc(100vw-32px)] max-w-[320px] -translate-x-1/2 ${hasHeaderSearch ? 'top-[166px]' : 'top-[94px]'} sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+12px)] sm:w-[230px] sm:max-w-none sm:translate-x-0`}
+              >
                 {/* 헤더 */}
                 <div className="flex items-center justify-between">
                   <span className="text-[15px] font-bold text-black tracking-[-0.5px]">POINT</span>
@@ -546,6 +599,13 @@ const SiteHeader = () => {
                     onClick={() => { setPointOpen(false); setPointModal('charge'); }}
                   >
                     충전
+                  </button>
+                  <button
+                    type="button"
+                    className="h-[34px] flex-1 rounded-[6px] bg-[#d9d9d9] text-[14px] font-bold text-[#4e4e4e] hover:bg-[#cfcfcf] transition-colors"
+                    onClick={() => { setPointOpen(false); setPointModal('convert'); }}
+                  >
+                    전환
                   </button>
                   <button
                     type="button"
@@ -778,34 +838,47 @@ const SiteHeader = () => {
               </div>
             )}
 
-            {/* 서비스 (아코디언) */}
-            <div className="border-b border-[#f0f0f0]">
-              <button
-                type="button"
-                className="flex w-full items-center justify-between py-4 text-[20px] font-bold text-[#333333]"
-                onClick={() => setMobileServiceOpen((v) => !v)}
-              >
-                {isProvider ? '견적 목록' : '견적 요청'}
-                <ChevronRight size={20} className={`transition-transform ${mobileServiceOpen ? 'rotate-90' : ''}`} />
-              </button>
-              {mobileServiceOpen && (
-                <div className="flex flex-col gap-1 pb-3 pl-2">
-                  <Link to="/service" className="py-2 text-[16px] font-bold text-primary" onClick={closeMobileMenu}>
-                    전체보기
-                  </Link>
-                  {SERVICE_CATEGORIES.map((label) => (
-                    <Link
-                      key={label}
-                      to={`/service?category=${encodeURIComponent(label)}`}
-                      className="py-2 text-[15px] text-[#4e4e4e]"
-                      onClick={closeMobileMenu}
-                    >
-                      {label}
+            {/* 담당자 7 통합: 일반회원은 작성으로, 제공자는 요청 목록으로 이동합니다. */}
+            {isProvider ? (
+              <div className="border-b border-[#f0f0f0]">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between py-4 text-[20px] font-bold text-[#333333]"
+                  onClick={() => setMobileServiceOpen((v) => !v)}
+                >
+                  견적 목록
+                  <ChevronRight size={20} className={`transition-transform ${mobileServiceOpen ? 'rotate-90' : ''}`} />
+                </button>
+                {mobileServiceOpen && (
+                  <div className="flex flex-col gap-1 pb-3 pl-2">
+                    <Link to="/service" className="py-2 text-[16px] font-bold text-primary" onClick={closeMobileMenu}>
+                      전체보기
                     </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+                    {SERVICE_CATEGORIES.map((label) => (
+                      <Link
+                        key={label}
+                        to={`/service?category=${encodeURIComponent(label)}`}
+                        className="py-2 text-[15px] text-[#4e4e4e]"
+                        onClick={closeMobileMenu}
+                      >
+                        {label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="border-b border-[#f0f0f0]">
+                <Link
+                  to="/service-requests/new"
+                  className="flex w-full items-center justify-between py-4 text-[20px] font-bold text-[#333333]"
+                  onClick={closeMobileMenu}
+                >
+                  견적 요청
+                  <ChevronRight size={20} />
+                </Link>
+              </div>
+            )}
 
             <div className="border-b border-[#f0f0f0]">
               <button
@@ -847,11 +920,24 @@ const SiteHeader = () => {
         </div>
       )}
     </header>
+    <div
+      aria-hidden="true"
+      className={hasHeaderSearch ? 'h-[154px] md:hidden' : 'h-[82px] md:hidden'}
+    />
     <ScrollToTopButton />
     <NotificationDetailModal item={selectedNoti} onClose={() => setSelectedNoti(null)} />
     {pointModal === 'charge' && (
       <PointChargeWidgetModal
         infoRow={{ label: '사용가능 포인트', value: `${(pointBalance.available ?? 0).toLocaleString()} P` }}
+        onClose={() => setPointModal(null)}
+      />
+    )}
+    {pointModal === 'convert' && (
+      <PointAmountModal
+        title="포인트 전환"
+        submitLabel="전환"
+        infoRow={{ label: '전환 가능 포인트', value: `${(pointBalance.settleable ?? 0).toLocaleString()} P` }}
+        onSubmit={submitHeaderConvert}
         onClose={() => setPointModal(null)}
       />
     )}
@@ -868,4 +954,4 @@ const SiteHeader = () => {
   );
 };
 
-export default SiteHeader;
+export default Header;

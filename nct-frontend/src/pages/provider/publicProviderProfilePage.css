@@ -1,5 +1,5 @@
 /* 담당자 7 · F-COM-002/F-COM-015: 공통 제공자 프로필을 수정하지 않고 공개 화면의 깊이만 보강합니다. */
-.provider-public-page .mockup-content-page-header {
+.provider-public-page .content-page-header {
   position: relative;
   overflow: hidden;
   margin-bottom: 22px;
@@ -12,7 +12,7 @@
   box-shadow: 0 12px 30px rgb(16 24 40 / 5%);
 }
 
-.provider-public-page .mockup-content-page-header::after {
+.provider-public-page .content-page-header::after {
   position: absolute;
   right: -40px;
   bottom: -90px;
@@ -23,7 +23,7 @@
   content: '';
 }
 
-.provider-public-page .mockup-content-page-header h1 {
+.provider-public-page .content-page-header h1 {
   position: relative;
   z-index: 1;
   color: #101828;
@@ -69,7 +69,7 @@
 }
 
 @media (max-width: 680px) {
-  .provider-public-page .mockup-content-page-header {
+  .provider-public-page .content-page-header {
     border-radius: 18px;
     padding: 21px 20px;
   }

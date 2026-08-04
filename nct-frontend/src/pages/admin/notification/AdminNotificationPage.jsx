@@ -6,7 +6,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminPagination from '@components/admin/AdminPagination';
-import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
+import AdminPageHeader from '@components/admin/AdminPageHeader';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import { useAdminNotificationSummary } from '@hooks/useAdminNotification';
 import useClientPagination from '@hooks/useClientPagination';
@@ -76,7 +76,6 @@ const AdminNotificationPage = () => {
     : []), [data]);
 
   const visibleGroups = tab === 'all' ? groups : groups.filter((g) => g.key === tab);
-  const totalCount = groups.reduce((sum, g) => sum + g.items.length, 0);
   const visibleItems = useMemo(
     () => visibleGroups.flatMap((group) => group.items.map((item, index) => ({
       groupKey: group.key,
@@ -106,10 +105,8 @@ const AdminNotificationPage = () => {
 
   return (
     <div className="admin-bjn-page">
-      <MockupAdminPageHeader
-        eyebrow="운영"
+      <AdminPageHeader
         title="알림"
-        description={data ? `확인이 필요한 운영 알림 ${totalCount}건` : '운영 알림을 불러오는 중입니다'}
       />
 
       <div className="admin-noti-tabs">

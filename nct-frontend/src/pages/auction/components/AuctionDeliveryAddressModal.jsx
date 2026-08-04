@@ -129,6 +129,7 @@ const AuctionDeliveryAddressModal = ({
               <div className="grid grid-cols-[minmax(0,1fr)_112px] gap-2 max-sm:grid-cols-1">
                 <input
                   className={FIELD_CLASS}
+                  disabled={!form.address}
                   id="auction-delivery-address"
                   placeholder="주소 검색을 눌러주세요."
                   readOnly

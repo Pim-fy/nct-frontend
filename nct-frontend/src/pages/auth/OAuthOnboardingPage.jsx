@@ -4,11 +4,11 @@
 // 약관 원문(SIGNUP_TERMS)은 SignupPage.jsx와 동일 파일을 그대로 재사용해 문구 드리프트를 막는다.
 // AgreementRow/AgreementModal 자체는 SignupPage.jsx의 복잡한 폼 상태(중복확인·이메일인증 등)와
 // 얽혀 있어 안전하게 분리 추출하기보다, 이 화면(체크박스 3개+모달)에 맞는 가벼운 버전을 새로 둔다.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useConfig } from '@hooks/useConfig';
-import { completeOauthOnboarding, getOauthOnboardingPending } from '@api/authApi';
+import { checkNickname, completeOauthOnboarding, getOauthOnboardingPending } from '@api/authApi';
 import AuthPageContainer from '@components/auth/AuthPageContainer';
 import AuthCard from '@components/auth/AuthCard';
 import { SIGNUP_TERMS } from './signupTerms';
@@ -87,6 +87,13 @@ const OAuthOnboardingPage = () => {
   const [provider, setProvider] = useState('');
   const [nickname, setNickname] = useState('');
   const [nicknameError, setNicknameError] = useState('');
+  // @ai_generated: 현재 닉네임 값에 대한 중복 확인 결과만 가입 조건으로 인정한다.
+  const [nicknameAvailability, setNicknameAvailability] = useState({
+    checkedValue: '',
+    state: 'idle',
+    message: '',
+  });
+  const nicknameRequestRef = useRef(0);
   const [optionalInfo, setOptionalInfo] = useState({ telno: '', address: '', detailAddress: '', bankName: '', accountNo: '' });
   const [optionalInfoError, setOptionalInfoError] = useState('');
   const [agreements, setAgreements] = useState({ terms: false, privacy: false, marketing: false });
@@ -133,6 +140,58 @@ const OAuthOnboardingPage = () => {
     setOptionalInfoError('');
   };
 
+  // @ai_generated: 입력값이 바뀌면 이전 확인 결과와 진행 중 응답을 모두 무효화한다.
+  const handleNicknameChange = (event) => {
+    nicknameRequestRef.current += 1;
+    setNickname(event.target.value);
+    setNicknameError('');
+    setNicknameAvailability({ checkedValue: '', state: 'idle', message: '' });
+  };
+
+  // @ai_generated: 일반 회원가입과 동일한 닉네임 중복 확인 API를 재사용한다.
+  const handleNicknameCheck = async () => {
+    const trimmedNickname = nickname.trim();
+    const requestId = nicknameRequestRef.current + 1;
+    nicknameRequestRef.current = requestId;
+    if (!trimmedNickname) {
+      setNicknameError('닉네임을 입력해주세요.');
+      return;
+    }
+    if (trimmedNickname.length > 100) {
+      setNicknameError('닉네임은 100자 이하로 입력해주세요.');
+      return;
+    }
+
+    setNicknameError('');
+    setNicknameAvailability({
+      checkedValue: trimmedNickname,
+      state: 'checking',
+      message: '확인 중입니다.',
+    });
+
+    try {
+      const response = await checkNickname(trimmedNickname);
+      const available = response?.data?.available;
+      if (typeof available !== 'boolean') {
+        throw new Error('중복 확인 응답 형식이 올바르지 않습니다.');
+      }
+      if (nicknameRequestRef.current !== requestId) return;
+
+      setNicknameAvailability({
+        checkedValue: trimmedNickname,
+        state: available ? 'available' : 'unavailable',
+        message: available ? '사용 가능한 닉네임입니다.' : '이미 사용 중인 닉네임입니다.',
+      });
+    } catch (error) {
+      if (nicknameRequestRef.current !== requestId) return;
+      setNicknameAvailability({
+        checkedValue: trimmedNickname,
+        state: 'error',
+        message: error.response?.data?.message ?? '중복 확인 중 오류가 발생했습니다. 다시 시도해주세요.',
+      });
+    }
+  };
+
   const handleSubmit = async () => {
     setSubmitMessage('');
     setAgreementMessage('');
@@ -148,7 +207,26 @@ const OAuthOnboardingPage = () => {
     }
     setNicknameError('');
 
-    if (optionalInfo.telno && !isValidPhoneNumber(optionalInfo.telno)) {
+    if (
+      nicknameAvailability.state !== 'available'
+      || nicknameAvailability.checkedValue !== trimmedNickname
+    ) {
+      // @ai_generated: 이미 중복 판정 메시지가 있으면 미확인 안내를 추가로 겹쳐 표시하지 않는다.
+      if (
+        nicknameAvailability.state !== 'unavailable'
+        || nicknameAvailability.checkedValue !== trimmedNickname
+      ) {
+        setNicknameError('가입 전에 닉네임 중복 확인을 완료해주세요.');
+      }
+      return;
+    }
+
+    // @ai_generated: ISS-023 - 전화번호가 선택에서 필수로 전환됐다.
+    if (!optionalInfo.telno.trim()) {
+      setOptionalInfoError('전화번호를 입력해주세요.');
+      return;
+    }
+    if (!isValidPhoneNumber(optionalInfo.telno)) {
       setOptionalInfoError('전화번호는 0으로 시작하는 11자리 숫자를 입력해주세요.');
       return;
     }
@@ -188,9 +266,15 @@ const OAuthOnboardingPage = () => {
     } catch (error) {
       const message = error.response?.data?.message ?? '가입 처리 중 오류가 발생했습니다. 다시 시도해주세요.';
       if (message.includes('닉네임')) {
-        setNicknameError(message);
+        setNicknameError('');
+        setNicknameAvailability({
+          checkedValue: trimmedNickname,
+          state: 'unavailable',
+          message,
+        });
+      } else {
+        setSubmitMessage(message);
       }
-      setSubmitMessage(message);
     } finally {
       setSubmitting(false);
     }
@@ -265,13 +349,35 @@ const OAuthOnboardingPage = () => {
                 </div>
                 <div className="mt-3.5">
                   <label className="text-sm font-medium text-gray-700" htmlFor="oauth-nickname">닉네임 <span className="text-[#a32d2d]">*</span></label>
-                  <input
-                    id="oauth-nickname"
-                    type="text"
-                    value={nickname}
-                    onChange={(event) => { setNickname(event.target.value); setNicknameError(''); }}
-                    className="mt-1.5 h-12 w-full rounded-lg border border-gray-300 px-4 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
+                  {/* @ai_generated: 제공자 기본값을 유지한 채 사용자가 명시적으로 중복을 확인한다. */}
+                  <div className="mt-1.5 grid gap-2 min-[769px]:grid-cols-[minmax(0,1fr)_auto]">
+                    <input
+                      id="oauth-nickname"
+                      type="text"
+                      value={nickname}
+                      onChange={handleNicknameChange}
+                      disabled={submitting}
+                      className="h-12 w-full rounded-lg border border-gray-300 px-4 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleNicknameCheck}
+                      disabled={submitting || nicknameAvailability.state === 'checking'}
+                      className="h-12 rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      중복 확인
+                    </button>
+                  </div>
+                  {nicknameAvailability.message ? (
+                    <p
+                      aria-live="polite"
+                      className={`mt-1.5 text-xs ${
+                        nicknameAvailability.state === 'available' ? 'text-green-600' : 'text-red-600'
+                      }`}
+                    >
+                      {nicknameAvailability.message}
+                    </p>
+                  ) : null}
                   {nicknameError ? <p className="mt-1.5 text-xs text-red-600">{nicknameError}</p> : null}
                 </div>
               </section>
@@ -279,11 +385,10 @@ const OAuthOnboardingPage = () => {
               <section aria-labelledby="additional-info-title" className="rounded-2xl border border-[#f0efec] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,.04),0_2px_8px_rgba(0,0,0,.06)]">
                 <div className="flex items-center gap-2">
                   <h2 className="m-0 text-lg" id="additional-info-title">추가 정보</h2>
-                  <span className="rounded-full bg-[#f0f0ee] px-2 py-0.5 text-xs text-[#5f5e5a]">모두 선택</span>
                 </div>
                 <div className="mt-3.5 grid gap-3.5">
-                  <label className="text-sm text-gray-700" htmlFor="oauth-telno">전화번호
-                    <input id="oauth-telno" type="tel" value={optionalInfo.telno} onChange={handleOptionalInfoChange('telno')} placeholder="010-1234-5678" className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />
+                  <label className="text-sm text-gray-700" htmlFor="oauth-telno">전화번호<span className="ml-1 text-[#a32d2d]">*</span>
+                    <input id="oauth-telno" type="tel" required value={optionalInfo.telno} onChange={handleOptionalInfoChange('telno')} placeholder="-를 제외한 숫자만 입력해주세요" className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />
                   </label>
                   <label className="text-sm text-gray-700" htmlFor="oauth-address">주소
                     <input id="oauth-address" value={optionalInfo.address} onChange={handleOptionalInfoChange('address')} maxLength={200} className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />

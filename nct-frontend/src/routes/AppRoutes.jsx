@@ -84,6 +84,7 @@ import ServiceRequestFormPage from '@pages/service/ServiceRequestFormPage';
 import ServiceRequestDetailPage from '@pages/service/ServiceRequestDetailPage';
 // F-SVC-004: 내 서비스 요청 목록 (담당자 2)
 import MyServiceRequestListPage from '@pages/service/MyServiceRequestListPage';
+import ServiceTradeDetailPreviewPage from '@pages/service/ServiceTradeDetailPreviewPage';
 
 // 기존 지갑 주소를 유지하되, 결제 결과·모달 제어용 query string도 함께 전달한다.
 const PointWalletRedirect = () => {
@@ -154,10 +155,7 @@ const AppRoutes = () => {
         <Route path="/auction" element={<AuctionListPage />} />
         <Route path="/auction/:auctionId" element={<AuctionDetailPage />} />
 
-        {/* 담당자 7의 F-COM-002/015 화면. 공통 route 소유자(담당자 1)에게 동일 manifest로 전달합니다. */}
-        <Route path="/service" element={<ServiceListPage />} />
-        {/* 담당자 2 · F-SVC: 서비스 요청서 상세는 비로그인도 조회 가능 (백엔드 permit-all) */}
-        <Route path="/service-requests/:svcReqSn" element={<ServiceRequestDetailPage />} />
+        {/* 담당자 7의 F-COM-015 공개 제공자 프로필 화면 */}
         <Route path="/providers/:providerId" element={<PublicProviderProfilePage />} />
         <Route element={<CustomerSupportLayout />}>
           <Route path="/guide" element={<GuidePage />} />
@@ -170,6 +168,11 @@ const AppRoutes = () => {
       {/* 실제 거래 경로의 인증 정책과 분리된 개발용 화면 확인 경로 */}
       {isTradePreviewEnabled && (
         <>
+          <Route
+            path="/service-trades/preview/:tradeId"
+            element={<ServiceTradeDetailPreviewPage />}
+          />
+          <Route path="/service-trades/preview/:tradeId/chat" element={<TradeChat preview />} />
           <Route path="/trades/preview/:tradeId/chat" element={<TradeChat />} />
           <Route
             path="/trades/preview/:tradeId"
@@ -203,6 +206,8 @@ const AppRoutes = () => {
           {/* 담당자 7 · F-PROV-006/012~014: 제공자 모드에서도 추가 분야 심사 신청·상태 조회를 허용합니다. */}
           <Route path="/provider/apply" element={<ProviderApplyPage />} />
           <Route path="/provider/applications/status" element={<ProviderApplicationStatusPage />} />
+          {/* 담당자 7 통합: 일반회원은 본인 요청, 제공자는 공개 요청 상세를 사용합니다. */}
+          <Route path="/service-requests/:svcReqSn" element={<ServiceRequestDetailPage />} />
         </Route>
       </Route>
 
@@ -223,6 +228,7 @@ const AppRoutes = () => {
           <Route path="/my-bids" element={<MyBidHistoryPage />} />
 
           <Route path="/trades/:tradeId/chat" element={<TradeChat />} />
+          <Route path="/service-trades/:tradeId/chat" element={<TradeChat />} />
           <Route path="/trades/:tradeId" element={<TradeDetailBuyer />} />
           <Route
             path="/trades/:tradeId/seller"
@@ -273,6 +279,8 @@ const AppRoutes = () => {
 
       <Route element={<ProtectedRoute allowedRoles={['ROLE_SERVICE']} />}>
         <Route element={<UserLayout />}>
+          {/* 담당자 7 통합: 공개 요청 검색·목록은 제공자 모드 전용입니다. */}
+          <Route path="/service" element={<ServiceListPage />} />
           <Route path="/provider/profile" element={<ProviderProfilePage />} />
           <Route path="/provider/quotes" element={<MyQuoteListPage />} />
           <Route path="/provider/quotes/new" element={<QuoteFormPage />} />

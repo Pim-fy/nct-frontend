@@ -1,42 +1,37 @@
 import { useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, Eye, Pin, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Pin, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Pagination from '@components/common/Pagination';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import { formatDate as sharedFormatDate } from '@utils/common';
-import './mockupContentComponents.css';
-import './mockupContentPages.css';
+import './ContentComponents.css';
+import './ContentPages.css';
 
 const formatDate = (value) => {
   if (!value || Number.isNaN(new Date(value).getTime())) return '게시일 미정';
   return sharedFormatDate(value);
 };
 
-const formatPeriod = (start, end) => {
-  if (!start && !end) return '상시 공개';
-  return `${formatDate(start)}${end ? ` ~ ${formatDate(end)}` : '부터'}`;
-};
-
-// UI목업_v3를 React로 옮긴 임시 공통 부품입니다.
+// 고객센터와 공개 콘텐츠 화면에서 재사용하는 공통 부품입니다.
 // 페이지는 ContentUi facade만 사용하므로 피그마 확정 컴포넌트가 오면 이 구현만 교체합니다.
 // 주의: className으로 Tailwind py-*/pt-*/pb-*를 넘기지 말 것 — .content-page(언레이어 CSS,
 // padding: 56px 0 72px shorthand)가 같은 요소의 py-* 유틸리티를 레이어 충돌로 무력화시킨다.
-export const MockupContentPageShell = ({ children, className = '' }) => (
+export const ContentPageShell = ({ children, className = '' }) => (
   <div className={`content-page${className ? ` ${className}` : ''}`}>
     {children}
   </div>
 );
 
-export const MockupContentPageHeader = ({ title, action }) => (
-  <header className="mockup-content-page-header">
+export const ContentPageHeader = ({ title, action }) => (
+  <header className="content-page-header">
     <div>
       <h1>{title}</h1>
     </div>
-    {action && <div className="mockup-content-page-header__action">{action}</div>}
+    {action && <div className="content-page-header__action">{action}</div>}
   </header>
 );
 
-export const MockupContentState = ({
+export const ContentState = ({
   tone = 'default',
   title,
   description,
@@ -56,7 +51,7 @@ export const MockupContentState = ({
   </div>
 );
 
-export const MockupNoticeFilterBar = ({
+export const NoticeFilterBar = ({
   selectedTypeCode,
   types = [],
   onChange,
@@ -99,52 +94,50 @@ export const MockupNoticeFilterBar = ({
  * 담당자 7 | F-COM-013 공개 공지 목록 행
  *
  * 공지사항 목록 화면에서만 사용하는 임시 공통 UI입니다. 큰 카드 대신 한 줄씩
- * 읽을 수 있도록 중요 고정 여부·분류·제목·등록일·조회수를 보여주며, 행을 누르면
+ * 읽을 수 있도록 중요 고정 여부·분류·제목·등록일을 보여주며, 행을 누르면
  * 기존과 같은 공지 상세 화면으로 이동합니다.
  */
-export const MockupNoticeRow = ({ notice }) => (
+export const NoticeRow = ({ notice }) => (
   <Link
     aria-label={`${notice.pinned ? '상단 고정, ' : ''}${notice.typeName} 공지: ${notice.title}`}
-    className={`mockup-notice-row${notice.pinned ? ' is-important' : ''}`}
+    className={`content-notice-row${notice.pinned ? ' is-important' : ''}`}
     to={`/customersupport/notice/${notice.id}`}
   >
-    <span className="mockup-notice-row__number">
+    <span className="content-notice-row__number">
       {notice.pinned ? <><Pin aria-hidden="true" />중요</> : notice.id}
     </span>
-    <span className="mockup-notice-row__type">{notice.typeName}</span>
-    <strong className="mockup-notice-row__title">{notice.title}</strong>
-    <span className="mockup-notice-row__date">{formatDate(notice.publishedAt)}</span>
-    <span className="mockup-notice-row__views"><Eye aria-hidden="true" />{Number(notice.viewCount || 0).toLocaleString('ko-KR')}</span>
+    <span className="content-notice-row__type">{notice.typeName}</span>
+    <strong className="content-notice-row__title">{notice.title}</strong>
+    <span className="content-notice-row__date">{formatDate(notice.publishedAt)}</span>
   </Link>
 );
 
-const MockupNoticeRowSkeleton = () => (
-  <div aria-hidden="true" className="mockup-notice-row">
-    <span className="mockup-notice-row__number"><Skeleton height={14} /></span>
-    <span className="mockup-notice-row__type"><Skeleton height={14} /></span>
-    <strong className="mockup-notice-row__title"><Skeleton height={14} /></strong>
-    <span className="mockup-notice-row__date"><Skeleton height={14} /></span>
-    <span className="mockup-notice-row__views"><Skeleton height={14} /></span>
+const NoticeRowSkeleton = () => (
+  <div aria-hidden="true" className="content-notice-row">
+    <span className="content-notice-row__number"><Skeleton height={14} /></span>
+    <span className="content-notice-row__type"><Skeleton height={14} /></span>
+    <strong className="content-notice-row__title"><Skeleton height={14} /></strong>
+    <span className="content-notice-row__date"><Skeleton height={14} /></span>
   </div>
 );
 
-export const MockupNoticeList = ({ notices = [], loading = false, loadingRows = 5 }) => (
+export const NoticeList = ({ notices = [], loading = false, loadingRows = 5 }) => (
   <div className="notice-list" aria-label="공지사항 목록">
-    <div aria-hidden="true" className="mockup-notice-row mockup-notice-row--head">
-      <span>번호</span><span>분류</span><span>제목</span><span>등록일</span><span>조회</span>
+    <div aria-hidden="true" className="content-notice-row content-notice-row--head">
+      <span>번호</span><span>분류</span><span>제목</span><span>등록일</span>
     </div>
     {loading
-      ? Array.from({ length: loadingRows }).map((_, index) => <MockupNoticeRowSkeleton key={index} />)
-      : notices.map((notice) => <MockupNoticeRow key={notice.id} notice={notice} />)}
+      ? Array.from({ length: loadingRows }).map((_, index) => <NoticeRowSkeleton key={index} />)
+      : notices.map((notice) => <NoticeRow key={notice.id} notice={notice} />)}
   </div>
 );
 
-export const MockupNoticeListSummary = ({ total }) => (
+export const NoticeListSummary = ({ total }) => (
   <p className="notice-total">총 <strong>{Number(total || 0).toLocaleString('ko-KR')}</strong>건</p>
 );
 
 /** 담당자 7 · F-COM-013: 고객센터도 전역 공용 페이지네이션을 사용하고 간격만 화면에 맞춥니다. */
-export const MockupContentPagination = ({ page, totalPages, onChange, ariaLabel }) => (
+export const ContentPagination = ({ page, totalPages, onChange, ariaLabel }) => (
   <Pagination
     ariaLabel={ariaLabel || '고객센터 목록 페이지 이동'}
     className="content-pagination"
@@ -155,7 +148,7 @@ export const MockupContentPagination = ({ page, totalPages, onChange, ariaLabel 
   />
 );
 
-export const MockupNoticeDetail = ({ notice }) => (
+export const NoticeDetail = ({ notice }) => (
   <article className="content-page notice-detail">
     <Link className="notice-detail__back" to="/customersupport/notice">
       <ArrowLeft aria-hidden="true" />공지 목록
@@ -164,8 +157,6 @@ export const MockupNoticeDetail = ({ notice }) => (
       <h1>{notice.title}</h1>
       <div className="notice-detail__meta">
         <span>{formatDate(notice.publishedAt)}</span>
-        <span>노출 기간 {formatPeriod(notice.publishedAt, notice.postingEndAt)}</span>
-        <span><Eye aria-hidden="true" />{Number(notice.viewCount || 0).toLocaleString('ko-KR')}</span>
       </div>
     </header>
     <div className="notice-detail__content">{notice.content}</div>
@@ -319,7 +310,7 @@ const GuideScreenPreview = ({ type }) => {
   return null;
 };
 
-export const MockupGuideJourneyOverview = ({
+export const GuideJourneyOverview = ({
   guides = [],
   highlightedFlowId,
   journeys = [],

@@ -5,7 +5,8 @@
 
 .admin-provider-filter {
   display: grid;
-  grid-template-columns: repeat(3, minmax(140px, .7fr)) minmax(240px, 1.6fr);
+  grid-template-columns: repeat(3, minmax(140px, .7fr)) minmax(240px, 1.6fr) auto;
+  align-items: end;
   gap: 14px;
   margin-bottom: 18px;
   padding: 18px;
@@ -31,21 +32,6 @@
   background: #fff;
   color: #1a1a18;
   font: inherit;
-}
-
-.admin-provider-filter__search div {
-  position: relative;
-}
-
-.admin-provider-filter__search svg {
-  position: absolute;
-  top: 12px;
-  left: 11px;
-  color: #5f5e5a;
-}
-
-.admin-provider-filter__search input {
-  padding-left: 36px;
 }
 
 .admin-provider-list {
@@ -178,6 +164,10 @@
   .admin-provider-filter__search {
     grid-column: 1 / -1;
   }
+
+  .admin-provider-filter .admin-filter-actions {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 620px) {
@@ -186,6 +176,10 @@
   }
 
   .admin-provider-filter__search {
+    grid-column: auto;
+  }
+
+  .admin-provider-filter .admin-filter-actions {
     grid-column: auto;
   }
 

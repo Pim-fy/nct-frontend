@@ -12,9 +12,9 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toImageUrl } from '@api/fileApi';
-import './mockupServicePages.css';
+import './ServicePages.css';
 
-export const MockupServiceSearchBar = ({ keyword, onKeywordChange, onSubmit }) => (
+export const ServiceSearchBar = ({ keyword, onKeywordChange, onSubmit }) => (
   <form className="hero-search-bar" onSubmit={onSubmit} role="search">
     <label className="sr-only" htmlFor="service-keyword">서비스 검색어</label>
     <input
@@ -28,7 +28,7 @@ export const MockupServiceSearchBar = ({ keyword, onKeywordChange, onSubmit }) =
   </form>
 );
 
-export const MockupDiscoveryTabs = ({ activeView, onChange, requestCount, providerCount }) => (
+export const DiscoveryTabs = ({ activeView, onChange, requestCount, providerCount }) => (
   <div className="service-discovery-tabs" role="tablist" aria-label="검색 결과 유형">
     <button
       aria-selected={activeView === 'requests'}
@@ -51,7 +51,7 @@ export const MockupDiscoveryTabs = ({ activeView, onChange, requestCount, provid
   </div>
 );
 
-export const MockupServiceFilterPanel = ({
+export const ServiceFilterPanel = ({
   categories,
   filters,
   isOpen,
@@ -150,7 +150,7 @@ const ServiceRequestCard = ({ request }) => (
   </article>
 );
 
-export const MockupServiceRequestGrid = ({ requests }) => (
+export const ServiceRequestGrid = ({ requests }) => (
   <section className="service-result-grid" aria-label="서비스 요청 검색 결과">
     {requests.map((request) => <ServiceRequestCard key={request.id} request={request} />)}
   </section>
@@ -180,13 +180,13 @@ const ProviderCard = ({ provider }) => (
   </Link>
 );
 
-export const MockupProviderGrid = ({ providers }) => (
+export const ProviderGrid = ({ providers }) => (
   <section className="service-provider-grid" aria-label="제공자 검색 결과">
     {providers.map((provider) => <ProviderCard key={provider.id} provider={provider} />)}
   </section>
 );
 
-export const MockupServiceEmptyState = ({ view }) => (
+export const ServiceEmptyState = ({ view }) => (
   <div className="service-empty-state" role="status">
     <Search aria-hidden="true" />
     <strong>조건에 맞는 {view === 'providers' ? '제공자가' : '서비스 요청이'} 없습니다.</strong>
@@ -194,7 +194,7 @@ export const MockupServiceEmptyState = ({ view }) => (
   </div>
 );
 
-export const MockupProviderProfile = ({
+export const ProviderProfile = ({
   activeTab,
   onOpenPortfolio,
   onReport,
@@ -273,7 +273,7 @@ export const MockupProviderProfile = ({
   </div>
 );
 
-export const MockupPortfolioModal = ({ closeButtonRef, onClose, portfolio }) => (
+export const PortfolioModal = ({ closeButtonRef, onClose, portfolio }) => (
   <div className="service-modal" onMouseDown={(event) => {
     if (event.target === event.currentTarget) onClose();
   }}>

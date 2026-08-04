@@ -11,7 +11,7 @@ body { font-family: 'Pretendard', 'Noto Sans KR', 'Malgun Gothic', sans-serif !i
    미세하게 어긋난다 — 스크롤바 자리를 항상 미리 확보해 모든 페이지의 가용 너비를 통일한다. */
 html { scrollbar-gutter: stable; }
 
-/* 공통 레이아웃 — .content-page(mockupContentPages.css)와 동일한 폭 공식.
+/* 공통 레이아웃 — .content-page(ContentPages.css)와 동일한 폭 공식.
    max-width+padding 대신 width:min()을 써서 모든 뷰포트에서 두 시스템이 정확히 일치하고,
    padding 선언 자체가 없어 Tailwind py-*와의 레이어 충돌 위험도 사라진다.
    max-width:none은 필수 — Tailwind v4가 "container"라는 같은 이름의 내장 유틸리티를 갖고 있어서
@@ -73,17 +73,17 @@ html { scrollbar-gutter: stable; }
    outline: success · danger · outline-orange · outline-gray · teal
    기타: blue · goods (App.css 전용 유지)
 =========================== */
-.badge { display: inline-flex; align-items: center; height: 30px; padding: 0 10px; border-radius: 30px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 30px; font-size: 12px; font-weight: 600; white-space: nowrap; }
 
 .badge-primary        { background: var(--color-primary, #0064ff); color: #fff; }
 .badge-success        { background: transparent; color: var(--color-primary, #0064ff); border: 1.5px solid var(--color-primary, #0064ff); }
 .badge-warning        { background: #FFC526; color: #fff; border: 1.5px solid #FFC526; }
 .badge-danger         { background: transparent; color: #EF4444; border: 1.5px solid #EF4444; }
 .badge-gray           { background: #9CA3AF; color: #fff; }
-.badge-orange         { background: #55C9C8; color: #fff; }
-.badge-outline-orange { background: transparent; color: #55C9C8; border: 1.5px solid #55C9C8; }
+.badge-orange         { background: #f5a524; color: #fff; }
+.badge-outline-orange { background: transparent; color: #f5a524; border: 1.5px solid #f5a524; }
 .badge-outline-gray   { background: transparent; color: #9CA3AF; border: 1.5px solid #9CA3AF; }
-.badge-teal           { background: transparent; color: #EF4444; border: 1.5px solid #EF4444; }
+.badge-teal           { background: transparent; color: #0d9488; border: 1.5px solid #0d9488; }
 .badge-urgent         { background: #FFC526; color: #fff; border: 1.5px solid #FFC526; }
 .badge-blue           { background: #e8f0fe; color: #1a56a4; }
 .badge-goods          { background: #e5e4df; color: #5f5e5a; }
