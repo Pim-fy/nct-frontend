@@ -25,11 +25,11 @@
 }
 
 .admin-badge--info {
-  background: #e8f5ef;
-  color: #1f6f5c;
+  background: #edf4ff;
+  color: #0057d9;
 }
 
 .admin-badge--neutral {
-  background: #eff0ec;
-  color: #666b63;
+  background: #f1f5f9;
+  color: #475569;
 }

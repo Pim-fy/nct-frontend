@@ -809,8 +809,7 @@
   text-decoration: none;
 }
 
-.notice-detail__back svg,
-.notice-detail__meta svg {
+.notice-detail__back svg {
   width: 16px;
 }
 

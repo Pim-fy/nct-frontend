@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Search } from 'lucide-react';
 import {
   decideAdminAuctionCancellation,
   fetchAdminAuctionCancellationRequest,
@@ -8,13 +7,14 @@ import {
   fetchAdminAuctions,
 } from '@api/adminAuctionApi';
 import AdminModal from '@components/admin/AdminModal';
+import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import PageMeta from '@components/admin/PageMeta';
-import { formatDateTime } from '@utils/common';
+import { formatDateTime, toast } from '@utils/common';
 import '../audit/adminAuditPage.css';
 import './adminAuctionManagementPage.css';
 
@@ -46,7 +46,6 @@ const AdminAuctionManagementPage = () => {
   const [filterError, setFilterError] = useState('');
   const [selected, setSelected] = useState(null);
   const [reviewReason, setReviewReason] = useState('');
-  const [feedback, setFeedback] = useState('');
   const [page, setPage] = useState(1);
 
   const auctionsQuery = useQuery({
@@ -77,7 +76,11 @@ const AdminAuctionManagementPage = () => {
   const decisionMutation = useMutation({
     mutationFn: decideAdminAuctionCancellation,
     onSuccess: (_, variables) => {
-      setFeedback(`경매 #${variables.auctionId} 취소 요청을 ${variables.decision === 'APPROVED' ? '승인' : '반려'}했습니다.`);
+      toast({
+        icon: 'success',
+        title: `경매 #${variables.auctionId} 취소 요청을 ${variables.decision === 'APPROVED' ? '승인' : '반려'}했습니다.`,
+        timer: 2000,
+      });
       setSelected(null);
       setReviewReason('');
       auctionsQuery.refetch();
@@ -171,11 +174,9 @@ const AdminAuctionManagementPage = () => {
         <label>등록 시작일<input onChange={(event) => setFilterForm({ ...filterForm, registeredFrom: event.target.value })} type="date" value={filterForm.registeredFrom} /></label>
         <label>등록 종료일<input onChange={(event) => setFilterForm({ ...filterForm, registeredTo: event.target.value })} type="date" value={filterForm.registeredTo} /></label>
         <label className="admin-auction-filters__search">검색<input onChange={(event) => setFilterForm({ ...filterForm, keyword: event.target.value })} placeholder="상품명·판매자·경매 번호" value={filterForm.keyword} /></label>
-        <button type="submit"><Search aria-hidden="true" />조회</button>
-        {Object.values(filters).some(Boolean) && <button className="admin-auction-filters__reset" onClick={resetFilters} type="button">초기화</button>}
+        <AdminFilterActions disabled={auctionsQuery.isFetching} onReset={resetFilters} />
       </form>
       {filterError && <p className="admin-auction-page__filter-error" role="alert">{filterError}</p>}
-      {feedback && <p className="admin-auction-page__feedback" role="status">{feedback}</p>}
       {auctionsQuery.isError && <div className="admin-bjn-state is-error">경매 목록을 불러오지 못했습니다. <button className="btn btn-outline" onClick={() => auctionsQuery.refetch()} type="button">다시 시도</button></div>}
       {!auctionsQuery.isError && (
         <AdminSectionCard action={!auctionsQuery.isLoading && <span>총 {auctionsQuery.data?.totalItems ?? 0}건</span>} title="경매·거래 목록">

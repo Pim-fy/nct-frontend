@@ -7,6 +7,7 @@ import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
 import { useAdminCategories, useSaveAdminCategory } from '@hooks/useAdminCategories';
 import useClientPagination from '@hooks/useClientPagination';
+import { toast } from '@utils/common';
 import '../notice/adminContentPages.css';
 import './adminCategoryPage.css';
 
@@ -66,7 +67,7 @@ const AdminCategoryPage = () => {
         },
       });
       reset();
-      setFeedback('카테고리를 저장했습니다. 연결된 화면에도 같은 값이 사용됩니다.');
+      toast({ icon: 'success', title: '카테고리를 저장했습니다.', timer: 1800 });
     } catch (error) {
       setFeedback(error.response?.data?.message || '저장하지 못했습니다. 입력값과 중복 이름을 확인해 주세요.');
     }
@@ -91,8 +92,6 @@ const AdminCategoryPage = () => {
       <PageMeta title="카테고리 관리" />
       <AdminPageHeader
         action={<button className="btn btn-primary" onClick={reset} type="button"><Plus /> 새 카테고리</button>}
-        description="상품과 서비스 카테고리를 분리해 관리합니다. 사용 중지는 기존 상품·요청의 연결을 보존합니다."
-        eyebrow="F-COM-003 · REQ-COM-003"
         title="카테고리 관리"
       />
 
@@ -115,7 +114,7 @@ const AdminCategoryPage = () => {
         <button className="btn btn-primary" disabled={saveMutation.isPending} type="submit"><Save /> {saveMutation.isPending ? '저장 중' : '저장'}</button>
       </form>
 
-      {feedback && <p className={`admin-category-feedback${feedback.includes('저장했습니다') ? ' is-success' : ''}`}>{feedback}</p>}
+      {feedback && <p className="admin-category-feedback" role="alert">{feedback}</p>}
       {categoriesQuery.isError && <div className="card admin-content-state is-error">카테고리를 불러오지 못했습니다.</div>}
       {!categoriesQuery.isError && (
         <section className="card admin-category-list">

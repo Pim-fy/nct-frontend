@@ -4,6 +4,7 @@ import { Menu } from 'lucide-react';
 import { Outlet } from 'react-router-dom';
 import AdminSidebar from '@components/admin/AdminSidebar';
 import './AdminLayout.css';
+import '@components/admin/AdminDesignSystem.css';
 
 // 화면을 다시 열어도 관리자 사이드바의 접힘 상태를 유지합니다.
 const ADMIN_SIDEBAR_STORAGE_KEY = 'ksteam-admin-sidebar-collapsed';
