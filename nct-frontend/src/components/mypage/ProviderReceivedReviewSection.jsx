@@ -110,6 +110,7 @@ export default function ProviderReceivedReviewSection() {
               ))}
             </ul>
             <Pagination
+              maxVisiblePages={5}
               page={page}
               totalPages={totalPages}
               onPageChange={setPage}
