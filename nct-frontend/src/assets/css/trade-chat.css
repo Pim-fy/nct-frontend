@@ -281,6 +281,10 @@
   border-bottom: 1px solid #edf0f5;
 }
 
+.trade-chat-conversation__header > div:first-child {
+  min-width: 0;
+}
+
 .trade-chat-conversation__header p {
   margin: 5px 0 0;
   color: #8893a5;
@@ -291,12 +295,17 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .trade-chat-conversation__close {
   min-width: auto;
   padding: 6px 10px;
   font-size: 12px;
+}
+
+.trade-chat-conversation__close.trade-chat-conversation__close--mobile {
+  display: none;
 }
 
 .trade-chat-status {
@@ -306,6 +315,7 @@
   color: #19734a;
   font-size: 12px;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .trade-chat-status--closed {
@@ -442,22 +452,58 @@
     height: auto;
   }
 
-  /* 모바일에서도 채팅방을 선택할 수 있도록 목록과 대화 영역을 세로로 함께 표시한다. */
-  .trade-chat-page--embedded
-  .trade-chat-layout--with-room-list
-  .trade-chat-rooms {
+  /* 모바일은 목록과 대화를 한 화면에 쌓지 않는다. 방 선택 뒤에는 대화만 전체 폭으로 표시한다. */
+  .trade-chat-layout--with-room-list:not(.trade-chat-layout--mobile-conversation) .trade-chat-conversation {
+    display: none;
+  }
+
+  .trade-chat-layout--with-room-list:not(.trade-chat-layout--mobile-conversation) .trade-chat-rooms {
     display: flex;
-  }
-
-  .trade-chat-rooms {
-    height: 260px;
-  }
-
-  .trade-chat-conversation {
     height: clamp(440px, calc(100dvh - 190px), 600px);
+  }
+
+  .trade-chat-layout--mobile-conversation .trade-chat-rooms {
+    display: none;
+  }
+
+  .trade-chat-layout--mobile-conversation .trade-chat-conversation,
+  .trade-chat-layout--conversation-only .trade-chat-conversation {
+    display: grid;
+    height: clamp(440px, calc(100dvh - 190px), 600px);
+  }
+
+  .trade-chat-conversation__close.trade-chat-conversation__close--desktop {
+    display: none;
+  }
+
+  .trade-chat-conversation__close.trade-chat-conversation__close--mobile {
+    display: inline-flex;
+  }
+
+  .trade-chat-status {
+    display: none;
   }
 
   .trade-chat-conversation__empty {
     min-height: 180px;
+  }
+}
+
+@media (max-width: 360px) {
+  .trade-chat-conversation__header {
+    gap: 8px;
+    padding: 16px;
+  }
+
+  .trade-chat-conversation__actions {
+    gap: 6px;
+  }
+
+  .trade-chat-status {
+    padding: 6px 7px;
+  }
+
+  .trade-chat-conversation__close {
+    padding: 6px 8px;
   }
 }

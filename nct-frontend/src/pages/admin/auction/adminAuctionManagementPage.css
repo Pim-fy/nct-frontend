@@ -1,7 +1,6 @@
 /* 담당자 7 · F-OPS-003: 상품명은 긴 경우가 많아 관리자 표에서 별도 폭을 확보합니다. */
 .admin-auction-page .admin-table th:nth-child(2),
 .admin-auction-page .admin-table td:nth-child(2) { min-width: 280px; }
-.admin-auction-page__feedback { margin: 12px 0; color: #176b45; font-size: 14px; }
 .admin-auction-page__filter-error { margin: -8px 0 12px; color: #d92d20; font-size: 13px; font-weight: 600; }
 .admin-auction-filters__search input { min-width: 220px; }
 .admin-bjn-filters .admin-auction-filters__reset { background: #f1f3f8; color: #3d4665; }

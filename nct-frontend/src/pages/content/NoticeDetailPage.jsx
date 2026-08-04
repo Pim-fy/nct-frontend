@@ -16,8 +16,6 @@ const NoticeDetailSkeleton = () => (
       <strong />
       <div>
         <span />
-        <span />
-        <span />
       </div>
     </header>
     <div className="public-notice-detail-skeleton__content">

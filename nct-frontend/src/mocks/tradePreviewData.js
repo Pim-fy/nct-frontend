@@ -1,8 +1,11 @@
+import tradePreviewThumbnail from '@assets/img/thum_img01.png';
+
 const tradePreviewItems = [
   {
     tradeId: 1001,
     userRole: 'BUYER',
     productName: '빈티지 원목 수납장',
+    productImageUrl: tradePreviewThumbnail,
     price: 128000,
     counterpartNickname: '따뜻한집',
     counterpartRating: 4.8,
