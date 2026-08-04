@@ -63,5 +63,4 @@
   background: #2f5bff; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer;
 }
 .admin-bjn-setting-actions button:disabled { background: #d4d9e8; cursor: not-allowed; }
-.admin-bjn-setting-actions .is-saved { color: #027a48; font-size: 13px; }
 .admin-bjn-setting-actions .is-error { color: #b42318; font-size: 13px; }

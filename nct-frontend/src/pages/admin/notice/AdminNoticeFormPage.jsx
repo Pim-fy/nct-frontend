@@ -13,6 +13,7 @@ import {
   useHideAdminNotice,
   useUpdateAdminNotice,
 } from '@hooks/useAdminNotices';
+import { toast } from '@utils/common';
 import './adminContentPages.css';
 
 const FAQ_TYPE_CODE = 'NTCC0008';
@@ -118,12 +119,13 @@ const AdminNoticeFormPage = () => {
       if (isNew) {
         await createMutation.mutateAsync(payload());
         setDraft(null);
+        toast({ icon: 'success', title: '공지가 등록되었습니다.', timer: 1800 });
         navigate('/admin/notices', { replace: true });
       } else {
         await updateMutation.mutateAsync({ noticeId, payload: payload() });
         setIsEditing(false);
         setDraft(null);
-        setFeedback('공지가 수정되었습니다.');
+        toast({ icon: 'success', title: '공지가 수정되었습니다.', timer: 1800 });
       }
     } catch (error) {
       setFeedback(getErrorMessage(error));
@@ -137,7 +139,7 @@ const AdminNoticeFormPage = () => {
       setDeletePanelOpen(false);
       setDeleteReason('');
       setDraft(null);
-      setFeedback('공지가 숨김 처리되었습니다. 같은 요청을 다시 해도 중복 처리되지 않습니다.');
+      toast({ icon: 'success', title: '공지가 숨김 처리되었습니다.', timer: 1800 });
     } catch (error) {
       setFeedback(getErrorMessage(error));
     }
@@ -152,6 +154,7 @@ const AdminNoticeFormPage = () => {
     if (!window.confirm('이 공지를 관리 목록에서도 삭제할까요? 삭제 후에는 사용자와 관리자 목록에서 보이지 않습니다.')) return;
     try {
       await deleteMutation.mutateAsync({ noticeId, changeReason: reason });
+      toast({ icon: 'success', title: '공지가 삭제되었습니다.', timer: 1800 });
       navigate('/admin/notices', { replace: true });
     } catch (error) {
       setFeedback(getErrorMessage(error));
@@ -181,10 +184,6 @@ const AdminNoticeFormPage = () => {
             {notice?.visibleNow ? '사용자 화면 노출 중' : '현재 미노출'}
           </AdminStatusBadge>
         )}
-        description={isNew
-          ? '기본값은 즉시 게시입니다. 필요한 경우 임시저장이나 예약 게시로 변경할 수 있습니다.'
-          : '저장된 공지와 사용자 노출 상태를 확인합니다.'}
-        eyebrow="F-OPS-023 · 관리자 전용"
         title={isNew ? '공지 작성' : '공지 상세'}
       />
 
@@ -193,7 +192,6 @@ const AdminNoticeFormPage = () => {
           <div className="admin-notice-form__readonly-meta">
             <span><small>공지 번호</small><strong>{notice.noticeId}</strong></span>
             <span><small>작성자</small><strong>{notice.writerName}</strong></span>
-            <span><small>조회수</small><strong>{notice.viewCount.toLocaleString('ko-KR')}</strong></span>
           </div>
         )}
 
@@ -355,7 +353,7 @@ const AdminNoticeFormPage = () => {
         )}
 
         {feedback && (
-          <p className={`admin-notice-form__feedback${feedback.includes('되었습니다') ? ' is-success' : ''}`}>
+          <p className="admin-notice-form__feedback" role="alert">
             {feedback}
           </p>
         )}

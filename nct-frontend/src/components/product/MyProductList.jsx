@@ -65,6 +65,17 @@ const TRADE_BADGE = {
   TRDC0008: 'badge-danger',
 };
 
+// 상품이 혼합 방식이어도 실제 낙찰 시 선택한 거래 방식으로 현재 상태를 표시한다.
+const getTradeStatusLabel = (product) => {
+  if (product.tradeStatusCd === 'TRDC0004') {
+    if (product.tradeMethodCd === 'TRDC0009') return '배송 중';
+    if (product.tradeMethodCd === 'TRDC0010') return '직거래 중';
+    return '배송·직거래 중';
+  }
+
+  return TRADE_STATUS_LABEL[product.tradeStatusCd] ?? product.tradeStatusCd;
+};
+
 const PRD_STATUS_LABEL = {
   PRDC0001: '임시저장',
   PRDC0002: '진행 중',
@@ -210,7 +221,7 @@ export default function MyProductList({ onOpenTradeDetail }) {
           <div className="history-list">
             {visibleList.map((p) => {
               const badgeLabel = p.tradeSn
-                ? (TRADE_STATUS_LABEL[p.tradeStatusCd] ?? p.tradeStatusCd)
+                ? getTradeStatusLabel(p)
                 : p.aucStatusCd
                 ? (AUC_STATUS_LABEL[p.aucStatusCd] ?? p.aucStatusCd)
                 : (PRD_STATUS_LABEL[p.prdStatusCd] ?? p.prdStatusCd);

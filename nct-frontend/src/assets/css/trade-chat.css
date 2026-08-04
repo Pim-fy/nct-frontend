@@ -304,7 +304,7 @@
   font-size: 12px;
 }
 
-.trade-chat-conversation__close--mobile {
+.trade-chat-conversation__close.trade-chat-conversation__close--mobile {
   display: none;
 }
 

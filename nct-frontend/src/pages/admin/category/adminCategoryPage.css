@@ -10,7 +10,6 @@
 .admin-category-check input { width: 18px; min-height: 18px; }
 .admin-category-form .btn, .admin-category-list .btn, .admin-page-header__action .btn { display: inline-flex; align-items: center; gap: 6px; }
 .admin-category-feedback { margin: 0 0 16px; color: #b42318; font-weight: 700; }
-.admin-category-feedback.is-success { color: #16794a; }
 .admin-category-list { overflow: hidden; }
 .admin-category-list table { width: 100%; border-collapse: collapse; }
 .admin-category-list th { padding: 12px 14px; background: #fafaf8; color: #5f5e5a; font-size: 12px; text-align: left; }
