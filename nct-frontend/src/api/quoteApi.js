@@ -14,7 +14,7 @@ export const withdrawQuote = (quoteId) =>
 
 /** 내 견적 목록 (제공자) */
 export const getMyQuotes = (params) =>
-  api.get('/quotes/me', { params }).then((res) => res.data);
+  api.get('/quotes/me', { params, skipServerErrorRedirect: true }).then((res) => res.data);
 
 /** 견적 수정 이력 조회 */
 export const getQuoteHistory = (quoteId) =>
