@@ -75,7 +75,8 @@ const Header = () => {
 
   // 공지사항 롤링 티커 — 비로그인 포함 모든 화면에서 표시
   const { data: noticeData } = usePublicNoticeList({ page: 1, size: 5 });
-  const siteNotices = (noticeData?.items ?? []).map(
+  const siteNoticeItems = noticeData?.items ?? [];
+  const siteNotices = siteNoticeItems.map(
     (n) => `[${n.typeName ?? '공지'}] ${n.title}`,
   );
 
@@ -322,7 +323,7 @@ const Header = () => {
     <>
     <header
       aria-hidden={isPageHidden || undefined}
-      className={`sticky top-0 z-[100] bg-white shadow-[0px_5px_10px_0px_rgba(0,0,0,0.2)] ${
+      className={`sticky top-0 z-[100] bg-white shadow-[0px_5px_10px_0px_rgba(0,0,0,0.2)] max-md:fixed max-md:inset-x-0 ${
       hasHeaderSearch ? 'h-[154px] md:h-[82px]' : 'h-[82px]'
     } ${
       isPageHidden ? 'invisible pointer-events-none' : ''
@@ -474,9 +475,12 @@ const Header = () => {
             검색창과 같은 자리(정중앙)를 쓰므로, 검색창이 있는 페이지에서는 아예 그리지 않는다
             (기존엔 검색창의 z-[1]에 우연히 가려지는 것에 기대고 있었다). */}
         {!hasHeaderSearch && (
-          <div
-            className="pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-full bg-[#f3f5fa] px-4 py-2 text-[13px] text-[#4e4e4e] transition-opacity duration-300 md:flex"
-            style={{ opacity: scrolled ? 1 : 0 }}
+          <Link
+            to={siteNoticeItems.length > 0
+              ? `/customersupport/notice/${siteNoticeItems[noticeIndex % siteNoticeItems.length].id}`
+              : '/customersupport/notice'}
+            className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-full bg-[#f3f5fa] px-4 py-2 text-[13px] text-[#4e4e4e] transition-opacity duration-300 hover:bg-[#e9edf5] md:flex"
+            style={{ opacity: scrolled ? 1 : 0, pointerEvents: scrolled ? 'auto' : 'none' }}
           >
             <img src={micIcon} alt="" width={14} height={14} className="shrink-0 opacity-70" />
             <span className="max-w-[420px] truncate">
@@ -484,7 +488,7 @@ const Header = () => {
                 ? siteNotices[noticeIndex % siteNotices.length]
                 : '서비스 점검 안내'}
             </span>
-          </div>
+          </Link>
         )}
 
         {/* 우측 유틸 영역 */}
@@ -916,6 +920,10 @@ const Header = () => {
         </div>
       )}
     </header>
+    <div
+      aria-hidden="true"
+      className={hasHeaderSearch ? 'h-[154px] md:hidden' : 'h-[82px] md:hidden'}
+    />
     <ScrollToTopButton />
     <NotificationDetailModal item={selectedNoti} onClose={() => setSelectedNoti(null)} />
     {pointModal === 'charge' && (
