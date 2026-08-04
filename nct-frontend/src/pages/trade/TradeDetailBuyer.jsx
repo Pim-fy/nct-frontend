@@ -15,7 +15,7 @@ import {
   getTradeDetail,
   requestTradeCompletion,
 } from '@api/tradeApi';
-import { getDeliveryProofBlob } from '@api/fileApi';
+import { getDeliveryProofBlob, toImageUrl } from '@api/fileApi';
 import { toTradeDetail } from '@api/tradeAdapter';
 import TradeTrustSummary from '@components/trade/TradeTrustSummary';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
@@ -330,8 +330,10 @@ const TradeDetailBuyer = ({
           <section className="trade-detail-card">
             <h2>상품 정보</h2>
             <div className="trade-product">
-              <div className="trade-product__image" aria-label="상품 이미지 준비 중">
-                상품 이미지
+              <div className="trade-product__image">
+                {trade.productImageUrl
+                  ? <img src={toImageUrl(trade.productImageUrl)} alt={trade.productName} />
+                  : '상품 이미지'}
               </div>
               <div>
                 <strong>{trade.productName}</strong>
