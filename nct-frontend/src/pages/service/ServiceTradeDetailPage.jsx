@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   confirmServiceCompletion,
@@ -11,11 +11,36 @@ import {
 } from './serviceTradeStatus';
 import '@assets/css/service-trade-detail.css';
 
+const getTodayDate = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+};
+
+const getNextAvailableTime = () => {
+  const now = new Date();
+  now.setSeconds(0, 0);
+  now.setMinutes(now.getMinutes() + 1);
+
+  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+};
+
+const SERVICE_SCHEDULE_TIME_SLOTS = Array.from({ length: 48 }, (_, index) => {
+  const hour = String(Math.floor(index / 2)).padStart(2, '0');
+  const minute = index % 2 === 0 ? '00' : '30';
+
+  return `${hour}:${minute}`;
+});
+
 // 담당자4 서비스 거래 상세의 표현 전용 화면이다.
 // 조회·완료 API와 공통 route는 계약 확정 뒤 연결한다.
 export default function ServiceTradeDetailPage({
   trade = null,
   disputeTypes = [],
+  onSubmitDispute = submitServiceTradeDispute,
   onRequestCompletion = requestServiceCompletion,
   onConfirmCompletion = confirmServiceCompletion,
   scheduleHistory = [],
@@ -34,11 +59,21 @@ export default function ServiceTradeDetailPage({
   const [completionSubmitted, setCompletionSubmitted] = useState(false);
   const [completionError, setCompletionError] = useState('');
   const [scheduleDialogType, setScheduleDialogType] = useState(null);
-  const [requestedScheduleAt, setRequestedScheduleAt] = useState('');
+  const [requestedScheduleDate, setRequestedScheduleDate] = useState('');
+  const [requestedScheduleTime, setRequestedScheduleTime] = useState('');
+  const [isScheduleTimePickerOpen, setIsScheduleTimePickerOpen] = useState(false);
   const [scheduleReason, setScheduleReason] = useState('');
   const [scheduleError, setScheduleError] = useState('');
   const [isSubmittingSchedule, setIsSubmittingSchedule] = useState(false);
   const [scheduleSubmitted, setScheduleSubmitted] = useState(false);
+  const todayDate = getTodayDate();
+  const availableScheduleTimes = useMemo(() => {
+    const minimumTime = requestedScheduleDate === todayDate
+      ? getNextAvailableTime()
+      : '00:00';
+
+    return SERVICE_SCHEDULE_TIME_SLOTS.filter((time) => time >= minimumTime);
+  }, [requestedScheduleDate, todayDate]);
 
   if (!trade) {
     return (
@@ -98,7 +133,7 @@ export default function ServiceTradeDetailPage({
     setIsSubmittingDispute(true);
     setDisputeError('');
     try {
-      await submitServiceTradeDispute(trade.tradeId, {
+      await onSubmitDispute(trade.tradeId, {
         disputeTypeCode,
         content,
       });
@@ -149,7 +184,9 @@ export default function ServiceTradeDetailPage({
 
   const openScheduleDialog = (type) => {
     setScheduleDialogType(type);
-    setRequestedScheduleAt('');
+    setRequestedScheduleDate('');
+    setRequestedScheduleTime('');
+    setIsScheduleTimePickerOpen(false);
     setScheduleReason('');
     setScheduleError('');
     setScheduleSubmitted(false);
@@ -163,8 +200,12 @@ export default function ServiceTradeDetailPage({
   const handleScheduleSubmit = async (event) => {
     event.preventDefault();
     const reason = scheduleReason.trim();
-    if (isScheduleChange && !requestedScheduleAt) {
-      setScheduleError('변경할 서비스 일시를 입력해 주세요.');
+    if (isScheduleChange && (!requestedScheduleDate || !requestedScheduleTime)) {
+      setScheduleError('변경할 서비스 날짜와 시간을 선택해 주세요.');
+      return;
+    }
+    if (isScheduleChange && new Date(`${requestedScheduleDate}T${requestedScheduleTime}`) <= new Date()) {
+      setScheduleError('변경 시간은 현재 시간 이후로 선택해 주세요.');
       return;
     }
     if (!reason) {
@@ -180,7 +221,7 @@ export default function ServiceTradeDetailPage({
     setScheduleError('');
     try {
       await scheduleHandler(trade.tradeId, isScheduleChange
-        ? { requestedScheduleAt, reason }
+        ? { requestedScheduleAt: `${requestedScheduleDate}T${requestedScheduleTime}`, reason }
         : { reason });
       setScheduleSubmitted(true);
     } catch (error) {
@@ -410,16 +451,66 @@ export default function ServiceTradeDetailPage({
               <form className="service-trade-dispute-form" onSubmit={handleScheduleSubmit}>
                 <p className="service-trade-dispute-form__notice">일정 변경·취소에는 수수료가 부과되지 않으며 요청 사유가 거래 이력에 기록됩니다.</p>
                 {isScheduleChange && (
-                  <>
-                    <label htmlFor="service-trade-requested-schedule">변경 희망 일시</label>
+                  <div className="service-trade-schedule-picker-grid">
+                    <label htmlFor="service-trade-requested-schedule-date">변경 희망 날짜
                     <input
-                      id="service-trade-requested-schedule"
-                      type="datetime-local"
-                      value={requestedScheduleAt}
-                      onChange={(event) => setRequestedScheduleAt(event.target.value)}
+                      id="service-trade-requested-schedule-date"
+                      type="date"
+                      value={requestedScheduleDate}
+                      min={todayDate}
+                      onChange={(event) => {
+                        const nextDate = event.target.value;
+                        setRequestedScheduleDate(nextDate);
+                        setIsScheduleTimePickerOpen(false);
+                        if (nextDate === todayDate && requestedScheduleTime < getNextAvailableTime()) {
+                          setRequestedScheduleTime('');
+                        }
+                      }}
                       disabled={isSubmittingSchedule}
                     />
-                  </>
+                    </label>
+                    <div className="service-trade-time-slots-field" role="group" aria-label="변경 희망 시간">
+                      <span className="service-trade-time-slots-field__label">변경 희망 시간</span>
+                      <button
+                        aria-expanded={isScheduleTimePickerOpen}
+                        className="service-trade-time-picker-trigger"
+                        type="button"
+                        disabled={!requestedScheduleDate || isSubmittingSchedule}
+                        onClick={() => setIsScheduleTimePickerOpen((isOpen) => !isOpen)}
+                      >
+                        <span>{requestedScheduleTime || '시간 선택'}</span>
+                        <span aria-hidden="true">⌄</span>
+                      </button>
+                      {!requestedScheduleDate && <p>먼저 변경 희망 날짜를 선택해 주세요.</p>}
+                      {requestedScheduleDate && isScheduleTimePickerOpen && (
+                        <div className="service-trade-time-picker" role="dialog" aria-label="변경 희망 시간 선택">
+                          {availableScheduleTimes.length > 0 ? (
+                            <div className="service-trade-time-slots" role="radiogroup" aria-label="변경 희망 시간">
+                              {availableScheduleTimes.map((time) => (
+                                <button
+                                  aria-checked={requestedScheduleTime === time}
+                                  className={requestedScheduleTime === time
+                                    ? 'service-trade-time-slot service-trade-time-slot--selected'
+                                    : 'service-trade-time-slot'}
+                                  key={time}
+                                  role="radio"
+                                  type="button"
+                                  disabled={isSubmittingSchedule}
+                                  onClick={() => {
+                                    setScheduleError('');
+                                    setRequestedScheduleTime(time);
+                                    setIsScheduleTimePickerOpen(false);
+                                  }}
+                                >
+                                  {time}
+                                </button>
+                              ))}
+                            </div>
+                          ) : <p>오늘 선택 가능한 시간이 없습니다. 다른 날짜를 선택해 주세요.</p>}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 )}
                 <label htmlFor="service-trade-schedule-reason">요청 사유</label>
                 <textarea
