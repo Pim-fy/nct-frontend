@@ -395,7 +395,7 @@ const PointWalletPage = ({ embedded = false } = {}) => {
         </PointHistoryDetailModal>
       )}
       {detailModal === 'convert' && (
-        <PointHistoryDetailModal title="전환 내역" onClose={() => setDetailModal(null)}>
+        <PointHistoryDetailModal title="정산포인트 내역" onClose={() => setDetailModal(null)}>
           <PointConvertHistoryTable rows={ledger} />
         </PointHistoryDetailModal>
       )}

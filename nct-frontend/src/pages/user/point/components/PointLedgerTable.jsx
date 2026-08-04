@@ -56,10 +56,13 @@ const withProductName = (row, bidByBidSn) => {
 
 // 사유는 "고정 문구: 관리자 입력 상세" 형태인 경우가 있어(취소 사유 등) 콜론 앞
 // 고정 문구만 기본 표시하고, 전체 텍스트는 title 툴팁으로 남긴다 (2026-08-04, 가독성 개선).
-const reasonSummary = (reason) => {
+// "(정산번호 446)" 같은 내부 참조번호도 화면엔 안 보여준다 — 사용자가 조회·문의에 쓸 방법이
+// 없는 내부 식별자라 노출 실익이 없다(데이터는 원장 사유 그대로 DB에 남는다, 표시만 정리).
+export const reasonSummary = (reason) => {
   if (!reason) return reason;
   const colonIndex = reason.indexOf(':');
-  return colonIndex === -1 ? reason : reason.slice(0, colonIndex);
+  const truncated = colonIndex === -1 ? reason : reason.slice(0, colonIndex);
+  return truncated.replace(/\s*\(정산번호\s*\d+\)/g, '').trim();
 };
 
 // 표 배치는 공용 셸(PointTable)이 담당 — 여기는 컬럼 구성과 셀 내용만 정의한다 (2026-07-20 통합)
@@ -67,7 +70,7 @@ const reasonSummary = (reason) => {
 // 컬럼이 하나 더 있어 컬럼 수가 달라서, 뒤쪽(잔액/관련/사유)까지 세 표를 전부 맞추진 못한다
 // (2026-08-04, PointTable.jsx 참고).
 const buildColumns = (bidByBidSn) => [
-  { key: 'date', header: '일시', widthClass: 'w-[18%]', cellClass: 'whitespace-nowrap text-gray-700', render: (r) => r.date },
+  { key: 'date', header: '일시', widthClass: 'w-[18%]', cellClass: 'truncate text-gray-700', render: (r) => <span title={r.date}>{r.date}</span> },
   {
     key: 'type', header: '유형', widthClass: 'w-[12%]', cellClass: 'whitespace-nowrap',
     render: (r) => badge(r.type),
@@ -78,8 +81,10 @@ const buildColumns = (bidByBidSn) => [
     render: (r) => `${r.amount > 0 ? '+' : ''}${r.amount.toLocaleString()}P`,
   },
   {
-    key: 'balanceAfter', header: '잔액', align: 'right', widthClass: 'w-[14%]', cellClass: 'whitespace-nowrap text-gray-700',
-    render: (r) => `${r.balanceAfter.toLocaleString()}P`,
+    // 정산가능·홀딩 카테고리 행은 아래에서 다 걸러내서, 이 표엔 항상 사용가능 카테고리만
+    // 남는다 — 잔액이 한 트랙으로만 이어져서 카테고리 라벨을 따로 붙일 필요가 없다 (2026-08-04).
+    key: 'balanceAfter', header: '잔액', align: 'right', widthClass: 'w-[14%]', cellClass: 'truncate text-gray-700',
+    render: (r) => <span title={`${r.balanceAfter.toLocaleString()}P`}>{r.balanceAfter.toLocaleString()}P</span>,
   },
   {
     key: 'ref', header: '관련', widthClass: 'w-[16%]', cellClass: 'truncate text-gray-500',
@@ -106,14 +111,16 @@ const buildRenderCard = (bidByBidSn) => (r) => {
   return (
     <>
       <div className="flex items-center justify-between gap-2">
-        {badge(r.type)}
-        <span className="text-xs text-gray-400 whitespace-nowrap">{r.date}</span>
+        <span className="shrink-0">{badge(r.type)}</span>
+        <span className="min-w-0 truncate text-xs text-gray-400" title={r.date}>{r.date}</span>
       </div>
       <div className="mt-1 flex items-baseline justify-between gap-2">
         <span className={`text-base font-bold ${r.amount > 0 ? 'text-blue-700' : 'text-red-700'}`}>
           {r.amount > 0 ? '+' : ''}{r.amount.toLocaleString()}P
         </span>
-        <span className="text-xs text-gray-400 whitespace-nowrap">잔액 {r.balanceAfter.toLocaleString()}P</span>
+        <span className="max-w-[55%] shrink-0 truncate text-xs text-gray-400">
+          잔액 {r.balanceAfter.toLocaleString()}P
+        </span>
       </div>
       {r.reason && <div className="mt-1 text-[13px] leading-snug text-gray-500" title={r.reason}>{reasonSummary(r.reason)}</div>}
       {label && (
@@ -127,13 +134,15 @@ const buildRenderCard = (bidByBidSn) => (r) => {
 
 // limit을 주면(마이페이지 요약 카드) 최근 N건만 보여주고 "+"로 전체보기 모달을 띄운다.
 // limit 없이 부르면(전체보기 모달 안) 전부 보여준다 (2026-07-29).
-// 홀딩 카테고리 행은 기본 노출에서 뺀다(2026-08-04) — 홀딩은 사용자가 취소·조작할 수 없는
-// 시스템 처리 중 상태라 행 자체가 정보 가치가 없고, 홀딩이 걸리거나 반환될 때 짝이 되는
-// 사용가능 카테고리 행("-15,000P, 사유: 입찰 포인트 홀딩")이 같은 사건을 이미 설명해준다.
-// 원장(POINT_LEDGER)에는 그대로 남고, 화면 노출만 거른다 — 상단 홀딩 요약 카드는 별개로 유지.
-const HIDDEN_CATEGORIES = new Set(['홀딩']);
-
-/** 포인트 원장 내역 테이블 (F-PAY-039) */
+//
+// 사용가능 카테고리만 보여준다(2026-08-04) — 홀딩·정산가능 카테고리 행은 원장(POINT_LEDGER)엔
+// 그대로 남고 화면 노출만 거른다. 상단 요약 카드는 이 필터와 별개로 항상 현재 값을 보여준다.
+// - 홀딩: 사용자가 취소·조작할 수 없는 시스템 처리 중 상태라 행 자체가 정보 가치 없음. 홀딩이
+//   걸리거나 반환될 때 짝이 되는 사용가능 카테고리 행("사유: 입찰 포인트 홀딩")이 같은 사건을
+//   이미 설명해준다.
+// - 정산가능(정산 적립·전환 출금 등): 정산가능 포인트와 관련된 흐름은 전부 정산포인트 내역 표
+//   (PointConvertHistoryTable)로 옮겼다 — 여기서 빼도 정보 손실이 없고, 이 표에 남는 행이 전부
+//   사용가능 카테고리라 잔액이 한 트랙으로만 이어진다.
 const PointLedgerTable = ({ rows, limit, onExpand, loading }) => {
   const { data: myBids } = useMyBidHistory();
   const bidByBidSn = useMemo(
@@ -142,7 +151,7 @@ const PointLedgerTable = ({ rows, limit, onExpand, loading }) => {
   );
   const columns = useMemo(() => buildColumns(bidByBidSn), [bidByBidSn]);
   const renderCard = useMemo(() => buildRenderCard(bidByBidSn), [bidByBidSn]);
-  const displayRows = rows.filter((r) => !HIDDEN_CATEGORIES.has(r.category));
+  const displayRows = rows.filter((r) => r.category === '사용가능');
   const visibleRows = limit ? displayRows.slice(0, limit) : displayRows;
 
   return (
