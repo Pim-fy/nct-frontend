@@ -22,6 +22,7 @@ const getDeadlinePresentation = (endDateTime) => {
 
 export const toLandingAuctionItem = (auction) => {
   const deadline = getDeadlinePresentation(auction.endDateTime);
+  const instantBuyPrice = Number(auction.instantBuyPrice);
   return {
     id: auction.auctionId,
     image: toImageUrl(auction.thumbnailPath),
@@ -29,7 +30,9 @@ export const toLandingAuctionItem = (auction) => {
     bids: `입찰 ${Number(auction.bidCount || 0).toLocaleString('ko-KR')}회`,
     name: auction.title || '제목 미등록 경매',
     price: formatPrice(auction.currentPrice),
-    secondaryPrice: `시작가 ${formatPrice(auction.startPrice)}`,
+    secondaryPrice: Number.isFinite(instantBuyPrice) && instantBuyPrice > 0
+      ? `/ ${formatPrice(instantBuyPrice)}`
+      : null,
     ...deadline,
   };
 };

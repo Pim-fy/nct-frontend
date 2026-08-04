@@ -248,7 +248,7 @@ export default function MyPage({
             )
           )}
           {activeSection === "service-requests" && <MyServiceRequestListPage embedded />}
-          {activeSection === "wishlist" && <AuctionFavoritesPage />}
+          {activeSection === "wishlist" && <AuctionFavoritesPage embedded />}
           {activeSection === "wallet" && <PointWalletPage embedded />}
           {activeSection === "quote" && isProvider && <MyQuoteListPage embedded />}
           {!isProvider && activeSection === "review" && <ReviewListPage />}
