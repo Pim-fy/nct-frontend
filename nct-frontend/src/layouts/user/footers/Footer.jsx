@@ -1,4 +1,4 @@
-// src/layouts/user/footers/MainFooter.jsx
+// src/layouts/user/footers/Footer.jsx
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SIGNUP_TERMS } from '@pages/auth/signupTerms';
@@ -39,7 +39,7 @@ const TermsModal = ({ code, onClose }) => {
  * 사이트 공통 푸터 (LandingLayout, UserLayout에서 공용으로 사용)
  * Figma 디자인(jdFyM2rlNnaVPqeqUTwap3, node 201:405 "FOOTER")을 기반으로 제작.
  */
-const MainFooter = () => {
+const Footer = () => {
   const [activeModal, setActiveModal] = useState(null);
 
   return (
@@ -98,4 +98,4 @@ const MainFooter = () => {
   );
 };
 
-export default MainFooter;
+export default Footer;

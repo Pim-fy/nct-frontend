@@ -14,10 +14,10 @@ import {
   ServiceFilterPanel,
   ServicePagination,
   ServiceRequestGrid,
-  ServiceSearchBar,
 } from '@components/service/ServiceUi';
 import CardGridSkeleton from '@components/skeleton/CardGridSkeleton';
 import HeaderSearchPortal from '@components/common/HeaderSearchPortal';
+import HeaderSearchWithHistory from '@components/common/HeaderSearchWithHistory';
 import {
   SERVICE_CATEGORY_DOMAIN_CODE,
   SERVICE_DISCOVERY_PAGE_SIZE,
@@ -38,11 +38,12 @@ const toPage = (value) => {
 
 const toRequestSort = (value) => (value === 'budget' ? 'budget' : 'latest');
 
-/** F-COM-002: 공개 중인 서비스 요청을 검색하는 목록 화면입니다. */
+/** 담당자 7 통합 · F-COM-002: 제공자가 공개 서비스 요청을 검색하는 목록 화면입니다. */
 const ServiceListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const resultHeadingRef = useRef(null);
+  const [keywordDraft, setKeywordDraft] = useState(searchParams.get('keyword') || '');
 
   const categoriesQuery = useQuery({
     queryKey: ['service-discovery-categories', SERVICE_CATEGORY_DOMAIN_CODE],
@@ -123,8 +124,7 @@ const ServiceListPage = () => {
     setSearchParams(next, { replace: true });
   }, [legacyCategory, resolvedLegacyCategorySn, searchParams, setSearchParams]);
 
-  const handleSearch = (event, keyword) => {
-    event.preventDefault();
+  const handleSearch = (keyword) => {
     updateParams({ keyword: keyword.trim(), page: null });
   };
 
@@ -155,13 +155,18 @@ const ServiceListPage = () => {
 
   return (
     <ContentPageShell className="service-discovery-page service-list-page">
-      <Helmet><title>서비스 찾기 | 에누리컷</title></Helmet>
+      <Helmet><title>견적 목록 | 에누리컷</title></Helmet>
 
       <HeaderSearchPortal>
-        <ServiceSearchBar
-          initialKeyword={filters.keyword}
-          key={filters.keyword}
+        <HeaderSearchWithHistory
+          storageKey="nct:service-search-history"
+          dropdownId="service-search-history"
+          value={keywordDraft}
+          onChange={setKeywordDraft}
           onSubmit={handleSearch}
+          placeholder="필요한 서비스 요청을 검색하세요"
+          ariaLabel="서비스 검색어"
+          key={filters.keyword}
         />
       </HeaderSearchPortal>
 
@@ -173,7 +178,7 @@ const ServiceListPage = () => {
               <strong>{discoveryQuery.isLoading ? '조회 중' : `${Number(result?.total || 0).toLocaleString('ko-KR')}건`}</strong>
             </div>
           )}
-          title="서비스 요청 찾기"
+          title="견적 요청 목록"
         />
         <p>필요한 분야와 예산을 비교하고, 내 경험에 맞는 서비스 요청을 찾아보세요.</p>
       </section>

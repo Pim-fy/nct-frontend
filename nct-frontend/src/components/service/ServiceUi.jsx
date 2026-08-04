@@ -3,7 +3,6 @@ export {
   ServiceFilterPanel,
   ServicePagination,
   ServiceRequestGrid,
-  ServiceSearchBar,
 } from './discovery/ServiceDiscoveryComponents';
 
 export {

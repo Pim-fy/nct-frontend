@@ -1,10 +1,13 @@
 // src/pages/service/ServiceRequestDetailPage.jsx
-// 서비스 요청서 상세 — 요청자 본인(마감/이어서작성) / 타인+로그인(견적제출) / 비로그인(로그인유도)
+// 서비스 요청서 상세 — 일반회원 본인 관리 / 제공자 공개 요청 조회·견적 제출
 // 라우트: /service-requests/:svcReqSn
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
-import { getServiceRequest, closeServiceRequest } from '@api/serviceRequestApi';
+import {
+  closeServiceRequest,
+  getServiceRequest,
+} from '@api/serviceRequestApi';
 import { getReceivedQuotes } from '@api/quoteApi';
 import { toImageUrl } from '@api/fileApi';
 import ErrorMessage from '@components/common/ErrorMessage';
@@ -190,44 +193,76 @@ export default function ServiceRequestDetailPage() {
   const { svcReqSn } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isProvider } = useAuth();
   const authenticatedUserId = user?.id ?? user?.userId ?? user?.userSn ?? user?.usrSn;
 
   const [request, setRequest] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loadedRequestSn, setLoadedRequestSn] = useState(null);
   const [error, setError] = useState('');
   const [closing, setClosing] = useState(false);
   const [toast, setToast] = useState('');
   const [quotes, setQuotes] = useState([]);
-  const [quotesLoading, setQuotesLoading] = useState(false);
-  const headerSearch = (
+  const [quotesLoadedRequestSn, setQuotesLoadedRequestSn] = useState(null);
+  const loading = String(loadedRequestSn) !== String(svcReqSn);
+  const requestOwner = !isProvider
+    && request
+    && authenticatedUserId != null
+    && String(authenticatedUserId) === String(request.usrSn);
+  const quotesLoading = Boolean(
+    requestOwner && String(quotesLoadedRequestSn) !== String(svcReqSn),
+  );
+  const headerSearch = isProvider ? (
     <HeaderSearchPortal>
       <SimpleHeaderSearch
         onSearch={(keyword) => navigate(`/service?keyword=${encodeURIComponent(keyword)}`)}
         placeholder="필요한 서비스 요청을 검색하세요"
       />
     </HeaderSearchPortal>
-  );
+  ) : null;
 
   useEffect(() => {
-    setLoading(true);
+    let cancelled = false;
     getServiceRequest(svcReqSn)
-      .then(res => setRequest(res.data))
-      .catch(() => setError('요청서 정보를 불러오지 못했습니다.'))
-      .finally(() => setLoading(false));
+      .then(res => {
+        if (cancelled) return;
+        setRequest(res.data);
+        setError('');
+        setLoadedRequestSn(svcReqSn);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setRequest(null);
+        setError('요청서 정보를 불러오지 못했습니다.');
+        setLoadedRequestSn(svcReqSn);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [svcReqSn]);
 
   // 견적 목록은 요청서 본인만 조회 가능(백엔드에서 NOT_RESOURCE_OWNER로 차단) — 요청서 로드 후 본인 확인되면 조회
   useEffect(() => {
     if (!request) return;
-    const owner = authenticatedUserId != null && String(authenticatedUserId) === String(request.usrSn);
+    const owner = !isProvider
+      && authenticatedUserId != null
+      && String(authenticatedUserId) === String(request.usrSn);
     if (!owner) return;
-    setQuotesLoading(true);
+    let cancelled = false;
     getReceivedQuotes(svcReqSn)
-      .then(res => setQuotes(res.data ?? []))
-      .catch(() => setQuotes([]))
-      .finally(() => setQuotesLoading(false));
-  }, [request, svcReqSn, authenticatedUserId]);
+      .then(res => {
+        if (cancelled) return;
+        setQuotes(res.data ?? []);
+        setQuotesLoadedRequestSn(svcReqSn);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setQuotes([]);
+        setQuotesLoadedRequestSn(svcReqSn);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [request, svcReqSn, authenticatedUserId, isProvider]);
 
   const handleClose = async () => {
     setClosing(true);
@@ -277,7 +312,9 @@ export default function ServiceRequestDetailPage() {
     );
   }
 
-  const isOwner = authenticatedUserId != null && String(authenticatedUserId) === String(request.usrSn);
+  const isOwner = !isProvider
+    && authenticatedUserId != null
+    && String(authenticatedUserId) === String(request.usrSn);
   const isDraft = request.svcReqStatusCd === 'SVCC0001';
   const isOpen  = request.svcReqStatusCd === 'SVCC0002';
 
@@ -445,7 +482,7 @@ export default function ServiceRequestDetailPage() {
             </div>
 
             {/* 액션 영역 */}
-            {!isOwner && (
+            {!isOwner && isProvider && (
               <div className="border-b border-[#e8e8e8] px-5 py-4">
                 {isAuthenticated ? (
                   isOpen ? (
