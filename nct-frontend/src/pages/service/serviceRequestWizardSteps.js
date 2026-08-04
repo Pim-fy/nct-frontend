@@ -96,11 +96,9 @@ export const WIZARD_STEPS = {
     ],
   },
   mv_date: {
-    title: '이사 희망일',
+    title: '이사 시간대',
     type: 'form', next: 'mv_extra',
     fields: [
-      { key: '희망일', type: 'calendar', embed: ['날짜 협의', '시간대'], required: true },
-      { key: '날짜 협의', type: 'choice', options: ['협의 가능', '협의 불가'], required: true },
       { key: '시간대', type: 'choice', options: ['오전', '오후', '저녁', '협의 가능'], required: true },
     ],
   },
@@ -179,7 +177,7 @@ export const WIZARD_STEPS = {
     ],
   },
   cl_home_extra: {
-    title: '추가 서비스 (복수 선택)', type: 'multi', next: 'cl_home_date',
+    title: '추가 서비스 (복수 선택)', type: 'multi', next: 'budget',
     options: [
       { label: '없음' }, { label: '곰팡이 제거' }, { label: '외부 유리창 청소' },
       { label: '새집증후군 제거' }, { label: '스티커·시트지 제거' }, { label: '기타' },
@@ -245,21 +243,12 @@ export const WIZARD_STEPS = {
     ],
   },
   cl_biz_extra: {
-    title: '추가 서비스 (복수 선택)', type: 'multi', next: 'cl_biz_date',
+    title: '추가 서비스 (복수 선택)', type: 'multi', next: 'budget',
     options: [
       { label: '없음' }, { label: '곰팡이 제거' }, { label: '외부 유리창 청소' },
       { label: '새집증후군 제거' }, { label: '스티커·시트지 제거' }, { label: '기타' },
     ],
   },
-  cl_biz_date: {
-    title: '희망일', type: 'form', next: 'budget',
-    fields: [
-      { key: '희망일', type: 'calendar', embed: ['날짜 협의', '시간 협의'], required: true },
-      { key: '날짜 협의', type: 'choice', options: ['협의 가능', '협의 불가'], required: true },
-      { key: '시간 협의', type: 'choice', options: ['오전', '오후', '저녁', '협의 가능'], required: true },
-    ],
-  },
-
   /* ── 설치·수리 (확정 시트 '설치_수리_정리' 재검증 반영, 260727)
      품목별로 "종류"·"브랜드/추가서비스/용량" 선택지가 다 달라 시트 그대로 품목별 하위 단계를 분리했다.
      (엔진이 단일 next만 지원해 품목 분기를 먼저 태우고 공통 단계로 다시 모이게 구성) ── */
@@ -445,14 +434,6 @@ export const WIZARD_STEPS = {
   svc_date: {
     title: '희망일', type: 'form', next: 'ir_location',
     fields: [
-      { key: '희망일', type: 'calendar', embed: ['날짜 협의', '시간 협의'], required: true },
-      { key: '날짜 협의', type: 'choice', options: ['협의 가능', '협의 불가'], required: true },
-      { key: '시간 협의', type: 'choice', options: ['오전', '오후', '저녁', '협의 가능'], required: true },
-    ],
-  },
-  ir_location: {
-    title: '지역 및 요청사항', type: 'form', next: 'budget',
-    fields: [
       { key: '희망 지역', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'ir_addr' },
       { key: '희망 지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'ir_addr', wide: true, required: true },
       { key: '층수', type: 'text', placeholder: '예: 3층', row: 'ir_addr', required: true, compact: true },
@@ -501,9 +482,6 @@ export const WIZARD_STEPS = {
   it_home_final: {
     title: '요청사항', type: 'form', next: 'memo',
     fields: [
-      { key: '희망일', type: 'calendar', embed: ['날짜 협의', '시간 협의'], required: true },
-      { key: '날짜 협의', type: 'choice', options: ['협의 가능', '협의 불가'], required: true },
-      { key: '시간 협의', type: 'choice', options: ['오전', '오후', '저녁', '협의 가능'], required: true },
       { key: '주소', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'it_home_addr' },
       { key: '상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'it_home_addr', wide: true, required: true },
       { key: '층수', type: 'text', placeholder: '예: 3층', row: 'it_home_addr', required: true, compact: true },
@@ -536,9 +514,6 @@ export const WIZARD_STEPS = {
   it_biz_final: {
     title: '요청사항', type: 'form', next: 'memo',
     fields: [
-      { key: '희망일', type: 'calendar', embed: ['날짜 협의', '시간 협의'], required: true },
-      { key: '날짜 협의', type: 'choice', options: ['협의 가능', '협의 불가'], required: true },
-      { key: '시간 협의', type: 'choice', options: ['오전', '오후', '저녁', '협의 가능'], required: true },
       { key: '주소', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'it_biz_addr' },
       { key: '상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'it_biz_addr', wide: true, required: true },
       { key: '층수', type: 'text', placeholder: '예: 3층', row: 'it_biz_addr', required: true, compact: true },
@@ -573,7 +548,6 @@ export const WIZARD_STEPS = {
     fields: [
       { key: '희망 지역', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'it_reno_addr' },
       { key: '희망 지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'it_reno_addr', wide: true, required: true },
-      { key: '희망일', type: 'calendar', required: true },
     ],
   },
 
@@ -614,7 +588,6 @@ export const WIZARD_STEPS = {
     fields: [
       { key: '희망 지역', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'it_wall_addr' },
       { key: '희망 지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'it_wall_addr', wide: true, required: true },
-      { key: '희망일', type: 'calendar', required: true },
     ],
   },
 

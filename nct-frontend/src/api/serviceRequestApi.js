@@ -17,6 +17,18 @@ export const getMyServiceRequests = (page = 1, size = 10, filterType = null) =>
 export const getServiceRequest = (svcReqSn) =>
   api.get(`/service-requests/${svcReqSn}`).then(res => res.data);
 
+/** F-SVC-002 현재 활성 카테고리별 동적 폼 정의 */
+export const getServiceRequestForms = () =>
+  api.get('/service-requests/forms').then(res => res.data);
+
+/** F-SVC-002 임시저장 요청서가 사용한 과거 폼 버전 조회 */
+export const getServiceRequestForm = (formTemplateSn) =>
+  api.get(`/service-requests/forms/${formTemplateSn}`).then(res => res.data);
+
+/** 임시저장 수정 화면 전용 상세 — 구조화 답변과 요청자 주소 포함 */
+export const getEditableServiceRequest = (svcReqSn) =>
+  api.get(`/service-requests/${svcReqSn}/edit`).then(res => res.data);
+
 /** 임시저장 요청서 수정 및 공개 전환 */
 export const updateServiceRequest = (svcReqSn, data) =>
   api.put(`/service-requests/${svcReqSn}`, data).then(res => res.data);

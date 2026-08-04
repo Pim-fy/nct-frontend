@@ -11,17 +11,14 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAuctions } from '@api/auctionApi';
-import { useServiceDiscovery } from '@hooks/useServiceDiscovery';
 import {
   toLandingAuctionItem,
   toLandingPopularAuction,
-  toLandingServiceRequest,
 } from '@utils/landingCuration';
 
 import HeroSection        from '@components/landing/sections/HeroSection';
 import ServiceMenuSection from '@components/landing/sections/ServiceMenuSection';
 import AuctionSection     from '@components/landing/sections/AuctionSection';
-import NewServiceSection  from '@components/landing/sections/NewServiceSection';
 import MobileLandingSections from '@components/landing/sections/MobileLandingSections';
 
 const LandingPage = () => {
@@ -59,15 +56,6 @@ const LandingPage = () => {
     refetchIntervalInBackground: false,
     enabled: !isProvider,
   });
-  const latestServiceQuery = useServiceDiscovery({
-    sort: 'latest',
-    page: 1,
-    size: 12,
-  }, {
-    retry: false,
-    enabled: !isProvider,
-  });
-
   const latestAuctions = useMemo(
     () => (latestAuctionQuery.data?.items || []).map(toLandingAuctionItem),
     [latestAuctionQuery.data?.items],
@@ -80,15 +68,6 @@ const LandingPage = () => {
     () => (popularAuctionQuery.data?.items || []).map(toLandingPopularAuction),
     [popularAuctionQuery.data?.items],
   );
-  const latestServiceRequests = useMemo(
-    () => (latestServiceQuery.data?.items || []).map(toLandingServiceRequest),
-    [latestServiceQuery.data?.items],
-  );
-  const serviceState = {
-    isLoading: latestServiceQuery.isLoading,
-    isError: latestServiceQuery.isError,
-  };
-
   // 모든 훅 호출 완료 후 제공자 리다이렉트
   if (isProvider) {
     return <Navigate to="/user/mypage" replace />;
@@ -112,7 +91,7 @@ const LandingPage = () => {
         />
       </div>
 
-      {/* 3~5. 서비스메뉴+HOT ITEM / 신규·마감임박 경매 / 신규 서비스요청 (데스크톱, lg 이상) */}
+      {/* 3~4. 서비스 요청 진입+HOT ITEM / 신규·마감임박 경매 (데스크톱, lg 이상) */}
       <div className="hidden lg:block">
         <ServiceMenuSection
           hotItems={popularAuctions}
@@ -127,11 +106,6 @@ const LandingPage = () => {
           newError={latestAuctionQuery.isError}
           newLoading={latestAuctionQuery.isLoading}
         />
-        <NewServiceSection
-          isError={serviceState.isError}
-          isLoading={serviceState.isLoading}
-          items={latestServiceRequests}
-        />
       </div>
 
       {/* 태블릿/모바일 전용 반응형 레이아웃 */}
@@ -143,12 +117,9 @@ const LandingPage = () => {
           hotItems={popularAuctions}
           isHotAuctionError={popularAuctionQuery.isError}
           isHotAuctionLoading={popularAuctionQuery.isLoading}
-          isServiceError={serviceState.isError}
-          isServiceLoading={serviceState.isLoading}
           newAuctionItems={latestAuctions}
           newAuctionError={latestAuctionQuery.isError}
           newAuctionLoading={latestAuctionQuery.isLoading}
-          serviceRequestItems={latestServiceRequests}
         />
       </div>
 
