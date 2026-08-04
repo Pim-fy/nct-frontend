@@ -322,7 +322,7 @@ const Header = () => {
     <>
     <header
       aria-hidden={isPageHidden || undefined}
-      className={`sticky top-0 z-[100] bg-white shadow-[0px_5px_10px_0px_rgba(0,0,0,0.2)] ${
+      className={`sticky top-0 z-[100] bg-white shadow-[0px_5px_10px_0px_rgba(0,0,0,0.2)] max-md:fixed max-md:inset-x-0 ${
       hasHeaderSearch ? 'h-[154px] md:h-[82px]' : 'h-[82px]'
     } ${
       isPageHidden ? 'invisible pointer-events-none' : ''
@@ -916,6 +916,10 @@ const Header = () => {
         </div>
       )}
     </header>
+    <div
+      aria-hidden="true"
+      className={hasHeaderSearch ? 'h-[154px] md:hidden' : 'h-[82px] md:hidden'}
+    />
     <ScrollToTopButton />
     <NotificationDetailModal item={selectedNoti} onClose={() => setSelectedNoti(null)} />
     {pointModal === 'charge' && (
