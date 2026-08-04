@@ -127,6 +127,25 @@ const tradePreviewItems = [
 
 const tradeChatPreviewRooms = [
   {
+    roomId: 'service-trade-chat-1',
+    tradeId: 1,
+    counterpartNickname: '정민 제공자',
+    productName: '이사 전 청소 서비스를 요청합니다',
+    roomStatus: 'ACTIVE',
+    lastMessage: '내일 오후 2시에 방문드리겠습니다.',
+    latestMessageAt: '14:10',
+    unreadCount: 1,
+    messages: [
+      {
+        messageId: 'service-message-1',
+        senderType: 'COUNTERPART',
+        content: '내일 오후 2시에 방문드리겠습니다.',
+        sentAt: '14:10',
+        isRead: false,
+      },
+    ],
+  },
+  {
     roomId: 'trade-chat-1005',
     tradeId: 1005,
     counterpartNickname: '느린생활',

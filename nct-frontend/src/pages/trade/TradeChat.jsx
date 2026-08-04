@@ -469,7 +469,7 @@ const TradeChat = ({
         <header className="trade-chat-page__header">
           <div>
             <h1>거래 채팅</h1>
-            <p>대면 거래 당사자만 이용할 수 있는 1:1 채팅입니다.</p>
+            <p>거래 당사자만 이용할 수 있는 1:1 채팅입니다.</p>
           </div>
         </header>
 
@@ -697,7 +697,7 @@ const TradeChat = ({
                 <div className="trade-chat-conversation__empty">
                   {rooms.length > 0
                     ? '좌측 목록에서 채팅방을 선택해 주세요.'
-                    : '선택할 수 있는 대면 거래 채팅방이 없습니다.'}
+                    : '선택할 수 있는 거래 채팅방이 없습니다.'}
                 </div>
               )}
             </section>

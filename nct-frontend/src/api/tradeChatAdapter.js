@@ -27,7 +27,8 @@ export const toTradeChatRooms = (response) => {
     roomId: String(room.roomId),
     tradeId: room.tradeId,
     counterpartNickname: room.counterpartNickname ?? '-',
-    productName: room.productName ?? '-',
+    // 기존 채팅 화면의 productName 표시 키는 유지하되, 서비스 거래에서는 요청 제목을 우선 표시한다.
+    productName: room.tradeTitle ?? room.productName ?? '-',
     roomStatus: normalizeRoomStatus(room.roomStatus),
     lastMessage: room.lastMessage ?? '아직 주고받은 메시지가 없습니다.',
     latestMessageAt: formatChatDateTime(room.latestMessageAt),

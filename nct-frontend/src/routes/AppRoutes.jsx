@@ -172,6 +172,7 @@ const AppRoutes = () => {
             path="/service-trades/preview/:tradeId"
             element={<ServiceTradeDetailPreviewPage />}
           />
+          <Route path="/service-trades/preview/:tradeId/chat" element={<TradeChat preview />} />
           <Route path="/trades/preview/:tradeId/chat" element={<TradeChat />} />
           <Route
             path="/trades/preview/:tradeId"
@@ -227,6 +228,7 @@ const AppRoutes = () => {
           <Route path="/my-bids" element={<MyBidHistoryPage />} />
 
           <Route path="/trades/:tradeId/chat" element={<TradeChat />} />
+          <Route path="/service-trades/:tradeId/chat" element={<TradeChat />} />
           <Route path="/trades/:tradeId" element={<TradeDetailBuyer />} />
           <Route
             path="/trades/:tradeId/seller"
