@@ -13,6 +13,7 @@ import AdminTable from '@components/admin/AdminTable';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import PageMeta from '@components/admin/PageMeta';
 import useClientPagination from '@hooks/useClientPagination';
+import { toast } from '@utils/common';
 import '../audit/adminAuditPage.css';
 import './adminOperationPages.css';
 
@@ -32,7 +33,6 @@ const AdminPointExchangePage = () => {
   const [reason, setReason] = useState('');
   const [accountRevealed, setAccountRevealed] = useState(false);
   const [transferConfirmed, setTransferConfirmed] = useState(false);
-  const [feedback, setFeedback] = useState('');
 
   const ordersQuery = useQuery({
     queryKey: ['admin', 'point-exchange', 'requested'],
@@ -45,11 +45,13 @@ const AdminPointExchangePage = () => {
         : rejectAdminPointExchange({ orderSn, reason: rejectReason })
     ),
     onSuccess: (_, variables) => {
-      setFeedback(
-        `환전 신청 #${variables.orderSn}을 ${
+      toast({
+        icon: 'success',
+        title: `환전 신청 #${variables.orderSn}을 ${
           variables.action === 'complete' ? '지급 완료' : '반려'
         } 처리했습니다.`,
-      );
+        timer: 2000,
+      });
       setSelected(null);
       setReason('');
       setAccountRevealed(false);
@@ -125,7 +127,6 @@ const AdminPointExchangePage = () => {
       <PageMeta title="환전 관리" />
       <AdminPageHeader title="환전 관리" />
 
-      {feedback && <p className="admin-operation-feedback" role="status">{feedback}</p>}
       {ordersQuery.isError && (
         <div className="admin-bjn-state is-error">
           환전 신청을 불러오지 못했습니다.

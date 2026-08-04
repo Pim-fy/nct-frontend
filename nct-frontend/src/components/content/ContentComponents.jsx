@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, Eye, Pin, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Pin, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Pagination from '@components/common/Pagination';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
@@ -10,11 +10,6 @@ import './ContentPages.css';
 const formatDate = (value) => {
   if (!value || Number.isNaN(new Date(value).getTime())) return '게시일 미정';
   return sharedFormatDate(value);
-};
-
-const formatPeriod = (start, end) => {
-  if (!start && !end) return '상시 공개';
-  return `${formatDate(start)}${end ? ` ~ ${formatDate(end)}` : '부터'}`;
 };
 
 // 고객센터와 공개 콘텐츠 화면에서 재사용하는 공통 부품입니다.
@@ -99,7 +94,7 @@ export const NoticeFilterBar = ({
  * 담당자 7 | F-COM-013 공개 공지 목록 행
  *
  * 공지사항 목록 화면에서만 사용하는 임시 공통 UI입니다. 큰 카드 대신 한 줄씩
- * 읽을 수 있도록 중요 고정 여부·분류·제목·등록일·조회수를 보여주며, 행을 누르면
+ * 읽을 수 있도록 중요 고정 여부·분류·제목·등록일을 보여주며, 행을 누르면
  * 기존과 같은 공지 상세 화면으로 이동합니다.
  */
 export const NoticeRow = ({ notice }) => (
@@ -114,7 +109,6 @@ export const NoticeRow = ({ notice }) => (
     <span className="content-notice-row__type">{notice.typeName}</span>
     <strong className="content-notice-row__title">{notice.title}</strong>
     <span className="content-notice-row__date">{formatDate(notice.publishedAt)}</span>
-    <span className="content-notice-row__views"><Eye aria-hidden="true" />{Number(notice.viewCount || 0).toLocaleString('ko-KR')}</span>
   </Link>
 );
 
@@ -124,14 +118,13 @@ const NoticeRowSkeleton = () => (
     <span className="content-notice-row__type"><Skeleton height={14} /></span>
     <strong className="content-notice-row__title"><Skeleton height={14} /></strong>
     <span className="content-notice-row__date"><Skeleton height={14} /></span>
-    <span className="content-notice-row__views"><Skeleton height={14} /></span>
   </div>
 );
 
 export const NoticeList = ({ notices = [], loading = false, loadingRows = 5 }) => (
   <div className="notice-list" aria-label="공지사항 목록">
     <div aria-hidden="true" className="content-notice-row content-notice-row--head">
-      <span>번호</span><span>분류</span><span>제목</span><span>등록일</span><span>조회</span>
+      <span>번호</span><span>분류</span><span>제목</span><span>등록일</span>
     </div>
     {loading
       ? Array.from({ length: loadingRows }).map((_, index) => <NoticeRowSkeleton key={index} />)
@@ -164,8 +157,6 @@ export const NoticeDetail = ({ notice }) => (
       <h1>{notice.title}</h1>
       <div className="notice-detail__meta">
         <span>{formatDate(notice.publishedAt)}</span>
-        <span>노출 기간 {formatPeriod(notice.publishedAt, notice.postingEndAt)}</span>
-        <span><Eye aria-hidden="true" />{Number(notice.viewCount || 0).toLocaleString('ko-KR')}</span>
       </div>
     </header>
     <div className="notice-detail__content">{notice.content}</div>

@@ -3,7 +3,8 @@
 // 민감정보 원문 제한 조회(F-OPS-014)는 감사로그 조회와 분리하여
 // 거래 분쟁 상세의 대상 채팅·첨부자료에서 실행하도록 연결한다.
 import { useMemo, useState } from 'react';
-import { Search, X } from 'lucide-react';
+import { X } from 'lucide-react';
+import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminTable from '@components/admin/AdminTable';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
@@ -23,6 +24,7 @@ const TYPE_OPTIONS = [
   { value: 'AUDC0007', label: '상태변경' },
 ];
 const PAGE_SIZE = 20;
+const EMPTY_FILTER_FORM = { usrSn: '', typeCd: '', from: '', to: '' };
 
 const auditDetails = (value) => {
   const raw = value?.trim() || '-';
@@ -51,7 +53,7 @@ const reasonPreview = (reason) => {
 
 const AdminAuditLogPage = () => {
   // 입력 중 값과 "조회 버튼을 누른 시점의 값"을 분리 — 타이핑할 때마다 서버를 찌르지 않기 위해
-  const [form, setForm] = useState({ usrSn: '', typeCd: '', from: '', to: '' });
+  const [form, setForm] = useState(EMPTY_FILTER_FORM);
   const [filters, setFilters] = useState({});
   const [selectedLog, setSelectedLog] = useState(null);
   const logsQuery = useAuditLogs(filters);
@@ -73,6 +75,12 @@ const AdminAuditLogPage = () => {
     if (form.to) next.to = form.to;
     resetPage();
     setFilters(next);
+  };
+
+  const resetFilters = () => {
+    setForm(EMPTY_FILTER_FORM);
+    setFilters({});
+    resetPage();
   };
 
   const columns = useMemo(() => [
@@ -105,9 +113,7 @@ const AdminAuditLogPage = () => {
   return (
     <div className="admin-bjn-page">
       <AdminPageHeader
-        eyebrow="보안/감사"
         title="감사 로그"
-        description="포인트·정산·관리자 조치·민감정보 접근 기록을 조건별로 조회합니다. 감사로그는 3년 보존 대상입니다."
       />
 
       {/* 조건 필터 (F-OPS-016) */}
@@ -140,7 +146,7 @@ const AdminAuditLogPage = () => {
           종료일
           <input name="to" type="date" value={form.to} onChange={(e) => setForm({ ...form, to: e.target.value })} />
         </label>
-        <button type="submit"><Search aria-hidden="true" /> 조회</button>
+        <AdminFilterActions disabled={logsQuery.isFetching} onReset={resetFilters} />
       </form>
 
       {/* 감사로그 표 */}
