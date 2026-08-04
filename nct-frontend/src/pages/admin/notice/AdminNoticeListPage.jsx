@@ -3,8 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { CalendarClock, Eye, FilePlus2, Search } from 'lucide-react';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminTable from '@components/admin/AdminTable';
-import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
-import MockupAdminStatusBadge from '@components/admin/mockup/MockupAdminStatusBadge';
+import AdminPageHeader from '@components/admin/AdminPageHeader';
+import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
 import {
   useAdminNoticeList,
@@ -91,7 +91,7 @@ const AdminNoticeListPage = () => {
     },
     {
       key: 'statusName', label: '상태',
-      render: (value, row) => <MockupAdminStatusBadge tone={statusTone(row.statusCode)}>{value}</MockupAdminStatusBadge>,
+      render: (value, row) => <AdminStatusBadge tone={statusTone(row.statusCode)}>{value}</AdminStatusBadge>,
     },
     {
       key: 'visibleNow', label: '현재 노출',
@@ -99,9 +99,9 @@ const AdminNoticeListPage = () => {
         const canPublishNow = !value && row.statusCode !== PUBLISHED_STATUS;
         return (
           <div className="admin-notice-list__visibility">
-            <MockupAdminStatusBadge tone={value ? 'success' : 'neutral'}>
+            <AdminStatusBadge tone={value ? 'success' : 'neutral'}>
               {value ? '노출 중' : '미노출'}
-            </MockupAdminStatusBadge>
+            </AdminStatusBadge>
             {canPublishNow && (
               <button
                 aria-label={`${row.title} 공지 노출하기`}
@@ -137,7 +137,7 @@ const AdminNoticeListPage = () => {
   return (
     <div className="admin-content-page">
       <PageMeta title="공지 관리" />
-      <MockupAdminPageHeader
+      <AdminPageHeader
         action={(
           <Link className="btn btn-primary admin-content-page__primary-action" to="/admin/notices/new">
             <FilePlus2 aria-hidden="true" /> 공지 작성

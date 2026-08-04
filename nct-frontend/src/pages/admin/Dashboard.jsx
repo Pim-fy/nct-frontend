@@ -18,7 +18,7 @@ import {
   WalletCards,
 } from 'lucide-react';
 import { fetchAdminAuctions } from '@api/adminAuctionApi';
-import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
+import AdminPageHeader from '@components/admin/AdminPageHeader';
 import PageMeta from '@components/admin/PageMeta';
 import { useAdminDashboardSummary } from '@hooks/useAdminDashboard';
 import './Dashboard.css';
@@ -174,7 +174,7 @@ const Dashboard = () => {
   return (
     <div className="admin-dashboard">
       <PageMeta title="관리자 대시보드" />
-      <MockupAdminPageHeader
+      <AdminPageHeader
         action={(
           <button
             className="admin-dashboard__refresh"

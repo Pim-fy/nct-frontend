@@ -246,11 +246,11 @@
   z-index: 1;
 }
 
-.provider-apply-hero .mockup-content-page-header {
+.provider-apply-hero .content-page-header {
   margin-bottom: 0;
 }
 
-.provider-apply-hero .mockup-content-page-header h1 {
+.provider-apply-hero .content-page-header h1 {
   color: #101828;
   font-size: clamp(28px, 3vw, 35px);
   letter-spacing: -.025em;
@@ -400,7 +400,7 @@
     padding: 22px 20px;
   }
 
-  .provider-apply-hero .mockup-content-page-header h1 {
+  .provider-apply-hero .content-page-header h1 {
     font-size: 27px;
   }
 

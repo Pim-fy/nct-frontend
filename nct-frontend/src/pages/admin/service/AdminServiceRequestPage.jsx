@@ -4,8 +4,8 @@ import AdminModal from '@components/admin/AdminModal';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminTable from '@components/admin/AdminTable';
-import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
-import MockupAdminStatusBadge from '@components/admin/mockup/MockupAdminStatusBadge';
+import AdminPageHeader from '@components/admin/AdminPageHeader';
+import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
 import useClientPagination from '@hooks/useClientPagination';
 import '../notice/adminContentPages.css';
@@ -108,7 +108,7 @@ const AdminServiceRequestPage = () => {
     { key: 'amount', label: '금액' },
     {
       key: 'status', label: '상태',
-      render: (value, row) => <MockupAdminStatusBadge tone={row.tone}>{value}</MockupAdminStatusBadge>,
+      render: (value, row) => <AdminStatusBadge tone={row.tone}>{value}</AdminStatusBadge>,
     },
     {
       key: 'manage', label: '관리',
@@ -119,8 +119,8 @@ const AdminServiceRequestPage = () => {
   return (
     <div className="admin-content-page admin-service-page">
       <PageMeta title="서비스 요청 관리" />
-      <MockupAdminPageHeader
-        action={<MockupAdminStatusBadge tone="warning">임시 데이터 · 읽기 전용</MockupAdminStatusBadge>}
+      <AdminPageHeader
+        action={<AdminStatusBadge tone="warning">임시 데이터 · 읽기 전용</AdminStatusBadge>}
         description="서비스 요청 흐름을 목록에서 먼저 확인합니다. 실제 요청·견적·거래 API가 연결되면 데이터만 교체합니다."
         eyebrow="담당자 7 · 관리자 운영 화면"
         title="서비스 요청 관리"
@@ -197,7 +197,7 @@ const AdminServiceRequestPage = () => {
 
               <dt>등록일 / 상태</dt>
               <dd>
-                {selected.date} / <MockupAdminStatusBadge tone={selected.tone}>{selected.status}</MockupAdminStatusBadge>
+                {selected.date} / <AdminStatusBadge tone={selected.tone}>{selected.status}</AdminStatusBadge>
               </dd>
             </dl>
             <p className="admin-service-detail__notice">
