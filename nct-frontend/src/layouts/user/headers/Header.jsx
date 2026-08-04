@@ -1,7 +1,8 @@
-// src/layouts/user/headers/SiteHeader.jsx
+// src/layouts/user/headers/Header.jsx
 // Figma: 에누리컷_디자인시안 main.png HEADER (node 1:1362)
 // - 로그인 여부와 무관하게 모든 페이지에서 동일한 헤더 구조를 쓰는 것이 디자인 시안 기준이라,
-//   기존 LandingHeader/MainHeader(페이지별로 다르게 구현되어 있던 것)를 이 컴포넌트 하나로 통합했다.
+//   기존 LandingHeader/MainHeader(페이지별로 다르게 구현되어 있던 것)를 이 컴포넌트 하나로 통합했다
+//   (LandingHeader/MainHeader는 이후 완전히 제거되어, 이 컴포넌트도 SiteHeader에서 Header로 개명했다).
 // - 아이콘(알림/지갑/마이페이지)은 디자인 시안 원본 라인 아이콘 PNG를 그대로 쓴다
 //   (@assets/img/bellIcon.png, walletIcon.png, userIcon.png — main.png의 free-icon-font-* 에셋).
 // - 드롭다운(경매/서비스 카테고리 · POINT · 마이페이지)은 열림·닫힘 상태가 있는 UI라 절대좌표 포팅 대신
@@ -51,7 +52,7 @@ const SERVICE_CATEGORIES = ['이사', '청소', '레슨', '설치·수리', '인
 // 헤더 드롭다운에 보여줄 알림 최대 개수 (안읽은 알림 미리보기 · 과거 알림 목록 공통)
 const NOTI_PREVIEW_MAX = 5;
 
-const SiteHeader = () => {
+const Header = () => {
   // isProvider·switchMode: 제공자 모드전환 실연동 (F-PROV-008, 담당자6 BJN, 2026-07-24)
   // — 종전 localStorage 가짜 플래그(@utils/providerMode) 대신 서버가 내려준 실제 역할 기준.
   const {
@@ -122,6 +123,10 @@ const SiteHeader = () => {
     pathname === '/service' || /^\/service-requests\/\d+$/.test(pathname)
   );
   const hasHeaderSearch = isAuctionSearchRoute || isServiceSearchRoute;
+  // 현재 보고 있는 화면이 헤더의 어느 메뉴에 속하는지 — 호버와 무관하게 항상 활성 색상을 보여준다.
+  const isAuctionMenuActive = pathname.startsWith('/auction');
+  const isServiceMenuActive = pathname.startsWith('/service') || pathname.startsWith('/provider/quotes');
+  const isCustomerMenuActive = pathname.startsWith('/customersupport') || pathname.startsWith('/guide');
   let headerCreateActionType = null;
   const canShowCreateAction = !authLoading && (!user || user.role === 'ROLE_USER');
   if (canShowCreateAction) {
@@ -347,7 +352,7 @@ const SiteHeader = () => {
               >
                 <Link
                   to="/auction"
-                  className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${categoryOpen ? 'text-primary' : 'text-[#333333]'}`}
+                  className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${categoryOpen || isAuctionMenuActive ? 'text-primary' : 'text-[#333333]'}`}
                   onClick={() => setCategoryHovered(false)}
                 >
                   경매
@@ -389,7 +394,7 @@ const SiteHeader = () => {
             >
               <Link
                 to={serviceMenuPath}
-                className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${serviceMenuOpen ? 'text-primary' : 'text-[#333333]'}`}
+                className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${serviceMenuOpen || isServiceMenuActive ? 'text-primary' : 'text-[#333333]'}`}
                 onClick={() => setServiceHovered(false)}
               >
                 {isProvider ? '견적 목록' : '견적 요청'}
@@ -429,7 +434,7 @@ const SiteHeader = () => {
             >
               <Link
                 to="/customersupport/notice"
-                className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${customerOpen ? 'text-primary' : 'text-[#333333]'}`}
+                className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${customerOpen || isCustomerMenuActive ? 'text-primary' : 'text-[#333333]'}`}
                 onClick={() => setCustomerHovered(false)}
               >
                 고객센터
@@ -465,18 +470,22 @@ const SiteHeader = () => {
           </nav>
         </div>
 
-        {/* 스크롤 시 헤더 중앙에 뜨는 연한 그레이 공지 롤링 티커 (NoticeStrip이 화면 밖으로 나간 뒤 대신 보여줌) */}
-        <div
-          className="pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-full bg-[#f3f5fa] px-4 py-2 text-[13px] text-[#4e4e4e] transition-opacity duration-300 md:flex"
-          style={{ opacity: scrolled ? 1 : 0 }}
-        >
-          <img src={micIcon} alt="" width={14} height={14} className="shrink-0 opacity-70" />
-          <span className="max-w-[420px] truncate">
-            {siteNotices.length > 0
-              ? siteNotices[noticeIndex % siteNotices.length]
-              : '서비스 점검 안내'}
-          </span>
-        </div>
+        {/* 스크롤 시 헤더 중앙에 뜨는 연한 그레이 공지 롤링 티커 (NoticeStrip이 화면 밖으로 나간 뒤 대신 보여줌)
+            검색창과 같은 자리(정중앙)를 쓰므로, 검색창이 있는 페이지에서는 아예 그리지 않는다
+            (기존엔 검색창의 z-[1]에 우연히 가려지는 것에 기대고 있었다). */}
+        {!hasHeaderSearch && (
+          <div
+            className="pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-full bg-[#f3f5fa] px-4 py-2 text-[13px] text-[#4e4e4e] transition-opacity duration-300 md:flex"
+            style={{ opacity: scrolled ? 1 : 0 }}
+          >
+            <img src={micIcon} alt="" width={14} height={14} className="shrink-0 opacity-70" />
+            <span className="max-w-[420px] truncate">
+              {siteNotices.length > 0
+                ? siteNotices[noticeIndex % siteNotices.length]
+                : '서비스 점검 안내'}
+            </span>
+          </div>
+        )}
 
         {/* 우측 유틸 영역 */}
         <div ref={utilRef} className="flex items-center gap-2 md:gap-3">
@@ -937,4 +946,4 @@ const SiteHeader = () => {
   );
 };
 
-export default SiteHeader;
+export default Header;

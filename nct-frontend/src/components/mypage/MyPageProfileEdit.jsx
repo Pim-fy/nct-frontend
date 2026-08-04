@@ -8,6 +8,7 @@ import { ChevronUp, ChevronDown } from "lucide-react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import DaumPostcode from "react-daum-postcode";
 import { toast, confirm } from "@utils/common";
+import { formatPhoneNumber, toPhoneDigits } from "@utils/phoneNumber";
 import AlertModal from "@components/common/AlertModal";
 import { assets } from "@components/mypage/assets";
 import { updateProfile, changePassword, getOauthLinks, unlinkOauth } from "@api/memberApi";
@@ -77,7 +78,7 @@ export default function MyPageProfileEdit({ user }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setForm((prev) => ({
       ...prev,
-      phone: profileQuery.data.phone || "",
+      phone: formatPhoneNumber(profileQuery.data.phone || ""),
       zip: profileQuery.data.zip || "",
       address: profileQuery.data.address || "",
       addressDetail: profileQuery.data.addressDetail || "",
@@ -227,12 +228,17 @@ export default function MyPageProfileEdit({ user }) {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    // @ai_generated: ISS-023 - 전화번호가 선택에서 필수로 전환됐다.
+    if (!form.phone.trim()) {
+      toast({ icon: "error", title: "전화번호를 입력해주세요." });
+      return;
+    }
     try {
       // email은 이 화면에서 수정하지 않지만 백엔드가 필수값으로 요구해 현재 값을 그대로 함께 보낸다.
       const res = await updateProfile({
         nickname: form.nickname,
         email: user?.email,
-        phone: form.phone.trim(),
+        phone: toPhoneDigits(form.phone),
         zip: form.zip.trim(),
         address: form.address.trim(),
         addressDetail: form.addressDetail.trim(),
@@ -333,79 +339,84 @@ export default function MyPageProfileEdit({ user }) {
               </div>
             </div>
             <div>
-              <label className="block font-bold text-[14px] text-[#404040] mb-0.5">전화번호</label>
+              <label className="block font-bold text-[14px] text-[#404040] mb-0.5">
+                전화번호<span className="ml-1 text-[#a32d2d]">*</span>
+              </label>
               <input
                 className={FIELD_CLASS}
                 type="tel"
                 placeholder="01012345678"
+                required
+                maxLength={13}
                 value={form.phone}
-                onChange={handleChange("phone")}
+                onChange={(e) => setForm((prev) => ({ ...prev, phone: formatPhoneNumber(e.target.value) }))}
               />
             </div>
           </div>
 
           {/* 비밀번호 */}
-          <div>
-            <label className="block font-bold text-[14px] text-[#404040] mb-0.5">현재 비밀번호</label>
-            <input
-              type="password"
-              className={FIELD_CLASS}
-              value={form.currentPassword}
-              onChange={handleChange("currentPassword")}
-              readOnly={!passwordChangeable}
-              onFocus={handlePasswordFieldBlocked}
-              onClick={handlePasswordFieldBlocked}
-              placeholder={passwordChangeable ? "********" : "소셜 로그인 계정은 비밀번호가 없습니다"}
-            />
-          </div>
-          <div>
-            <label className="block font-bold text-[14px] text-[#404040] mb-0.5">새 비밀번호</label>
-            <input
-              type="password"
-              className={FIELD_CLASS}
-              value={form.newPassword}
-              onChange={handleChange("newPassword")}
-              readOnly={!passwordChangeable}
-              onFocus={handlePasswordFieldBlocked}
-              onClick={handlePasswordFieldBlocked}
-              placeholder={passwordChangeable ? "********" : "소셜 로그인 계정은 비밀번호가 없습니다"}
-            />
-          </div>
-          <div>
-            <label className="block font-bold text-[14px] text-[#404040] mb-0.5">새 비밀번호 확인</label>
-            <input
-              type="password"
-              className={FIELD_CLASS}
-              value={form.newPasswordConfirm}
-              onChange={handleChange("newPasswordConfirm")}
-              readOnly={!passwordChangeable}
-              onFocus={handlePasswordFieldBlocked}
-              onClick={handlePasswordFieldBlocked}
-              placeholder={passwordChangeable ? "********" : "소셜 로그인 계정은 비밀번호가 없습니다"}
-            />
-          </div>
-          {!passwordChangeable && (
-            <p className="text-[12px] text-[#969696]">
-              소셜 로그인(카카오·네이버·구글)으로 가입한 계정은 비밀번호를 생성·저장할 수 없습니다.
-            </p>
+          {passwordChangeable ? (
+            <>
+              <div>
+                <label className="block font-bold text-[14px] text-[#404040] mb-0.5">현재 비밀번호</label>
+                <input
+                  type="password"
+                  className={FIELD_CLASS}
+                  value={form.currentPassword}
+                  onChange={handleChange("currentPassword")}
+                  placeholder="********"
+                />
+              </div>
+              <div>
+                <label className="block font-bold text-[14px] text-[#404040] mb-0.5">새 비밀번호</label>
+                <input
+                  type="password"
+                  className={FIELD_CLASS}
+                  value={form.newPassword}
+                  onChange={handleChange("newPassword")}
+                  placeholder="********"
+                />
+              </div>
+              <div>
+                <label className="block font-bold text-[14px] text-[#404040] mb-0.5">새 비밀번호 확인</label>
+                <input
+                  type="password"
+                  className={FIELD_CLASS}
+                  value={form.newPasswordConfirm}
+                  onChange={handleChange("newPasswordConfirm")}
+                  placeholder="********"
+                />
+              </div>
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleChangePassword}
+                  disabled={isChangingPassword}
+                  className="btn btn-outline btn-sm"
+                >
+                  {isChangingPassword ? "변경 중..." : "비밀번호 변경"}
+                </button>
+              </div>
+            </>
+          ) : (
+            <div>
+              <label className="block font-bold text-[14px] text-[#404040] mb-0.5">비밀번호</label>
+              <div className="rounded-[5px] border border-[#e8e9ec] bg-[#f5f7fc] px-3.5 py-3">
+                <p className="m-0 text-[13px] text-[#767676]">
+                  소셜 로그인(카카오·네이버·구글)으로 가입한 계정은 비밀번호가 없어 변경할 수 없습니다.
+                </p>
+              </div>
+            </div>
           )}
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={handleChangePassword}
-              disabled={isChangingPassword || !passwordChangeable}
-              className="btn btn-outline btn-sm"
-            >
-              {isChangingPassword ? "변경 중..." : "비밀번호 변경"}
-            </button>
-          </div>
 
           {/* 주소 */}
           <div>
             <label className="block font-bold text-[14px] text-[#404040] mb-0.5">주소</label>
             <div className="flex gap-2">
               <input
-                className={FIELD_CLASS + " flex-1"}
+                className={FIELD_CLASS + " flex-1 cursor-pointer"}
+                onClick={() => setAddressSearchOpen(true)}
+                onFocus={(e) => e.target.blur()}
                 placeholder="주소 검색을 눌러주세요."
                 readOnly
                 value={form.address}
@@ -547,8 +558,8 @@ export default function MyPageProfileEdit({ user }) {
                       className="flex-1 flex items-center gap-1.5 h-full text-left min-w-0"
                     >
                       {isOpen
-                        ? <ChevronDown size={14} className="text-[#0064ff] shrink-0" />
-                        : <ChevronUp   size={14} className="text-[#0064ff] shrink-0" />
+                        ? <ChevronUp   size={14} className="text-[#0064ff] shrink-0" />
+                        : <ChevronDown size={14} className="text-[#0064ff] shrink-0" />
                       }
                       <span>
                         <span className="text-[15px] font-semibold text-[#1a1a1a]">{domainLabel}</span>

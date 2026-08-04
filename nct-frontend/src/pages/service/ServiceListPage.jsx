@@ -14,10 +14,10 @@ import {
   ServiceFilterPanel,
   ServicePagination,
   ServiceRequestGrid,
-  ServiceSearchBar,
 } from '@components/service/ServiceUi';
 import CardGridSkeleton from '@components/skeleton/CardGridSkeleton';
 import HeaderSearchPortal from '@components/common/HeaderSearchPortal';
+import HeaderSearchWithHistory from '@components/common/HeaderSearchWithHistory';
 import {
   SERVICE_CATEGORY_DOMAIN_CODE,
   SERVICE_DISCOVERY_PAGE_SIZE,
@@ -43,6 +43,7 @@ const ServiceListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const resultHeadingRef = useRef(null);
+  const [keywordDraft, setKeywordDraft] = useState(searchParams.get('keyword') || '');
 
   const categoriesQuery = useQuery({
     queryKey: ['service-discovery-categories', SERVICE_CATEGORY_DOMAIN_CODE],
@@ -123,8 +124,7 @@ const ServiceListPage = () => {
     setSearchParams(next, { replace: true });
   }, [legacyCategory, resolvedLegacyCategorySn, searchParams, setSearchParams]);
 
-  const handleSearch = (event, keyword) => {
-    event.preventDefault();
+  const handleSearch = (keyword) => {
     updateParams({ keyword: keyword.trim(), page: null });
   };
 
@@ -158,10 +158,15 @@ const ServiceListPage = () => {
       <Helmet><title>견적 목록 | 에누리컷</title></Helmet>
 
       <HeaderSearchPortal>
-        <ServiceSearchBar
-          initialKeyword={filters.keyword}
-          key={filters.keyword}
+        <HeaderSearchWithHistory
+          storageKey="nct:service-search-history"
+          dropdownId="service-search-history"
+          value={keywordDraft}
+          onChange={setKeywordDraft}
           onSubmit={handleSearch}
+          placeholder="필요한 서비스 요청을 검색하세요"
+          ariaLabel="서비스 검색어"
+          key={filters.keyword}
         />
       </HeaderSearchPortal>
 

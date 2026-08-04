@@ -1,7 +1,7 @@
 // src/pages/landing/LandingPage.jsx
 //
 // LandingPage는 컨텐츠 조합만 담당합니다.
-// - 헤더/푸터: @layouts/user/headers/LandingHeader, @layouts/user/footers/MainFooter
+// - 헤더/푸터: @layouts/user/headers/Header, @layouts/user/footers/Footer
 //   (LandingLayout에서 이미 렌더링됨 — 이 페이지에서는 다루지 않음)
 // - 컨텐츠 컴포넌트: @components/landing 이하에서 가져옴
 

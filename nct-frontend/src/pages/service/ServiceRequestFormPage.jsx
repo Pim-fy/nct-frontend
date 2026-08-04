@@ -1660,8 +1660,11 @@ export default function ServiceRequestFormPage() {
                           ) : f.type === 'address' ? (
                             <>
                               <div className="flex gap-2">
-                                <input readOnly
-                                  className={`flex-1 rounded-lg border bg-[#f8f8f6] px-3 py-2.5 text-sm outline-none ${fieldErrors[`${stepId}:${f.key}`] ? 'border-red-500' : 'border-[#e2e1dc]'}`}
+                                <input
+                                  readOnly
+                                  onClick={() => setAddressSearchKey(`${stepId}:${f.key}`)}
+                                  onFocus={(e) => e.target.blur()}
+                                  className={`flex-1 cursor-pointer rounded-lg border bg-[#f8f8f6] px-3 py-2.5 text-sm outline-none ${fieldErrors[`${stepId}:${f.key}`] ? 'border-red-500' : 'border-[#e2e1dc]'}`}
                                   placeholder={f.placeholder}
                                   value={stepDraft[stepId]?.[f.key] || ''}
                                 />

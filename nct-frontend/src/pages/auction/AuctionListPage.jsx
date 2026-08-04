@@ -8,9 +8,7 @@ import {
   ChevronUp,
   ChevronsLeft,
   ChevronsRight,
-  History,
   RotateCcw,
-  Search,
   SlidersHorizontal,
   X,
 } from 'lucide-react';
@@ -20,18 +18,10 @@ import { fetchReferenceCodes } from '@api/referenceApi';
 import { SORT_OPTIONS } from '@/constants/auctionOptions';
 import CardGridSkeleton from '@components/skeleton/CardGridSkeleton';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
-import HeaderSearchPortal, {
-  HEADER_SEARCH_BUTTON_CLASS,
-  HEADER_SEARCH_FORM_CLASS,
-  HEADER_SEARCH_INPUT_CLASS,
-} from '@components/common/HeaderSearchPortal';
+import HeaderSearchPortal from '@components/common/HeaderSearchPortal';
+import HeaderSearchWithHistory from '@components/common/HeaderSearchWithHistory';
 import useBodyScrollLock from '@hooks/useBodyScrollLock';
 import AuctionCard from './components/AuctionCard';
-import {
-  addAuctionSearchHistory,
-  getAuctionSearchHistory,
-  removeAuctionSearchHistory,
-} from '@utils/auctionSearchHistory';
 
 const getSelectedValues = (searchParams, key) => searchParams.getAll(key);
 const DEFAULT_PAGE_SIZE = 12;
@@ -93,8 +83,6 @@ const AuctionListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const shouldScrollAfterPageChangeRef = useRef(false);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [searchHistoryOpen, setSearchHistoryOpen] = useState(false);
-  const [searchHistory, setSearchHistory] = useState(() => getAuctionSearchHistory());
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [keywordDraft, setKeywordDraft] = useState(searchParams.get('keyword') || '');
   const [categoryDraft, setCategoryDraft] = useState(() => getSelectedValues(searchParams, 'category'));
@@ -113,8 +101,6 @@ const AuctionListPage = () => {
   );
   const [previewQueryParams, setPreviewQueryParams] = useState(null);
   const searchParamsKey = searchParams.toString();
-  const searchContainerRef = useRef(null);
-  const showSearchHistory = searchHistoryOpen && searchHistory.length > 0;
 
   useEffect(() => {
     const animationFrameId = window.requestAnimationFrame(() => {
@@ -132,16 +118,6 @@ const AuctionListPage = () => {
 
     return () => window.cancelAnimationFrame(animationFrameId);
   }, [searchParamsKey]);
-
-  useEffect(() => {
-    const handlePointerDown = (event) => {
-      if (searchContainerRef.current?.contains(event.target)) return;
-      setSearchHistoryOpen(false);
-    };
-
-    document.addEventListener('mousedown', handlePointerDown);
-    return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, []);
 
   useEffect(() => {
     if (!filterOpen || !window.matchMedia('(max-width: 767px)').matches) {
@@ -297,23 +273,8 @@ const AuctionListPage = () => {
     return next;
   };
 
-  const handleSearch = (event) => {
-    event.preventDefault();
-    const keyword = keywordDraft.trim();
-    if (keyword) setSearchHistory(addAuctionSearchHistory(keyword));
-    setSearchHistoryOpen(false);
+  const handleSearch = (keyword) => {
     setSearchParams(createSearchParamsFromDraft(keyword), { replace: false });
-  };
-
-  const handleRecentSearch = (term) => {
-    setKeywordDraft(term);
-    setSearchHistory(addAuctionSearchHistory(term));
-    setSearchHistoryOpen(false);
-    setSearchParams(createSearchParamsFromDraft(term), { replace: false });
-  };
-
-  const handleRemoveRecentSearch = (term) => {
-    setSearchHistory(removeAuctionSearchHistory(term));
   };
 
   const handleFilterSearch = () => {
@@ -354,85 +315,15 @@ const AuctionListPage = () => {
   return (
     <div className="min-h-full bg-white text-body-sm text-[#1a1a18] md:text-body-md">
   <HeaderSearchPortal>
-      <div
-        ref={searchContainerRef}
-        className="relative mx-auto w-full"
-      >
-        <form
-          className={`${HEADER_SEARCH_FORM_CLASS} relative z-[141] ${
-            showSearchHistory
-              ? '![border-radius:22px_22px_0_0] !border-b-transparent'
-              : ''
-          }`}
-          onSubmit={handleSearch}
-        >
-          <input
-            className={HEADER_SEARCH_INPUT_CLASS}
-            type="search"
-            value={keywordDraft}
-            onChange={(event) => setKeywordDraft(event.target.value)}
-            onFocus={() => setSearchHistoryOpen(true)}
-            onClick={() => setSearchHistoryOpen(true)}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') setSearchHistoryOpen(false);
-            }}
-            placeholder="원하는 경매 상품을 검색하세요"
-            aria-label="경매 검색어"
-            aria-controls="auction-search-history"
-            aria-expanded={showSearchHistory}
-            autoComplete="off"
-          />
-
-          <button
-            className={HEADER_SEARCH_BUTTON_CLASS}
-            type="submit"
-            aria-label="검색"
-          >
-            <Search size={24} strokeWidth={2.4} />
-          </button>
-        </form>
-
-        {showSearchHistory && (
-          <div
-            id="auction-search-history"
-            className="absolute inset-x-0 top-[calc(100%_-_2px)] z-[142] overflow-hidden rounded-b-[22px] border-2 border-t-0 border-primary bg-white shadow-[0_12px_24px_rgba(0,0,0,0.14)]"
-          >
-            <ul className="m-0 list-none p-0">
-              {searchHistory.map((term) => (
-                <li
-                  className="flex min-h-11 items-center hover:bg-[#f7f8fa]"
-                  key={term}
-                >
-                  <button
-                    className="flex min-w-0 flex-1 cursor-pointer items-center self-stretch overflow-hidden border-0 bg-transparent text-left text-body-sm text-[#333] md:text-body-md"
-                    type="button"
-                    onClick={() => handleRecentSearch(term)}
-                  >
-                    <History
-                      className="ml-3 shrink-0 text-[#777]"
-                      size={17}
-                      aria-hidden="true"
-                    />
-
-                    <span className="min-w-0 overflow-hidden px-3 text-ellipsis whitespace-nowrap">
-                      {term}
-                    </span>
-                  </button>
-
-                  <button
-                    className="mr-1 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-[#999] hover:bg-white hover:text-[#333]"
-                    type="button"
-                    onClick={() => handleRemoveRecentSearch(term)}
-                    aria-label={`${term} 검색 기록 삭제`}
-                  >
-                    <X size={16} aria-hidden="true" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
+      <HeaderSearchWithHistory
+        storageKey="nct:auction-search-history"
+        dropdownId="auction-search-history"
+        value={keywordDraft}
+        onChange={setKeywordDraft}
+        onSubmit={handleSearch}
+        placeholder="원하는 경매 상품을 검색하세요"
+        ariaLabel="경매 검색어"
+      />
   </HeaderSearchPortal>
 
      {/* .container에 Tailwind py-*를 같이 쓰면 App.css의 padding shorthand가 레이어 충돌로 상하 패딩을 0으로 무력화한다 — 인라인 style로 우회 */}
