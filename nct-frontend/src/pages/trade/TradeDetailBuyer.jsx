@@ -196,27 +196,53 @@ const TradeDetailBuyer = ({
     && trade?.meetingTime && trade.meetingTime !== '-'
     && trade?.meetingPlace && trade.meetingPlace !== '-',
   );
-  // 이전에 일정만 저장된 거래도 구매자에게는 실제 진행 상태를 우선 보여준다.
+  // 판매자가 직거래 일정을 제안하면 구매자 화면은 다음 거래 진행 단계로 안내한다.
   const currentStatus = trade?.method === 'OFFLINE'
-    && (trade?.status === 'DELIVERING' || hasMeetingSchedule)
+    && ['IN_PROGRESS', 'DELIVERING'].includes(trade?.status)
+    && hasMeetingSchedule
     ? {
-      ...statusInfo.DELIVERING,
-      label: '직거래 중',
-      description: '판매자가 제안한 일정과 장소에서 직거래를 진행해 주세요.',
+      ...statusInfo.WAITING_CONFIRMATION,
+      label: '판매자 확인 대기',
+      description: '직거래 일정이 제안되었습니다. 거래가 끝난 뒤 서로 완료 확인을 진행해 주세요.',
     }
     : statusInfo[trade?.status] ?? unknownStatus;
   const selectedDeliveryProof = selectedDeliveryProofIndex === null
     ? null
     : deliveryProofUrls[selectedDeliveryProofIndex] ?? null;
-  const isInProgress = currentStatus.step === 0;
-  // 구매자는 진행 중 첫 확인을 시작하거나, 판매자가 먼저 요청한 확인에 응답할 수 있다.
-  const canRequestBuyerCompletion = (
-    isInProgress
-    || (
-      ['CONFIRM_PENDING', 'WAITING_CONFIRMATION'].includes(trade?.status)
-      && trade?.completionRequestedBy === 'SELLER'
-    )
+  const isCompleted = trade?.status === 'COMPLETED';
+  const isSellerCompletionRequested = (
+    ['CONFIRM_PENDING', 'WAITING_CONFIRMATION'].includes(trade?.status)
+    && trade?.completionRequestedBy === 'SELLER'
   );
+  const isBuyerCompletionRequested = (
+    ['CONFIRM_PENDING', 'WAITING_CONFIRMATION'].includes(trade?.status)
+    && trade?.completionRequestedBy === 'BUYER'
+  );
+  // 판매자·구매자 모두 거래 진행 중에는 먼저 완료 확인을 시작할 수 있다.
+  // 한쪽이 먼저 요청한 뒤에만 반대쪽의 확인 요청으로 전환한다.
+  const canRequestBuyerCompletion = (
+    ['IN_PROGRESS', 'DELIVERING'].includes(trade?.status)
+    || isSellerCompletionRequested
+  );
+  const completionGuide = isCompleted
+    ? {
+      title: '거래가 완료되었습니다.',
+      description: '구매자와 판매자의 완료 확인이 모두 처리되었습니다.',
+    }
+    : isSellerCompletionRequested
+      ? {
+        title: '구매자 완료 확인 필요',
+        description: '판매자가 완료를 확인했습니다. 구매자 확인 후 거래가 완료됩니다.',
+      }
+      : isBuyerCompletionRequested
+        ? {
+          title: '판매자 확인 대기',
+          description: '구매자의 완료 확인이 전달되었습니다. 판매자 확인 또는 무이의 기간 경과를 기다려 주세요.',
+        }
+        : {
+          title: '상호 완료 확인',
+          description: '거래가 완료되었다면 구매자와 판매자 누구나 먼저 완료 확인을 진행할 수 있습니다.',
+        };
   // 직거래는 판매자 일정이 확정된 뒤에만 실제 만남과 완료 확인이 가능하다.
   const isOfflineSchedulePending = (
     trade?.method === 'OFFLINE'
@@ -253,8 +279,11 @@ const TradeDetailBuyer = ({
           ? '판매자와 구매자의 완료 확인이 모두 끝나 거래가 완료되었습니다.'
           : '거래 완료 확인을 보냈습니다. 판매자의 확인을 기다려 주세요.',
       );
-    } catch {
-      setNotice('거래 완료 확인 요청에 실패했습니다. 다시 시도해 주세요.');
+    } catch (completionError) {
+      setNotice(
+        completionError.response?.data?.message
+          ?? '거래 완료 확인 요청에 실패했습니다. 다시 시도해 주세요.',
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -302,6 +331,10 @@ const TradeDetailBuyer = ({
             <h1>거래 상세</h1>
             <p>
               물건 거래 · {trade.method === 'DELIVERY' ? '배송 거래' : '직거래'}
+            </p>
+            <p className="trade-detail-page__status">
+              <span className={`trade-status ${currentStatus.className}`}>{currentStatus.label}</span>
+              <span>{currentStatus.description}</span>
             </p>
           </div>
           <button
@@ -387,91 +420,75 @@ const TradeDetailBuyer = ({
               )}
             </section>
           ) : (
-            <section className="trade-detail-card">
-              <h2>직거래 정보</h2>
-              {hasMeetingSchedule ? (
-                <dl className="trade-meeting-summary">
-                  <div>
-                    <dt>거래 일시</dt>
-                    <dd>{trade.meetingDate} {trade.meetingTime}</dd>
-                  </div>
-                  <div>
-                    <dt>거래 장소</dt>
-                    <dd>{trade.meetingPlace}</dd>
-                  </div>
-                  {trade.meetingAddress !== '-' && (
-                    <div className="trade-meeting-summary__memo">
-                      <dt>상세 주소</dt>
-                      <dd>{trade.meetingAddress}</dd>
+            <>
+              <section className="trade-detail-card">
+                <h2>제안받은 직거래 일정</h2>
+                {hasMeetingSchedule ? (
+                  <dl className="trade-meeting-summary">
+                    <div>
+                      <dt>거래 일시</dt>
+                      <dd>{trade.meetingDate} {trade.meetingTime}</dd>
                     </div>
-                  )}
-                </dl>
-              ) : (
-                <p>판매자가 제안한 거래 일시와 장소를 확인해 주세요.</p>
-              )}
-            </section>
+                    <div>
+                      <dt>거래 장소</dt>
+                      <dd>{trade.meetingPlace}</dd>
+                    </div>
+                    {trade.meetingAddress !== '-' && (
+                      <div className="trade-meeting-summary__memo">
+                        <dt>상세 주소</dt>
+                        <dd>{trade.meetingAddress}</dd>
+                      </div>
+                    )}
+                  </dl>
+                ) : (
+                  <p>판매자가 제안한 거래 일시와 장소를 확인해 주세요.</p>
+                )}
+              </section>
+              <section className="trade-detail-card">
+                <h2>구매자 진행 안내</h2>
+                <p>
+                  <span className={`trade-status ${currentStatus.className}`}>
+                    {currentStatus.label}
+                  </span>
+                </p>
+                <p>{currentStatus.description}</p>
+                {hasMeetingSchedule && (
+                  <div className="trade-detail-actions">
+                    {onOpenChat ? (
+                      <button
+                        className="btn btn-outline"
+                        type="button"
+                        onClick={() => onOpenChat(tradeId)}
+                      >
+                        {trade.status === 'COMPLETED' ? '거래 채팅 기록 보기' : '거래 채팅'}
+                      </button>
+                    ) : (
+                      <Link className="btn btn-outline" to={chatPath}>
+                        {trade.status === 'COMPLETED' ? '거래 채팅 기록 보기' : '거래 채팅'}
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </section>
+            </>
           )}
 
-          <section className="trade-detail-card">
-            <h2>거래 상태</h2>
-            <p>
-              <span className={`trade-status ${currentStatus.className}`}>
-                {currentStatus.label}
-              </span>
-            </p>
-            <p>{currentStatus.description}</p>
-          </section>
         </div>
-
-        {trade.method === 'OFFLINE' && (
-          <section className="trade-detail-card trade-complete-card">
-            <h2>직거래 일정 확인</h2>
-            <div className="trade-auto-complete">
-              <strong>{hasMeetingSchedule ? '일정 제안 완료' : '판매자 제안 대기'}</strong>
-              <p>
-                {hasMeetingSchedule
-                  ? '판매자가 저장한 일정과 장소입니다. 거래를 진행해 주세요.'
-                  : '판매자가 거래 일시와 장소를 저장하면 이곳에 표시됩니다.'}
-              </p>
-            </div>
-            {hasMeetingSchedule && (
-              <div className="trade-detail-actions">
-                {onOpenChat ? (
-                  <button
-                    className="btn btn-outline"
-                    type="button"
-                    onClick={() => onOpenChat(tradeId)}
-                  >
-                    {trade.status === 'COMPLETED' ? '거래 채팅 기록 보기' : '거래 채팅'}
-                  </button>
-                ) : (
-                  <Link className="btn btn-outline" to={chatPath}>
-                    {trade.status === 'COMPLETED' ? '거래 채팅 기록 보기' : '거래 채팅'}
-                  </Link>
-                )}
-              </div>
-            )}
-          </section>
-        )}
 
         {!isOfflineSchedulePending && (
           <section className="trade-detail-card trade-complete-card">
-            <h2>거래 완료 확인</h2>
+            <h2>{isCompleted ? '거래 완료' : '거래 완료 확인'}</h2>
             <div className="trade-auto-complete">
-              <strong>
-                {trade.status === 'COMPLETED'
-                  ? '거래 완료'
-                  : '판매자 확인 대기'}
-              </strong>
+              <strong>{completionGuide.title}</strong>
               <p>
-                {trade.autoCompleteAt !== '-'
+                {!isCompleted && isBuyerCompletionRequested && trade.autoCompleteAt !== '-'
                   ? `${trade.autoCompleteAt}까지 양쪽 확인이 완료되지 않으면 자동 완료됩니다.`
-                  : '거래가 완료되었다면 판매자와 서로 완료 확인을 진행해 주세요.'}
+                  : completionGuide.description}
               </p>
             </div>
 
-            {/* 첫 요청 또는 판매자 요청에 대한 응답일 때만 구매자의 완료 동의를 받는다. */}
-            {canRequestBuyerCompletion && (
+            {/* 거래 진행 중 첫 요청 또는 판매자 요청에 대한 응답일 때만 구매자 확인을 받는다. */}
+            {!isCompleted && canRequestBuyerCompletion && (
               <>
                 <label className="trade-complete-card__check">
                   <input
@@ -488,7 +505,7 @@ const TradeDetailBuyer = ({
             )}
 
             <div className="trade-detail-actions">
-              {canRequestBuyerCompletion && (
+              {!isCompleted && canRequestBuyerCompletion && (
                 <button
                   className="btn btn-primary"
                   type="button"
@@ -568,7 +585,7 @@ const TradeDetailBuyer = ({
         >
           <div className="trade-modal__content">
             <div className="trade-modal__header">
-              <h2>완료 확인 요청을 보냈습니다</h2>
+              <h2>{isCompleted ? '거래가 완료되었습니다' : '완료 확인 요청을 보냈습니다'}</h2>
               <button
                 className="trade-modal__close"
                 type="button"
@@ -579,8 +596,9 @@ const TradeDetailBuyer = ({
               </button>
             </div>
             <p>
-              판매자 확인 또는 무이의 기간 경과 후 거래가 완료됩니다.
-              현재 거래 상태는 판매자 확인 대기입니다.
+              {isCompleted
+                ? '구매자와 판매자의 완료 확인이 모두 처리되었습니다.'
+                : '판매자 확인 또는 무이의 기간 경과 후 거래가 완료됩니다. 현재 거래 상태는 판매자 확인 대기입니다.'}
             </p>
             <div className="trade-modal__actions">
               <button
