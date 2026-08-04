@@ -570,9 +570,13 @@ const TradeChat = ({
                           <span className="trade-chat-room__preview">
                             {room.lastMessage}
                           </span>
-                          {isCompleted && (
-                            <span className="trade-chat-room__closed">채팅 불가</span>
-                          )}
+                          <span
+                            className={isCompleted
+                              ? 'trade-chat-room__closed'
+                              : 'trade-chat-room__available'}
+                          >
+                            {isCompleted ? '채팅 불가' : '대화 가능'}
+                          </span>
                           {room.unreadCount > 0 && (
                             <span className="trade-chat-room__unread">
                               새 메시지 {room.unreadCount}개
@@ -616,20 +620,13 @@ const TradeChat = ({
                       <p>{activeRoom.productName}</p>
                     </div>
                     <div className="trade-chat-conversation__actions">
-                      <span className="trade-chat-status">
+                      <span
+                        className={activeRoom.roomStatus === 'ACTIVE'
+                          ? 'trade-chat-status'
+                          : 'trade-chat-status trade-chat-status--closed'}
+                      >
                         {activeRoom.roomStatus === 'ACTIVE' ? '대화 가능' : '채팅 불가'}
                       </span>
-                      {!preview && !isActiveRoomClosed && (
-                        <span
-                          className={realtimeStatus === 'CONNECTED'
-                            ? 'trade-chat-realtime trade-chat-realtime--connected'
-                            : 'trade-chat-realtime'}
-                        >
-                          {realtimeStatus === 'CONNECTED'
-                            ? '실시간 연결됨'
-                            : '실시간 재연결 중'}
-                        </span>
-                      )}
                       {showRoomList && (
                         <button
                           className="btn btn-ghost trade-chat-conversation__close"

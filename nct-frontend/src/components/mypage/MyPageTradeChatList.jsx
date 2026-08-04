@@ -264,7 +264,7 @@ const MyPageTradeChatList = ({
                   </span>
                   <span className="mt-1 flex items-center gap-2">
                     {isCompleted && (
-                      <span className="rounded-full bg-[#eef0f4] px-2 py-0.5 text-[11px] font-bold text-[#64748b]">
+                      <span className="rounded-full bg-[#fef2f2] px-2 py-0.5 text-[11px] font-bold text-[#dc2626]">
                         채팅 불가
                       </span>
                     )}
