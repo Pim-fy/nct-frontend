@@ -7,6 +7,8 @@ import { useAuth } from '@hooks/useAuth';
 import {
   closeServiceRequest,
   getServiceRequest,
+  addServiceRequestComment,
+  getServiceRequestComments,
 } from '@api/serviceRequestApi';
 import { getReceivedQuotes } from '@api/quoteApi';
 import { toImageUrl } from '@api/fileApi';
@@ -203,6 +205,10 @@ export default function ServiceRequestDetailPage() {
   const [toast, setToast] = useState('');
   const [quotes, setQuotes] = useState([]);
   const [quotesLoadedRequestSn, setQuotesLoadedRequestSn] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [cmtTtl, setCmtTtl] = useState('');
+  const [cmtCn, setCmtCn] = useState('');
+  const [cmtSubmitting, setCmtSubmitting] = useState(false);
   const loading = String(loadedRequestSn) !== String(svcReqSn);
   const requestOwner = !isProvider
     && request
@@ -264,6 +270,44 @@ export default function ServiceRequestDetailPage() {
     };
   }, [request, svcReqSn, authenticatedUserId, isProvider]);
 
+  // 변경사항 목록은 요청자·제공자 누구나 조회 가능 — 요청서 로드 후 함께 조회
+  useEffect(() => {
+    if (!request) return;
+    let cancelled = false;
+    getServiceRequestComments(svcReqSn)
+      .then(res => {
+        if (cancelled) return;
+        setComments(res.data ?? []);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setComments([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [request, svcReqSn]);
+
+  const handleCommentSubmit = async () => {
+    if (!cmtTtl.trim()) {
+      setToast('제목을 입력해 주세요.');
+      return;
+    }
+    setCmtSubmitting(true);
+    try {
+      await addServiceRequestComment(svcReqSn, { ttl: cmtTtl.trim(), cn: cmtCn.trim() || null });
+      const updated = await getServiceRequestComments(svcReqSn);
+      setComments(updated.data ?? []);
+      setCmtTtl('');
+      setCmtCn('');
+      setToast('변경사항이 등록되었습니다.');
+    } catch (err) {
+      setToast(err.response?.data?.message || '변경사항 등록에 실패했습니다.');
+    } finally {
+      setCmtSubmitting(false);
+    }
+  };
+
   const handleClose = async () => {
     setClosing(true);
     try {
@@ -317,6 +361,8 @@ export default function ServiceRequestDetailPage() {
     && String(authenticatedUserId) === String(request.usrSn);
   const isDraft = request.svcReqStatusCd === 'SVCC0001';
   const isOpen  = request.svcReqStatusCd === 'SVCC0002';
+  const isMatched = request.svcReqStatusCd === 'SVCC0003';
+  const canAddComment = isOwner && (isOpen || isMatched) && comments.length < 3;
 
   const parsedItems = (request.items ?? []).map(parseItemGroup);
   parsedItems.push({ title: MEMO_TITLE, fields: [{ label: null, value: request.svcReqCn ?? '' }] });
@@ -336,7 +382,7 @@ export default function ServiceRequestDetailPage() {
           <button
             type="button"
             className="inline-flex items-center gap-1 rounded-lg border border-[#e2e1dc] bg-white px-4 py-2.5 text-lg font-medium text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/user/mypage?section=service-requests')}
           >
             ← 목록으로
           </button>
@@ -468,6 +514,73 @@ export default function ServiceRequestDetailPage() {
                     </div>
                   ))}
                 </div>
+              )}
+            </div>
+
+            {/* 변경사항 작성 — 본문 수정 불가 대신 견적 요청 정책상 최대 3개까지 별도 등록. 본인에게만 노출 */}
+            {isOwner && (isOpen || isMatched) && (
+              <div className="border-t border-[#e8e8e8] px-6 py-5">
+                <h2 className="mb-4 text-lg font-semibold text-[#5f5e5a]">변경사항 추가</h2>
+                {canAddComment ? (
+                  <div className="rounded-lg border border-[#e2e1dc] p-4">
+                    <input
+                      type="text"
+                      maxLength={30}
+                      placeholder="제목 (필수)"
+                      value={cmtTtl}
+                      onChange={e => setCmtTtl(e.target.value)}
+                      className="w-full rounded-lg border border-[#e2e1dc] px-3 py-2 text-base outline-none focus:border-primary"
+                    />
+                    <p className={`mt-1 text-right text-xs ${cmtTtl.length >= 30 ? 'text-[#c0392b]' : 'text-[#9a9ba5]'}`}>{cmtTtl.length}/30</p>
+                    <textarea
+                      rows={3}
+                      maxLength={100}
+                      placeholder="내용 (선택)"
+                      value={cmtCn}
+                      onChange={e => setCmtCn(e.target.value)}
+                      className="mt-2 w-full resize-none rounded-lg border border-[#e2e1dc] px-3 py-2 text-base outline-none focus:border-primary"
+                    />
+                    <p className={`mt-1 text-right text-xs ${cmtCn.length >= 100 ? 'text-[#c0392b]' : 'text-[#9a9ba5]'}`}>{cmtCn.length}/100</p>
+                    <p className="mt-1 text-xs text-[#9a9ba5]">변경사항은 최대 3개까지 등록할 수 있습니다.</p>
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        type="button"
+                        className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0048bf] disabled:opacity-50"
+                        onClick={handleCommentSubmit}
+                        disabled={cmtSubmitting}
+                      >
+                        {cmtSubmitting ? '등록 중...' : '등록'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-[#9a9ba5]">변경사항은 최대 3개까지 등록할 수 있습니다.</p>
+                )}
+              </div>
+            )}
+
+            {/* 변경 내역 — 등록된 변경사항 조회, 요청자·제공자 누구나 확인 가능 */}
+            <div className="border-t border-[#e8e8e8] px-6 py-5">
+              <h2 className="mb-4 text-lg font-semibold text-[#5f5e5a]">변경 내역</h2>
+              {comments.length === 0 ? (
+                <p className="text-sm text-[#9a9ba5]">등록된 변경사항이 없습니다.</p>
+              ) : (
+                <ul className="flex flex-col gap-3">
+                  {comments.map((c, i) => (
+                    <li key={c.svcReqCmtSn} className="flex gap-3 border-b border-[#f0efec] pb-3 last:border-b-0 last:pb-0">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
+                        {i + 1}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-[#1d1d1f]">{c.svcReqCmtTtl}</p>
+                        {c.svcReqCmtCn && (
+                          <p className="mt-1 whitespace-pre-wrap text-sm text-[#5f5e5a]">{c.svcReqCmtCn}</p>
+                        )}
+                        <p className="mt-1 text-xs text-[#9a9ba5]">{fmtDate(c.svcReqCmtRegDt)}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
           </article>

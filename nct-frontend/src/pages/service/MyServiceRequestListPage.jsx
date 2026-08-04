@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { deleteServiceRequest, closeServiceRequest } from '@api/serviceRequestApi';
+import { toImageUrl } from '@api/fileApi';
 import { useMyServiceRequests } from '@hooks/useServiceRequest';
 import MyPageListSectionLayout from '@components/mypage/MyPageListSectionLayout';
 import MyPageListItem from '@components/mypage/MyPageListItem';
@@ -158,6 +159,8 @@ export default function MyServiceRequestListPage({ embedded = false }) {
               return (
                 <MyPageListItem
                   key={item.svcReqSn}
+                  imageSrc={item.repImageUrl ? toImageUrl(item.repImageUrl) : undefined}
+                  imageAlt={item.svcReqTtl}
                   imageFallback={item.catNm}
                   badge={
                     <MyPageStatusBadge className={STATUS_BADGE[item.svcReqStatusCd] ?? 'badge-outline-gray'}>

@@ -1,4 +1,4 @@
-// 상품(PRODUCT) 관련 공통 상수 — ProductRegisterPage / MyProductListPage / ProductDetailSellerPage 공유
+// 상품(PRODUCT) 관련 공통 상수 — ProductRegisterPage / MyProductList / ProductDetailSellerPage 공유
 // F-AUC-005 거래 상태(TRDC) 라벨·배지 — 정민재(4) 연계
 export const TRADE_STATUS_LABEL = {
   TRDC0003: '거래 진행중',

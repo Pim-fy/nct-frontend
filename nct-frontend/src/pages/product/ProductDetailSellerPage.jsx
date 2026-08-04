@@ -429,6 +429,7 @@ export default function ProductDetailSellerPage() {
                     style={{ width: '100%', fontSize: 16, resize: 'none', overflowY: 'auto' }}
                   />
                   <p style={{ margin: '2px 0 4px', fontSize: 12, color: cmtCn.length >= 100 ? '#c0392b' : '#969696', textAlign: 'right' }}>{cmtCn.length}/100</p>
+                  <p className="muted" style={{ fontSize: 12, margin: '0 0 4px' }}>변경사항은 최대 3개까지 등록할 수 있습니다.</p>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 2 }}>
                     <button className="btn btn-primary btn-sm" onClick={handleCommentSubmit} disabled={cmtSubmitting}>
                       {cmtSubmitting ? '등록 중...' : '등록'}
