@@ -15,6 +15,20 @@ const COLUMNS = [
   },
 ];
 
+// 모바일 카드 한 장 — 배지+날짜 / 금액+전환 후 잔액 순서로 배치 (2026-08-03)
+const renderCard = (r) => (
+  <>
+    <div className="flex items-center justify-between gap-2">
+      <span className="inline-block px-2.5 py-0.5 rounded-lg text-xs font-medium bg-purple-100 text-purple-800">전환</span>
+      <span className="text-xs text-gray-400 whitespace-nowrap">{r.date}</span>
+    </div>
+    <div className="mt-1 flex items-baseline justify-between gap-2">
+      <span className="text-base font-bold text-blue-700">{r.amount.toLocaleString()}P</span>
+      <span className="text-xs text-gray-400 whitespace-nowrap">전환 후 잔액 {r.balanceAfter.toLocaleString()}P</span>
+    </div>
+  </>
+);
+
 /**
  * 전환 내역 테이블 (F-PAY-010)
  * - 충전·환전과 달리 전환은 승인 대기 상태 없이 즉시 완료돼서 별도 신청 이력 API가 없다.
@@ -37,6 +51,7 @@ const PointConvertHistoryTable = ({ rows, limit, onExpand, loading }) => {
       onExpand={limit ? onExpand : undefined}
       pageSize={limit ? undefined : 10}
       loading={loading}
+      renderCard={renderCard}
     />
   );
 };

@@ -5,16 +5,22 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Truck, BrushCleaning, Wrench, Armchair, GraduationCap } from 'lucide-react';
 import { getCategories } from '@api/categoryApi';
-import { registerServiceRequest, updateServiceRequest, getServiceRequest } from '@api/serviceRequestApi';
+import {
+  getEditableServiceRequest,
+  getServiceRequestForm,
+  getServiceRequestForms,
+  registerServiceRequest,
+  updateServiceRequest,
+} from '@api/serviceRequestApi';
 import DaumPostcode from 'react-daum-postcode';
 import ErrorMessage from '@components/common/ErrorMessage';
 import AlertModal from '@components/common/AlertModal';
 import ConfirmModal from '@components/common/ConfirmModal';
 import ServiceRequestImageUpload from '@components/service/ServiceRequestImageUpload';
-import { toImageUrl } from '@api/fileApi';
+import { toImageUrl, uploadImage } from '@api/fileApi';
 import DateRangePicker from '@components/product/DateRangePicker';
 import RegionSelector from '@components/common/RegionSelector';
-import { WIZARD_STEPS, CATEGORY_NEXT_STEP, CATEGORY_META } from './serviceRequestWizardSteps';
+import { buildServiceRequestWizardCatalog } from './serviceRequestFormAdapter';
 
 const MAX_IMAGES = 5;
 
@@ -68,39 +74,39 @@ function renderStepTitle(title) {
 
 // 카테고리 진행률 분모 — 실제 chain은 답변할 때마다 늘어나 분모로 못 씀.
 // 분기 중 가장 긴 경로 기준으로 해당 카테고리의 전체 단계 수를 고정 계산한다.
-function getCategoryMaxSteps(stepId, visited = new Set()) {
-  if (!stepId || !WIZARD_STEPS[stepId] || visited.has(stepId)) return 0;
-  const step = WIZARD_STEPS[stepId];
+function getCategoryMaxSteps(steps, stepId, visited = new Set()) {
+  if (!stepId || !steps[stepId] || visited.has(stepId)) return 0;
+  const step = steps[stepId];
   const nextVisited = new Set(visited);
   nextVisited.add(stepId);
   let maxNext = 0;
   if (step.type === 'single') {
     step.options.forEach(opt => {
-      maxNext = Math.max(maxNext, getCategoryMaxSteps(opt.next || step.next, nextVisited));
+      maxNext = Math.max(maxNext, getCategoryMaxSteps(steps, opt.next || step.next, nextVisited));
     });
   } else {
-    maxNext = getCategoryMaxSteps(step.next, nextVisited);
+    maxNext = getCategoryMaxSteps(steps, step.next, nextVisited);
   }
   return 1 + maxNext;
 }
 
 // 분기 단계에서 "기본값(첫 번째 선택지)"을 따라갔을 때의 다음 단계 — 미리보기 카드 자리 계산용
-function getDefaultNextStep(stepId) {
-  const step = WIZARD_STEPS[stepId];
+function getDefaultNextStep(steps, stepId) {
+  const step = steps[stepId];
   if (!step) return null;
   return step.type === 'single' ? (step.options[0]?.next || step.next) : step.next;
 }
 
 // 아직 답변 전이라 실제 다음 단계를 알 수 없는 구간을, 기본 선택지를 따라간 경로로 미리 보여주기
 // 위한 미리보기 단계 id 목록 (실제로 답변하면 이 자리들이 진짜 카드로 교체된다)
-function buildPreviewSteps(startStepId, excludeIds) {
+function buildPreviewSteps(steps, startStepId, excludeIds) {
   const preview = [];
   const visited = new Set(excludeIds);
   let cur = startStepId;
-  while (cur && WIZARD_STEPS[cur] && !visited.has(cur)) {
+  while (cur && steps[cur] && !visited.has(cur)) {
     visited.add(cur);
     preview.push(cur);
-    cur = getDefaultNextStep(cur);
+    cur = getDefaultNextStep(steps, cur);
   }
   return preview;
 }
@@ -140,6 +146,7 @@ export default function ServiceRequestFormPage() {
   const editSvcReqSn = location.state?.svcReqSn ?? null;
 
   const [categories, setCategories] = useState([]);
+  const [formCatalog, setFormCatalog] = useState(() => buildServiceRequestWizardCatalog([]));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [alertMsg, setAlertMsg] = useState('');
@@ -151,11 +158,13 @@ export default function ServiceRequestFormPage() {
   // 로컬 미리보기만 유지한다. API 확정되면 submit 시점에 업로드·연결 호출만 추가하면 됨.
   const [images, setImages] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedFormTemplateSn, setSelectedFormTemplateSn] = useState(null);
   const [chain, setChain] = useState([]);
   const [answers, setAnswers] = useState({});
   const [stepDraft, setStepDraft] = useState({});
   const [isComplete, setIsComplete] = useState(false);
   const [freeTextDraft, setFreeTextDraft] = useState({});
+  const [addressDraft, setAddressDraft] = useState({});
   const [pendingEtcStep, setPendingEtcStep] = useState(null);
 
   // 경매등록과 같은 2단계 구성: 0=요청 정보 입력, 1=요청 확인
@@ -165,6 +174,7 @@ export default function ServiceRequestFormPage() {
   const [policyAgreed, setPolicyAgreed] = useState(false); // 요청 정보 입력 탭 — 견적 요청 정책 동의
   const policyRef = useRef(null);
   const agreedRef = useRef(null);
+  const detailSectionRef = useRef(null);
 
   // 아코디언 상태 — 단계 카드는 한 번에 하나만 펼쳐진다(진행 중인 카드든 재편집하려는
   // 완료 카드든 동일하게 이 값 하나로 표현)
@@ -174,22 +184,155 @@ export default function ServiceRequestFormPage() {
   const [fieldErrors, setFieldErrors] = useState({}); // { 'stepId:fieldKey': 에러 메시지 }
   const [addressSearchKey, setAddressSearchKey] = useState(null); // 주소 검색 중인 'stepId:fieldKey'
 
-  const cardRefs = useRef({});
   const titleSectionRef = useRef(null);
   const categorySectionRef = useRef(null);
 
-  function restoreFromExisting(cat, s) {
+  const {
+    steps: wizardSteps,
+    categoryNextStep,
+    categoryMeta,
+    formByCategorySn,
+    formByTemplateSn,
+  } = formCatalog;
+
+  const scrollToStep = (stepId) => {
+    document.getElementById(`service-request-step-${stepId}`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  function restoreFromExisting(cat, s, catalog) {
+    const steps = catalog.steps;
+    const storedForm = s.formTemplateSn
+      ? catalog.formByTemplateSn[String(s.formTemplateSn)]
+      : null;
+    const form = storedForm || catalog.formByCategorySn[String(cat.catSn)];
+    const firstStepId = form?.firstStepId;
+    if (!firstStepId || !steps[firstStepId]) {
+      throw new Error('FORM_TEMPLATE_NOT_FOUND');
+    }
     setSelectedCategory({ catSn: cat.catSn, catNm: cat.catNm });
+    setSelectedFormTemplateSn(form.formTemplateSn);
+
+    if (s.formTemplateSn && Array.isArray(s.structuredAnswers)) {
+      const groupedAnswers = s.structuredAnswers.reduce((acc, answer) => {
+        (acc[answer.stepKey] ||= []).push(answer);
+        return acc;
+      }, {});
+      const groupedAddresses = (s.addressList || []).reduce((acc, address) => {
+        (acc[address.stepKey] ||= []).push(address);
+        return acc;
+      }, {});
+      const newChain = [];
+      const newAnswers = {};
+      const newDraft = {};
+      const newFreeText = {};
+      const newAddressDraft = {};
+      const visited = new Set();
+      let stepId = firstStepId;
+
+      while (stepId && steps[stepId] && !visited.has(stepId)) {
+        visited.add(stepId);
+        const current = steps[stepId];
+        const stored = groupedAnswers[current.stepKey] || [];
+        const storedAddresses = groupedAddresses[current.stepKey] || [];
+        newChain.push(stepId);
+
+        if (current.type === 'single') {
+          const item = stored.find(answer => !answer.fieldKey);
+          if (!item) break;
+          const option = current.options.find(candidate => candidate.value === item.optionValue);
+          if (!option) break;
+          const display = item.otherText ? `${option.label}(${item.otherText})` : option.label;
+          newAnswers[stepId] = display;
+          if (item.otherText) newFreeText[`${stepId}:${ETC}`] = item.otherText;
+          stepId = option.next || current.next;
+          continue;
+        }
+
+        if (current.type === 'multi') {
+          const items = stored.filter(answer => !answer.fieldKey);
+          if (items.length === 0) break;
+          const labels = items.map(item => {
+            const option = current.options.find(candidate => candidate.value === item.optionValue);
+            if (!option) return null;
+            if (item.otherText) newFreeText[`${stepId}:${ETC}`] = item.otherText;
+            return item.otherText ? `${option.label}(${item.otherText})` : option.label;
+          }).filter(Boolean);
+          newDraft[stepId] = labels.map(label => label.startsWith(`${ETC}(`) ? ETC : label);
+          newAnswers[stepId] = labels.join(', ');
+          stepId = current.next;
+          continue;
+        }
+
+        const draft = {};
+        current.fields.forEach(field => {
+          if (field.type === 'address') {
+            const address = storedAddresses.find(item => item.addressFieldKey === field.fieldKey);
+            if (!address) return;
+            draft[field.key] = address.address || '';
+            newAddressDraft[`${stepId}:${field.key}`] = {
+              address: address.address || '',
+              zonecode: address.zonecode || '',
+              sido: address.sido || '',
+              sigungu: address.sigungu || '',
+            };
+            if (address.detailFieldKey) {
+              const detailField = current.fields.find(item => item.fieldKey === address.detailFieldKey);
+              if (detailField) draft[detailField.key] = address.detailAddress || '';
+            }
+            return;
+          }
+          if (storedAddresses.some(address => address.detailFieldKey === field.fieldKey)) return;
+          const item = stored.find(answer => answer.fieldKey === field.fieldKey);
+          if (!item) return;
+          if (item.optionValue != null) {
+            const option = field.optionDefs?.find(candidate => candidate.value === item.optionValue);
+            if (!option) return;
+            draft[field.key] = option.label;
+            if (item.otherText) newFreeText[`${stepId}:${field.key}`] = item.otherText;
+          } else {
+            draft[field.key] = item.value ?? '';
+          }
+        });
+
+        const vals = current.fields
+          .map(field => {
+            let value = String(draft[field.key] ?? '').trim();
+            if (value === ETC && newFreeText[`${stepId}:${field.key}`]) {
+              value = `${ETC}(${newFreeText[`${stepId}:${field.key}`]})`;
+            }
+            return value ? `${field.key}: ${value}` : null;
+          })
+          .filter(Boolean);
+        const hasRequiredInput = current.fields.some(field => field.required && !draft[field.key]);
+        if (vals.length === 0 && hasRequiredInput) break;
+        newDraft[stepId] = draft;
+        newAnswers[stepId] = vals.length ? vals.join(' / ') : '(입력 없음)';
+        stepId = current.next;
+      }
+
+      setChain(newChain);
+      setAnswers(newAnswers);
+      setStepDraft(newDraft);
+      setFreeTextDraft(newFreeText);
+      setAddressDraft(newAddressDraft);
+      const lastId = newChain[newChain.length - 1];
+      setIsComplete(Boolean(lastId && newAnswers[lastId] !== undefined && !steps[lastId]?.next));
+      setImages((s.imageList ?? []).map(img => ({ id: img.flSn, flSn: img.flSn, url: img.url, file: null })));
+      if (newChain.length > 0) setPolicyAgreed(true);
+      return;
+    }
+
     const items = Array.isArray(s.items) ? s.items : [];
-    let stepId = CATEGORY_NEXT_STEP[cat.catNm];
+    let stepId = firstStepId;
     let idx = 0;
     const newChain = [];
     const newAnswers = {};
     const newDraft = {};
     const newFreeText = {};
 
-    while (stepId && WIZARD_STEPS[stepId] && idx < items.length) {
-      const step = WIZARD_STEPS[stepId];
+    while (stepId && steps[stepId] && idx < items.length) {
+      const step = steps[stepId];
       const raw = items[idx];
       const prefix = `${step.title}: `;
       if (typeof raw !== 'string' || !raw.startsWith(prefix)) break;
@@ -211,36 +354,81 @@ export default function ServiceRequestFormPage() {
       stepId = nextId;
     }
 
-    if (s.svcReqBdgtAmt != null) {
-      newDraft.budget = { 예산: String(s.svcReqBdgtAmt) };
+    // budget/memo는 저장 시 items 배열에서 빠지고 svcReqBdgtAmt/svcReqCn으로 따로 저장되므로,
+    // 위 루프가 자연스럽게 소비를 못 하고 budget 직전에서 멈춘다. 여기서 체인에 직접 이어붙인다.
+    // svcReqBdgtAmt가 null이면 "아직 예산 단계에 도달 못 함"과 "미정을 선택함"을 구분할 수 없는데,
+    // 여기까지 온 이상 이미 예산 단계를 지났다고 보고 미정으로 간주한다.
+    if (steps[stepId]?.stepKey === 'budget') {
+      const hasAmount = s.svcReqBdgtAmt != null;
+      newAnswers[stepId] = hasAmount ? `예산: ${Number(s.svcReqBdgtAmt).toLocaleString('ko-KR')}원` : '예산: 미정';
+      newDraft[stepId] = { 예산: hasAmount ? String(s.svcReqBdgtAmt) : '미정' };
+      newChain.push(stepId);
+      stepId = steps[stepId].next;
     }
-    if (s.svcReqCn) {
-      newDraft.memo = { 메모: s.svcReqCn };
+    if (steps[stepId]?.stepKey === 'memo') {
+      newAnswers[stepId] = s.svcReqCn ? `메모: ${s.svcReqCn}` : '(입력 없음)';
+      newDraft[stepId] = { 메모: s.svcReqCn || '' };
+      newChain.push(stepId);
     }
 
     setChain(newChain);
     setAnswers(newAnswers);
     setStepDraft(prev => ({ ...prev, ...newDraft }));
     setFreeTextDraft(prev => ({ ...prev, ...newFreeText }));
+    setAddressDraft({});
+    setImages((s.imageList ?? []).map(img => ({ id: img.flSn, flSn: img.flSn, url: img.url, file: null })));
+    // 기존에 임시저장된 요청서를 이어서 작성하는 경우 — 이미 답변된 단계가 있다는 건
+    // 정책 안내 단계를 지나 여기까지 진행했다는 뜻이므로 다시 체크하게 하지 않는다.
+    if (newChain.length > 0) setPolicyAgreed(true);
   }
 
   useEffect(() => {
-    getCategories(SERVICE_DOMAIN_CD)
-      .then(res => {
-        const children = res.data.filter(c => c.catParentSn !== null);
-        setCategories(children);
-        if (editSvcReqSn) {
-          getServiceRequest(editSvcReqSn)
-            .then(res2 => {
-              const s = res2.data;
-              setTitle(s.svcReqTtl ?? '');
-              const cat = children.find(c => String(c.catSn) === String(s.catSn));
-              if (cat) restoreFromExisting(cat, s);
-            })
-            .catch(() => setError('기존 요청서 정보를 불러오지 못했습니다.'));
+    let cancelled = false;
+
+    const loadForm = async () => {
+      const [categoryResponse, formResponse] = await Promise.all([
+        getCategories(SERVICE_DOMAIN_CD),
+        getServiceRequestForms(),
+      ]);
+      const children = categoryResponse.data.filter(c => c.catParentSn !== null);
+      const forms = [...(formResponse.data || [])];
+      let existing = null;
+
+      if (editSvcReqSn) {
+        const response = await getEditableServiceRequest(editSvcReqSn);
+        existing = response.data;
+        const hasStoredVersion = !existing.formTemplateSn
+          || forms.some(form => String(form.formTemplateSn) === String(existing.formTemplateSn));
+        if (!hasStoredVersion) {
+          const storedFormResponse = await getServiceRequestForm(existing.formTemplateSn);
+          forms.push(storedFormResponse.data);
         }
-      })
-      .catch(() => setError('카테고리를 불러오지 못했습니다.'));
+      }
+
+      if (cancelled) return;
+      const catalog = buildServiceRequestWizardCatalog(forms);
+      setCategories(children);
+      setFormCatalog(catalog);
+
+      if (existing) {
+        setTitle(existing.svcReqTtl ?? '');
+        const cat = children.find(c => String(c.catSn) === String(existing.catSn));
+        if (!cat) throw new Error('CATEGORY_NOT_FOUND');
+        restoreFromExisting(cat, existing, catalog);
+      }
+    };
+
+    loadForm()
+      .catch(() => {
+        if (cancelled) return;
+        setError(editSvcReqSn
+          ? '기존 요청서 또는 동적 폼 정보를 불러오지 못했습니다.'
+          : '카테고리별 요청 양식을 불러오지 못했습니다.');
+      });
+
+    return () => {
+      cancelled = true;
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -253,9 +441,8 @@ export default function ServiceRequestFormPage() {
   useEffect(() => {
     const lastId = chain[chain.length - 1];
     if (!lastId || answers[lastId]) return; // 새로 추가된 미답변 단계만 스크롤
-    const el = cardRefs.current[lastId];
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, [chain]);
+    scrollToStep(lastId);
+  }, [chain, answers]);
 
   // 요청 정보 입력(0)↔요청 확인(1) 탭 전환 시 맨 위로 스크롤한다.
   // 안 그러면 스크롤이 한참 내려간 채로 탭만 바뀌어서, 화면이 짧아진 쪽으로 넘어갈 때
@@ -274,6 +461,11 @@ export default function ServiceRequestFormPage() {
       setAnswers(prev => { const n = { ...prev }; removed.forEach(id => delete n[id]); return n; });
       setStepDraft(prev => { const n = { ...prev }; removed.forEach(id => delete n[id]); return n; });
       setFreeTextDraft(prev => {
+        const n = { ...prev };
+        Object.keys(n).forEach(key => { if (removed.some(id => key.startsWith(`${id}:`))) delete n[key]; });
+        return n;
+      });
+      setAddressDraft(prev => {
         const n = { ...prev };
         Object.keys(n).forEach(key => { if (removed.some(id => key.startsWith(`${id}:`))) delete n[key]; });
         return n;
@@ -311,10 +503,12 @@ export default function ServiceRequestFormPage() {
         msg: '카테고리를 변경하면 이후 입력한 내용이 모두 초기화됩니다.',
         action: () => {
           setSelectedCategory(null);
+          setSelectedFormTemplateSn(null);
           setChain([]);
           setAnswers({});
           setStepDraft({});
           setFreeTextDraft({});
+          setAddressDraft({});
           setPendingEtcStep(null);
           setExpandedStepId(null);
           setIsComplete(false);
@@ -327,16 +521,23 @@ export default function ServiceRequestFormPage() {
   };
 
   const handleCategorySelect = (cat) => {
+    const form = formByCategorySn[String(cat.catSn)];
+    if (!form) {
+      setAlertMsg('이 카테고리의 요청 양식을 불러올 수 없습니다.');
+      return;
+    }
     setSelectedCategory({ catSn: cat.catSn, catNm: cat.catNm });
+    setSelectedFormTemplateSn(form.formTemplateSn);
     setAnswers({});
     setStepDraft({});
     setFreeTextDraft({});
+    setAddressDraft({});
     setPendingEtcStep(null);
     setIsComplete(false);
     setEditingCategory(false);
     setFieldErrors({});
     setError('');
-    const firstStep = CATEGORY_NEXT_STEP[cat.catNm];
+    const firstStep = form.firstStepId;
     setChain(firstStep ? [firstStep] : []);
     setExpandedStepId(firstStep || null);
     // 카테고리를 고르면 아래 상세 설정 카드는 정책 동의 전까지 비활성 상태이므로,
@@ -350,6 +551,16 @@ export default function ServiceRequestFormPage() {
 
   const handleStepCardHeaderClick = (stepId) => {
     setExpandedStepId(prev => (prev === stepId ? null : stepId));
+  };
+
+  // 진행률의 완료된(done) 배지를 클릭하면 해당 단계 카드를 펼치고 그 위치로 스크롤한다
+  const handleProgressBadgeClick = (stepIndex) => {
+    const stepId = chain[stepIndex];
+    if (!stepId) return;
+    setExpandedStepId(stepId);
+    requestAnimationFrame(() => {
+      scrollToStep(stepId);
+    });
   };
 
   // 편집 중이던 분기 단계의 답변을 교체할 때 공통으로 쓰는 로직 —
@@ -394,7 +605,7 @@ export default function ServiceRequestFormPage() {
     }
     setPendingEtcStep(prev => (prev === stepId ? null : prev));
 
-    const step = WIZARD_STEPS[stepId];
+    const step = wizardSteps[stepId];
     const newNext = option.next || step.next;
 
     if (answers[stepId] !== undefined) {
@@ -411,11 +622,11 @@ export default function ServiceRequestFormPage() {
     if (fieldErrors[`${stepId}:single`]) {
       setFieldErrors(prev => { const n = { ...prev }; delete n[`${stepId}:single`]; return n; });
     }
-    const step = WIZARD_STEPS[stepId];
+    const step = wizardSteps[stepId];
     const text = (freeTextDraft[`${stepId}:${ETC}`] || '').trim();
     if (!text) {
       setAlertMsg('기타 내용을 입력해 주세요.');
-      cardRefs.current[stepId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      scrollToStep(stepId);
       return;
     }
     const option = step.options.find(o => o.label === ETC);
@@ -434,17 +645,19 @@ export default function ServiceRequestFormPage() {
 
   // ── multi 선택 ──────────────────────────────────────────────────────────────
 
-  const NONE_LABEL = '없음';
+  // "없음"/"해당없음"처럼 "이 항목엔 해당하는 게 없다"는 뜻의 선택지는 다른 선택지와 동시에
+  // 고를 수 없는 독립 항목으로 취급한다
+  const isNoneLabel = label => label === '없음' || label === '해당없음';
   const handleMultiToggle = (stepId, label) => {
     setStepDraft(prev => {
       const cur = prev[stepId] || [];
-      if (label === NONE_LABEL) {
-        // 없음 선택 → 다른 선택지 전부 해제, 없음만 남김 (토글)
-        const next = cur.includes(NONE_LABEL) ? [] : [NONE_LABEL];
+      if (isNoneLabel(label)) {
+        // "없음"류 선택 → 다른 선택지 전부 해제, 이것만 남김 (토글)
+        const next = cur.includes(label) ? [] : [label];
         return { ...prev, [stepId]: next };
       }
-      // 일반 선택지 → 없음 해제 후 토글
-      const withoutNone = cur.filter(l => l !== NONE_LABEL);
+      // 일반 선택지 → "없음"류 전부 해제 후 토글
+      const withoutNone = cur.filter(l => !isNoneLabel(l));
       const next = withoutNone.includes(label) ? withoutNone.filter(l => l !== label) : [...withoutNone, label];
       return { ...prev, [stepId]: next };
     });
@@ -454,19 +667,19 @@ export default function ServiceRequestFormPage() {
   };
 
   const handleMultiConfirm = (stepId) => {
-    const step = WIZARD_STEPS[stepId];
+    const step = wizardSteps[stepId];
     const picked = stepDraft[stepId] || [];
     if (picked.length === 0) {
       const cleanTitle = step.title.replace(/\s*\(복수 선택\)$/, '');
       const msg = `${withEulReul(cleanTitle)} 선택해 주세요.`;
       setAlertMsg(msg);
       setFieldErrors(prev => ({ ...prev, [`${stepId}:multi`]: msg }));
-      cardRefs.current[stepId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      scrollToStep(stepId);
       return;
     }
     if (picked.includes(ETC) && !(freeTextDraft[`${stepId}:${ETC}`] || '').trim()) {
       setAlertMsg('기타 내용을 입력해 주세요.');
-      cardRefs.current[stepId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      scrollToStep(stepId);
       return;
     }
     setFieldErrors(prev => { const n = { ...prev }; delete n[`${stepId}:multi`]; return n; });
@@ -500,7 +713,7 @@ export default function ServiceRequestFormPage() {
   // form 단계의 필수·숫자포함·기타텍스트 검증 — 실패 시 알림+포커스 이동+인라인 에러를 설정하고
   // false를 반환한다. 카드 안의 "다음" 버튼과 화면 하단 전체 "다음" 버튼(goNext) 양쪽에서 재사용
   const validateFormStep = (stepId) => {
-    const step = WIZARD_STEPS[stepId];
+    const step = wizardSteps[stepId];
     const values = stepDraft[stepId] || {};
     // hideWhen 조건에 걸려 화면에 안 보이는 필드(예: 온라인·화상 레슨의 지역)와,
     // 같은 단계 안 다른 필드가 채워져 비활성화된 필드(예: 예상 금액대 선택 시 예산)는 검증에서도 뺀다
@@ -519,7 +732,7 @@ export default function ServiceRequestFormPage() {
         const msg = `${withEulReul(f.key)} ${verb}해 주세요.`;
         setFieldErrors(prev => ({ ...prev, [errKey]: msg }));
         setAlertMsg(msg);
-        cardRefs.current[stepId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        scrollToStep(stepId);
         return false;
       }
       if (f.requireDigit && raw && !/\d/.test(raw)) {
@@ -527,7 +740,7 @@ export default function ServiceRequestFormPage() {
         const msg = `${f.key}에 숫자를 포함해 입력해 주세요.`;
         setFieldErrors(prev => ({ ...prev, [errKey]: msg }));
         setAlertMsg(msg);
-        cardRefs.current[stepId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        scrollToStep(stepId);
         return false;
       }
     }
@@ -536,7 +749,7 @@ export default function ServiceRequestFormPage() {
     );
     if (etcFieldMissingText) {
       setAlertMsg('기타 내용을 입력해 주세요.');
-      cardRefs.current[stepId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      scrollToStep(stepId);
       return false;
     }
     return true;
@@ -544,7 +757,7 @@ export default function ServiceRequestFormPage() {
 
   const handleFormConfirm = (stepId) => {
     if (!validateFormStep(stepId)) return;
-    const step = WIZARD_STEPS[stepId];
+    const step = wizardSteps[stepId];
     const values = stepDraft[stepId] || {};
     // hideWhen 조건에 걸려 숨겨졌거나 disabledWhenFilled로 비활성화된 필드는
     // 값이 남아있어도 저장하지 않는다
@@ -598,32 +811,148 @@ export default function ServiceRequestFormPage() {
       categorySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return false;
     }
+    if (!selectedFormTemplateSn) {
+      setAlertMsg('서비스 요청 양식을 불러오지 못했습니다. 카테고리를 다시 선택해 주세요.');
+      categorySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return false;
+    }
     return true;
   };
 
-  const buildPayload = (statusCd) => {
-    const budgetDraft = stepDraft.budget || {};
+  const buildStructuredSubmission = () => {
+    const structuredAnswers = [];
+    const addressList = [];
+
+    chain.forEach(stepId => {
+      const current = wizardSteps[stepId];
+      if (!current) return;
+
+      if (current.type === 'single') {
+        const selected = answers[stepId];
+        if (selected === undefined) return;
+        const label = selected.startsWith(`${ETC}(`) ? ETC : selected;
+        const option = current.options.find(candidate => candidate.label === label);
+        if (!option) return;
+        structuredAnswers.push({
+          stepKey: current.stepKey,
+          optionValue: option.value,
+          otherText: label === ETC ? (freeTextDraft[`${stepId}:${ETC}`] || '').trim() || null : null,
+        });
+        return;
+      }
+
+      if (current.type === 'multi') {
+        (stepDraft[stepId] || []).forEach(label => {
+          const option = current.options.find(candidate => candidate.label === label);
+          if (!option) return;
+          structuredAnswers.push({
+            stepKey: current.stepKey,
+            optionValue: option.value,
+            otherText: label === ETC ? (freeTextDraft[`${stepId}:${ETC}`] || '').trim() || null : null,
+          });
+        });
+        return;
+      }
+
+      const values = stepDraft[stepId] || {};
+      const visibleFields = current.fields.filter(field =>
+        (!field.hideWhen || answers[field.hideWhen.step] !== field.hideWhen.equals)
+        && (!field.disabledWhenFilled || !String(values[field.disabledWhenFilled] || '').trim())
+      );
+      const detailFieldKeys = new Set();
+
+      visibleFields.filter(field => field.type === 'address').forEach(field => {
+        const address = String(values[field.key] || '').trim();
+        if (!address) return;
+        const detailField = visibleFields.find(candidate =>
+          candidate.fieldKey !== field.fieldKey
+          && candidate.type === 'text'
+          && candidate.sensitiveYn === 'Y'
+          && candidate.row
+          && candidate.row === field.row
+          && candidate.key.includes('상세주소')
+        );
+        if (detailField) detailFieldKeys.add(detailField.fieldKey);
+        const metadata = addressDraft[`${stepId}:${field.key}`] || {};
+        addressList.push({
+          stepKey: current.stepKey,
+          addressFieldKey: field.fieldKey,
+          detailFieldKey: detailField?.fieldKey || null,
+          sequence: 1,
+          address,
+          detailAddress: detailField ? String(values[detailField.key] || '').trim() || null : null,
+          zonecode: metadata.zonecode || null,
+          sido: metadata.sido || null,
+          sigungu: metadata.sigungu || null,
+        });
+      });
+
+      visibleFields.forEach(field => {
+        if (field.type === 'address' || detailFieldKeys.has(field.fieldKey)) return;
+        const rawValue = String(values[field.key] || '').trim();
+        if (!rawValue) return;
+
+        if (field.type === 'choice' || field.type === 'select') {
+          const option = field.optionDefs?.find(candidate => candidate.label === rawValue);
+          if (!option) return;
+          structuredAnswers.push({
+            stepKey: current.stepKey,
+            fieldKey: field.fieldKey,
+            optionValue: option.value,
+            otherText: rawValue === ETC
+              ? (freeTextDraft[`${stepId}:${field.key}`] || '').trim() || null
+              : null,
+          });
+          return;
+        }
+
+        structuredAnswers.push({
+          stepKey: current.stepKey,
+          fieldKey: field.fieldKey,
+          value: rawValue,
+        });
+      });
+    });
+
+    return { structuredAnswers, addressList };
+  };
+
+  const buildPayload = (statusCd, flSnList) => {
+    const budgetStepId = chain.find(stepId => wizardSteps[stepId]?.stepKey === 'budget');
+    const memoStepId = chain.find(stepId => wizardSteps[stepId]?.stepKey === 'memo');
+    const budgetDraft = (budgetStepId && stepDraft[budgetStepId]) || {};
     const budgetRaw = budgetDraft['예산'];
     const hasBudget = budgetRaw && budgetRaw !== '미정';
     const budgetAmount = hasBudget ? Number(String(budgetRaw).replace(/[^0-9]/g, '')) : null;
-    const memoText = (stepDraft.memo?.['메모'] || '').trim() || null;
-    const items = chain
-      .filter(id => id !== 'budget' && id !== 'memo')
-      .map(id => `${WIZARD_STEPS[id].title}: ${answers[id]}`);
+    const memoText = ((memoStepId && stepDraft[memoStepId]?.['메모']) || '').trim() || null;
+    const { structuredAnswers, addressList } = buildStructuredSubmission();
     return {
       catSn: Number(selectedCategory.catSn),
+      formTemplateSn: Number(selectedFormTemplateSn),
       svcReqTtl: title.trim(),
       svcReqCn: memoText,
       svcReqBdgtAmt: budgetAmount != null && !Number.isNaN(budgetAmount) ? budgetAmount : null,
       svcReqStatusCd: statusCd,
-      items,
+      structuredAnswers,
+      addressList,
+      flSnList,
     };
   };
 
   const submit = async (statusCd) => {
     setLoading(true);
     try {
-      const payload = buildPayload(statusCd);
+      // 사진은 선택 시점엔 로컬 blob 미리보기만 두고, 제출 시점에 한 번에 업로드한다
+      // (상품등록 handleSubmit과 동일한 패턴) — 이미 업로드된(수정 모드) 이미지는 재업로드하지 않는다.
+      const uploadedImages = await Promise.all(images.map(async img => {
+        if (img.flSn) return img;
+        const res = await uploadImage(img.file, 'service-request');
+        URL.revokeObjectURL(img.url);
+        return { ...img, flSn: res.data.flSn, url: res.data.url };
+      }));
+      const flSnList = uploadedImages.map(img => img.flSn);
+
+      const payload = buildPayload(statusCd, flSnList);
       const result = editSvcReqSn
         ? await updateServiceRequest(editSvcReqSn, payload)
         : await registerServiceRequest(payload);
@@ -639,9 +968,10 @@ export default function ServiceRequestFormPage() {
   const handleDraft = () => { if (validateBasic()) submit('SVCC0001'); };
 
   const goNext = () => {
-    if (!validateBasic()) return;
+    if (!validateBasic()) { console.log('[goNext] blocked: validateBasic 실패(제목/카테고리)'); return; }
 
     if (!policyAgreed) {
+      console.log('[goNext] blocked: 정책 미동의');
       setAlertMsg('견적 요청 정책을 확인하고 동의해 주세요.');
       policyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
@@ -650,68 +980,81 @@ export default function ServiceRequestFormPage() {
     // 이미 답변된 단계를 다시 열어 편집하는 중이면, 그 초안이 지금 유효한지부터 확인한다.
     // 안 그러면 체인 맨 끝(재편집 중인 단계와 무관한 이후 단계)이 엉뚱하게 지목된다.
     if (expandedStepId && answers[expandedStepId] !== undefined) {
-      const editingStep = WIZARD_STEPS[expandedStepId];
+      const editingStep = wizardSteps[expandedStepId];
+      console.log('[goNext] 재편집 중인 카드 검증:', expandedStepId, editingStep?.type);
       if (editingStep?.type === 'multi') {
         const picked = stepDraft[expandedStepId] || [];
         if (picked.length === 0) {
+          console.log('[goNext] blocked: 재편집 중 multi 미선택', expandedStepId);
           const cleanTitle = editingStep.title.replace(/\s*\(복수 선택\)$/, '');
           const msg = `${withEulReul(cleanTitle)} 선택해 주세요.`;
           setAlertMsg(msg);
           setFieldErrors(prev => ({ ...prev, [`${expandedStepId}:multi`]: msg }));
-          cardRefs.current[expandedStepId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          scrollToStep(expandedStepId);
           return;
         }
       } else if (editingStep?.type === 'form') {
-        if (!validateFormStep(expandedStepId)) return;
+        const ok = validateFormStep(expandedStepId);
+        console.log('[goNext] 재편집 중 form 검증 결과:', expandedStepId, ok);
+        if (!ok) { console.log('[goNext] blocked: 재편집 중 form 검증 실패', expandedStepId); return; }
       }
     }
 
     // isComplete는 상태값이라 재편집 흐름(같은 분기로 재선택 등)에서 실제 진행 상황과 어긋날 수 있어,
     // 여기서는 체인 끝 단계가 실제로 답변됐고 다음 단계가 없는지를 그 자리에서 다시 계산해 사용한다.
     const lastId = chain[chain.length - 1];
-    const lastStep = lastId ? WIZARD_STEPS[lastId] : null;
+    const lastStep = lastId ? wizardSteps[lastId] : null;
     const actuallyComplete = !!lastId && answers[lastId] !== undefined && !lastStep?.next;
+    console.log('[goNext] lastId:', lastId, 'lastStep.type:', lastStep?.type, 'lastStep.next:', lastStep?.next, 'answers[lastId] 존재:', lastId ? answers[lastId] !== undefined : null, 'actuallyComplete:', actuallyComplete);
 
     if (!actuallyComplete) {
+      console.log('[goNext] 미완료 처리 진입, lastId:', lastId, 'type:', lastStep?.type);
       if (lastStep?.type === 'form') {
         // 카드 안 "다음" 버튼과 동일한 검증(알림+포커스+인라인 에러)을 그대로 재사용.
-        if (!validateFormStep(lastId)) return;
+        const ok = validateFormStep(lastId);
+        console.log('[goNext] 마지막 form 카드 검증 결과:', lastId, ok);
+        if (!ok) { console.log('[goNext] blocked: 마지막 form 카드 검증 실패', lastId); return; }
         // 필수 항목이 하나도 없는 단계(예: 특이사항 메모)는 안내 문구로 막을 이유가 없으니
         // 카드 안 버튼을 누른 것과 동일하게 바로 확정 처리한다.
         if (!lastStep.fields.some(f => f.required)) {
+          console.log('[goNext] 필수 없는 form 자동 확정:', lastId, '다음단계 없음?', !lastStep.next);
           handleFormConfirm(lastId);
           // 이 단계가 마지막(다음 단계 없음)이면 확정과 동시에 완료된 것이므로 바로 확인 탭으로 넘어간다.
           // isComplete는 handleFormConfirm 내부 setState라 이 시점엔 아직 반영 전이라 여기서 직접 판단한다.
-          if (!lastStep.next) setStep(1);
+          if (!lastStep.next) { console.log('[goNext] setStep(1) 호출 (자동확정 경로)'); setStep(1); }
           return;
         }
+        console.log('[goNext] 필수 있는 form 카드, 자동확정 안 하고 아래 공용 안내로 진행:', lastId);
         // 필수 항목은 다 채웠지만 카드 안 버튼을 아직 안 눌러 확정 안 된 경우엔 여기서
         // return하지 않고 아래 공용 안내 문구로 이어지게 한다.
       }
       if (lastStep?.type === 'multi') {
         const picked = stepDraft[lastId] || [];
         if (picked.length === 0) {
+          console.log('[goNext] blocked: 마지막 multi 카드 미선택', lastId);
           const cleanTitle = lastStep.title.replace(/\s*\(복수 선택\)$/, '');
           const msg = `${withEulReul(cleanTitle)} 선택해 주세요.`;
           setAlertMsg(msg);
           setFieldErrors(prev => ({ ...prev, [`${lastId}:multi`]: msg }));
-          cardRefs.current[lastId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          scrollToStep(lastId);
           return;
         }
       }
 
+      console.log('[goNext] blocked: 공용 안내 문구(모든 단계를 마쳐야) 표시, lastId:', lastId, 'type:', lastStep?.type);
       const msg = lastStep?.type === 'single'
         ? `${withEulReul(lastStep.title)} 선택해 주세요.`
         : '모든 단계를 마쳐야 다음으로 진행할 수 있어요. \n진행 중이라면 임시저장을 이용해 주세요.';
       setAlertMsg(msg);
       if (lastId) {
-        cardRefs.current[lastId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        scrollToStep(lastId);
         if (lastStep?.type === 'single') {
           setFieldErrors(prev => ({ ...prev, [`${lastId}:single`]: msg }));
         }
       }
       return;
     }
+    console.log('[goNext] setStep(1) 호출 (완료 경로)');
     setStep(1);
   };
 
@@ -739,6 +1082,15 @@ export default function ServiceRequestFormPage() {
     const fieldKey = addressSearchKey.slice(colonIdx + 1);
     const address = data.roadAddress || data.jibunAddress || '';
     handleFormFieldChange(stepId, fieldKey, address);
+    setAddressDraft(prev => ({
+      ...prev,
+      [addressSearchKey]: {
+        address,
+        zonecode: data.zonecode || '',
+        sido: data.sido || '',
+        sigungu: data.sigungu || '',
+      },
+    }));
     if (fieldErrors[addressSearchKey]) setFieldErrors(prev => { const n = { ...prev }; delete n[addressSearchKey]; return n; });
     setAddressSearchKey(null);
   };
@@ -752,11 +1104,17 @@ export default function ServiceRequestFormPage() {
   // 하는 동안 expandedStepId가 자연스럽게 이 조건을 갱신하므로 별도 해제 로직이 필요 없다.
   const editingStepIndex = expandedStepId && answers[expandedStepId] !== undefined ? chain.indexOf(expandedStepId) : -1;
   // 카테고리별 전체 단계 수(분기 중 가장 긴 경로 기준) — chain.length 대신 진행률 분모로 사용
-  const categoryMaxSteps = selectedCategory ? getCategoryMaxSteps(CATEGORY_NEXT_STEP[selectedCategory.catNm]) : 0;
+  const categoryMaxSteps = selectedCategory
+    ? getCategoryMaxSteps(
+        wizardSteps,
+        formByTemplateSn[String(selectedFormTemplateSn)]?.firstStepId
+          || categoryNextStep[selectedCategory.catNm],
+      )
+    : 0;
   const answeredStepCount = chain.filter(id => answers[id] !== undefined).length;
   // 현재 진행 중인(맨 마지막) 단계 다음부터 기본 경로를 따라간 미리보기 카드 — 아직 실제로 답변하지 않은 구간
   const previewStepIds = selectedCategory && chain.length > 0
-    ? buildPreviewSteps(getDefaultNextStep(chain[chain.length - 1]), chain)
+    ? buildPreviewSteps(wizardSteps, getDefaultNextStep(wizardSteps, chain[chain.length - 1]), chain)
     : [];
   // 희망일 달력에서 최대 6개월 뒤까지만 넘겨볼 수 있게 제한
   const maxCalendarNavDate = (() => {
@@ -861,13 +1219,13 @@ export default function ServiceRequestFormPage() {
                       type="button"
                       onClick={handleCategoryCardHeaderClick}
                       className="flex w-full cursor-pointer items-center gap-4 rounded-xl p-4 text-left text-white transition-opacity hover:opacity-90"
-                      style={{ backgroundColor: (CATEGORY_META[selectedCategory.catNm] || {}).color || '#5f5e5a' }}
+                      style={{ backgroundColor: (categoryMeta[selectedCategory.catNm] || {}).color || '#5f5e5a' }}
                     >
                       <CategoryIcon name={selectedCategory.catNm} />
                       <div>
                         <p className="m-0 text-lg font-bold leading-tight">{selectedCategory.catNm}</p>
-                        {(CATEGORY_META[selectedCategory.catNm] || {}).sub && (
-                          <p className="m-0 mt-1 text-sm opacity-90">{CATEGORY_META[selectedCategory.catNm].sub}</p>
+                        {(categoryMeta[selectedCategory.catNm] || {}).sub && (
+                          <p className="m-0 mt-1 text-sm opacity-90">{categoryMeta[selectedCategory.catNm].sub}</p>
                         )}
                       </div>
                     </button>
@@ -878,7 +1236,7 @@ export default function ServiceRequestFormPage() {
                   <div className="border-t border-[#e8e8e8] px-6 py-5">
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                       {categories.map(cat => {
-                        const meta = CATEGORY_META[cat.catNm] || {};
+                        const meta = categoryMeta[cat.catNm] || {};
                         const active = selectedCategory?.catSn === cat.catSn;
                         const color = meta.color || '#5f5e5a';
                         return (
@@ -920,40 +1278,6 @@ export default function ServiceRequestFormPage() {
                 )}
               </div>
 
-              {/* 상세 항목 진행률 — 오른쪽 위저드 번호 배지와 같은 점-연결선 형태로 표시 */}
-              {selectedCategory && categoryMaxSteps > 0 && (
-                <div className="border-t border-[#e8e8e8] px-6 py-5">
-                  <div className="mb-3 flex items-center justify-between text-sm">
-                    <span className="font-semibold text-[#5f5e5a]">상세 항목 진행률</span>
-                    <span className="font-bold text-primary">{answeredStepCount}/{categoryMaxSteps}</span>
-                  </div>
-                  <div className="flex w-full items-center">
-                    {Array.from({ length: categoryMaxSteps }, (_, i) => {
-                      const state = i < answeredStepCount ? 'done' : i === answeredStepCount ? 'current' : 'upcoming';
-                      return (
-                        <div key={i} className="flex flex-1 items-center last:flex-none">
-                          <span
-                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                              state === 'done' ? 'bg-primary text-white'
-                              : state === 'current' ? 'bg-[#e5efff] text-primary ring-2 ring-primary'
-                              : 'bg-[#eceae4] text-[#9f9e9a]'
-                            }`}
-                          >
-                            {i + 1}
-                          </span>
-                          {i < categoryMaxSteps - 1 && (
-                            <span className={`h-[2px] flex-1 ${i < answeredStepCount ? 'bg-primary' : 'bg-[#e2e1dc]'}`} />
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {isComplete && (
-                    <p className="mt-3 text-xs font-semibold text-primary">모든 항목을 입력했어요!</p>
-                  )}
-                </div>
-              )}
-
               {/* 3. 사진 첨부 */}
               <div className="border-t border-[#e8e8e8] px-6 py-5">
                 <div className="mb-3 flex items-center gap-3">
@@ -984,7 +1308,14 @@ export default function ServiceRequestFormPage() {
                       <input
                         type="checkbox"
                         checked={policyAgreed}
-                        onChange={e => setPolicyAgreed(e.target.checked)}
+                        onChange={e => {
+                          const checked = e.target.checked;
+                          setPolicyAgreed(checked);
+                          if (checked) {
+                            // 체크하는 순간 방금까지 비활성화돼 있던 요청 상세 설정 쪽으로 포커스를 옮겨준다.
+                            detailSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }
+                        }}
                       />
                       위 견적 요청 정책을 확인하였습니다.
                     </label>
@@ -995,6 +1326,7 @@ export default function ServiceRequestFormPage() {
 
             {/* 오른쪽: 요청 상세 설정 — 정책 미동의 시 비활성화 */}
             <section
+              ref={detailSectionRef}
               className={`overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm transition-opacity ${
                 policyAgreed ? '' : 'pointer-events-none opacity-50'
               }`}
@@ -1009,8 +1341,50 @@ export default function ServiceRequestFormPage() {
                   <p className="py-16 text-center text-sm text-[#888780]">카테고리를 선택하면 상세 항목이 나타납니다.</p>
                 ) : (
                   <div className="flex flex-col gap-4">
+                    {/* 상세 항목 진행률 — 아래 단계 카드들의 답변 진행 상황을 점-연결선 형태로 표시 */}
+                    {categoryMaxSteps > 0 && (
+                      <div className="rounded-2xl border border-[#e8e8e8] bg-white px-6 py-5 shadow-sm">
+                        <div className="mb-3 flex items-center justify-between text-sm">
+                          <span className="font-semibold text-[#5f5e5a]">상세 항목 진행률</span>
+                          <span className="font-bold text-primary">{answeredStepCount}/{categoryMaxSteps}</span>
+                        </div>
+                        <div className="flex w-full items-center">
+                          {Array.from({ length: categoryMaxSteps }, (_, i) => {
+                            const state = i < answeredStepCount ? 'done' : i === answeredStepCount ? 'current' : 'upcoming';
+                            return (
+                              <div key={i} className="flex flex-1 items-center last:flex-none">
+                                {state === 'done' ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleProgressBadgeClick(i)}
+                                    className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary text-xs font-bold text-white transition-opacity hover:opacity-80"
+                                  >
+                                    {i + 1}
+                                  </button>
+                                ) : (
+                                  <span
+                                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                                      state === 'current' ? 'bg-[#e5efff] text-primary ring-2 ring-primary'
+                                      : 'bg-[#eceae4] text-[#9f9e9a]'
+                                    }`}
+                                  >
+                                    {i + 1}
+                                  </span>
+                                )}
+                                {i < categoryMaxSteps - 1 && (
+                                  <span className={`h-[2px] flex-1 ${i < answeredStepCount ? 'bg-primary' : 'bg-[#e2e1dc]'}`} />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {isComplete && (
+                          <p className="mt-3 text-xs font-semibold text-primary">모든 항목을 입력했어요!</p>
+                        )}
+                      </div>
+                    )}
                     {chain.map((stepId, index) => {
-            const step = WIZARD_STEPS[stepId];
+            const step = wizardSteps[stepId];
             if (!step) return null;
             const expanded = isStepExpanded(stepId);
             const stepNum = index + 1;
@@ -1019,8 +1393,8 @@ export default function ServiceRequestFormPage() {
             return (
               <section
                 key={stepId}
+                id={`service-request-step-${stepId}`}
                 className={`overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm ${disabledByEdit ? 'pointer-events-none opacity-50' : ''}`}
-                ref={el => { if (el) cardRefs.current[stepId] = el; }}
               >
                 {/* 카드 헤더 */}
                 <button
@@ -1286,8 +1660,11 @@ export default function ServiceRequestFormPage() {
                           ) : f.type === 'address' ? (
                             <>
                               <div className="flex gap-2">
-                                <input readOnly
-                                  className={`flex-1 rounded-lg border bg-[#f8f8f6] px-3 py-2.5 text-sm outline-none ${fieldErrors[`${stepId}:${f.key}`] ? 'border-red-500' : 'border-[#e2e1dc]'}`}
+                                <input
+                                  readOnly
+                                  onClick={() => setAddressSearchKey(`${stepId}:${f.key}`)}
+                                  onFocus={(e) => e.target.blur()}
+                                  className={`flex-1 cursor-pointer rounded-lg border bg-[#f8f8f6] px-3 py-2.5 text-sm outline-none ${fieldErrors[`${stepId}:${f.key}`] ? 'border-red-500' : 'border-[#e2e1dc]'}`}
                                   placeholder={f.placeholder}
                                   value={stepDraft[stepId]?.[f.key] || ''}
                                 />
@@ -1434,7 +1811,7 @@ export default function ServiceRequestFormPage() {
 
                     {/* 아직 답변하지 않은 다음 단계들 — 자리만 미리 보여주고 클릭 비활성 */}
                     {previewStepIds.map((stepId, i) => {
-                      const previewStep = WIZARD_STEPS[stepId];
+                      const previewStep = wizardSteps[stepId];
                       if (!previewStep) return null;
                       return (
                         <section
@@ -1551,7 +1928,7 @@ export default function ServiceRequestFormPage() {
                               className={`w-32 break-keep px-3 py-2.5 text-left font-semibold border-r border-[#d8d6cf] ${i === arr.length - 1 ? '' : 'border-b border-[#d8d6cf]'}`}
                               style={{ verticalAlign: 'middle', backgroundColor: '#eef2fb', color: '#5f5e5a' }}
                             >
-                              {renderStepTitle(WIZARD_STEPS[stepId].title)}
+                              {renderStepTitle(wizardSteps[stepId].title)}
                             </th>
                             <td className={`px-3 py-2.5 text-[#1d1d1f] ${i === arr.length - 1 ? '' : 'border-b border-[#d8d6cf]'}`}>
                               {parts ? (
@@ -1588,8 +1965,9 @@ export default function ServiceRequestFormPage() {
           </>
         )}
 
-        {/* ── 하단 버튼 ── */}
-        <div className="flex items-center justify-between pb-4 pt-5">
+        {/* ── 하단 버튼 — 화면에 고정해서 스크롤 중에도 항상 같은 위치를 클릭할 수 있게 함
+             (스크롤 애니메이션 중 버튼 위치가 흔들려서 클릭이 빗나가는 문제 방지) ── */}
+        <div className="sticky bottom-0 z-10 flex items-center justify-between border-t border-[#e8e8e8] bg-white pb-4 pt-4">
           {step > 0 ? (
             <button
               type="button"

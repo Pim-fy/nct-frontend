@@ -39,24 +39,55 @@ const PointSummaryCards = ({ balance }) => {
     },
   ];
 
+  const [hero, ...rest] = cards;
+
   return (
-    <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-      {cards.map((card) => (
-        <div
-          key={card.label}
-          className="rounded-[10px] text-white p-5"
-          style={{ backgroundColor: card.color }}
-        >
+    <section>
+      {/* 모바일: 총 보유만 큰 히어로 카드로, 나머지 3개는 작은 타일로 — 첫 화면이 카드 4개로
+          다 차서 스크롤이 길어진다는 지적에 따라 위계를 나눔 (사용자 결정, 2026-08-03) */}
+      <div className="sm:hidden">
+        <div className="rounded-[10px] text-white p-5 mb-2.5" style={{ backgroundColor: hero.color }}>
           <div className="flex items-start gap-3 mb-3">
-            <img src={iconPoint} alt="" className="size-[40px] object-contain shrink-0 mt-0.5" />
+            <img src={iconPoint} alt="" className="size-[36px] object-contain shrink-0 mt-0.5" />
             <div className="min-w-0">
-              <p className="font-bold text-[16px] opacity-90 leading-tight m-0">{card.label}</p>
-              <p className="font-bold text-[30px] leading-tight mt-0.5 mb-0">{card.value.toLocaleString()} P</p>
+              <p className="font-bold text-[14px] opacity-90 leading-tight m-0">{hero.label}</p>
+              <p className="font-bold text-[26px] leading-tight mt-0.5 mb-0">{hero.value.toLocaleString()} P</p>
             </div>
           </div>
-          <p className="text-[14px] opacity-80 truncate m-0">{card.meta}</p>
+          <p className="text-[13px] opacity-80 truncate m-0">{hero.meta}</p>
         </div>
-      ))}
+        <div className="grid grid-cols-3 gap-2">
+          {rest.map((card) => (
+            <div key={card.label} className="rounded-xl text-white p-3" style={{ backgroundColor: card.color }}>
+              <p className="font-bold text-[11px] opacity-85 leading-tight whitespace-nowrap m-0">
+                {card.label.replace(' 포인트', '').replace(' 가능', '가능')}
+              </p>
+              <p className="font-bold text-[16px] leading-tight mt-1 mb-0">{card.value.toLocaleString()}P</p>
+              <p className="text-[10px] opacity-75 truncate mt-0.5 mb-0">{card.meta}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* sm 이상(태블릿·데스크톱)은 기존처럼 4개 균등 카드 그리드 그대로 유지 */}
+      <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {cards.map((card) => (
+          <div
+            key={card.label}
+            className="rounded-[10px] text-white p-5"
+            style={{ backgroundColor: card.color }}
+          >
+            <div className="flex items-start gap-3 mb-3">
+              <img src={iconPoint} alt="" className="size-[40px] object-contain shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <p className="font-bold text-[16px] opacity-90 leading-tight m-0">{card.label}</p>
+                <p className="font-bold text-[30px] leading-tight mt-0.5 mb-0">{card.value.toLocaleString()} P</p>
+              </div>
+            </div>
+            <p className="text-[14px] opacity-80 truncate m-0">{card.meta}</p>
+          </div>
+        ))}
+      </div>
     </section>
   );
 };

@@ -30,6 +30,7 @@ import SettlementListPage from "@pages/user/settlement/SettlementListPage";
 import MyReportListPage from "@pages/user/report/MyReportListPage";
 import ReportFormPage from "@pages/user/report/ReportFormPage";
 import MyQuoteListPage from "@pages/provider/MyQuoteListPage";
+import MyServiceRequestListPage from "@pages/service/MyServiceRequestListPage";
 import ReviewListPage from "@pages/user/ReviewListPage";
 import { useAuth } from "@hooks/useAuth";
 import { useMyProviderApplications } from "@hooks/useProviderApplications";
@@ -39,6 +40,7 @@ const MYPAGE_SECTION_QUERY_VALUES = new Set([
   "active-auctions",
   "auction-bids",
   "auction-sales",
+  "service-requests",
   "wishlist",
   "chat",
   "wallet",
@@ -89,22 +91,20 @@ export default function MyPage({
   useEffect(() => {
     const requestedSectionAllowed = isAllowedSection(requestedSection, isProvider);
     const nextSection = requestedSectionAllowed ? requestedSection : initialSection;
-    if (nextSection === activeSection) return undefined;
 
+    // 함수형 업데이트로 activeSection을 읽지 않아, 이 effect가 activeSection 변경 자체에는
+    // 반응하지 않는다 — 사이드바 클릭처럼 이미 URL과 동기화된 내부 전환에서 불필요하게
+    // 재검증이 도는 걸 막는다 (재검증은 URL/역할이 실제로 바뀔 때만 필요).
     const animationFrameId = window.requestAnimationFrame(() => {
-      setActiveSection(nextSection);
+      setActiveSection((prevSection) => (
+        nextSection === prevSection ? prevSection : nextSection
+      ));
       if (requestedSection && !requestedSectionAllowed) {
         setSearchParams({}, { replace: true });
       }
     });
     return () => window.cancelAnimationFrame(animationFrameId);
-  }, [
-    activeSection,
-    initialSection,
-    isProvider,
-    requestedSection,
-    setSearchParams,
-  ]);
+  }, [initialSection, isProvider, requestedSection, setSearchParams]);
 
   const [selectedChatTradeId, setSelectedChatTradeId] = useState("");
   const [selectedPurchaseTradeId, setSelectedPurchaseTradeId] = useState("");
@@ -247,6 +247,7 @@ export default function MyPage({
               <MyProductList embedded onOpenTradeDetail={handleOpenSalesTradeDetail} />
             )
           )}
+          {activeSection === "service-requests" && <MyServiceRequestListPage embedded />}
           {activeSection === "wishlist" && <AuctionFavoritesPage />}
           {activeSection === "wallet" && <PointWalletPage embedded />}
           {activeSection === "quote" && isProvider && <MyQuoteListPage embedded />}

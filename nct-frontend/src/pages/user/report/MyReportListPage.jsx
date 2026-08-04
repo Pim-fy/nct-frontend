@@ -16,7 +16,7 @@ const STATUS_LABEL = {
 
 const STATUS_BADGE_CLS = {
   ABRC0005: "badge-urgent",    // 접수됨  → #FFC526 채움
-  ABRC0006: "badge-orange",    // 검토중  → 녹색 채움 (거래진행중 스타일)
+  ABRC0006: "badge-aqua",      // 검토중  → 청록 채움 (badge-orange는 원래 색으로 복원되어 badge-aqua로 이전)
   ABRC0007: "badge-gray",      // 처리완료 → 회색 채움 (종료 스타일)
   ABRC0008: "badge-danger",    // 반려    → 빨강 채움
 };

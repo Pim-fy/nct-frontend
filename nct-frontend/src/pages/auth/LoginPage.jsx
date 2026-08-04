@@ -117,6 +117,10 @@ export default function LoginPage() {
   // ── 소셜 로그인 ───────────────────────────────────────
   const handleSocialLogin = (provider) => {
     sessionStorage.setItem('loginRedirectFrom', from);
+    // @ai_generated: 소셜 로그인은 별도 화면이 없어, 이 체크박스 상태를 짧은 쿠키로 실어 보내
+    // 백엔드(OAuth2SuccessHandler/온보딩 완료)가 로그인 유지 여부를 판단하게 한다.
+    // eslint-disable-next-line react-hooks/immutability
+    document.cookie = `oauth_remember_me=${rememberMe}; path=/; max-age=600`;
     window.location.assign(provider.href());
   };
 

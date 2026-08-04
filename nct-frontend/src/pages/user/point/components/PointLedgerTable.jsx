@@ -86,8 +86,41 @@ const buildColumns = (bidByBidSn) => [
         : <span title={label}>{label}</span>;
     },
   },
-  { key: 'reason', header: '사유', cellClass: 'text-gray-500', render: (r) => r.reason },
+  {
+    key: 'reason', header: '사유', cellClass: 'max-w-[160px] truncate text-gray-500',
+    render: (r) => <span title={r.reason}>{r.reason}</span>,
+  },
 ];
+
+// 모바일 카드 한 장 — 표 컬럼과 같은 데이터를 배지+날짜 / 금액+잔액 / 사유 / 관련 순서로 배치한다
+// (사유·관련처럼 폭이 일정치 않은 정보가 있어 표는 sm 이상에서만, 좁은 화면은 카드로 보여준다, 2026-08-03)
+const buildRenderCard = (bidByBidSn) => (r) => {
+  const label = r.ref ? withProductName(r, bidByBidSn) : null;
+  const link = r.ref ? resolveRefLink(r, bidByBidSn) : null;
+  return (
+    <>
+      <div className="flex items-center justify-between gap-2">
+        <span>
+          {badge(r.type)}
+          <span className="ml-1.5 text-xs text-gray-400">({r.category})</span>
+        </span>
+        <span className="text-xs text-gray-400 whitespace-nowrap">{r.date}</span>
+      </div>
+      <div className="mt-1 flex items-baseline justify-between gap-2">
+        <span className={`text-base font-bold ${r.amount > 0 ? 'text-blue-700' : 'text-red-700'}`}>
+          {r.amount > 0 ? '+' : ''}{r.amount.toLocaleString()}P
+        </span>
+        <span className="text-xs text-gray-400 whitespace-nowrap">잔액 {r.balanceAfter.toLocaleString()}P</span>
+      </div>
+      {r.reason && <div className="mt-1 text-[13px] leading-snug text-gray-500">{r.reason}</div>}
+      {label && (
+        link
+          ? <Link to={link} className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline">↗ {label}</Link>
+          : <div className="mt-1 text-xs text-gray-500">{label}</div>
+      )}
+    </>
+  );
+};
 
 // limit을 주면(마이페이지 요약 카드) 최근 N건만 보여주고 "+"로 전체보기 모달을 띄운다.
 // limit 없이 부르면(전체보기 모달 안) 전부 보여준다 (2026-07-29).
@@ -99,6 +132,7 @@ const PointLedgerTable = ({ rows, limit, onExpand, loading }) => {
     [myBids],
   );
   const columns = useMemo(() => buildColumns(bidByBidSn), [bidByBidSn]);
+  const renderCard = useMemo(() => buildRenderCard(bidByBidSn), [bidByBidSn]);
   const visibleRows = limit ? rows.slice(0, limit) : rows;
 
   return (
@@ -110,6 +144,7 @@ const PointLedgerTable = ({ rows, limit, onExpand, loading }) => {
       onExpand={limit ? onExpand : undefined}
       pageSize={limit ? undefined : 10}
       loading={loading}
+      renderCard={renderCard}
     />
   );
 };
