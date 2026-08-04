@@ -5,8 +5,9 @@
 //
 // ※ 파일 소유: 황희준(담당자1)
 //    라우트 추가·수정은 황희준에게 전달 후 반영. 임시로 추가된 상품 라우트
-//    (/product/register, /product/me, /product/:prdSn/seller) 도 최종 통합 시
+//    (/product/register, /product/:prdSn/seller) 도 최종 통합 시
 //    황희준에게 전달해 ProtectedRoute 구조에 맞게 정리 필요.
+//    /product/me는 MyProductList가 MyPage 아코디언(황성경)에 통합되어 제거함.
 // ─────────────────────────────────────────────────────────────────────────────
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
@@ -75,7 +76,6 @@ import ReportFormPage from '@pages/user/report/ReportFormPage';
 // 담당자 7 병합 검증: develop의 상품 route가 참조하는 페이지 import가 누락되어 런타임 빈 화면이 발생해 복구했습니다.
 // 임시 코드는 아니며 상품 기능의 구현·소유권은 기존 상품 담당자에게 그대로 있습니다.
 import ProductRegisterPage from '@pages/product/ProductRegisterPage';
-import MyProductListPage from '@pages/product/MyProductListPage';
 import ProductDetailSellerPage from '@pages/product/ProductDetailSellerPage';
 
 // F-SVC-001~004: 서비스 요청서 작성/임시저장 폼
@@ -231,7 +231,6 @@ const AppRoutes = () => {
 
           {/* 상품 — 로그인 필요 */}
           <Route path="/product/register"        element={<ProductRegisterPage key={location.key} />} />
-          <Route path="/product/me"              element={<MyProductListPage />} />
           <Route path="/product/:prdSn/seller"   element={<ProductDetailSellerPage />} />
 
           {/* 신고 접수 (담당자3 황성경 · F-COM-018) */}
