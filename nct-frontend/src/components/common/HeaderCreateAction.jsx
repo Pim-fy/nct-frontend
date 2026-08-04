@@ -26,7 +26,7 @@ const HeaderCreateAction = ({ type }) => {
   return (
     <Link
       aria-label={label}
-      className="inline-flex size-[44px] shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-0 text-[14px] font-bold text-white shadow-sm transition-colors hover:bg-[#0048bf] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 sm:w-auto sm:px-4"
+      className={`${type === 'auction' ? 'hidden md:inline-flex' : 'inline-flex'} size-[44px] shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-0 text-[14px] font-bold text-white shadow-sm transition-colors hover:bg-[#0048bf] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 sm:w-auto sm:px-4`}
       title={label}
       to={to}
     >

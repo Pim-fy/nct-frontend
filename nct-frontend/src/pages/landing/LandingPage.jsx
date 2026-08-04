@@ -91,7 +91,7 @@ const LandingPage = () => {
         />
       </div>
 
-      {/* 3~4. 서비스 요청 진입+HOT ITEM / 신규·마감임박 경매 (데스크톱, lg 이상) */}
+      {/* 3~4. 서비스 요청 진입+HOT ITEM / 신규·마감 임박 경매 (데스크톱, lg 이상) */}
       <div className="hidden lg:block">
         <ServiceMenuSection
           hotItems={popularAuctions}

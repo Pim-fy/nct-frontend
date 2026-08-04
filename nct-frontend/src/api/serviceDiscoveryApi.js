@@ -36,6 +36,7 @@ const normalizeRequest = (item) => ({
   statusName: firstDefined(item.svcReqStatusNm, item.statusName, item.status, ''),
   quoteCount: firstDefined(item.quoteCount, item.quotationCount),
   registeredAt: firstDefined(item.svcReqRegDt, item.registeredAt, item.createdAt),
+  imageUrl: firstDefined(item.thumbnailUrl, item.imageUrl, item.imageList?.[0]?.url, ''),
 });
 
 const normalizeProvider = (item) => ({
