@@ -16,10 +16,10 @@ import {
   Users,
   WalletCards,
 } from 'lucide-react';
-import './MockupAdminSidebar.css';
+import './AdminSidebar.css';
 
-// 관리자 목업 v2와 업무분장 v11을 화면으로 확인하기 위한 임시 메뉴입니다.
-// route가 없는 다른 담당자 화면은 클릭을 막아 미완성 경로에서 404가 나지 않게 합니다.
+// 관리자 전체 화면에서 공통으로 사용하는 탐색 메뉴입니다.
+// route가 없는 화면은 클릭을 막아 미완성 경로에서 404가 나지 않게 합니다.
 const MENU_SECTIONS = [
   [
     { label: '대시보드', icon: LayoutDashboard, to: '/admin' },
@@ -45,23 +45,23 @@ const MENU_SECTIONS = [
   ],
 ];
 
-const MockupAdminSidebar = ({ collapsed = false, id, onNavigate }) => {
+const AdminSidebar = ({ collapsed = false, id, onNavigate }) => {
   // 담당자 7: 관리자 공통 화면에서 기존 인증 계약을 소비해 로그아웃 진입점만 제공합니다.
   const { logout, loading } = useAuth();
 
   return (
     <aside
       aria-label="관리자 메뉴 미리보기"
-      className={`mockup-admin-sidebar${collapsed ? ' is-collapsed' : ''}`}
+      className={`admin-sidebar${collapsed ? ' is-collapsed' : ''}`}
       id={id}
     >
-      <nav className="mockup-admin-nav" aria-label="관리자 화면 목록">
+      <nav className="admin-nav" aria-label="관리자 화면 목록">
         {MENU_SECTIONS.map((section, sectionIndex) => (
-          <div className="mockup-admin-nav__section" key={`admin-menu-${sectionIndex}`}>
+          <div className="admin-nav__section" key={`admin-menu-${sectionIndex}`}>
             {section.map(({ label, icon: Icon, to }) => (
               to ? (
                 <NavLink
-                  className={({ isActive }) => `mockup-admin-nav__item${isActive ? ' is-active' : ''}`}
+                  className={({ isActive }) => `admin-nav__item${isActive ? ' is-active' : ''}`}
                   end={to === '/admin'}
                   key={label}
                   onClick={onNavigate}
@@ -74,7 +74,7 @@ const MockupAdminSidebar = ({ collapsed = false, id, onNavigate }) => {
               ) : (
                 <div
                   aria-disabled="true"
-                  className="mockup-admin-nav__item is-pending"
+                  className="admin-nav__item is-pending"
                   key={label}
                   title={collapsed ? label : undefined}
                 >
@@ -86,9 +86,9 @@ const MockupAdminSidebar = ({ collapsed = false, id, onNavigate }) => {
           </div>
         ))}
 
-        <div className="mockup-admin-nav__section is-preview">
+        <div className="admin-nav__section is-preview">
           <NavLink
-            className={({ isActive }) => `mockup-admin-nav__item${isActive ? ' is-active' : ''}`}
+            className={({ isActive }) => `admin-nav__item${isActive ? ' is-active' : ''}`}
             onClick={onNavigate}
             title={collapsed ? '위험 이벤트' : undefined}
             to="/admin/risk-events"
@@ -99,10 +99,10 @@ const MockupAdminSidebar = ({ collapsed = false, id, onNavigate }) => {
         </div>
       </nav>
 
-      <div className="mockup-admin-sidebar__footer">
+      <div className="admin-sidebar__footer">
         <button
           aria-label="관리자 로그아웃"
-          className="mockup-admin-nav__item mockup-admin-sidebar__logout"
+          className="admin-nav__item admin-sidebar__logout"
           disabled={loading}
           onClick={() => void logout()}
           title={collapsed ? '로그아웃' : undefined}
@@ -116,4 +116,4 @@ const MockupAdminSidebar = ({ collapsed = false, id, onNavigate }) => {
   );
 };
 
-export default MockupAdminSidebar;
+export default AdminSidebar;

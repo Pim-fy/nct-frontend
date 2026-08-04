@@ -1,6 +1,6 @@
 import { ArrowLeft, UsersRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
+import AdminPageHeader from '@components/admin/AdminPageHeader';
 import PageMeta from '@components/admin/PageMeta';
 import './AdminMemberList.css';
 
@@ -11,7 +11,7 @@ import './AdminMemberList.css';
 const AdminMemberList = () => (
   <div className="admin-member-pending">
     <PageMeta title="회원 관리" />
-    <MockupAdminPageHeader
+    <AdminPageHeader
       description="회원관리 계약이 준비되면 이 경로에서 목록과 상세 기능을 제공합니다."
       title="회원 관리"
     />

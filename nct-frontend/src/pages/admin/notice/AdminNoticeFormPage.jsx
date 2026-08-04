@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { EyeOff, Save, Trash2 } from 'lucide-react';
-import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
-import MockupAdminStatusBadge from '@components/admin/mockup/MockupAdminStatusBadge';
+import AdminPageHeader from '@components/admin/AdminPageHeader';
+import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
 import FormSkeleton from '@components/skeleton/FormSkeleton';
 import {
@@ -175,11 +175,11 @@ const AdminNoticeFormPage = () => {
   return (
     <div className="admin-content-page">
       <PageMeta title={isNew ? '공지 작성' : '공지 상세'} />
-      <MockupAdminPageHeader
+      <AdminPageHeader
         action={!isNew && (
-          <MockupAdminStatusBadge tone={notice?.visibleNow ? 'success' : 'neutral'}>
+          <AdminStatusBadge tone={notice?.visibleNow ? 'success' : 'neutral'}>
             {notice?.visibleNow ? '사용자 화면 노출 중' : '현재 미노출'}
-          </MockupAdminStatusBadge>
+          </AdminStatusBadge>
         )}
         description={isNew
           ? '기본값은 즉시 게시입니다. 필요한 경우 임시저장이나 예약 게시로 변경할 수 있습니다.'
@@ -298,11 +298,11 @@ const AdminNoticeFormPage = () => {
         <section className="admin-notice-preview" aria-label="사용자 공지 미리보기">
           <div><small>사용자 화면 미리보기</small><strong>{previewTitle}</strong><p>{form.content.trim() || '공지 내용이 이곳에 표시됩니다.'}</p></div>
           <div>
-            <MockupAdminStatusBadge tone="info">
+            <AdminStatusBadge tone="info">
               {optionsQuery.data?.types?.find((item) => item.code === form.typeCode)?.name ?? '유형 선택'}
-            </MockupAdminStatusBadge>
+            </AdminStatusBadge>
             {form.pinned && (
-              <MockupAdminStatusBadge tone="warning">중요 공지</MockupAdminStatusBadge>
+              <AdminStatusBadge tone="warning">중요 공지</AdminStatusBadge>
             )}
           </div>
         </section>

@@ -10,7 +10,7 @@ import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
-import MockupAdminPageHeader from '@components/admin/mockup/MockupAdminPageHeader';
+import AdminPageHeader from '@components/admin/AdminPageHeader';
 import PageMeta from '@components/admin/PageMeta';
 import useClientPagination from '@hooks/useClientPagination';
 import '../audit/adminAuditPage.css';
@@ -123,7 +123,7 @@ const AdminPointExchangePage = () => {
   return (
     <div className="admin-bjn-page admin-operation-page">
       <PageMeta title="환전 관리" />
-      <MockupAdminPageHeader title="환전 관리" />
+      <AdminPageHeader title="환전 관리" />
 
       {feedback && <p className="admin-operation-feedback" role="status">{feedback}</p>}
       {ordersQuery.isError && (
