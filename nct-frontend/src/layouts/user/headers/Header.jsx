@@ -12,7 +12,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Menu, X, ChevronRight, Bell, Gavel, Truck, Wrench, Wallet, MessageCircle } from 'lucide-react';
-import Swal from 'sweetalert2';
 import { useAuth } from '@hooks/useAuth';
 import { useMyProviderApplications } from '@hooks/useProviderApplications';
 import { useMarkAllRead, useMarkRead, useNotifications } from '@hooks/useNotification';
@@ -20,7 +19,6 @@ import { useNotificationStream } from '@hooks/useNotificationStream';
 import { usePointBalance } from '@hooks/usePoint';
 import { usePublicNoticeList } from '@hooks/usePublicNotices';
 import relativeTime from '@utils/relativeTime';
-import { requestPointExchange, convertPoint } from '@api/pointApi';
 import {
   SITE_HEADER_DOCK_EVENT,
   SITE_HEADER_VISIBILITY_EVENT,
@@ -31,6 +29,7 @@ import ScrollToTopButton from '@components/common/ScrollToTopButton';
 import NotificationDetailModal from '@pages/user/notification/components/NotificationDetailModal';
 import PointChargeWidgetModal from '@pages/user/point/components/PointChargeWidgetModal';
 import PointAmountModal from '@pages/user/point/components/PointAmountModal';
+import { submitPointAmount } from '@pages/user/point/components/pointSubmitActions';
 import logoImg from '@assets/img/logo.png';
 import bellIcon from '@assets/img/bellIcon.png';
 import walletIcon from '@assets/img/walletIcon.png';
@@ -281,70 +280,12 @@ const Header = () => {
     setProfileOpen(which === 'profile' ? (v) => !v : false);
   };
 
-  // 헤더 POINT 드롭다운의 전환 모달 제출 — PointWalletPage의 submitAmount('convert')와 같은 로직
-  const submitHeaderConvert = (amount) => {
-    if (!Number.isInteger(amount) || amount <= 0) {
-      Swal.fire({
-        icon: 'warning',
-        title: '금액을 확인해 주세요',
-        text: '전환 금액은 1P 이상의 정수만 가능합니다.',
-        confirmButtonColor: '#0064ff',
-      });
-      return;
-    }
-    setPointModal(null);
-    convertPoint(amount)
-      .then(() => {
-        queryClient.invalidateQueries({ queryKey: ['point'] });
-        Swal.fire({
-          icon: 'success',
-          title: '전환 완료',
-          text: '정산 가능 포인트가 사용 가능 포인트로 전환되었습니다.',
-          confirmButtonColor: '#0064ff',
-        });
-      })
-      .catch((err) => {
-        Swal.fire({
-          icon: 'error',
-          title: '전환 실패',
-          text: err?.response?.data?.message ?? '처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
-          confirmButtonColor: '#0064ff',
-        });
-      });
-  };
-
-  // 헤더 POINT 드롭다운의 환전 모달 제출 — PointWalletPage의 submitAmount('exchange')와 같은 로직
-  // (검증 → API 호출 → 포인트 캐시 갱신 → 결과 안내). 충전은 결제위젯이 자체 API를 처리하므로 별도 핸들러가 없다.
-  const submitHeaderExchange = (amount) => {
-    if (!Number.isInteger(amount) || amount <= 0) {
-      Swal.fire({
-        icon: 'warning',
-        title: '금액을 확인해 주세요',
-        text: '환전 금액은 1P 이상의 정수만 가능합니다.',
-        confirmButtonColor: '#0064ff',
-      });
-      return;
-    }
-    setPointModal(null);
-    requestPointExchange(amount)
-      .then(() => {
-        queryClient.invalidateQueries({ queryKey: ['point'] });
-        Swal.fire({
-          icon: 'success',
-          title: '환전 신청 완료',
-          text: '신청 금액이 차감되었고, 등록하신 계좌로 며칠 내 지급될 예정입니다.',
-          confirmButtonColor: '#0064ff',
-        });
-      })
-      .catch((err) => {
-        Swal.fire({
-          icon: 'error',
-          title: '환전 신청 실패',
-          text: err?.response?.data?.message ?? '처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
-          confirmButtonColor: '#0064ff',
-        });
-      });
-  };
+  // 헤더 POINT 드롭다운의 전환/환전 모달 제출 — 검증·API 호출·캐시 갱신·안내 흐름을
+  // PointWalletPage와 공용 모듈(pointSubmitActions)로 공유하고, 여기서는 헤더 모달 닫기만 연결한다
+  // (2026-08-05 코드 점검 후속 — 지갑 페이지와 같은 로직 ~60줄이 이 파일에 중복돼 있던 것을 통합).
+  // 충전은 결제위젯이 자체 API를 처리하므로 별도 핸들러가 없다.
+  const submitHeaderPoint = (kind) => (amount) =>
+    submitPointAmount(kind, amount, { queryClient, closeModal: () => setPointModal(null) });
 
   const closeMobileMenu = () => {
     setMobileMenuOpen(false);
@@ -1034,7 +975,7 @@ const Header = () => {
         submitLabel="전환"
         infoRow={{ label: '정산가능 포인트', value: `${(pointBalance.settleable ?? 0).toLocaleString()} P` }}
         maxAmount={pointBalance.settleable ?? 0}
-        onSubmit={submitHeaderConvert}
+        onSubmit={submitHeaderPoint('convert')}
         onClose={() => setPointModal(null)}
       />
     )}
@@ -1044,7 +985,7 @@ const Header = () => {
         submitLabel="환전"
         infoRow={{ label: '환전 가능 포인트', value: `${(pointBalance.exchangeable ?? 0).toLocaleString()} P` }}
         maxAmount={pointBalance.exchangeable ?? 0}
-        onSubmit={submitHeaderExchange}
+        onSubmit={submitHeaderPoint('exchange')}
         onClose={() => setPointModal(null)}
       />
     )}

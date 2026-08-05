@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useMyBidHistory } from '@hooks/useBid';
 import PointTable from './PointTable';
+import pointBadge from './pointBadge';
 
 // 원장유형(PTLG02)별 배지 색 — 목업 badge-success/warning/blue/gray 매핑
 const TYPE_BADGE = {
@@ -18,11 +19,8 @@ const TYPE_BADGE = {
   보정:       'bg-gray-100 text-gray-600',
 };
 
-const badge = (label) => (
-  <span className={`inline-block px-2.5 py-0.5 rounded-lg text-xs font-medium ${TYPE_BADGE[label] ?? 'bg-gray-100 text-gray-600'}`}>
-    {label}
-  </span>
-);
+// 배지 마크업은 네 내역 테이블 공용 렌더러(pointBadge)로 통합 — 여기는 색 매핑만 정의 (2026-08-05)
+const badge = pointBadge(TYPE_BADGE);
 
 // 참조유형공통코드(REFG01) → 이동할 화면 경로.
 // 거래(REFC0005)는 정산 적립(PTLC0008)이면 판매자 화면, 보관금 환불(PTLC0013)이면 구매자 화면으로 보낸다 —

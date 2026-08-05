@@ -33,9 +33,6 @@ const PointChargeWidgetModal = ({ infoRow, onClose }) => {
   // (react-hooks/refs, 2026-07-17 수정) 때문에 표시용 값만 상태로 따로 둔다
   const [orderAmount, setOrderAmount] = useState(null);
 
-  // 위젯 스크립트가 언마운트 후에도 DOM을 계속 참조하지 않도록 정리
-  useEffect(() => () => { widgetsRef.current = null; }, []);
-
   // 모달이 떠 있는 동안 뒤 페이지 스크롤을 잠근다 — 위젯 목록이 길어져도
   // 휠/드래그가 배경으로 새지 않고 모달 안쪽(overflow-y-auto)에서만 스크롤되게
   useEffect(() => {
@@ -170,7 +167,8 @@ const PointChargeWidgetModal = ({ infoRow, onClose }) => {
         {step === 'amount' && (
           <>
             <div className="flex gap-2 mb-4">
-              {QUICK_AMOUNTS.map((quick) => (
+              {/* 충전은 공용 4개 금액에 큰 금액(CHARGE_QUICK_EXTRA) 하나를 더 보여준다 — 마크업이 같아 하나의 map으로 렌더 */}
+              {[...QUICK_AMOUNTS, CHARGE_QUICK_EXTRA].map((quick) => (
                 <button
                   key={quick}
                   type="button"
@@ -180,13 +178,6 @@ const PointChargeWidgetModal = ({ infoRow, onClose }) => {
                   {quick.toLocaleString()}
                 </button>
               ))}
-              <button
-                type="button"
-                className="flex-1 whitespace-nowrap border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center text-gray-600 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                onClick={() => setAmount((prev) => String((Number(prev) || 0) + CHARGE_QUICK_EXTRA))}
-              >
-                {CHARGE_QUICK_EXTRA.toLocaleString()}
-              </button>
               <button
                 type="button"
                 className="flex-1 whitespace-nowrap border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors"
