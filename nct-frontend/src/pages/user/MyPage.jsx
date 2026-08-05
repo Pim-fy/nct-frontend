@@ -110,6 +110,9 @@ export default function MyPage({
   const [selectedPurchaseTradeId, setSelectedPurchaseTradeId] = useState("");
   const [selectedSalesTradeId, setSelectedSalesTradeId] = useState("");
   const [chatReturnSection, setChatReturnSection] = useState("");
+  // 사이드바 클릭마다 증가 — 콘텐츠 영역 key로 써서, 같은 섹션을 다시 눌러도 그 섹션 컴포넌트를
+  // 강제로 리마운트한다(필터·검색어·페이지 등 내부 state를 처음 진입 상태로 초기화하기 위함).
+  const [sectionResetKey, setSectionResetKey] = useState(0);
 
   // 임시저장·외부 링크 등으로 이 페이지에 진입할 때 이전 페이지의 스크롤 위치가 남지 않도록 최상단으로 이동한다.
   useEffect(() => { window.scrollTo(0, 0); }, []);
@@ -129,7 +132,9 @@ export default function MyPage({
     }
   }, [selectedPurchaseTradeId, selectedSalesTradeId]);
 
-  // 메뉴를 옮기면 열려 있던 마이페이지 채팅 대화를 닫는다.
+  // 사이드바 메뉴를 누르면 항상 그 섹션의 기본(목록) 화면으로 이동한다.
+  // 같은 메뉴를 다시 눌러도 상세 화면에 머물러 있지 않도록, 드릴다운 상태를 무조건 초기화한다
+  // (예: 판매 내역 상세를 보다가 "상품 판매 내역"을 다시 누르면 목록으로 돌아가야 한다).
   const handleSelectSection = (section) => {
     setActiveSection(section);
     if (MYPAGE_SECTION_QUERY_VALUES.has(section)) {
@@ -137,16 +142,12 @@ export default function MyPage({
     } else {
       setSearchParams({});
     }
-    if (section !== "chat") {
-      setSelectedChatTradeId("");
-      setChatReturnSection("");
-    }
-    if (section !== "auction-bids") {
-      setSelectedPurchaseTradeId("");
-    }
-    if (section !== "auction-sales") {
-      setSelectedSalesTradeId("");
-    }
+    setSelectedChatTradeId("");
+    setChatReturnSection("");
+    setSelectedPurchaseTradeId("");
+    setSelectedSalesTradeId("");
+    setSectionResetKey((key) => key + 1);
+    window.scrollTo(0, 0);
   };
 
   // 제공자 모드 전환 (F-PROV-008): 서버에 실제 역할 전환을 요청한다.
@@ -186,7 +187,7 @@ export default function MyPage({
           onSelect={handleSelectSection}
           onRequestProviderSwitch={handleProviderSwitchRequest}
         />
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0" key={sectionResetKey}>
           {activeSection === "home" && !isProvider && (
             <MyPageDashboard
               user={user}

@@ -7,16 +7,17 @@ import MyPageListSectionLayout from '@components/mypage/MyPageListSectionLayout'
 import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
 import MyPageListEmpty from '@components/mypage/MyPageListEmpty';
 import MyPageListError from '@components/mypage/MyPageListError';
-import MyPageListItem from '@components/mypage/MyPageListItem';
+import MyPageAuctionListItem from '@components/mypage/MyPageAuctionListItem';
 import MyPageStatusBadge from '@components/mypage/MyPageStatusBadge';
 import useCountdown from '@hooks/useCountdown';
 import { useMyBidHistory } from '@hooks/useBid';
 import { formatPrice } from '@utils/common';
 import MyPageListSkeleton from '@components/skeleton/MyPageListSkeleton';
+import AuctionCard from '@pages/auction/components/AuctionCard';
 import '@assets/css/my-active-auctions.css';
 
 const ACTIVE_AUCTION_STATUS_CODE = 'AUCC0002';
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 10;
 const REFRESH_INTERVAL_MS = 15_000;
 
 const STATUS_META = {
@@ -47,9 +48,9 @@ const formatRemainingTime = (endDateTime, now) => {
   const hours = Math.floor((totalMinutes % 1_440) / 60);
   const minutes = totalMinutes % 60;
 
-  if (days > 0) return `${days}일 ${hours}시간 남음`;
-  if (hours > 0) return `${hours}시간 ${minutes}분 남음`;
-  return `${minutes}분 남음`;
+  if (days > 0) return `종료까지 ${days}일 ${hours}시간`;
+  if (hours > 0) return `종료까지 ${hours}시간 ${minutes}분`;
+  return `종료까지 ${minutes}분`;
 };
 
 const toLatestActiveAuctions = (items = []) => {
@@ -77,6 +78,22 @@ const toLatestActiveAuctions = (items = []) => {
       - new Date(right.auctionEndDateTime || 0).getTime()
     ));
 };
+
+// @ai_generated
+const toAuctionCardItem = (item) => ({
+  auctionId: item.aucSn,
+  title: item.auctionTitle || `경매 #${item.aucSn}`,
+  thumbnailPath: item.thumbnailPath || item.thumbnailUrl,
+  currentPrice: item.currentPrice,
+  instantBuyPrice: item.instantBuyPrice,
+  tradeMethodCode: item.tradeMethodCode,
+  tradeMethodName: item.tradeMethodName,
+  sellerName: item.sellerName || item.sellerNickname || '정보 없음',
+  bidCount: item.bidCount,
+  endDateTime: item.auctionEndDateTime,
+  auctionStatusCode: item.auctionStatusCode,
+  categoryName: item.categoryName || '경매',
+});
 
 export default function MyActiveAuctionPage() {
   const navigate = useNavigate();
@@ -135,6 +152,7 @@ export default function MyActiveAuctionPage() {
       next.set('page', String(nextPage));
       return next;
     });
+    window.scrollTo(0, 0);
   };
   if (isError) {
     return (
@@ -175,26 +193,33 @@ export default function MyActiveAuctionPage() {
       ) : filteredAuctions.length === 0 ? (
         <MyPageListEmpty message="해당 조건의 진행 중인 경매가 없습니다." />
       ) : (
-        <>
-          <div className="my-active-auctions__list">
+          <>
+          {/* history-list의 display:grid가 불레이어(unlayered) CSS라 Tailwind hidden(@layer utilities)보다
+              우선 적용된다 — hidden/lg:block은 별도 래퍼에 둬서 두 display 선언이 충돌하지 않게 한다. */}
+          <div className="hidden lg:block">
+          <div className="history-list">
             {pagedAuctions.map((item) => {
               const status = STATUS_META[item.displayStatus];
               const remainingTime = formatRemainingTime(item.auctionEndDateTime, now);
 
               return (
-                <MyPageListItem
+                <MyPageAuctionListItem
                   key={item.aucSn}
                   imageSrc={item.thumbnailUrl}
                   imageAlt={item.auctionTitle || `경매 ${item.aucSn}`}
                   imageFallback={<Gavel size={24} aria-hidden="true" />}
-                  badge={(
-                    <>
-                      <MyPageStatusBadge className={status.badgeClass}>{status.label}</MyPageStatusBadge>
-                      <span className="text-xs font-bold text-[#667085]">{remainingTime}</span>
-                    </>
-                  )}
+                  badge={<MyPageStatusBadge className={status.badgeClass}>{status.label}</MyPageStatusBadge>}
                   title={item.auctionTitle || `경매 #${item.aucSn}`}
-                  actions={(
+                  topLine={remainingTime}
+                  priceItems={[
+                    { label: '현재 최고가', value: formatPrice(item.currentPrice) },
+                    {
+                      label: '즉시구매가',
+                      value: Number(item.instantBuyPrice) > 0 ? formatPrice(item.instantBuyPrice) : '없음',
+                    },
+                  ]}
+                  tradeMethodLabel={item.tradeMethodName || '정보 없음'}
+                  actionButton={(
                     <button
                       className="btn btn-sm btn-primary"
                       type="button"
@@ -203,21 +228,25 @@ export default function MyActiveAuctionPage() {
                       경매 상세
                     </button>
                   )}
-                >
-                  <p>판매자 {item.sellerName || '-'}</p>
-                  <p>
-                    현재가 {formatPrice(item.currentPrice)} · 내 입찰가 {formatPrice(item.bidAmount)}
-                  </p>
-                </MyPageListItem>
+                />
               );
             })}
           </div>
-          <Pagination
-            page={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-          />
-        </>
+          </div>
+          <div className="grid gap-4 lg:hidden">
+            {pagedAuctions.map((item) => (
+              <AuctionCard key={item.aucSn} item={toAuctionCardItem(item)} />
+            ))}
+          </div>
+          </>
+      )}
+      {!isLoading && (
+        <Pagination
+          page={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          showSinglePage
+        />
       )}
     </section>
   );

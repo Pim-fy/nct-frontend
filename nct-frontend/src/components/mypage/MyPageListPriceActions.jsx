@@ -1,0 +1,39 @@
+// src/components/mypage/MyPageListPriceActions.jsx
+// 마이페이지 목록 행(MyPageListItem)의 우측 영역 공통 형태.
+// 위쪽 보조 정보 한 줄(topLine, 예: 남은시간 · 날짜 요약) + 아래쪽 가격류 정보(라벨이 숫자 위,
+// 항상 같은 최소 너비로 정렬) + 액션 버튼을 한 묶음으로 재사용한다 (진행 중인 경매에서 먼저 확정한 형태).
+const PRICE_MIN_WIDTH = 120; // "999,999원"(6자리) 실측 기준 — 이보다 길면 자연스럽게 늘어난다.
+
+export default function MyPageListPriceActions({ topLine, priceItems = [], children }) {
+  return (
+    <div className="flex items-center gap-6">
+      <div className="flex flex-col items-end gap-3">
+        {topLine && (
+          <span className="text-lg font-bold whitespace-nowrap text-[#667085]">{topLine}</span>
+        )}
+        {priceItems.length > 0 && (
+          <div className="flex items-end gap-4">
+            {priceItems.map(({ label, value, highlight }) => (
+              <div className="flex flex-col items-end" key={label}>
+                <span className="text-xs font-semibold whitespace-nowrap text-[#667085]">{label}</span>
+                <span
+                  className={`inline-block text-right text-2xl font-bold whitespace-nowrap ${
+                    highlight ? 'text-primary' : 'text-[#151923]'
+                  }`}
+                  style={{ minWidth: PRICE_MIN_WIDTH }}
+                >
+                  {value}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      {children && (
+        <div className="flex flex-col items-end gap-2">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}

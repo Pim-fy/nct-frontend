@@ -19,18 +19,10 @@ const GENERAL_MENU_ITEMS = [
       { key: "active-auctions", label: "진행 중인 경매", type: "section" },
       { key: "auction-bids",    label: "상품 구매 내역", type: "section" },
       { key: "auction-sales",   label: "상품 판매 내역", type: "section" },
+      { key: "wishlist",        label: "관심 경매",      type: "section" },
     ],
   },
-  {
-    key: "service-history",
-    label: "서비스 요청",
-    type: "accordion",
-    children: [
-      { key: "service-requests", label: "내 서비스 요청 목록", type: "section" },
-      { key: "received-quotes",  label: "받은 견적 관리",      type: "todo" },
-    ],
-  },
-  { key: "wishlist",     label: "관심 경매",    type: "section" },
+  { key: "service-requests", label: "견적 요청", type: "section" },
   { key: "chat",         label: "채팅",         type: "section" },
   { key: "wallet",       label: "포인트 지갑",  type: "section" },
   { key: "review",       label: "내 리뷰",      type: "section" },
@@ -51,8 +43,7 @@ const PROVIDER_MENU_ITEMS = [
 
 // 아코디언 key → 포함되는 child key 목록
 const ACCORDION_CHILDREN = {
-  "auction-history":  ["active-auctions", "auction-bids", "auction-sales"],
-  "service-history":  ["service-requests", "received-quotes"],
+  "auction-history":  ["active-auctions", "auction-bids", "auction-sales", "wishlist"],
 };
 
 function getParentAccordion(sectionKey) {
@@ -111,7 +102,7 @@ export default function MyPageSidebar({
   );
 
   return (
-    <nav className="lg:w-[210px] lg:shrink-0" aria-label={`${sidebarTitle} 메뉴`}>
+    <nav className="lg:sticky lg:top-[122px] lg:w-[210px] lg:shrink-0" aria-label={`${sidebarTitle} 메뉴`}>
       {/* 타이틀 (데스크톱) */}
       <h2 className="hidden h-9 items-center px-2 text-[25px] font-bold leading-none text-black lg:flex mb-5">
         {sidebarTitle}
