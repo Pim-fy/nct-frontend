@@ -24,13 +24,13 @@ const AuctionSellerHistory = ({
   currentAuctionId,
   sellerId,
   sellerName,
+  returnPath = '/auction',
   enabled = true,
 }) => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedPage = Number.parseInt(searchParams.get('sellerPage') ?? '1', 10);
   const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
-  const returnPath = `${location.pathname}${location.search}${location.hash}`;
 
   const changePage = (nextPage) => {
     const nextSearchParams = new URLSearchParams(searchParams);
