@@ -85,7 +85,7 @@ import ServiceRequestDetailPage from '@pages/service/ServiceRequestDetailPage';
 import MyServiceRequestListPage from '@pages/service/MyServiceRequestListPage';
 // F-SVC-007, F-SVC-009~010: 견적 비교·선택·매칭 관리 (담당자 2)
 import ServiceRequestManagePage from '@pages/service/ServiceRequestManagePage';
-import ServiceTradeDetailPreviewPage from '@pages/service/ServiceTradeDetailPreviewPage';
+import ServiceTradeDetailRoutePage from '@pages/service/ServiceTradeDetailRoutePage';
 
 // 기존 지갑 주소를 유지하되, 결제 결과·모달 제어용 query string도 함께 전달한다.
 const PointWalletRedirect = () => {
@@ -169,11 +169,6 @@ const AppRoutes = () => {
       {/* 실제 거래 경로의 인증 정책과 분리된 개발용 화면 확인 경로 */}
       {isTradePreviewEnabled && (
         <>
-          <Route
-            path="/service-trades/preview/:tradeId"
-            element={<ServiceTradeDetailPreviewPage />}
-          />
-          <Route path="/service-trades/preview/:tradeId/chat" element={<TradeChat preview />} />
           <Route path="/trades/preview/:tradeId/chat" element={<TradeChat />} />
           <Route
             path="/trades/preview/:tradeId"
@@ -208,6 +203,7 @@ const AppRoutes = () => {
           <Route path="/provider/applications/status" element={<ProviderApplicationStatusPage />} />
           {/* 담당자 7 통합: 일반회원은 본인 요청, 제공자는 공개 요청 상세를 사용합니다. */}
           <Route path="/service-requests/:svcReqSn" element={<ServiceRequestDetailPage />} />
+          <Route path="/service-trades/:tradeId" element={<ServiceTradeDetailRoutePage />} />
         </Route>
       </Route>
 
