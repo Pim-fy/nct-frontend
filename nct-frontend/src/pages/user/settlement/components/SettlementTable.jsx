@@ -1,4 +1,5 @@
 // src/pages/user/settlement/components/SettlementTable.jsx
+import { Link } from 'react-router-dom';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 
 const STATUS_BADGE = {
@@ -36,35 +37,44 @@ const SettlementTable = ({ rows, filter, onFilterChange, loading = false, loadin
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 text-gray-500">
-              <th className="text-left font-bold px-4 py-3">정산번호</th>
-              <th className="text-left font-bold px-4 py-3">거래번호</th>
+              <th className="text-left font-bold px-4 py-3">관련 거래</th>
               <th className="text-left font-bold px-4 py-3">등록일시</th>
-              <th className="text-right font-bold px-4 py-3">금액</th>
+              <th className="text-right font-bold px-4 py-3">정산 포인트</th>
               <th className="text-left font-bold px-4 py-3">상태</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading && Array.from({ length: loadingRows }).map((_, rowIndex) => (
               <tr key={rowIndex}>
-                {Array.from({ length: 5 }).map((__, cellIndex) => (
+                {Array.from({ length: 4 }).map((__, cellIndex) => (
                   <td className="px-4 py-3" key={cellIndex}><Skeleton height={14} /></td>
                 ))}
               </tr>
             ))}
             {!loading && filtered.length === 0 && (
               <tr>
-                <td colSpan={5} className="text-center text-gray-400 py-10">
+                <td colSpan={4} className="text-center text-gray-400 py-10">
                   정산 내역이 없습니다.
                 </td>
               </tr>
             )}
             {!loading && filtered.map((row) => (
               <tr key={row.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 whitespace-nowrap text-gray-700">STL-{row.id}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-gray-700">TRD-{row.tradeId}</td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  {row.tradeId ? (
+                    <Link
+                      className="font-medium text-primary no-underline hover:underline"
+                      to={`/trades/${row.tradeId}/seller`}
+                    >
+                      거래상세
+                    </Link>
+                  ) : (
+                    <span className="text-gray-400">-</span>
+                  )}
+                </td>
                 <td className="px-4 py-3 whitespace-nowrap text-gray-700">{row.regDate}</td>
                 <td className="px-4 py-3 text-right whitespace-nowrap font-medium text-gray-900">
-                  {row.amount.toLocaleString()}원
+                  {row.amount.toLocaleString()}P
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   <span className={`inline-block px-2.5 py-0.5 rounded-lg text-xs font-medium ${STATUS_BADGE[row.statusName] ?? 'bg-gray-100 text-gray-600'}`}>
