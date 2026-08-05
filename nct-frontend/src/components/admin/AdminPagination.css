@@ -2,14 +2,22 @@
 .admin-pagination {
   --admin-pagination-accent: #0057d9;
   display: flex;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  align-self: stretch;
   align-items: center;
   justify-content: center;
-  margin: 20px 0 0;
-  padding: 16px 0 0;
+  grid-column: 1 / -1;
+  min-height: 68px;
+  margin: 0;
+  padding: 16px 0;
   border-top: 1px solid #e6eaf0;
 }
 
 .admin-pagination .pagination__controls {
+  margin-right: auto;
+  margin-left: auto;
   gap: 6px;
 }
 

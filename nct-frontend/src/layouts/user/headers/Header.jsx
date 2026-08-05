@@ -131,7 +131,7 @@ const Header = () => {
   // 현재 보고 있는 화면이 헤더의 어느 메뉴에 속하는지 — 호버와 무관하게 항상 활성 색상을 보여준다.
   const isAuctionMenuActive = pathname.startsWith('/auction');
   const isServiceMenuActive = pathname.startsWith('/service') || pathname.startsWith('/provider/quotes');
-  const isCustomerMenuActive = pathname.startsWith('/customersupport') || pathname.startsWith('/guide');
+  const isCustomerMenuActive = pathname.startsWith('/customersupport');
   let headerCreateActionType = null;
   const canShowCreateAction = !authLoading && (!user || user.role === 'ROLE_USER');
   if (canShowCreateAction) {
@@ -474,7 +474,7 @@ const Header = () => {
                       공지사항
                     </Link>
                     <Link
-                      to="/guide"
+                      to="/customersupport/guide"
                       className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
                       onClick={() => setCustomerHovered(false)}
                     >
@@ -949,7 +949,7 @@ const Header = () => {
               {mobileCustomerOpen && (
                 <div className="flex flex-col gap-1 pb-3 pl-2">
                   <Link to="/customersupport/notice" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>공지사항</Link>
-                  <Link to="/guide" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>이용가이드</Link>
+                  <Link to="/customersupport/guide" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>이용가이드</Link>
                   <Link to="/customersupport/faq" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>FAQ</Link>
                 </div>
               )}

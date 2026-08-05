@@ -202,7 +202,7 @@ export default function MyPage({
           )}
           {activeSection === "profile" && (
             isProvider
-              ? <ProviderProfilePage embedded />
+              ? <ProviderProfilePage embedded user={user} />
               : <MyPageProfileEdit user={user} />
           )}
           {activeSection === "active-auctions" && <MyActiveAuctionPage />}

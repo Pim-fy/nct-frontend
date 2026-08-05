@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams } from 'react-router-dom';
 import {
-  ContentPageHeader,
   ContentPageShell,
   ContentState,
 } from '@components/content/ContentUi';
@@ -89,7 +88,6 @@ const PublicProviderProfilePage = () => {
   return (
     <ContentPageShell className="provider-public-page">
       <Helmet><title>{provider.name} 제공자 프로필 | 에누리컷</title></Helmet>
-      <ContentPageHeader title="제공자 프로필" />
 
       <ProviderProfile
         activeTab={activeTab}

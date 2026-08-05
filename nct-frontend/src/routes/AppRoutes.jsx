@@ -99,13 +99,13 @@ const PointWalletRedirect = () => {
 // ──────────────────────────────────────────
 import Dashboard        from '@pages/admin/Dashboard';
 import AdminMemberList from '@pages/admin/AdminMemberList';
-import OperationsIntegrationPreview from '@pages/admin/OperationsIntegrationPreview';
 import AdminNoticeListPage from '@pages/admin/notice/AdminNoticeListPage';
 import AdminNoticeFormPage from '@pages/admin/notice/AdminNoticeFormPage';
 import AdminCategoryPage from '@pages/admin/category/AdminCategoryPage';
+import AdminServiceRequestFormPage from '@pages/admin/category/AdminServiceRequestFormPage';
 import AdminServiceRequestPage from '@pages/admin/service/AdminServiceRequestPage';
 import AdminProviderApprovalPage from '@pages/admin/provider/AdminProviderApprovalPage';
-import AdminAuditLogPage from '@pages/admin/audit/AdminAuditLogPage';
+import AdminOperationsRecordPage from '@pages/admin/operation/AdminOperationsRecordPage';
 import AdminSystemSettingPage from '@pages/admin/setting/AdminSystemSettingPage';
 import AdminAuctionManagementPage from '@pages/admin/auction/AdminAuctionManagementPage';
 import AdminNotificationPage from '@pages/admin/notification/AdminNotificationPage';
@@ -156,8 +156,9 @@ const AppRoutes = () => {
 
         {/* 담당자 7의 F-COM-015 공개 제공자 프로필 화면 */}
         <Route path="/providers/:providerId" element={<PublicProviderProfilePage />} />
+        <Route path="/guide" element={<Navigate replace to="/customersupport/guide" />} />
         <Route element={<CustomerSupportLayout />}>
-          <Route path="/guide" element={<GuidePage />} />
+          <Route path="/customersupport/guide" element={<GuidePage />} />
           <Route path="/customersupport/notice" element={<NoticeListPage />} />
           <Route path="/customersupport/notice/:noticeId" element={<NoticeDetailPage />} />
           <Route path="/customersupport/faq" element={<FaqPage />} />
@@ -258,20 +259,22 @@ const AppRoutes = () => {
           <Route path="notices" element={<AdminNoticeListPage />} />
           <Route path="notices/new" element={<AdminNoticeFormPage />} />
           <Route path="notices/:noticeId" element={<AdminNoticeFormPage />} />
-          <Route path="guides" element={<Navigate replace to="/guide" />} />
+          <Route path="guides" element={<Navigate replace to="/customersupport/guide" />} />
           <Route path="categories" element={<AdminCategoryPage />} />
+          <Route path="categories/:categorySn/form" element={<AdminServiceRequestFormPage />} />
           <Route path="services" element={<AdminServiceRequestPage />} />
           <Route path="provider-applications" element={<AdminProviderApprovalPage />} />
           <Route path="auctions" element={<AdminAuctionManagementPage />} />
           <Route path="reports" element={<AdminReportManagementPage />} />
           <Route path="exchanges" element={<AdminPointExchangePage />} />
-          <Route path="risk-events" element={<OperationsIntegrationPreview />} />
-          {/* 보안/감사·시스템 설정: 1단계 최소 설정은 담당자7 F-OPS-024, 3단계 감사/제한조회 화면은 담당자6 인수 범위입니다. */}
-          <Route path="audit-logs" element={<AdminAuditLogPage />} />
+          {/* 담당자 7 · F-OPS-011: 담당자 6의 F-OPS-016 화면을 소비해 운영 기록 탐색만 통합합니다. */}
+          <Route path="operations-records" element={<AdminOperationsRecordPage />} />
+          <Route path="risk-events" element={<Navigate replace to="/admin/operations-records?tab=risk" />} />
+          <Route path="audit-logs" element={<Navigate replace to="/admin/operations-records?tab=audit" />} />
           <Route path="system-settings" element={<AdminSystemSettingPage />} />
           {/* 관리자 알림 (담당자6, F-COM-004/005) */}
           <Route path="notifications" element={<AdminNotificationPage />} />
-          <Route path="operations-preview" element={<Navigate replace to="/admin/risk-events" />} />
+          <Route path="operations-preview" element={<Navigate replace to="/admin/operations-records?tab=risk" />} />
         </Route>
       </Route>
 
