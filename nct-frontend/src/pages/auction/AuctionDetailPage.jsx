@@ -49,6 +49,7 @@ import {
 import AuctionInquirySection from './components/AuctionInquirySection';
 import AuctionProductUpdateSection from './components/AuctionProductUpdateSection';
 import AuctionSellerHistory from './components/AuctionSellerHistory';
+import AuctionSellerReviewDialog from './components/AuctionSellerReviewDialog';
 import AuctionToast from './components/AuctionToast';
 import {
   createImageItems,
@@ -94,6 +95,7 @@ const AuctionDetailPageContent = ({ auctionId }) => {
   const [isDetailNavigationStuck, setIsDetailNavigationStuck] = useState(false);
   const [isBuyNowOpen, setIsBuyNowOpen] = useState(false);
   const [isDeliveryAddressModalOpen, setIsDeliveryAddressModalOpen] = useState(false);
+  const [isSellerReviewDialogOpen, setIsSellerReviewDialogOpen] = useState(false);
   // 입찰 패널의 "충전" 클릭 시 마이페이지로 이동하지 않고 이 자리에서 바로 모달을 띄운다
   // (헤더 POINT 드롭다운과 같은 방식, 사용자 요청으로 변경 2026-07-28 — 이동하면 입력 중인 입찰 금액이 날아감)
   const [isChargeModalOpen, setIsChargeModalOpen] = useState(false);
@@ -112,7 +114,12 @@ const AuctionDetailPageContent = ({ auctionId }) => {
   const confirmedFavoriteCountRef = useRef(0);
   const desiredFavoriteRef = useRef(null);
   const [failedImageUrls, setFailedImageUrls] = useState(() => new Set());
-  useBodyScrollLock(isBuyNowOpen || isDeliveryAddressModalOpen || isChargeModalOpen);
+  useBodyScrollLock(
+    isBuyNowOpen
+    || isDeliveryAddressModalOpen
+    || isSellerReviewDialogOpen
+    || isChargeModalOpen,
+  );
   const requestedReturnPath = location.state?.from;
   const returnPath = typeof requestedReturnPath === 'string'
     && requestedReturnPath.startsWith('/')
@@ -132,6 +139,17 @@ const AuctionDetailPageContent = ({ auctionId }) => {
   const handleInquiryLoginRequired = useCallback(() => {
     navigate('/login', { state: { from: location } });
   }, [location, navigate]);
+  const handleSellerReviewsOpen = useCallback(() => {
+    if (isAuthLoading) return;
+    if (!isAuthenticated) {
+      handleInquiryLoginRequired();
+      return;
+    }
+    setIsSellerReviewDialogOpen(true);
+  }, [handleInquiryLoginRequired, isAuthLoading, isAuthenticated]);
+  const handleSellerReviewsClose = useCallback(() => {
+    setIsSellerReviewDialogOpen(false);
+  }, []);
 
   useLayoutEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -1076,6 +1094,7 @@ const AuctionDetailPageContent = ({ auctionId }) => {
             sellerRating={sellerTrustQuery.data?.totalScore ?? auction.sellerRating}
             sellerReviewCount={sellerTrustQuery.data?.totalCount ?? auction.sellerReviewCount}
             isSellerTrustLoading={!supplementalQueriesEnabled || sellerTrustQuery.isLoading}
+            onSellerReviewsOpen={handleSellerReviewsOpen}
           >
             <AuctionSellerHistory
               key={`seller-history-${auction.sellerId}`}
@@ -1098,6 +1117,14 @@ const AuctionDetailPageContent = ({ auctionId }) => {
         onClose={() => setIsBuyNowOpen(false)}
         onConfirm={handleBuyNowConfirm}
       />
+      {isSellerReviewDialogOpen && (
+        <AuctionSellerReviewDialog
+          isOpen
+          sellerId={auction.sellerId}
+          sellerName={auction.sellerName}
+          onClose={handleSellerReviewsClose}
+        />
+      )}
       {isDeliveryAddressModalOpen && (
         <AuctionDeliveryAddressModal
           profile={memberProfileQuery.data}
