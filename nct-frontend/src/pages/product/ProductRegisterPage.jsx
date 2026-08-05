@@ -59,7 +59,10 @@ export default function ProductRegisterPage() {
   const navigationType = useNavigationType(); // 'POP'(뒤로/앞으로가기) | 'PUSH'(링크·버튼으로 새로 진입) | 'REPLACE'
   const queryClient = useQueryClient();
   const editPrdSn = location.state?.prdSn ?? null; // 임시저장 수정 모드
-  const draftKey = editPrdSn ?? 'new'; // 뒤로가기로 돌아왔을 때 지금 이 진입과 같은 draft인지 구분하는 키
+  // 유찰 상품 재등록 모드 — AUCTION.PRD_SN이 UNIQUE 제약이라 같은 상품번호로는 경매를 다시 만들 수 없어서,
+  // 기존 데이터를 불러와 새 상품으로 등록한다(editPrdSn은 null로 둬서 제출 시 POST/신규 생성되게 함).
+  const relistFromPrdSn = location.state?.relistFromPrdSn ?? null;
+  const draftKey = editPrdSn ?? (relistFromPrdSn ? `relist-${relistFromPrdSn}` : 'new'); // 뒤로가기로 돌아왔을 때 지금 이 진입과 같은 draft인지 구분하는 키
   // 렌더 중(첫 마운트) 한 번만 평가 — 아래 동기화 effect가 draftCache를 다시 써버리기 전에
   // "이번 마운트가 캐시에서 복원된 것인지"를 고정해둬야 서버 재조회 여부를 정확히 판단할 수 있다.
   // navigationType이 'POP'(진짜 뒤로가기)일 때만 캐시를 쓴다 — 그래야 "메인페이지 갔다가 경매등록
@@ -183,6 +186,29 @@ export default function ProductRegisterPage() {
 
             if (p.prdDraftPolicyAgreedYn === 'Y') {
               setPolicyAgreed(true);
+            }
+          })
+          .catch(() => setError('기존 상품 정보를 불러오지 못했습니다.'))
+      );
+    } else if (relistFromPrdSn && !hasCachedDraft) {
+      // 재등록 모드 — 날짜·시작시점·입찰단위·정책동의는 새로 정해야 하니 기본값 그대로 두고
+      // 나머지 정보만 불러온다. editPrdSn이 null이라 제출 시 신규 등록(POST)으로 처리된다.
+      loads.push(
+        getProduct(relistFromPrdSn)
+          .then(res => {
+            const p = res.data;
+            setForm(prev => ({
+              ...prev,
+              catSn:          p.catSn ?? '',
+              prdNm:          p.prdNm ?? '',
+              prdCn:          p.prdCn ?? '',
+              prdTrdMethodCd: p.prdTrdMethodCd ?? 'TRDC0009',
+              prdStartAmt:    p.prdStartAmt != null ? String(p.prdStartAmt) : '',
+              prdIbyAmt:      p.prdIbyAmt  != null ? String(p.prdIbyAmt)  : '',
+              tradeRegions:   p.tradeRegions ?? prev.tradeRegions,
+            }));
+            if (p.imageList?.length > 0) {
+              setImages(p.imageList.map(img => ({ id: img.flSn, flSn: img.flSn, url: img.url, file: null })));
             }
           })
           .catch(() => setError('기존 상품 정보를 불러오지 못했습니다.'))
@@ -421,7 +447,7 @@ export default function ProductRegisterPage() {
 
   return (
     <main className="container">
-<div className="page-title"><div><h1 style={{ fontWeight: 700 }}>{editPrdSn ? '경매 설정 완료' : '상품 등록'}</h1></div></div>
+<div className="page-title"><div><h1 style={{ fontWeight: 700 }}>{editPrdSn ? '경매 설정 완료' : relistFromPrdSn ? '상품 재등록' : '상품 등록'}</h1></div></div>
 
       {/* 스텝 인디케이터 */}
       <div className="card product-register-steps" style={{ padding: 0, overflow: 'hidden', marginBottom: 20 }}>

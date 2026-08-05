@@ -29,3 +29,24 @@ export const STATUS_BADGE = {
   PRDC0003: 'badge-gray',
   PRDC0004: 'badge-danger',
 };
+
+// 경매 실제 진행 상태(AUCTION.AUC_STATUS_CD) 라벨·배지 — PRODUCT.PRD_STATUS_CD는 등록 후
+// 계속 PRDC0002로 남아있어서 유찰·낙찰·취소 여부를 못 담는다. 상태 표시가 필요한 화면은
+// auctionStatus가 있으면 이쪽을, 없으면(임시저장 등 경매 자체가 없는 경우) 위 STATUS_LABEL을 쓴다.
+export const AUC_STATUS_LABEL = {
+  AUCC0001: '준비',
+  AUCC0002: '경매 진행중',
+  AUCC0003: '낙찰',
+  AUCC0004: '유찰',
+  AUCC0005: '취소',
+  AUCC0006: '취소요청',
+};
+
+export const AUC_STATUS_BADGE = {
+  AUCC0001: 'badge-gray',
+  AUCC0002: 'badge-success',
+  AUCC0003: 'badge-gray',
+  AUCC0004: 'badge-gray',
+  AUCC0005: 'badge-danger',
+  AUCC0006: 'badge-danger',
+};

@@ -5,10 +5,11 @@ import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import { toImageUrl } from '@api/fileApi';
+import { resolveDescriptionImagesForDisplay } from '@components/product/richTextEditorImages';
 import { getProduct, postProductComment, fetchProductComments, fetchProductInquiries, postInquiryReply, updateInquiryReply } from '@api/productApi';
 import { getAuctionStatus, requestAuctionCancel, fetchAuctionFavoriteStatus } from '@api/auctionApi';
 import { submitInquiryReport } from '@api/abuseReportApi';
-import { TRADE_LABEL, STATUS_LABEL, STATUS_BADGE } from '@/constants/productConstants';
+import { TRADE_LABEL, STATUS_LABEL, STATUS_BADGE, AUC_STATUS_LABEL, AUC_STATUS_BADGE } from '@/constants/productConstants';
 import useCountdown from '@hooks/useCountdown';
 import ErrorMessage from '@components/common/ErrorMessage';
 import MediaDetailSkeleton from '@components/skeleton/MediaDetailSkeleton';
@@ -231,10 +232,12 @@ export default function ProductDetailSellerPage() {
     );
   }
 
-  const isActive        = product.prdStatusCd === 'PRDC0002';
-  const isEnded         = product.prdStatusCd === 'PRDC0003';
+  // PRODUCT.PRD_STATUS_CD는 등록 후 계속 PRDC0002로 남아있고(백엔드에 PRDC0003 전이 로직 자체가 없음),
+  // 실제 진행 상태는 AUCTION.AUC_STATUS_CD에만 있어서 그쪽을 기준으로 판정한다.
   const isDraft         = product.prdStatusCd === 'PRDC0001';
-  const isCancelPending = isActive && auctionStatus?.aucStatusCd === 'AUCC0006';
+  const isActive        = !isDraft && ['AUCC0001', 'AUCC0002'].includes(auctionStatus?.aucStatusCd);
+  const isEnded         = auctionStatus?.aucStatusCd === 'AUCC0004'; // 유찰
+  const isCancelPending = auctionStatus?.aucStatusCd === 'AUCC0006';
   const isCancelled     = auctionStatus?.aucStatusCd === 'AUCC0005'; // 관리자 승인으로 취소 확정된 경매
 
   const priceLabel = isActive ? '현재가' : '시작가';
@@ -321,7 +324,9 @@ export default function ProductDetailSellerPage() {
             <div>
               <div className="seller-status-row" style={{ justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <span className={`badge ${STATUS_BADGE[product.prdStatusCd] ?? 'badge-gray'}`}>{STATUS_LABEL[product.prdStatusCd] ?? product.prdStatusCd}</span>
+                  <span className={`badge ${auctionStatus?.aucStatusCd ? (AUC_STATUS_BADGE[auctionStatus.aucStatusCd] ?? 'badge-gray') : (STATUS_BADGE[product.prdStatusCd] ?? 'badge-gray')}`}>
+                    {auctionStatus?.aucStatusCd ? (AUC_STATUS_LABEL[auctionStatus.aucStatusCd] ?? auctionStatus.aucStatusCd) : (STATUS_LABEL[product.prdStatusCd] ?? product.prdStatusCd)}
+                  </span>
                   <span className="badge badge-goods">판매</span>
                 </div>
                 <p className="muted small" style={{ margin: 0 }}>
@@ -361,7 +366,7 @@ export default function ProductDetailSellerPage() {
               <div
                 className="rich-text-editor-body"
                 style={{ fontSize: 16, lineHeight: 1.7, color: '#1a1a18', flex: 1, minHeight: 0, overflowY: 'auto', padding: 0 }}
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.prdCn, { ALLOWED_TAGS: ['p', 'br', 'b', 'strong', 'i', 'em', 'u', 'ul', 'ol', 'li', 'img', 'div', 'span'], ALLOWED_ATTR: ['src', 'style'] }) }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(resolveDescriptionImagesForDisplay(product.prdCn), { ALLOWED_TAGS: ['p', 'br', 'b', 'strong', 'i', 'em', 'u', 'ul', 'ol', 'li', 'img', 'div', 'span'], ALLOWED_ATTR: ['src', 'style'] }) }}
               />
             ) : (
               <p style={{ margin: 0, fontSize: 15, color: '#a8a79f' }}>상품설명이 없습니다.</p>
@@ -393,6 +398,7 @@ export default function ProductDetailSellerPage() {
                   </>
                 )}
                 {isEnded && <button className="btn btn-outline" onClick={() => auctionStatus?.aucSn && navigate(`/auction/${auctionStatus.aucSn}`)}>종료 화면 보기</button>}
+                {isEnded && <button className="btn btn-primary" onClick={() => navigate('/product/register', { state: { relistFromPrdSn: Number(prdSn) } })}>재등록</button>}
                 {isDraft && <button className="btn btn-primary" onClick={() => navigate('/product/register', { state: { prdSn: Number(prdSn) } })}>상품 등록 재개</button>}
               </div>
               <div className={noticeClass} style={{ marginTop: 16 }}>{noticeText}</div>

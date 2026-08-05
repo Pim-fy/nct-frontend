@@ -10,7 +10,7 @@ import {
   addServiceRequestComment,
   getServiceRequestComments,
 } from '@api/serviceRequestApi';
-import { getReceivedQuotes } from '@api/quoteApi';
+import { getReceivedQuotes, getQuoteHistory } from '@api/quoteApi';
 import { toImageUrl } from '@api/fileApi';
 import ErrorMessage from '@components/common/ErrorMessage';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
@@ -205,6 +205,9 @@ export default function ServiceRequestDetailPage() {
   const [toast, setToast] = useState('');
   const [quotes, setQuotes] = useState([]);
   const [quotesLoadedRequestSn, setQuotesLoadedRequestSn] = useState(null);
+  const [quoteDetail, setQuoteDetail] = useState(null); // 상세 모달에 띄울 견적(클릭한 항목)
+  const [quoteHistory, setQuoteHistory] = useState([]);
+  const [quoteHistoryLoading, setQuoteHistoryLoading] = useState(false);
   const [comments, setComments] = useState([]);
   const [cmtTtl, setCmtTtl] = useState('');
   const [cmtCn, setCmtCn] = useState('');
@@ -321,6 +324,16 @@ export default function ServiceRequestDetailPage() {
     }
   };
 
+  const openQuoteDetail = (quote) => {
+    setQuoteDetail(quote);
+    setQuoteHistory([]);
+    setQuoteHistoryLoading(true);
+    getQuoteHistory(quote.qutSn)
+      .then(res => setQuoteHistory(res.data ?? []))
+      .catch(() => setQuoteHistory([]))
+      .finally(() => setQuoteHistoryLoading(false));
+  };
+
   const handleQuoteClick = () => {
     if (!isAuthenticated) {
       navigate('/login', { state: { from: location } });
@@ -415,10 +428,10 @@ export default function ServiceRequestDetailPage() {
                 {isOwner && isDraft && (
                   <button
                     type="button"
-                    className="shrink-0 rounded-lg bg-primary px-4 py-2.5 text-lg font-semibold text-white transition-colors hover:bg-[#0048bf]"
+                    className="shrink-0 rounded-lg border border-[#e2e1dc] bg-white px-4 py-2.5 text-lg font-medium text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary"
                     onClick={() => navigate('/service-requests/new', { state: { svcReqSn: Number(svcReqSn) } })}
                   >
-                    이어서 작성
+                    작성재개
                   </button>
                 )}
                 {isOwner && isOpen && (
@@ -590,8 +603,21 @@ export default function ServiceRequestDetailPage() {
 
             {/* 패널 헤더 */}
             <div className="border-b border-[#e8e8e8] px-5 py-4">
-              <h2 className="text-2xl font-bold">도착한 견적</h2>
-              <p className="mt-1 text-lg text-[#5f5e5a]">견적을 선택하면 상세 내용과 제공자 리뷰를 확인할 수 있습니다.</p>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl font-bold">도착한 견적</h2>
+                  <p className="mt-1 text-lg text-[#5f5e5a]">견적을 선택하면 상세 내용과 제공자 리뷰를 확인할 수 있습니다.</p>
+                </div>
+                {isOwner && quotes.length > 0 && (
+                  <button
+                    type="button"
+                    className="shrink-0 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-[#e5efff]"
+                    onClick={() => navigate(`/service-requests/${svcReqSn}/manage`)}
+                  >
+                    전체 견적목록 보기
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* 액션 영역 */}
@@ -642,7 +668,11 @@ export default function ServiceRequestDetailPage() {
               ) : (
                 <ul className="divide-y divide-[#e8e8e8]">
                   {quotes.map(q => (
-                    <li key={q.qutSn} className="px-5 py-4">
+                    <li
+                      key={q.qutSn}
+                      className="cursor-pointer px-5 py-4 transition-colors hover:bg-[#f9fafb]"
+                      onClick={() => openQuoteDetail(q)}
+                    >
                       <div className="flex items-start justify-between gap-3">
                         <span className="font-semibold text-[#1d1d1f]">{q.providerNm}</span>
                         <span className="shrink-0 rounded-lg bg-[#f0f0ee] px-3 py-1 text-sm font-medium text-[#5f5e5a]">
@@ -666,6 +696,67 @@ export default function ServiceRequestDetailPage() {
       </div>
 
       {toast && <Toast message={toast} onClose={() => setToast('')} />}
+
+      {/* 견적 상세 모달 — 목록을 아코디언으로 펼치면 견적이 많을 때 가독성이 떨어져서 모달로 처리 */}
+      <div
+        className={`modal ${quoteDetail ? 'open' : ''}`}
+        onClick={e => { if (e.target === e.currentTarget) setQuoteDetail(null); }}
+      >
+        {quoteDetail && (
+          <div className="modal-box">
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="text-xl font-bold text-[#1d1d1f]">{quoteDetail.providerNm}</h3>
+              <span className="shrink-0 rounded-lg bg-[#f0f0ee] px-3 py-1 text-sm font-medium text-[#5f5e5a]">
+                {QUOTE_STATUS_LABEL[quoteDetail.statusCode] ?? quoteDetail.statusCode}
+              </span>
+            </div>
+            <p className="mt-2 text-2xl font-bold text-primary">{fmtBudget(quoteDetail.amount)}</p>
+            {quoteDetail.content && (
+              <p className="mt-3 whitespace-pre-line text-base leading-relaxed text-[#1d1d1f]">{quoteDetail.content}</p>
+            )}
+            {/* 견적서 첨부파일 — 필드명은 황성경(3) QUOTE 구조 확정 전 임시(fileUrl/fileName), 확정되면 맞춰서 교체 */}
+            {quoteDetail.fileUrl && (
+              <a
+                href={quoteDetail.fileUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[#e2e1dc] px-3 py-2 text-sm font-medium text-[#0048bf] hover:border-primary hover:bg-[#e5efff]"
+              >
+                📎 {quoteDetail.fileName || '첨부 견적서'}
+              </a>
+            )}
+            <p className="mt-3 text-sm text-[#9a9ba5]">
+              {fmtDate(quoteDetail.registeredAt)} 제출
+              {quoteDetail.reviseCnt > 0 && ` · ${quoteDetail.reviseCnt}회 수정됨`}
+            </p>
+
+            {quoteDetail.reviseCnt > 0 && (
+              <div className="mt-5 border-t border-[#e8e8e8] pt-4">
+                <h4 className="mb-2 text-base font-semibold text-[#5f5e5a]">수정 이력</h4>
+                {quoteHistoryLoading ? (
+                  <p className="text-sm text-[#9a9ba5]">불러오는 중...</p>
+                ) : quoteHistory.length === 0 ? (
+                  <p className="text-sm text-[#9a9ba5]">이력이 없습니다.</p>
+                ) : (
+                  <ul className="space-y-3">
+                    {quoteHistory.map(h => (
+                      <li key={h.qutHstSn} className="rounded-lg bg-[#f9fafb] p-3">
+                        <p className="font-semibold text-[#1d1d1f]">{fmtBudget(h.amount)}</p>
+                        {h.content && <p className="mt-1 whitespace-pre-line text-sm text-[#5f5e5a]">{h.content}</p>}
+                        <p className="mt-1 text-xs text-[#9a9ba5]">{fmtDate(h.registeredAt)} 수정 전 내용</p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
+            <div className="mt-5 flex justify-end">
+              <button type="button" className="btn btn-ghost" onClick={() => setQuoteDetail(null)}>닫기</button>
+            </div>
+          </div>
+        )}
+      </div>
       </div>
     </>
   );

@@ -84,6 +84,8 @@ import ServiceRequestFormPage from '@pages/service/ServiceRequestFormPage';
 import ServiceRequestDetailPage from '@pages/service/ServiceRequestDetailPage';
 // F-SVC-004: 내 서비스 요청 목록 (담당자 2)
 import MyServiceRequestListPage from '@pages/service/MyServiceRequestListPage';
+// F-SVC-007, F-SVC-009~010: 견적 비교·선택·매칭 관리 (담당자 2)
+import ServiceRequestManagePage from '@pages/service/ServiceRequestManagePage';
 import ServiceTradeDetailPreviewPage from '@pages/service/ServiceTradeDetailPreviewPage';
 
 // 기존 지갑 주소를 유지하되, 결제 결과·모달 제어용 query string도 함께 전달한다.
@@ -247,6 +249,8 @@ const AppRoutes = () => {
           <Route path="/service-requests/new" element={<ServiceRequestFormPage />} />
           {/* 담당자 2 · F-SVC-004: 내 서비스 요청 목록. 라우트 소유자에게 전달 필요. */}
           <Route path="/service-requests/me" element={<MyServiceRequestListPage />} />
+          {/* 담당자 2 · F-SVC-007, F-SVC-009~010: 견적 비교·선택·매칭 관리 */}
+          <Route path="/service-requests/:svcReqSn/manage" element={<ServiceRequestManagePage />} />
         </Route>
       </Route>
 

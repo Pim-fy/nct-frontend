@@ -29,7 +29,10 @@ export async function resolvePendingDescriptionImages(html, pendingFilesMap, max
       const file = pendingFilesMap.get(blobUrl);
       if (!file) return;
       const res = await uploadImage(file, 'product');
-      img.setAttribute('src', toImageUrl(res.data.url));
+      // 상대경로 그대로 저장 — 배포 환경마다 백엔드 origin이 달라서(VITE_API_URL) 저장 시점에
+      // 절대경로로 박아넣으면 다른 환경에서 열 때 이미지가 깨진다. 화면에 그릴 땐
+      // resolveDescriptionImagesForDisplay()로 그때그때 현재 환경 origin을 붙인다.
+      img.setAttribute('src', res.data.url);
     }),
   );
 
@@ -41,4 +44,19 @@ export async function resolvePendingDescriptionImages(html, pendingFilesMap, max
     throw new Error(`상품 설명이 이미지 주소 변환 후 글자수 제한(${maxLength.toLocaleString()}자)을 초과했습니다. 이미지 수를 줄여주세요.`);
   }
   return resolvedHtml;
+}
+
+// 저장된 상대경로(/api/attachment/...) 이미지를 현재 실행 환경의 백엔드 origin에 맞춰
+// 절대경로로 변환해 화면에 그린다. 이미 절대경로(http...)나 blob:이면 toImageUrl이 그대로 통과시킨다.
+// prdCn을 dangerouslySetInnerHTML로 렌더링하는 곳에서 sanitize 전에 호출한다.
+export function resolveDescriptionImagesForDisplay(html) {
+  if (!html) return html;
+
+  const container = document.createElement('div');
+  container.innerHTML = html;
+  container.querySelectorAll('img').forEach((img) => {
+    const src = img.getAttribute('src');
+    if (src) img.setAttribute('src', toImageUrl(src));
+  });
+  return container.innerHTML;
 }
