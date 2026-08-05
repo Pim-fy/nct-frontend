@@ -38,9 +38,9 @@ const MENU_SECTIONS = [
   [
     { label: '공지 관리', icon: Megaphone, to: '/admin/notices' },
   ],
-  [{ label: '신고 처리', icon: Siren, to: '/admin/reports' }],
+  [{ label: '신고 관리', icon: Siren, to: '/admin/reports' }],
   [
-    { label: '감사 로그', icon: ScrollText, to: '/admin/audit-logs' },
+    { label: '운영 기록', icon: ScrollText, to: '/admin/operations-records' },
     { label: '시스템 설정', icon: Settings, to: '/admin/system-settings' },
   ],
 ];
@@ -85,18 +85,6 @@ const AdminSidebar = ({ collapsed = false, id, onNavigate }) => {
             ))}
           </div>
         ))}
-
-        <div className="admin-nav__section is-preview">
-          <NavLink
-            className={({ isActive }) => `admin-nav__item${isActive ? ' is-active' : ''}`}
-            onClick={onNavigate}
-            title={collapsed ? '위험 이벤트' : undefined}
-            to="/admin/risk-events"
-          >
-            <Siren aria-hidden="true" />
-            <span><strong>위험 이벤트</strong></span>
-          </NavLink>
-        </div>
       </nav>
 
       <div className="admin-sidebar__footer">

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ChevronDown } from 'lucide-react';
 import { deleteImage, toImageUrl, uploadImage } from '@api/fileApi';
 import { toast } from '@utils/common';
 import {
@@ -11,13 +12,14 @@ import {
   useUpdatePortfolio,
 } from '@hooks/useProviderProfile';
 import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
+import MyPageProfileEdit from '@components/mypage/MyPageProfileEdit';
 import FormSkeleton from '@components/skeleton/FormSkeleton';
 import './providerProfilePage.css';
 
 const fieldClass = 'w-full rounded-md border border-[#d9d9d9] px-3 py-2 text-sm text-[#404040] focus:border-[#0064ff] focus:outline-none';
 
 /** 담당자 7 · F-PROV-004: 승인된 제공자가 소개와 가능 지역을 직접 관리하는 화면이다. */
-export default function ProviderProfilePage({ embedded = false } = {}) {
+export default function ProviderProfilePage({ embedded = false, user = null } = {}) {
   const navigate = useNavigate();
   const profileQuery = useMyProviderProfile();
   const statusClass = embedded
@@ -31,7 +33,7 @@ export default function ProviderProfilePage({ embedded = false } = {}) {
     </main>
   );
   if (profileQuery.isError) return (
-    <main className={`provider-profile-editor ${embedded ? 'w-full' : 'mx-auto max-w-3xl px-4 py-8'}`}>
+    <main className={`provider-profile-editor ${embedded ? 'provider-profile-editor--embedded w-full' : 'mx-auto max-w-3xl px-4 py-8'}`}>
       {embedded && <MyPageContentHeader title="프로필" />}
       <div className={statusClass}>
         <p className="text-[#d9363e]">제공자 프로필을 불러올 수 없습니다.</p>
@@ -53,11 +55,48 @@ export default function ProviderProfilePage({ embedded = false } = {}) {
           <button type="button" className="btn btn-outline" onClick={() => navigate('/user/mypage')}>대시보드</button>
         </div>
       )}
-      <div className="space-y-6">
-        <ProviderProfileForm key={profileQuery.data.userSn} profile={profileQuery.data} />
-        <PortfolioRegistrationSection />
-      </div>
+      {embedded ? (
+        <div className="provider-profile-editor__accordion-list">
+          <ProfileAccordion
+            defaultOpen
+            description="공개 프로필에 표시되는 소개, 활동 지역과 포트폴리오를 관리합니다."
+            title="제공자 프로필 관리"
+          >
+            <ProviderProfileForm key={profileQuery.data.userSn} profile={profileQuery.data} />
+            <PortfolioRegistrationSection />
+          </ProfileAccordion>
+          <ProfileAccordion
+            description="일반 회원과 동일한 기본 정보, 보안, 알림 설정을 관리합니다."
+            title="프로필 설정"
+          >
+            <MyPageProfileEdit hideHeader user={user} />
+          </ProfileAccordion>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <ProviderProfileForm key={profileQuery.data.userSn} profile={profileQuery.data} />
+          <PortfolioRegistrationSection />
+        </div>
+      )}
     </main>
+  );
+}
+
+/** 담당자 7 · F-PROV-004/005: 제공자 마이페이지의 두 프로필 설정 영역을 독립적으로 여닫습니다. */
+function ProfileAccordion({ children, defaultOpen = false, description, title }) {
+  return (
+    <details className="provider-profile-editor__accordion" open={defaultOpen}>
+      <summary>
+        <span>
+          <strong>{title}</strong>
+          <small>{description}</small>
+        </span>
+        <ChevronDown aria-hidden="true" />
+      </summary>
+      <div className="provider-profile-editor__accordion-body">
+        {children}
+      </div>
+    </details>
   );
 }
 

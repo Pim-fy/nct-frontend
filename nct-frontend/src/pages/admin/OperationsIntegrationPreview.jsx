@@ -28,32 +28,15 @@ const OperationsIntegrationPreview = () => {
     () => ({
       typeCode: typeCode || undefined,
       processed: processed || undefined,
+      keyword: keyword || undefined,
       page,
       size: 20,
     }),
-    [page, processed, typeCode],
+    [keyword, page, processed, typeCode],
   );
 
   const eventsQuery = useAdminRiskEvents(filters);
   const summaryQuery = useAdminRiskEventSummary();
-
-  const events = useMemo(
-    () =>
-      (eventsQuery.data?.items ?? []).filter((item) => {
-        const query = keyword.trim().toLowerCase();
-        const searchableText = [
-          item.riskEventId,
-          item.typeName,
-          item.referenceTypeCode,
-          item.content,
-        ]
-          .join(' ')
-          .toLowerCase();
-
-        return !query || searchableText.includes(query);
-      }),
-    [eventsQuery.data, keyword],
-  );
 
   const columns = useMemo(() => [
     {
@@ -65,7 +48,9 @@ const OperationsIntegrationPreview = () => {
     {
       key: 'referenceTypeCode',
       label: '관련 대상',
-      render: (value, row) => `${value} #${row.referenceSn}`,
+      render: (value, row) => (
+        value && row.referenceSn != null ? `${value} #${row.referenceSn}` : '전체 범위'
+      ),
     },
     {
       key: 'content',
@@ -190,6 +175,7 @@ const OperationsIntegrationPreview = () => {
                 ...filterForm,
                 keyword: event.target.value,
               })}
+              maxLength={100}
               placeholder="번호, 유형, 내용 검색"
               value={filterForm.keyword}
             />
@@ -200,7 +186,7 @@ const OperationsIntegrationPreview = () => {
         <div className="operations-table-wrap">
           <AdminTable
             columns={columns}
-            data={eventsQuery.isError ? [] : events}
+            data={eventsQuery.isError ? [] : (eventsQuery.data?.items ?? [])}
             emptyMessage={eventsQuery.isError
               ? '위험 이벤트를 불러오지 못했습니다.'
               : '조건에 맞는 위험 이벤트가 없습니다.'}

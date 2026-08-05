@@ -18,6 +18,7 @@ const AdminPagination = ({
     maxVisiblePages={5}
     onPageChange={onPageChange}
     page={page}
+    showSinglePage
     totalPages={totalPages}
   />
 );

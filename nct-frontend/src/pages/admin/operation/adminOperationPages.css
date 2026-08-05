@@ -12,11 +12,21 @@
 }
 
 .admin-operation-search label {
-  width: min(460px, 100%);
+  width: auto;
 }
 
-.admin-operation-search input {
+.admin-operation-search input,
+.admin-operation-search select {
   width: 100%;
+}
+
+.admin-operation-search__status {
+  flex: 0 0 180px;
+}
+
+.admin-operation-search__keyword {
+  flex: 1 1 320px;
+  min-width: min(320px, 100%);
 }
 
 .admin-operation-error,
@@ -162,6 +172,12 @@
 }
 
 @media (max-width: 620px) {
+  .admin-operation-search__status,
+  .admin-operation-search__keyword {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+
   .admin-operation-detail {
     padding: 16px;
   }

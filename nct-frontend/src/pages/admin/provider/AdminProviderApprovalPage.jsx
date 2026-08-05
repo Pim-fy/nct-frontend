@@ -26,7 +26,7 @@ const FILTERS = {
 };
 
 const EMPTY_FILTER = {
-  status: '심사 대기',
+  status: '전체',
   category: '전체',
   type: '전체',
   keyword: '',
@@ -226,7 +226,7 @@ const AdminProviderApprovalPage = () => {
         <AdminSectionCard
           action={!applicationsQuery.isLoading && <span>총 {totalItems}건</span>}
           className="admin-notice-list admin-provider-list"
-          description="기본은 심사 대기 건만 보여 주며, 승인·반려 이력은 심사 상태 필터에서 조회합니다."
+          description="전체 신청을 표시하며, 심사 대기 건부터 상태별 최신 신청순으로 조회합니다."
           title="제공자 신청 목록"
         >
           <div className="admin-table-scroll">

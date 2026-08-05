@@ -8,3 +8,11 @@ export const saveAdminCategory = ({ domainCode, categorySn, payload }) => {
   const path = `/admin/categories/${domainCode}${categorySn ? `/${categorySn}` : ''}`;
   return api[categorySn ? 'put' : 'post'](path, payload).then(({ data }) => data.data);
 };
+
+export const moveAdminCategory = ({ domainCode, categorySn, direction }) =>
+  api.put(`/admin/categories/${domainCode}/${categorySn}/order`, { direction })
+    .then(({ data }) => data.data);
+
+export const reorderAdminCategories = ({ domainCode, categorySnOrder }) =>
+  api.put(`/admin/categories/${domainCode}/reorder`, { categorySnOrder })
+    .then(({ data }) => data.data);
