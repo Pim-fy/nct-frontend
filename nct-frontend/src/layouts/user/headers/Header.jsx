@@ -197,6 +197,14 @@ const Header = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // 모바일 알림 전체화면이 열려있는 동안 배경 스크롤을 막는다 (데스크톱 드롭다운은 그대로 스크롤 허용).
+  useEffect(() => {
+    if (!notiOpen || window.innerWidth >= 640) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [notiOpen]);
+
   // 모바일 전체화면 메뉴가 열려있는 동안 배경 스크롤을 막는다.
   useEffect(() => {
     if (!mobileMenuOpen) return undefined;
@@ -508,59 +516,93 @@ const Header = () => {
                 </span>
               )}
             </button>
-            {notiOpen && (
-              <div
-                className={`z-50 rounded-[10px] border border-[#434343] bg-white p-4 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)] fixed left-1/2 w-[calc(100vw-32px)] max-w-[320px] -translate-x-1/2 ${hasHeaderSearch ? 'top-[166px]' : 'top-[94px]'} sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+12px)] sm:w-[280px] sm:max-w-none sm:translate-x-0`}
-              >
-                {/* 헤더 */}
-                <div className="flex items-center justify-between">
-                  <span className="flex items-baseline gap-1.5">
-                    <span className="text-[15px] font-bold text-black tracking-[-0.5px]">알림</span>
-                    <span className="text-[12px] text-[#0064ff]">{notiCount}</span>
-                  </span>
-                </div>
-                <div className="my-3 h-px bg-[#e5e5e5]" />
-                {/* 안읽은 우선 + 읽은 알림 통합, 최대 5개 미리보기 */}
-                {previewNotis.length === 0 ? (
-                  <p className="py-2 text-center text-[13px] text-[#969696]">새 알림이 없습니다.</p>
-                ) : (
-                  <ul className="flex flex-col gap-1.5">
-                    {previewNotis.map((item) => (
-                      <li key={item.id}>
-                        <button
-                          type="button"
-                          className="flex w-full items-start gap-2 text-left"
-                          onClick={() => {
-                            if (!item.read) markReadMutation.mutate(item.id);
-                            setSelectedNoti({ ...item, time: relativeTime(item.regDt) });
-                            setNotiOpen(false);
-                          }}
-                        >
-                          <span
-                            className={`mt-[6px] size-[6px] shrink-0 rounded-full ${item.read ? 'bg-[#d9d9d9]' : 'bg-primary'}`}
-                          />
-                          <div className="min-w-0">
-                            <p className="truncate text-[13px] text-[#333]">
-                              {item.title}
-                              {item.content && <span className="text-[#969696]"> · {item.content}</span>}
-                            </p>
-                            <p className="text-[11px] text-[#969696]">{relativeTime(item.regDt)}</p>
-                          </div>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {/* 전체보기 */}
-                <button
-                  type="button"
-                  className="mt-4 h-[34px] w-full rounded-[6px] bg-primary text-[14px] font-bold text-white hover:bg-[#0048bf] transition-colors"
-                  onClick={() => { setNotiOpen(false); navigate('/user/notification'); }}
-                >
-                  알림 전체보기
-                </button>
-              </div>
-            )}
+            {notiOpen && (() => {
+              // 안읽은 우선 + 읽은 알림 통합, 최대 5개 미리보기 — 데스크톱 드롭다운·모바일
+              // 전체화면 둘 다 같은 목록을 쓴다 (2026-08-04, 모바일만 전체화면으로 분리)
+              const notiList = previewNotis.length === 0 ? (
+                <p className="py-2 text-center text-[13px] text-[#969696]">새 알림이 없습니다.</p>
+              ) : (
+                <ul className="flex flex-col gap-1.5">
+                  {previewNotis.map((item) => (
+                    <li key={item.id}>
+                      <button
+                        type="button"
+                        className="flex w-full items-start gap-2 text-left"
+                        onClick={() => {
+                          if (!item.read) markReadMutation.mutate(item.id);
+                          setSelectedNoti({ ...item, time: relativeTime(item.regDt) });
+                          setNotiOpen(false);
+                        }}
+                      >
+                        <span
+                          className={`mt-[6px] size-[6px] shrink-0 rounded-full ${item.read ? 'bg-[#d9d9d9]' : 'bg-primary'}`}
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate text-[13px] text-[#333]">
+                            {item.title}
+                            {item.content && <span className="text-[#969696]"> · {item.content}</span>}
+                          </p>
+                          <p className="text-[11px] text-[#969696]">{relativeTime(item.regDt)}</p>
+                        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              );
+
+              return (
+                <>
+                  {/* 모바일: 화면 전체를 덮는 알림함 (네이버 알림센터 방식, 2026-08-04) */}
+                  <div className="fixed inset-0 z-[300] flex flex-col bg-white sm:hidden">
+                    <div className="flex h-[56px] shrink-0 items-center justify-between border-b border-[#f0f0f0] px-4">
+                      <span className="flex items-baseline gap-1.5">
+                        <span className="text-[17px] font-bold text-black tracking-[-0.5px]">알림</span>
+                        <span className="text-[13px] text-[#0064ff]">{notiCount}</span>
+                      </span>
+                      <button
+                        type="button"
+                        aria-label="닫기"
+                        className="flex size-9 items-center justify-center rounded-full text-[#767676] hover:bg-[#f3f5fa] transition-colors"
+                        onClick={() => setNotiOpen(false)}
+                      >
+                        <X size={22} />
+                      </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3">
+                      {notiList}
+                    </div>
+                    <div className="shrink-0 border-t border-[#f0f0f0] p-4">
+                      <button
+                        type="button"
+                        className="h-[42px] w-full rounded-[6px] bg-primary text-[14px] font-bold text-white hover:bg-[#0048bf] transition-colors"
+                        onClick={() => { setNotiOpen(false); navigate('/user/notification'); }}
+                      >
+                        알림 전체보기
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 데스크톱: 기존 드롭다운 그대로 */}
+                  <div className="z-50 hidden rounded-[10px] border border-[#434343] bg-white p-4 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)] sm:absolute sm:right-0 sm:top-[calc(100%+12px)] sm:block sm:w-[280px]">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-baseline gap-1.5">
+                        <span className="text-[15px] font-bold text-black tracking-[-0.5px]">알림</span>
+                        <span className="text-[12px] text-[#0064ff]">{notiCount}</span>
+                      </span>
+                    </div>
+                    <div className="my-3 h-px bg-[#e5e5e5]" />
+                    {notiList}
+                    <button
+                      type="button"
+                      className="mt-4 h-[34px] w-full rounded-[6px] bg-primary text-[14px] font-bold text-white hover:bg-[#0048bf] transition-colors"
+                      onClick={() => { setNotiOpen(false); navigate('/user/notification'); }}
+                    >
+                      알림 전체보기
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
           </div>
 
           {/* 지갑 → POINT 박스 */}
@@ -936,7 +978,7 @@ const Header = () => {
       <PointAmountModal
         title="포인트 전환"
         submitLabel="전환"
-        infoRow={{ label: '전환 가능 포인트', value: `${(pointBalance.settleable ?? 0).toLocaleString()} P` }}
+        infoRow={{ label: '정산가능 포인트', value: `${(pointBalance.settleable ?? 0).toLocaleString()} P` }}
         onSubmit={submitHeaderConvert}
         onClose={() => setPointModal(null)}
       />

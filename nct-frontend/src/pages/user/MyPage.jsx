@@ -26,7 +26,6 @@ import TradeDetailBuyer from "@pages/trade/TradeDetailBuyer";
 import TradeDetailSeller from "@pages/trade/TradeDetailSeller";
 import MyProductList from "@components/product/MyProductList";
 import PointWalletPage from "@pages/user/point/PointWalletPage";
-import SettlementListPage from "@pages/user/settlement/SettlementListPage";
 import MyReportListPage from "@pages/user/report/MyReportListPage";
 import ReportFormPage from "@pages/user/report/ReportFormPage";
 import MyQuoteListPage from "@pages/provider/MyQuoteListPage";
@@ -48,7 +47,6 @@ const MYPAGE_SECTION_QUERY_VALUES = new Set([
   "quote",
   "review",
   "service-trade",
-  "settlement",
   "service-chat",
   "received-review",
   "report-list",
@@ -58,7 +56,6 @@ const MYPAGE_SECTION_QUERY_VALUES = new Set([
 const PROVIDER_ONLY_SECTION_QUERY_VALUES = new Set([
   "quote",
   "service-trade",
-  "settlement",
   "service-chat",
   "received-review",
 ]);
@@ -261,7 +258,6 @@ export default function MyPage({
               emptyText="아직 표시할 서비스 거래 내역이 없습니다."
             />
           )}
-          {isProvider && activeSection === "settlement" && <SettlementListPage embedded />}
           {isProvider && activeSection === "service-chat" && (
             <ProviderEmbeddedSection
               title="서비스 채팅"
