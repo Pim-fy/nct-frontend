@@ -3,8 +3,8 @@
 // 라우트: /service-requests/me, 마이페이지 "내 서비스 요청 목록" 섹션에서도 embedded로 재사용
 // 상품 판매 내역(MyProductList.jsx)과 동일한 마이페이지 공통 목록 컴포넌트를 사용한다.
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { deleteServiceRequest } from '@api/serviceRequestApi';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { deleteServiceRequest, closeServiceRequest } from '@api/serviceRequestApi';
 import { toImageUrl } from '@api/fileApi';
 import { useMyServiceRequests } from '@hooks/useServiceRequest';
 import MyPageListSectionLayout from '@components/mypage/MyPageListSectionLayout';
@@ -53,6 +53,8 @@ const PAGE_SIZE = 10;
 
 export default function MyServiceRequestListPage({ embedded = false }) {
   const navigate = useNavigate();
+  // 전역 브레드크럼 (BJN, 260805): 상세로 이동할 때 접근 경로(state.from)를 전달하기 위해 사용
+  const location = useLocation();
   const [filter, setFilter] = useState(null);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [page, setPage] = useState(1);
@@ -132,7 +134,7 @@ export default function MyServiceRequestListPage({ embedded = false }) {
         <MyPageListEmpty
           message="해당 조건의 서비스 요청이 없습니다."
           action={filter === null ? (
-            <button type="button" onClick={() => navigate('/service-requests/new')} className="btn btn-primary">
+            <button type="button" onClick={() => navigate('/service-requests/new', { state: { from: location.pathname + location.search } })} className="btn btn-primary">
               견적 요청서 작성하기
             </button>
           ) : null}
@@ -160,8 +162,8 @@ export default function MyServiceRequestListPage({ embedded = false }) {
                       {isDraft && (
                         <button
                           type="button"
-                          onClick={() => navigate('/service-requests/new', { state: { svcReqSn: item.svcReqSn } })}
-                          className="btn btn-sm btn-ghost"
+                          onClick={() => navigate('/service-requests/new', { state: { svcReqSn: item.svcReqSn, from: location.pathname + location.search } })}
+                          className="btn btn-sm btn-primary"
                         >
                           작성재개
                         </button>
@@ -169,7 +171,7 @@ export default function MyServiceRequestListPage({ embedded = false }) {
                       {!isDraft && (
                         <button
                           type="button"
-                          onClick={() => navigate(`/service-requests/${item.svcReqSn}`)}
+                          onClick={() => navigate(`/service-requests/${item.svcReqSn}`, { state: { from: location.pathname + location.search } })}
                           className="btn btn-sm btn-primary"
                         >
                           상세보기

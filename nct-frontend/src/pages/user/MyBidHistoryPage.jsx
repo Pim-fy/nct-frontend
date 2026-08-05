@@ -2,7 +2,7 @@
 // 마이페이지 사이드바 "상품 입찰 내역" 섹션 — 내 입찰 내역 전용
 // 판매 내역은 MyProductList 컴포넌트로 분리 (마이페이지 "상품 판매 내역" 사이드바 항목)
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Pagination from '@components/common/Pagination';
 import { toImageUrl } from '@api/fileApi';
 import { useMyBidHistory } from '@hooks/useBid';
@@ -98,6 +98,7 @@ function getBidDescription(item) {
 
 function BidHistoryTab() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { data, isLoading, isError, refetch } = useMyBidHistory();
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
@@ -114,7 +115,8 @@ function BidHistoryTab() {
   const paged      = filtered.slice((page - 1) * BID_PAGE_SIZE, page * BID_PAGE_SIZE);
 
   const handleFilterChange = (value) => { setStatusFilter(value); setPage(1); };
-  const handleGoToAuction  = (aucSn) => navigate(`/auction/${aucSn}`);
+  // 전역 브레드크럼 (BJN, 260805): 어디서 진입했는지(state.from)를 상세에 전달해 브레드크럼 경로에 반영
+  const handleGoToAuction  = (aucSn) => navigate(`/auction/${aucSn}`, { state: { from: location.pathname + location.search } });
 
   if (isLoading) return <CardGridSkeleton cardHeight={100} columns={1} count={4} />;
   if (isError) {

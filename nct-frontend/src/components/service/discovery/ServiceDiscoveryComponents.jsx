@@ -8,7 +8,7 @@ import {
   Search,
   X,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { SERVICE_REQUEST_SORT_OPTIONS } from '@/constants/serviceDiscovery';
 
 const FILTER_GROUP_CLASS = 'm-0 grid gap-2 border-0 p-0 disabled:opacity-60';
@@ -167,9 +167,14 @@ export const ServiceFilterPanel = ({
   );
 };
 
-const ServiceRequestCard = ({ request }) => (
+// 전역 브레드크럼 (BJN, 260805): 목록의 현재 경로(검색·필터 포함)를 state.from으로 전달해
+// 상세 화면 브레드크럼이 "어디서 들어왔는지"를 표시할 수 있게 한다
+const ServiceRequestCard = ({ request }) => {
+  const location = useLocation();
+  return (
   <Link
     className="group flex h-full min-w-0 flex-col overflow-hidden rounded-lg border border-[#dededc] bg-white transition-[border-color,box-shadow] hover:border-primary hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]"
+    state={{ from: `${location.pathname}${location.search}${location.hash}` }}
     to={`/service-requests/${request.id}`}
   >
     <div className="relative aspect-[3/2] w-full overflow-hidden bg-[#f1f3f6]">
@@ -205,7 +210,8 @@ const ServiceRequestCard = ({ request }) => (
       </div>
     </div>
   </Link>
-);
+  );
+};
 
 export const ServiceRequestGrid = ({ requests }) => (
   <div className="grid grid-cols-3 gap-[45px] max-xl:grid-cols-2 max-xl:gap-6 max-md:grid-cols-1 max-md:gap-[18px]" aria-label="서비스 요청 검색 결과">

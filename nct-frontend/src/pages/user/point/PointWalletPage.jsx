@@ -12,9 +12,10 @@ import PointExchangeOrderTable from './components/PointExchangeOrderTable';
 import PointAmountModal from './components/PointAmountModal';
 import PointChargeWidgetModal from './components/PointChargeWidgetModal';
 import PointHistoryDetailModal from './components/PointHistoryDetailModal';
+import { errorMessage, submitPointAmount } from './components/pointSubmitActions';
 import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
 import { usePointBalance, usePointLedger, usePointChargeOrders, usePointExchangeOrders } from '../../../hooks/usePoint';
-import { confirmPointCharge, requestPointExchange, convertPoint } from '../../../api/pointApi';
+import { confirmPointCharge } from '../../../api/pointApi';
 import { useAuth } from '@hooks/useAuth';
 import { useSettlementList } from '../../../hooks/useSettlement';
 import SettlementSummaryCards from '@pages/user/settlement/components/SettlementSummaryCards';
@@ -25,32 +26,6 @@ const EMPTY_BALANCE = { available: 0, hold: 0, settleable: 0, total: 0, exchange
 
 // 요약 카드에서 각 내역별로 보여주는 최근 건수 — 나머지는 "+" 눌러 전체 내역 모달에서 확인 (2026-07-29)
 const RECENT_LIMIT = 5;
-
-/** axios 오류에서 백엔드 ApiResponse의 message를 꺼낸다 (없으면 일반 안내) */
-const errorMessage = (err) =>
-  err?.response?.data?.message ?? '처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
-
-/**
- * 환전/전환 제출 설정 — 두 기능은 "검증 → 모달 닫기 → API 호출 → 포인트 캐시 갱신 → 결과 안내"
- * 구조가 완전히 같고 API와 문구만 달라서, 흐름은 submitAmount 하나로 쓰고 차이만 여기 모았다
- * (환전 F-PAY-012: 신청 즉시 차감·관리자 수동 지급 / 전환 F-PAY-010: 분쟁 없을 때만 서버가 허용)
- */
-const SUBMIT_ACTIONS = {
-  exchange: {
-    api: requestPointExchange,
-    invalidText: '환전 금액은 1P 이상의 정수만 가능합니다.',
-    successTitle: '환전 신청 완료',
-    successText: '신청 금액이 차감되었고, 등록하신 계좌로 며칠 내 지급될 예정입니다.',
-    failTitle: '환전 신청 실패',
-  },
-  convert: {
-    api: convertPoint,
-    invalidText: '전환 금액은 1P 이상의 정수만 가능합니다.',
-    successTitle: '전환 완료',
-    successText: '정산 가능 포인트가 사용 가능 포인트로 전환되었습니다.',
-    failTitle: '전환 실패',
-  },
-};
 
 /**
  * 포인트 지갑 (목업 17_point_wallet.html, F-PAY-006/007/011)
@@ -192,42 +167,47 @@ const PointWalletPage = ({ embedded = false } = {}) => {
   }, [searchParams, setSearchParams, queryClient]);
 
   /**
-   * 환전/전환 공통 제출 처리 — 어느 쪽인지(kind)에 따라 SUBMIT_ACTIONS의 API·문구만 갈아끼운다.
-   * 서버가 검증(계좌·잔액·분쟁)을 전부 하므로 프론트는 정수 확인만 하고 사유는 서버 응답을 그대로 안내
+   * 환전/전환 공통 제출 처리 — 검증·API 호출·캐시 갱신·안내 흐름은 헤더 POINT 드롭다운과
+   * 공유하는 pointSubmitActions.submitPointAmount에 있고, 여기서는 이 화면의 모달 닫기만 연결한다
+   * (2026-08-05 코드 점검 후속 — 헤더와 3중 중복이던 로직을 공용 모듈로 통합)
    */
-  const submitAmount = (kind) => (amount) => {
-    const action = SUBMIT_ACTIONS[kind];
-    if (!Number.isInteger(amount) || amount <= 0) {
-      Swal.fire({
-        icon: 'warning',
-        title: '금액을 확인해 주세요',
-        text: action.invalidText,
-        confirmButtonColor: '#0064ff',
-      });
-      return;
-    }
-    setOpenModal(null);
-    action.api(amount)
-      .then(() => {
-        // 잔액·원장·내역이 전부 바뀌므로 포인트 캐시 전체 갱신
-        queryClient.invalidateQueries({ queryKey: ['point'] });
-        Swal.fire({
-          icon: 'success',
-          title: action.successTitle,
-          text: action.successText,
-          confirmButtonColor: '#0064ff',
-        });
-      })
-      .catch((err) => {
-        // 계좌 미등록·잔액 부족·분쟁 진행 중 등 서버가 알려준 사유를 그대로 안내
-        Swal.fire({
-          icon: 'error',
-          title: action.failTitle,
-          text: errorMessage(err),
-          confirmButtonColor: '#0064ff',
-        });
-      });
-  };
+  const submitAmount = (kind) => (amount) =>
+    submitPointAmount(kind, amount, { queryClient, closeModal: () => setOpenModal(null) });
+
+  // 네 내역 표는 제공자(포인트/정산 탭 분리)와 일반회원(한 화면) 두 분기에서 같은 props로
+  // 반복 렌더되므로, 파일 안에서 한 번씩만 정의해 두 분기가 공유한다 (2026-08-05 점검 정리)
+  const ledgerTable = (
+    <PointLedgerTable
+      loading={ledgerLoading || balanceLoading}
+      rows={ledger}
+      limit={RECENT_LIMIT}
+      onExpand={() => setDetailModal('ledger')}
+    />
+  );
+  const chargeTable = (
+    <PointChargeOrderTable
+      loading={ordersLoading}
+      rows={chargeOrders}
+      limit={RECENT_LIMIT}
+      onExpand={() => setDetailModal('charge')}
+    />
+  );
+  const convertTable = (
+    <PointConvertHistoryTable
+      loading={ledgerLoading}
+      rows={ledger}
+      limit={RECENT_LIMIT}
+      onExpand={() => setDetailModal('convert')}
+    />
+  );
+  const exchangeTable = (
+    <PointExchangeOrderTable
+      loading={exchangeLoading}
+      rows={exchangeOrders}
+      limit={RECENT_LIMIT}
+      onExpand={() => setDetailModal('exchange')}
+    />
+  );
 
   return (
     <div
@@ -290,18 +270,8 @@ const PointWalletPage = ({ embedded = false } = {}) => {
 
           {activeTab === 'point' && (
             <>
-              <PointLedgerTable
-                loading={ledgerLoading || balanceLoading}
-                rows={ledger}
-                limit={RECENT_LIMIT}
-                onExpand={() => setDetailModal('ledger')}
-              />
-              <PointChargeOrderTable
-                loading={ordersLoading}
-                rows={chargeOrders}
-                limit={RECENT_LIMIT}
-                onExpand={() => setDetailModal('charge')}
-              />
+              {ledgerTable}
+              {chargeTable}
             </>
           )}
 
@@ -329,47 +299,17 @@ const PointWalletPage = ({ embedded = false } = {}) => {
                   loading={settlementLoading}
                 />
               </section>
-              <PointConvertHistoryTable
-                loading={ledgerLoading}
-                rows={ledger}
-                limit={RECENT_LIMIT}
-                onExpand={() => setDetailModal('convert')}
-              />
-              <PointExchangeOrderTable
-                loading={exchangeLoading}
-                rows={exchangeOrders}
-                limit={RECENT_LIMIT}
-                onExpand={() => setDetailModal('exchange')}
-              />
+              {convertTable}
+              {exchangeTable}
             </>
           )}
         </>
       ) : (
         <>
-          <PointLedgerTable
-            loading={ledgerLoading || balanceLoading}
-            rows={ledger}
-            limit={RECENT_LIMIT}
-            onExpand={() => setDetailModal('ledger')}
-          />
-          <PointChargeOrderTable
-            loading={ordersLoading}
-            rows={chargeOrders}
-            limit={RECENT_LIMIT}
-            onExpand={() => setDetailModal('charge')}
-          />
-          <PointConvertHistoryTable
-            loading={ledgerLoading}
-            rows={ledger}
-            limit={RECENT_LIMIT}
-            onExpand={() => setDetailModal('convert')}
-          />
-          <PointExchangeOrderTable
-            loading={exchangeLoading}
-            rows={exchangeOrders}
-            limit={RECENT_LIMIT}
-            onExpand={() => setDetailModal('exchange')}
-          />
+          {ledgerTable}
+          {chargeTable}
+          {convertTable}
+          {exchangeTable}
         </>
       )}
 
@@ -416,6 +356,7 @@ const PointWalletPage = ({ embedded = false } = {}) => {
           title="환전 신청"
           submitLabel="환전"
           infoRow={{ label: '환전 가능 포인트', value: `${balance.exchangeable.toLocaleString()} P` }}
+          maxAmount={balance.exchangeable}
           onSubmit={submitAmount('exchange')}
           onClose={() => setOpenModal(null)}
         />
@@ -425,6 +366,7 @@ const PointWalletPage = ({ embedded = false } = {}) => {
           title="포인트 전환"
           submitLabel="전환"
           infoRow={{ label: '정산가능 포인트', value: `${balance.settleable.toLocaleString()} P` }}
+          maxAmount={balance.settleable}
           onSubmit={submitAmount('convert')}
           onClose={() => setOpenModal(null)}
         />
