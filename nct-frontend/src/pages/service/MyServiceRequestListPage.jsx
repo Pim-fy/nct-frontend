@@ -156,9 +156,8 @@ export default function MyServiceRequestListPage({ embedded = false }) {
                       {STATUS_LABEL[item.svcReqStatusCd] ?? item.svcReqStatusCd}
                     </MyPageStatusBadge>
                   }
-                  title={item.svcReqTtl}
                   actions={(
-                    <>
+                    <div className="flex flex-col gap-2">
                       {isDraft && (
                         <button
                           type="button"
@@ -186,11 +185,18 @@ export default function MyServiceRequestListPage({ embedded = false }) {
                           삭제
                         </button>
                       )}
-                    </>
+                    </div>
                   )}
                 >
-                  <p>예산 {fmtBudget(item.svcReqBdgtAmt)}</p>
-                  <p>등록 {fmtDate(item.svcReqRegDt)}</p>
+                  {/* 왼쪽엔 제목, 오른쪽엔 예산·등록일 — MyPageListItem의 title prop은 안 쓰고
+                      직접 좌우로 배치해서 넘긴다 */}
+                  <div className="flex items-start justify-between gap-4">
+                    <h2 className="m-0 truncate text-xl font-bold text-[#151923]">{item.svcReqTtl}</h2>
+                    <div className="shrink-0 text-right text-sm text-[#667085]">
+                      <p className="m-0">{fmtBudget(item.svcReqBdgtAmt)}</p>
+                      <p className="m-0">등록 {fmtDate(item.svcReqRegDt)}</p>
+                    </div>
+                  </div>
                 </MyPageListItem>
               );
             })}

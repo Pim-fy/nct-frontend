@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toImageUrl } from '@api/fileApi';
 import { deleteProduct } from '@api/productApi';
-import { TRADE_LABEL, TRADE_STATUS_LABEL } from '@/constants/productConstants';
+import { TRADE_LABEL, TRADE_STATUS_LABEL, AUC_STATUS_LABEL } from '@/constants/productConstants';
 import { useMyProducts } from '@hooks/useProduct';
 import Pagination from '@components/common/Pagination';
 import Toast from '@components/common/Toast';
@@ -37,15 +37,8 @@ const CLOSED_SUB_FILTERS = [
 ];
 
 // ─── 배지 ────────────────────────────────────────────────────────────────────
-
-const AUC_STATUS_LABEL = {
-  AUCC0001: '준비',
-  AUCC0002: '진행 중',
-  AUCC0003: '낙찰',
-  AUCC0004: '유찰',
-  AUCC0005: '취소',
-  AUCC0006: '취소요청',
-};
+// AUC_STATUS_LABEL(라벨 문구)은 productConstants.js가 단일 소스 — 다른 화면과 표기 어긋남 방지.
+// 배지 클래스는 이 목록 안의 TRADE_BADGE·PRD_STATUS_BADGE와 시각적으로 맞춰야 해서 로컬로 유지.
 
 const AUC_STATUS_BADGE = {
   AUCC0001: 'badge-outline-gray',
