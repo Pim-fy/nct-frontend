@@ -7,8 +7,10 @@ import { useAuth } from '@hooks/useAuth';
 import {
   closeServiceRequest,
   getServiceRequest,
+  addServiceRequestComment,
+  getServiceRequestComments,
 } from '@api/serviceRequestApi';
-import { getReceivedQuotes } from '@api/quoteApi';
+import { getReceivedQuotes, getQuoteHistory } from '@api/quoteApi';
 import { toImageUrl } from '@api/fileApi';
 import ErrorMessage from '@components/common/ErrorMessage';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
@@ -203,6 +205,13 @@ export default function ServiceRequestDetailPage() {
   const [toast, setToast] = useState('');
   const [quotes, setQuotes] = useState([]);
   const [quotesLoadedRequestSn, setQuotesLoadedRequestSn] = useState(null);
+  const [quoteDetail, setQuoteDetail] = useState(null); // 상세 모달에 띄울 견적(클릭한 항목)
+  const [quoteHistory, setQuoteHistory] = useState([]);
+  const [quoteHistoryLoading, setQuoteHistoryLoading] = useState(false);
+  const [comments, setComments] = useState([]);
+  const [cmtTtl, setCmtTtl] = useState('');
+  const [cmtCn, setCmtCn] = useState('');
+  const [cmtSubmitting, setCmtSubmitting] = useState(false);
   const loading = String(loadedRequestSn) !== String(svcReqSn);
   const requestOwner = !isProvider
     && request
@@ -264,6 +273,44 @@ export default function ServiceRequestDetailPage() {
     };
   }, [request, svcReqSn, authenticatedUserId, isProvider]);
 
+  // 변경사항 목록은 요청자·제공자 누구나 조회 가능 — 요청서 로드 후 함께 조회
+  useEffect(() => {
+    if (!request) return;
+    let cancelled = false;
+    getServiceRequestComments(svcReqSn)
+      .then(res => {
+        if (cancelled) return;
+        setComments(res.data ?? []);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setComments([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [request, svcReqSn]);
+
+  const handleCommentSubmit = async () => {
+    if (!cmtTtl.trim()) {
+      setToast('제목을 입력해 주세요.');
+      return;
+    }
+    setCmtSubmitting(true);
+    try {
+      await addServiceRequestComment(svcReqSn, { ttl: cmtTtl.trim(), cn: cmtCn.trim() || null });
+      const updated = await getServiceRequestComments(svcReqSn);
+      setComments(updated.data ?? []);
+      setCmtTtl('');
+      setCmtCn('');
+      setToast('변경사항이 등록되었습니다.');
+    } catch (err) {
+      setToast(err.response?.data?.message || '변경사항 등록에 실패했습니다.');
+    } finally {
+      setCmtSubmitting(false);
+    }
+  };
+
   const handleClose = async () => {
     setClosing(true);
     try {
@@ -275,6 +322,16 @@ export default function ServiceRequestDetailPage() {
     } finally {
       setClosing(false);
     }
+  };
+
+  const openQuoteDetail = (quote) => {
+    setQuoteDetail(quote);
+    setQuoteHistory([]);
+    setQuoteHistoryLoading(true);
+    getQuoteHistory(quote.qutSn)
+      .then(res => setQuoteHistory(res.data ?? []))
+      .catch(() => setQuoteHistory([]))
+      .finally(() => setQuoteHistoryLoading(false));
   };
 
   const handleQuoteClick = () => {
@@ -317,6 +374,8 @@ export default function ServiceRequestDetailPage() {
     && String(authenticatedUserId) === String(request.usrSn);
   const isDraft = request.svcReqStatusCd === 'SVCC0001';
   const isOpen  = request.svcReqStatusCd === 'SVCC0002';
+  const isMatched = request.svcReqStatusCd === 'SVCC0003';
+  const canAddComment = isOwner && (isOpen || isMatched) && comments.length < 3;
 
   const parsedItems = (request.items ?? []).map(parseItemGroup);
   parsedItems.push({ title: MEMO_TITLE, fields: [{ label: null, value: request.svcReqCn ?? '' }] });
@@ -336,7 +395,7 @@ export default function ServiceRequestDetailPage() {
           <button
             type="button"
             className="inline-flex items-center gap-1 rounded-lg border border-[#e2e1dc] bg-white px-4 py-2.5 text-lg font-medium text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/user/mypage?section=service-requests')}
           >
             ← 목록으로
           </button>
@@ -369,10 +428,10 @@ export default function ServiceRequestDetailPage() {
                 {isOwner && isDraft && (
                   <button
                     type="button"
-                    className="shrink-0 rounded-lg bg-primary px-4 py-2.5 text-lg font-semibold text-white transition-colors hover:bg-[#0048bf]"
+                    className="shrink-0 rounded-lg border border-[#e2e1dc] bg-white px-4 py-2.5 text-lg font-medium text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary"
                     onClick={() => navigate('/service-requests/new', { state: { svcReqSn: Number(svcReqSn) } })}
                   >
-                    이어서 작성
+                    작성재개
                   </button>
                 )}
                 {isOwner && isOpen && (
@@ -444,9 +503,9 @@ export default function ServiceRequestDetailPage() {
             )}
 
             {/* 첨부사진 — 요청 원문은 위 "요청 항목" 표의 "특이사항 메모" 행으로 이동함 */}
-            {request.imageList?.length > 0 && (
-              <div className="px-6 py-5">
-                <h2 className="mb-4 text-lg font-semibold text-[#5f5e5a]">첨부사진</h2>
+            <div className="px-6 py-5">
+              <h2 className="mb-4 text-lg font-semibold text-[#5f5e5a]">첨부사진</h2>
+              {request.imageList?.length > 0 ? (
                 <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
                   {request.imageList.map(img => (
                     <img
@@ -457,8 +516,86 @@ export default function ServiceRequestDetailPage() {
                     />
                   ))}
                 </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <div
+                      key={i}
+                      className="flex aspect-square w-full items-center justify-center rounded-lg border border-dashed border-[#d8d6cf] bg-[#fafaf8] text-center text-sm text-[#888780]"
+                    >
+                      {i === 0 && '등록된 사진이 없습니다'}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 변경사항 작성 — 본문 수정 불가 대신 견적 요청 정책상 최대 3개까지 별도 등록. 본인에게만 노출 */}
+            {isOwner && (isOpen || isMatched) && (
+              <div className="border-t border-[#e8e8e8] px-6 py-5">
+                <h2 className="mb-4 text-lg font-semibold text-[#5f5e5a]">변경사항 추가</h2>
+                {canAddComment ? (
+                  <div className="rounded-lg border border-[#e2e1dc] p-4">
+                    <input
+                      type="text"
+                      maxLength={30}
+                      placeholder="제목 (필수)"
+                      value={cmtTtl}
+                      onChange={e => setCmtTtl(e.target.value)}
+                      className="w-full rounded-lg border border-[#e2e1dc] px-3 py-2 text-base outline-none focus:border-primary"
+                    />
+                    <p className={`mt-1 text-right text-xs ${cmtTtl.length >= 30 ? 'text-[#c0392b]' : 'text-[#9a9ba5]'}`}>{cmtTtl.length}/30</p>
+                    <textarea
+                      rows={3}
+                      maxLength={100}
+                      placeholder="내용 (선택)"
+                      value={cmtCn}
+                      onChange={e => setCmtCn(e.target.value)}
+                      className="mt-2 w-full resize-none rounded-lg border border-[#e2e1dc] px-3 py-2 text-base outline-none focus:border-primary"
+                    />
+                    <p className={`mt-1 text-right text-xs ${cmtCn.length >= 100 ? 'text-[#c0392b]' : 'text-[#9a9ba5]'}`}>{cmtCn.length}/100</p>
+                    <p className="mt-1 text-xs text-[#9a9ba5]">변경사항은 최대 3개까지 등록할 수 있습니다.</p>
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        type="button"
+                        className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0048bf] disabled:opacity-50"
+                        onClick={handleCommentSubmit}
+                        disabled={cmtSubmitting}
+                      >
+                        {cmtSubmitting ? '등록 중...' : '등록'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-[#9a9ba5]">변경사항은 최대 3개까지 등록할 수 있습니다.</p>
+                )}
               </div>
             )}
+
+            {/* 변경 내역 — 등록된 변경사항 조회, 요청자·제공자 누구나 확인 가능 */}
+            <div className="border-t border-[#e8e8e8] px-6 py-5">
+              <h2 className="mb-4 text-lg font-semibold text-[#5f5e5a]">변경 내역</h2>
+              {comments.length === 0 ? (
+                <p className="text-sm text-[#9a9ba5]">등록된 변경사항이 없습니다.</p>
+              ) : (
+                <ul className="flex flex-col gap-3">
+                  {comments.map((c, i) => (
+                    <li key={c.svcReqCmtSn} className="flex gap-3 border-b border-[#f0efec] pb-3 last:border-b-0 last:pb-0">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
+                        {i + 1}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-[#1d1d1f]">{c.svcReqCmtTtl}</p>
+                        {c.svcReqCmtCn && (
+                          <p className="mt-1 whitespace-pre-wrap text-sm text-[#5f5e5a]">{c.svcReqCmtCn}</p>
+                        )}
+                        <p className="mt-1 text-xs text-[#9a9ba5]">{fmtDate(c.svcReqCmtRegDt)}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </article>
 
           {/* ── 오른쪽: 견적 패널 ── */}
@@ -466,8 +603,21 @@ export default function ServiceRequestDetailPage() {
 
             {/* 패널 헤더 */}
             <div className="border-b border-[#e8e8e8] px-5 py-4">
-              <h2 className="text-2xl font-bold">도착한 견적</h2>
-              <p className="mt-1 text-lg text-[#5f5e5a]">견적을 선택하면 상세 내용과 제공자 리뷰를 확인할 수 있습니다.</p>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl font-bold">도착한 견적</h2>
+                  <p className="mt-1 text-lg text-[#5f5e5a]">견적을 선택하면 상세 내용과 제공자 리뷰를 확인할 수 있습니다.</p>
+                </div>
+                {isOwner && quotes.length > 0 && (
+                  <button
+                    type="button"
+                    className="shrink-0 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-[#e5efff]"
+                    onClick={() => navigate(`/service-requests/${svcReqSn}/manage`)}
+                  >
+                    전체 견적목록 보기
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* 액션 영역 */}
@@ -518,7 +668,11 @@ export default function ServiceRequestDetailPage() {
               ) : (
                 <ul className="divide-y divide-[#e8e8e8]">
                   {quotes.map(q => (
-                    <li key={q.qutSn} className="px-5 py-4">
+                    <li
+                      key={q.qutSn}
+                      className="cursor-pointer px-5 py-4 transition-colors hover:bg-[#f9fafb]"
+                      onClick={() => openQuoteDetail(q)}
+                    >
                       <div className="flex items-start justify-between gap-3">
                         <span className="font-semibold text-[#1d1d1f]">{q.providerNm}</span>
                         <span className="shrink-0 rounded-lg bg-[#f0f0ee] px-3 py-1 text-sm font-medium text-[#5f5e5a]">
@@ -542,6 +696,67 @@ export default function ServiceRequestDetailPage() {
       </div>
 
       {toast && <Toast message={toast} onClose={() => setToast('')} />}
+
+      {/* 견적 상세 모달 — 목록을 아코디언으로 펼치면 견적이 많을 때 가독성이 떨어져서 모달로 처리 */}
+      <div
+        className={`modal ${quoteDetail ? 'open' : ''}`}
+        onClick={e => { if (e.target === e.currentTarget) setQuoteDetail(null); }}
+      >
+        {quoteDetail && (
+          <div className="modal-box">
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="text-xl font-bold text-[#1d1d1f]">{quoteDetail.providerNm}</h3>
+              <span className="shrink-0 rounded-lg bg-[#f0f0ee] px-3 py-1 text-sm font-medium text-[#5f5e5a]">
+                {QUOTE_STATUS_LABEL[quoteDetail.statusCode] ?? quoteDetail.statusCode}
+              </span>
+            </div>
+            <p className="mt-2 text-2xl font-bold text-primary">{fmtBudget(quoteDetail.amount)}</p>
+            {quoteDetail.content && (
+              <p className="mt-3 whitespace-pre-line text-base leading-relaxed text-[#1d1d1f]">{quoteDetail.content}</p>
+            )}
+            {/* 견적서 첨부파일 — 필드명은 황성경(3) QUOTE 구조 확정 전 임시(fileUrl/fileName), 확정되면 맞춰서 교체 */}
+            {quoteDetail.fileUrl && (
+              <a
+                href={quoteDetail.fileUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[#e2e1dc] px-3 py-2 text-sm font-medium text-[#0048bf] hover:border-primary hover:bg-[#e5efff]"
+              >
+                📎 {quoteDetail.fileName || '첨부 견적서'}
+              </a>
+            )}
+            <p className="mt-3 text-sm text-[#9a9ba5]">
+              {fmtDate(quoteDetail.registeredAt)} 제출
+              {quoteDetail.reviseCnt > 0 && ` · ${quoteDetail.reviseCnt}회 수정됨`}
+            </p>
+
+            {quoteDetail.reviseCnt > 0 && (
+              <div className="mt-5 border-t border-[#e8e8e8] pt-4">
+                <h4 className="mb-2 text-base font-semibold text-[#5f5e5a]">수정 이력</h4>
+                {quoteHistoryLoading ? (
+                  <p className="text-sm text-[#9a9ba5]">불러오는 중...</p>
+                ) : quoteHistory.length === 0 ? (
+                  <p className="text-sm text-[#9a9ba5]">이력이 없습니다.</p>
+                ) : (
+                  <ul className="space-y-3">
+                    {quoteHistory.map(h => (
+                      <li key={h.qutHstSn} className="rounded-lg bg-[#f9fafb] p-3">
+                        <p className="font-semibold text-[#1d1d1f]">{fmtBudget(h.amount)}</p>
+                        {h.content && <p className="mt-1 whitespace-pre-line text-sm text-[#5f5e5a]">{h.content}</p>}
+                        <p className="mt-1 text-xs text-[#9a9ba5]">{fmtDate(h.registeredAt)} 수정 전 내용</p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
+            <div className="mt-5 flex justify-end">
+              <button type="button" className="btn btn-ghost" onClick={() => setQuoteDetail(null)}>닫기</button>
+            </div>
+          </div>
+        )}
+      </div>
       </div>
     </>
   );
