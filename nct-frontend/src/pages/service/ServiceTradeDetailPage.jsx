@@ -35,18 +35,38 @@ const SERVICE_SCHEDULE_TIME_SLOTS = Array.from({ length: 48 }, (_, index) => {
   return `${hour}:${minute}`;
 });
 
-// 담당자4 서비스 거래 상세의 표현 전용 화면이다.
-// 조회·완료 API와 공통 route는 계약 확정 뒤 연결한다.
+const formatPointAmount = (amount) => {
+  const numericAmount = Number(amount);
+  return Number.isFinite(numericAmount) ? `${numericAmount.toLocaleString('ko-KR')}P` : '-';
+};
+
+const formatDateTime = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  return new Intl.DateTimeFormat('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date);
+};
+
+// 실조회 컨테이너와 개발용 입력 양쪽에서 재사용하는 서비스 거래 표현 컴포넌트다.
 export default function ServiceTradeDetailPage({
   trade = null,
   disputeTypes = [],
   onSubmitDispute = submitServiceTradeDispute,
   onRequestCompletion = requestServiceCompletion,
   onConfirmCompletion = confirmServiceCompletion,
-  scheduleHistory = [],
+  scheduleHistory = null,
   onRequestScheduleChange = null,
   onRequestScheduleCancellation = null,
   chatPath = null,
+  onActionCompleted = null,
 }) {
   const [isDisputeDialogOpen, setIsDisputeDialogOpen] = useState(false);
   const [disputeTypeCode, setDisputeTypeCode] = useState('');
@@ -94,8 +114,10 @@ export default function ServiceTradeDetailPage({
   const canConfirmCompletion = isRequester && trade.availableActions?.includes('CONFIRM_COMPLETION');
   const canSubmitDispute = trade.availableActions?.includes('SUBMIT_DISPUTE');
   const canOpenChat = trade.chatAvailable === true || trade.availableActions?.includes('OPEN_CHAT');
-  const canRequestScheduleChange = trade.availableActions?.includes('REQUEST_SCHEDULE_CHANGE');
-  const canRequestScheduleCancellation = trade.availableActions?.includes('REQUEST_SCHEDULE_CANCELLATION');
+  const canRequestScheduleChange = typeof onRequestScheduleChange === 'function'
+    && trade.availableActions?.includes('REQUEST_SCHEDULE_CHANGE');
+  const canRequestScheduleCancellation = typeof onRequestScheduleCancellation === 'function'
+    && trade.availableActions?.includes('REQUEST_SCHEDULE_CANCELLATION');
   const hasDisputeTypes = disputeTypes.length > 0;
   const isCompletionRequest = completionDialogType === 'REQUEST';
   const completionHandler = isCompletionRequest ? onRequestCompletion : onConfirmCompletion;
@@ -103,6 +125,8 @@ export default function ServiceTradeDetailPage({
   const isScheduleChange = scheduleDialogType === 'CHANGE';
   const scheduleHandler = isScheduleChange ? onRequestScheduleChange : onRequestScheduleCancellation;
   const canSubmitSchedule = typeof scheduleHandler === 'function';
+  const tradeAmountLabel = trade.tradeAmountLabel ?? formatPointAmount(trade.tradeAmount);
+  const autoCompleteAtLabel = formatDateTime(trade.autoCompleteAt);
 
   const openDisputeDialog = () => {
     setDisputeError('');
@@ -139,6 +163,7 @@ export default function ServiceTradeDetailPage({
         disputeTypeCode,
         content,
       });
+      await onActionCompleted?.();
       setDisputeSubmitted(true);
     } catch (error) {
       setDisputeError(error.response?.data?.message ?? '거래 문제를 접수하지 못했습니다. 다시 시도해 주세요.');
@@ -176,6 +201,7 @@ export default function ServiceTradeDetailPage({
     setCompletionError('');
     try {
       await completionHandler(trade.tradeId, isCompletionRequest ? { completionMemo: memo } : undefined);
+      await onActionCompleted?.();
       setCompletionSubmitted(true);
     } catch (error) {
       setCompletionError(error.response?.data?.message ?? '완료 처리를 요청하지 못했습니다. 다시 시도해 주세요.');
@@ -225,6 +251,7 @@ export default function ServiceTradeDetailPage({
       await scheduleHandler(trade.tradeId, isScheduleChange
         ? { requestedScheduleAt: `${requestedScheduleDate}T${requestedScheduleTime}`, reason }
         : { reason });
+      await onActionCompleted?.();
       setScheduleSubmitted(true);
     } catch (error) {
       setScheduleError(error.response?.data?.message ?? '일정 요청을 처리하지 못했습니다. 다시 시도해 주세요.');
@@ -264,34 +291,37 @@ export default function ServiceTradeDetailPage({
             <dl className="service-trade-detail-list">
               <div><dt>서비스 요청</dt><dd>{trade.serviceRequestTitle}</dd></div>
               <div><dt>선택 견적</dt><dd>{trade.quoteSummary}</dd></div>
-              <div><dt>거래 금액</dt><dd>{trade.tradeAmountLabel}</dd></div>
-              <div><dt>서비스 일정</dt><dd>{trade.scheduleLabel ?? '일정 협의 중'}</dd></div>
+              <div><dt>거래 금액</dt><dd>{tradeAmountLabel}</dd></div>
+              <div><dt>서비스 일정</dt><dd>{trade.scheduleLabel || '등록된 일정 정보 없음'}</dd></div>
+              {autoCompleteAtLabel && <div><dt>완료 확인 기한</dt><dd>{autoCompleteAtLabel}</dd></div>}
             </dl>
           </article>
 
           <aside className="service-trade-card service-trade-card--escrow">
             <h2>서비스 보관금</h2>
-            <strong>{trade.tradeAmountLabel}</strong>
+            <strong>{tradeAmountLabel}</strong>
             <p>{trade.escrowStatusLabel ?? '보관금 상태를 확인하고 있습니다.'}</p>
           </aside>
         </section>
 
-        <section className="service-trade-card service-trade-card--timeline">
-          <h2>서비스 일정 이력</h2>
-          {scheduleHistory.length > 0 ? (
-            <ol className="service-trade-schedule-history">
-              {scheduleHistory.map((item) => (
-                <li key={item.id}>
-                  <strong>{item.title}</strong>
-                  <span>{item.occurredAt}</span>
-                  {item.reason && <p>{item.reason}</p>}
-                </li>
-              ))}
-            </ol>
-          ) : <p>서비스 일정 API가 연결되면 변경·취소 이력을 시간순으로 표시합니다.</p>}
-        </section>
+        {Array.isArray(scheduleHistory) && (
+          <section className="service-trade-card service-trade-card--timeline">
+            <h2>서비스 일정 이력</h2>
+            {scheduleHistory.length > 0 ? (
+              <ol className="service-trade-schedule-history">
+                {scheduleHistory.map((item) => (
+                  <li key={item.id}>
+                    <strong>{item.title}</strong>
+                    <span>{item.occurredAt}</span>
+                    {item.reason && <p>{item.reason}</p>}
+                  </li>
+                ))}
+              </ol>
+            ) : <p>등록된 일정 변경·취소 이력이 없습니다.</p>}
+          </section>
+        )}
 
-        {(canRequestCompletion || canConfirmCompletion || canSubmitDispute || canRequestScheduleChange || canRequestScheduleCancellation) && (
+        {(canOpenChat || canRequestCompletion || canConfirmCompletion || canSubmitDispute || canRequestScheduleChange || canRequestScheduleCancellation) && (
           <section className="service-trade-detail-actions" aria-label="서비스 거래 처리">
             {canOpenChat && <Link className="btn btn-ghost" to={chatPath ?? `/service-trades/${trade.tradeId}/chat`}>거래 채팅</Link>}
             {canRequestCompletion && <button className="btn btn-success" type="button" onClick={() => openCompletionDialog('REQUEST')}>완료 요청 작성</button>}

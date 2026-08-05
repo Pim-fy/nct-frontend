@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 
 import NotificationDetailModal from './components/NotificationDetailModal';
 import NotificationItem from './components/NotificationItem';
+import PrevNextPagination from '../point/components/PrevNextPagination';
 import { useMarkAllRead, useMarkRead, useNotifications } from '../../../hooks/useNotification';
 import relativeTime from '../../../utils/relativeTime';
 import CardGroupSkeleton from '@components/skeleton/CardGroupSkeleton';
@@ -89,11 +90,9 @@ const NotificationPage = () => {
     setSelectedItem(item);
   };
 
-  const visibleDomains =
-    filter === '전체' ? DOMAINS : [FILTER_TO_DOMAIN[filter]];
-
   // 도메인 탭으로 들어간 단일 도메인 전체 목록 — 필터가 '전체'가 아닐 때만 쓴다
-  const focusedDomain = filter === '전체' ? null : visibleDomains[0];
+  // ('전체' 화면의 도메인 카드는 아래 렌더에서 DOMAINS를 직접 돌므로 중간 배열이 필요 없다)
+  const focusedDomain = filter === '전체' ? null : FILTER_TO_DOMAIN[filter];
   const focusedItems = focusedDomain ? items.filter((n) => n.domain === focusedDomain) : [];
   const focusedPageCount = Math.max(1, Math.ceil(focusedItems.length / LIST_PAGE_SIZE));
   const pagedFocusedItems = focusedItems.slice((page - 1) * LIST_PAGE_SIZE, page * LIST_PAGE_SIZE);
@@ -159,7 +158,7 @@ const NotificationPage = () => {
         <CardGroupSkeleton cardsPerGroup={2} groups={4} />
       ) : filter === '전체' ? (
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-5">
-          {visibleDomains.map((domain) => {
+          {DOMAINS.map((domain) => {
             const domainItems = items.filter((n) => n.domain === domain);
             const overflowCount = domainItems.length - CARD_PREVIEW_LIMIT;
             const previewItems = overflowCount > 0
@@ -203,26 +202,9 @@ const NotificationPage = () => {
               <NotificationItem key={item.id} item={item} onClick={openItem} />
             ))}
           </div>
+          {/* 포인트 테이블과 공용하는 "이전/다음" 페이지네이션 (2026-08-05 중복 통합) */}
           {focusedItems.length > LIST_PAGE_SIZE && (
-            <div className="flex items-center justify-center gap-3 mt-4">
-              <button
-                type="button"
-                disabled={page === 1}
-                onClick={() => setPage((p) => p - 1)}
-                className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:border-blue-500 hover:text-blue-600 disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:text-gray-600 transition-colors"
-              >
-                이전
-              </button>
-              <span className="text-sm text-gray-500">{page} / {focusedPageCount}</span>
-              <button
-                type="button"
-                disabled={page === focusedPageCount}
-                onClick={() => setPage((p) => p + 1)}
-                className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:border-blue-500 hover:text-blue-600 disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:text-gray-600 transition-colors"
-              >
-                다음
-              </button>
-            </div>
+            <PrevNextPagination page={page} pageCount={focusedPageCount} onPageChange={setPage} className="mt-4" />
           )}
         </section>
       )}

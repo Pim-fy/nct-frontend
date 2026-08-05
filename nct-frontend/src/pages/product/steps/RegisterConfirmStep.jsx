@@ -1,9 +1,9 @@
 // src/pages/product/steps/RegisterConfirmStep.jsx
-// Step 2: 등록 전 상품정보·경매조건 요약 확인 + 최종 동의
+// 1단계(등록 확인): 등록 전 상품정보·경매조건 요약 확인 + 최종 동의 (예전 3단계 구조의 "Step 2")
 // Props: form, agreed, setAgreed, images, selectedCat, selectedTrade, endDt, auctionRange
 import { useState } from 'react';
 import DOMPurify from 'dompurify';
-import { SANITIZE_OPTS } from '@components/product/richTextEditorImages';
+import { SANITIZE_OPTS, resolveDescriptionImagesForDisplay } from '@components/product/richTextEditorImages';
 import { formatDateTimeAmPm } from '@/utils/common';
 
 // endDt(Date 객체)를 formatDateTime이 기대하는 오프셋 없는 로컬 ISO 문자열로 변환
@@ -64,7 +64,7 @@ export default function RegisterConfirmStep({ form, agreed, setAgreed, images, s
           <div
             className="rich-text-editor-body"
             style={{ fontSize: 16, lineHeight: 1.7, color: '#1a1a18', overflow: 'hidden', maxHeight: descOpen ? 'none' : 120, padding: 0 }}
-            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(form.prdCn, SANITIZE_OPTS) }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(resolveDescriptionImagesForDisplay(form.prdCn), SANITIZE_OPTS) }}
           />
           <div style={{ textAlign: 'center', marginTop: 12 }}>
             <button

@@ -2,7 +2,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // 상품 API — 상품 등록 · 내 판매 목록 조회 · 상품 상세 조회 · 상품 삭제
 //             금지 키워드 · 추가 공지(코멘트)
-//             ProductRegisterPage / MyProductListPage / ProductDetailSellerPage 에서 사용
+//             ProductRegisterPage / MyProductList / ProductDetailSellerPage 에서 사용
 // ─────────────────────────────────────────────────────────────────────────────
 import api from './axios';
 

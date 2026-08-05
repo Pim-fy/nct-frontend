@@ -2,6 +2,7 @@
 // Claude Code 작성 (BJN, 2026-07-30, 정산포인트 내역으로 확장 2026-08-04)
 import { reasonSummary } from './PointLedgerTable';
 import PointTable from './PointTable';
+import pointBadge from './pointBadge';
 
 // 원장유형 배지 색 — 포인트 내역 표(PointLedgerTable)의 TYPE_BADGE와 같은 색을 쓴다
 const TYPE_BADGE = {
@@ -9,11 +10,8 @@ const TYPE_BADGE = {
   전환: 'bg-purple-100 text-purple-800',
 };
 
-const badge = (label) => (
-  <span className={`inline-block px-2.5 py-0.5 rounded-lg text-xs font-medium ${TYPE_BADGE[label] ?? 'bg-gray-100 text-gray-600'}`}>
-    {label}
-  </span>
-);
+// 배지 마크업은 네 내역 테이블 공용 렌더러(pointBadge)로 통합 — 여기는 색 매핑만 정의 (2026-08-05)
+const badge = pointBadge(TYPE_BADGE);
 
 // 표 배치는 공용 셸(PointTable)이 담당 — 여기는 컬럼 구성과 셀 내용만 정의한다 (2026-07-20 통합 방식과 동일)
 // widthClass 퍼센트는 앞 3열(일시/유형/변동금액)만 포인트 내역 표와 맞춰뒀다 — 컬럼 수가 달라

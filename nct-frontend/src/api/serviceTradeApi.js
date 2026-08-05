@@ -1,5 +1,10 @@
 import api from './axios';
 
+/** 로그인한 거래 당사자의 서비스 거래 상세와 서버 판정 가능 행동을 조회한다. */
+export const getServiceTradeDetail = (tradeId) => (
+  api.get(`/trades/${tradeId}/service-detail`).then((response) => response.data.data)
+);
+
 /**
  * F-SVC-012: 서비스 거래 당사자가 거래 문제를 접수한다.
  * payload는 disputeTypeCode와 content를 포함하며, 권한·거래 상태·중복 접수는 서버가 검증한다.

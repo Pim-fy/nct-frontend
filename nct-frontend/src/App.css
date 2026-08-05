@@ -4,7 +4,11 @@
    프로젝트 전체에서 공유하는 기본 UI 클래스를 정의합니다.
 ───────────────────────────────────────────────────────────────────────────── */
 
-body { font-family: 'Pretendard', 'Noto Sans KR', 'Malgun Gothic', sans-serif !important;}
+/* 이 앱은 다크모드를 지원하지 않는데 배경색을 어디서도 명시하지 않아서, OS/브라우저가
+   다크모드면 브라우저 기본 캔버스(검정)가 그대로 비쳐 보이는 문제가 있었다.
+   항상 라이트로 렌더링하도록 고정 — 폼 컨트롤(버튼 등) 다크 스타일링도 같이 막아준다. */
+html { color-scheme: light; }
+body { font-family: 'Pretendard', 'Noto Sans KR', 'Malgun Gothic', sans-serif !important; background: #fff; }
 
 /* 콘텐츠 길이에 따라 세로 스크롤바 유무가 갈리면, 스크롤바가 차지하는 폭(보통 15~17px)만큼
    페이지마다 가용 너비가 달라져 .container/.content-page 등 %·calc 기반 폭 계산이 페이지마다
