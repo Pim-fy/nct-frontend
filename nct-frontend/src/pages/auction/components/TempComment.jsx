@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import DOMPurify from 'dompurify';
 
 const SANITIZE_OPTIONS = {
@@ -30,4 +30,4 @@ const TempComment = ({ content = '' }) => {
   );
 };
 
-export default TempComment;
+export default memo(TempComment);

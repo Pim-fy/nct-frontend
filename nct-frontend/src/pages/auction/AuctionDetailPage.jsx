@@ -129,6 +129,9 @@ const AuctionDetailPageContent = ({ auctionId }) => {
       />
     </HeaderSearchPortal>
   );
+  const handleInquiryLoginRequired = useCallback(() => {
+    navigate('/login', { state: { from: location } });
+  }, [location, navigate]);
 
   useLayoutEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -189,7 +192,7 @@ const AuctionDetailPageContent = ({ auctionId }) => {
     || (auction?.auctionStatusCode === 'AUCC0002' && auction?.endDateTime),
   ));
 
-  const showToast = (message) => setToastMessage(message);
+  const showToast = useCallback((message) => setToastMessage(message), []);
   const getErrorMessage = (error) => error?.response?.data?.message || '요청 처리 중 오류가 발생했습니다';
   const openDeliveryAddressModal = () => setIsDeliveryAddressModalOpen(true);
   const deliveryAddressMutation = useMutation({
@@ -1043,7 +1046,7 @@ const AuctionDetailPageContent = ({ auctionId }) => {
 
         <div className={DETAIL_CONTAINER_CLASS}>
           <AuctionProductDescriptionSection
-            auction={auction}
+            content={auction.content}
             sectionId={DETAIL_SECTION_ITEMS[0].id}
           />
 
@@ -1060,8 +1063,9 @@ const AuctionDetailPageContent = ({ auctionId }) => {
             productId={auction.productId}
             isAuthenticated={isAuthenticated}
             isOwnAuction={isOwnAuction}
+            currentUserId={authenticatedUserId}
             enabled={supplementalQueriesEnabled}
-            onLoginRequired={() => navigate('/login', { state: { from: location } })}
+            onLoginRequired={handleInquiryLoginRequired}
             onToast={showToast}
           />
 

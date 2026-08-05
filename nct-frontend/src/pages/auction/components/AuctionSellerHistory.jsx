@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -195,4 +196,4 @@ const AuctionSellerHistory = ({
   );
 };
 
-export default AuctionSellerHistory;
+export default memo(AuctionSellerHistory);

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import TempComment from './TempComment';
 import { SkeletonBlock } from '@components/skeleton/AuctionSkeletons';
 
@@ -14,7 +15,7 @@ const formatSellerReviewCount = (reviewCount) => {
   return `${Number(reviewCount).toLocaleString('ko-KR')}개`;
 };
 
-export const AuctionProductDescriptionSection = ({ auction, sectionId }) => (
+export const AuctionProductDescriptionSection = memo(({ content, sectionId }) => (
   <section
     className="scroll-mt-[208px] border-b border-[#e2e5ea] py-10 md:scroll-mt-[82px] md:py-14"
     id={sectionId}
@@ -29,9 +30,11 @@ export const AuctionProductDescriptionSection = ({ auction, sectionId }) => (
       </h2>
     </header>
 
-    <TempComment content={auction.content} />
+    <TempComment content={content} />
   </section>
-);
+));
+
+AuctionProductDescriptionSection.displayName = 'AuctionProductDescriptionSection';
 
 export const AuctionSellerInformationSection = ({
   auction,
