@@ -8,7 +8,10 @@
 //   사이드바: 데스크톱(lg+) 좌측 고정 컬럼 / 모바일 상단 가로 스크롤 탭.
 //   콘텐츠: 우측 flex-1 영역.
 import React, { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+// 전역 브레드크럼 (BJN, 260805): 마이페이지는 URL만으로 위치 표현이 안 되는 화면이라 오버라이드 사용
+import { useBreadcrumbOverride } from "@components/common/breadcrumb/BreadcrumbContext";
+import { HOME_ITEM, buildMyPageTrail } from "@components/common/breadcrumb/breadcrumbRoutes";
 import MyPageSidebar from "@components/mypage/MyPageSidebar";
 import MyPageDashboard from "@components/mypage/MyPageDashboard";
 import MyPageProfileEdit from "@components/mypage/MyPageProfileEdit";
@@ -107,6 +110,26 @@ export default function MyPage({
   const [selectedPurchaseTradeId, setSelectedPurchaseTradeId] = useState("");
   const [selectedSalesTradeId, setSelectedSalesTradeId] = useState("");
   const [chatReturnSection, setChatReturnSection] = useState("");
+
+  // 전역 브레드크럼 (BJN, 260805): 로컬 state로 거래 상세가 열려 있을 때만
+  // "홈 > 마이페이지 > 섹션 > 거래 상세" 트레일을 직접 지정한다 (닫히면 자동 해제).
+  // 섹션 목록 화면 자체는 브레드크럼 비대상이라 아무것도 지정하지 않는다.
+  useBreadcrumbOverride(
+    selectedPurchaseTradeId
+      ? [HOME_ITEM, ...buildMyPageTrail("auction-bids"), { label: "거래 상세" }]
+      : selectedSalesTradeId
+        ? [HOME_ITEM, ...buildMyPageTrail("auction-sales"), { label: "거래 상세" }]
+        : null,
+  );
+
+  // 전역 브레드크럼 (BJN, 260805): 브레드크럼 링크처럼 "같은 마이페이지 URL로의 재이동"도
+  // 새 history 항목이 생기므로, 이동이 일어나면 열려 있던 거래 상세를 닫아 목록으로 돌아가게 한다.
+  // (사이드바 클릭은 handleSelectSection에서 이미 닫고 있어 중복 실행돼도 무해)
+  const { key: locationKey } = useLocation();
+  useEffect(() => {
+    setSelectedPurchaseTradeId("");
+    setSelectedSalesTradeId("");
+  }, [locationKey]);
 
   // 임시저장·외부 링크 등으로 이 페이지에 진입할 때 이전 페이지의 스크롤 위치가 남지 않도록 최상단으로 이동한다.
   useEffect(() => { window.scrollTo(0, 0); }, []);

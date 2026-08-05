@@ -2,6 +2,7 @@
 // Claude Code 작성 (BJN, 2026-07-20)
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
+import PrevNextPagination from './PrevNextPagination';
 
 /**
  * 포인트 화면 공용 테이블 셸 — 원장·충전·환전 세 내역 테이블이 같은 표 구조(제목 + 카드형
@@ -125,26 +126,9 @@ const PointTable = ({
         </table>
       </div>
 
+      {/* 알림함 페이지와 공용하는 "이전/다음" 페이지네이션 (2026-08-05 중복 통합) */}
       {pageSize && (
-        <div className="flex items-center justify-center gap-3 mt-3">
-          <button
-            type="button"
-            disabled={page === 1}
-            onClick={() => setPage((p) => p - 1)}
-            className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:border-blue-500 hover:text-blue-600 disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:text-gray-600 transition-colors"
-          >
-            이전
-          </button>
-          <span className="text-sm text-gray-500">{page} / {pageCount}</span>
-          <button
-            type="button"
-            disabled={page === pageCount}
-            onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:border-blue-500 hover:text-blue-600 disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:text-gray-600 transition-colors"
-          >
-            다음
-          </button>
-        </div>
+        <PrevNextPagination page={page} pageCount={pageCount} onPageChange={setPage} />
       )}
     </section>
   );

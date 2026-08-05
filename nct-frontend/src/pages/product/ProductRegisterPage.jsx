@@ -1,8 +1,8 @@
 // src/pages/product/ProductRegisterPage.jsx
-// 상품(경매) 등록 페이지 — 판매자가 경매에 올릴 상품을 3단계로 입력하는 화면
+// 상품(경매) 등록 페이지 — 판매자가 경매에 올릴 상품을 2단계로 입력하는 화면
 // 목업: 07_product_register_seller.html 기반
 // 라우트: /product/register
-// 단계: 0(상품정보) → 1(경매설정) → 2(등록확인)
+// 단계: 0(상품 입력 — 상품정보+경매설정 통합) → 1(등록 확인)  ※ STEP_LABELS 참조
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation, useNavigationType } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -122,23 +122,22 @@ export default function ProductRegisterPage() {
   }, [draftKey, form, images, auctionRange, step, policyAgreed, agreed, pendingDescFilesMap]);
 
   // ─── 카테고리 목록 + (수정 모드, 캐시 복원이 아닐 때만) 기존 상품 데이터 로드 ─────
+  // 세 요청은 서로 독립적이고 결과를 한데 모아 쓰는 곳이 없어서 각자 실행만 한다
+  // (예전엔 배열에 모아 Promise.all로 감쌌지만 await도 반환도 하지 않는 무의미한 호출이라 제거, 2026-08-05 점검 정리)
   useEffect(() => {
-    const loads = [
-      getCategories(PRODUCT_DOMAIN_CD)
-        .then(res => {
-          const children = res.data.filter(c => c.catParentSn !== null);
-          setCategories(children);
-        })
-        .catch(() => setError('카테고리를 불러오지 못했습니다.')),
-      fetchBannedKeywords()
-        .then(res => setBannedKeywords(res.data))
-        .catch(() => {}),
-    ];
+    getCategories(PRODUCT_DOMAIN_CD)
+      .then(res => {
+        const children = res.data.filter(c => c.catParentSn !== null);
+        setCategories(children);
+      })
+      .catch(() => setError('카테고리를 불러오지 못했습니다.'));
+    fetchBannedKeywords()
+      .then(res => setBannedKeywords(res.data))
+      .catch(() => {});
 
     // 캐시로 복원된 경우엔 이미 최신 입력값을 들고 있으니 서버에서 다시 불러오지 않는다.
     if (editPrdSn && !hasCachedDraft) {
-      loads.push(
-        getProduct(editPrdSn)
+      getProduct(editPrdSn)
           .then(res => {
             const p = res.data;
             setForm(prev => ({
@@ -188,34 +187,29 @@ export default function ProductRegisterPage() {
               setPolicyAgreed(true);
             }
           })
-          .catch(() => setError('기존 상품 정보를 불러오지 못했습니다.'))
-      );
+          .catch(() => setError('기존 상품 정보를 불러오지 못했습니다.'));
     } else if (relistFromPrdSn && !hasCachedDraft) {
       // 재등록 모드 — 날짜·시작시점·입찰단위·정책동의는 새로 정해야 하니 기본값 그대로 두고
       // 나머지 정보만 불러온다. editPrdSn이 null이라 제출 시 신규 등록(POST)으로 처리된다.
-      loads.push(
-        getProduct(relistFromPrdSn)
-          .then(res => {
-            const p = res.data;
-            setForm(prev => ({
-              ...prev,
-              catSn:          p.catSn ?? '',
-              prdNm:          p.prdNm ?? '',
-              prdCn:          p.prdCn ?? '',
-              prdTrdMethodCd: p.prdTrdMethodCd ?? 'TRDC0009',
-              prdStartAmt:    p.prdStartAmt != null ? String(p.prdStartAmt) : '',
-              prdIbyAmt:      p.prdIbyAmt  != null ? String(p.prdIbyAmt)  : '',
-              tradeRegions:   p.tradeRegions ?? prev.tradeRegions,
-            }));
-            if (p.imageList?.length > 0) {
-              setImages(p.imageList.map(img => ({ id: img.flSn, flSn: img.flSn, url: img.url, file: null })));
-            }
-          })
-          .catch(() => setError('기존 상품 정보를 불러오지 못했습니다.'))
-      );
+      getProduct(relistFromPrdSn)
+        .then(res => {
+          const p = res.data;
+          setForm(prev => ({
+            ...prev,
+            catSn:          p.catSn ?? '',
+            prdNm:          p.prdNm ?? '',
+            prdCn:          p.prdCn ?? '',
+            prdTrdMethodCd: p.prdTrdMethodCd ?? 'TRDC0009',
+            prdStartAmt:    p.prdStartAmt != null ? String(p.prdStartAmt) : '',
+            prdIbyAmt:      p.prdIbyAmt  != null ? String(p.prdIbyAmt)  : '',
+            tradeRegions:   p.tradeRegions ?? prev.tradeRegions,
+          }));
+          if (p.imageList?.length > 0) {
+            setImages(p.imageList.map(img => ({ id: img.flSn, flSn: img.flSn, url: img.url, file: null })));
+          }
+        })
+        .catch(() => setError('기존 상품 정보를 불러오지 못했습니다.'));
     }
-
-    Promise.all(loads);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -481,7 +475,6 @@ export default function ProductRegisterPage() {
                 selectedCat={selectedCat}
                 selectedTrade={selectedTrade}
                 endDt={endDt}
-                maxImages={MAX_IMAGES}
                 auctionRange={auctionRange}
               />
             </div>

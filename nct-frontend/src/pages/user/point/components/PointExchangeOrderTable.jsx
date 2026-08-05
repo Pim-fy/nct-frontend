@@ -1,6 +1,7 @@
 // src/pages/user/point/components/PointExchangeOrderTable.jsx
 // Claude Code 작성 (BJN, 2026-07-17)
 import PointTable from './PointTable';
+import pointBadge from './pointBadge';
 
 // 환전주문상태(PEOG01)별 배지 색 — 충전 이력 테이블(PointChargeOrderTable)과 같은 방식
 const STATUS_BADGE = {
@@ -9,11 +10,8 @@ const STATUS_BADGE = {
   반려: 'bg-red-100 text-red-700',
 };
 
-const badge = (label) => (
-  <span className={`inline-block px-2.5 py-0.5 rounded-lg text-xs font-medium ${STATUS_BADGE[label] ?? 'bg-gray-100 text-gray-600'}`}>
-    {label}
-  </span>
-);
+// 배지 마크업은 네 내역 테이블 공용 렌더러(pointBadge)로 통합 — 여기는 색 매핑만 정의 (2026-08-05)
+const badge = pointBadge(STATUS_BADGE);
 
 // 표 배치는 공용 셸(PointTable)이 담당 — 여기는 컬럼 구성과 셀 내용만 정의한다 (2026-07-20 통합)
 // widthClass 퍼센트는 원장·충전 내역 표와 같은 열 순서(일시/배지/금액/짧은텍스트/긴텍스트)

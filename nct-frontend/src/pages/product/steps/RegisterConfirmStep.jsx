@@ -1,5 +1,5 @@
 // src/pages/product/steps/RegisterConfirmStep.jsx
-// Step 2: 등록 전 상품정보·경매조건 요약 확인 + 최종 동의
+// 1단계(등록 확인): 등록 전 상품정보·경매조건 요약 확인 + 최종 동의 (예전 3단계 구조의 "Step 2")
 // Props: form, agreed, setAgreed, images, selectedCat, selectedTrade, endDt, auctionRange
 import { useState } from 'react';
 import DOMPurify from 'dompurify';

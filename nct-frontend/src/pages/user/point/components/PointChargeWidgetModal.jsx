@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { loadTossPayments, ANONYMOUS } from '@tosspayments/tosspayments-sdk';
 
 import { requestPointCharge, getChargeLimits } from '../../../../api/pointApi';
-import { QUICK_AMOUNTS } from './quickAmounts';
+import { CHARGE_QUICK_EXTRA, QUICK_AMOUNTS } from './quickAmounts';
 
 // infoRow: 모달 상단에 보여줄 현재 잔액 안내 { label, value } — PointAmountModal과 같은 방식.
 // 잔액 조회는 호출하는 쪽(헤더·지갑 페이지)이 이미 하고 있어서 여기서 다시 조회하지 않고 받아서 표시만 한다
@@ -32,9 +32,6 @@ const PointChargeWidgetModal = ({ infoRow, onClose }) => {
   // 화면 표시 전용 주문 금액 — ref는 렌더링 중에 읽으면 안 된다는 React 19 규칙
   // (react-hooks/refs, 2026-07-17 수정) 때문에 표시용 값만 상태로 따로 둔다
   const [orderAmount, setOrderAmount] = useState(null);
-
-  // 위젯 스크립트가 언마운트 후에도 DOM을 계속 참조하지 않도록 정리
-  useEffect(() => () => { widgetsRef.current = null; }, []);
 
   // 모달이 떠 있는 동안 뒤 페이지 스크롤을 잠근다 — 위젯 목록이 길어져도
   // 휠/드래그가 배경으로 새지 않고 모달 안쪽(overflow-y-auto)에서만 스크롤되게
@@ -170,16 +167,24 @@ const PointChargeWidgetModal = ({ infoRow, onClose }) => {
         {step === 'amount' && (
           <>
             <div className="flex gap-2 mb-4">
-              {QUICK_AMOUNTS.map((quick) => (
+              {/* 충전은 공용 4개 금액에 큰 금액(CHARGE_QUICK_EXTRA) 하나를 더 보여준다 — 마크업이 같아 하나의 map으로 렌더 */}
+              {[...QUICK_AMOUNTS, CHARGE_QUICK_EXTRA].map((quick) => (
                 <button
                   key={quick}
                   type="button"
-                  className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-600 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                  onClick={() => setAmount(String(quick))}
+                  className="flex-1 whitespace-nowrap border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center text-gray-600 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                  onClick={() => setAmount((prev) => String((Number(prev) || 0) + quick))}
                 >
-                  {quick.toLocaleString()} P
+                  {quick.toLocaleString()}
                 </button>
               ))}
+              <button
+                type="button"
+                className="flex-1 whitespace-nowrap border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors"
+                onClick={() => setAmount('')}
+              >
+                초기화
+              </button>
             </div>
             <input
               type="number"
