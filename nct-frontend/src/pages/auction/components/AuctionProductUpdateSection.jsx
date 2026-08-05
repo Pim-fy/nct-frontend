@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { History, RotateCcw } from 'lucide-react';
 import { fetchProductComments } from '@api/productApi';
@@ -148,4 +148,4 @@ const AuctionProductUpdateSection = ({
   );
 };
 
-export default AuctionProductUpdateSection;
+export default memo(AuctionProductUpdateSection);
