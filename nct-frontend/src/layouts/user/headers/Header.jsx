@@ -21,7 +21,10 @@ import { usePointBalance } from '@hooks/usePoint';
 import { usePublicNoticeList } from '@hooks/usePublicNotices';
 import relativeTime from '@utils/relativeTime';
 import { requestPointExchange, convertPoint } from '@api/pointApi';
-import { SITE_HEADER_VISIBILITY_EVENT } from '@/constants/layoutEvents';
+import {
+  SITE_HEADER_DOCK_EVENT,
+  SITE_HEADER_VISIBILITY_EVENT,
+} from '@/constants/layoutEvents';
 import { SITE_HEADER_SEARCH_SLOT_ID } from '@components/common/HeaderSearchPortal';
 import HeaderCreateAction from '@components/common/HeaderCreateAction';
 import ScrollToTopButton from '@components/common/ScrollToTopButton';
@@ -118,6 +121,7 @@ const Header = () => {
   const [scrolled, setScrolled] = useState(false);
   const [noticeIndex, setNoticeIndex] = useState(0);
   const [isPageHidden, setIsPageHidden] = useState(false);
+  const [hasBottomDock, setHasBottomDock] = useState(false);
   const isAuctionSearchRoute = pathname === '/auction'
     || /^\/auction\/[^/]+$/.test(pathname);
   const isServiceSearchRoute = isProvider && (
@@ -160,6 +164,15 @@ const Header = () => {
       SITE_HEADER_VISIBILITY_EVENT,
       handleVisibilityChange,
     );
+  }, []);
+
+  useEffect(() => {
+    const handleDockChange = (event) => {
+      setHasBottomDock(Boolean(event.detail?.docked));
+    };
+
+    window.addEventListener(SITE_HEADER_DOCK_EVENT, handleDockChange);
+    return () => window.removeEventListener(SITE_HEADER_DOCK_EVENT, handleDockChange);
   }, []);
 
   // 스크롤이 임계값을 넘으면(= 상단 NoticeStrip이 화면 밖으로 나가면) 헤더 중앙에 롤링 티커를 보여준다.
@@ -331,7 +344,9 @@ const Header = () => {
     <>
     <header
       aria-hidden={isPageHidden || undefined}
-      className={`sticky top-0 z-[100] bg-white shadow-[0px_5px_10px_0px_rgba(0,0,0,0.2)] max-md:fixed max-md:inset-x-0 ${
+      className={`sticky top-0 z-[100] bg-white max-md:fixed max-md:inset-x-0 ${
+      hasBottomDock ? 'shadow-none' : 'shadow-[0px_5px_10px_0px_rgba(0,0,0,0.2)]'
+    } ${
       hasHeaderSearch ? 'h-[154px] md:h-[82px]' : 'h-[82px]'
     } ${
       isPageHidden ? 'invisible pointer-events-none' : ''

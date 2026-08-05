@@ -267,12 +267,13 @@ const AuctionInquirySection = ({
         })}
       </div>
 
-      <div className="[&_button]:transition-colors [&_button:not(:disabled)]:cursor-pointer [&_button:not(:disabled):hover]:border-primary [&_button:not(:disabled):hover]:bg-[#f2f7ff] [&_button:not(:disabled):hover]:text-primary-dark">
+      <div className="pt-7 max-sm:pt-6 [&_button]:transition-colors [&_button:not(:disabled)]:cursor-pointer [&_button:not(:disabled):hover]:border-primary [&_button:not(:disabled):hover]:bg-[#f2f7ff] [&_button:not(:disabled):hover]:text-primary-dark">
         <Pagination
           page={currentPage}
           totalPages={totalPages}
           onPageChange={setPage}
           showSinglePage
+          className="!my-0"
         />
       </div>
 
