@@ -35,7 +35,7 @@ export const STATUS_BADGE = {
 // auctionStatus가 있으면 이쪽을, 없으면(임시저장 등 경매 자체가 없는 경우) 위 STATUS_LABEL을 쓴다.
 export const AUC_STATUS_LABEL = {
   AUCC0001: '준비',
-  AUCC0002: '경매 진행중',
+  AUCC0002: '진행 중',
   AUCC0003: '낙찰',
   AUCC0004: '유찰',
   AUCC0005: '취소',
