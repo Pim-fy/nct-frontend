@@ -416,6 +416,7 @@ const PointWalletPage = ({ embedded = false } = {}) => {
           title="환전 신청"
           submitLabel="환전"
           infoRow={{ label: '환전 가능 포인트', value: `${balance.exchangeable.toLocaleString()} P` }}
+          maxAmount={balance.exchangeable}
           onSubmit={submitAmount('exchange')}
           onClose={() => setOpenModal(null)}
         />
@@ -425,6 +426,7 @@ const PointWalletPage = ({ embedded = false } = {}) => {
           title="포인트 전환"
           submitLabel="전환"
           infoRow={{ label: '정산가능 포인트', value: `${balance.settleable.toLocaleString()} P` }}
+          maxAmount={balance.settleable}
           onSubmit={submitAmount('convert')}
           onClose={() => setOpenModal(null)}
         />

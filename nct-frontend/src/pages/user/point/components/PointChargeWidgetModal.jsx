@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { loadTossPayments, ANONYMOUS } from '@tosspayments/tosspayments-sdk';
 
 import { requestPointCharge, getChargeLimits } from '../../../../api/pointApi';
-import { QUICK_AMOUNTS } from './quickAmounts';
+import { CHARGE_QUICK_EXTRA, QUICK_AMOUNTS } from './quickAmounts';
 
 // infoRow: 모달 상단에 보여줄 현재 잔액 안내 { label, value } — PointAmountModal과 같은 방식.
 // 잔액 조회는 호출하는 쪽(헤더·지갑 페이지)이 이미 하고 있어서 여기서 다시 조회하지 않고 받아서 표시만 한다
@@ -174,12 +174,26 @@ const PointChargeWidgetModal = ({ infoRow, onClose }) => {
                 <button
                   key={quick}
                   type="button"
-                  className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-600 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                  onClick={() => setAmount(String(quick))}
+                  className="flex-1 whitespace-nowrap border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center text-gray-600 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                  onClick={() => setAmount((prev) => String((Number(prev) || 0) + quick))}
                 >
-                  {quick.toLocaleString()} P
+                  {quick.toLocaleString()}
                 </button>
               ))}
+              <button
+                type="button"
+                className="flex-1 whitespace-nowrap border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center text-gray-600 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                onClick={() => setAmount((prev) => String((Number(prev) || 0) + CHARGE_QUICK_EXTRA))}
+              >
+                {CHARGE_QUICK_EXTRA.toLocaleString()}
+              </button>
+              <button
+                type="button"
+                className="flex-1 whitespace-nowrap border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors"
+                onClick={() => setAmount('')}
+              >
+                초기화
+              </button>
             </div>
             <input
               type="number"

@@ -11,11 +11,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Menu, X, ChevronRight } from 'lucide-react';
+import { Menu, X, ChevronRight, Bell, Gavel, Truck, Wrench, Wallet, MessageCircle } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useAuth } from '@hooks/useAuth';
 import { useMyProviderApplications } from '@hooks/useProviderApplications';
-import { useMarkRead, useNotifications } from '@hooks/useNotification';
+import { useMarkAllRead, useMarkRead, useNotifications } from '@hooks/useNotification';
 import { useNotificationStream } from '@hooks/useNotificationStream';
 import { usePointBalance } from '@hooks/usePoint';
 import { usePublicNoticeList } from '@hooks/usePublicNotices';
@@ -49,8 +49,21 @@ const SERVICE_CATEGORIES = ['이사', '청소', '레슨', '설치·수리', '인
 // POINT/알림 수치 실연동 (담당자6 BJN, 2026-07-18) — 종전 더미 상수(DUMMY_POINT/NOTI_ITEMS) 제거.
 // 이 헤더는 비로그인 공개 페이지에서도 렌더링되므로, 두 훅 모두 { enabled: 로그인여부 }로
 // 로그인 상태일 때만 API를 호출한다 (무조건 호출하면 401→로그인 강제이동이 발생하기 때문).
-// 헤더 드롭다운에 보여줄 알림 최대 개수 (안읽은 알림 미리보기 · 과거 알림 목록 공통)
+// 헤더 드롭다운(데스크톱, 좁은 팝오버)에 보여줄 알림 최대 개수
 const NOTI_PREVIEW_MAX = 5;
+// 모바일 전체화면 알림함은 스크롤 가능한 넓은 화면이라 5개로 잘라내면 실제로는 더 있는데도
+// 화면 아래쪽이 비어 보인다 — 데스크톱보다 훨씬 넉넉하게 보여준다 (2026-08-05)
+const NOTI_MOBILE_MAX = 20;
+
+// 알림 도메인(domainCd, NTFG03)별 아이콘 — 알림함 페이지(NotificationPage.jsx DOMAIN_DEFS)와 같은 코드값 기준.
+// 텍스트만 있던 미리보기가 모바일 전체화면에서 허전해 보여 항목마다 시각적 구분을 추가했다 (2026-08-05).
+const NOTI_DOMAIN_ICONS = {
+  NTFC0010: Gavel, // 경매·입찰
+  NTFC0011: Truck, // 거래·배송
+  NTFC0012: Wrench, // 서비스
+  NTFC0013: Wallet, // 운영·환전
+  NTFC0014: MessageCircle, // 채팅
+};
 
 const Header = () => {
   // isProvider·switchMode: 제공자 모드전환 실연동 (F-PROV-008, 담당자6 BJN, 2026-07-24)
@@ -84,6 +97,7 @@ const Header = () => {
   const notiQuery = useNotifications({ enabled: !!user });
   useNotificationStream(!!user); // 실시간 push 구독 — 새 알림 오면 notiQuery를 자동 invalidate
   const markReadMutation = useMarkRead();
+  const markAllReadMutation = useMarkAllRead();
   const [selectedNoti, setSelectedNoti] = useState(null); // 클릭한 알림 상세 팝업
   const balanceQuery = usePointBalance({ enabled: !!user });
   // 헤더 POINT 드롭다운의 충전/환전 버튼 → 마이페이지로 이동하지 않고 이 자리에서 바로 모달을 띄운다
@@ -93,9 +107,11 @@ const Header = () => {
   // 안읽은 알림: 배지 숫자와 드롭다운 목록의 공통 원천
   const unreadNotis = (notiQuery.data ?? []).filter((n) => !n.read);
   const notiCount = user ? unreadNotis.length : 0;
-  // 안읽은 우선 + 읽은 알림을 합쳐 드롭다운에 최대 NOTI_PREVIEW_MAX(5)개만 미리보기
+  // 안읽은 우선 + 읽은 알림을 합쳐 데스크톱 드롭다운엔 NOTI_PREVIEW_MAX(5)개, 모바일 전체화면엔 NOTI_MOBILE_MAX(20)개까지 보여준다
   const readNotis = (notiQuery.data ?? []).filter((n) => n.read);
-  const previewNotis = [...unreadNotis, ...readNotis].slice(0, NOTI_PREVIEW_MAX);
+  const sortedNotis = [...unreadNotis, ...readNotis];
+  const previewNotis = sortedNotis.slice(0, NOTI_PREVIEW_MAX);
+  const mobileNotis = sortedNotis.slice(0, NOTI_MOBILE_MAX);
   // 잔액은 조회 전(로딩·비로그인)에는 0으로 표시 — 임의 기본값이 아니라 "아직 모름"의 화면 표기
   const pointBalance = balanceQuery.data ?? { total: 0, available: 0 };
   const [categoryHovered, setCategoryHovered] = useState(false);
@@ -517,38 +533,45 @@ const Header = () => {
               )}
             </button>
             {notiOpen && (() => {
-              // 안읽은 우선 + 읽은 알림 통합, 최대 5개 미리보기 — 데스크톱 드롭다운·모바일
-              // 전체화면 둘 다 같은 목록을 쓴다 (2026-08-04, 모바일만 전체화면으로 분리)
-              const notiList = previewNotis.length === 0 ? (
+              // 안읽은 우선 + 읽은 알림 목록을 렌더 — 데스크톱은 previewNotis(5개), 모바일은
+              // mobileNotis(20개)로 서로 다른 캡을 넘겨 쓴다 (2026-08-05, 모바일 전체화면이
+              // 5개로는 스크롤 가능한 화면을 못 채워 허전해 보이던 문제)
+              const renderNotiItems = (items) => items.length === 0 ? (
                 <p className="py-2 text-center text-[13px] text-[#969696]">새 알림이 없습니다.</p>
               ) : (
                 <ul className="flex flex-col gap-1.5">
-                  {previewNotis.map((item) => (
-                    <li key={item.id}>
-                      <button
-                        type="button"
-                        className="flex w-full items-start gap-2 text-left"
-                        onClick={() => {
-                          if (!item.read) markReadMutation.mutate(item.id);
-                          setSelectedNoti({ ...item, time: relativeTime(item.regDt) });
-                          setNotiOpen(false);
-                        }}
-                      >
-                        <span
-                          className={`mt-[6px] size-[6px] shrink-0 rounded-full ${item.read ? 'bg-[#d9d9d9]' : 'bg-primary'}`}
-                        />
-                        <div className="min-w-0">
-                          <p className="truncate text-[13px] text-[#333]">
-                            {item.title}
-                            {item.content && <span className="text-[#969696]"> · {item.content}</span>}
-                          </p>
-                          <p className="text-[11px] text-[#969696]">{relativeTime(item.regDt)}</p>
-                        </div>
-                      </button>
-                    </li>
-                  ))}
+                  {items.map((item) => {
+                    const DomainIcon = NOTI_DOMAIN_ICONS[item.domainCd] ?? Bell;
+                    return (
+                      <li key={item.id}>
+                        <button
+                          type="button"
+                          className={`flex w-full items-center gap-3 rounded-[10px] px-2 py-2 text-left transition-colors hover:bg-[#f3f5fa] ${item.read ? '' : 'bg-[#f8f9fb]'}`}
+                          onClick={() => {
+                            if (!item.read) markReadMutation.mutate(item.id);
+                            setSelectedNoti({ ...item, time: relativeTime(item.regDt) });
+                            setNotiOpen(false);
+                          }}
+                        >
+                          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-light text-primary">
+                            <DomainIcon size={16} />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[13px] text-[#333]">
+                              {item.title}
+                              {item.content && <span className="text-[#969696]"> · {item.content}</span>}
+                            </p>
+                            <p className="text-[11px] text-[#969696]">{relativeTime(item.regDt)}</p>
+                          </div>
+                          {!item.read && <span className="mt-1 size-[6px] shrink-0 rounded-full bg-primary" />}
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               );
+              const notiList = renderNotiItems(previewNotis);
+              const mobileNotiList = renderNotiItems(mobileNotis);
 
               return (
                 <>
@@ -559,19 +582,28 @@ const Header = () => {
                         <span className="text-[17px] font-bold text-black tracking-[-0.5px]">알림</span>
                         <span className="text-[13px] text-[#0064ff]">{notiCount}</span>
                       </span>
-                      <button
-                        type="button"
-                        aria-label="닫기"
-                        className="flex size-9 items-center justify-center rounded-full text-[#767676] hover:bg-[#f3f5fa] transition-colors"
-                        onClick={() => setNotiOpen(false)}
-                      >
-                        <X size={22} />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          className="text-[13px] font-medium text-primary"
+                          onClick={() => markAllReadMutation.mutate()}
+                        >
+                          전체 읽음
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="닫기"
+                          className="flex size-9 items-center justify-center rounded-full text-[#767676] hover:bg-[#f3f5fa] transition-colors"
+                          onClick={() => setNotiOpen(false)}
+                        >
+                          <X size={22} />
+                        </button>
+                      </div>
                     </div>
                     <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3">
-                      {notiList}
+                      {mobileNotiList}
                     </div>
-                    <div className="shrink-0 border-t border-[#f0f0f0] p-4">
+                    <div className="shrink-0 border-t border-[#f0f0f0] p-4 pb-[max(16px,env(safe-area-inset-bottom))]">
                       <button
                         type="button"
                         className="h-[42px] w-full rounded-[6px] bg-primary text-[14px] font-bold text-white hover:bg-[#0048bf] transition-colors"
@@ -589,6 +621,13 @@ const Header = () => {
                         <span className="text-[15px] font-bold text-black tracking-[-0.5px]">알림</span>
                         <span className="text-[12px] text-[#0064ff]">{notiCount}</span>
                       </span>
+                      <button
+                        type="button"
+                        className="text-[12px] font-medium text-primary"
+                        onClick={() => markAllReadMutation.mutate()}
+                      >
+                        전체 읽음
+                      </button>
                     </div>
                     <div className="my-3 h-px bg-[#e5e5e5]" />
                     {notiList}
@@ -979,6 +1018,7 @@ const Header = () => {
         title="포인트 전환"
         submitLabel="전환"
         infoRow={{ label: '정산가능 포인트', value: `${(pointBalance.settleable ?? 0).toLocaleString()} P` }}
+        maxAmount={pointBalance.settleable ?? 0}
         onSubmit={submitHeaderConvert}
         onClose={() => setPointModal(null)}
       />
@@ -988,6 +1028,7 @@ const Header = () => {
         title="환전 신청"
         submitLabel="환전"
         infoRow={{ label: '환전 가능 포인트', value: `${(pointBalance.exchangeable ?? 0).toLocaleString()} P` }}
+        maxAmount={pointBalance.exchangeable ?? 0}
         onSubmit={submitHeaderExchange}
         onClose={() => setPointModal(null)}
       />
