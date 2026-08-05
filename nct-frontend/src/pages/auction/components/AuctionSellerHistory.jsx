@@ -79,6 +79,15 @@ const AuctionSellerHistory = ({
 
   return (
     <div aria-label="판매자가 등록한 경매 상품">
+      <div className="mb-4 flex min-h-6 items-center justify-between gap-3">
+        <h3 className="m-0 text-body-md font-bold text-[#1d1d1f]">판매자의 경매 상품</h3>
+        {!isInitialWaiting && !hasCurrentPageError && (
+          <span className="shrink-0 text-caption font-semibold text-[#777]">
+            {Number(totalElements).toLocaleString('ko-KR')}개
+          </span>
+        )}
+      </div>
+
       {(isInitialWaiting || isCurrentPageWaiting) && (
         <div className="grid grid-cols-5 gap-2.5 md:gap-4" aria-label="판매자 경매 상품을 불러오는 중">
           {Array.from({ length: HISTORY_PAGE_SIZE }).map((_, index) => (

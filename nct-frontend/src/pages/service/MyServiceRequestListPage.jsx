@@ -5,6 +5,9 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { deleteServiceRequest, closeServiceRequest } from '@api/serviceRequestApi';
+import { useNavigate } from 'react-router-dom';
+import { deleteServiceRequest } from '@api/serviceRequestApi';
+import { toImageUrl } from '@api/fileApi';
 import { useMyServiceRequests } from '@hooks/useServiceRequest';
 import MyPageListSectionLayout from '@components/mypage/MyPageListSectionLayout';
 import MyPageListItem from '@components/mypage/MyPageListItem';
@@ -58,7 +61,6 @@ export default function MyServiceRequestListPage({ embedded = false }) {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [page, setPage] = useState(1);
   const [toast, setToast] = useState('');
-  const [closeTarget, setCloseTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const { data, isLoading, isError, refetch } = useMyServiceRequests(page, PAGE_SIZE, filter);
@@ -79,17 +81,6 @@ export default function MyServiceRequestListPage({ embedded = false }) {
   const handleFilterChange = (value) => {
     setFilter(value);
     setPage(1);
-  };
-
-  const handleCloseConfirm = async () => {
-    const { svcReqSn } = closeTarget;
-    setCloseTarget(null);
-    try {
-      await closeServiceRequest(svcReqSn);
-      refetch();
-    } catch (err) {
-      setToast(err.response?.data?.message || '마감에 실패했습니다.');
-    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -155,11 +146,12 @@ export default function MyServiceRequestListPage({ embedded = false }) {
           <div className="history-list">
             {visibleList.map(item => {
               const isDraft = item.svcReqStatusCd === 'SVCC0001';
-              const isOpen = item.svcReqStatusCd === 'SVCC0002';
 
               return (
                 <MyPageListItem
                   key={item.svcReqSn}
+                  imageSrc={item.repImageUrl ? toImageUrl(item.repImageUrl) : undefined}
+                  imageAlt={item.svcReqTtl}
                   imageFallback={item.catNm}
                   badge={
                     <MyPageStatusBadge className={STATUS_BADGE[item.svcReqStatusCd] ?? 'badge-outline-gray'}>
@@ -175,7 +167,7 @@ export default function MyServiceRequestListPage({ embedded = false }) {
                           onClick={() => navigate('/service-requests/new', { state: { svcReqSn: item.svcReqSn, from: location.pathname + location.search } })}
                           className="btn btn-sm btn-primary"
                         >
-                          이어서 작성
+                          작성재개
                         </button>
                       )}
                       {!isDraft && (
@@ -185,15 +177,6 @@ export default function MyServiceRequestListPage({ embedded = false }) {
                           className="btn btn-sm btn-primary"
                         >
                           상세보기
-                        </button>
-                      )}
-                      {isOpen && (
-                        <button
-                          type="button"
-                          onClick={() => setCloseTarget({ svcReqSn: item.svcReqSn })}
-                          className="btn btn-sm btn-ghost"
-                        >
-                          마감
                         </button>
                       )}
                       {isDraft && (
@@ -223,14 +206,6 @@ export default function MyServiceRequestListPage({ embedded = false }) {
         </>
       )}
 
-      <ConfirmModal
-        open={!!closeTarget}
-        message="이 요청서를 마감하시겠습니까?"
-        subMessage="마감 후에는 견적을 받을 수 없습니다."
-        confirmLabel="마감"
-        onConfirm={handleCloseConfirm}
-        onCancel={() => setCloseTarget(null)}
-      />
       <ConfirmModal
         open={!!deleteTarget}
         message="이 요청서를 삭제하시겠습니까?"

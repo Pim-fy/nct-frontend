@@ -1,16 +1,27 @@
 // src/components/service/ServiceRequestImageUpload.jsx
-// 전문가 견적 요청서 첨부사진 — 드래그앤드롭·파일 선택으로 로컬 미리보기만 담당
+// 전문가 견적 요청서 첨부사진 — 드래그앤드롭·파일 선택·대표이미지 지정
 // Props: images([{ id, flSn, url, file }]), onChange(setter), maxImages(최대 장수)
-// ServiceRequestFormPage에서 사용
-//
-// SERVICE_REQUEST_FILE 연결 테이블·업로드 API가 아직 정본요청 전이라, 지금은 로컬
-// blob: 미리보기까지만 동작한다. 대표이미지·정렬순서 개념 없이 단순 다중 첨부(ProductImageUpload와
-// 다른 점). API 확정되면 제출 시점에 uploadImage → SERVICE_REQUEST_FILE 연결 호출만 추가하면 된다.
-import { useRef } from 'react';
+// ServiceRequestFormPage에서 사용. index 0이 대표이미지 — 목록(MyServiceRequestListPage)
+// 썸네일로 쓰인다. 지정 방식은 ProductImageUpload와 동일(지정 모드 켜고 사진 클릭 시 맨 앞으로 이동).
+import { useRef, useState } from 'react';
 import { toImageUrl } from '@api/fileApi';
 
 export default function ServiceRequestImageUpload({ images, onChange, maxImages = 5 }) {
+  const [pickMode, setPickMode] = useState(false); // 대표이미지 지정 모드 — 활성화 중 사진 클릭 시 대표로 변경
   const fileInputRef = useRef(null);
+
+  // 선택한 사진을 배열 맨 앞으로 이동 — index 0이 대표이미지(백엔드 전송 시 정렬순번 0번)
+  const setAsRepresentative = (id) => {
+    onChange(prev => {
+      const idx = prev.findIndex(img => img.id === id);
+      if (idx <= 0) return prev;
+      const next = [...prev];
+      const [picked] = next.splice(idx, 1);
+      next.unshift(picked);
+      return next;
+    });
+    setPickMode(false);
+  };
 
   const handleFilesSelected = (fileList) => {
     const files = Array.from(fileList).slice(0, maxImages - images.length);
@@ -42,16 +53,28 @@ export default function ServiceRequestImageUpload({ images, onChange, maxImages 
     >
       <div className="flex items-center justify-between">
         <p className="text-xs text-[#888780]">
-          드래그앤드롭 또는 파일 선택 · 최대 {maxImages}장 ({images.length}/{maxImages})
+          {pickMode ? '대표로 지정할 사진을 선택하세요' : `드래그앤드롭 또는 파일 선택 · 최대 ${maxImages}장 (${images.length}/${maxImages})`}
         </p>
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={images.length >= maxImages}
-          className="rounded-lg border border-[#e2e1dc] bg-white px-3 py-1.5 text-sm text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
-        >
-          사진 추가
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setPickMode(v => !v)}
+            disabled={images.length === 0}
+            className={`rounded-lg border px-3 py-1.5 text-sm transition-colors disabled:opacity-50 ${
+              pickMode ? 'border-primary bg-primary text-white' : 'border-[#e2e1dc] bg-white text-[#5f5e5a] hover:border-primary hover:text-primary'
+            }`}
+          >
+            대표이미지로 지정
+          </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={images.length >= maxImages}
+            className="rounded-lg border border-[#e2e1dc] bg-white px-3 py-1.5 text-sm text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+          >
+            사진 추가
+          </button>
+        </div>
         <input
           ref={fileInputRef}
           type="file"
@@ -64,15 +87,25 @@ export default function ServiceRequestImageUpload({ images, onChange, maxImages 
 
       <div className="mt-3 grid gap-2" style={{ gridTemplateColumns: `repeat(${maxImages}, 1fr)` }}>
         {images.map((img, i) => (
-          <div key={img.id} className="relative">
+          <div
+            key={img.id}
+            className="relative"
+            onClick={() => pickMode && setAsRepresentative(img.id)}
+            style={{ cursor: pickMode && i !== 0 ? 'pointer' : 'default' }}
+          >
             <img
               src={toImageUrl(img.url)}
               alt={`요청 사진 ${i + 1}`}
-              className="aspect-square w-full rounded-lg border border-[#e2e1dc] object-cover"
+              className={`aspect-square w-full rounded-lg object-cover ${
+                i === 0 ? 'border-2 border-primary' : pickMode ? 'border-2 border-dashed border-primary' : 'border border-[#e2e1dc]'
+              }`}
             />
+            {i === 0 && (
+              <span className="absolute left-1 top-1 rounded bg-primary px-1.5 py-0.5 text-[11px] font-semibold text-white">대표</span>
+            )}
             <button
               type="button"
-              onClick={() => removeImage(img.id)}
+              onClick={(e) => { e.stopPropagation(); removeImage(img.id); }}
               title="삭제"
               className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#1a1a18] text-xs leading-none text-white"
             >
