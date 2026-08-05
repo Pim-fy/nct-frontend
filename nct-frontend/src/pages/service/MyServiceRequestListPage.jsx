@@ -5,8 +5,6 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { deleteServiceRequest, closeServiceRequest } from '@api/serviceRequestApi';
-import { useNavigate } from 'react-router-dom';
-import { deleteServiceRequest } from '@api/serviceRequestApi';
 import { toImageUrl } from '@api/fileApi';
 import { useMyServiceRequests } from '@hooks/useServiceRequest';
 import MyPageListSectionLayout from '@components/mypage/MyPageListSectionLayout';

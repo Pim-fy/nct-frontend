@@ -187,8 +187,7 @@ export default function ProductRegisterPage() {
               setPolicyAgreed(true);
             }
           })
-          .catch(() => setError('기존 상품 정보를 불러오지 못했습니다.'))
-      );
+          .catch(() => setError('기존 상품 정보를 불러오지 못했습니다.'));
     } else if (relistFromPrdSn && !hasCachedDraft) {
       // 재등록 모드 — 날짜·시작시점·입찰단위·정책동의는 새로 정해야 하니 기본값 그대로 두고
       // 나머지 정보만 불러온다. editPrdSn이 null이라 제출 시 신규 등록(POST)으로 처리된다.
