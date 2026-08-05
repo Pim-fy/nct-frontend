@@ -17,16 +17,18 @@ const badge = (label) => (
 );
 
 // 표 배치는 공용 셸(PointTable)이 담당 — 여기는 컬럼 구성과 셀 내용만 정의한다 (2026-07-20 통합)
+// widthClass 퍼센트는 원장·환전 내역 표와 같은 열 순서(일시/배지/금액/짧은텍스트/긴텍스트)
+// 기준으로 맞춘 값 — 임의로 바꾸면 세 표의 세로 구분선이 어긋난다 (2026-08-04, PointTable.jsx 참고)
 const COLUMNS = [
-  { key: 'date', header: '일시', widthClass: 'min-w-[150px]', cellClass: 'whitespace-nowrap text-gray-700', render: (r) => r.date },
+  { key: 'date', header: '일시', widthClass: 'w-[18%]', cellClass: 'truncate text-gray-700', render: (r) => <span title={r.date}>{r.date}</span> },
+  { key: 'status', header: '상태', widthClass: 'w-[12%]', cellClass: 'whitespace-nowrap', render: (r) => badge(r.status) },
   {
-    key: 'amount', header: '충전금액', align: 'right', widthClass: 'min-w-[110px]', cellClass: 'whitespace-nowrap font-medium text-gray-900',
+    key: 'amount', header: '충전금액', align: 'right', widthClass: 'w-[14%]', cellClass: 'whitespace-nowrap font-medium text-gray-900',
     render: (r) => `${r.amount.toLocaleString()}P`,
   },
-  { key: 'payMethod', header: '결제수단', cellClass: 'whitespace-nowrap text-gray-500', render: (r) => r.payMethod ?? '-' },
-  { key: 'status', header: '상태', widthClass: 'min-w-[110px]', cellClass: 'whitespace-nowrap', render: (r) => badge(r.status) },
+  { key: 'payMethod', header: '결제수단', widthClass: 'w-[20%]', cellClass: 'truncate text-gray-500', render: (r) => r.payMethod ?? '-' },
   {
-    key: 'failReason', header: '비고', cellClass: 'max-w-[160px] truncate text-gray-500',
+    key: 'failReason', header: '비고', widthClass: 'w-[36%]', cellClass: 'truncate text-gray-500',
     render: (r) => <span title={r.failReason}>{r.failReason ?? '-'}</span>,
   },
 ];
@@ -35,8 +37,8 @@ const COLUMNS = [
 const renderCard = (r) => (
   <>
     <div className="flex items-center justify-between gap-2">
-      {badge(r.status)}
-      <span className="text-xs text-gray-400 whitespace-nowrap">{r.date}</span>
+      <span className="shrink-0">{badge(r.status)}</span>
+      <span className="min-w-0 truncate text-xs text-gray-400" title={r.date}>{r.date}</span>
     </div>
     <div className="mt-1 flex items-baseline justify-between gap-2">
       <span className="text-base font-bold text-gray-900">{r.amount.toLocaleString()}P</span>

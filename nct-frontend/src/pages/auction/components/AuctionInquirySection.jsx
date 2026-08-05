@@ -1,8 +1,12 @@
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { RotateCcw, Send } from 'lucide-react';
+import { Check, Pencil, RotateCcw, Send, X } from 'lucide-react';
 import { fetchActiveManualAbuseReportReferences } from '@api/abuseReportApi';
-import { fetchProductInquiries, postProductInquiry } from '@api/productApi';
+import {
+  fetchProductInquiries,
+  postProductInquiry,
+  updateProductInquiry,
+} from '@api/productApi';
 import Pagination from '@components/common/Pagination';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 
@@ -49,6 +53,7 @@ const AuctionInquirySection = ({
   productId,
   isAuthenticated,
   isOwnAuction,
+  currentUserId,
   enabled = true,
   onLoginRequired,
   onToast,
@@ -56,6 +61,9 @@ const AuctionInquirySection = ({
   const queryClient = useQueryClient();
   const [content, setContent] = useState('');
   const [page, setPage] = useState(1);
+  const [editingInquirySn, setEditingInquirySn] = useState(null);
+  const [editingContent, setEditingContent] = useState('');
+  const [editingError, setEditingError] = useState('');
   const queryKey = useMemo(() => ['productInquiries', productId], [productId]);
 
   const inquiryQuery = useQuery({
@@ -79,6 +87,27 @@ const AuctionInquirySection = ({
     },
   });
 
+  const updateInquiryMutation = useMutation({
+    mutationFn: ({ inquirySn, inquiryContent }) => (
+      updateProductInquiry(productId, inquirySn, { cn: inquiryContent })
+    ),
+    onSuccess: async () => {
+      setEditingInquirySn(null);
+      setEditingContent('');
+      setEditingError('');
+      await queryClient.invalidateQueries({ queryKey });
+      onToast('문의가 수정되었습니다');
+    },
+    onError: async (error) => {
+      const message = error?.response?.data?.message || '문의 수정에 실패했습니다';
+      setEditingError(message);
+      onToast(message);
+      if (error?.response?.status === 409) {
+        await queryClient.invalidateQueries({ queryKey });
+      }
+    },
+  });
+
   const inquiries = useMemo(
     () => groupInquiryRows(inquiryQuery.data),
     [inquiryQuery.data],
@@ -89,6 +118,7 @@ const AuctionInquirySection = ({
     const startIndex = (currentPage - 1) * INQUIRIES_PER_PAGE;
     return inquiries.slice(startIndex, startIndex + INQUIRIES_PER_PAGE);
   }, [currentPage, inquiries]);
+
   const inquiryReferenceSns = useMemo(
     () => inquiries.map((inquiry) => inquiry.prdCmtSn).filter(Boolean),
     [inquiries],
@@ -146,6 +176,37 @@ const AuctionInquirySection = ({
     }
 
     inquiryMutation.mutate(trimmedContent);
+  };
+
+  const startEditing = (inquiry) => {
+    setEditingInquirySn(inquiry.prdCmtSn);
+    setEditingContent(inquiry.prdCmtCn || '');
+    setEditingError('');
+  };
+
+  const cancelEditing = () => {
+    if (updateInquiryMutation.isPending) return;
+    setEditingInquirySn(null);
+    setEditingContent('');
+    setEditingError('');
+  };
+
+  const handleEditSubmit = (event, inquiry) => {
+    event.preventDefault();
+    const normalizedContent = editingContent.trim();
+    if (!normalizedContent) {
+      setEditingError('문의 내용을 입력해 주세요');
+      return;
+    }
+    if (normalizedContent === (inquiry.prdCmtCn || '').trim()) {
+      setEditingError('변경된 문의 내용이 없습니다');
+      return;
+    }
+    setEditingError('');
+    updateInquiryMutation.mutate({
+      inquirySn: inquiry.prdCmtSn,
+      inquiryContent: normalizedContent,
+    });
   };
 
   return (
@@ -226,6 +287,16 @@ const AuctionInquirySection = ({
 
         {!isWaiting && !inquiryQuery.isError && inquiries.length > 0 && pagedInquiries.map((inquiry) => {
           const hasActiveReport = activeReportedReferenceSns.has(String(inquiry.prdCmtSn));
+          const isAuthor = currentUserId != null
+            && inquiry.usrSn != null
+            && String(currentUserId) === String(inquiry.usrSn);
+          const canEdit = isAuthenticated && isAuthor && !inquiry.answer;
+          const isEditing = canEdit
+            && String(editingInquirySn) === String(inquiry.prdCmtSn);
+          const normalizedEditingContent = editingContent.trim();
+          const isEditSubmitDisabled = updateInquiryMutation.isPending
+            || !normalizedEditingContent
+            || normalizedEditingContent === (inquiry.prdCmtCn || '').trim();
 
           return (
           <article className="min-h-[148px] rounded-lg border border-[#e8e8e8] bg-white p-[18px]" key={inquiry.prdCmtSn}>
@@ -239,13 +310,69 @@ const AuctionInquirySection = ({
                   </>
                 )}
               </strong>
-              <time className="text-caption whitespace-nowrap text-[#666]" dateTime={inquiry.prdCmtRegDt}>
-                {formatRegisteredAt(inquiry.prdCmtRegDt)}
-              </time>
+              <div className="flex items-center gap-3">
+                <time className="text-caption whitespace-nowrap text-[#666]" dateTime={inquiry.prdCmtRegDt}>
+                  {formatRegisteredAt(inquiry.prdCmtRegDt)}
+                </time>
+                {canEdit && !isEditing && (
+                  <button
+                    className="inline-flex min-h-8 cursor-pointer items-center justify-center gap-1 rounded-md border border-[#d8d8d8] bg-white px-2.5 text-caption font-bold text-[#555] transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-55"
+                    disabled={updateInquiryMutation.isPending}
+                    onClick={() => startEditing(inquiry)}
+                    type="button"
+                  >
+                    <Pencil aria-hidden="true" size={14} />
+                    수정
+                  </button>
+                )}
+              </div>
             </div>
-            <p className="mt-3 mb-0 whitespace-pre-wrap text-body-sm text-[#353535] [overflow-wrap:anywhere] md:text-body-md">
-              {inquiry.prdCmtCn}
-            </p>
+
+            {isEditing ? (
+              <form className="mt-3 grid gap-2.5" onSubmit={(event) => handleEditSubmit(event, inquiry)}>
+                <textarea
+                  aria-label="문의 내용 수정"
+                  autoFocus
+                  className="min-h-24 w-full resize-y rounded-lg border border-primary bg-white px-3.5 py-3 text-body-sm text-[#353535] outline-none shadow-[0_0_0_3px_#e5efff] md:text-body-md"
+                  disabled={updateInquiryMutation.isPending}
+                  maxLength={MAX_INQUIRY_LENGTH}
+                  onChange={(event) => {
+                    setEditingContent(event.target.value);
+                    if (editingError) setEditingError('');
+                  }}
+                  value={editingContent}
+                />
+                <div className="flex min-h-9 items-center justify-between gap-3 max-sm:flex-col max-sm:items-stretch">
+                  <div>
+                    <span className="text-caption tabular-nums text-[#666]">{editingContent.length}/{MAX_INQUIRY_LENGTH}</span>
+                    {editingError && <p className="mt-1 mb-0 text-caption text-[#c5221f]" role="alert">{editingError}</p>}
+                  </div>
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      className="inline-flex min-h-9 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#d8d8d8] bg-white px-3.5 text-body-sm font-bold text-[#555] disabled:cursor-not-allowed disabled:opacity-55"
+                      disabled={updateInquiryMutation.isPending}
+                      onClick={cancelEditing}
+                      type="button"
+                    >
+                      <X aria-hidden="true" size={15} />
+                      취소
+                    </button>
+                    <button
+                      className="inline-flex min-h-9 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-primary bg-primary px-3.5 text-body-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-55"
+                      disabled={isEditSubmitDisabled}
+                      type="submit"
+                    >
+                      <Check aria-hidden="true" size={15} />
+                      {updateInquiryMutation.isPending ? '저장 중' : '저장'}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            ) : (
+              <p className="mt-3 mb-0 whitespace-pre-wrap text-body-sm text-[#353535] [overflow-wrap:anywhere] md:text-body-md">
+                {inquiry.prdCmtCn}
+              </p>
+            )}
 
             {inquiry.answer ? (
               <div className="mt-4 border-l-[3px] border-[#18a36b] bg-[#f2faf6] px-4 py-3.5">
@@ -267,12 +394,13 @@ const AuctionInquirySection = ({
         })}
       </div>
 
-      <div className="[&_button]:transition-colors [&_button:not(:disabled)]:cursor-pointer [&_button:not(:disabled):hover]:border-primary [&_button:not(:disabled):hover]:bg-[#f2f7ff] [&_button:not(:disabled):hover]:text-primary-dark">
+      <div className="pt-7 max-sm:pt-6 [&_button]:transition-colors [&_button:not(:disabled)]:cursor-pointer [&_button:not(:disabled):hover]:border-primary [&_button:not(:disabled):hover]:bg-[#f2f7ff] [&_button:not(:disabled):hover]:text-primary-dark">
         <Pagination
           page={currentPage}
           totalPages={totalPages}
           onPageChange={setPage}
           showSinglePage
+          className="!my-0"
         />
       </div>
 
@@ -280,4 +408,4 @@ const AuctionInquirySection = ({
   );
 };
 
-export default AuctionInquirySection;
+export default memo(AuctionInquirySection);

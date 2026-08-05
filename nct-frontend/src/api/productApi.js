@@ -50,6 +50,10 @@ export const fetchProductInquiries = (prdSn) =>
 export const postProductInquiry = (prdSn, data) =>
   api.post(`/products/${prdSn}/inquiries`, data).then(res => res.data);
 
+/** 구매자 문의 수정 — 작성자 본인, 판매자 답변 전까지만 가능 (F-AUC-012) */
+export const updateProductInquiry = (prdSn, inquirySn, data) =>
+  api.patch(`/products/${prdSn}/inquiries/${inquirySn}`, data).then(res => res.data);
+
 /** 판매자 답변 등록 (F-AUC-012) */
 export const postInquiryReply = (prdSn, inquirySn, data) =>
   api.post(`/products/${prdSn}/inquiries/${inquirySn}/reply`, data).then(res => res.data);

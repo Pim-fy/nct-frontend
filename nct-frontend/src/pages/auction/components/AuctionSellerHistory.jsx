@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -24,13 +25,13 @@ const AuctionSellerHistory = ({
   currentAuctionId,
   sellerId,
   sellerName,
+  returnPath = '/auction',
   enabled = true,
 }) => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedPage = Number.parseInt(searchParams.get('sellerPage') ?? '1', 10);
   const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
-  const returnPath = `${location.pathname}${location.search}${location.hash}`;
 
   const changePage = (nextPage) => {
     const nextSearchParams = new URLSearchParams(searchParams);
@@ -195,4 +196,4 @@ const AuctionSellerHistory = ({
   );
 };
 
-export default AuctionSellerHistory;
+export default memo(AuctionSellerHistory);

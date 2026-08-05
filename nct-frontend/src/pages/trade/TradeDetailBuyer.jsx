@@ -388,37 +388,52 @@ const TradeDetailBuyer = ({
 
           {/* 거래 방식에 따라 배송 정보와 직거래 정보를 동시에 노출하지 않는다. */}
           {trade.method === 'DELIVERY' ? (
-            <section className="trade-detail-card">
-              <h2>배송 정보</h2>
-              <p>배송지: {trade.deliveryAddress}</p>
-              <p>
-                {trade.deliveryMessage}
-                <span className="badge badge-blue">배송 정보</span>
-              </p>
-              <p className="trade-detail-card__muted">
-                배송지와 배송 메모는 거래 시점에 고정된 정보입니다.
-              </p>
-              {deliveryProofUrls.length > 0 && (
-                <div className="trade-delivery-proof-gallery">
-                  <strong>판매자 발송 인증사진</strong>
-                  <div>
-                    {deliveryProofUrls.map((file, index) => (
-                      <button
-                        className="trade-delivery-proof-gallery__item"
-                        key={file.fileId}
-                        type="button"
-                        onClick={() => setSelectedDeliveryProofIndex(index)}
-                      >
-                        <img
-                          src={file.objectUrl}
-                          alt={`판매자 발송 인증 사진 ${index + 1} 크게 보기`}
-                        />
-                      </button>
-                    ))}
+            <>
+              <section className="trade-detail-card">
+                <h2>배송 정보</h2>
+                <p>배송지: {trade.deliveryAddress}</p>
+                <p>
+                  {trade.deliveryMessage}
+                  <span className="badge badge-blue">배송 정보</span>
+                </p>
+                <p className="trade-detail-card__muted">
+                  배송지와 배송 메모는 거래 시점에 고정된 정보입니다.
+                </p>
+                {deliveryProofUrls.length > 0 && (
+                  <div className="trade-delivery-proof-gallery">
+                    <strong>판매자 발송 인증사진</strong>
+                    <div>
+                      {deliveryProofUrls.map((file, index) => (
+                        <button
+                          className="trade-delivery-proof-gallery__item"
+                          key={file.fileId}
+                          type="button"
+                          onClick={() => setSelectedDeliveryProofIndex(index)}
+                        >
+                          <img
+                            src={file.objectUrl}
+                            alt={`판매자 발송 인증 사진 ${index + 1} 크게 보기`}
+                          />
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-            </section>
+                )}
+              </section>
+              <section className="trade-detail-card">
+                <h2>배송 진행 안내</h2>
+                <p>
+                  <span className={`trade-status ${currentStatus.className}`}>
+                    {currentStatus.label}
+                  </span>
+                </p>
+                <p>
+                  {deliveryProofUrls.length > 0
+                    ? '판매자가 발송 인증사진을 등록했습니다. 상품을 수령한 뒤 거래 완료 확인을 진행해 주세요.'
+                    : '판매자의 발송 인증을 기다리고 있습니다. 발송 정보가 등록되면 배송 정보에서 확인할 수 있습니다.'}
+                </p>
+              </section>
+            </>
           ) : (
             <>
               <section className="trade-detail-card">
