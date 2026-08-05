@@ -47,19 +47,19 @@ const MYPAGE_SECTION_QUERY_VALUES = new Set([
   "chat",
   "wallet",
   "profile",
+  "provider-profile",
   "quote",
   "review",
   "service-trade",
-  "service-chat",
   "received-review",
   "report-list",
   "report-form",
 ]);
 
 const PROVIDER_ONLY_SECTION_QUERY_VALUES = new Set([
+  "provider-profile",
   "quote",
   "service-trade",
-  "service-chat",
   "received-review",
 ]);
 
@@ -223,11 +223,8 @@ export default function MyPage({
               onOpenSection={handleSelectSection}
             />
           )}
-          {activeSection === "profile" && (
-            isProvider
-              ? <ProviderProfilePage embedded user={user} />
-              : <MyPageProfileEdit user={user} />
-          )}
+          {activeSection === "profile" && <MyPageProfileEdit user={user} />}
+          {isProvider && activeSection === "provider-profile" && <ProviderProfilePage embedded />}
           {activeSection === "active-auctions" && <MyActiveAuctionPage />}
           {activeSection === "auction-bids" && (
             selectedPurchaseTradeId ? (
@@ -279,13 +276,6 @@ export default function MyPage({
               title="서비스 거래"
               description="진행 중이거나 완료된 서비스 거래를 확인합니다."
               emptyText="아직 표시할 서비스 거래 내역이 없습니다."
-            />
-          )}
-          {isProvider && activeSection === "service-chat" && (
-            <ProviderEmbeddedSection
-              title="서비스 채팅"
-              description="서비스 요청자와 나눈 채팅방을 확인합니다."
-              emptyText="아직 표시할 서비스 채팅이 없습니다."
             />
           )}
           {isProvider && activeSection === "received-review" && <ProviderReceivedReviewSection />}

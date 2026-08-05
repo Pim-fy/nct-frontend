@@ -49,7 +49,7 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpe
           {
             key: 'profile',
             label: '프로필 관리',
-            onClick: () => openSection('profile'),
+            onClick: () => openSection('provider-profile'),
           },
           {
             key: 'general-switch',
