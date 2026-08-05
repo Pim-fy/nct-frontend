@@ -615,6 +615,7 @@ const AuctionListPage = () => {
           <section className="min-w-0 flex-1">
             <Link
               className="mb-3 hidden min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-primary bg-primary px-4 font-bold text-white no-underline transition-colors hover:border-primary-dark hover:bg-primary-dark max-md:inline-flex"
+              state={{ from: '/auction' }} /* 전역 브레드크럼 (BJN, 260805): 경매 목록 경유 표시용 */
               to="/product/register"
             >
               <Gavel aria-hidden="true" size={18} strokeWidth={2.2} />

@@ -2,18 +2,17 @@
 // 내 판매 목록 페이지 — /product/me 라우트
 // 황성경(3) 아코디언 통합 전까지 단독 페이지로 유지
 import { useNavigate } from 'react-router-dom';
-import Breadcrumb from '@components/common/Breadcrumb';
 import MyProductList from '@components/product/MyProductList';
 
 export default function MyProductListPage() {
   const navigate = useNavigate();
 
+  // 페이지 내 개별 브레드크럼은 전역 브레드크럼(UserLayout의 BreadcrumbBar)으로 대체 (BJN, 260805)
   return (
     <main className="container">
-      <Breadcrumb items={[{ label: '홈', href: '/' }, { label: '내 판매 내역' }]} />
       <div className="page-title">
         <div><h1>내 판매 내역</h1></div>
-        <button type="button" onClick={() => navigate('/product/register')} className="btn btn-outline">
+        <button type="button" onClick={() => navigate('/product/register', { state: { from: '/product/me' } })} className="btn btn-outline">
           경매 등록
         </button>
       </div>
