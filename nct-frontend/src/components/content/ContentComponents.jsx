@@ -149,6 +149,7 @@ export const ContentPagination = ({ page, totalPages, onChange, ariaLabel }) => 
     maxVisiblePages={5}
     onPageChange={onChange}
     page={page}
+    showSinglePage
     totalPages={totalPages}
   />
 );
@@ -177,6 +178,11 @@ const GuidePreviewWindow = ({ label, children }) => (
     <div className="guide-screen-preview__bar" aria-hidden="true">
       <span /><span /><span />
       <strong>{label}</strong>
+      <div className="guide-screen-preview__window-controls">
+        <span className="guide-window-control guide-window-control--minimize" />
+        <span className="guide-window-control guide-window-control--maximize" />
+        <span className="guide-window-control guide-window-control--close" />
+      </div>
       <em>예시 화면</em>
     </div>
     <div className="guide-screen-preview__body" aria-hidden="true">

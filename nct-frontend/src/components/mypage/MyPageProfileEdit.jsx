@@ -39,7 +39,7 @@ const SOCIAL_PROVIDERS = [
 
 const MYPAGE_LINK_RETURN_KEY = "mypageLinkReturn";
 
-export default function MyPageProfileEdit({ user }) {
+export default function MyPageProfileEdit({ hideHeader = false, user }) {
   const queryClient = useQueryClient();
   const { localLogout } = useAuth();
   const [form, setForm] = useState({
@@ -287,7 +287,7 @@ export default function MyPageProfileEdit({ user }) {
 
   return (
     <>
-      <MyPageContentHeader title="프로필" />
+      {!hideHeader && <MyPageContentHeader title="프로필" />}
       <div className="flex flex-col xl:flex-row gap-4 items-start">
       {/* ── 메인 정보수정 카드 ── */}
       <div className="flex-1 min-w-0 border border-[#e4e9f2] rounded-[20px] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.06)]">

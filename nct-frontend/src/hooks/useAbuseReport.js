@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { getMyReports, submitCustomerReport } from '../api/abuseReportApi';
 
 /** 내 신고 목록 — data: PageResponse { content, totalCount, page, size, hasNext } */
@@ -7,7 +12,7 @@ export function useMyReports({ status = null, page = 1, size = 5 } = {}) {
     queryKey: ['abuse-reports', 'my', { status, page, size }],
     queryFn: () => getMyReports({ status: status || undefined, page, size }),
     select: (res) => res.data,
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 }
 
