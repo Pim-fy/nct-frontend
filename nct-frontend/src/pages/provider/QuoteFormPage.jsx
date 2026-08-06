@@ -1,8 +1,12 @@
 // src/pages/provider/QuoteFormPage.jsx
 // F-SVC-005/006: 제공자 견적 제출·수정 (담당자3 황성경 소유)
-import React, { useRef, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useSubmitQuote, useUpdateQuote } from "@hooks/useQuote";
+import { getMyActiveQuote } from "@api/quoteApi";
+import { getServiceRequest } from "@api/serviceRequestApi";
+import { fetchMyProviderQuoteAccess } from "@api/providerProfileApi";
 import { uploadQuotePhoto } from "@api/quoteApi";
 import cameraIcon from "@assets/img/icon_camera.png";
 import iconImage from "@assets/img/icon_image.png";
@@ -217,21 +221,26 @@ function WorkPhotoUpload({ photos, onChange, submitted }) {
 export default function QuoteFormPage() {
   const navigate   = useNavigate();
   const location   = useLocation();
+  const [searchParams] = useSearchParams();
   const routeState = location.state || {};
 
   // router state: { svcReqSn, svcReqTitle, category, location, budget, requester }  → 신규
   //               { quoteId, svcReqSn, svcReqTitle, amount, content, reviseCnt }    → 수정
-  const isEditMode = !!routeState.quoteId;
-  const [quoteId]  = useState(routeState.quoteId || null);
-  const svcReqInfo = {
-    svcReqSn:  routeState.svcReqSn,
+  const querySvcReqSn = Number(searchParams.get("svcReqSn")) || null;
+  const queryQuoteId = Number(searchParams.get("quoteId")) || null;
+  const isEditMode = Boolean(queryQuoteId || routeState.quoteId);
+  const quoteId = queryQuoteId || routeState.quoteId || null;
+  const svcReqSn = querySvcReqSn || routeState.svcReqSn || null;
+  const [svcReqInfo, setSvcReqInfo] = useState({
+    svcReqSn,
+    catSn: routeState.catSn || null,
     title:     routeState.svcReqTitle  || FALLBACK_REQUEST.title,
     category:  routeState.category     || FALLBACK_REQUEST.category,
     sub:       routeState.sub          || FALLBACK_REQUEST.sub,
     location:  routeState.location     || FALLBACK_REQUEST.location,
     budget:    routeState.budget       || FALLBACK_REQUEST.budget,
     requester: routeState.requester    || FALLBACK_REQUEST.requester,
-  };
+  });
 
   const submitMutation = useSubmitQuote();
   const updateMutation = useUpdateQuote();
@@ -239,12 +248,14 @@ export default function QuoteFormPage() {
   const [submitted, setSubmitted] = useState(false);
   const [loading,   setLoading]   = useState(false);
   const [alertMsg,  setAlertMsg]  = useState("");
+  const [requestLoading, setRequestLoading] = useState(Boolean(svcReqSn));
+  const [requestLoadFailed, setRequestLoadFailed] = useState(false);
 
   const MAX_EDIT_COUNT = 3;
 
   const [form, setForm] = useState({
     price:    isEditMode ? String(routeState.amount  || "") : "",
-    duration: "",
+    duration: isEditMode ? (routeState.duration || "") : "",
     message:  isEditMode ? (routeState.content || "") : "",
   });
   const [prevForm, setPrevForm] = useState({ ...form });
@@ -253,6 +264,73 @@ export default function QuoteFormPage() {
   const [revisions, setRevisions] = useState([]);
   const [editCount, setEditCount] = useState(isEditMode ? (routeState.reviseCnt || 0) : 0);
   const [isQuoteSubmitted, setIsQuoteSubmitted] = useState(isEditMode);
+  const [activeQuoteLoading, setActiveQuoteLoading] = useState(isEditMode);
+  const [activeQuoteLoadFailed, setActiveQuoteLoadFailed] = useState(false);
+  const quoteAccessQuery = useQuery({
+    queryKey: ['provider', 'quote-access', svcReqInfo.catSn],
+    queryFn: () => fetchMyProviderQuoteAccess(svcReqInfo.catSn),
+    enabled: !isEditMode && !requestLoading && Number(svcReqInfo.catSn) > 0,
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (!svcReqSn) return undefined;
+    let cancelled = false;
+
+    getServiceRequest(svcReqSn)
+      .then((res) => {
+        if (cancelled || !res.data) return;
+        const request = res.data;
+        setSvcReqInfo((prev) => ({
+          ...prev,
+          svcReqSn,
+          catSn: request.catSn,
+          title: request.svcReqTtl || prev.title,
+          category: request.catNm || prev.category,
+          budget: request.svcReqBdgtAmt == null
+            ? prev.budget
+            : `${Number(request.svcReqBdgtAmt).toLocaleString('ko-KR')}원`,
+        }));
+        setRequestLoadFailed(false);
+      })
+      .catch(() => { if (!cancelled) setRequestLoadFailed(true); })
+      .finally(() => { if (!cancelled) setRequestLoading(false); });
+
+    if (isEditMode && quoteId) {
+      getMyActiveQuote(svcReqSn)
+        .then((res) => {
+          const quote = res.data;
+          if (cancelled || !quote || Number(quote.qutSn) !== Number(quoteId)) {
+            if (!cancelled) {
+              setActiveQuoteLoadFailed(true);
+              setActiveQuoteLoading(false);
+            }
+            return;
+          }
+          setForm((prev) => ({
+            ...prev,
+            price: quote.amount == null ? prev.price : String(quote.amount),
+            duration: quote.duration || prev.duration,
+            message: quote.content || '',
+          }));
+          setPrevForm((prev) => ({
+            ...prev,
+            price: quote.amount == null ? prev.price : String(quote.amount),
+            duration: quote.duration || prev.duration,
+            message: quote.content || '',
+          }));
+          setEditCount(quote.reviseCnt || 0);
+          setActiveQuoteLoading(false);
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setActiveQuoteLoadFailed(true);
+            setActiveQuoteLoading(false);
+          }
+        });
+    }
+    return () => { cancelled = true; };
+  }, [svcReqSn, isEditMode, quoteId]);
 
   const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
   const fmt = n => (n ? Number(n).toLocaleString() : "");
@@ -293,6 +371,33 @@ export default function QuoteFormPage() {
   const [editSuccessMsg, setEditSuccessMsg] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [cancelConfirm, setCancelConfirm] = useState(false);
+
+  if (!svcReqSn) {
+    return (
+      <main className="container seller-page">
+        <section className="card mx-auto max-w-[640px] py-12 text-center">
+          <p className="m-0 text-[22px] font-bold text-[#1d1d1f]">서비스 요청을 먼저 선택해 주세요.</p>
+          <button type="button" className="btn btn-primary mt-6" onClick={() => navigate('/service')}>서비스 요청 목록으로</button>
+        </section>
+      </main>
+    );
+  }
+
+  if (requestLoading || (isEditMode && activeQuoteLoading) || (!isEditMode && quoteAccessQuery.isLoading)) {
+    return <main className="container seller-page"><section className="card mx-auto max-w-[640px] py-12 text-center">견적 정보를 확인하는 중입니다.</section></main>;
+  }
+
+  if (requestLoadFailed || activeQuoteLoadFailed || (!isEditMode && (quoteAccessQuery.isError || quoteAccessQuery.data !== true))) {
+    return (
+      <main className="container seller-page">
+        <section className="card mx-auto max-w-[640px] py-12 text-center">
+          <p className="m-0 text-[22px] font-bold text-[#1d1d1f]">견적을 작성할 수 없습니다.</p>
+          <p className="mb-6 mt-3 text-base text-[#686762]">공개 요청과 제공자 카테고리 승인 상태를 확인해 주세요.</p>
+          <button type="button" className="btn btn-primary" onClick={() => navigate(`/service-requests/${svcReqSn}`)}>요청 상세로 돌아가기</button>
+        </section>
+      </main>
+    );
+  }
 
   const hasChanges = () =>
     form.price !== prevForm.price ||
@@ -343,7 +448,7 @@ export default function QuoteFormPage() {
     try {
       const photoFlSns = await uploadNewPhotos();
       await submitMutation.mutateAsync({
-        svcReqSn:  svcReqInfo.svcReqSn,
+        svcReqSn,
         amount:    Number(form.price),
         content:   form.message,
         duration:  form.duration,
@@ -490,7 +595,9 @@ export default function QuoteFormPage() {
                 견적 수정
               </button>
             )}
-            <button type="button" className="btn btn-danger" onClick={() => setCancelConfirm(true)}>견적 취소</button>
+            <button type="button" className="btn btn-outline" onClick={() => setCancelConfirm(true)}>
+              {isEditMode ? '수정 취소' : '작성 취소'}
+            </button>
           </div>
 
         </aside>
@@ -527,7 +634,10 @@ export default function QuoteFormPage() {
               type="button"
               className="btn btn-primary"
               style={{ marginTop: 24, width: "100%" }}
-              onClick={() => setEditSuccessMsg("")}
+              onClick={() => {
+                setEditSuccessMsg("");
+                navigate("/user/mypage?section=quote");
+              }}
             >
               확인
             </button>
@@ -558,7 +668,10 @@ export default function QuoteFormPage() {
               type="button"
               className="btn btn-primary"
               style={{ marginTop: 24, width: "100%" }}
-              onClick={() => { setSubmitSuccess(false); navigate("/provider/quotes"); }}
+              onClick={() => {
+                setSubmitSuccess(false);
+                navigate("/user/mypage?section=quote");
+              }}
             >
               확인
             </button>

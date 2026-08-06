@@ -8,6 +8,11 @@ export const updateMyProviderProfile = ({ introduction, availableArea }) =>
   api.put('/providers/me/profile', { introduction, availableArea })
     .then((response) => response.data.data);
 
+/** 제공자 본인의 카테고리별 견적 작성 승인 여부를 서버 기준으로 확인한다. */
+export const fetchMyProviderQuoteAccess = (categorySn) =>
+  api.get(`/providers/me/categories/${categorySn}/quote-access`)
+    .then((response) => response.data.data);
+
 export const fetchPublicProviderProfile = (providerUserSn) =>
   api.get(`/providers/${providerUserSn}/profile`).then((response) => response.data.data);
 

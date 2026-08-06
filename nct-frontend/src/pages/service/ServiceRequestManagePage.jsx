@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
 import { getServiceRequest } from '@api/serviceRequestApi';
-import { getReceivedQuotes } from '@api/quoteApi';
+import { getReceivedQuotes, selectQuoteAndCreateTrade } from '@api/quoteApi';
 import ErrorMessage from '@components/common/ErrorMessage';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
 
@@ -39,6 +39,25 @@ export default function ServiceRequestManagePage() {
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectingQuoteId, setSelectingQuoteId] = useState(null);
+
+  const handleSelectQuote = async (quote) => {
+    if (!['QUTC0001', 'QUTC0002'].includes(quote.statusCode)) return;
+    if (!window.confirm('이 견적을 선택하면 거래와 보관금이 생성됩니다. 계속하시겠습니까?')) return;
+
+    setSelectingQuoteId(quote.qutSn);
+    setError('');
+    try {
+      const response = await selectQuoteAndCreateTrade(svcReqSn, quote.qutSn);
+      const tradeId = response.data?.tradeId;
+      if (!tradeId) throw new Error('거래 생성 결과를 확인할 수 없습니다.');
+      navigate(`/service-trades/${tradeId}`);
+    } catch (selectionError) {
+      setError(selectionError.response?.data?.message || '견적 선택에 실패했습니다. 다시 시도해 주세요.');
+    } finally {
+      setSelectingQuoteId(null);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -149,9 +168,9 @@ export default function ServiceRequestManagePage() {
                   </div>
                   <button
                     type="button"
-                    title="준비 중인 기능입니다"
-                    disabled
-                    className="shrink-0 cursor-not-allowed rounded-lg bg-[#e2e1dc] px-4 py-2.5 text-lg font-semibold text-[#9a9ba5]"
+                    onClick={() => handleSelectQuote(q)}
+                    disabled={!['QUTC0001', 'QUTC0002'].includes(q.statusCode) || selectingQuoteId != null}
+                    className="shrink-0 rounded-lg bg-primary px-4 py-2.5 text-lg font-semibold text-white transition-colors hover:bg-[#0048bf] disabled:cursor-not-allowed disabled:bg-[#e2e1dc] disabled:text-[#9a9ba5]"
                   >
                     선택하기
                   </button>
