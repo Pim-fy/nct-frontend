@@ -29,7 +29,7 @@ export const MYPAGE_SECTION_LABELS = {
   chat: '채팅',
   wallet: '포인트 지갑',
   profile: '프로필',
-  quote: '내 견적',
+  quote: '견적 제출 내역',
   review: '내 리뷰',
   'service-trade': '서비스 거래',
   'service-chat': '서비스 채팅',
@@ -85,7 +85,7 @@ export const BREADCRUMB_ENTRIES = [
   },
   {
     pattern: '/provider/quotes',
-    trail: () => [{ label: '내 견적', to: '/provider/quotes' }],
+    trail: () => [{ label: '견적 제출 내역', to: '/provider/quotes' }],
   },
   {
     pattern: '/customersupport/notice',
@@ -230,6 +230,6 @@ export const BREADCRUMB_ROUTES = [
   {
     pattern: '/provider/quotes/new',
     pageLabel: '견적 작성',
-    defaultTrail: [{ label: '내 견적', to: '/provider/quotes' }],
+    defaultTrail: [{ label: '견적 제출 내역', to: '/provider/quotes' }],
   },
 ];

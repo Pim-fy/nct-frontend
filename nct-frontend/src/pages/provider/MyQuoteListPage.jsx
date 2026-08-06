@@ -130,8 +130,8 @@ export default function MyQuoteListPage({ embedded = false } = {}) {
   const countOf = (s) => quotes.filter((q) => q.status === s).length;
   const totalCount = quotes.length;
   const pageHeader = embedded
-    ? <MyPageContentHeader title="내 견적" />
-    : <h2 className="m-0 text-[22px] font-bold text-[#1a1a1a]">내 견적</h2>;
+    ? <MyPageContentHeader title="견적 제출 내역" />
+    : <h2 className="m-0 text-[22px] font-bold text-[#1a1a1a]">견적 제출 내역</h2>;
 
   const handleEdit = (quote) => {
     if (quote.editCount >= 3) {

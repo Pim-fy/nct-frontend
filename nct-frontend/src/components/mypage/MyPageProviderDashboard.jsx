@@ -1,8 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
 import { getUserReviews } from '@api/reviewApi';
 import { useMyProviderProfile } from '@hooks/useProviderProfile';
-import { useNotifications } from '@hooks/useNotification';
 import { usePointBalance } from '@hooks/usePoint';
 import { useMyQuotes } from '@hooks/useQuote';
 import { assets } from '@components/mypage/assets';
@@ -14,9 +12,7 @@ import {
 import ProviderApprovedCategorySection from '@components/mypage/ProviderApprovedCategorySection';
 
 export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpenSection }) {
-  const navigate = useNavigate();
   const profileQuery = useMyProviderProfile();
-  const notificationsQuery = useNotifications();
   const pointBalanceQuery = usePointBalance();
   const quotesQuery = useMyQuotes({ page: 1, size: 1 });
 
@@ -31,8 +27,6 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpe
     }).then((response) => response?.data ?? response),
     enabled: Number.isSafeInteger(providerUserSn) && providerUserSn > 0,
   });
-  const notifications = notificationsQuery.data ?? [];
-  const unreadNotifications = notifications.filter((notification) => !notification.read);
   const pointBalance = pointBalanceQuery.data;
   const receivedReviews = receivedReviewsQuery.data?.content ?? [];
   const nickname = user?.nickname || '제공자';
@@ -59,9 +53,6 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpe
             onClick: onSwitchToGeneral,
           },
         ]}
-        notifications={unreadNotifications}
-        notificationsLoading={notificationsQuery.isLoading}
-        onOpenNotifications={() => navigate('/user/notification')}
       />
 
       <MyPageDashboardSummaryCards
@@ -97,18 +88,18 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpe
             key: 'service',
             color: '#005eb5',
             icon: assets.iconService,
-            label: '서비스 현황',
+            label: '견적 진행 내역',
             value: '—',
-            meta: '진행 중인 서비스를 확인합니다.',
+            meta: '견적 진행 내역을 확인합니다.',
             onMore: () => openSection('service-trade'),
           },
           {
             key: 'done',
             color: '#e63946',
             icon: assets.iconEnd2,
-            label: '완료 서비스',
+            label: '완료 견적',
             value: '—',
-            meta: '완료된 서비스 내역을 확인합니다.',
+            meta: '완료된 견적 내역을 확인합니다.',
             onMore: () => openSection('service-trade'),
           },
         ]}

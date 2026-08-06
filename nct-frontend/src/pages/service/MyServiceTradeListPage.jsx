@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { BriefcaseBusiness } from 'lucide-react';
 import { getMyServiceTrades } from '@api/serviceTradeApi';
@@ -19,7 +19,8 @@ const FILTERS = [
   { label: '진행 중', value: 'TRDC0003' },
   { label: '완료 확인', value: 'TRDC0005' },
   { label: '보류', value: 'TRDC0007' },
-  { label: '종료', value: 'CLOSED' },
+  { label: '거래 완료', value: 'TRDC0006' },
+  { label: '거래 취소', value: 'TRDC0008' },
 ];
 
 const STATUS_BADGE = {
@@ -46,50 +47,41 @@ const formatDate = (value) => {
   }).format(date);
 };
 
-const matchesFilter = (trade, filter) => {
-  if (filter === 'ALL') return true;
-  if (filter === 'CLOSED') {
-    return trade.tradeStatusCode === 'TRDC0006' || trade.tradeStatusCode === 'TRDC0008';
-  }
-  return trade.tradeStatusCode === filter;
-};
-
 export default function MyServiceTradeListPage({ fixedRole = null }) {
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState('ALL');
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
   const listQuery = useQuery({
-    queryKey: ['my-service-trades', fixedRole ?? 'ALL'],
-    queryFn: () => getMyServiceTrades({ role: fixedRole }),
+    queryKey: ['my-service-trades', fixedRole ?? 'ALL', activeFilter, keyword, { page, size: PAGE_SIZE }],
+    queryFn: () => getMyServiceTrades({
+      role: fixedRole,
+      status: activeFilter === 'ALL' ? undefined : activeFilter,
+      keyword,
+      page,
+      size: PAGE_SIZE,
+    }),
     staleTime: 30 * 1000,
   });
-
-  const trades = useMemo(() => (
-    Array.isArray(listQuery.data) ? listQuery.data : []
-  ), [listQuery.data]);
-  const normalizedKeyword = keyword.trim().toLowerCase();
-  const filteredTrades = useMemo(() => trades.filter((trade) => {
-    if (!matchesFilter(trade, activeFilter)) return false;
-    if (!normalizedKeyword) return true;
-
-    return [
-      trade.serviceRequestTitle,
-      trade.quoteSummary,
-      trade.counterpartNickname,
-    ].some((value) => String(value ?? '').toLowerCase().includes(normalizedKeyword));
-  }), [activeFilter, normalizedKeyword, trades]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredTrades.length / PAGE_SIZE));
+  const countQueries = useQueries({
+    queries: FILTERS.map((filter) => ({
+      queryKey: ['my-service-trades', fixedRole ?? 'ALL', filter.value, 'count'],
+      queryFn: () => getMyServiceTrades({
+        role: fixedRole,
+        status: filter.value === 'ALL' ? undefined : filter.value,
+        page: 1,
+        size: 1,
+      }),
+      staleTime: 30 * 1000,
+    })),
+  });
+  const countByFilter = Object.fromEntries(FILTERS.map((filter, index) => [
+    filter.value,
+    countQueries[index].data?.totalCount ?? 0,
+  ]));
+  const visibleTrades = listQuery.data?.content ?? [];
+  const totalPages = Math.max(1, listQuery.data?.totalPages ?? 0);
   const visiblePage = Math.min(page, totalPages);
-  const visibleTrades = filteredTrades.slice(
-    (visiblePage - 1) * PAGE_SIZE,
-    visiblePage * PAGE_SIZE,
-  );
-  const countByStatus = (statusCode) => (
-    trades.filter((trade) => trade.tradeStatusCode === statusCode).length
-  );
-  const filterCount = (filter) => trades.filter((trade) => matchesFilter(trade, filter)).length;
 
   const handleFilterChange = (value) => {
     setActiveFilter(value);
@@ -102,36 +94,36 @@ export default function MyServiceTradeListPage({ fixedRole = null }) {
   };
 
   return (
-    <section aria-label="서비스 거래 목록">
+    <section aria-label="견적 진행 내역 목록">
       <MyPageListSectionLayout
-        title="서비스 거래"
+        title="견적 진행 내역"
         summaryItems={[
-          { label: '진행 중', value: countByStatus('TRDC0003') },
-          { label: '완료 확인', value: countByStatus('TRDC0005') },
-          { label: '거래 완료', value: countByStatus('TRDC0006') },
+          { label: '진행 중', value: countByFilter.TRDC0003 },
+          { label: '완료 확인', value: countByFilter.TRDC0005 },
+          { label: '거래 완료', value: countByFilter.TRDC0006 },
         ]}
         filterItems={FILTERS.map((filter) => ({
           ...filter,
-          count: filterCount(filter.value),
+          count: countByFilter[filter.value],
         }))}
         activeFilter={activeFilter}
         onFilterChange={handleFilterChange}
-        filterAriaLabel="서비스 거래 상태"
+        filterAriaLabel="견적 진행 내역 상태"
         onSearch={handleSearch}
-        searchAriaLabel="서비스 거래 검색"
+        searchAriaLabel="견적 진행 내역 검색"
         searchPlaceholder="요청 제목 또는 거래 상대 검색"
-        isLoading={listQuery.isLoading}
+        isLoading={listQuery.isLoading || countQueries.some((query) => query.isLoading)}
       />
 
       {listQuery.isLoading ? (
         <MyPageListSkeleton count={4} />
       ) : listQuery.isError ? (
         <MyPageListError
-          message="서비스 거래 목록을 불러오지 못했습니다."
+          message="견적 진행 내역을 불러오지 못했습니다."
           onRetry={() => listQuery.refetch()}
         />
       ) : visibleTrades.length === 0 ? (
-        <MyPageListEmpty message="해당 조건의 서비스 거래가 없습니다." />
+        <MyPageListEmpty message="해당 조건의 견적 진행 내역이 없습니다." />
       ) : (
         <>
           <div className="history-list">
@@ -148,7 +140,7 @@ export default function MyServiceTradeListPage({ fixedRole = null }) {
                       {status.label}
                     </MyPageStatusBadge>
                   )}
-                  title={trade.serviceRequestTitle || '서비스 거래'}
+                  title={trade.serviceRequestTitle || '견적 진행 내역'}
                   actions={(
                     <button
                       type="button"

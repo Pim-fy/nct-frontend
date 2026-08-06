@@ -553,7 +553,7 @@ export default function QuoteFormPage() {
           >
             <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
             <p style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 700, color: "#111" }}>견적이 제출되었습니다.</p>
-            <p style={{ margin: 0, fontSize: 15, color: "#555" }}>내 견적 목록에서 확인하실 수 있습니다.</p>
+            <p style={{ margin: 0, fontSize: 15, color: "#555" }}>견적 제출 내역에서 확인하실 수 있습니다.</p>
             <button
               type="button"
               className="btn btn-primary"
