@@ -16,6 +16,7 @@ import MediaDetailSkeleton from '@components/skeleton/MediaDetailSkeleton';
 import Toast from '@components/common/Toast';
 import AlertModal from '@components/common/AlertModal';
 import Pagination from '@components/common/Pagination';
+import ImageLightbox from '@components/common/ImageLightbox';
 
 const CANCEL_REASONS = ['상품 상태 변경', '상품 정보 오류', '판매 진행 불가', '기타'];
 const INQUIRIES_PAGE_SIZE = 4;
@@ -48,6 +49,7 @@ export default function ProductDetailSellerPage() {
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState('');
   const [imgIdx, setImgIdx]             = useState(0); // 상품 이미지 슬라이드 현재 인덱스
+  const [lightboxOpen, setLightboxOpen] = useState(false); // 상품 이미지 확대뷰
 
   const now = useCountdown(!!auctionStatus?.aucEndDt);
   const remainTime = (() => {
@@ -256,6 +258,8 @@ export default function ProductDetailSellerPage() {
     : isEnded   ? '유찰 건은 거래와 정산이 생성되지 않습니다.'
     : '임시저장 상품은 경매 설정 완료 후 공개됩니다.';
 
+  const productImages = product.imageList?.length > 0 ? product.imageList : (product.prdImgUrl ? [{ url: product.prdImgUrl }] : []);
+
   return (
     <main className="container">
       <div className="seller-auction-head" style={{ marginBottom: 16, marginTop: 24 }}>
@@ -289,13 +293,18 @@ export default function ProductDetailSellerPage() {
           <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
           <div className="seller-product" style={{ alignItems: 'flex-start' }}>
             {(() => {
-              const images = product.imageList?.length > 0 ? product.imageList : (product.prdImgUrl ? [{ url: product.prdImgUrl }] : []);
+              const images = productImages;
               const hasMultiple = images.length > 1;
               const current = images[imgIdx];
               return (
                 <div className="seller-product-img" style={{ position: 'relative' }}>
                   {current && (
-                    <img src={toImageUrl(current.url)} alt={product.prdNm} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} />
+                    <img
+                      src={toImageUrl(current.url)}
+                      alt={product.prdNm}
+                      onClick={() => setLightboxOpen(true)}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8, cursor: 'pointer' }}
+                    />
                   )}
                   {imgIdx === 0 && current && (
                     <span style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,100,255,0.82)', color: '#fff', fontSize: 11, fontWeight: 700, textAlign: 'center', padding: '3px 0', borderBottomLeftRadius: 8, borderBottomRightRadius: 8 }}>대표이미지</span>
@@ -653,6 +662,12 @@ export default function ProductDetailSellerPage() {
 
       {toast && <Toast message={toast} onClose={() => setToast('')} />}
       <AlertModal open={!!alertMsg} message={alertMsg} onClose={() => setAlertMsg('')} />
+      <ImageLightbox
+        images={productImages.map(img => toImageUrl(img.url))}
+        initialIndex={imgIdx}
+        open={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+      />
     </main>
   );
 }
