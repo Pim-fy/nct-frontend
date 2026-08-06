@@ -11,19 +11,6 @@ const toNumber = (value, fallback = 0) => {
   return Number.isFinite(number) ? number : fallback;
 };
 
-const toStringArray = (value) => {
-  if (Array.isArray(value)) {
-    return value
-      .map((item) => (typeof item === 'string'
-        ? item
-        : firstDefined(item?.categoryName, item?.catNm, item?.name)))
-      .filter(Boolean)
-      .map(String);
-  }
-  if (!value) return [];
-  return String(value).split(',').map((item) => item.trim()).filter(Boolean);
-};
-
 const normalizeRequest = (item) => ({
   id: firstDefined(item.svcReqSn, item.serviceRequestId, item.id),
   title: firstDefined(item.svcReqTtl, item.title, ''),
@@ -39,19 +26,7 @@ const normalizeRequest = (item) => ({
   imageUrl: firstDefined(item.thumbnailUrl, item.imageUrl, item.imageList?.[0]?.url, ''),
 });
 
-const normalizeProvider = (item) => ({
-  id: firstDefined(item.providerUserSn, item.usrSn, item.providerId, item.id),
-  name: firstDefined(item.providerName, item.usrNm, item.name, ''),
-  introduction: firstDefined(item.prvPrfIntroCn, item.introduction, item.intro, ''),
-  availableArea: firstDefined(item.prvPrfAreaNm, item.availableArea, item.region, ''),
-  categoryNames: toStringArray(firstDefined(item.categoryNames, item.categories)),
-  rating: firstDefined(item.reviewAverageScore, item.averageRating, item.rating),
-  reviewCount: firstDefined(item.reviewCount, 0),
-  completedCount: firstDefined(item.completedCount, item.tradeCount),
-  verified: true,
-});
-
-const normalizeDiscoveryResult = (payload, view, requestedPage, requestedSize) => {
+const normalizeDiscoveryResult = (payload, requestedPage, requestedSize) => {
   const source = payload ?? {};
   const pageSource = source.page && typeof source.page === 'object' ? source.page : source;
   const rawItems = firstDefined(
@@ -76,62 +51,45 @@ const normalizeDiscoveryResult = (payload, view, requestedPage, requestedSize) =
   )));
   const rawResponsePage = toNumber(
     firstDefined(source.pageNumber, pageSource.number, source.page),
-    view === 'providers' ? requestedPage - 1 : requestedPage,
+    requestedPage,
   );
-  const responsePage = view === 'providers' ? rawResponsePage + 1 : rawResponsePage;
   const counts = source.counts ?? {};
 
   return {
-    items: rawItems.map(view === 'providers' ? normalizeProvider : normalizeRequest),
+    items: rawItems.map(normalizeRequest),
     total,
     totalPages,
-    page: responsePage,
+    page: rawResponsePage,
     size: toNumber(firstDefined(source.size, pageSource.size), requestedSize),
     counts: {
-      requests: firstDefined(counts.requests, source.requestCount, view === 'requests' ? total : null),
-      providers: firstDefined(counts.providers, source.providerCount, view === 'providers' ? total : null),
+      requests: firstDefined(counts.requests, source.requestCount, total),
     },
-    view,
+    view: 'requests',
   };
 };
 
 export const fetchServiceDiscovery = async ({
-  view = 'requests',
   keyword = '',
   categorySn = '',
-  region = '',
   minBudget = 0,
   maxBudget = 0,
   sort = '',
   page = 1,
   size = 12,
 }) => {
-  const isProviderView = view === 'providers';
-  const viewSpecificParams = isProviderView
-    ? {
-        region: region.trim() || undefined,
-      }
-    : {
-        minBudget: minBudget || undefined,
-        maxBudget: maxBudget || undefined,
-      };
-  const resource = isProviderView
-    ? '/service-discovery/providers'
-    : '/service-requests';
-  const response = await api.get(resource, {
+  const response = await api.get('/service-requests', {
     params: {
       keyword: keyword.trim() || undefined,
       categorySn: categorySn || undefined,
-      ...viewSpecificParams,
+      minBudget: minBudget || undefined,
+      maxBudget: maxBudget || undefined,
       sort: sort || undefined,
-      page: isProviderView ? Math.max(0, page - 1) : Math.max(1, page),
+      page: Math.max(1, page),
       size,
     },
-    // 제공자 프로필 검색은 공개 계약이고, 서비스 요청 검색은 제공자 인증 계약이다.
-    skipAuthRefresh: isProviderView,
     skipServerErrorRedirect: true,
   });
-  return normalizeDiscoveryResult(response.data.data, view, page, size);
+  return normalizeDiscoveryResult(response.data.data, page, size);
 };
 
 export const fetchPublicProviderProfile = async (providerId) => {

@@ -351,7 +351,7 @@ export default function MyPageDashboard({
     ],
     title: item.title || `경매 #${item.auctionId}`,
     meta: item.currentPrice
-      ? `현재가 ${Number(item.currentPrice).toLocaleString()}원`
+      ? `현재가 ${Number(item.currentPrice).toLocaleString()}P`
       : "현재가 -",
     section: "active-auctions",
   }));

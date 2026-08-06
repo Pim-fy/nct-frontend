@@ -1,5 +1,5 @@
 import { Flag, Heart } from 'lucide-react';
-import { formatNumber, formatPrice } from '@utils/common';
+import { formatNumber, formatPoint } from '@utils/common';
 import { resolveTradeMethodLabel } from '../utils/auctionFormatters';
 
 const BID_UNIT_MULTIPLIERS = [1, 5, 10];
@@ -111,7 +111,7 @@ const AuctionBidPanel = ({
       : (isPointBalanceLoading
         ? '조회 중'
         : (isPointBalanceError ? '확인 불가' : '-')));
-  const currentPriceLabel = formatPrice(currentPrice);
+  const currentPriceLabel = formatPoint(currentPrice);
   const currentPriceSize = `${100 / Math.max(currentPriceLabel.length * 0.62, 1)}cqi`;
   const remainingTimeSize = `${100 / Math.max(String(remainingTime).length * 0.66, 1)}cqi`;
   const isEndedAuction = auction.auctionStatusCode === AUCTION_STATUS.ENDED;
@@ -383,7 +383,7 @@ const AuctionBidPanel = ({
               </div>
               <div className="grid gap-1.5">
                 <span className="text-caption text-[#666]">
-                  입찰 단위 <strong className="ml-1 text-[#1d1d1f]">{formatPrice(bidUnitPrice)}</strong>
+                  입찰 단위 <strong className="ml-1 text-[#1d1d1f]">{formatPoint(bidUnitPrice)}</strong>
                 </span>
                 <div className="grid grid-cols-3 gap-2" role="group" aria-label="입찰 단위 배수 선택">
                   {BID_UNIT_MULTIPLIERS.map((multiplier) => (
@@ -408,7 +408,7 @@ const AuctionBidPanel = ({
                 id="bidAmountPolicy"
                 role={showBidAmountUnitError ? 'alert' : undefined}
               >
-                {formatPrice(bidUnitPrice)} 단위에 맞는 금액을 입력해 주세요
+                {formatPoint(bidUnitPrice)} 단위에 맞는 금액을 입력해 주세요
               </p>
               <div className="grid min-h-7 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2.5 text-caption text-[#666]">
                 <span>사용 가능 포인트</span>
@@ -492,7 +492,7 @@ const AuctionBidPanel = ({
                           : (isBuyNowPointInsufficient
                             ? '포인트 부족'
                             : (isBuyNowAvailable
-                              ? `즉시구매 ${formatPrice(auction.instantBuyPrice)}`
+                              ? `즉시구매 ${formatPoint(auction.instantBuyPrice)}`
                               : '즉시구매 불가'))}
                       </button>
                     </>

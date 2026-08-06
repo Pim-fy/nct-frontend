@@ -277,7 +277,7 @@ const AppRoutes = () => {
 
       <Route element={<ProtectedRoute allowedRoles={['ROLE_SERVICE']} />}>
         <Route element={<UserLayout />}>
-          {/* 담당자 7 통합: 공개 요청 검색·목록은 제공자 모드 전용입니다. */}
+          {/* 담당자 5 · F-COM-002: 공개 요청 검색·목록은 제공자 모드 전용입니다. */}
           <Route path="/service" element={<ServiceListPage />} />
           <Route path="/service-requests/:svcReqSn/quotes/new" element={<QuoteFormPage />} />
           <Route path="/service-requests/:svcReqSn/quotes/:quoteId/edit" element={<QuoteFormPage />} />

@@ -28,7 +28,7 @@ const SettlementSummaryCards = ({ rows }) => {
         >
           <h3 className="text-base font-bold text-gray-900 m-0">{card.label}</h3>
           <p className={`text-2xl font-bold mt-2 mb-0 ${card.text}`}>
-            {card.count}건 / {card.amount.toLocaleString()}원
+            {card.count}건 / {card.amount.toLocaleString()}P
           </p>
         </div>
       ))}

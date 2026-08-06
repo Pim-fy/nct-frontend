@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import { formatPrice } from '@utils/common';
+import { formatPoint } from '@utils/common';
 
 const AuctionBuyNowModal = ({
   isOpen,
@@ -41,7 +41,7 @@ const AuctionBuyNowModal = ({
               <strong className="text-[#1d1d1f]">상품명</strong><span>{auction.title}</span>
             </li>
             <li className="grid grid-cols-[112px_1fr] gap-3 border-b border-[#e8e8e8] py-2.5 max-sm:grid-cols-[96px_1fr]">
-              <strong className="text-[#1d1d1f]">즉시구매가</strong><span>{formatPrice(auction.instantBuyPrice)}</span>
+              <strong className="text-[#1d1d1f]">즉시구매가</strong><span>{formatPoint(auction.instantBuyPrice)}</span>
             </li>
             <li className="grid grid-cols-[112px_1fr] gap-3 border-b border-[#e8e8e8] py-2.5 max-sm:grid-cols-[96px_1fr]">
               <strong className="text-[#1d1d1f]">거래 방식</strong><span>{selectedTradeName}</span>

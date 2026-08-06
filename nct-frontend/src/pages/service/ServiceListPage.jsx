@@ -38,7 +38,7 @@ const toPage = (value) => {
 
 const toRequestSort = (value) => (value === 'budget' ? 'budget' : 'latest');
 
-/** 담당자 7 통합 · F-COM-002: 제공자가 공개 서비스 요청을 검색하는 목록 화면입니다. */
+/** 담당자 5 · F-COM-002: 제공자가 공개 서비스 요청을 검색하는 목록 화면입니다. */
 const ServiceListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -154,15 +154,15 @@ const ServiceListPage = () => {
     ? '예산 범위를 다시 확인해 주세요.'
     : legacyCategoryMissing
       ? '선택한 서비스 카테고리를 찾을 수 없습니다.'
-      : '서비스 검색 결과를 불러오지 못했습니다.';
+      : '서비스 요청 검색 결과를 불러오지 못했습니다.';
 
   return (
     <ContentPageShell className="service-discovery-page service-list-page">
-      <Helmet><title>견적 목록 | 에누리컷</title></Helmet>
+      <Helmet><title>견적 요청 목록 | 에누리컷</title></Helmet>
 
       <HeaderSearchPortal>
         <HeaderSearchWithHistory
-          storageKey="nct:service-search-history"
+          storageKey="nct:service-request-search-history"
           dropdownId="service-search-history"
           value={keywordDraft}
           onChange={setKeywordDraft}

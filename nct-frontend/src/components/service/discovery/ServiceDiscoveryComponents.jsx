@@ -17,7 +17,7 @@ const FILTER_INPUT_CLASS = 'min-h-10 w-full rounded-lg border border-[#e2e1dc] b
 const formatAmount = (value) => {
   const amount = Number(value);
   return Number.isFinite(amount) && amount > 0
-    ? `${amount.toLocaleString('ko-KR')}원`
+    ? `${amount.toLocaleString('ko-KR')}P`
     : '예산 협의';
 };
 
@@ -200,7 +200,7 @@ const ServiceRequestCard = ({ request }) => {
       <h3 className="mt-3 line-clamp-2 text-h3 font-bold leading-[1.45] text-[#1a1a18] group-hover:text-primary">{request.title}</h3>
       {request.description && <p className="mt-2 line-clamp-2 text-body-md leading-[1.65] text-[#62625f]">{request.description}</p>}
       <div className="mt-auto flex items-end justify-between gap-3 border-t border-[#ececea] pt-4">
-        <strong className="text-body-lg text-[#1a1a18]">{request.budgetLabel || formatAmount(request.budgetAmount)}</strong>
+        <strong className="text-body-lg text-[#1a1a18]">{formatAmount(request.budgetAmount)}</strong>
         {request.registeredAt && (
           <span className="inline-flex shrink-0 items-center gap-1.5 text-caption text-[#666663]">
             <Clock3 aria-hidden="true" size={15} />

@@ -2,7 +2,7 @@ import { toImageUrl } from '@api/fileApi';
 
 const formatPrice = (value) => {
   const amount = Number(value);
-  return Number.isFinite(amount) ? `${amount.toLocaleString('ko-KR')}원` : '-';
+  return Number.isFinite(amount) ? `${amount.toLocaleString('ko-KR')}P` : '-';
 };
 
 const getDeadlinePresentation = (endDateTime) => {
@@ -51,8 +51,9 @@ export const toLandingServiceRequest = (request) => {
     .join(' · ');
   return {
     id: request.id,
-    price: request.budgetLabel
-      || (Number.isFinite(budget) && budget > 0 ? `${budget.toLocaleString('ko-KR')}원` : '협의'),
+    price: Number.isFinite(budget) && budget > 0
+      ? `${budget.toLocaleString('ko-KR')}P`
+      : '협의',
     title: request.title || '제목 미등록 서비스 요청',
     meta: regionAndDate,
     bidLabel: request.categoryName || '서비스',
