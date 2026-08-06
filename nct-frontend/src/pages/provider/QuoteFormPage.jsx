@@ -3,6 +3,7 @@
 import React, { useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useSubmitQuote, useUpdateQuote } from "@hooks/useQuote";
+import { uploadQuotePhoto } from "@api/quoteApi";
 import cameraIcon from "@assets/img/icon_camera.png";
 import iconImage from "@assets/img/icon_image.png";
 import { toast } from "@utils/common";
@@ -299,16 +300,28 @@ export default function QuoteFormPage() {
     form.message !== prevForm.message ||
     photosChanged();
 
+  const uploadNewPhotos = async () => {
+    const results = await Promise.all(
+      workPhotos
+        .filter(p => p.file)
+        .map(p => uploadQuotePhoto(p.file))
+    );
+    return results.map(r => r.flSn);
+  };
+
   const handleEdit = async () => {
     if (editCount >= MAX_EDIT_COUNT) { setAlertMsg("수정 가능 횟수(3회)를 초과했습니다."); return; }
     if (!hasChanges()) { setAlertMsg("변경된 내용이 없습니다."); return; }
     if (!validate()) return;
     setLoading(true);
     try {
+      const photoFlSns = await uploadNewPhotos();
       await updateMutation.mutateAsync({
         quoteId,
-        amount:  Number(form.price),
-        content: form.message,
+        amount:      Number(form.price),
+        content:     form.message,
+        duration:    form.duration,
+        photoFlSns,
       });
       const desc = buildDiff(prevForm, form);
       const next = editCount + 1;
@@ -328,10 +341,13 @@ export default function QuoteFormPage() {
     if (!validate()) return;
     setLoading(true);
     try {
+      const photoFlSns = await uploadNewPhotos();
       await submitMutation.mutateAsync({
-        svcReqSn: svcReqInfo.svcReqSn,
-        amount:   Number(form.price),
-        content:  form.message,
+        svcReqSn:  svcReqInfo.svcReqSn,
+        amount:    Number(form.price),
+        content:   form.message,
+        duration:  form.duration,
+        photoFlSns,
       });
       setIsQuoteSubmitted(true);
       setSubmitSuccess(true);
