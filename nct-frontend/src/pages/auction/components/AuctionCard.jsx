@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Truck, UserRound } from 'lucide-react';
 import { toImageUrl } from '@api/fileApi';
 import useCountdown from '@hooks/useCountdown';
-import { formatPrice } from '@utils/common';
+import { formatPoint } from '@utils/common';
 import {
   resolveAuctionResultLabel,
   resolveTradeMethodLabel,
@@ -68,11 +68,11 @@ const AuctionCard = ({ item }) => {
       </div>
       <div className="mt-2 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
         <strong className="whitespace-nowrap text-h3 font-extrabold text-primary-dark">
-          {formatPrice(item.currentPrice)}
+          {formatPoint(item.currentPrice)}
         </strong>
         {hasInstantBuyPrice && (
           <span className="whitespace-nowrap text-caption font-semibold text-[#85847f]">
-            / {formatPrice(instantBuyPrice)}
+            / {formatPoint(instantBuyPrice)}
           </span>
         )}
       </div>
