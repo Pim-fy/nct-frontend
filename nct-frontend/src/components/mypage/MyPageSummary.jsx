@@ -1,8 +1,14 @@
 import InlineSkeleton from '@components/skeleton/InlineSkeleton';
 
+// sm 이상에서 항목 수만큼 열을 나눈다 — 3개 고정이면 항목이 2개일 때 남은 한 칸이 비어
+// 카드가 좁아 보인다(Tailwind가 인식하도록 실제 클래스명을 그대로 나열해둔다).
+const GRID_COLS_CLASS = { 1: 'sm:grid-cols-1', 2: 'sm:grid-cols-2', 3: 'sm:grid-cols-3', 4: 'sm:grid-cols-4' };
+
 export default function MyPageSummary({ items, isLoading = false }) {
+  const gridColsClass = GRID_COLS_CLASS[items.length] ?? 'sm:grid-cols-3';
+
   return (
-    <div className="mb-5 grid grid-cols-1 border-y border-[#e9edf4] sm:grid-cols-3">
+    <div className={`mb-5 hidden grid-cols-1 border-y border-[#e9edf4] lg:grid ${gridColsClass}`}>
       {items.map((item, index) => (
         <div
           key={item.label}

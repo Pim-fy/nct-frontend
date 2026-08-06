@@ -16,16 +16,26 @@ export default function MyPageListSkeleton({ count = 4 }) {
             <div className="mb-2">
               <Skeleton width={64} height={20} borderRadius={6} />
             </div>
-            <Skeleton width="58%" height={22} borderRadius={5} />
+            <Skeleton width="58%" height={28} borderRadius={5} />
             <div className="mt-2">
-              <Skeleton width="78%" height={16} borderRadius={4} />
-            </div>
-            <div className="mt-1">
-              <Skeleton width="46%" height={16} borderRadius={4} />
+              <Skeleton width="42%" height={16} borderRadius={4} />
             </div>
           </div>
 
-          <div className="shrink-0">
+          <div className="flex shrink-0 items-center gap-6">
+            <div className="flex flex-col items-end gap-3">
+              <Skeleton width={110} height={14} borderRadius={4} />
+              <div className="flex items-end gap-4">
+                <div className="flex flex-col items-end gap-1">
+                  <Skeleton width={48} height={10} borderRadius={3} />
+                  <Skeleton width={90} height={22} borderRadius={5} />
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <Skeleton width={48} height={10} borderRadius={3} />
+                  <Skeleton width={90} height={22} borderRadius={5} />
+                </div>
+              </div>
+            </div>
             <Skeleton width={84} height={36} borderRadius={8} />
           </div>
         </article>

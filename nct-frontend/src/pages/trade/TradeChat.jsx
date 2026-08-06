@@ -15,9 +15,13 @@ import {
   toTradeChatMessage,
   toTradeChatMessages,
   toTradeChatRooms,
+  filterTradeChatRoomsForCurrentRole,
 } from '@api/tradeChatAdapter';
 import { getTradeChatWebSocketUrl } from '@api/tradeChatSocket';
+import ReportModal from '@components/common/ReportModal';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
+import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
+import { useAuth } from '@hooks/useAuth';
 import '@assets/css/trade-chat.css';
 
 const MAX_MESSAGE_LENGTH = 500;
@@ -51,6 +55,7 @@ const TradeChat = ({
   tradeId: selectedTradeId,
   showRoomList = !embedded,
 }) => {
+  const { isProvider } = useAuth();
   const { tradeId: routeTradeId } = useParams();
   const tradeId = selectedTradeId ?? routeTradeId;
   const [rooms, setRooms] = useState([]);
@@ -62,6 +67,7 @@ const TradeChat = ({
   const [messageInput, setMessageInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const [error, setError] = useState('');
   const [realtimeStatus, setRealtimeStatus] = useState('IDLE');
   const [reconnectSignal, setReconnectSignal] = useState(0);
@@ -106,8 +112,11 @@ const TradeChat = ({
       const roomParams = showRoomList ? {} : { tradeId };
       const roomResponse = await getTradeChatRooms(roomParams, { preview });
       const hiddenRoomIds = getHiddenRoomIds();
-      const loadedRooms = toTradeChatRooms(roomResponse).filter(
-        (room) => !hiddenRoomIds.has(room.roomId),
+      const loadedRooms = filterTradeChatRoomsForCurrentRole(
+        toTradeChatRooms(roomResponse).filter(
+          (room) => !hiddenRoomIds.has(room.roomId),
+        ),
+        isProvider,
       );
       const selectedRoom = loadedRooms.find(
         (room) => String(room.tradeId) === String(tradeId),
@@ -146,7 +155,7 @@ const TradeChat = ({
     } finally {
       setIsLoading(false);
     }
-  }, [preview, showRoomList, tradeId]);
+  }, [isProvider, preview, showRoomList, tradeId]);
 
   // 방을 선택하면 서버가 상대방 메시지를 읽음 처리한 최신 목록을 다시 받아 온다.
   const selectChatRoom = useCallback(async (roomId) => {
@@ -242,24 +251,32 @@ const TradeChat = ({
   // 목록에 있는 모든 진행 중 방을 함께 구독해, 열지 않은 방의 미확인 수도 즉시 갱신한다.
   // 미리보기는 서버 연결 없이 목업 데이터를 쓰므로 기존 화면 동작만 유지한다.
   useEffect(() => {
-    if (preview || subscribedRoomIds.length === 0) {
-      setRealtimeStatus('IDLE');
-      return undefined;
+    if (preview || subscribedRoomIdsKey === '') {
+      const idleStatusTimer = window.setTimeout(() => {
+        setRealtimeStatus('IDLE');
+      }, 0);
+
+      return () => window.clearTimeout(idleStatusTimer);
     }
 
     let isDisposed = false;
     let reconnectTimer;
     const socket = new WebSocket(getTradeChatWebSocketUrl());
     socketRef.current = socket;
-    setRealtimeStatus('CONNECTING');
+    const connectingStatusTimer = window.setTimeout(() => {
+      if (!isDisposed) {
+        setRealtimeStatus('CONNECTING');
+      }
+    }, 0);
 
     socket.onopen = () => {
       if (isDisposed) {
         return;
       }
 
+      window.clearTimeout(connectingStatusTimer);
       setRealtimeStatus('CONNECTED');
-      subscribedRoomIds.forEach((roomId) => {
+      subscribedRoomIdsKey.split(',').forEach((roomId) => {
         socket.send(JSON.stringify({
           type: 'SUBSCRIBE',
           roomId,
@@ -329,6 +346,7 @@ const TradeChat = ({
     return () => {
       isDisposed = true;
       window.clearTimeout(reconnectTimer);
+      window.clearTimeout(connectingStatusTimer);
       socket.close();
 
       if (socketRef.current === socket) {
@@ -470,12 +488,16 @@ const TradeChat = ({
         : 'trade-chat-page'}
     >
       <main className="container">
-        <header className="trade-chat-page__header">
-          <div>
-            <h1>거래 채팅</h1>
-            <p>거래 당사자만 이용할 수 있는 1:1 채팅입니다.</p>
-          </div>
-        </header>
+        {embedded ? (
+          <MyPageContentHeader title="채팅" />
+        ) : (
+          <header className="trade-chat-page__header">
+            <div>
+              <h1>거래 채팅</h1>
+              <p>거래 당사자만 이용할 수 있는 1:1 채팅입니다.</p>
+            </div>
+          </header>
+        )}
 
         {isLoading && (
           <div className="trade-chat-layout trade-chat-layout--with-room-list">
@@ -631,6 +653,13 @@ const TradeChat = ({
                       >
                         {activeRoom.roomStatus === 'ACTIVE' ? '대화 가능' : '채팅 불가'}
                       </span>
+                      <button
+                        className="btn btn-ghost trade-chat-conversation__report"
+                        type="button"
+                        onClick={() => setIsReportOpen(true)}
+                      >
+                        신고하기
+                      </button>
                       {showRoomList && (
                         <button
                           className="btn btn-ghost trade-chat-conversation__close trade-chat-conversation__close--desktop"
@@ -718,6 +747,17 @@ const TradeChat = ({
           </div>
         )}
       </main>
+      {activeRoom && (
+        <ReportModal
+          open={isReportOpen}
+          onClose={() => setIsReportOpen(false)}
+          targetName={activeRoom.counterpartNickname}
+          targetType="trade"
+          referenceSn={activeRoom.tradeId}
+          reportedUserSn={activeRoom.counterpartUserId}
+          contextLabel={`채팅 상대: ${activeRoom.counterpartNickname}`}
+        />
+      )}
     </div>
   );
 };

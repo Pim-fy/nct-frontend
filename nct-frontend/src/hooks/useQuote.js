@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { submitQuote, updateQuote, withdrawQuote, getMyQuotes, getQuoteHistory } from '../api/quoteApi';
 
 /** 내 견적 목록 — data: PageResponse { content, totalCount, page, size, hasNext } */
@@ -7,7 +7,7 @@ export function useMyQuotes({ page = 1, size = 50 } = {}) {
     queryKey: ['quotes', 'my', { page, size }],
     queryFn: () => getMyQuotes({ page, size }),
     select: (res) => res.data,
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 }
 
