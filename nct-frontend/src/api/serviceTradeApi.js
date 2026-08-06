@@ -1,5 +1,15 @@
 import api from './axios';
 
+/** 로그인한 의뢰자·제공자의 서비스 거래 목록을 조회한다. */
+export const getMyServiceTrades = ({ role, status } = {}) => (
+  api.get('/trades/service', {
+    params: {
+      ...(role ? { role } : {}),
+      ...(status ? { status } : {}),
+    },
+  }).then((response) => response.data.data)
+);
+
 /** 로그인한 거래 당사자의 서비스 거래 상세와 서버 판정 가능 행동을 조회한다. */
 export const getServiceTradeDetail = (tradeId) => (
   api.get(`/trades/${tradeId}/service-detail`).then((response) => response.data.data)

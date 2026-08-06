@@ -1,7 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
+import { fetchReferenceCodes } from '@api/referenceApi';
 import { getServiceTradeDetail } from '@api/serviceTradeApi';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
+import { SERVICE_TRADE_DISPUTE_TYPE_GROUP_CODE } from '@/constants/serviceTrade';
 import ServiceTradeDetailPage from './ServiceTradeDetailPage';
 
 const serviceTradeDetailQueryKey = (tradeId) => ['service-trade-detail', tradeId];
@@ -16,6 +18,16 @@ export default function ServiceTradeDetailRoutePage() {
     queryFn: () => getServiceTradeDetail(tradeId),
     enabled: isValidTradeId,
     retry: false,
+  });
+  const disputeTypesQuery = useQuery({
+    queryKey: ['reference-codes', SERVICE_TRADE_DISPUTE_TYPE_GROUP_CODE],
+    queryFn: () => fetchReferenceCodes(SERVICE_TRADE_DISPUTE_TYPE_GROUP_CODE),
+    enabled: isValidTradeId,
+    select: (codes) => codes
+      .filter((code) => code.code && code.name)
+      .map((code) => ({ code: code.code, label: code.name })),
+    staleTime: 30 * 60 * 1000,
+    retry: 1,
   });
 
   const refreshDetail = () => queryClient.invalidateQueries({
@@ -66,8 +78,12 @@ export default function ServiceTradeDetailRoutePage() {
 
   return (
     <ServiceTradeDetailPage
-      trade={detailQuery.data}
+      disputeTypes={disputeTypesQuery.data ?? []}
+      disputeTypesError={disputeTypesQuery.isError}
+      disputeTypesLoading={disputeTypesQuery.isLoading}
+      onRetryDisputeTypes={() => disputeTypesQuery.refetch()}
       onActionCompleted={refreshDetail}
+      trade={detailQuery.data}
     />
   );
 }
