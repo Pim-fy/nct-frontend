@@ -17,6 +17,7 @@ import ImageLightbox from '@components/common/ImageLightbox';
 import ErrorMessage from '@components/common/ErrorMessage';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
 import Toast from '@components/common/Toast';
+import Pagination from '@components/common/Pagination';
 import HeaderSearchPortal, {
   SimpleHeaderSearch,
 } from '@components/common/HeaderSearchPortal';
@@ -42,6 +43,8 @@ const QUOTE_STATUS_LABEL = {
   QUTC0004: '선택됨',
   QUTC0005: '철회됨',
 };
+
+const QUOTES_PAGE_SIZE = 5;
 
 function parseItem(raw) {
   const idx = raw.indexOf(': ');
@@ -207,6 +210,7 @@ export default function ServiceRequestDetailPage() {
   const [toast, setToast] = useState('');
   const [quotes, setQuotes] = useState([]);
   const [quotesLoadedRequestSn, setQuotesLoadedRequestSn] = useState(null);
+  const [quotePage, setQuotePage] = useState(1);
   const [quoteDetail, setQuoteDetail] = useState(null); // 상세 모달에 띄울 견적(클릭한 항목)
   const [quoteHistory, setQuoteHistory] = useState([]);
   const [quoteHistoryLoading, setQuoteHistoryLoading] = useState(false);
@@ -266,6 +270,7 @@ export default function ServiceRequestDetailPage() {
         if (cancelled) return;
         setQuotes(res.data ?? []);
         setQuotesLoadedRequestSn(svcReqSn);
+        setQuotePage(1);
       })
       .catch(() => {
         if (cancelled) return;
@@ -384,6 +389,8 @@ export default function ServiceRequestDetailPage() {
   const isOpen  = request.svcReqStatusCd === 'SVCC0002';
   const isMatched = request.svcReqStatusCd === 'SVCC0003';
   const canAddComment = isOwner && (isOpen || isMatched) && comments.length < 3;
+  const quoteTotalPages = Math.max(1, Math.ceil(quotes.length / QUOTES_PAGE_SIZE));
+  const pagedQuotes = quotes.slice((quotePage - 1) * QUOTES_PAGE_SIZE, quotePage * QUOTES_PAGE_SIZE);
 
   const parsedItems = (request.items ?? []).map(parseItemGroup);
   parsedItems.push({ title: MEMO_TITLE, fields: [{ label: null, value: request.svcReqCn ?? '' }] });
@@ -632,15 +639,6 @@ export default function ServiceRequestDetailPage() {
                   <h2 className="text-2xl font-bold">도착한 견적</h2>
                   <p className="mt-1 text-lg text-[#5f5e5a]">견적을 선택하면 상세 내용과 제공자 리뷰를 확인할 수 있습니다.</p>
                 </div>
-                {isOwner && quotes.length > 0 && (
-                  <button
-                    type="button"
-                    className="shrink-0 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-[#e5efff]"
-                    onClick={() => navigate(`/service-requests/${svcReqSn}/manage`)}
-                  >
-                    전체 견적목록 보기
-                  </button>
-                )}
               </div>
             </div>
 
@@ -690,29 +688,34 @@ export default function ServiceRequestDetailPage() {
                   아직 도착한 견적이 없습니다.
                 </div>
               ) : (
-                <ul className="divide-y divide-[#e8e8e8]">
-                  {quotes.map(q => (
-                    <li
-                      key={q.qutSn}
-                      className="cursor-pointer px-5 py-4 transition-colors hover:bg-[#f9fafb]"
-                      onClick={() => openQuoteDetail(q)}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <span className="font-semibold text-[#1d1d1f]">{q.providerNm}</span>
-                        <span className="shrink-0 rounded-lg bg-[#f0f0ee] px-3 py-1 text-sm font-medium text-[#5f5e5a]">
-                          {QUOTE_STATUS_LABEL[q.statusCode] ?? q.statusCode}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-xl font-bold text-primary">{fmtBudget(q.amount)}</p>
-                      {q.content && (
-                        <p className="mt-1 line-clamp-2 text-base text-[#5f5e5a]">{q.content}</p>
-                      )}
-                      {q.registeredAt && (
-                        <p className="mt-1 text-sm text-[#9a9ba5]">{fmtDate(q.registeredAt)} 제출</p>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <ul className="divide-y divide-[#e8e8e8]">
+                    {pagedQuotes.map(q => (
+                      <li
+                        key={q.qutSn}
+                        className="cursor-pointer px-5 py-4 transition-colors hover:bg-[#f9fafb]"
+                        onClick={() => openQuoteDetail(q)}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <span className="font-semibold text-[#1d1d1f]">{q.providerNm}</span>
+                          <span className="shrink-0 rounded-lg bg-[#f0f0ee] px-3 py-1 text-sm font-medium text-[#5f5e5a]">
+                            {QUOTE_STATUS_LABEL[q.statusCode] ?? q.statusCode}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xl font-bold text-primary">{fmtBudget(q.amount)}</p>
+                        {q.content && (
+                          <p className="mt-1 line-clamp-2 text-base text-[#5f5e5a]">{q.content}</p>
+                        )}
+                        {q.registeredAt && (
+                          <p className="mt-1 text-sm text-[#9a9ba5]">{fmtDate(q.registeredAt)} 제출</p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                  {quoteTotalPages > 1 && (
+                    <Pagination page={quotePage} totalPages={quoteTotalPages} onPageChange={setQuotePage} />
+                  )}
+                </>
               )
             )}
           </aside>
