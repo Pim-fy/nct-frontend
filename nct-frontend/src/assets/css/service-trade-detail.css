@@ -1,23 +1,23 @@
 .service-trade-detail-page {
   min-height: 100%;
-  padding: 34px 0 80px;
-  background: #fff;
+  padding: 44px 0 84px;
+  background: #f7f9fc;
   overflow-x: clip;
 }
 
 .service-trade-detail-page .container {
   width: calc(100% - 52px);
-  max-width: 1600px;
+  max-width: 1240px;
   margin: 0 auto;
   padding: 0;
 }
 
 .service-trade-detail-page__header {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 28px;
+  margin-bottom: 20px;
 }
 
 .service-trade-detail-page__heading {
@@ -34,7 +34,7 @@
 .service-trade-detail-page h1 {
   margin: 0;
   color: #1d1d1f;
-  font-size: var(--text-h1, 36px);
+  font-size: clamp(28px, 3vw, 36px);
   font-weight: 800;
   line-height: 1.3;
   overflow-wrap: anywhere;
@@ -42,7 +42,7 @@
 
 .service-trade-detail-page__heading > p {
   margin: 8px 0 0;
-  color: #666;
+  color: #667085;
   font-size: var(--text-body-md, 16px);
   line-height: 1.6;
 }
@@ -50,9 +50,9 @@
 .service-trade-status {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
+  min-height: 28px;
   gap: 6px;
-  padding: 2px 9px;
+  padding: 3px 10px;
   border-radius: 999px;
   font-size: 13px;
   font-weight: 700;
@@ -66,11 +66,11 @@
   background: currentColor;
 }
 
-.service-trade-status--progress { background: #edf9f1; color: #176b3a; }
-.service-trade-status--pending { background: #fff6df; color: #8a5900; }
-.service-trade-status--complete { background: #e5efff; color: #0048bf; }
-.service-trade-status--problem { background: #fff1f0; color: #b42318; }
-.service-trade-status--canceled { background: #f3f3f3; color: #666; }
+.service-trade-status--progress { background: #e8f7ed; color: #16703b; }
+.service-trade-status--pending { background: #fff4df; color: #a15c00; }
+.service-trade-status--complete { background: #e9f0ff; color: #155eef; }
+.service-trade-status--problem { background: #fff0f0; color: #ba2525; }
+.service-trade-status--canceled { background: #f2f4f7; color: #667085; }
 
 .service-trade-viewer-role {
   color: #666;
@@ -84,7 +84,7 @@
   align-items: center;
   gap: 7px;
   min-height: 42px;
-  border-radius: 6px;
+  border-radius: 10px;
 }
 
 .service-trade-progress {
@@ -93,11 +93,12 @@
   max-width: 100%;
   box-sizing: border-box;
   grid-template-columns: repeat(4, minmax(100px, 1fr));
-  margin: 0 0 18px;
-  padding: 18px 0;
+  margin: 0 0 20px;
+  padding: 8px;
   list-style: none;
-  border-top: 1px solid #e8e8e8;
-  border-bottom: 1px solid #e8e8e8;
+  border: 1px solid #e1e7f0;
+  border-radius: 16px;
+  background: #fff;
   overflow-x: auto;
 }
 
@@ -107,7 +108,8 @@
   align-items: center;
   justify-content: center;
   gap: 9px;
-  min-height: 32px;
+  min-height: 42px;
+  border-radius: 10px;
   color: #8a8a8a;
   font-size: 14px;
   font-weight: 700;
@@ -116,8 +118,8 @@
 .service-trade-progress__item:not(:last-child)::after {
   position: absolute;
   top: 50%;
-  right: -12px;
-  width: 24px;
+  right: -10px;
+  width: 20px;
   height: 1px;
   background: #dadada;
   content: '';
@@ -137,7 +139,8 @@
 }
 
 .service-trade-progress__item--active {
-  color: #0048bf;
+  background: #eef4ff;
+  color: #155eef;
 }
 
 .service-trade-progress__item--active .service-trade-progress__marker {
@@ -153,7 +156,7 @@
 
 .service-trade-detail-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
+  grid-template-columns: minmax(0, 1fr) minmax(320px, .62fr);
   align-items: start;
   gap: 16px;
 }
@@ -166,13 +169,14 @@
 
 .service-trade-panel,
 .service-trade-action-panel {
-  border: 1px solid #e8e8e8;
-  border-radius: 8px;
+  border: 1px solid #e1e7f0;
+  border-radius: 18px;
   background: #fff;
+  box-shadow: 0 10px 28px rgba(31, 54, 90, .05);
 }
 
 .service-trade-panel {
-  padding: 24px 28px;
+  padding: 24px;
 }
 
 .service-trade-panel__header,
@@ -185,7 +189,7 @@
 
 .service-trade-panel__header {
   padding-bottom: 15px;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid #e9edf4;
 }
 
 .service-trade-panel__header svg,
@@ -210,7 +214,7 @@
   gap: 24px;
   align-items: start;
   padding: 18px 0;
-  border-bottom: 1px solid #eeeeec;
+  border-bottom: 1px solid #edf0f5;
 }
 
 .service-trade-detail-list > div:last-child {
@@ -261,7 +265,8 @@
 }
 
 .service-trade-action-panel__status {
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid #e9edf4;
+  background: linear-gradient(135deg, #f7faff, #fff);
 }
 
 .service-trade-action-panel__status-heading {
@@ -271,7 +276,7 @@
 .service-trade-action-panel__status > strong {
   display: block;
   color: #1d1d1f;
-  font-size: var(--text-h3, 22px);
+  font-size: 21px;
   line-height: 1.4;
 }
 
@@ -284,8 +289,8 @@
 }
 
 .service-trade-escrow-summary {
-  border-bottom: 1px solid #e8e8e8;
-  background: #fafafa;
+  border-bottom: 1px solid #e9edf4;
+  background: #f6f9ff;
 }
 
 .service-trade-escrow-summary > div {
@@ -311,17 +316,32 @@
 
 .service-trade-detail-actions {
   display: grid;
+  gap: 14px;
+}
+
+.service-trade-detail-actions__group {
+  display: grid;
   gap: 8px;
 }
 
-.service-trade-detail-actions .btn {
+.service-trade-detail-actions__group--secondary {
+  padding-top: 14px;
+  border-top: 1px solid #e9edf4;
+}
+
+.service-trade-detail-actions__group--danger {
+  padding-top: 14px;
+  border-top: 1px solid #e9edf4;
+}
+
+.service-trade-detail-actions__group .btn {
   display: inline-flex;
   width: 100%;
   min-height: 46px;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border-radius: 7px;
+  border-radius: 10px;
 }
 
 .service-trade-detail-actions__problem {
@@ -359,7 +379,7 @@
   align-items: flex-start;
   gap: 7px;
   margin: 0 24px 22px;
-  color: #8f3a32;
+  color: #a13a31;
   font-size: 13px;
   line-height: 1.5;
 }
@@ -377,6 +397,168 @@
 .service-trade-detail-page__empty p {
   color: #666;
   line-height: 1.6;
+}
+
+/* 담당자4 서비스 거래 상세 전용 카드 구성 */
+.service-trade-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, .65fr);
+  align-items: stretch;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.service-trade-card,
+.service-trade-action-panel {
+  border: 1px solid #e1e7f0;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(31, 54, 90, .05);
+}
+
+.service-trade-card {
+  padding: 24px;
+}
+
+.service-trade-card--summary {
+  display: flex;
+  flex-direction: column;
+}
+
+.service-trade-card__header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e9edf4;
+  color: #252b3a;
+}
+
+.service-trade-card__header svg { color: #155eef; }
+.service-trade-card__header h2,
+.service-trade-action-panel__header h2 { margin: 0; font-size: 18px; font-weight: 800; }
+
+.service-trade-card--status {
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(155deg, #f8fbff 0%, #fff 56%);
+}
+
+.service-trade-card__status-label {
+  display: block;
+  margin-top: 22px;
+  color: #252b3a;
+  font-size: 24px;
+  line-height: 1.35;
+}
+
+.service-trade-card__status-description {
+  margin: 7px 0 14px;
+  color: #667085;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.service-trade-card__escrow {
+  margin-top: auto;
+  padding: 12px;
+  border: 1px solid #d9e5fb;
+  border-radius: 12px;
+  background: #f4f8ff;
+}
+
+.service-trade-card__escrow > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #49658f;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.service-trade-card__escrow > span svg { color: #155eef; }
+.service-trade-card__escrow > strong { display: block; margin-top: 5px; color: #155eef; font-size: 21px; }
+.service-trade-card__escrow > p { margin: 3px 0 0; color: #667085; font-size: 12px; line-height: 1.5; }
+
+.service-trade-card--schedule { margin-bottom: 18px; }
+.service-trade-card__empty { margin: 18px 0 0; color: #667085; font-size: 14px; }
+
+.service-trade-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 18px;
+  border-top: 1px solid #e9edf4;
+}
+
+.service-trade-inline-actions__group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.service-trade-inline-actions__group .btn {
+  width: auto;
+  min-height: 42px;
+  padding: 0 14px;
+  border-radius: 10px;
+}
+
+.service-trade-inline-actions__chat {
+  border: 1px solid #86d9ad;
+  background: #effbf3;
+  color: #087443;
+  font-weight: 800;
+}
+
+.service-trade-inline-actions__chat:hover {
+  border-color: #36a269;
+  background: #dcf7e6;
+  color: #056838;
+}
+
+.service-trade-card__dispute-action {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 14px 0;
+}
+
+.service-trade-card__dispute-action .btn {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 0 9px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.service-trade-card__dispute-action p {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  color: #b42318;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+@media (max-width: 860px) {
+  .service-trade-overview-grid { grid-template-columns: 1fr; }
+  .service-trade-card--summary { display: block; }
+  .service-trade-card--status { min-height: auto; }
+  .service-trade-card__escrow { margin-top: 0; }
+  .service-trade-inline-actions { align-items: stretch; flex-direction: column; margin-top: 18px; }
+  .service-trade-inline-actions__group { width: 100%; flex-direction: column; }
+  .service-trade-inline-actions__group .btn { width: 100%; }
+  .service-trade-card__dispute-action { align-items: flex-start; flex-direction: column; }
+  .service-trade-card__dispute-action .btn { width: 100%; }
+  .service-trade-card__dispute-action p { white-space: normal; }
+}
+
+@media (max-width: 640px) {
+  .service-trade-card { padding: 20px; }
 }
 
 .service-trade-dialog-backdrop {
@@ -432,6 +614,7 @@
 .service-trade-schedule-picker-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
 .service-trade-dispute-form .service-trade-schedule-picker-grid > label,
 .service-trade-time-slots-field { display: grid; align-content: start; gap: 8px; margin: 0; min-width: 0; color: #344054; font-size: 14px; font-weight: 800; }
+.service-trade-time-slots-field { position: relative; }
 .service-trade-time-slots-field__label { line-height: 21px; }
 .service-trade-schedule-picker-grid input,
 .service-trade-time-picker-trigger { box-sizing: border-box; height: 44px; }
@@ -439,7 +622,7 @@
 .service-trade-time-picker-trigger:disabled { background: #f2f4f7; color: #98a2b3; cursor: not-allowed; }
 .service-trade-time-slots-field > p,
 .service-trade-time-picker > p { margin: 0; color: #667085; font-size: 12px; font-weight: 400; line-height: 1.5; }
-.service-trade-time-picker { max-height: 180px; overflow-y: auto; padding: 10px; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; box-shadow: 0 8px 16px rgb(16 24 40 / 8%); }
+.service-trade-time-picker { position: absolute; z-index: 2; top: 76px; right: 0; left: 0; max-height: 180px; overflow-y: auto; padding: 10px; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; box-shadow: 0 8px 16px rgb(16 24 40 / 12%); }
 .service-trade-time-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .service-trade-time-slot { min-height: 34px; border: 1px solid #d0d5dd; border-radius: 7px; background: #fff; color: #475467; cursor: pointer; font-size: 12px; font-weight: 700; }
 .service-trade-time-slot:hover,
@@ -476,12 +659,12 @@
 
   .service-trade-action-panel {
     position: static;
-    order: -1;
+    order: 0;
   }
 }
 
 @media (max-width: 640px) {
-  .service-trade-detail-page { padding: 24px 0 56px; }
+  .service-trade-detail-page { padding: 28px 0 56px; }
   .service-trade-detail-page .container { width: calc(100% - 24px); }
   .service-trade-detail-page__header { align-items: stretch; flex-direction: column; gap: 18px; }
   .service-trade-detail-page h1 { font-size: 28px; }
@@ -499,6 +682,11 @@
   }
   .service-trade-progress__item:not(:last-child)::after { display: none; }
   .service-trade-panel { padding: 20px; }
+  .service-trade-action-panel__status,
+  .service-trade-escrow-summary,
+  .service-trade-detail-actions,
+  .service-trade-action-panel__closed { padding: 20px; }
+  .service-trade-action-panel__notice { margin: 0 20px 20px; }
   .service-trade-detail-list > div { grid-template-columns: 1fr; gap: 5px; padding: 15px 0; }
   .service-trade-dialog-backdrop { align-items: end; padding: 0; }
   .service-trade-dialog { width: 100%; border-radius: 8px 8px 0 0; }

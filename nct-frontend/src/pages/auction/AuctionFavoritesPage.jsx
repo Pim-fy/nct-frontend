@@ -1,13 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { HeartOff, RotateCcw } from 'lucide-react';
 import {
   fetchMyFavoriteAuctions,
   removeAuctionFavorite,
 } from '@api/auctionApi';
+import { toImageUrl } from '@api/fileApi';
+import { formatPrice, formatDateTime } from '@utils/common';
+import { resolveAuctionResultLabel, formatTimeUntil, resolveTradeMethodLabel } from './utils/auctionFormatters';
+import useCountdown from '@hooks/useCountdown';
 import CardGridSkeleton from '@components/skeleton/CardGridSkeleton';
 import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
+import MyPageListSectionLayout from '@components/mypage/MyPageListSectionLayout';
+import MyPageAuctionListItem from '@components/mypage/MyPageAuctionListItem';
+import MyPageListEmpty from '@components/mypage/MyPageListEmpty';
+import MyPageListError from '@components/mypage/MyPageListError';
+import MyPageStatusBadge from '@components/mypage/MyPageStatusBadge';
+import MyPageListSkeleton from '@components/skeleton/MyPageListSkeleton';
+import Pagination from '@components/common/Pagination';
 import AuctionCard from './components/AuctionCard';
 import AuctionToast from './components/AuctionToast';
 import '@assets/css/my-active-auctions.css';
@@ -26,6 +37,28 @@ const getPageNumber = (searchParams) => {
   return Number.isFinite(page) && page > 0 ? page : 1;
 };
 
+// 관심 경매는 "내가 관리하는 상태"가 아니라 "찜한 경매 자체의 상태"라, 임시저장/거래중 같은
+// 판매 내역 개념 대신 경매 결과(진행 중/종료)로 요약·필터를 구성한다 (실험용 미리보기).
+// 낙찰·유찰·취소는 전부 "종료"로 묶는다(사용자 결정) — 활성 여부만 구분하면 충분하다고 판단.
+const resolveFavoriteStatusGroup = (item) => (
+  resolveAuctionResultLabel(item) ? 'ENDED' : 'ACTIVE'
+);
+
+const formatFavoriteRemainingTime = (item, now) => {
+  const isEnded = Boolean(resolveAuctionResultLabel(item));
+  if (isEnded) return `종료 일시 ${formatDateTime(item.endDateTime)}`;
+  // 진행 중(AUCC0002)인데 endDateTime이 없는 경우는 정상 데이터에서는 나오지 않는
+  // 방어적 분기(데이터 누락 시 화면이 깨지는 것을 막기 위한 안전장치).
+  if (!item.endDateTime) return '종료 시간 미정';
+  return `종료까지 ${formatTimeUntil(item.endDateTime, now)}`;
+};
+
+const FAVORITE_STATUS_FILTERS = [
+  { value: null, label: '전체' },
+  { value: 'ACTIVE', label: '진행 중' },
+  { value: 'ENDED', label: '종료' },
+];
+
 const getVisiblePages = (currentPage, totalPages) => {
   const visibleCount = Math.min(MAX_VISIBLE_PAGES, totalPages);
   const half = Math.floor(visibleCount / 2);
@@ -38,8 +71,11 @@ const getVisiblePages = (currentPage, totalPages) => {
 };
 
 const AuctionFavoritesPage = ({ embedded = false }) => {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [toastMessage, setToastMessage] = useState('');
+  const [statusFilter, setStatusFilter] = useState(null);
+  const [keyword, setKeyword] = useState('');
   const queryClient = useQueryClient();
   const page = getPageNumber(searchParams);
 
@@ -55,13 +91,30 @@ const AuctionFavoritesPage = ({ embedded = false }) => {
     refetchOnMount: 'always',
   });
 
-  const favoriteItems = favoritePage?.items || [];
+  const favoriteItems = useMemo(() => favoritePage?.items || [], [favoritePage]);
+  const now = useCountdown(favoriteItems.length > 0);
   const totalElements = favoritePage?.totalElements || 0;
   const totalPages = favoritePage?.totalPages || 0;
   const visiblePages = useMemo(
     () => getVisiblePages(page, totalPages),
     [page, totalPages],
   );
+
+  // 요약·필터 개수는 현재 불러온 페이지 항목 기준이다(서버 API가 상태별 집계를 아직 안 내려줌) —
+  // 미리보기 목적의 근사치이며, 실제로 쓰려면 서버에 상태별 카운트 조회를 추가해야 한다.
+  const favoriteStatusCounts = useMemo(() => favoriteItems.reduce((counts, item) => {
+    const group = resolveFavoriteStatusGroup(item);
+    counts[group] = (counts[group] || 0) + 1;
+    return counts;
+  }, { ACTIVE: 0, ENDED: 0 }), [favoriteItems]);
+
+  const normalizedKeyword = keyword.trim().toLowerCase();
+  const visibleFavoriteItems = useMemo(() => favoriteItems.filter((item) => {
+    const matchesStatus = !statusFilter || resolveFavoriteStatusGroup(item) === statusFilter;
+    const matchesKeyword = !normalizedKeyword
+      || String(item.title ?? '').toLowerCase().includes(normalizedKeyword);
+    return matchesStatus && matchesKeyword;
+  }), [favoriteItems, statusFilter, normalizedKeyword]);
 
   const goToPage = (nextPage) => {
     const next = new URLSearchParams(searchParams);
@@ -225,9 +278,126 @@ const AuctionFavoritesPage = ({ embedded = false }) => {
     </section>
   );
 
+  // 마이페이지 "경매" 아코디언의 나머지 3개 화면(진행 중인 경매/구매 내역/판매 내역)과
+  // 같은 공통 요소(MyPageAuctionListItem 행, 공통 Pagination)로 맞춘 목록.
+  const listContent = (
+    <section className="my-active-auctions">
+      <MyPageListSectionLayout
+        title="관심 경매"
+        summaryItems={[
+          { label: '진행 중', value: favoriteStatusCounts.ACTIVE },
+          { label: '종료', value: favoriteStatusCounts.ENDED },
+        ]}
+        filterItems={FAVORITE_STATUS_FILTERS.map((filter) => ({
+          ...filter,
+          count: filter.value === null ? favoriteItems.length : favoriteStatusCounts[filter.value],
+        }))}
+        activeFilter={statusFilter}
+        onFilterChange={setStatusFilter}
+        filterAriaLabel="관심 경매 상태"
+        onSearch={setKeyword}
+        searchAriaLabel="관심 경매 검색"
+        searchPlaceholder="상품명 검색"
+        isLoading={isLoading}
+      />
+
+      {isLoading ? (
+        <MyPageListSkeleton count={PAGE_SIZE} />
+      ) : isError ? (
+        <MyPageListError message="관심 경매를 불러오지 못했습니다." onRetry={refetch} retryIcon={<RotateCcw size={16} />} />
+      ) : visibleFavoriteItems.length === 0 ? (
+        <MyPageListEmpty
+          message={favoriteItems.length === 0
+            ? '관심 등록한 경매가 없습니다.'
+            : '해당 조건의 관심 경매가 없습니다.'}
+          action={favoriteItems.length === 0 ? (
+            <Link className="btn btn-primary" to="/auction">경매 둘러보기</Link>
+          ) : null}
+        />
+      ) : (
+        <>
+        {/* history-list의 display:grid가 불레이어 CSS라 Tailwind hidden(@layer utilities)보다 우선
+            적용된다 — hidden/lg:block은 별도 래퍼에 둬서 두 display 선언이 충돌하지 않게 한다. */}
+        <div className="hidden lg:block">
+        <div className="history-list">
+          {visibleFavoriteItems.map((item) => {
+            const statusGroup = resolveFavoriteStatusGroup(item);
+            const isEnded = statusGroup === 'ENDED';
+            const badgeClass = isEnded ? 'badge-outline-gray' : 'badge-primary';
+            const badgeLabel = isEnded ? '종료' : '진행 중';
+
+            return (
+              <MyPageAuctionListItem
+                key={item.auctionId}
+                imageSrc={toImageUrl(item.thumbnailPath)}
+                imageAlt={item.title}
+                imageFallback="경매 이미지"
+                badge={<MyPageStatusBadge className={badgeClass}>{badgeLabel}</MyPageStatusBadge>}
+                title={item.title}
+                topLine={formatFavoriteRemainingTime(item, now)}
+                priceItems={[
+                  { label: '입찰 횟수', value: `${item.bidCount ?? 0}회` },
+                  { label: '현재가', value: formatPrice(item.currentPrice) },
+                  {
+                    label: '즉시구매가',
+                    value: Number(item.instantBuyPrice) > 0 ? formatPrice(item.instantBuyPrice) : '없음',
+                  },
+                ]}
+                tradeMethodLabel={resolveTradeMethodLabel(item.tradeMethodCode, item.tradeMethodName)}
+                actionButton={(
+                  <>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-primary"
+                      onClick={() => navigate(`/auction/${item.auctionId}`)}
+                    >
+                      경매 상세
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-ghost"
+                      aria-busy={favoriteMutation.isPending && favoriteMutation.variables === item.auctionId}
+                      disabled={favoriteMutation.isPending && favoriteMutation.variables === item.auctionId}
+                      onClick={() => favoriteMutation.mutate(item.auctionId)}
+                    >
+                      관심 해제
+                    </button>
+                  </>
+                )}
+              />
+            );
+          })}
+        </div>
+        </div>
+        <div className="grid gap-4 lg:hidden">
+          {visibleFavoriteItems.map((item) => (
+            <div className="relative min-w-0" key={item.auctionId}>
+              <AuctionCard item={item} />
+              <button
+                type="button"
+                className="absolute top-[22px] right-[22px] z-[2] inline-flex size-10 items-center justify-center rounded-full border border-[#e2e2e2] bg-white/95 text-[#d63c3c] shadow-[0_2px_8px_rgba(0,0,0,0.1)]"
+                aria-label={`${item.title} 관심 해제`}
+                aria-busy={favoriteMutation.isPending && favoriteMutation.variables === item.auctionId}
+                disabled={favoriteMutation.isPending && favoriteMutation.variables === item.auctionId}
+                onClick={() => favoriteMutation.mutate(item.auctionId)}
+              >
+                <HeartOff size={18} aria-hidden="true" />
+              </button>
+            </div>
+          ))}
+        </div>
+        </>
+      )}
+
+      {!isLoading && !isError && (
+        <Pagination page={page} totalPages={totalPages} onPageChange={goToPage} showSinglePage />
+      )}
+    </section>
+  );
+
   return (
     <div className="min-h-full bg-white text-[#1a1a18]">
-      {embedded ? content : (
+      {embedded ? listContent : (
         <main
           className="container min-h-[calc(100vh-180px)]"
           style={{ paddingTop: '28px', paddingBottom: '52px' }}

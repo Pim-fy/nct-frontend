@@ -15,6 +15,8 @@ import { getReceivedQuotes, getQuoteHistory } from '@api/quoteApi';
 import { fetchMyProviderQuoteAccess } from '@api/providerProfileApi';
 import { useMyActiveQuote } from '@hooks/useQuote';
 import { toImageUrl } from '@api/fileApi';
+import ReportModal from '@components/common/ReportModal';
+import ImageLightbox from '@components/common/ImageLightbox';
 import ErrorMessage from '@components/common/ErrorMessage';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
 import Toast from '@components/common/Toast';
@@ -214,6 +216,8 @@ export default function ServiceRequestDetailPage() {
   const [quoteDetail, setQuoteDetail] = useState(null); // 상세 모달에 띄울 견적(클릭한 항목)
   const [quoteHistory, setQuoteHistory] = useState([]);
   const [quoteHistoryLoading, setQuoteHistoryLoading] = useState(false);
+  const [reportTarget, setReportTarget] = useState(null); // { qutSn, providerUsrSn, providerNm, svcReqSn }
+  const [lightboxIndex, setLightboxIndex] = useState(null); // 첨부사진 확대뷰 — null이면 닫힘
   const [comments, setComments] = useState([]);
   const [cmtTtl, setCmtTtl] = useState('');
   const [cmtCn, setCmtCn] = useState('');
@@ -349,6 +353,10 @@ export default function ServiceRequestDetailPage() {
       .then(res => setQuoteHistory(res.data ?? []))
       .catch(() => setQuoteHistory([]))
       .finally(() => setQuoteHistoryLoading(false));
+  };
+
+  const closeQuoteDetail = () => {
+    setQuoteDetail(null);
   };
 
   const handleQuoteClick = () => {
@@ -490,11 +498,26 @@ export default function ServiceRequestDetailPage() {
             </div>
 
             {/* 요청 항목 (위저드 답변) — 경매등록 확인탭·위저드 확인탭과 동일한 신청서 표 양식
-                필드가 1개뿐인 단순 항목은 2개씩 한 행에 짝지어 표시한다 */}
-            {parsedItems.length > 0 && (
+                필드가 1개뿐인 단순 항목은 2개씩 한 행에 짝지어 표시한다.
+                모바일(md 미만)에서는 2열이 너무 좁아져서 표 대신 항목별 1줄 카드로 따로 보여준다. */}
+            {parsedItems.length > 0 && (() => {
+              const numberedItems = parsedItems.map((entry, idx) => ({ ...entry, number: idx + 1 }));
+              return (
               <div className="border-b border-[#e8e8e8] px-6 py-5">
                 <h2 className="mb-4 text-lg font-semibold text-[#5f5e5a]">요청 항목</h2>
-                <table className="w-full table-fixed overflow-hidden rounded-[10px] border border-[#d8d6cf] text-lg">
+
+                {/* 모바일 전용: 항목마다 한 줄(라벨 위, 값 아래) */}
+                <div className="flex flex-col divide-y divide-[#d8d6cf] rounded-[10px] border border-[#d8d6cf] text-lg md:hidden">
+                  {numberedItems.map((entry, i) => (
+                    <div key={i} className="px-4 py-4">
+                      <p className="mb-1.5 font-semibold text-[#5f5e5a]">{renderThLabel(entry)}</p>
+                      <div className="text-[#1d1d1f]">{renderEntryValue(entry)}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* PC 전용: 기존 2열 표 그대로 */}
+                <table className="hidden w-full table-fixed overflow-hidden rounded-[10px] border border-[#d8d6cf] text-lg md:table">
                   <colgroup>
                     <col style={{ width: '17%' }} />
                     <col style={{ width: '33%' }} />
@@ -503,7 +526,6 @@ export default function ServiceRequestDetailPage() {
                   </colgroup>
                   <tbody>
                     {(() => {
-                      const numberedItems = parsedItems.map((entry, idx) => ({ ...entry, number: idx + 1 }));
                       const tableRows = buildTableRows(numberedItems);
                       return tableRows.map((group, i) => {
                         const isLast = i === tableRows.length - 1;
@@ -536,19 +558,21 @@ export default function ServiceRequestDetailPage() {
                   </tbody>
                 </table>
               </div>
-            )}
+              );
+            })()}
 
             {/* 첨부사진 — 요청 원문은 위 "요청 항목" 표의 "특이사항 메모" 행으로 이동함 */}
             <div className="px-6 py-5">
               <h2 className="mb-4 text-lg font-semibold text-[#5f5e5a]">첨부사진</h2>
               {request.imageList?.length > 0 ? (
                 <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
-                  {request.imageList.map(img => (
+                  {request.imageList.map((img, i) => (
                     <img
                       key={img.flSn}
                       src={toImageUrl(img.url)}
                       alt="요청 사진"
-                      className="aspect-square w-full rounded-lg border border-[#e2e1dc] object-cover"
+                      onClick={() => setLightboxIndex(i)}
+                      className="aspect-square w-full cursor-pointer rounded-lg border border-[#e2e1dc] object-cover transition-opacity hover:opacity-90"
                     />
                   ))}
                 </div>
@@ -755,7 +779,10 @@ export default function ServiceRequestDetailPage() {
       {/* 견적 상세 모달 — 목록을 아코디언으로 펼치면 견적이 많을 때 가독성이 떨어져서 모달로 처리 */}
       <div
         className={`modal ${quoteDetail ? 'open' : ''}`}
-        onClick={e => { if (e.target === e.currentTarget) setQuoteDetail(null); }}
+        // ReportModal(성경3 공용 컴포넌트, z-index 500)을 이 위에 띄울 때는 이 모달이
+        // 뒤로 가도록 z-index를 낮춘다 — .modal 기본값(2000)이 ReportModal보다 높아서 안 낮추면 이 모달이 위로 겹친다.
+        style={reportTarget ? { zIndex: 100 } : undefined}
+        onClick={e => { if (e.target === e.currentTarget) closeQuoteDetail(); }}
       >
         {quoteDetail && (
           <div className="modal-box">
@@ -806,12 +833,57 @@ export default function ServiceRequestDetailPage() {
               </div>
             )}
 
-            <div className="mt-5 flex justify-end">
-              <button type="button" className="btn btn-ghost" onClick={() => setQuoteDetail(null)}>닫기</button>
+            {/* 신고·선택하기 — 둘 다 자리만 잡아둔 버튼. 황성경(3)이 신고 연동 방법 공유해주면
+                그때 제출 로직 채운다. 선택하기도 조우진(7) 통합 끝나면 활성화. */}
+            <div className="mt-5 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => setReportTarget({
+                  qutSn: quoteDetail.qutSn,
+                  providerUsrSn: quoteDetail.providerUsrSn,
+                  providerNm: quoteDetail.providerNm,
+                  svcReqSn,
+                })}
+                className="rounded-lg border border-[#e2e1dc] px-4 py-2 text-sm font-semibold text-[#a32d2d] transition-colors hover:bg-[#fcebeb]"
+              >
+                신고
+              </button>
+              <div className="flex gap-2">
+                {quoteDetail.statusCode !== 'QUTC0004' && quoteDetail.statusCode !== 'QUTC0005' && (
+                  <button
+                    type="button"
+                    title="준비 중인 기능입니다"
+                    disabled
+                    className="cursor-not-allowed rounded-lg bg-[#e2e1dc] px-4 py-2 text-sm font-semibold text-[#9a9ba5]"
+                  >
+                    이 견적 선택하기
+                  </button>
+                )}
+                <button type="button" className="btn btn-ghost" onClick={closeQuoteDetail}>닫기</button>
+              </div>
             </div>
           </div>
         )}
       </div>
+
+      {reportTarget && (
+        <ReportModal
+          open={!!reportTarget}
+          onClose={() => setReportTarget(null)}
+          targetName={reportTarget.providerNm}
+          targetType="service"
+          referenceSn={reportTarget.svcReqSn}
+          reportedUserSn={reportTarget.providerUsrSn}
+          contextLabel={`견적 제공자: ${reportTarget.providerNm}`}
+        />
+      )}
+
+      <ImageLightbox
+        images={(request.imageList ?? []).map(img => toImageUrl(img.url))}
+        initialIndex={lightboxIndex ?? 0}
+        open={lightboxIndex !== null}
+        onClose={() => setLightboxIndex(null)}
+      />
       </div>
     </>
   );

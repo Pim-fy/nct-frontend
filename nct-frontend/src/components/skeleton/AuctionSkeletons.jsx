@@ -125,7 +125,7 @@ const MyActiveAuctionSkeleton = () => (
       <SkeletonBlock className="h-[38px] w-28 shrink-0 rounded-lg" />
       <SkeletonBlock className="h-[38px] w-28 shrink-0 rounded-lg" />
     </div>
-    <div className="my-active-auctions__list">
+    <div className="history-list">
       {Array.from({ length: 4 }).map((_, index) => (
         <article className="my-active-auction-item" key={index}>
           <SkeletonBlock className="size-[88px] rounded-lg max-[720px]:size-[72px]" />
