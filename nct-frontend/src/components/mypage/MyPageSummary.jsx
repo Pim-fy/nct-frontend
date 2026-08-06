@@ -12,7 +12,7 @@ export default function MyPageSummary({ items, isLoading = false }) {
       {items.map((item, index) => (
         <div
           key={item.label}
-          className={`flex min-h-[76px] items-center justify-between gap-3 px-5 py-4 ${
+          className={`flex min-h-[70px] items-center justify-between gap-3 px-5 py-4 ${
             index > 0 ? "border-t border-[#e9edf4] sm:border-l sm:border-t-0" : ""
           }`}
         >

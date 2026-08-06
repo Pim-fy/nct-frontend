@@ -9,8 +9,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import ReviewableItemCard from "@components/review/ReviewableItemCard";
-import WrittenReviewItemCard from "@components/review/WrittenReviewItemCard";
+import MyPageReviewListItem from "@components/mypage/MyPageReviewListItem";
 import Pagination from "@components/common/Pagination";
 import MyPageListSectionLayout from "@components/mypage/MyPageListSectionLayout";
 import MyPageListSkeleton from "@components/skeleton/MyPageListSkeleton";
@@ -33,6 +32,7 @@ export default function ReviewListPage() {
   const [writablePage, setWritablePage] = useState(1);
   const [writtenPage, setWrittenPage] = useState(1);
   const [allPage, setAllPage] = useState(1);
+  const [searchKeyword, setSearchKeyword] = useState("");
 
   const writableQuery = useWritableReviews();
   const myReviewsQuery = useMyReviews();
@@ -45,12 +45,26 @@ export default function ReviewListPage() {
     (myReviewsQuery.data ?? []).map((item) => ({ ...item, thumbnail: toImageUrl(item.photos?.[0]) }))
   ), [myReviewsQuery.data]);
 
+  const filteredWritableItems = useMemo(
+    () => writableItems.filter((item) => (
+      !searchKeyword || String(item.title ?? "").toLowerCase().includes(searchKeyword)
+    )),
+    [writableItems, searchKeyword],
+  );
+
+  const filteredWrittenItems = useMemo(
+    () => writtenItems.filter((item) => (
+      !searchKeyword || String(item.title ?? "").toLowerCase().includes(searchKeyword)
+    )),
+    [writtenItems, searchKeyword],
+  );
+
   // "전체" 탭은 다른 화면들과 같은 방식(하나로 합친 리스트 + 페이지네이션 하나)을 따른다.
   // 카드 종류가 다른 두 리스트를 completedDate 기준 최신순으로 합친다.
   const combinedItems = useMemo(() => [
-    ...writableItems.map((item) => ({ ...item, kind: "writable" })),
-    ...writtenItems.map((item) => ({ ...item, kind: "written" })),
-  ].sort((a, b) => new Date(b.completedDate || 0) - new Date(a.completedDate || 0)), [writableItems, writtenItems]);
+    ...filteredWritableItems.map((item) => ({ ...item, kind: "writable" })),
+    ...filteredWrittenItems.map((item) => ({ ...item, kind: "written" })),
+  ].sort((a, b) => new Date(b.completedDate || 0) - new Date(a.completedDate || 0)), [filteredWritableItems, filteredWrittenItems]);
 
   const isLoading = activeTab === "all"
     ? (writableQuery.isLoading || myReviewsQuery.isLoading)
@@ -81,16 +95,16 @@ export default function ReviewListPage() {
     { key: "written",  label: "작성완료 리뷰",  count: writtenItems.length },
   ];
 
-  const writableTotalPages = Math.max(1, Math.ceil(writableItems.length / PAGE_SIZE));
+  const writableTotalPages = Math.max(1, Math.ceil(filteredWritableItems.length / PAGE_SIZE));
   const pagedWritableItems = useMemo(
-    () => writableItems.slice((writablePage - 1) * PAGE_SIZE, writablePage * PAGE_SIZE),
-    [writableItems, writablePage],
+    () => filteredWritableItems.slice((writablePage - 1) * PAGE_SIZE, writablePage * PAGE_SIZE),
+    [filteredWritableItems, writablePage],
   );
 
-  const writtenTotalPages = Math.max(1, Math.ceil(writtenItems.length / PAGE_SIZE));
+  const writtenTotalPages = Math.max(1, Math.ceil(filteredWrittenItems.length / PAGE_SIZE));
   const pagedWrittenItems = useMemo(
-    () => writtenItems.slice((writtenPage - 1) * PAGE_SIZE, writtenPage * PAGE_SIZE),
-    [writtenItems, writtenPage],
+    () => filteredWrittenItems.slice((writtenPage - 1) * PAGE_SIZE, writtenPage * PAGE_SIZE),
+    [filteredWrittenItems, writtenPage],
   );
 
   const allTotalPages = Math.max(1, Math.ceil(combinedItems.length / PAGE_SIZE));
@@ -101,6 +115,13 @@ export default function ReviewListPage() {
 
   const handleTabChange = (key) => {
     setActiveTab(key);
+    setWritablePage(1);
+    setWrittenPage(1);
+    setAllPage(1);
+  };
+
+  const handleSearch = (keyword) => {
+    setSearchKeyword(keyword.toLowerCase());
     setWritablePage(1);
     setWrittenPage(1);
     setAllPage(1);
@@ -150,6 +171,9 @@ export default function ReviewListPage() {
         activeFilter={activeTab}
         onFilterChange={handleTabChange}
         filterAriaLabel="리뷰 탭"
+        onSearch={handleSearch}
+        searchAriaLabel="리뷰 검색"
+        searchPlaceholder="상품명·견적 요청 검색"
         isLoading={isLoading}
       />
 
@@ -167,11 +191,12 @@ export default function ReviewListPage() {
           {combinedItems.length === 0 ? (
             <MyPageListEmpty message="아직 리뷰 내역이 없습니다." />
           ) : (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3">
               {pagedCombinedItems.map((item) => (
                 item.kind === "writable" ? (
-                  <ReviewableItemCard
+                  <MyPageReviewListItem
                     key={`writable-${item.id}`}
+                    variant="writable"
                     thumbnail={item.thumbnail}
                     title={item.title}
                     dealType={item.dealType}
@@ -183,8 +208,9 @@ export default function ReviewListPage() {
                     onViewTarget={() => handleViewTarget(item)}
                   />
                 ) : (
-                  <WrittenReviewItemCard
+                  <MyPageReviewListItem
                     key={`written-${item.id}`}
+                    variant="written"
                     thumbnail={item.thumbnail}
                     title={item.title}
                     dealType={item.dealType}
@@ -205,13 +231,14 @@ export default function ReviewListPage() {
       {/* 작성가능한 리뷰 */}
       {!isLoading && !isError && activeTab === "writable" && (
         <>
-          {writableItems.length === 0 ? (
+          {filteredWritableItems.length === 0 ? (
             <MyPageListEmpty message="아직 작성 가능한 리뷰가 없습니다." />
           ) : (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3">
               {pagedWritableItems.map((item) => (
-                <ReviewableItemCard
+                <MyPageReviewListItem
                   key={item.id}
+                  variant="writable"
                   thumbnail={item.thumbnail}
                   title={item.title}
                   dealType={item.dealType}
@@ -232,13 +259,14 @@ export default function ReviewListPage() {
       {/* 작성한 리뷰 */}
       {!isLoading && !isError && activeTab === "written" && (
         <>
-          {writtenItems.length === 0 ? (
+          {filteredWrittenItems.length === 0 ? (
             <MyPageListEmpty message="아직 작성한 리뷰가 없습니다." />
           ) : (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3">
               {pagedWrittenItems.map((item) => (
-                <WrittenReviewItemCard
+                <MyPageReviewListItem
                   key={item.id}
+                  variant="written"
                   thumbnail={item.thumbnail}
                   title={item.title}
                   dealType={item.dealType}
