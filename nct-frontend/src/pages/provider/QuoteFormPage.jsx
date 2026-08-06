@@ -1,13 +1,14 @@
 // src/pages/provider/QuoteFormPage.jsx
 // F-SVC-005/006: 제공자 견적 제출·수정 (담당자3 황성경 소유)
 import React, { useEffect, useRef, useState } from "react";
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useSubmitQuote, useUpdateQuote } from "@hooks/useQuote";
 import { getMyActiveQuote } from "@api/quoteApi";
 import { getServiceRequest } from "@api/serviceRequestApi";
 import { fetchMyProviderQuoteAccess } from "@api/providerProfileApi";
 import { uploadQuotePhoto } from "@api/quoteApi";
+import { toImageUrl } from "@api/fileApi";
 import { toast } from "@utils/common";
 import AlertModal from "@components/common/AlertModal";
 import "./QuoteFormPage.css";
@@ -23,6 +24,7 @@ const FALLBACK_REQUEST = { title: "서비스 요청", category: "" };
 export default function QuoteFormPage() {
   const navigate   = useNavigate();
   const location   = useLocation();
+  const { quoteId: routeQuoteId } = useParams();
   const [searchParams] = useSearchParams();
   const routeState = location.state || {};
   const fileInputRef = useRef(null);
@@ -31,8 +33,8 @@ export default function QuoteFormPage() {
   //               { quoteId, svcReqSn, svcReqTitle, amount, content, reviseCnt }    → 수정
   const querySvcReqSn = Number(searchParams.get("svcReqSn")) || null;
   const queryQuoteId = Number(searchParams.get("quoteId")) || null;
-  const isEditMode = Boolean(queryQuoteId || routeState.quoteId);
-  const quoteId = queryQuoteId || routeState.quoteId || null;
+  const quoteId = Number(routeQuoteId) || queryQuoteId || routeState.quoteId || null;
+  const isEditMode = Boolean(quoteId);
   const svcReqSn = querySvcReqSn || routeState.svcReqSn || null;
   const [svcReqInfo, setSvcReqInfo] = useState({
     svcReqSn,
@@ -59,13 +61,13 @@ export default function QuoteFormPage() {
   const [requestLoadFailed, setRequestLoadFailed] = useState(false);
 
   const [form, setForm] = useState({
-    title: isEditMode ? (routeState.title || routeState.svcReqTitle || "") : "",
     amount: isEditMode && routeState.amount != null ? String(routeState.amount) : "",
     message:  isEditMode ? (routeState.content || "") : "",
   });
   const [prevForm,        setPrevForm]        = useState({ ...form });
   const [attachFiles,     setAttachFiles]     = useState([]);
-  const [prevAttachCount, setPrevAttachCount] = useState(0);
+  const [existingAttachments, setExistingAttachments] = useState([]);
+  const [initialAttachmentSns, setInitialAttachmentSns] = useState([]);
   const [revisions,   setRevisions]   = useState([]);
   const [editCount,   setEditCount]   = useState(isEditMode ? (routeState.reviseCnt || 0) : 0);
   const [isQuoteSubmitted, setIsQuoteSubmitted] = useState(isEditMode);
@@ -122,6 +124,9 @@ export default function QuoteFormPage() {
             amount: quote.amount == null ? prev.amount : String(quote.amount),
             message: quote.content || '',
           }));
+          const attachments = quote.attachments || [];
+          setExistingAttachments(attachments);
+          setInitialAttachmentSns(attachments.map((attachment) => String(attachment.flSn)));
           setEditCount(quote.reviseCnt || 0);
           setActiveQuoteLoading(false);
         })
@@ -137,11 +142,15 @@ export default function QuoteFormPage() {
 
   const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
 
+  const attachmentFingerprint = () => [
+    ...existingAttachments.map((attachment) => String(attachment.flSn)),
+    ...attachFiles.map((attachment) => attachment.id),
+  ].join(',');
+
   const hasChanges = () =>
-    form.title !== prevForm.title ||
     form.amount !== prevForm.amount ||
     form.message !== prevForm.message ||
-    attachFiles.length !== prevAttachCount;
+    attachmentFingerprint() !== initialAttachmentSns.join(',');
 
   const now = () => {
     const d = new Date();
@@ -150,10 +159,12 @@ export default function QuoteFormPage() {
 
   const validate = () => {
     setSubmitted(true);
-    if (!form.title.trim())                       { setAlertMsg("제목을 입력해 주세요.");         return false; }
     if (!form.amount || Number(form.amount) <= 0) { setAlertMsg("견적 금액을 입력해 주세요.");    return false; }
     if (!form.message.trim())                     { setAlertMsg("내용을 입력해 주세요.");         return false; }
-    if (attachFiles.length === 0)                 { setAlertMsg("첨부파일을 추가해 주세요.");     return false; }
+    if (existingAttachments.length + attachFiles.length === 0) {
+      setAlertMsg("첨부파일을 추가해 주세요.");
+      return false;
+    }
     return true;
   };
 
@@ -190,7 +201,7 @@ export default function QuoteFormPage() {
   }
 
   const handleFiles = (fileList) => {
-    const added = Array.from(fileList).slice(0, MAX_ATTACH - attachFiles.length);
+    const added = Array.from(fileList).slice(0, MAX_ATTACH - existingAttachments.length - attachFiles.length);
     if (!added.length) return;
     setAttachFiles(prev => [
       ...prev,
@@ -211,6 +222,10 @@ export default function QuoteFormPage() {
     return prev.filter(f => f.id !== id);
   });
 
+  const removeExistingAttachment = (flSn) => {
+    setExistingAttachments((prev) => prev.filter((attachment) => attachment.flSn !== flSn));
+  };
+
   const fmtSize = (size) =>
     size < 1024 * 1024 ? Math.round(size / 1024) + "KB" : (size / 1024 / 1024).toFixed(1) + "MB";
 
@@ -227,7 +242,6 @@ export default function QuoteFormPage() {
       const photoFlSns = await uploadFiles();
       await submitMutation.mutateAsync({
         svcReqSn: svcReqInfo.svcReqSn,
-        title:    form.title,
         amount:   Number(form.amount),
         content:  form.message,
         photoFlSns,
@@ -247,24 +261,25 @@ export default function QuoteFormPage() {
     if (!validate()) return;
     setLoading(true);
     try {
-      const photoFlSns = await uploadFiles();
+      const newPhotoFlSns = await uploadFiles();
+      const photoFlSns = [
+        ...existingAttachments.map((attachment) => attachment.flSn),
+        ...newPhotoFlSns,
+      ];
       await updateMutation.mutateAsync({
         quoteId,
-        title:   form.title,
         amount:  Number(form.amount),
         content: form.message,
         photoFlSns,
       });
       const lines = [];
-      if (form.title   !== prevForm.title)          lines.push("제목을 수정했습니다.");
       if (form.amount  !== prevForm.amount)          lines.push("금액을 수정했습니다.");
       if (form.message !== prevForm.message)         lines.push("내용을 수정했습니다.");
-      if (attachFiles.length !== prevAttachCount)    lines.push(`첨부파일을 변경했습니다. (${attachFiles.length}개)`);
+      if (attachmentFingerprint() !== initialAttachmentSns.join(',')) lines.push("첨부파일을 변경했습니다.");
       const desc = lines.length ? lines.join(" ") : "내용 변경 없음.";
       const next = editCount + 1;
       setRevisions(prev => [...prev, { round: next, date: now(), desc }]);
       setPrevForm({ ...form });
-      setPrevAttachCount(attachFiles.length);
       setEditCount(next);
       setEditSuccessMsg(`견적이 수정되었습니다.\n남은 수정 횟수: ${MAX_EDIT_COUNT - next}회`);
     } catch (err) {
@@ -300,23 +315,8 @@ export default function QuoteFormPage() {
           {/* 좌: 입력 필드 / 우: 수정가능정보 (50/50) */}
           <div className="qf-main-2col">
 
-            {/* 좌측 — 제목·금액·내용·첨부파일 세로 나열 */}
+            {/* 좌측 — 금액·내용·첨부파일 세로 나열 */}
             <div className="qf-col-left">
-              <div className="qf-field">
-                <label>
-                  제목 <span style={{ color: "#EF4444" }}>*</span>
-                </label>
-                <input
-                  type="text"
-                  className="input"
-                  placeholder="견적 제목을 입력하세요"
-                  maxLength={100}
-                  value={form.title}
-                  onChange={e => set("title", e.target.value)}
-                  style={{ borderColor: submitted && !form.title.trim() ? "#EF4444" : undefined }}
-                />
-              </div>
-
               <div className="qf-field">
                 <label>
                   견적 금액 <span style={{ color: "#EF4444" }}>*</span>
@@ -401,7 +401,7 @@ export default function QuoteFormPage() {
                 </label>
                 <div
                   className="qf-thumb-wrap"
-                  style={{ borderColor: submitted && attachFiles.length === 0 ? "#EF4444" : undefined }}
+                  style={{ borderColor: submitted && existingAttachments.length + attachFiles.length === 0 ? "#EF4444" : undefined }}
                   onDragOver={e => e.preventDefault()}
                   onDrop={e => { e.preventDefault(); handleFiles(e.dataTransfer.files); }}
                 >
@@ -415,18 +415,48 @@ export default function QuoteFormPage() {
                   />
                   <div className="qf-thumb-header">
                     <p className="qf-thumb-hint">
-                      드래그앤드롭 또는 파일 선택 · 최대 {MAX_ATTACH}개 ({attachFiles.length}/{MAX_ATTACH})
+                      드래그앤드롭 또는 파일 선택 · 최대 {MAX_ATTACH}개 ({existingAttachments.length + attachFiles.length}/{MAX_ATTACH})
                     </p>
                     <button
                       type="button"
                       className="btn btn-outline btn-sm"
                       onClick={() => fileInputRef.current?.click()}
-                      disabled={attachFiles.length >= MAX_ATTACH}
+                      disabled={existingAttachments.length + attachFiles.length >= MAX_ATTACH}
                     >
                       파일 추가
                     </button>
                   </div>
                   <div className="qf-thumb-grid">
+                    {existingAttachments.map((attachment) => {
+                      const extension = attachment.fileName?.split(".").pop()?.toUpperCase() || "FILE";
+                      const isImage = ["JPG", "JPEG", "PNG", "GIF", "WEBP"].includes(extension);
+                      return (
+                        <div key={`saved-${attachment.flSn}`} className="qf-thumb-item">
+                          {isImage ? (
+                            <img src={toImageUrl(attachment.url)} alt={attachment.fileName} className="qf-thumb-img" />
+                          ) : (
+                            <div className="qf-thumb-file">
+                              <span className="qf-thumb-ext">{extension}</span>
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            className="qf-thumb-del"
+                            onClick={() => removeExistingAttachment(attachment.flSn)}
+                            aria-label="기존 첨부파일 삭제"
+                          >×</button>
+                          <a
+                            href={toImageUrl(attachment.url)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="qf-thumb-name"
+                            title={`${attachment.fileName} 열기`}
+                          >
+                            {attachment.fileName}
+                          </a>
+                        </div>
+                      );
+                    })}
                     {attachFiles.map(f => (
                       <div key={f.id} className="qf-thumb-item">
                         {f.previewUrl ? (
@@ -445,7 +475,7 @@ export default function QuoteFormPage() {
                         <span className="qf-thumb-name">{f.name}</span>
                       </div>
                     ))}
-                    {Array.from({ length: MAX_ATTACH - attachFiles.length }, (_, i) => (
+                    {Array.from({ length: MAX_ATTACH - existingAttachments.length - attachFiles.length }, (_, i) => (
                       <div
                         key={`empty-${i}`}
                         className="qf-thumb-empty"
@@ -527,7 +557,7 @@ export default function QuoteFormPage() {
               style={{ marginTop: 24, width: "100%" }}
               onClick={() => {
                 setEditSuccessMsg("");
-                navigate("/user/mypage?section=quote");
+                navigate("/mypage?section=quote");
               }}
             >
               확인
@@ -549,7 +579,7 @@ export default function QuoteFormPage() {
               style={{ marginTop: 24, width: "100%" }}
               onClick={() => {
                 setSubmitSuccess(false);
-                navigate("/user/mypage?section=quote");
+                navigate("/mypage?section=quote");
               }}
             >
               확인

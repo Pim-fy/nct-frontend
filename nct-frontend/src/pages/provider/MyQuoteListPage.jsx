@@ -138,16 +138,8 @@ export default function MyQuoteListPage({ embedded = false } = {}) {
       toast({ icon: "warning", title: "수정 가능 횟수(3회)를 초과했습니다." });
       return;
     }
-    navigate("/provider/quotes/new", {
-      state: {
-        quoteId:     quote.qutSn,
-        svcReqSn:    quote.svcReqSn,
-        svcReqTitle: quote.title,
-        amount:      quote.amount,
-        content:     quote.content,
-        reviseCnt:   quote.reviseCnt,
-      },
-    });
+    // 수정 대상 견적번호를 경로에 남겨 새로고침·직접 진입에도 수정 상태를 유지한다.
+    navigate(`/provider/quotes/${quote.qutSn}/edit?svcReqSn=${quote.svcReqSn}`);
   };
 
   const handleCancel = async (quote) => {

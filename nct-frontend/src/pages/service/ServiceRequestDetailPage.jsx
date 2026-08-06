@@ -369,7 +369,7 @@ export default function ServiceRequestDetailPage() {
 
   const handleQuoteEdit = () => {
     if (!myActiveQuote?.qutSn) return;
-    navigate(`/provider/quotes/new?svcReqSn=${svcReqSn}&quoteId=${myActiveQuote.qutSn}`, {
+    navigate(`/provider/quotes/${myActiveQuote.qutSn}/edit?svcReqSn=${svcReqSn}`, {
       state: {
         quoteId: myActiveQuote.qutSn,
         svcReqSn,
