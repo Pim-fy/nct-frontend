@@ -27,6 +27,8 @@ const GENERAL_MENU_ITEMS = [
     type: "accordion",
     children: [
       { key: "service-requests", label: "내 서비스 요청 목록", type: "section" },
+      { key: "service-trade",    label: "서비스 거래",         type: "section" },
+      { key: "received-quotes",  label: "받은 견적 관리",      type: "todo" },
     ],
   },
   { key: "wishlist",     label: "관심 경매",    type: "section" },
@@ -67,7 +69,7 @@ const PROVIDER_MENU_ITEMS = [
 // 아코디언 key → 포함되는 child key 목록
 const ACCORDION_CHILDREN = {
   "auction-history":  ["active-auctions", "auction-bids", "auction-sales"],
-  "service-history":  ["service-requests", "received-quotes"],
+  "service-history":  ["service-requests", "service-trade", "received-quotes"],
   "provider-profile-menu": ["provider-profile", "profile"],
   "provider-service-menu": ["quote", "service-trade"],
 };

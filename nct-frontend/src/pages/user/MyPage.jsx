@@ -33,6 +33,7 @@ import MyReportListPage from "@pages/user/report/MyReportListPage";
 import ReportFormPage from "@pages/user/report/ReportFormPage";
 import MyQuoteListPage from "@pages/provider/MyQuoteListPage";
 import MyServiceRequestListPage from "@pages/service/MyServiceRequestListPage";
+import MyServiceTradeListPage from "@pages/service/MyServiceTradeListPage";
 import ReviewListPage from "@pages/user/ReviewListPage";
 import { useAuth } from "@hooks/useAuth";
 import { useMyProviderApplications } from "@hooks/useProviderApplications";
@@ -59,7 +60,6 @@ const MYPAGE_SECTION_QUERY_VALUES = new Set([
 const PROVIDER_ONLY_SECTION_QUERY_VALUES = new Set([
   "provider-profile",
   "quote",
-  "service-trade",
   "received-review",
 ]);
 
@@ -271,12 +271,8 @@ export default function MyPage({
           {!isProvider && activeSection === "review" && <ReviewListPage />}
           {activeSection === "report-list" && <MyReportListPage embedded />}
           {activeSection === "report-form" && <ReportFormPage embedded />}
-          {isProvider && activeSection === "service-trade" && (
-            <ProviderEmbeddedSection
-              title="서비스 거래"
-              description="진행 중이거나 완료된 서비스 거래를 확인합니다."
-              emptyText="아직 표시할 서비스 거래 내역이 없습니다."
-            />
+          {activeSection === "service-trade" && (
+            <MyServiceTradeListPage fixedRole={isProvider ? "PROVIDER" : "REQUESTER"} />
           )}
           {isProvider && activeSection === "received-review" && <ProviderReceivedReviewSection />}
           {/* 기존 경로로 진입한 경우에도 입찰 내역을 안전하게 표시한다. */}
