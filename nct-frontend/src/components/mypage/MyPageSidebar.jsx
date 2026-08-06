@@ -27,7 +27,6 @@ const GENERAL_MENU_ITEMS = [
     type: "accordion",
     children: [
       { key: "service-requests", label: "내 서비스 요청 목록", type: "section" },
-      { key: "received-quotes",  label: "받은 견적 관리",      type: "todo" },
     ],
   },
   { key: "wishlist",     label: "관심 경매",    type: "section" },
