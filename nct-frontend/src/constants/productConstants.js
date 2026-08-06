@@ -11,8 +11,8 @@ export const TRADE_STATUS_LABEL = {
 
 
 export const TRADE_LABEL = {
-  TRDC0009: '배송만',
-  TRDC0010: '직거래만',
+  TRDC0009: '배송',
+  TRDC0010: '직거래',
   TRDC0020: '둘 다 가능',
 };
 

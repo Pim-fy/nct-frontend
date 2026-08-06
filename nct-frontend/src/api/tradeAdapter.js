@@ -74,6 +74,7 @@ export const toTradeHistoryItem = (trade) => {
     counterpart: trade.counterpartNickname ?? trade.counterpart ?? '-',
     amount: formatPrice(trade.price ?? trade.amount ?? trade.tradeAmount),
     date: formatDate(trade.createdAt ?? trade.tradedAt ?? trade.tradeDate),
+    completedDate: trade.completedAt ? formatDate(trade.completedAt) : null,
     method: trade.tradeMethod ?? trade.method,
     status: normalizeTradeStatus(trade.tradeStatus ?? trade.status),
     meetingDate: trade.meetingDate ?? (meetingDateTime.date === '-' ? null : meetingDateTime.date),
