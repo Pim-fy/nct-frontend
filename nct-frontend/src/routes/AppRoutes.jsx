@@ -210,6 +210,7 @@ const AppRoutes = () => {
           {/* 담당자 7 통합: 일반회원은 본인 요청, 제공자는 공개 요청 상세를 사용합니다. */}
           <Route path="/service-requests/:svcReqSn" element={<ServiceRequestDetailPage />} />
           <Route path="/service-trades/:tradeId" element={<ServiceTradeDetailRoutePage />} />
+          <Route path="/service-trades/:tradeId/chat" element={<TradeChat />} />
         </Route>
       </Route>
 
@@ -230,7 +231,6 @@ const AppRoutes = () => {
           <Route path="/my-bids" element={<MyBidHistoryPage />} />
 
           <Route path="/trades/:tradeId/chat" element={<TradeChat />} />
-          <Route path="/service-trades/:tradeId/chat" element={<TradeChat />} />
           <Route path="/trades/:tradeId" element={<TradeDetailBuyer />} />
           <Route
             path="/trades/:tradeId/seller"
