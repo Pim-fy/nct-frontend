@@ -132,6 +132,8 @@ const tradeChatPreviewRooms = [
   {
     roomId: 'service-trade-chat-1',
     tradeId: 1,
+    tradeTypeCode: 'TRDC0002',
+    viewerRole: 'REQUESTER',
     counterpartNickname: '정민 제공자',
     productName: '이사 전 청소 서비스를 요청합니다',
     roomStatus: 'ACTIVE',
@@ -151,6 +153,8 @@ const tradeChatPreviewRooms = [
   {
     roomId: 'trade-chat-1005',
     tradeId: 1005,
+    tradeTypeCode: 'TRDC0001',
+    viewerRole: 'BUYER',
     counterpartNickname: '느린생활',
     productName: '원목 접이식 테이블',
     roomStatus: 'ACTIVE',
@@ -252,6 +256,8 @@ export const updateTradePreviewDetail = (tradeId, changes) => {
     tradeChatPreviewRooms.push({
       roomId: `trade-chat-${tradeId}`,
       tradeId: trade.tradeId,
+      tradeTypeCode: 'TRDC0001',
+      viewerRole: 'BUYER',
       counterpartNickname: trade.counterpartNickname,
       productName: trade.productName,
       roomStatus: 'ACTIVE',
@@ -295,6 +301,8 @@ export const getTradePreviewChatRooms = () => (
   tradeChatPreviewRooms.map((room) => ({
     roomId: room.roomId,
     tradeId: room.tradeId,
+    tradeTypeCode: room.tradeTypeCode,
+    viewerRole: room.viewerRole,
     counterpartNickname: room.counterpartNickname,
     productName: room.productName,
     roomStatus: room.roomStatus,

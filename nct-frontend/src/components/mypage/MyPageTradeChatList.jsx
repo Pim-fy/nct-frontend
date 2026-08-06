@@ -12,8 +12,12 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getTradeChatRooms } from '@api/tradeChatApi';
-import { toTradeChatRooms } from '@api/tradeChatAdapter';
+import {
+  filterTradeChatRoomsForCurrentRole,
+  toTradeChatRooms,
+} from '@api/tradeChatAdapter';
 import CardGridSkeleton from '@components/skeleton/CardGridSkeleton';
+import { useAuth } from '@hooks/useAuth';
 
 const HIDDEN_ROOM_STORAGE_KEY = 'nct-hidden-trade-chat-room-ids';
 
@@ -42,6 +46,7 @@ const MyPageTradeChatList = ({
   preview = false,
   onOpenChatRoom,
 }) => {
+  const { isProvider } = useAuth();
   const navigate = useNavigate();
   const [rooms, setRooms] = useState([]);
   const [roomFilter, setRoomFilter] = useState('ALL');
@@ -79,8 +84,11 @@ const MyPageTradeChatList = ({
       const response = await getTradeChatRooms({}, { preview });
       const hiddenRoomIds = getHiddenRoomIds();
 
-      setRooms(toTradeChatRooms(response).filter(
-        (room) => !hiddenRoomIds.has(room.roomId),
+      setRooms(filterTradeChatRoomsForCurrentRole(
+        toTradeChatRooms(response).filter(
+          (room) => !hiddenRoomIds.has(room.roomId),
+        ),
+        isProvider,
       ));
     } catch {
       if (showLoading) {
@@ -91,7 +99,7 @@ const MyPageTradeChatList = ({
         setIsLoading(false);
       }
     }
-  }, [preview]);
+  }, [isProvider, preview]);
 
   useEffect(() => {
     const requestTimer = window.setTimeout(() => loadRooms(true), 0);
