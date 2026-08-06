@@ -93,6 +93,7 @@ const AuctionBidPanel = ({
   onBuyNowOpen,
   onDeliveryAddressOpen,
   onFavoriteToggle,
+  onReportOpen,
   onChargeClick,
 }) => {
   const isBidPointInsufficient = hasAvailablePoint && !isBidPointSufficient;
@@ -207,9 +208,15 @@ const AuctionBidPanel = ({
             관심
           </button>
           <button
-            className="inline-flex min-h-6 shrink-0 cursor-default items-center gap-1 rounded-full border border-[#dadada] bg-white px-3 py-0.5 text-[13px] leading-[1.4] font-bold text-[#666]"
+            className={`inline-flex min-h-6 shrink-0 items-center gap-1 rounded-full border border-[#dadada] bg-white px-3 py-0.5 text-[13px] leading-[1.4] font-bold text-[#666] transition-colors ${
+              isAuthLoading || isOwnAuction
+                ? 'cursor-not-allowed opacity-45'
+                : 'cursor-pointer hover:border-[#999] hover:text-[#1d1d1f]'
+            }`}
             type="button"
-            title="경매 상품 신고"
+            disabled={isAuthLoading || isOwnAuction}
+            title={isOwnAuction ? '본인 경매 상품은 신고할 수 없습니다' : '경매 상품 신고'}
+            onClick={onReportOpen}
           >
             <Flag size={14} aria-hidden="true" />
             신고

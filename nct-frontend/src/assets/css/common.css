@@ -136,6 +136,23 @@ a.list-row:hover {
   font-size: 14px;
 }
 
+@keyframes auction-toast-fade {
+  0% { opacity: 0; }
+  10%, 82% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.auction-toast {
+  animation: auction-toast-fade 2800ms ease-in-out both;
+  will-change: opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auction-toast {
+    animation: none;
+  }
+}
+
 /* 스크롤 숨김 — 가로 스크롤이 생기는 칩·탭 목록에서 스크롤바만 감춰 깔끔하게 유지 */
 .scrollbar-hide {
   scrollbar-width: none;

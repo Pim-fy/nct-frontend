@@ -73,8 +73,6 @@ function getBidDescription(item) {
   if (displayStatus === 'WON') {
     const parts = [`낙찰가 ${fmtPrice(bidAmount)}`];
     if (bidDateTime) parts.push(`${fmtDate(bidDateTime)} 낙찰 확정`);
-    // 거래 상태는 TRADE 모듈 미완 — 담당자4(정민재) 완성 후 실값으로 교체
-    parts.push('배송중');
     return parts.join(' · ');
   }
   if (displayStatus === 'OUTBID') {
@@ -117,6 +115,7 @@ function BidHistoryTab() {
   const handleFilterChange = (value) => { setStatusFilter(value); setPage(1); };
   // 전역 브레드크럼 (BJN, 260805): 어디서 진입했는지(state.from)를 상세에 전달해 브레드크럼 경로에 반영
   const handleGoToAuction  = (aucSn) => navigate(`/auction/${aucSn}`, { state: { from: location.pathname + location.search } });
+  const handleGoToTrade = (tradeId) => navigate(`/trades/${tradeId}`, { state: { from: location.pathname + location.search } });
 
   if (isLoading) return <CardGridSkeleton cardHeight={100} columns={1} count={4} />;
   if (isError) {
@@ -185,14 +184,24 @@ function BidHistoryTab() {
                   {/* 액션 버튼 */}
                   <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                     {isWon && (
-                      <button
-                        type="button"
-                        onClick={() => handleGoToAuction(item.aucSn)}
-                        className="btn btn-sm"
-                        style={{ background: '#10b981', color: '#fff', border: 'none' }}
-                      >
-                        거래 상세
-                      </button>
+                      item.tradeId ? (
+                        <button
+                          type="button"
+                          onClick={() => handleGoToTrade(item.tradeId)}
+                          className="btn btn-sm"
+                          style={{ background: '#10b981', color: '#fff', border: 'none' }}
+                        >
+                          거래 상세
+                        </button>
+                      ) : (
+                        <span
+                          className="btn btn-sm btn-ghost"
+                          aria-disabled="true"
+                          style={{ cursor: 'default', color: '#6b7280' }}
+                        >
+                          거래 생성 중
+                        </span>
+                      )
                     )}
                     <button
                       type="button"
