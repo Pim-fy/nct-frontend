@@ -98,8 +98,45 @@
 .service-trade-detail-list dt { color: #667085; font-size: 14px; }
 .service-trade-detail-list dd { margin: 0; color: #252b3a; font-size: 14px; font-weight: 700; text-align: right; }
 
-.service-trade-detail-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
-.service-trade-detail-page__links { margin-top: 24px; }
+.service-trade-action-panel {
+  margin-top: 6px;
+  padding: 20px 24px;
+  border: 1px solid #e9edf4;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(20, 38, 79, .055);
+}
+.service-trade-action-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e9edf4;
+}
+.service-trade-action-panel__header h2 { margin: 0; color: #252b3a; font-size: 17px; }
+.service-trade-action-panel__header p { margin: 5px 0 0; color: #667085; font-size: 13px; }
+.service-trade-action-panel__request-link {
+  color: #475467;
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.service-trade-action-panel__request-link:hover { color: #155eef; text-decoration: underline; }
+.service-trade-action-panel__controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 16px;
+}
+.service-trade-action-panel__group { display: flex; flex-wrap: wrap; gap: 8px; }
+.service-trade-action-panel__group--schedule {
+  padding-left: 12px;
+  border-left: 1px solid #e9edf4;
+}
+.service-trade-action-panel__group--danger { margin-left: auto; }
 .service-trade-detail-page__empty { padding-top: 56px; text-align: center; }
 
 .service-trade-dialog-backdrop {
@@ -192,7 +229,13 @@
   .service-trade-progress__item { padding: 10px 4px; font-size: 12px; }
   .service-trade-detail-grid { grid-template-columns: 1fr; }
   .service-trade-card { padding: 20px; }
-  .service-trade-detail-actions { flex-direction: column; }
+  .service-trade-action-panel { padding: 20px; }
+  .service-trade-action-panel__header { align-items: flex-start; }
+  .service-trade-action-panel__controls { align-items: stretch; flex-direction: column; }
+  .service-trade-action-panel__group { width: 100%; flex-direction: column; }
+  .service-trade-action-panel__group--schedule { padding: 12px 0 0; border-top: 1px solid #e9edf4; border-left: 0; }
+  .service-trade-action-panel__group--danger { margin-left: 0; padding-top: 12px; border-top: 1px solid #e9edf4; }
+  .service-trade-action-panel__group .btn { width: 100%; }
   .service-trade-dialog-backdrop { align-items: end; padding: 0; }
   .service-trade-dialog { width: 100%; border-radius: 20px 20px 0 0; }
   .service-trade-dialog__header,

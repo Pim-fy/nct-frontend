@@ -322,19 +322,39 @@ export default function ServiceTradeDetailPage({
         )}
 
         {(canOpenChat || canRequestCompletion || canConfirmCompletion || canSubmitDispute || canRequestScheduleChange || canRequestScheduleCancellation) && (
-          <section className="service-trade-detail-actions" aria-label="서비스 거래 처리">
-            {canOpenChat && <Link className="btn btn-ghost" to={chatPath ?? `/service-trades/${trade.tradeId}/chat`}>거래 채팅</Link>}
-            {canRequestCompletion && <button className="btn btn-success" type="button" onClick={() => openCompletionDialog('REQUEST')}>완료 요청 작성</button>}
-            {canConfirmCompletion && <button className="btn btn-primary" type="button" onClick={() => openCompletionDialog('CONFIRM')}>완료 확인</button>}
-            {canRequestScheduleChange && <button className="btn btn-ghost" type="button" onClick={() => openScheduleDialog('CHANGE')}>일정 변경 요청</button>}
-            {canRequestScheduleCancellation && <button className="btn btn-ghost" type="button" onClick={() => openScheduleDialog('CANCEL')}>일정 취소 요청</button>}
-            {canSubmitDispute && <button className="btn btn-danger" type="button" onClick={openDisputeDialog}>거래 문제 접수</button>}
+          <section className="service-trade-action-panel" aria-labelledby="service-trade-action-title">
+            <header className="service-trade-action-panel__header">
+              <div>
+                <h2 id="service-trade-action-title">거래 처리</h2>
+                <p>현재 거래 상태에서 가능한 처리만 표시됩니다.</p>
+              </div>
+              <Link className="service-trade-action-panel__request-link" to={`/service-requests/${trade.serviceRequestId}`}>
+                요청 상세 보기
+              </Link>
+            </header>
+
+            <div className="service-trade-action-panel__controls">
+              {(canOpenChat || canRequestCompletion || canConfirmCompletion) && (
+                <div className="service-trade-action-panel__group service-trade-action-panel__group--primary">
+                  {canOpenChat && <Link className="btn btn-ghost" to={chatPath ?? `/service-trades/${trade.tradeId}/chat`}>거래 채팅</Link>}
+                  {canRequestCompletion && <button className="btn btn-success" type="button" onClick={() => openCompletionDialog('REQUEST')}>완료 요청 작성</button>}
+                  {canConfirmCompletion && <button className="btn btn-primary" type="button" onClick={() => openCompletionDialog('CONFIRM')}>완료 확인</button>}
+                </div>
+              )}
+              {(canRequestScheduleChange || canRequestScheduleCancellation) && (
+                <div className="service-trade-action-panel__group service-trade-action-panel__group--schedule">
+                  {canRequestScheduleChange && <button className="btn btn-ghost" type="button" onClick={() => openScheduleDialog('CHANGE')}>일정 변경</button>}
+                  {canRequestScheduleCancellation && <button className="btn btn-ghost" type="button" onClick={() => openScheduleDialog('CANCEL')}>일정 취소</button>}
+                </div>
+              )}
+              {canSubmitDispute && (
+                <div className="service-trade-action-panel__group service-trade-action-panel__group--danger">
+                  <button className="btn btn-danger" type="button" onClick={openDisputeDialog}>거래 문제 접수</button>
+                </div>
+              )}
+            </div>
           </section>
         )}
-
-        <div className="service-trade-detail-page__links">
-          <Link className="btn btn-ghost" to={`/service-requests/${trade.serviceRequestId}`}>요청 상세</Link>
-        </div>
       </div>
 
       {isDisputeDialogOpen && (
