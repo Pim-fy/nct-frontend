@@ -8,213 +8,15 @@ import { getMyActiveQuote } from "@api/quoteApi";
 import { getServiceRequest } from "@api/serviceRequestApi";
 import { fetchMyProviderQuoteAccess } from "@api/providerProfileApi";
 import { uploadQuotePhoto } from "@api/quoteApi";
-import cameraIcon from "@assets/img/icon_camera.png";
-import iconImage from "@assets/img/icon_image.png";
 import { toast } from "@utils/common";
 import AlertModal from "@components/common/AlertModal";
 import "./QuoteFormPage.css";
 
-const MAX_WORK_PHOTOS = 20;
-const MAX_MESSAGE_LEN = 1000;
-const PHOTO_COLS      = 5;
+const MAX_CONTENT_LEN = 4000;
+const MAX_ATTACH      = 5;
+const MAX_EDIT_COUNT  = 3;
 
-const FALLBACK_REQUEST = { title: "서비스 요청", category: "", sub: "", location: "", budget: "", requester: "" };
-
-function FieldBlock({ label, required, hint, children }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <label style={{ fontSize: 16, fontWeight: 500, color: "#333" }}>
-        {label}{required && <span style={{ color: "#EF4444", marginLeft: 3 }}>*</span>}
-      </label>
-      {children}
-      {hint && <p style={{ fontSize: 13, color: "#969696", margin: 0 }}>{hint}</p>}
-    </div>
-  );
-}
-
-const DURATION_OPTIONS = ["30분", "1시간", "2시간", "3시간", "4시간", "반나절", "하루", "이틀", "3일", "1주일", "직접입력"];
-
-function DurationField({ value, onChange, error }) {
-  const isCustom = !DURATION_OPTIONS.slice(0, -1).includes(value);
-  const [mode, setMode] = useState(isCustom ? "custom" : "select");
-
-  const handleSelect = (e) => {
-    const v = e.target.value;
-    if (v === "직접입력") {
-      setMode("custom");
-      onChange("");
-    } else {
-      setMode("select");
-      onChange(v);
-    }
-  };
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <select
-        className="input"
-        value={mode === "custom" ? "직접입력" : value}
-        onChange={handleSelect}
-        style={{ borderColor: error && mode === "select" && !value ? "#EF4444" : undefined }}
-      >
-        <option value="">선택하세요</option>
-        {DURATION_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-      </select>
-      {mode === "custom" && (
-        <input
-          type="text"
-          className="input"
-          placeholder="예) 5시간, 2주"
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          autoFocus
-          style={{ borderColor: error && !value.trim() ? "#EF4444" : undefined }}
-        />
-      )}
-    </div>
-  );
-}
-
-// 작업 사진 업로드 — 경매등록 ProductImageUpload와 동일한 레이아웃
-function WorkPhotoUpload({ photos, onChange, submitted }) {
-  const [pickMode, setPickMode] = useState(false);
-  const fileInputRef = useRef(null);
-
-  const handleFiles = (fileList) => {
-    const files = Array.from(fileList).slice(0, MAX_WORK_PHOTOS - photos.length);
-    if (!files.length) return;
-    const newItems = files.map(file => ({
-      id: crypto.randomUUID(),
-      file,
-      url: URL.createObjectURL(file),
-    }));
-    onChange(prev => [...prev, ...newItems]);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const setAsRepresentative = (id) => {
-    onChange(prev => {
-      const idx = prev.findIndex(p => p.id === id);
-      if (idx <= 0) return prev;
-      const next = [...prev];
-      const [picked] = next.splice(idx, 1);
-      next.unshift(picked);
-      return next;
-    });
-    setPickMode(false);
-  };
-
-  const removePhoto = (id) => {
-    onChange(prev => {
-      const target = prev.find(p => p.id === id);
-      if (target?.file) URL.revokeObjectURL(target.url);
-      return prev.filter(p => p.id !== id);
-    });
-  };
-
-  const emptyCount = photos.length >= MAX_WORK_PHOTOS
-    ? 0
-    : PHOTO_COLS - (photos.length % PHOTO_COLS);
-
-  return (
-    <div
-      className="card"
-      style={{ border: "none", padding: 0, boxShadow: "none", minHeight: 220, display: "flex", flexDirection: "column" }}
-      onDragOver={e => e.preventDefault()}
-      onDrop={e => { e.preventDefault(); handleFiles(e.dataTransfer.files); }}
-    >
-      <div className="qf-photo-header">
-        <div>
-          <strong>작업 사진</strong>
-          <p className="muted small" style={{ margin: "4px 0 0" }}>
-            {pickMode
-              ? "대표로 지정할 사진을 선택하세요"
-              : `드래그앤드롭 또는 파일 선택 · 최대 ${MAX_WORK_PHOTOS}장 (${photos.length}/${MAX_WORK_PHOTOS})`}
-          </p>
-        </div>
-        <div className="qf-summary-actions">
-          <button
-            type="button"
-            onClick={() => setPickMode(v => !v)}
-            disabled={photos.length === 0}
-            className="btn btn-ghost"
-            style={pickMode ? { background: "#0064ff", color: "#fff", borderColor: "#0064ff" } : undefined}
-          >
-            <img src={iconImage} alt="" style={{ width: 15, height: 15, display: "block" }} />
-            대표이미지로 지정
-          </button>
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={photos.length >= MAX_WORK_PHOTOS}
-            className="btn btn-ghost"
-          >
-            <img src={cameraIcon} alt="" style={{ width: 15, height: 15, display: "block" }} />
-            사진등록
-          </button>
-        </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/gif,image/webp"
-          multiple
-          hidden
-          onChange={e => handleFiles(e.target.files)}
-        />
-      </div>
-
-      <div className="qf-photo-grid">
-        {photos.map((photo, i) => (
-          <div
-            key={photo.id}
-            style={{ position: "relative" }}
-          >
-            {/* 이미지 영역 (overflow hidden으로 objectFit 적용) */}
-            <div
-              onClick={() => pickMode && setAsRepresentative(photo.id)}
-              style={{
-                aspectRatio: "1",
-                overflow: "hidden",
-                borderRadius: 8,
-                cursor: pickMode && i !== 0 ? "pointer" : "default",
-                border: i === 0 ? "2px solid #0064ff"
-                  : pickMode ? "2px dashed #0064ff"
-                  : "1px solid #eee",
-              }}
-            >
-              <img
-                src={photo.url}
-                alt={`작업 사진 ${i + 1}`}
-                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-              />
-              {i === 0 && photos.length > 1 && (
-                <span className="badge badge-blue" style={{ position: "absolute", top: 4, left: 4, fontSize: 13 }}>대표</span>
-              )}
-            </div>
-            {/* X 버튼 — 이미지 컨테이너 밖에 배치하여 클리핑 방지 */}
-            <button
-              type="button"
-              onClick={e => { e.stopPropagation(); removePhoto(photo.id); }}
-              title="삭제"
-              style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", border: "none", background: "#111", color: "#fff", cursor: "pointer", fontSize: 14, lineHeight: "20px", padding: 0, zIndex: 1 }}
-            >
-              ×
-            </button>
-          </div>
-        ))}
-        {Array.from({ length: emptyCount }, (_, i) => (
-          <div
-            key={`empty-${i}`}
-            onClick={() => fileInputRef.current?.click()}
-            style={{ width: "100%", borderRadius: 8, border: "1px dashed #d8d6cf", background: "#fafaf8", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", aspectRatio: "1" }}
-          >
-            <span style={{ fontSize: 24, color: "#c7c5bd" }}>+</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+const FALLBACK_REQUEST = { title: "서비스 요청", category: "" };
 
 // ─── 메인 ────────────────────────────────────────────────────────────────────
 
@@ -223,6 +25,7 @@ export default function QuoteFormPage() {
   const location   = useLocation();
   const [searchParams] = useSearchParams();
   const routeState = location.state || {};
+  const fileInputRef = useRef(null);
 
   // router state: { svcReqSn, svcReqTitle, category, location, budget, requester }  → 신규
   //               { quoteId, svcReqSn, svcReqTitle, amount, content, reviseCnt }    → 수정
@@ -246,23 +49,25 @@ export default function QuoteFormPage() {
   const updateMutation = useUpdateQuote();
 
   const [submitted, setSubmitted] = useState(false);
-  const [loading,   setLoading]   = useState(false);
-  const [alertMsg,  setAlertMsg]  = useState("");
+  const [loading, setLoading] = useState(false);
+  const [alertMsg, setAlertMsg] = useState("");
+  const [policyAgreed, setPolicyAgreed] = useState(isEditMode);
+  const [editSuccessMsg, setEditSuccessMsg] = useState("");
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [cancelConfirm, setCancelConfirm] = useState(false);
   const [requestLoading, setRequestLoading] = useState(Boolean(svcReqSn));
   const [requestLoadFailed, setRequestLoadFailed] = useState(false);
 
-  const MAX_EDIT_COUNT = 3;
-
   const [form, setForm] = useState({
-    price:    isEditMode ? String(routeState.amount  || "") : "",
-    duration: isEditMode ? (routeState.duration || "") : "",
+    title: isEditMode ? (routeState.title || routeState.svcReqTitle || "") : "",
+    amount: isEditMode && routeState.amount != null ? String(routeState.amount) : "",
     message:  isEditMode ? (routeState.content || "") : "",
   });
-  const [prevForm, setPrevForm] = useState({ ...form });
-  const [workPhotos, setWorkPhotos] = useState([]);
-  const [prevPhotoIds, setPrevPhotoIds] = useState([]);
-  const [revisions, setRevisions] = useState([]);
-  const [editCount, setEditCount] = useState(isEditMode ? (routeState.reviseCnt || 0) : 0);
+  const [prevForm,        setPrevForm]        = useState({ ...form });
+  const [attachFiles,     setAttachFiles]     = useState([]);
+  const [prevAttachCount, setPrevAttachCount] = useState(0);
+  const [revisions,   setRevisions]   = useState([]);
+  const [editCount,   setEditCount]   = useState(isEditMode ? (routeState.reviseCnt || 0) : 0);
   const [isQuoteSubmitted, setIsQuoteSubmitted] = useState(isEditMode);
   const [activeQuoteLoading, setActiveQuoteLoading] = useState(isEditMode);
   const [activeQuoteLoadFailed, setActiveQuoteLoadFailed] = useState(false);
@@ -309,14 +114,12 @@ export default function QuoteFormPage() {
           }
           setForm((prev) => ({
             ...prev,
-            price: quote.amount == null ? prev.price : String(quote.amount),
-            duration: quote.duration || prev.duration,
+            amount: quote.amount == null ? prev.amount : String(quote.amount),
             message: quote.content || '',
           }));
           setPrevForm((prev) => ({
             ...prev,
-            price: quote.amount == null ? prev.price : String(quote.amount),
-            duration: quote.duration || prev.duration,
+            amount: quote.amount == null ? prev.amount : String(quote.amount),
             message: quote.content || '',
           }));
           setEditCount(quote.reviseCnt || 0);
@@ -333,26 +136,12 @@ export default function QuoteFormPage() {
   }, [svcReqSn, isEditMode, quoteId]);
 
   const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
-  const fmt = n => (n ? Number(n).toLocaleString() : "");
 
-  const photosChanged = () => {
-    const ids = workPhotos.map(p => p.id);
-    if (ids.length !== prevPhotoIds.length) return true;
-    return ids.some((id, i) => id !== prevPhotoIds[i]);
-  };
-
-  const buildDiff = (prev, next) => {
-    const lines = [];
-    if (prev.price !== next.price)
-      lines.push(`견적 금액을 ${fmt(prev.price)}원에서 ${fmt(next.price)}원으로 수정했습니다.`);
-    if (prev.duration !== next.duration)
-      lines.push(`예상 소요 시간을 ${prev.duration}에서 ${next.duration}으로 수정했습니다.`);
-    if (prev.message !== next.message)
-      lines.push("견적 메시지를 수정했습니다.");
-    if (photosChanged())
-      lines.push(`작업 사진을 ${prevPhotoIds.length}장에서 ${workPhotos.length}장으로 변경했습니다.`);
-    return lines.length ? lines.join(" ") : "내용 변경 없음.";
-  };
+  const hasChanges = () =>
+    form.title !== prevForm.title ||
+    form.amount !== prevForm.amount ||
+    form.message !== prevForm.message ||
+    attachFiles.length !== prevAttachCount;
 
   const now = () => {
     const d = new Date();
@@ -361,16 +150,17 @@ export default function QuoteFormPage() {
 
   const validate = () => {
     setSubmitted(true);
-    if (!form.price)             { setAlertMsg("견적 금액을 입력해 주세요.");          return false; }
-    if (Number(form.price) <= 0) { setAlertMsg("견적 금액은 1원 이상이어야 합니다."); return false; }
-    if (!form.duration.trim())   { setAlertMsg("예상 소요 시간을 입력해 주세요.");     return false; }
-    if (!form.message.trim())    { setAlertMsg("견적 메시지를 입력해 주세요.");        return false; }
+    if (!form.title.trim())                       { setAlertMsg("제목을 입력해 주세요.");         return false; }
+    if (!form.amount || Number(form.amount) <= 0) { setAlertMsg("견적 금액을 입력해 주세요.");    return false; }
+    if (!form.message.trim())                     { setAlertMsg("내용을 입력해 주세요.");         return false; }
+    if (attachFiles.length === 0)                 { setAlertMsg("첨부파일을 추가해 주세요.");     return false; }
     return true;
   };
 
-  const [editSuccessMsg, setEditSuccessMsg] = useState("");
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [cancelConfirm, setCancelConfirm] = useState(false);
+  const handleAmountInput = (e) => {
+    const raw = e.target.value.replace(/[^0-9]/g, "");
+    set("amount", raw);
+  };
 
   if (!svcReqSn) {
     return (
@@ -399,65 +189,86 @@ export default function QuoteFormPage() {
     );
   }
 
-  const hasChanges = () =>
-    form.price !== prevForm.price ||
-    form.duration !== prevForm.duration ||
-    form.message !== prevForm.message ||
-    photosChanged();
+  const handleFiles = (fileList) => {
+    const added = Array.from(fileList).slice(0, MAX_ATTACH - attachFiles.length);
+    if (!added.length) return;
+    setAttachFiles(prev => [
+      ...prev,
+      ...added.map(f => ({
+        id: crypto.randomUUID(),
+        file: f,
+        name: f.name,
+        size: f.size,
+        previewUrl: f.type.startsWith("image/") ? URL.createObjectURL(f) : null,
+      })),
+    ]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
-  const uploadNewPhotos = async () => {
-    const results = await Promise.all(
-      workPhotos
-        .filter(p => p.file)
-        .map(p => uploadQuotePhoto(p.file))
-    );
+  const removeFile = (id) => setAttachFiles(prev => {
+    const target = prev.find(f => f.id === id);
+    if (target?.previewUrl) URL.revokeObjectURL(target.previewUrl);
+    return prev.filter(f => f.id !== id);
+  });
+
+  const fmtSize = (size) =>
+    size < 1024 * 1024 ? Math.round(size / 1024) + "KB" : (size / 1024 / 1024).toFixed(1) + "MB";
+
+  const uploadFiles = async () => {
+    const results = await Promise.all(attachFiles.map(f => uploadQuotePhoto(f.file)));
     return results.map(r => r.flSn);
   };
 
-  const handleEdit = async () => {
-    if (editCount >= MAX_EDIT_COUNT) { setAlertMsg("수정 가능 횟수(3회)를 초과했습니다."); return; }
-    if (!hasChanges()) { setAlertMsg("변경된 내용이 없습니다."); return; }
-    if (!validate()) return;
-    setLoading(true);
-    try {
-      const photoFlSns = await uploadNewPhotos();
-      await updateMutation.mutateAsync({
-        quoteId,
-        amount:      Number(form.price),
-        content:     form.message,
-        duration:    form.duration,
-        photoFlSns,
-      });
-      const desc = buildDiff(prevForm, form);
-      const next = editCount + 1;
-      setRevisions(prev => [...prev, { round: next, date: now(), desc }]);
-      setPrevForm({ ...form });
-      setPrevPhotoIds(workPhotos.map(p => p.id));
-      setEditCount(next);
-      setEditSuccessMsg(`견적이 수정되었습니다.\n남은 수정 횟수: ${MAX_EDIT_COUNT - next}회`);
-    } catch (err) {
-      toast({ icon: "error", title: err?.response?.data?.message || "견적 수정에 실패했습니다. 다시 시도해 주세요." });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSubmit = async () => {
+    if (!policyAgreed) { setAlertMsg("수정 가능 정보를 확인해 주세요."); return; }
     if (!validate()) return;
     setLoading(true);
     try {
-      const photoFlSns = await uploadNewPhotos();
+      const photoFlSns = await uploadFiles();
       await submitMutation.mutateAsync({
-        svcReqSn,
-        amount:    Number(form.price),
-        content:   form.message,
-        duration:  form.duration,
+        svcReqSn: svcReqInfo.svcReqSn,
+        title:    form.title,
+        amount:   Number(form.amount),
+        content:  form.message,
         photoFlSns,
       });
       setIsQuoteSubmitted(true);
       setSubmitSuccess(true);
     } catch (err) {
       toast({ icon: "error", title: err?.response?.data?.message || "견적 제출에 실패했습니다. 다시 시도해 주세요." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEdit = async () => {
+    if (editCount >= MAX_EDIT_COUNT) { setAlertMsg("수정 가능 횟수(3회)를 초과했습니다."); return; }
+    if (!hasChanges())               { setAlertMsg("변경된 내용이 없습니다.");              return; }
+    if (!validate()) return;
+    setLoading(true);
+    try {
+      const photoFlSns = await uploadFiles();
+      await updateMutation.mutateAsync({
+        quoteId,
+        title:   form.title,
+        amount:  Number(form.amount),
+        content: form.message,
+        photoFlSns,
+      });
+      const lines = [];
+      if (form.title   !== prevForm.title)          lines.push("제목을 수정했습니다.");
+      if (form.amount  !== prevForm.amount)          lines.push("금액을 수정했습니다.");
+      if (form.message !== prevForm.message)         lines.push("내용을 수정했습니다.");
+      if (attachFiles.length !== prevAttachCount)    lines.push(`첨부파일을 변경했습니다. (${attachFiles.length}개)`);
+      const desc = lines.length ? lines.join(" ") : "내용 변경 없음.";
+      const next = editCount + 1;
+      setRevisions(prev => [...prev, { round: next, date: now(), desc }]);
+      setPrevForm({ ...form });
+      setPrevAttachCount(attachFiles.length);
+      setEditCount(next);
+      setEditSuccessMsg(`견적이 수정되었습니다.\n남은 수정 횟수: ${MAX_EDIT_COUNT - next}회`);
+    } catch (err) {
+      toast({ icon: "error", title: err?.response?.data?.message || "견적 수정에 실패했습니다. 다시 시도해 주세요." });
     } finally {
       setLoading(false);
     }
@@ -471,160 +282,240 @@ export default function QuoteFormPage() {
         <div><h1 style={{ fontWeight: 700 }}>견적 작성</h1></div>
       </div>
 
-      {/* 견적 입력(좌) + 요청요약·수정가능정보(우) 2열 */}
-      <div className="qf-main-grid">
+      <div className="qf-simple-layout">
 
-        {/* 좌: 견적 정보 입력 */}
+        {/* 서비스 요청 한 줄 표시 */}
+        <p style={{ margin: 0, fontSize: 18, fontWeight: 500 }}>
+          서비스요청 {svcReqInfo.title}
+          {svcReqInfo.category && (
+            <span className="badge badge-blue" style={{ fontSize: 13, borderRadius: 5, marginLeft: 8, verticalAlign: "middle" }}>
+              {svcReqInfo.category}
+            </span>
+          )}
+        </p>
+
+        {/* 폼 카드 */}
         <div className="card" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
-          <div className="qf-price-grid">
-            <FieldBlock label="견적 금액" required>
-              <input
-                type="number"
-                className="input no-spinner"
-                placeholder="예) 160000"
-                value={form.price}
-                onChange={e => set("price", e.target.value)}
-                min={0}
-                style={{ borderColor: submitted && !form.price ? "#EF4444" : undefined }}
-              />
-              {form.price && (
-                <p style={{ fontSize: 14, color: "#0064ff", margin: 0, fontWeight: 500 }}>{fmt(form.price)}원</p>
-              )}
-            </FieldBlock>
+          {/* 좌: 입력 필드 / 우: 수정가능정보 (50/50) */}
+          <div className="qf-main-2col">
 
-            <FieldBlock label="예상 소요 시간" required>
-              <DurationField
-                value={form.duration}
-                onChange={val => set("duration", val)}
-                error={submitted && !form.duration.trim()}
-              />
-            </FieldBlock>
-          </div>
-
-          <FieldBlock label={`견적 메시지 ${form.message.length}/${MAX_MESSAGE_LEN}`} required>
-            <textarea
-              className="input"
-              rows={6}
-              placeholder="제공할 서비스의 내용, 방식, 포함 항목 등을 상세히 작성하세요."
-              value={form.message}
-              onChange={e => set("message", e.target.value.slice(0, MAX_MESSAGE_LEN))}
-              maxLength={MAX_MESSAGE_LEN}
-              style={{
-                resize: "vertical", minHeight: 140,
-                padding: "10px 12px", lineHeight: 1.6,
-                borderColor: submitted && !form.message.trim() ? "#EF4444" : undefined,
-              }}
-            />
-          </FieldBlock>
-
-          {/* 작업 사진 */}
-          <WorkPhotoUpload photos={workPhotos} onChange={setWorkPhotos} submitted={submitted} />
-
-          {!isQuoteSubmitted && (
-            <div>
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={loading}
-                className="btn btn-primary"
-              >
-                {loading ? "제출 중..." : "견적 제출"}
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* 우: 요청 요약 + 수정 가능 정보 */}
-        <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
-          {/* 요청 요약 카드 */}
-          <section className="card qf-summary-card">
-            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>요청 요약</h3>
-            <p className="qf-summary-text" style={{ margin: 0, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              {svcReqInfo.category && (
-                <span className="badge badge-blue" style={{ fontSize: 13, borderRadius: 5, height: 28 }}>
-                  {svcReqInfo.category}{svcReqInfo.sub ? `·${svcReqInfo.sub}` : ""}
-                </span>
-              )}
-              <span style={{ fontSize: 16, color: "#333" }}>
-                {svcReqInfo.title}
-                {svcReqInfo.location  && ` · ${svcReqInfo.location}`}
-                {svcReqInfo.budget    && ` · 예산 ${svcReqInfo.budget}`}
-                {svcReqInfo.requester && ` · 요청자 ${svcReqInfo.requester}`}
-              </span>
-            </p>
-          </section>
-
-          {/* 수정 가능 정보 카드 */}
-          <div className="card">
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
-              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, flexShrink: 0 }}>수정 가능 정보</h3>
-              <span style={{ fontSize: 14, color: "#4E4E4E" }}>제출 후 최대 3회 수정 가능하며, 이력은 보존됩니다.</span>
-            </div>
-            <p style={{ margin: "0 0 8px", fontSize: 15 }}>
-              {editCount < MAX_EDIT_COUNT
-                ? <span style={{ color: "#0064ff", fontWeight: 600 }}>남은 수정 횟수: {MAX_EDIT_COUNT - editCount}회</span>
-                : <span style={{ color: "#EF4444", fontWeight: 600 }}>수정 횟수를 모두 사용했습니다.</span>}
-            </p>
-            {revisions.length === 0 ? (
-              <p style={{ fontSize: 15, color: "#969696", margin: 0 }}>아직 수정 이력이 없습니다.</p>
-            ) : revisions.map(({ round, date, desc }) => (
-              <div key={round} className="card qf-history-card" style={{ background: "#fafaf8", boxShadow: "none", marginTop: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
-                  <h4 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{round}회차 수정 내용</h4>
-                  <span className="muted small">{date}</span>
-                </div>
-                <p style={{ margin: 0, fontSize: 15 }}>{desc}</p>
+            {/* 좌측 — 제목·금액·내용·첨부파일 세로 나열 */}
+            <div className="qf-col-left">
+              <div className="qf-field">
+                <label>
+                  제목 <span style={{ color: "#EF4444" }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="견적 제목을 입력하세요"
+                  maxLength={100}
+                  value={form.title}
+                  onChange={e => set("title", e.target.value)}
+                  style={{ borderColor: submitted && !form.title.trim() ? "#EF4444" : undefined }}
+                />
               </div>
-            ))}
+
+              <div className="qf-field">
+                <label>
+                  견적 금액 <span style={{ color: "#EF4444" }}>*</span>
+                </label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    className="input"
+                    placeholder="0"
+                    value={form.amount ? Number(form.amount).toLocaleString() : ""}
+                    onChange={handleAmountInput}
+                    style={{
+                      paddingRight: 36,
+                      borderColor: submitted && (!form.amount || Number(form.amount) <= 0) ? "#EF4444" : undefined,
+                    }}
+                  />
+                  <span style={{
+                    position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+                    fontSize: 14, color: "#888", pointerEvents: "none",
+                  }}>원</span>
+                </div>
+              </div>
+
+              <div className="qf-field">
+                <label>
+                  내용 <span style={{ color: "#EF4444" }}>*</span>
+                  <span className="qf-field-hint">{form.message.length} / {MAX_CONTENT_LEN}</span>
+                </label>
+                <textarea
+                  className="input"
+                  rows={9}
+                  placeholder={"견적 내용을 입력하세요\n\n예) 서비스 범위, 예상 일정, 특이사항 등"}
+                  value={form.message}
+                  onChange={e => set("message", e.target.value.slice(0, MAX_CONTENT_LEN))}
+                  maxLength={MAX_CONTENT_LEN}
+                  style={{
+                    resize: "vertical", minHeight: 180,
+                    padding: "10px 12px", lineHeight: 1.6,
+                    borderColor: submitted && !form.message.trim() ? "#EF4444" : undefined,
+                  }}
+                />
+              </div>
+
+              {/* 버튼 — 입력 필드 컬럼 하단 */}
+              <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => setCancelConfirm(true)}
+                  style={{ flex: 1 }}
+                >
+                  취소
+                </button>
+                {isQuoteSubmitted ? (
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handleEdit}
+                    disabled={loading || editCount >= MAX_EDIT_COUNT}
+                    style={{ flex: 1 }}
+                  >
+                    {loading ? "수정 중..." : "견적 수정"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handleSubmit}
+                    disabled={loading}
+                    style={{ flex: 1 }}
+                  >
+                    {loading ? "제출 중..." : "견적 제출"}
+                  </button>
+                )}
+              </div>
+
+              <div className="qf-field">
+                <label>
+                  첨부파일 <span style={{ color: "#EF4444" }}>*</span>
+                  <span className="qf-field-hint">(최대 {MAX_ATTACH}개)</span>
+                </label>
+                <div
+                  className="qf-thumb-wrap"
+                  style={{ borderColor: submitted && attachFiles.length === 0 ? "#EF4444" : undefined }}
+                  onDragOver={e => e.preventDefault()}
+                  onDrop={e => { e.preventDefault(); handleFiles(e.dataTransfer.files); }}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    hidden
+                    accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
+                    onChange={e => handleFiles(e.target.files)}
+                  />
+                  <div className="qf-thumb-header">
+                    <p className="qf-thumb-hint">
+                      드래그앤드롭 또는 파일 선택 · 최대 {MAX_ATTACH}개 ({attachFiles.length}/{MAX_ATTACH})
+                    </p>
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={attachFiles.length >= MAX_ATTACH}
+                    >
+                      파일 추가
+                    </button>
+                  </div>
+                  <div className="qf-thumb-grid">
+                    {attachFiles.map(f => (
+                      <div key={f.id} className="qf-thumb-item">
+                        {f.previewUrl ? (
+                          <img src={f.previewUrl} alt={f.name} className="qf-thumb-img" />
+                        ) : (
+                          <div className="qf-thumb-file">
+                            <span className="qf-thumb-ext">{f.name.split(".").pop().toUpperCase()}</span>
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          className="qf-thumb-del"
+                          onClick={() => removeFile(f.id)}
+                          aria-label="삭제"
+                        >×</button>
+                        <span className="qf-thumb-name">{f.name}</span>
+                      </div>
+                    ))}
+                    {Array.from({ length: MAX_ATTACH - attachFiles.length }, (_, i) => (
+                      <div
+                        key={`empty-${i}`}
+                        className="qf-thumb-empty"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <span>+</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 우측 — 수정 가능 정보 */}
+            <div className="qf-col-right">
+              <div className="qf-policy-wrap">
+                <div className="qf-policy-head">
+                  <h4>수정 가능 정보 <span style={{ color: "#c0392b" }}>*</span></h4>
+                  <span>제출 후 최대 3회 수정 가능하며, 이력은 보존됩니다.</span>
+                </div>
+                <p className="qf-policy-remain">
+                  {editCount < MAX_EDIT_COUNT
+                    ? <span style={{ color: "#0064ff", fontWeight: 600 }}>남은 수정 횟수: {MAX_EDIT_COUNT - editCount}회</span>
+                    : <span style={{ color: "#EF4444", fontWeight: 600 }}>수정 횟수를 모두 사용했습니다.</span>}
+                </p>
+                <ul className="qf-policy-list">
+                  <li>제출한 견적은 요청자가 선택하기 전까지 수정할 수 있습니다</li>
+                  <li>수정할 때마다 이력이 기록되며 요청자에게 공개됩니다</li>
+                  <li>수정 횟수 3회를 모두 사용하면 추가 수정이 불가합니다</li>
+                </ul>
+                {revisions.length === 0 ? (
+                  <p className="qf-no-history">아직 수정 이력이 없습니다.</p>
+                ) : (
+                  revisions.map(({ round, date, desc }) => (
+                    <div key={round} className="qf-history-card">
+                      <div className="qf-history-card-header">
+                        <span style={{ fontSize: 13, fontWeight: 600 }}>{round}회차 수정</span>
+                        <span className="muted small">{date}</span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: 13, color: "#555" }}>{desc}</p>
+                    </div>
+                  ))
+                )}
+                {!isEditMode && (
+                  <div className="qf-policy-agree">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={policyAgreed}
+                        onChange={e => setPolicyAgreed(e.target.checked)}
+                        style={{ accentColor: "#0048bf" }}
+                      />
+                      위 내용을 확인하였습니다.
+                    </label>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* 버튼 영역 — 카드 밖 하단 */}
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-            {isQuoteSubmitted && (
-              <button
-                type="button"
-                className="btn btn-outline"
-                onClick={handleEdit}
-                disabled={loading || editCount >= MAX_EDIT_COUNT}
-                style={editCount >= MAX_EDIT_COUNT ? {
-                  background: "#e0e0e0", color: "#999", borderColor: "#e0e0e0", cursor: "not-allowed", pointerEvents: "none"
-                } : undefined}
-              >
-                견적 수정
-              </button>
-            )}
-            <button type="button" className="btn btn-outline" onClick={() => setCancelConfirm(true)}>
-              {isEditMode ? '수정 취소' : '작성 취소'}
-            </button>
-          </div>
-
-        </aside>
-
+        </div>
       </div>
 
       <AlertModal open={!!alertMsg} message={alertMsg} onClose={() => setAlertMsg("")} />
 
-      {/* 견적 수정 완료 레이어팝업 */}
+      {/* 견적 수정 완료 팝업 */}
       {editSuccessMsg && (
-        <div
-          style={{
-            position: "fixed", inset: 0, zIndex: 1000,
-            background: "rgba(0,0,0,0.45)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}
-          onClick={() => setEditSuccessMsg("")}
-        >
-          <div
-            style={{
-              background: "#fff", borderRadius: 16, padding: "36px 40px",
-              maxWidth: 380, width: "90%", textAlign: "center",
-              boxShadow: "0 8px 40px rgba(0,0,0,0.18)",
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
+        <div className="qf-modal-overlay" onClick={() => setEditSuccessMsg("")}>
+          <div className="qf-modal-box" onClick={e => e.stopPropagation()}>
+            <div className="qf-modal-icon">✅</div>
             {editSuccessMsg.split("\n").map((line, i) => (
               <p key={i} style={{ margin: i === 0 ? "0 0 8px" : 0, fontSize: i === 0 ? 18 : 15, fontWeight: i === 0 ? 700 : 400, color: i === 0 ? "#111" : "#555" }}>
                 {line}
@@ -645,23 +536,11 @@ export default function QuoteFormPage() {
         </div>
       )}
 
-      {/* 견적 제출 완료 레이어팝업 */}
+      {/* 견적 제출 완료 팝업 */}
       {submitSuccess && (
-        <div
-          style={{
-            position: "fixed", inset: 0, zIndex: 1000,
-            background: "rgba(0,0,0,0.45)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}
-        >
-          <div
-            style={{
-              background: "#fff", borderRadius: 16, padding: "36px 40px",
-              maxWidth: 380, width: "90%", textAlign: "center",
-              boxShadow: "0 8px 40px rgba(0,0,0,0.18)",
-            }}
-          >
-            <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
+        <div className="qf-modal-overlay">
+          <div className="qf-modal-box">
+            <div className="qf-modal-icon">✅</div>
             <p style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 700, color: "#111" }}>견적이 제출되었습니다.</p>
             <p style={{ margin: 0, fontSize: 15, color: "#555" }}>내 견적 목록에서 확인하실 수 있습니다.</p>
             <button
@@ -679,28 +558,14 @@ export default function QuoteFormPage() {
         </div>
       )}
 
-      {/* 견적 취소 확인 팝업 */}
+      {/* 취소 확인 팝업 */}
       {cancelConfirm && (
-        <div
-          style={{
-            position: "fixed", inset: 0, zIndex: 1000,
-            background: "rgba(0,0,0,0.45)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}
-          onClick={() => setCancelConfirm(false)}
-        >
-          <div
-            style={{
-              background: "#fff", borderRadius: 16, padding: "36px 40px",
-              maxWidth: 380, width: "90%", textAlign: "center",
-              boxShadow: "0 8px 40px rgba(0,0,0,0.18)",
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
-            <p style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 700, color: "#111" }}>견적을 취소하시겠습니까?</p>
+        <div className="qf-modal-overlay" onClick={() => setCancelConfirm(false)}>
+          <div className="qf-modal-box" onClick={e => e.stopPropagation()}>
+            <div className="qf-modal-icon">⚠️</div>
+            <p style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 700, color: "#111" }}>작성을 취소하시겠습니까?</p>
             <p style={{ margin: 0, fontSize: 15, color: "#555" }}>작성 중인 내용은 저장되지 않습니다.</p>
-            <div style={{ display: "flex", gap: "10px", marginTop: 24 }}>
+            <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
               <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={() => setCancelConfirm(false)}>
                 돌아가기
               </button>
