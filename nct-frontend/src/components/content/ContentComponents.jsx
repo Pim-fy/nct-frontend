@@ -175,16 +175,6 @@ const GuidePreviewWindow = ({ label, children }) => (
     className="guide-screen-preview"
     role="img"
   >
-    <div className="guide-screen-preview__bar" aria-hidden="true">
-      <span /><span /><span />
-      <strong>{label}</strong>
-      <div className="guide-screen-preview__window-controls">
-        <span className="guide-window-control guide-window-control--minimize" />
-        <span className="guide-window-control guide-window-control--maximize" />
-        <span className="guide-window-control guide-window-control--close" />
-      </div>
-      <em>예시 화면</em>
-    </div>
     <div className="guide-screen-preview__body" aria-hidden="true">
       {children}
     </div>
@@ -227,6 +217,21 @@ const ProductRegisterPreview = () => (
         </div>
       </section>
     </div>
+    <section className="guide-preview-panel guide-preview-panel--wide">
+      <header>상품 사진·상세 설명</header>
+      <div className="guide-preview-product-extra">
+        <div className="guide-preview-upload-grid">
+          <span className="is-primary">대표 사진</span>
+          <span>상세 사진</span>
+          <span>상세 사진</span>
+        </div>
+        <div className="guide-preview-form-grid">
+          <GuidePreviewField label="상품 상태" value="사용감 적음" />
+          <GuidePreviewField label="거래 지역" value="서울 성동구" />
+          <GuidePreviewField label="상세 설명" value="정상 작동하며 구성품을 모두 포함합니다." />
+        </div>
+      </div>
+    </section>
     <div className="guide-preview-actions"><span>임시저장</span><strong>다음</strong></div>
   </GuidePreviewWindow>
 );
@@ -248,34 +253,67 @@ const AuctionDetailPreview = () => (
         <div className="guide-preview-actions guide-preview-actions--wide"><strong>입찰하기</strong><span>즉시구매</span></div>
       </section>
     </div>
+    <div className="guide-preview-auction-checks">
+      <GuidePreviewField label="사용 가능 포인트" value="82,000 P" />
+      <GuidePreviewField label="다음 입찰 가능 금액" value="63,000원 이상" />
+      <GuidePreviewField label="거래 방식" value="배송 · 직거래" />
+    </div>
+    <div className="guide-preview-ledger">
+      <strong>최근 입찰 현황</strong>
+      <div><span>시간</span><span>입찰자</span><span>입찰가</span><span>상태</span></div>
+      <div><span>14:32</span><b>참여자 3</b><em>62,000원</em><strong>최고가</strong></div>
+      <div><span>14:28</span><b>참여자 2</b><em>61,000원</em><strong>갱신됨</strong></div>
+    </div>
   </GuidePreviewWindow>
 );
 
-const TradeHistoryPreview = () => (
-  <GuidePreviewWindow label="상품 구매 내역">
-    <div className="guide-preview-page-title guide-preview-page-title--compact">
-      <div><small>MY AUCTION</small><strong>상품 구매 내역</strong></div>
-      <div className="guide-preview-tabs"><span className="is-active">전체 3</span><span>진행 중 1</span><span>완료 2</span></div>
+const TradeDetailPreview = () => (
+  <GuidePreviewWindow label="거래 상세">
+    <div className="guide-preview-page-title guide-preview-page-title--trade-detail">
+      <div>
+        <strong>거래 상세</strong>
+        <small>거래번호 TR-20260729-0182</small>
+      </div>
+      <span className="guide-preview-status">거래 완료</span>
     </div>
-    <div className="guide-preview-search">상품명, 상대방, 거래번호 검색</div>
-    <article className="guide-preview-trade-item">
+    <section className="guide-preview-trade-summary">
       <div className="guide-preview-trade-image">상품 이미지</div>
       <div>
-        <span className="guide-preview-status">배송 중</span>
+        <small>구매 상품</small>
         <h4>빈티지 오디오 앰프</h4>
-        <p>62,000원 · 2026.07.29</p>
-        <small>구매자 거래 · 판매자 예시</small>
+        <p>판매자 예시 · 배송 거래</p>
       </div>
-      <strong>거래 상세</strong>
-    </article>
+      <strong>62,000원</strong>
+    </section>
+    <ol className="guide-preview-trade-progress">
+      <li className="is-complete">결제</li>
+      <li className="is-complete">배송</li>
+      <li className="is-complete">구매 확정</li>
+      <li className="is-current">거래 완료</li>
+    </ol>
+    <section className="guide-preview-trade-details">
+      <div><span>거래 방식</span><strong>택배 배송</strong></div>
+      <div><span>결제 금액</span><strong>62,000원</strong></div>
+      <div><span>배송 완료</span><strong>2026.07.29</strong></div>
+      <div><span>완료 상태</span><strong>구매 확정 완료</strong></div>
+      <div><span>배송지</span><strong>서울 성동구 ****</strong></div>
+      <div><span>송장번호</span><strong>1234-****-5678</strong></div>
+    </section>
+    <div className="guide-preview-actions guide-preview-actions--wide">
+      <span>거래 내역 확인</span><strong>리뷰 작성</strong>
+    </div>
   </GuidePreviewWindow>
 );
 
 const PointWalletPreview = () => (
   <GuidePreviewWindow label="포인트 지갑">
-    <div className="guide-preview-page-title guide-preview-page-title--compact">
+    <div className="guide-preview-page-title guide-preview-page-title--wallet">
       <strong>포인트 지갑</strong>
-      <div className="guide-preview-actions guide-preview-actions--inline"><strong>충전</strong><span>전환</span><span>환전</span></div>
+      <div className="guide-preview-wallet-actions">
+        <span className="is-active">포인트 충전</span>
+        <span>포인트 전환</span>
+        <span>환전 신청</span>
+      </div>
     </div>
     <div className="guide-preview-wallet-cards">
       <div><span>총 보유 포인트</span><strong>144,000 P</strong></div>
@@ -287,6 +325,21 @@ const PointWalletPreview = () => (
       <strong>포인트 내역</strong>
       <div><span>일시</span><span>유형</span><span>변동금액</span><span>잔액</span></div>
       <div><span>07.29</span><b>홀딩</b><em>-62,000P</em><strong>82,000P</strong></div>
+      <div><span>07.25</span><b>충전</b><em>+50,000P</em><strong>144,000P</strong></div>
+      <div><span>07.20</span><b>반환</b><em>+20,000P</em><strong>94,000P</strong></div>
+      <div><span>07.18</span><b>사용</b><em>-35,000P</em><strong>74,000P</strong></div>
+    </div>
+    <div className="guide-preview-wallet-exchange">
+      <div><span>환전 신청 가능</span><strong>20,000 P</strong></div>
+      <div><span>등록 계좌</span><strong>신한은행 ***1234</strong></div>
+    </div>
+    <div className="guide-preview-wallet-status">
+      <strong>포인트 상태 안내</strong>
+      <div>
+        <span>사용 가능 · 즉시 사용</span>
+        <span>홀딩 · 거래 완료까지 보관</span>
+        <span>환전 가능 · 신청 가능</span>
+      </div>
     </div>
   </GuidePreviewWindow>
 );
@@ -297,27 +350,76 @@ const ServiceRequestPreview = () => (
     <section className="guide-preview-panel guide-preview-panel--wide">
       <header>요청 정보</header>
       <div>
-        <GuidePreviewField label="요청 제목" value="브랜드 로고 디자인을 의뢰해요" />
+        <GuidePreviewField label="요청 제목" value="성수동 원룸 이사 운반" />
         <span className="guide-preview-label">카테고리</span>
         <div className="guide-preview-category-cards">
-          <b>청소</b><b className="is-active">디자인 ✓</b><b>레슨</b><b>설치</b>
+          <b className="is-active">이사</b><b>청소</b><b>설치·수리</b><b>인테리어</b>
         </div>
       </div>
     </section>
     <section className="guide-preview-question">
       <span>1</span>
-      <div><strong>어떤 디자인이 필요한가요?</strong><div className="guide-preview-chips"><b className="is-active">로고</b><b>명함</b><b>상세페이지</b></div></div>
+      <div><strong>이사 방식</strong><div className="guide-preview-chips"><b className="is-active">포장이사</b><b>반포장이사</b><b>일반이사</b></div></div>
+    </section>
+    <section className="guide-preview-question">
+      <span>2</span>
+      <div><strong>평수·거주 인원</strong><div className="guide-preview-chips"><b className="is-active">8평</b><b>1명</b></div></div>
+    </section>
+    <section className="guide-preview-question">
+      <span>3</span>
+      <div><strong>출발지·도착지</strong><div className="guide-preview-chips"><b className="is-active">서울 성동구</b><b>서울 마포구</b></div></div>
     </section>
     <div className="guide-preview-actions"><span>임시저장</span><strong>요청서 공개</strong></div>
+  </GuidePreviewWindow>
+);
+
+const QuoteSelectionPreview = () => (
+  <GuidePreviewWindow label="견적 비교·선택">
+    <div className="guide-preview-page-title guide-preview-page-title--compact">
+      <strong>받은 견적 비교</strong>
+    </div>
+    <article className="guide-preview-trade-item">
+      <div className="guide-preview-trade-image">이사</div>
+      <div>
+        <span className="guide-preview-status">제출됨</span>
+        <h4>정성 이사 견적</h4>
+        <p>포장이사 · 오전 방문 가능</p>
+        <small>견적 금액 180,000원</small>
+      </div>
+      <strong>선택하기</strong>
+    </article>
+    <article className="guide-preview-trade-item">
+      <div className="guide-preview-trade-image">이사</div>
+      <div>
+        <span className="guide-preview-status">제출됨</span>
+        <h4>안심 이사팀</h4>
+        <p>포장이사 · 추가 작업 포함</p>
+        <small>견적 금액 195,000원</small>
+      </div>
+      <strong>선택하기</strong>
+    </article>
+    <article className="guide-preview-trade-item">
+      <div className="guide-preview-trade-image">이사</div>
+      <div>
+        <span className="guide-preview-status">제출됨</span>
+        <h4>빠른 운반 파트너</h4>
+        <p>일반이사 · 포장재 별도 제공</p>
+        <small>견적 금액 165,000원</small>
+      </div>
+      <strong>선택하기</strong>
+    </article>
+    <p className="guide-preview-selection-note">금액뿐 아니라 작업 범위와 방문 가능 시간까지 확인한 뒤 견적을 선택합니다.</p>
+    <div className="guide-preview-actions guide-preview-actions--wide"><strong>선택 후 거래 시작</strong></div>
   </GuidePreviewWindow>
 );
 
 const GuideScreenPreview = ({ type }) => {
   if (type === 'product-register') return <ProductRegisterPreview />;
   if (type === 'auction-detail') return <AuctionDetailPreview />;
-  if (type === 'trade-history') return <TradeHistoryPreview />;
+  if (type === 'trade-detail') return <TradeDetailPreview />;
   if (type === 'point-wallet') return <PointWalletPreview />;
   if (type === 'service-request') return <ServiceRequestPreview />;
+  if (type === 'quote-selection') return <QuoteSelectionPreview />;
   return null;
 };
 
@@ -339,6 +441,11 @@ export const GuideJourneyOverview = ({
   const activeGuides = activeJourney?.flowIds
     .map((flowId) => guidesById.get(flowId))
     .filter(Boolean) || [];
+  const [activeGuideId, setActiveGuideId] = useState(
+    highlightedFlowId || requestedJourney?.flowIds?.[0] || journeys[0]?.flowIds?.[0],
+  );
+  const activeGuide = activeGuides.find((guide) => guide.id === activeGuideId)
+    || activeGuides[0];
 
   if (!activeJourney) return null;
 
@@ -350,13 +457,18 @@ export const GuideJourneyOverview = ({
             aria-selected={activeJourney.id === journey.id}
             className={activeJourney.id === journey.id ? 'is-active' : undefined}
             key={journey.id}
-            onClick={() => setActiveJourneyId(journey.id)}
+            onClick={() => {
+              setActiveJourneyId(journey.id);
+              setActiveGuideId(journey.flowIds[0]);
+            }}
             role="tab"
             type="button"
           >
-            <span>{journey.id === 'auction' ? '01' : '02'}</span>
-            <strong>{journey.id === 'auction' ? '경매로 거래하기' : '서비스 요청하기'}</strong>
-            <small>{journey.id === 'auction' ? '판매와 입찰부터 안전한 거래까지' : '요청서 작성부터 거래 완료까지'}</small>
+            <span aria-hidden="true">{journey.id === 'auction' ? '01' : '02'}</span>
+            <div>
+              <strong>{journey.id === 'auction' ? '경매 거래' : '서비스 요청'}</strong>
+              <small>{journey.id === 'auction' ? '등록부터 거래 완료까지' : '작성부터 거래 완료까지'}</small>
+            </div>
           </button>
         ))}
       </div>
@@ -366,23 +478,37 @@ export const GuideJourneyOverview = ({
         role="tabpanel"
       >
         <div className="guide-feature__copy">
-          <span>{activeJourney.eyebrow}</span>
-          <h2>{activeJourney.title}</h2>
-          <p>{activeJourney.description}</p>
+          <header className="guide-feature__heading">
+            <span>{activeJourney.id === 'auction' ? '01' : '02'}</span>
+            <div>
+              <h2>{activeJourney.title}</h2>
+              <p>{activeJourney.description}</p>
+            </div>
+          </header>
 
           <ol className="guide-feature__steps">
             {activeGuides.map((guide, index) => (
               <li
-                className={guide.id === highlightedFlowId ? 'is-highlighted' : undefined}
+                className={[
+                  guide.id === highlightedFlowId ? 'is-highlighted' : '',
+                  guide.id === activeGuide?.id ? 'is-active' : '',
+                ].filter(Boolean).join(' ') || undefined}
                 id={`guide-flow-${guide.id}`}
                 key={`${activeJourney.id}-${guide.id}`}
               >
-                <span>{index + 1}</span>
-                <div>
-                  <strong>{guide.title}</strong>
-                  <p>{guide.summary}</p>
-                </div>
-                <Check aria-hidden="true" />
+                <button
+                  onClick={() => setActiveGuideId(guide.id)}
+                  onFocus={() => setActiveGuideId(guide.id)}
+                  onMouseEnter={() => setActiveGuideId(guide.id)}
+                  type="button"
+                >
+                  <span>{index + 1}</span>
+                  <div>
+                    <strong>{guide.title}</strong>
+                    <p>{guide.summary}</p>
+                  </div>
+                  <Check aria-hidden="true" className="guide-feature__step-check" />
+                </button>
               </li>
             ))}
           </ol>
@@ -395,10 +521,7 @@ export const GuideJourneyOverview = ({
 
         <div className="guide-feature__visual" aria-label={`${activeJourney.title} 대표 화면`}>
           <div className="guide-feature__visual-main">
-            <GuideScreenPreview type={activeJourney.previewType} />
-          </div>
-          <div className="guide-feature__visual-secondary">
-            <GuideScreenPreview type={activeJourney.secondaryPreviewType} />
+            <GuideScreenPreview type={activeGuide?.preview?.type} />
           </div>
         </div>
       </article>

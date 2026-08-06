@@ -84,10 +84,6 @@ export const BREADCRUMB_ENTRIES = [
     trail: () => [{ label: '내 서비스 요청 목록', to: '/service-requests/me' }],
   },
   {
-    pattern: '/provider/quotes',
-    trail: () => [{ label: '내 견적', to: '/provider/quotes' }],
-  },
-  {
     pattern: '/customersupport/notice',
     trail: () => [{ label: '공지사항', to: '/customersupport/notice' }],
   },
@@ -105,7 +101,7 @@ export const BREADCRUMB_ENTRIES = [
 // 브레드크럼 대상 페이지 목록.
 //  - pageLabel     : 마지막 항목(현재 페이지)에 표시할 고정 라벨 (실제 데이터 제목은 넣지 않음 — 사용자 확정)
 //  - defaultTrail  : state.from이 없거나(직접 URL 진입·새 탭) 진입점이 아닐 때 쓰는
-//                    "정보 구조상의 정식 상위 경로"
+//                    "정보 구조상의 정식 상위 경로". 경로 파라미터가 필요하면 함수로 정의한다.
 //  - hidden: true  : 파라미터 패턴과 URL이 겹치는 목록 페이지를 명시적으로 제외하기 위한 표시
 //
 // ※ matchPath는 배열 순서대로 첫 매치를 쓰므로, 구체 경로(/service-requests/new)를
@@ -135,6 +131,20 @@ export const BREADCRUMB_ROUTES = [
     defaultTrail: [],
   },
   { pattern: '/service-requests/me', hidden: true }, // 목록 페이지 — :svcReqSn 오매치 방지용
+  {
+    pattern: '/service-requests/:svcReqSn/quotes/new',
+    pageLabel: '견적 작성',
+    defaultTrail: ({ svcReqSn }) => [
+      { label: '서비스 요청 상세', to: `/service-requests/${svcReqSn}` },
+    ],
+  },
+  {
+    pattern: '/service-requests/:svcReqSn/quotes/:quoteId/edit',
+    pageLabel: '견적 수정',
+    defaultTrail: ({ svcReqSn }) => [
+      { label: '서비스 요청 상세', to: `/service-requests/${svcReqSn}` },
+    ],
+  },
   {
     // 일반회원(본인 요청)과 제공자(공개 요청)가 같은 화면을 쓰므로,
     // 역할을 단정하지 않도록 정식 상위는 홈만 두고 실제 경로는 state.from으로 구분한다
@@ -221,20 +231,5 @@ export const BREADCRUMB_ROUTES = [
     pattern: '/provider/applications/status',
     pageLabel: '제공자 신청 현황',
     defaultTrail: [{ label: '마이페이지', to: '/user/mypage' }],
-  },
-  {
-    pattern: '/provider/profile',
-    pageLabel: '제공자 프로필 관리',
-    defaultTrail: [{ label: '마이페이지', to: '/user/mypage' }],
-  },
-  {
-    pattern: '/provider/quotes/new',
-    pageLabel: '견적 작성',
-    defaultTrail: [{ label: '내 견적', to: '/provider/quotes' }],
-  },
-  {
-    pattern: '/provider/quotes/:quoteId/edit',
-    pageLabel: '견적 수정',
-    defaultTrail: [{ label: '내 견적', to: '/provider/quotes' }],
   },
 ];

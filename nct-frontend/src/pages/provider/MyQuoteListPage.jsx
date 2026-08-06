@@ -138,8 +138,10 @@ export default function MyQuoteListPage({ embedded = false } = {}) {
       toast({ icon: "warning", title: "수정 가능 횟수(3회)를 초과했습니다." });
       return;
     }
-    // 수정 대상 견적번호를 경로에 남겨 새로고침·직접 진입에도 수정 상태를 유지한다.
-    navigate(`/provider/quotes/${quote.qutSn}/edit?svcReqSn=${quote.svcReqSn}`);
+    // 요청번호와 견적번호를 경로에 남겨 새로고침·직접 진입에도 연결 관계를 유지한다.
+    navigate(`/service-requests/${quote.svcReqSn}/quotes/${quote.qutSn}/edit`, {
+      state: { from: '/user/mypage?section=quote' },
+    });
   };
 
   const handleCancel = async (quote) => {
