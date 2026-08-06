@@ -3,20 +3,23 @@
 // 마이페이지 공통 목록 컴포넌트를 사용하며 가격·날짜 표시 형식을 유지한다.
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { CalendarCheck, CalendarDays } from 'lucide-react';
 import { toImageUrl } from '@api/fileApi';
 import { deleteProduct } from '@api/productApi';
+import { formatDate } from '@utils/common';
 import { TRADE_LABEL, TRADE_STATUS_LABEL, AUC_STATUS_LABEL } from '@/constants/productConstants';
 import { useMyProducts } from '@hooks/useProduct';
 import Pagination from '@components/common/Pagination';
 import Toast from '@components/common/Toast';
 import ConfirmModal from '@components/common/ConfirmModal';
 import MyPageListSectionLayout from '@components/mypage/MyPageListSectionLayout';
-import MyPageListItem from '@components/mypage/MyPageListItem';
+import MyPageAuctionListItem from '@components/mypage/MyPageAuctionListItem';
 import MyPageListEmpty from '@components/mypage/MyPageListEmpty';
 import MyPageListError from '@components/mypage/MyPageListError';
 import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
 import MyPageStatusBadge from '@components/mypage/MyPageStatusBadge';
 import MyPageListSkeleton from '@components/skeleton/MyPageListSkeleton';
+import MyPageMobileCard from '@components/mypage/MyPageMobileCard';
 
 // ─── 필터 ────────────────────────────────────────────────────────────────────
 
@@ -87,11 +90,6 @@ function fmtPrice(n) {
   return n != null ? `${Number(n).toLocaleString()}원` : '-';
 }
 
-function fmtDate(d) {
-  if (!d) return '';
-  return new Date(d).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
-}
-
 // ─── 컴포넌트 ─────────────────────────────────────────────────────────────────
 
 export default function MyProductList({ onOpenTradeDetail }) {
@@ -139,6 +137,11 @@ export default function MyProductList({ onOpenTradeDetail }) {
   };
 
   const handleSubFilterChange = (value) => { setSubFilter(value); setPage(1); };
+
+  const handlePageChange = (nextPage) => {
+    setPage(nextPage);
+    window.scrollTo(0, 0);
+  };
 
   const handleDeleteConfirm = async () => {
     const { prdSn } = confirmTarget;
@@ -215,7 +218,10 @@ export default function MyProductList({ onOpenTradeDetail }) {
           ) : null}
         />
       ) : (
-        <>
+          <>
+          {/* history-list의 display:grid가 불레이어 CSS라 Tailwind hidden(@layer utilities)보다 우선
+              적용된다 — hidden/lg:block은 별도 래퍼에 둬서 두 display 선언이 충돌하지 않게 한다. */}
+          <div className="hidden lg:block">
           <div className="history-list">
             {visibleList.map((p) => {
               const badgeLabel = p.tradeSn
@@ -235,14 +241,19 @@ export default function MyProductList({ onOpenTradeDetail }) {
               const isEnded  = p.prdStatusCd === 'PRDC0003';
 
               return (
-                <MyPageListItem
+                <MyPageAuctionListItem
                   key={p.prdSn}
                   imageSrc={p.prdImgUrl ? toImageUrl(p.prdImgUrl) : ''}
                   imageAlt={p.prdNm}
                   imageFallback="상품 이미지"
                   badge={<MyPageStatusBadge className={badgeClass}>{badgeLabel}</MyPageStatusBadge>}
                   title={p.prdNm}
-                  actions={(
+                  topLine={`확정날짜 ${formatDate(p.tradeCreatedAt ?? p.prdRegDt)} / 완료날짜 ${formatDate(p.tradeCompletedAt)}`}
+                  priceItems={[
+                    { label: '확정 가격', value: fmtPrice(p.tradeAmount ?? p.prdStartAmt) },
+                  ]}
+                  tradeMethodLabel={TRADE_LABEL[p.prdTrdMethodCd] ?? p.prdTrdMethodCd}
+                  actionButton={(
                     <>
                     {p.tradeSn && (
                       <button
@@ -287,21 +298,70 @@ export default function MyProductList({ onOpenTradeDetail }) {
                     )}
                     </>
                   )}
-                >
-                  <p>
-                    시작가 {fmtPrice(p.prdStartAmt)}
-                    {p.prdIbyAmt != null && ` · 즉시구매 ${fmtPrice(p.prdIbyAmt)}`}
-                    {` · ${TRADE_LABEL[p.prdTrdMethodCd] ?? p.prdTrdMethodCd}`}
-                    {p.prdRegDt && ` · ${fmtDate(p.prdRegDt)}`}
-                  </p>
-                </MyPageListItem>
+                />
               );
             })}
           </div>
-          <div className="pagination">
-            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           </div>
-        </>
+          <div className="grid gap-4 lg:hidden">
+            {visibleList.map((p) => {
+              const badgeLabel = p.tradeSn
+                ? getTradeStatusLabel(p)
+                : p.aucStatusCd
+                ? (AUC_STATUS_LABEL[p.aucStatusCd] ?? p.aucStatusCd)
+                : (PRD_STATUS_LABEL[p.prdStatusCd] ?? p.prdStatusCd);
+              const badgeClass = p.tradeSn
+                ? (TRADE_BADGE[p.tradeStatusCd] ?? 'badge-outline-gray')
+                : p.aucStatusCd
+                ? (AUC_STATUS_BADGE[p.aucStatusCd] ?? 'badge-outline-gray')
+                : (PRD_STATUS_BADGE[p.prdStatusCd] ?? 'badge-outline-gray');
+              const isActive = p.prdStatusCd === 'PRDC0002';
+              const isDraft = p.prdStatusCd === 'PRDC0001';
+              const isEnded = p.prdStatusCd === 'PRDC0003';
+
+              return (
+                <MyPageMobileCard
+                  key={p.prdSn}
+                  imageSrc={p.prdImgUrl ? toImageUrl(p.prdImgUrl) : ''}
+                  imageAlt={p.prdNm}
+                  imageFallbackLabel="상품 이미지"
+                  badge={<MyPageStatusBadge className={badgeClass}>{badgeLabel}</MyPageStatusBadge>}
+                  title={p.prdNm}
+                  price={fmtPrice(p.tradeAmount ?? p.prdStartAmt)}
+                  infoItems={[
+                    { icon: CalendarDays, label: '확정날짜', value: formatDate(p.tradeCreatedAt ?? p.prdRegDt) },
+                    { icon: CalendarCheck, label: '완료날짜', value: formatDate(p.tradeCompletedAt) },
+                  ]}
+                  footerLeft={`거래 방식 · ${TRADE_LABEL[p.prdTrdMethodCd] ?? p.prdTrdMethodCd}`}
+                  actionButton={(
+                    <>
+                      {p.tradeSn && (
+                        <button type="button" onClick={() => onOpenTradeDetail ? onOpenTradeDetail(p.tradeSn) : navigate(`/trades/${p.tradeSn}/seller`, { state: breadcrumbFrom })} className="btn btn-sm btn-primary">거래 관리</button>
+                      )}
+                      {!p.tradeSn && isActive && (
+                        <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`, { state: breadcrumbFrom })} className={`btn btn-sm ${p.aucStatusCd === 'AUCC0005' ? 'btn-ghost' : 'btn-primary'}`}>
+                          {p.aucStatusCd === 'AUCC0005' ? '취소 상품 보기' : '판매 관리'}
+                        </button>
+                      )}
+                      {isDraft && (
+                        <button type="button" onClick={() => navigate('/product/register', { state: { prdSn: p.prdSn, ...breadcrumbFrom } })} className="btn btn-sm btn-ghost">등록재개</button>
+                      )}
+                      {!p.tradeSn && isEnded && (
+                        <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`, { state: breadcrumbFrom })} className="btn btn-sm btn-ghost">판매 기록</button>
+                      )}
+                      {(isDraft || isEnded) && !p.tradeSn && p.aucStatusCd !== 'AUCC0003' && (
+                        <button type="button" onClick={() => setConfirmTarget({ prdSn: p.prdSn, prdNm: p.prdNm })} className="btn btn-sm btn-danger">삭제</button>
+                      )}
+                    </>
+                  )}
+                />
+              );
+            })}
+          </div>
+          </>
+      )}
+      {!isLoading && (
+        <Pagination page={page} totalPages={totalPages} onPageChange={handlePageChange} showSinglePage />
       )}
 
       {toast && <Toast message={toast} onClose={() => setToast('')} />}
