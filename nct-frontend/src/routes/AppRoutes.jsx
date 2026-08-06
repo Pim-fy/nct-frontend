@@ -171,6 +171,10 @@ const AppRoutes = () => {
       {/* 실제 거래 경로의 인증 정책과 분리된 개발용 화면 확인 경로 */}
       {isTradePreviewEnabled && (
         <>
+          <Route
+            path="/service-trades/preview/:tradeId"
+            element={<ServiceTradeDetailPreviewPage />}
+          />
           <Route path="/trades/preview/:tradeId/chat" element={<TradeChat />} />
           <Route
             path="/trades/preview/:tradeId"
@@ -185,10 +189,6 @@ const AppRoutes = () => {
             <Route
               path="/user/mypage/preview/trades"
               element={<MyPage initialSection="auction-bids" previewTrades />}
-            />
-            <Route
-              path="/service-trades/preview/:tradeId"
-              element={<ServiceTradeDetailPreviewPage />}
             />
           </Route>
         </>

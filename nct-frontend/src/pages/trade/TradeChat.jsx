@@ -17,6 +17,7 @@ import {
   toTradeChatRooms,
 } from '@api/tradeChatAdapter';
 import { getTradeChatWebSocketUrl } from '@api/tradeChatSocket';
+import ReportModal from '@components/common/ReportModal';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
 import '@assets/css/trade-chat.css';
@@ -63,6 +64,7 @@ const TradeChat = ({
   const [messageInput, setMessageInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const [error, setError] = useState('');
   const [realtimeStatus, setRealtimeStatus] = useState('IDLE');
   const [reconnectSignal, setReconnectSignal] = useState(0);
@@ -636,6 +638,13 @@ const TradeChat = ({
                       >
                         {activeRoom.roomStatus === 'ACTIVE' ? '대화 가능' : '채팅 불가'}
                       </span>
+                      <button
+                        className="btn btn-ghost trade-chat-conversation__report"
+                        type="button"
+                        onClick={() => setIsReportOpen(true)}
+                      >
+                        신고하기
+                      </button>
                       {showRoomList && (
                         <button
                           className="btn btn-ghost trade-chat-conversation__close trade-chat-conversation__close--desktop"
@@ -723,6 +732,17 @@ const TradeChat = ({
           </div>
         )}
       </main>
+      {activeRoom && (
+        <ReportModal
+          open={isReportOpen}
+          onClose={() => setIsReportOpen(false)}
+          targetName={activeRoom.counterpartNickname}
+          targetType="trade"
+          referenceSn={activeRoom.tradeId}
+          reportedUserSn={activeRoom.counterpartUserId}
+          contextLabel={`채팅 상대: ${activeRoom.counterpartNickname}`}
+        />
+      )}
     </div>
   );
 };
