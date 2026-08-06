@@ -85,6 +85,7 @@
   background: transparent;
   box-shadow: none;
   padding: 0;
+  margin-bottom: 20px;
 }
 
 .trade-history-tabs {
@@ -194,12 +195,6 @@
   min-height: 44px;
   border-color: #dce2ed;
   border-radius: 10px;
-}
-
-.trade-history-list {
-  display: grid;
-  gap: 16px;
-  margin-top: 20px;
 }
 
 .trade-history-item {

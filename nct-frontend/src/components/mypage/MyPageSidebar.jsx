@@ -19,40 +19,49 @@ const GENERAL_MENU_ITEMS = [
       { key: "active-auctions", label: "진행 중인 경매", type: "section" },
       { key: "auction-bids",    label: "상품 구매 내역", type: "section" },
       { key: "auction-sales",   label: "상품 판매 내역", type: "section" },
+      { key: "wishlist",        label: "관심 경매",      type: "section" },
+    ],
+  },
+  { key: "service-requests", label: "견적 요청", type: "section" },
+  { key: "chat",         label: "채팅",         type: "section" },
+  { key: "wallet",       label: "포인트 지갑",  type: "section" },
+  { key: "review",       label: "리뷰",      type: "section" },
+  { key: "report-list",  label: "신고", type: "section" },
+];
+
+// "정산 관리" 메뉴는 포인트 지갑 화면의 "정산 내역" 탭으로 흡수돼 빠졌다
+// (백종남·옥동민 협의, 2026-08-04 — PointWalletPage.jsx 참고)
+const PROVIDER_MENU_ITEMS = [
+  { key: "home",              label: "MY 홈",        type: "section" },
+  {
+    key: "provider-profile-menu",
+    label: "프로필",
+    type: "accordion",
+    children: [
+      { key: "provider-profile", label: "제공자 프로필 관리", type: "section" },
+      { key: "profile",          label: "프로필 설정",         type: "section" },
     ],
   },
   {
-    key: "service-history",
-    label: "서비스 요청",
+    key: "provider-service-menu",
+    label: "서비스",
     type: "accordion",
     children: [
-      { key: "service-requests", label: "내 서비스 요청 목록", type: "section" },
-      { key: "received-quotes",  label: "받은 견적 관리",      type: "todo" },
+      { key: "quote",         label: "내 견적",      type: "section" },
+      { key: "service-trade", label: "서비스 거래", type: "section" },
     ],
   },
-  { key: "wishlist",     label: "관심 경매",    type: "section" },
-  { key: "chat",         label: "채팅",         type: "section" },
-  { key: "wallet",       label: "포인트 지갑",  type: "section" },
-  { key: "review",       label: "내 리뷰",      type: "section" },
-  { key: "report-list",  label: "내 신고 목록", type: "section" },
-];
-
-const PROVIDER_MENU_ITEMS = [
-  { key: "home",              label: "MY 홈",        type: "section" },
-  { key: "profile",           label: "프로필 관리",   type: "section" },
-  { key: "quote",             label: "내 견적",        type: "section" },
-  { key: "service-trade",     label: "서비스 거래",   type: "section" },
-  { key: "settlement",        label: "정산 관리",     type: "section" },
-  { key: "service-chat",      label: "서비스 채팅",   type: "section" },
+  { key: "chat",              label: "채팅",          type: "section" },
   { key: "wallet",            label: "포인트 지갑",   type: "section" },
   { key: "received-review",   label: "받은 리뷰",     type: "section" },
-  { key: "report-list",       label: "내 신고 목록",  type: "section" },
+  { key: "report-list",       label: "신고",  type: "section" },
 ];
 
 // 아코디언 key → 포함되는 child key 목록
 const ACCORDION_CHILDREN = {
-  "auction-history":  ["active-auctions", "auction-bids", "auction-sales"],
-  "service-history":  ["service-requests", "received-quotes"],
+  "auction-history":  ["active-auctions", "auction-bids", "auction-sales", "wishlist"],
+  "provider-profile-menu": ["provider-profile", "profile"],
+  "provider-service-menu": ["quote", "service-trade"],
 };
 
 function getParentAccordion(sectionKey) {
@@ -111,7 +120,7 @@ export default function MyPageSidebar({
   );
 
   return (
-    <nav className="lg:w-[210px] lg:shrink-0" aria-label={`${sidebarTitle} 메뉴`}>
+    <nav className="lg:sticky lg:top-[122px] lg:w-[210px] lg:shrink-0" aria-label={`${sidebarTitle} 메뉴`}>
       {/* 타이틀 (데스크톱) */}
       <h2 className="hidden h-9 items-center px-2 text-[25px] font-bold leading-none text-black lg:flex mb-5">
         {sidebarTitle}

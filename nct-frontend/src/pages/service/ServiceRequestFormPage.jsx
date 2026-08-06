@@ -1301,7 +1301,7 @@ export default function ServiceRequestFormPage() {
                     <li>요청서 등록 후에는 본문을 수정할 수 없으며, 변경사항은 별도로 최대 3회까지 추가할 수 있습니다</li>
                     <li>포인트 홀딩은 제공자의 견적을 선택한 시점부터 시작됩니다</li>
                     <li>매칭 후 거래를 정당한 사유 없이 취소하면 포인트 패널티가 부과됩니다</li>
-                    <li>요청서 삭제는 관리자에게 요청하여 정당한 사유가 확인된 경우에만 처리됩니다</li>
+                    <li>임시저장 상태의 요청서만 삭제할 수 있습니다</li>
                   </ul>
                   <div className="mt-3 rounded-lg border border-[#f0efec] bg-white px-3.5 py-3">
                     <label className="flex cursor-pointer items-center gap-2 text-sm text-[#1d1d1f]">

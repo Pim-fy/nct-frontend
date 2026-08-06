@@ -11,23 +11,25 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Menu, X, ChevronRight } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { Menu, X, ChevronRight, Bell, Gavel, Truck, Wrench, Wallet, MessageCircle } from 'lucide-react';
 import { useAuth } from '@hooks/useAuth';
 import { useMyProviderApplications } from '@hooks/useProviderApplications';
-import { useMarkRead, useNotifications } from '@hooks/useNotification';
+import { useMarkAllRead, useMarkRead, useNotifications } from '@hooks/useNotification';
 import { useNotificationStream } from '@hooks/useNotificationStream';
 import { usePointBalance } from '@hooks/usePoint';
 import { usePublicNoticeList } from '@hooks/usePublicNotices';
 import relativeTime from '@utils/relativeTime';
-import { requestPointExchange, convertPoint } from '@api/pointApi';
-import { SITE_HEADER_VISIBILITY_EVENT } from '@/constants/layoutEvents';
+import {
+  SITE_HEADER_DOCK_EVENT,
+  SITE_HEADER_VISIBILITY_EVENT,
+} from '@/constants/layoutEvents';
 import { SITE_HEADER_SEARCH_SLOT_ID } from '@components/common/HeaderSearchPortal';
 import HeaderCreateAction from '@components/common/HeaderCreateAction';
 import ScrollToTopButton from '@components/common/ScrollToTopButton';
 import NotificationDetailModal from '@pages/user/notification/components/NotificationDetailModal';
 import PointChargeWidgetModal from '@pages/user/point/components/PointChargeWidgetModal';
 import PointAmountModal from '@pages/user/point/components/PointAmountModal';
+import { submitPointAmount } from '@pages/user/point/components/pointSubmitActions';
 import logoImg from '@assets/img/logo.png';
 import bellIcon from '@assets/img/bellIcon.png';
 import walletIcon from '@assets/img/walletIcon.png';
@@ -49,8 +51,21 @@ const SERVICE_CATEGORIES = ['이사', '청소', '레슨', '설치·수리', '인
 // POINT/알림 수치 실연동 (담당자6 BJN, 2026-07-18) — 종전 더미 상수(DUMMY_POINT/NOTI_ITEMS) 제거.
 // 이 헤더는 비로그인 공개 페이지에서도 렌더링되므로, 두 훅 모두 { enabled: 로그인여부 }로
 // 로그인 상태일 때만 API를 호출한다 (무조건 호출하면 401→로그인 강제이동이 발생하기 때문).
-// 헤더 드롭다운에 보여줄 알림 최대 개수 (안읽은 알림 미리보기 · 과거 알림 목록 공통)
+// 헤더 드롭다운(데스크톱, 좁은 팝오버)에 보여줄 알림 최대 개수
 const NOTI_PREVIEW_MAX = 5;
+// 모바일 전체화면 알림함은 스크롤 가능한 넓은 화면이라 5개로 잘라내면 실제로는 더 있는데도
+// 화면 아래쪽이 비어 보인다 — 데스크톱보다 훨씬 넉넉하게 보여준다 (2026-08-05)
+const NOTI_MOBILE_MAX = 20;
+
+// 알림 도메인(domainCd, NTFG03)별 아이콘 — 알림함 페이지(NotificationPage.jsx DOMAIN_DEFS)와 같은 코드값 기준.
+// 텍스트만 있던 미리보기가 모바일 전체화면에서 허전해 보여 항목마다 시각적 구분을 추가했다 (2026-08-05).
+const NOTI_DOMAIN_ICONS = {
+  NTFC0010: Gavel, // 경매·입찰
+  NTFC0011: Truck, // 거래·배송
+  NTFC0012: Wrench, // 서비스
+  NTFC0013: Wallet, // 운영·환전
+  NTFC0014: MessageCircle, // 채팅
+};
 
 const Header = () => {
   // isProvider·switchMode: 제공자 모드전환 실연동 (F-PROV-008, 담당자6 BJN, 2026-07-24)
@@ -84,6 +99,7 @@ const Header = () => {
   const notiQuery = useNotifications({ enabled: !!user });
   useNotificationStream(!!user); // 실시간 push 구독 — 새 알림 오면 notiQuery를 자동 invalidate
   const markReadMutation = useMarkRead();
+  const markAllReadMutation = useMarkAllRead();
   const [selectedNoti, setSelectedNoti] = useState(null); // 클릭한 알림 상세 팝업
   const balanceQuery = usePointBalance({ enabled: !!user });
   // 헤더 POINT 드롭다운의 충전/환전 버튼 → 마이페이지로 이동하지 않고 이 자리에서 바로 모달을 띄운다
@@ -93,9 +109,11 @@ const Header = () => {
   // 안읽은 알림: 배지 숫자와 드롭다운 목록의 공통 원천
   const unreadNotis = (notiQuery.data ?? []).filter((n) => !n.read);
   const notiCount = user ? unreadNotis.length : 0;
-  // 안읽은 우선 + 읽은 알림을 합쳐 드롭다운에 최대 NOTI_PREVIEW_MAX(5)개만 미리보기
+  // 안읽은 우선 + 읽은 알림을 합쳐 데스크톱 드롭다운엔 NOTI_PREVIEW_MAX(5)개, 모바일 전체화면엔 NOTI_MOBILE_MAX(20)개까지 보여준다
   const readNotis = (notiQuery.data ?? []).filter((n) => n.read);
-  const previewNotis = [...unreadNotis, ...readNotis].slice(0, NOTI_PREVIEW_MAX);
+  const sortedNotis = [...unreadNotis, ...readNotis];
+  const previewNotis = sortedNotis.slice(0, NOTI_PREVIEW_MAX);
+  const mobileNotis = sortedNotis.slice(0, NOTI_MOBILE_MAX);
   // 잔액은 조회 전(로딩·비로그인)에는 0으로 표시 — 임의 기본값이 아니라 "아직 모름"의 화면 표기
   const pointBalance = balanceQuery.data ?? { total: 0, available: 0 };
   const [categoryHovered, setCategoryHovered] = useState(false);
@@ -118,6 +136,7 @@ const Header = () => {
   const [scrolled, setScrolled] = useState(false);
   const [noticeIndex, setNoticeIndex] = useState(0);
   const [isPageHidden, setIsPageHidden] = useState(false);
+  const [hasBottomDock, setHasBottomDock] = useState(false);
   const isAuctionSearchRoute = pathname === '/auction'
     || /^\/auction\/[^/]+$/.test(pathname);
   const isServiceSearchRoute = isProvider && (
@@ -127,7 +146,7 @@ const Header = () => {
   // 현재 보고 있는 화면이 헤더의 어느 메뉴에 속하는지 — 호버와 무관하게 항상 활성 색상을 보여준다.
   const isAuctionMenuActive = pathname.startsWith('/auction');
   const isServiceMenuActive = pathname.startsWith('/service') || pathname.startsWith('/provider/quotes');
-  const isCustomerMenuActive = pathname.startsWith('/customersupport') || pathname.startsWith('/guide');
+  const isCustomerMenuActive = pathname.startsWith('/customersupport');
   let headerCreateActionType = null;
   const canShowCreateAction = !authLoading && (!user || user.role === 'ROLE_USER');
   if (canShowCreateAction) {
@@ -160,6 +179,15 @@ const Header = () => {
       SITE_HEADER_VISIBILITY_EVENT,
       handleVisibilityChange,
     );
+  }, []);
+
+  useEffect(() => {
+    const handleDockChange = (event) => {
+      setHasBottomDock(Boolean(event.detail?.docked));
+    };
+
+    window.addEventListener(SITE_HEADER_DOCK_EVENT, handleDockChange);
+    return () => window.removeEventListener(SITE_HEADER_DOCK_EVENT, handleDockChange);
   }, []);
 
   // 스크롤이 임계값을 넘으면(= 상단 NoticeStrip이 화면 밖으로 나가면) 헤더 중앙에 롤링 티커를 보여준다.
@@ -196,6 +224,14 @@ const Header = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // 모바일 알림 전체화면이 열려있는 동안 배경 스크롤을 막는다 (데스크톱 드롭다운은 그대로 스크롤 허용).
+  useEffect(() => {
+    if (!notiOpen || window.innerWidth >= 640) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [notiOpen]);
 
   // 모바일 전체화면 메뉴가 열려있는 동안 배경 스크롤을 막는다.
   useEffect(() => {
@@ -244,70 +280,12 @@ const Header = () => {
     setProfileOpen(which === 'profile' ? (v) => !v : false);
   };
 
-  // 헤더 POINT 드롭다운의 전환 모달 제출 — PointWalletPage의 submitAmount('convert')와 같은 로직
-  const submitHeaderConvert = (amount) => {
-    if (!Number.isInteger(amount) || amount <= 0) {
-      Swal.fire({
-        icon: 'warning',
-        title: '금액을 확인해 주세요',
-        text: '전환 금액은 1P 이상의 정수만 가능합니다.',
-        confirmButtonColor: '#0064ff',
-      });
-      return;
-    }
-    setPointModal(null);
-    convertPoint(amount)
-      .then(() => {
-        queryClient.invalidateQueries({ queryKey: ['point'] });
-        Swal.fire({
-          icon: 'success',
-          title: '전환 완료',
-          text: '정산 가능 포인트가 사용 가능 포인트로 전환되었습니다.',
-          confirmButtonColor: '#0064ff',
-        });
-      })
-      .catch((err) => {
-        Swal.fire({
-          icon: 'error',
-          title: '전환 실패',
-          text: err?.response?.data?.message ?? '처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
-          confirmButtonColor: '#0064ff',
-        });
-      });
-  };
-
-  // 헤더 POINT 드롭다운의 환전 모달 제출 — PointWalletPage의 submitAmount('exchange')와 같은 로직
-  // (검증 → API 호출 → 포인트 캐시 갱신 → 결과 안내). 충전은 결제위젯이 자체 API를 처리하므로 별도 핸들러가 없다.
-  const submitHeaderExchange = (amount) => {
-    if (!Number.isInteger(amount) || amount <= 0) {
-      Swal.fire({
-        icon: 'warning',
-        title: '금액을 확인해 주세요',
-        text: '환전 금액은 1P 이상의 정수만 가능합니다.',
-        confirmButtonColor: '#0064ff',
-      });
-      return;
-    }
-    setPointModal(null);
-    requestPointExchange(amount)
-      .then(() => {
-        queryClient.invalidateQueries({ queryKey: ['point'] });
-        Swal.fire({
-          icon: 'success',
-          title: '환전 신청 완료',
-          text: '신청 금액이 차감되었고, 등록하신 계좌로 며칠 내 지급될 예정입니다.',
-          confirmButtonColor: '#0064ff',
-        });
-      })
-      .catch((err) => {
-        Swal.fire({
-          icon: 'error',
-          title: '환전 신청 실패',
-          text: err?.response?.data?.message ?? '처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
-          confirmButtonColor: '#0064ff',
-        });
-      });
-  };
+  // 헤더 POINT 드롭다운의 전환/환전 모달 제출 — 검증·API 호출·캐시 갱신·안내 흐름을
+  // PointWalletPage와 공용 모듈(pointSubmitActions)로 공유하고, 여기서는 헤더 모달 닫기만 연결한다
+  // (2026-08-05 코드 점검 후속 — 지갑 페이지와 같은 로직 ~60줄이 이 파일에 중복돼 있던 것을 통합).
+  // 충전은 결제위젯이 자체 API를 처리하므로 별도 핸들러가 없다.
+  const submitHeaderPoint = (kind) => (amount) =>
+    submitPointAmount(kind, amount, { queryClient, closeModal: () => setPointModal(null) });
 
   const closeMobileMenu = () => {
     setMobileMenuOpen(false);
@@ -323,7 +301,9 @@ const Header = () => {
     <>
     <header
       aria-hidden={isPageHidden || undefined}
-      className={`sticky top-0 z-[100] bg-white shadow-[0px_5px_10px_0px_rgba(0,0,0,0.2)] max-md:fixed max-md:inset-x-0 ${
+      className={`sticky top-0 z-[100] bg-white max-md:fixed max-md:inset-x-0 ${
+      hasBottomDock ? 'shadow-none' : 'shadow-[0px_5px_10px_0px_rgba(0,0,0,0.2)]'
+    } ${
       hasHeaderSearch ? 'h-[154px] md:h-[82px]' : 'h-[82px]'
     } ${
       isPageHidden ? 'invisible pointer-events-none' : ''
@@ -451,7 +431,7 @@ const Header = () => {
                       공지사항
                     </Link>
                     <Link
-                      to="/guide"
+                      to="/customersupport/guide"
                       className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
                       onClick={() => setCustomerHovered(false)}
                     >
@@ -508,59 +488,116 @@ const Header = () => {
                 </span>
               )}
             </button>
-            {notiOpen && (
-              <div
-                className={`z-50 rounded-[10px] border border-[#434343] bg-white p-4 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)] fixed left-1/2 w-[calc(100vw-32px)] max-w-[320px] -translate-x-1/2 ${hasHeaderSearch ? 'top-[166px]' : 'top-[94px]'} sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+12px)] sm:w-[280px] sm:max-w-none sm:translate-x-0`}
-              >
-                {/* 헤더 */}
-                <div className="flex items-center justify-between">
-                  <span className="flex items-baseline gap-1.5">
-                    <span className="text-[15px] font-bold text-black tracking-[-0.5px]">알림</span>
-                    <span className="text-[12px] text-[#0064ff]">{notiCount}</span>
-                  </span>
-                </div>
-                <div className="my-3 h-px bg-[#e5e5e5]" />
-                {/* 안읽은 우선 + 읽은 알림 통합, 최대 5개 미리보기 */}
-                {previewNotis.length === 0 ? (
-                  <p className="py-2 text-center text-[13px] text-[#969696]">새 알림이 없습니다.</p>
-                ) : (
-                  <ul className="flex flex-col gap-1.5">
-                    {previewNotis.map((item) => (
+            {notiOpen && (() => {
+              // 안읽은 우선 + 읽은 알림 목록을 렌더 — 데스크톱은 previewNotis(5개), 모바일은
+              // mobileNotis(20개)로 서로 다른 캡을 넘겨 쓴다 (2026-08-05, 모바일 전체화면이
+              // 5개로는 스크롤 가능한 화면을 못 채워 허전해 보이던 문제)
+              const renderNotiItems = (items) => items.length === 0 ? (
+                <p className="py-2 text-center text-[13px] text-[#969696]">새 알림이 없습니다.</p>
+              ) : (
+                <ul className="flex flex-col gap-1.5">
+                  {items.map((item) => {
+                    const DomainIcon = NOTI_DOMAIN_ICONS[item.domainCd] ?? Bell;
+                    return (
                       <li key={item.id}>
                         <button
                           type="button"
-                          className="flex w-full items-start gap-2 text-left"
+                          className={`flex w-full items-center gap-3 rounded-[10px] px-2 py-2 text-left transition-colors hover:bg-[#f3f5fa] ${item.read ? '' : 'bg-[#f8f9fb]'}`}
                           onClick={() => {
                             if (!item.read) markReadMutation.mutate(item.id);
                             setSelectedNoti({ ...item, time: relativeTime(item.regDt) });
                             setNotiOpen(false);
                           }}
                         >
-                          <span
-                            className={`mt-[6px] size-[6px] shrink-0 rounded-full ${item.read ? 'bg-[#d9d9d9]' : 'bg-primary'}`}
-                          />
-                          <div className="min-w-0">
+                          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-light text-primary">
+                            <DomainIcon size={16} />
+                          </span>
+                          <div className="min-w-0 flex-1">
                             <p className="truncate text-[13px] text-[#333]">
                               {item.title}
                               {item.content && <span className="text-[#969696]"> · {item.content}</span>}
                             </p>
                             <p className="text-[11px] text-[#969696]">{relativeTime(item.regDt)}</p>
                           </div>
+                          {!item.read && <span className="mt-1 size-[6px] shrink-0 rounded-full bg-primary" />}
                         </button>
                       </li>
-                    ))}
-                  </ul>
-                )}
-                {/* 전체보기 */}
-                <button
-                  type="button"
-                  className="mt-4 h-[34px] w-full rounded-[6px] bg-primary text-[14px] font-bold text-white hover:bg-[#0048bf] transition-colors"
-                  onClick={() => { setNotiOpen(false); navigate('/user/notification'); }}
-                >
-                  알림 전체보기
-                </button>
-              </div>
-            )}
+                    );
+                  })}
+                </ul>
+              );
+              const notiList = renderNotiItems(previewNotis);
+              const mobileNotiList = renderNotiItems(mobileNotis);
+
+              return (
+                <>
+                  {/* 모바일: 화면 전체를 덮는 알림함 (네이버 알림센터 방식, 2026-08-04) */}
+                  <div className="fixed inset-0 z-[300] flex flex-col bg-white sm:hidden">
+                    <div className="flex h-[56px] shrink-0 items-center justify-between border-b border-[#f0f0f0] px-4">
+                      <span className="flex items-baseline gap-1.5">
+                        <span className="text-[17px] font-bold text-black tracking-[-0.5px]">알림</span>
+                        <span className="text-[13px] text-[#0064ff]">{notiCount}</span>
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          className="text-[13px] font-medium text-primary"
+                          onClick={() => markAllReadMutation.mutate()}
+                        >
+                          전체 읽음
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="닫기"
+                          className="flex size-9 items-center justify-center rounded-full text-[#767676] hover:bg-[#f3f5fa] transition-colors"
+                          onClick={() => setNotiOpen(false)}
+                        >
+                          <X size={22} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3">
+                      {mobileNotiList}
+                    </div>
+                    <div className="shrink-0 border-t border-[#f0f0f0] p-4 pb-[max(16px,env(safe-area-inset-bottom))]">
+                      <button
+                        type="button"
+                        className="h-[42px] w-full rounded-[6px] bg-primary text-[14px] font-bold text-white hover:bg-[#0048bf] transition-colors"
+                        onClick={() => { setNotiOpen(false); navigate('/user/notification'); }}
+                      >
+                        알림 전체보기
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 데스크톱: 기존 드롭다운 그대로 */}
+                  <div className="z-50 hidden rounded-[10px] border border-[#434343] bg-white p-4 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)] sm:absolute sm:right-0 sm:top-[calc(100%+12px)] sm:block sm:w-[280px]">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-baseline gap-1.5">
+                        <span className="text-[15px] font-bold text-black tracking-[-0.5px]">알림</span>
+                        <span className="text-[12px] text-[#0064ff]">{notiCount}</span>
+                      </span>
+                      <button
+                        type="button"
+                        className="text-[12px] font-medium text-primary"
+                        onClick={() => markAllReadMutation.mutate()}
+                      >
+                        전체 읽음
+                      </button>
+                    </div>
+                    <div className="my-3 h-px bg-[#e5e5e5]" />
+                    {notiList}
+                    <button
+                      type="button"
+                      className="mt-4 h-[34px] w-full rounded-[6px] bg-primary text-[14px] font-bold text-white hover:bg-[#0048bf] transition-colors"
+                      onClick={() => { setNotiOpen(false); navigate('/user/notification'); }}
+                    >
+                      알림 전체보기
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
           </div>
 
           {/* 지갑 → POINT 박스 */}
@@ -892,7 +929,7 @@ const Header = () => {
               {mobileCustomerOpen && (
                 <div className="flex flex-col gap-1 pb-3 pl-2">
                   <Link to="/customersupport/notice" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>공지사항</Link>
-                  <Link to="/guide" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>이용가이드</Link>
+                  <Link to="/customersupport/guide" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>이용가이드</Link>
                   <Link to="/customersupport/faq" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>FAQ</Link>
                 </div>
               )}
@@ -936,8 +973,9 @@ const Header = () => {
       <PointAmountModal
         title="포인트 전환"
         submitLabel="전환"
-        infoRow={{ label: '전환 가능 포인트', value: `${(pointBalance.settleable ?? 0).toLocaleString()} P` }}
-        onSubmit={submitHeaderConvert}
+        infoRow={{ label: '정산가능 포인트', value: `${(pointBalance.settleable ?? 0).toLocaleString()} P` }}
+        maxAmount={pointBalance.settleable ?? 0}
+        onSubmit={submitHeaderPoint('convert')}
         onClose={() => setPointModal(null)}
       />
     )}
@@ -946,7 +984,8 @@ const Header = () => {
         title="환전 신청"
         submitLabel="환전"
         infoRow={{ label: '환전 가능 포인트', value: `${(pointBalance.exchangeable ?? 0).toLocaleString()} P` }}
-        onSubmit={submitHeaderExchange}
+        maxAmount={pointBalance.exchangeable ?? 0}
+        onSubmit={submitHeaderPoint('exchange')}
         onClose={() => setPointModal(null)}
       />
     )}

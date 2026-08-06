@@ -13,9 +13,9 @@ const CUSTOMER_SUPPORT_MENU = [
   {
     key: 'guide',
     label: '이용가이드',
-    to: '/guide',
+    to: '/customersupport/guide',
     type: 'section',
-    isActive: (pathname) => pathname === '/guide',
+    isActive: (pathname) => pathname === '/customersupport/guide',
   },
   {
     key: 'faq',

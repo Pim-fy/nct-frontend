@@ -8,6 +8,16 @@ export const submitQuote = (data) =>
 export const updateQuote = (quoteId, data) =>
   api.put(`/quotes/${quoteId}`, data).then((res) => res.data);
 
+/** 견적 작업사진 업로드 — 파일 1장당 1회 호출, 반환값 { flSn, url } */
+export const uploadQuotePhoto = (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('service', 'quote');
+  return api.post('/attachment', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }).then((res) => res.data.data);
+};
+
 /** F-SVC-008: 견적 철회 */
 export const withdrawQuote = (quoteId) =>
   api.delete(`/quotes/${quoteId}`).then((res) => res.data);

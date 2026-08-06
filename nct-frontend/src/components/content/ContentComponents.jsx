@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Pin, ShieldCheck } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import Pagination from '@components/common/Pagination';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import { formatDate as sharedFormatDate } from '@utils/common';
@@ -97,10 +97,14 @@ export const NoticeFilterBar = ({
  * 읽을 수 있도록 중요 고정 여부·분류·제목·등록일을 보여주며, 행을 누르면
  * 기존과 같은 공지 상세 화면으로 이동합니다.
  */
-export const NoticeRow = ({ notice }) => (
+export const NoticeRow = ({ notice }) => {
+  // 전역 브레드크럼 (BJN, 260805): 목록의 현재 경로(필터·페이지 포함)를 상세에 전달
+  const location = useLocation();
+  return (
   <Link
     aria-label={`${notice.pinned ? '상단 고정, ' : ''}${notice.typeName} 공지: ${notice.title}`}
     className={`content-notice-row${notice.pinned ? ' is-important' : ''}`}
+    state={{ from: `${location.pathname}${location.search}${location.hash}` }}
     to={`/customersupport/notice/${notice.id}`}
   >
     <span className="content-notice-row__number">
@@ -110,7 +114,8 @@ export const NoticeRow = ({ notice }) => (
     <strong className="content-notice-row__title">{notice.title}</strong>
     <span className="content-notice-row__date">{formatDate(notice.publishedAt)}</span>
   </Link>
-);
+  );
+};
 
 const NoticeRowSkeleton = () => (
   <div aria-hidden="true" className="content-notice-row">
@@ -144,6 +149,7 @@ export const ContentPagination = ({ page, totalPages, onChange, ariaLabel }) => 
     maxVisiblePages={5}
     onPageChange={onChange}
     page={page}
+    showSinglePage
     totalPages={totalPages}
   />
 );
@@ -172,6 +178,11 @@ const GuidePreviewWindow = ({ label, children }) => (
     <div className="guide-screen-preview__bar" aria-hidden="true">
       <span /><span /><span />
       <strong>{label}</strong>
+      <div className="guide-screen-preview__window-controls">
+        <span className="guide-window-control guide-window-control--minimize" />
+        <span className="guide-window-control guide-window-control--maximize" />
+        <span className="guide-window-control guide-window-control--close" />
+      </div>
       <em>예시 화면</em>
     </div>
     <div className="guide-screen-preview__body" aria-hidden="true">

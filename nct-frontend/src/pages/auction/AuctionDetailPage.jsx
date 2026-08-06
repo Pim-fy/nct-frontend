@@ -29,11 +29,15 @@ import {
   useMemberProfile,
 } from '@hooks/useMemberProfile';
 import { getUserReviewTrust } from '@api/reviewApi';
-import { SITE_HEADER_VISIBILITY_EVENT } from '@/constants/layoutEvents';
+import {
+  SITE_HEADER_DOCK_EVENT,
+  SITE_HEADER_VISIBILITY_EVENT,
+} from '@/constants/layoutEvents';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import HeaderSearchPortal, {
   SimpleHeaderSearch,
 } from '@components/common/HeaderSearchPortal';
+import ReportModal from '@components/common/ReportModal';
 import PointChargeWidgetModal from '@pages/user/point/components/PointChargeWidgetModal';
 import AuctionBidPanel from './components/AuctionBidPanel';
 import AuctionBuyNowModal from './components/AuctionBuyNowModal';
@@ -46,6 +50,7 @@ import {
 import AuctionInquirySection from './components/AuctionInquirySection';
 import AuctionProductUpdateSection from './components/AuctionProductUpdateSection';
 import AuctionSellerHistory from './components/AuctionSellerHistory';
+import AuctionSellerReviewDialog from './components/AuctionSellerReviewDialog';
 import AuctionToast from './components/AuctionToast';
 import {
   createImageItems,
@@ -70,8 +75,7 @@ const DETAIL_SECTION_ITEMS = [
   { id: 'auction-seller-information', label: '판매자 정보' },
 ];
 
-const AuctionDetailPage = () => {
-  const { auctionId } = useParams();
+const AuctionDetailPageContent = ({ auctionId }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -92,6 +96,8 @@ const AuctionDetailPage = () => {
   const [isDetailNavigationStuck, setIsDetailNavigationStuck] = useState(false);
   const [isBuyNowOpen, setIsBuyNowOpen] = useState(false);
   const [isDeliveryAddressModalOpen, setIsDeliveryAddressModalOpen] = useState(false);
+  const [isSellerReviewDialogOpen, setIsSellerReviewDialogOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   // 입찰 패널의 "충전" 클릭 시 마이페이지로 이동하지 않고 이 자리에서 바로 모달을 띄운다
   // (헤더 POINT 드롭다운과 같은 방식, 사용자 요청으로 변경 2026-07-28 — 이동하면 입력 중인 입찰 금액이 날아감)
   const [isChargeModalOpen, setIsChargeModalOpen] = useState(false);
@@ -110,13 +116,20 @@ const AuctionDetailPage = () => {
   const confirmedFavoriteCountRef = useRef(0);
   const desiredFavoriteRef = useRef(null);
   const [failedImageUrls, setFailedImageUrls] = useState(() => new Set());
-  useBodyScrollLock(isBuyNowOpen || isDeliveryAddressModalOpen || isChargeModalOpen);
+  useBodyScrollLock(
+    isBuyNowOpen
+    || isDeliveryAddressModalOpen
+    || isSellerReviewDialogOpen
+    || isChargeModalOpen,
+  );
   const requestedReturnPath = location.state?.from;
   const returnPath = typeof requestedReturnPath === 'string'
     && requestedReturnPath.startsWith('/')
+    && !requestedReturnPath.startsWith('//')
+    && !/^\/auction\/[^/?#]+(?:[/?#]|$)/.test(requestedReturnPath)
     ? requestedReturnPath
     : '/auction';
-  const returnLabel = returnPath === '/auction' ? '경매 목록' : '이전 목록';
+  const returnLabel = returnPath.startsWith('/auction') ? '경매 목록' : '이전 목록';
   const headerSearch = (
     <HeaderSearchPortal>
       <SimpleHeaderSearch
@@ -125,6 +138,20 @@ const AuctionDetailPage = () => {
       />
     </HeaderSearchPortal>
   );
+  const handleInquiryLoginRequired = useCallback(() => {
+    navigate('/login', { state: { from: location } });
+  }, [location, navigate]);
+  const handleSellerReviewsOpen = useCallback(() => {
+    if (isAuthLoading) return;
+    if (!isAuthenticated) {
+      handleInquiryLoginRequired();
+      return;
+    }
+    setIsSellerReviewDialogOpen(true);
+  }, [handleInquiryLoginRequired, isAuthLoading, isAuthenticated]);
+  const handleSellerReviewsClose = useCallback(() => {
+    setIsSellerReviewDialogOpen(false);
+  }, []);
 
   useLayoutEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -185,7 +212,25 @@ const AuctionDetailPage = () => {
     || (auction?.auctionStatusCode === 'AUCC0002' && auction?.endDateTime),
   ));
 
-  const showToast = (message) => setToastMessage(message);
+  const showToast = useCallback((message) => setToastMessage(message), []);
+  const handleReportOpen = useCallback(() => {
+    if (isAuthLoading) return;
+    if (!isAuthenticated) {
+      handleInquiryLoginRequired();
+      return;
+    }
+    if (isOwnAuction) {
+      showToast('본인이 등록한 경매 상품은 신고할 수 없습니다');
+      return;
+    }
+    setIsReportModalOpen(true);
+  }, [
+    handleInquiryLoginRequired,
+    isAuthLoading,
+    isAuthenticated,
+    isOwnAuction,
+    showToast,
+  ]);
   const getErrorMessage = (error) => error?.response?.data?.message || '요청 처리 중 오류가 발생했습니다';
   const openDeliveryAddressModal = () => setIsDeliveryAddressModalOpen(true);
   const deliveryAddressMutation = useMutation({
@@ -278,7 +323,7 @@ const AuctionDetailPage = () => {
     mutationFn: (payload) => placeAuctionBid(auctionId, payload),
     onSuccess: (updatedAuction) => {
       handleMutationSuccess(updatedAuction);
-      showToast('입찰이 등록되었습니다');
+      showToast('입찰이 완료되었습니다.');
     },
     onError: handleAuctionMutationError,
   });
@@ -413,7 +458,7 @@ const AuctionDetailPage = () => {
 
   useEffect(() => {
     if (!toastMessage) return undefined;
-    const timerId = window.setTimeout(() => setToastMessage(''), 1800);
+    const timerId = window.setTimeout(() => setToastMessage(''), 2800);
     return () => window.clearTimeout(timerId);
   }, [toastMessage]);
 
@@ -501,18 +546,25 @@ const AuctionDetailPage = () => {
   }, [auction?.productId]);
 
   useEffect(() => {
-    const syncSiteHeaderVisibility = () => {
+    const syncSiteHeaderLayout = () => {
+      const isDesktop = window.innerWidth >= 768;
       window.dispatchEvent(new CustomEvent(SITE_HEADER_VISIBILITY_EVENT, {
-        detail: { hidden: isDetailNavigationStuck && window.innerWidth >= 768 },
+        detail: { hidden: isDetailNavigationStuck && isDesktop },
+      }));
+      window.dispatchEvent(new CustomEvent(SITE_HEADER_DOCK_EVENT, {
+        detail: { docked: isDetailNavigationStuck && !isDesktop },
       }));
     };
 
-    syncSiteHeaderVisibility();
-    window.addEventListener('resize', syncSiteHeaderVisibility);
+    syncSiteHeaderLayout();
+    window.addEventListener('resize', syncSiteHeaderLayout);
     return () => {
-      window.removeEventListener('resize', syncSiteHeaderVisibility);
+      window.removeEventListener('resize', syncSiteHeaderLayout);
       window.dispatchEvent(new CustomEvent(SITE_HEADER_VISIBILITY_EVENT, {
         detail: { hidden: false },
+      }));
+      window.dispatchEvent(new CustomEvent(SITE_HEADER_DOCK_EVENT, {
+        detail: { docked: false },
       }));
     };
   }, [isDetailNavigationStuck]);
@@ -920,7 +972,7 @@ const AuctionDetailPage = () => {
             <div className="relative grid min-h-0 min-w-0 grid-rows-[minmax(0,1fr)_auto] gap-2 max-lg:grid-rows-[auto_auto]">
               <button
                 type="button"
-                className="absolute top-4 left-4 z-20 inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-md border border-[#d5d5d5] bg-white/95 px-3 text-body-sm font-bold text-[#252525] shadow-[0_2px_10px_rgba(0,0,0,0.14)] backdrop-blur-sm transition-colors hover:border-primary hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                className="absolute top-4 left-4 z-20 inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-md border border-[#858585] bg-white px-3 text-body-sm font-bold text-[#202020] shadow-[0_2px_10px_rgba(0,0,0,0.16)] transition-colors hover:border-primary hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 aria-label="목록으로 돌아가기"
                 title="목록으로"
                 onClick={handleBack}
@@ -929,6 +981,7 @@ const AuctionDetailPage = () => {
                 <span>목록으로</span>
               </button>
               <AuctionImageGallery
+                key={`auction-gallery-${auction.auctionId}`}
                 auction={auction}
                 imageItems={imageItems}
                 activeImageIndex={activeImageIndex}
@@ -993,6 +1046,7 @@ const AuctionDetailPage = () => {
               onBuyNowOpen={handleBuyNowOpen}
               onDeliveryAddressOpen={handleDeliveryAddressOpen}
               onFavoriteToggle={handleFavoriteToggle}
+              onReportOpen={handleReportOpen}
               onChargeClick={() => setIsChargeModalOpen(true)}
             />
           </section>
@@ -1000,9 +1054,9 @@ const AuctionDetailPage = () => {
 
         <nav
           ref={detailNavigationRef}
-          className={`sticky top-[154px] mt-7 h-[54px] border-y border-[#e2e5ea] bg-white transition-shadow md:top-0 md:h-[82px] ${
+          className={`sticky top-[154px] mt-7 h-[54px] bg-white transition-shadow md:top-0 md:h-[82px] ${
             isDetailNavigationStuck
-              ? 'z-[110] shadow-[0_5px_14px_rgba(0,0,0,0.14)]'
+              ? 'z-40 shadow-[0_5px_14px_rgba(0,0,0,0.14)]'
               : 'z-0 shadow-none'
           }`}
           aria-label="경매 상세 구역"
@@ -1031,7 +1085,7 @@ const AuctionDetailPage = () => {
 
         <div className={DETAIL_CONTAINER_CLASS}>
           <AuctionProductDescriptionSection
-            auction={auction}
+            content={auction.content}
             sectionId={DETAIL_SECTION_ITEMS[0].id}
           />
 
@@ -1048,8 +1102,9 @@ const AuctionDetailPage = () => {
             productId={auction.productId}
             isAuthenticated={isAuthenticated}
             isOwnAuction={isOwnAuction}
+            currentUserId={authenticatedUserId}
             enabled={supplementalQueriesEnabled}
-            onLoginRequired={() => navigate('/login', { state: { from: location } })}
+            onLoginRequired={handleInquiryLoginRequired}
             onToast={showToast}
           />
 
@@ -1060,12 +1115,14 @@ const AuctionDetailPage = () => {
             sellerRating={sellerTrustQuery.data?.totalScore ?? auction.sellerRating}
             sellerReviewCount={sellerTrustQuery.data?.totalCount ?? auction.sellerReviewCount}
             isSellerTrustLoading={!supplementalQueriesEnabled || sellerTrustQuery.isLoading}
+            onSellerReviewsOpen={handleSellerReviewsOpen}
           >
             <AuctionSellerHistory
               key={`seller-history-${auction.sellerId}`}
               currentAuctionId={auctionId}
               sellerId={auction.sellerId}
               sellerName={auction.sellerName}
+              returnPath={returnPath}
               enabled={supplementalQueriesEnabled}
             />
           </AuctionSellerInformationSection>
@@ -1081,6 +1138,14 @@ const AuctionDetailPage = () => {
         onClose={() => setIsBuyNowOpen(false)}
         onConfirm={handleBuyNowConfirm}
       />
+      {isSellerReviewDialogOpen && (
+        <AuctionSellerReviewDialog
+          isOpen
+          sellerId={auction.sellerId}
+          sellerName={auction.sellerName}
+          onClose={handleSellerReviewsClose}
+        />
+      )}
       {isDeliveryAddressModalOpen && (
         <AuctionDeliveryAddressModal
           profile={memberProfileQuery.data}
@@ -1096,6 +1161,15 @@ const AuctionDetailPage = () => {
           onSave={(address) => deliveryAddressMutation.mutateAsync(address)}
         />
       )}
+      <ReportModal
+        open={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        targetName={auction.sellerName || '판매자'}
+        targetType="auction"
+        referenceSn={Number(auction.auctionId ?? auctionId)}
+        reportedUserSn={Number(auction.sellerId)}
+        contextLabel={`경매: ${auction.title}`}
+      />
       <AuctionToast message={toastMessage} />
       {isChargeModalOpen && (
         <PointChargeWidgetModal
@@ -1105,6 +1179,11 @@ const AuctionDetailPage = () => {
       )}
     </>
   );
+};
+
+const AuctionDetailPage = () => {
+  const { auctionId } = useParams();
+  return <AuctionDetailPageContent key={auctionId} auctionId={auctionId} />;
 };
 
 export default AuctionDetailPage;

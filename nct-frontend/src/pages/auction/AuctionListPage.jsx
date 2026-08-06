@@ -17,6 +17,7 @@ import { fetchAuctions } from '@api/auctionApi';
 import { getCategories } from '@api/categoryApi';
 import { fetchReferenceCodes } from '@api/referenceApi';
 import { SORT_OPTIONS } from '@/constants/auctionOptions';
+import { SITE_HEADER_DOCK_EVENT } from '@/constants/layoutEvents';
 import CardGridSkeleton from '@components/skeleton/CardGridSkeleton';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import HeaderSearchPortal from '@components/common/HeaderSearchPortal';
@@ -162,6 +163,23 @@ const AuctionListPage = () => {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    const syncHeaderDock = () => {
+      window.dispatchEvent(new CustomEvent(SITE_HEADER_DOCK_EVENT, {
+        detail: { docked: filterBarFixed && window.innerWidth < 768 },
+      }));
+    };
+
+    syncHeaderDock();
+    window.addEventListener('resize', syncHeaderDock);
+    return () => {
+      window.removeEventListener('resize', syncHeaderDock);
+      window.dispatchEvent(new CustomEvent(SITE_HEADER_DOCK_EVENT, {
+        detail: { docked: false },
+      }));
+    };
+  }, [filterBarFixed]);
+
   const selectedCategories = getSelectedValues(searchParams, 'category');
   const selectedStatuses = getSelectedValues(searchParams, 'status');
   const tradeMethod = normalizeTradeMethod(searchParams.get('tradeMethod'));
@@ -298,11 +316,15 @@ const AuctionListPage = () => {
     return next;
   };
 
+  const scrollToPageTop = () => {
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    });
+  };
+
   const handleSearch = (keyword) => {
     setSearchParams(createSearchParamsFromDraft(keyword), { replace: false });
-    window.requestAnimationFrame(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
+    scrollToPageTop();
   };
 
   const handleFilterSearch = () => {
@@ -310,6 +332,7 @@ const AuctionListPage = () => {
 
     setSearchParams(next, { replace: false });
     setFilterOpen(false);
+    scrollToPageTop();
   };
 
   const handlePriceDraftChange = (setter, value) => {
@@ -328,6 +351,8 @@ const AuctionListPage = () => {
     setEndingSoonOnlyDraft(false);
     setShowAllCategories(false);
     setSearchParams(new URLSearchParams());
+    setFilterOpen(false);
+    scrollToPageTop();
   };
 
   const goToPage = (nextPage) => {
@@ -590,6 +615,7 @@ const AuctionListPage = () => {
           <section className="min-w-0 flex-1">
             <Link
               className="mb-3 hidden min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-primary bg-primary px-4 font-bold text-white no-underline transition-colors hover:border-primary-dark hover:bg-primary-dark max-md:inline-flex"
+              state={{ from: '/auction' }} /* 전역 브레드크럼 (BJN, 260805): 경매 목록 경유 표시용 */
               to="/product/register"
             >
               <Gavel aria-hidden="true" size={18} strokeWidth={2.2} />
@@ -601,9 +627,9 @@ const AuctionListPage = () => {
                 aria-hidden="true"
                 className="pointer-events-none absolute left-0 top-0 h-px w-px md:hidden"
               />
-              <div className={`max-md:z-[110] max-md:bg-white/95 max-md:px-4 max-md:py-2 max-md:backdrop-blur-sm ${
+              <div className={`max-md:z-40 max-md:bg-white/95 max-md:px-4 max-md:py-2 max-md:backdrop-blur-sm ${
                 filterBarFixed
-                  ? 'max-md:fixed max-md:inset-x-0 max-md:top-[154px]'
+                  ? 'max-md:fixed max-md:inset-x-0 max-md:top-[154px] max-md:shadow-[0_5px_14px_rgba(0,0,0,0.14)]'
                   : 'max-md:absolute max-md:inset-0'
               }`}>
                 <button

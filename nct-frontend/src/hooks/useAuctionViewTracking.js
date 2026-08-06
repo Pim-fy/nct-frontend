@@ -44,12 +44,25 @@ export function useAuctionViewTracking(auctionId, productId) {
     storeView(storageKey, 'pending');
 
     increaseProductViewCount(productId)
-      .then(() => {
+      .then((response) => {
         storeView(storageKey, 'recorded');
-        queryClient.refetchQueries({
+        const latestViewCount = Number(response?.data?.viewCount ?? response?.viewCount);
+        if (!Number.isFinite(latestViewCount)) return;
+
+        queryClient.setQueriesData({
           queryKey: ['auctionDetail', auctionId],
-          type: 'active',
-        }).catch(() => {});
+        }, (currentAuction) => {
+          if (!currentAuction) return currentAuction;
+
+          const currentViewCount = Number(currentAuction.viewCount);
+          const nextViewCount = Number.isFinite(currentViewCount)
+            ? Math.max(currentViewCount, latestViewCount)
+            : latestViewCount;
+
+          return nextViewCount === currentViewCount
+            ? currentAuction
+            : { ...currentAuction, viewCount: nextViewCount };
+        });
       })
       .catch(() => {
         trackedViews.delete(storageKey);

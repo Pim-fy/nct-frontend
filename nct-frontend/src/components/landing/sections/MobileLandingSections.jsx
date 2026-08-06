@@ -22,7 +22,7 @@ const BANNER_SLIDES = [
     title2: "어렵지 않아요",
     sub: "경매와 서비스 요청, 시작부터 완료까지 한눈에",
     btnLabel: "이용가이드 보기",
-    btnRoute: "/guide",
+    btnRoute: "/customersupport/guide",
     tags: ["경매 거래", "서비스 요청", "안전 거래"],
     rightImg: "heroSectionImg",
   },

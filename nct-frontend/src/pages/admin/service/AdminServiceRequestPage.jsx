@@ -27,8 +27,8 @@ const INITIAL_FILTERS = {
 const PAGE_SIZE = 20;
 const SERVICE_CATEGORY_DOMAIN = 'CATC0002';
 const STATUS_OPTIONS = [
-  { value: 'SVCC0001', label: '임시저장' },
   { value: 'SVCC0002', label: '공개' },
+  { value: 'SVCC0001', label: '임시저장' },
   { value: 'SVCC0003', label: '매칭완료' },
   { value: 'SVCC0004', label: '종료' },
 ];

@@ -35,7 +35,7 @@ const WISH_TABS = [
   { label: "입찰",     section: "wishlist" },
 ];
 
-const NOTIF_TABS = ["전체", "경매·거래", "서비스", "운영·기타"];
+const NOTIF_TABS = ["전체", "경매", "거래", "채팅", "서비스", "운영"];
 
 const DOMAIN_BADGE = {
   NTFC0010: "badge-urgent",
@@ -127,12 +127,11 @@ function ListPanel({ title, items, tabs, onTabClick, onMore, onItemMore }) {
 function NotificationPanel({ notifications = [], onItemClick, onMore }) {
   const [activeIdx, setActiveIdx] = useState(0);
 
-  const filtered = notifications.filter((n) => {
-    if (activeIdx === 1) return n.domainCd === "NTFC0010" || n.domainCd === "NTFC0011";
-    if (activeIdx === 2) return n.domainCd === "NTFC0012";
-    if (activeIdx === 3) return n.domainCd === "NTFC0013" || n.domainCd === "NTFC0014";
-    return true;
-  });
+  // 탭 순서: 전체, 경매(NTFC0010), 거래(NTFC0011), 채팅(NTFC0014), 서비스(NTFC0012), 운영(NTFC0013)
+  const NOTIF_TAB_CODES = [null, "NTFC0010", "NTFC0011", "NTFC0014", "NTFC0012", "NTFC0013"];
+  const filtered = notifications
+    .filter((n) => activeIdx === 0 || n.domainCd === NOTIF_TAB_CODES[activeIdx])
+    .slice(0, 6);
 
   return (
     <div className="bg-white rounded-[15px] shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-[#e4e9f2] overflow-hidden">
@@ -163,9 +162,9 @@ function NotificationPanel({ notifications = [], onItemClick, onMore }) {
       </div>
 
       {/* 리스트 영역 */}
-      <div className="px-5 pb-5 min-h-[122px]">
+      <div className="px-5 pb-5 min-h-[179px] flex flex-col">
         {filtered.length === 0 ? (
-          <div className="flex items-center justify-center py-10">
+          <div className="flex-1 flex items-center justify-center">
             <p className="text-[15px] text-[#969696] m-0">알림이 없습니다.</p>
           </div>
         ) : (
@@ -174,13 +173,20 @@ function NotificationPanel({ notifications = [], onItemClick, onMore }) {
               <div
                 key={n.id}
                 onClick={() => onItemClick?.(DOMAIN_TO_SECTION[n.domainCd] ?? "home")}
-                className="flex items-center gap-3 py-3.5 cursor-pointer hover:opacity-70 transition-opacity border-b border-[#e8e9ec]"
+                className="flex items-center gap-2 py-3.5 cursor-pointer hover:opacity-70 transition-opacity border-b border-[#e8e9ec]"
               >
                 <span className={`badge ${DOMAIN_BADGE[n.domainCd] ?? "badge-gray"} shrink-0`} style={{ borderRadius: 5, fontSize: 12 }}>
                   {n.type}
                 </span>
-                <p className="flex-1 min-w-0 text-[15px] text-[#1a1a1a] m-0 leading-snug truncate">{n.title}</p>
-                <span className="text-[13px] text-[#b0aea8] shrink-0 ml-2">{relativeTime(n.regDt)}</span>
+                <div className="flex-1 flex items-center gap-1.5 min-w-0">
+                  <span className="text-[15px] text-[#1a1a1a] leading-snug truncate">{n.title}</span>
+                  {!n.read && (
+                    <span className="shrink-0 min-w-[16px] h-[16px] rounded-full bg-[#e63946] text-white text-[10px] font-bold inline-flex items-center justify-center leading-none">
+                      N
+                    </span>
+                  )}
+                </div>
+                <span className="text-[13px] text-[#b0aea8] shrink-0">{relativeTime(n.regDt)}</span>
               </div>
             ))}
           </div>
@@ -548,7 +554,7 @@ export default function MyPageDashboard({
 
       {/* 알림 100% */}
       <NotificationPanel
-        notifications={unreadNotifications}
+        notifications={allNotifications}
         onItemClick={(section) => navigate(`/user/mypage?section=${section}`)}
         onMore={() => navigate("/user/notification")}
       />

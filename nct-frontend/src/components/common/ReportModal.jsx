@@ -10,7 +10,7 @@
 //     open={reportOpen}
 //     onClose={() => setReportOpen(false)}
 //     targetName="홍길동"              // (선택) 신고 대상 이름 pre-fill
-//     targetType="provider"           // (선택) 'provider'|'trade'|'service'|'review'|'direct'
+//     targetType="provider"           // (선택) 'provider'|'auction'|'trade'|'service'|'review'|'direct'
 //     referenceSn={123}               // (선택) 거래번호 등 참조 ID
 //     reportedUserSn={123}            // (선택) 피신고자 회원번호
 //     reportTypeLabel="제공자 프로필"   // (선택) 신고 유형 pre-fill
@@ -39,6 +39,7 @@ const TYPE_CODE_MAP = {
 
 const REF_TYPE_CODE_MAP = {
   provider: "REFC0001",
+  auction:  "REFC0003",
   trade:    "REFC0005",
   service:  "REFC0007",
   review:   null,
@@ -47,8 +48,12 @@ const REF_TYPE_CODE_MAP = {
 
 const EMPTY_FORM = { types: [], targetName: "", title: "", content: "" };
 
-export default function ReportModal({
-  open,
+export default function ReportModal(props) {
+  if (!props.open) return null;
+  return <ReportModalContent {...props} />;
+}
+
+function ReportModalContent({
   onClose,
   targetName: initialTargetName = "",
   targetType = "direct",
@@ -60,41 +65,25 @@ export default function ReportModal({
   const { mutateAsync, isPending } = useSubmitCustomerReport();
   const navigate = useNavigate();
 
-  const [form, setForm]     = useState(EMPTY_FORM);
+  const [form, setForm] = useState(() => ({
+    ...EMPTY_FORM,
+    types: reportTypeLabel ? [reportTypeLabel] : [],
+    targetName: initialTargetName || "",
+  }));
   const [errors, setErrors] = useState({});
-
-  // open될 때 props 값으로 초기화
-  useEffect(() => {
-    if (open) {
-      setForm({
-        types:      reportTypeLabel ? [reportTypeLabel] : [],
-        targetName: initialTargetName || "",
-        title:      "",
-        content:    "",
-      });
-      setErrors({});
-    }
-  }, [open, reportTypeLabel, initialTargetName]);
 
   // ESC 키로 닫기
   useEffect(() => {
-    if (!open) return;
     const handler = (e) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose]);
+  }, [onClose]);
 
   // 모달 열릴 때 스크롤 잠금
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
-  }, [open]);
-
-  if (!open) return null;
+  }, []);
 
   const toggleType = (t) => {
     setForm((prev) => ({

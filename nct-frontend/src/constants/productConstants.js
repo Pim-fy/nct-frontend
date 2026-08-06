@@ -1,4 +1,4 @@
-// 상품(PRODUCT) 관련 공통 상수 — ProductRegisterPage / MyProductListPage / ProductDetailSellerPage 공유
+// 상품(PRODUCT) 관련 공통 상수 — ProductRegisterPage / MyProductList / ProductDetailSellerPage 공유
 // F-AUC-005 거래 상태(TRDC) 라벨·배지 — 정민재(4) 연계
 export const TRADE_STATUS_LABEL = {
   TRDC0003: '거래 진행중',
@@ -11,8 +11,8 @@ export const TRADE_STATUS_LABEL = {
 
 
 export const TRADE_LABEL = {
-  TRDC0009: '배송만',
-  TRDC0010: '직거래만',
+  TRDC0009: '배송',
+  TRDC0010: '직거래',
   TRDC0020: '둘 다 가능',
 };
 
@@ -28,4 +28,25 @@ export const STATUS_BADGE = {
   PRDC0002: 'badge-success',
   PRDC0003: 'badge-gray',
   PRDC0004: 'badge-danger',
+};
+
+// 경매 실제 진행 상태(AUCTION.AUC_STATUS_CD) 라벨·배지 — PRODUCT.PRD_STATUS_CD는 등록 후
+// 계속 PRDC0002로 남아있어서 유찰·낙찰·취소 여부를 못 담는다. 상태 표시가 필요한 화면은
+// auctionStatus가 있으면 이쪽을, 없으면(임시저장 등 경매 자체가 없는 경우) 위 STATUS_LABEL을 쓴다.
+export const AUC_STATUS_LABEL = {
+  AUCC0001: '준비',
+  AUCC0002: '진행 중',
+  AUCC0003: '낙찰',
+  AUCC0004: '유찰',
+  AUCC0005: '취소',
+  AUCC0006: '취소요청',
+};
+
+export const AUC_STATUS_BADGE = {
+  AUCC0001: 'badge-gray',
+  AUCC0002: 'badge-success',
+  AUCC0003: 'badge-gray',
+  AUCC0004: 'badge-gray',
+  AUCC0005: 'badge-danger',
+  AUCC0006: 'badge-danger',
 };

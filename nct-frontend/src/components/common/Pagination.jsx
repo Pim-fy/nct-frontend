@@ -38,7 +38,7 @@ const Pagination = ({
   return (
     <nav
       aria-label={ariaLabel}
-      className={`flex items-center justify-center my-6${className ? ` ${className}` : ''}`}
+      className={`pagination flex items-center justify-center my-6${className ? ` ${className}` : ''}`}
     >
       <div className="pagination__controls flex items-center justify-center gap-2">
       {/* 첫 페이지 «  */}

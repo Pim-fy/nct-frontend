@@ -275,18 +275,20 @@ export default function DateRangePicker({
         </button>
         <div style={{ display: 'flex', gap: 32, fontWeight: 700, fontSize: 16 }}>
           <span>{leftYear}년 {MONTHS[leftMonth]}</span>
-          <span>{rightYear}년 {MONTHS[rightMonth]}</span>
+          <span className="date-picker-second-month-label">{rightYear}년 {MONTHS[rightMonth]}</span>
         </div>
         <button type="button" onClick={() => changeMonth(1)} disabled={!canGoNext} style={{ width: 28, height: 28, background: 'none', border: 'none', cursor: canGoNext ? 'pointer' : 'default', color: canGoNext ? '#6b7280' : '#d1d5db', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6 }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
         </button>
       </div>
 
-      {/* 2개월 달력 */}
+      {/* 2개월 달력 — 두 번째 달은 모바일 폭에서 숨김(common.css) */}
       <div style={{ display: 'flex', padding: gridPadding, gap: 16 }}>
         {renderMonth(leftYear, leftMonth)}
-        <div style={{ width: 1, background: '#e5e7eb', flexShrink: 0 }} />
-        {renderMonth(rightYear, rightMonth)}
+        <div className="date-picker-second-month-group">
+          <div style={{ width: 1, background: '#e5e7eb', flexShrink: 0 }} />
+          {renderMonth(rightYear, rightMonth)}
+        </div>
       </div>
 
       {/* 선택 상태 */}

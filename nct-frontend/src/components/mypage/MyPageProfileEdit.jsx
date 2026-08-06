@@ -21,6 +21,7 @@ import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
 const DOMAIN_LABELS = [
   { key: 'AUCTION', label: '경매' },
   { key: 'TRADE',   label: '거래' },
+  { key: 'CHAT',    label: '채팅' },
   { key: 'SERVICE', label: '서비스' },
   { key: 'OPS',     label: '운영' },
 ];

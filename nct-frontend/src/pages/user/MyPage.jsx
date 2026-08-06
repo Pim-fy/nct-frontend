@@ -8,7 +8,10 @@
 //   사이드바: 데스크톱(lg+) 좌측 고정 컬럼 / 모바일 상단 가로 스크롤 탭.
 //   콘텐츠: 우측 flex-1 영역.
 import React, { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+// 전역 브레드크럼 (BJN, 260805): 마이페이지는 URL만으로 위치 표현이 안 되는 화면이라 오버라이드 사용
+import { useBreadcrumbOverride } from "@components/common/breadcrumb/BreadcrumbContext";
+import { HOME_ITEM, buildMyPageTrail } from "@components/common/breadcrumb/breadcrumbRoutes";
 import MyPageSidebar from "@components/mypage/MyPageSidebar";
 import MyPageDashboard from "@components/mypage/MyPageDashboard";
 import MyPageProfileEdit from "@components/mypage/MyPageProfileEdit";
@@ -26,11 +29,11 @@ import TradeDetailBuyer from "@pages/trade/TradeDetailBuyer";
 import TradeDetailSeller from "@pages/trade/TradeDetailSeller";
 import MyProductList from "@components/product/MyProductList";
 import PointWalletPage from "@pages/user/point/PointWalletPage";
-import SettlementListPage from "@pages/user/settlement/SettlementListPage";
 import MyReportListPage from "@pages/user/report/MyReportListPage";
 import ReportFormPage from "@pages/user/report/ReportFormPage";
 import MyQuoteListPage from "@pages/provider/MyQuoteListPage";
 import MyServiceRequestListPage from "@pages/service/MyServiceRequestListPage";
+import MyServiceTradeListPage from "@pages/service/MyServiceTradeListPage";
 import ReviewListPage from "@pages/user/ReviewListPage";
 import { useAuth } from "@hooks/useAuth";
 import { useMyProviderApplications } from "@hooks/useProviderApplications";
@@ -45,21 +48,18 @@ const MYPAGE_SECTION_QUERY_VALUES = new Set([
   "chat",
   "wallet",
   "profile",
+  "provider-profile",
   "quote",
   "review",
   "service-trade",
-  "settlement",
-  "service-chat",
   "received-review",
   "report-list",
   "report-form",
 ]);
 
 const PROVIDER_ONLY_SECTION_QUERY_VALUES = new Set([
+  "provider-profile",
   "quote",
-  "service-trade",
-  "settlement",
-  "service-chat",
   "received-review",
 ]);
 
@@ -110,6 +110,29 @@ export default function MyPage({
   const [selectedPurchaseTradeId, setSelectedPurchaseTradeId] = useState("");
   const [selectedSalesTradeId, setSelectedSalesTradeId] = useState("");
   const [chatReturnSection, setChatReturnSection] = useState("");
+  // 사이드바 클릭마다 증가 — 콘텐츠 영역 key로 써서, 같은 섹션을 다시 눌러도 그 섹션 컴포넌트를
+  // 강제로 리마운트한다(필터·검색어·페이지 등 내부 state를 처음 진입 상태로 초기화하기 위함).
+  const [sectionResetKey, setSectionResetKey] = useState(0);
+
+  // 전역 브레드크럼 (BJN, 260805): 로컬 state로 거래 상세가 열려 있을 때만
+  // "홈 > 마이페이지 > 섹션 > 거래 상세" 트레일을 직접 지정한다 (닫히면 자동 해제).
+  // 섹션 목록 화면 자체는 브레드크럼 비대상이라 아무것도 지정하지 않는다.
+  useBreadcrumbOverride(
+    selectedPurchaseTradeId
+      ? [HOME_ITEM, ...buildMyPageTrail("auction-bids"), { label: "거래 상세" }]
+      : selectedSalesTradeId
+        ? [HOME_ITEM, ...buildMyPageTrail("auction-sales"), { label: "거래 상세" }]
+        : null,
+  );
+
+  // 전역 브레드크럼 (BJN, 260805): 브레드크럼 링크처럼 "같은 마이페이지 URL로의 재이동"도
+  // 새 history 항목이 생기므로, 이동이 일어나면 열려 있던 거래 상세를 닫아 목록으로 돌아가게 한다.
+  // (사이드바 클릭은 handleSelectSection에서 이미 닫고 있어 중복 실행돼도 무해)
+  const { key: locationKey } = useLocation();
+  useEffect(() => {
+    setSelectedPurchaseTradeId("");
+    setSelectedSalesTradeId("");
+  }, [locationKey]);
 
   // 임시저장·외부 링크 등으로 이 페이지에 진입할 때 이전 페이지의 스크롤 위치가 남지 않도록 최상단으로 이동한다.
   useEffect(() => { window.scrollTo(0, 0); }, []);
@@ -129,7 +152,9 @@ export default function MyPage({
     }
   }, [selectedPurchaseTradeId, selectedSalesTradeId]);
 
-  // 메뉴를 옮기면 열려 있던 마이페이지 채팅 대화를 닫는다.
+  // 사이드바 메뉴를 누르면 항상 그 섹션의 기본(목록) 화면으로 이동한다.
+  // 같은 메뉴를 다시 눌러도 상세 화면에 머물러 있지 않도록, 드릴다운 상태를 무조건 초기화한다
+  // (예: 판매 내역 상세를 보다가 "상품 판매 내역"을 다시 누르면 목록으로 돌아가야 한다).
   const handleSelectSection = (section) => {
     setActiveSection(section);
     if (MYPAGE_SECTION_QUERY_VALUES.has(section)) {
@@ -137,16 +162,12 @@ export default function MyPage({
     } else {
       setSearchParams({});
     }
-    if (section !== "chat") {
-      setSelectedChatTradeId("");
-      setChatReturnSection("");
-    }
-    if (section !== "auction-bids") {
-      setSelectedPurchaseTradeId("");
-    }
-    if (section !== "auction-sales") {
-      setSelectedSalesTradeId("");
-    }
+    setSelectedChatTradeId("");
+    setChatReturnSection("");
+    setSelectedPurchaseTradeId("");
+    setSelectedSalesTradeId("");
+    setSectionResetKey((key) => key + 1);
+    window.scrollTo(0, 0);
   };
 
   // 제공자 모드 전환 (F-PROV-008): 서버에 실제 역할 전환을 요청한다.
@@ -186,7 +207,7 @@ export default function MyPage({
           onSelect={handleSelectSection}
           onRequestProviderSwitch={handleProviderSwitchRequest}
         />
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0" key={sectionResetKey}>
           {activeSection === "home" && !isProvider && (
             <MyPageDashboard
               user={user}
@@ -203,11 +224,8 @@ export default function MyPage({
               onOpenSection={handleSelectSection}
             />
           )}
-          {activeSection === "profile" && (
-            isProvider
-              ? <ProviderProfilePage embedded />
-              : <MyPageProfileEdit user={user} />
-          )}
+          {activeSection === "profile" && <MyPageProfileEdit user={user} />}
+          {isProvider && activeSection === "provider-profile" && <ProviderProfilePage embedded />}
           {activeSection === "active-auctions" && <MyActiveAuctionPage />}
           {activeSection === "auction-bids" && (
             selectedPurchaseTradeId ? (
@@ -254,20 +272,8 @@ export default function MyPage({
           {!isProvider && activeSection === "review" && <ReviewListPage />}
           {activeSection === "report-list" && <MyReportListPage embedded />}
           {activeSection === "report-form" && <ReportFormPage embedded />}
-          {isProvider && activeSection === "service-trade" && (
-            <ProviderEmbeddedSection
-              title="서비스 거래"
-              description="진행 중이거나 완료된 서비스 거래를 확인합니다."
-              emptyText="아직 표시할 서비스 거래 내역이 없습니다."
-            />
-          )}
-          {isProvider && activeSection === "settlement" && <SettlementListPage embedded />}
-          {isProvider && activeSection === "service-chat" && (
-            <ProviderEmbeddedSection
-              title="서비스 채팅"
-              description="서비스 요청자와 나눈 채팅방을 확인합니다."
-              emptyText="아직 표시할 서비스 채팅이 없습니다."
-            />
+          {activeSection === "service-trade" && (
+            <MyServiceTradeListPage fixedRole={isProvider ? "PROVIDER" : "REQUESTER"} />
           )}
           {isProvider && activeSection === "received-review" && <ProviderReceivedReviewSection />}
           {/* 기존 경로로 진입한 경우에도 입찰 내역을 안전하게 표시한다. */}
