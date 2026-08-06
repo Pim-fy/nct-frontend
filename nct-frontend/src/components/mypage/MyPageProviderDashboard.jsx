@@ -13,7 +13,7 @@ import {
 } from '@components/mypage/MyPageDashboardCommon';
 import ProviderApprovedCategorySection from '@components/mypage/ProviderApprovedCategorySection';
 
-export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpenSection }) {
+export default function MyPageProviderDashboard({ user, onLogout, onSwitchToGeneral, onOpenSection }) {
   const navigate = useNavigate();
   const profileQuery = useMyProviderProfile();
   const notificationsQuery = useNotifications();
@@ -47,9 +47,10 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpe
         email={user?.email || ''}
         actions={[
           {
-            key: 'profile',
-            label: '프로필 관리',
-            onClick: () => openSection('provider-profile'),
+            key: 'logout',
+            label: '로그아웃',
+            icon: assets.iconLogout,
+            onClick: onLogout,
           },
           {
             key: 'general-switch',

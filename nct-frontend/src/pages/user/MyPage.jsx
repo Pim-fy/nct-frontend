@@ -219,6 +219,7 @@ export default function MyPage({
           {activeSection === "home" && isProvider && (
             <MyPageProviderDashboard
               user={user}
+              onLogout={logout}
               onSwitchToGeneral={handleSwitchToGeneral}
               onOpenSection={handleSelectSection}
             />
