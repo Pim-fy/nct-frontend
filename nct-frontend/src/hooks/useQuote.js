@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { submitQuote, updateQuote, withdrawQuote, getMyQuotes, getQuoteHistory } from '../api/quoteApi';
+import { submitQuote, updateQuote, withdrawQuote, getMyQuotes, getMyActiveQuote, getQuoteHistory } from '../api/quoteApi';
 
 /** 내 견적 목록 — data: PageResponse { content, totalCount, page, size, hasNext } */
 export function useMyQuotes({ page = 1, size = 50 } = {}) {
@@ -35,6 +35,17 @@ export function useWithdrawQuote() {
   return useMutation({
     mutationFn: (quoteId) => withdrawQuote(quoteId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['quotes', 'my'] }),
+  });
+}
+
+/** 현재 제공자의 서비스 요청별 활성 견적. 새 제출/수정 화면 분기에 사용한다. */
+export function useMyActiveQuote(svcReqSn) {
+  return useQuery({
+    queryKey: ['quotes', 'my', 'service-request', svcReqSn],
+    queryFn: () => getMyActiveQuote(svcReqSn),
+    select: (res) => res.data,
+    enabled: Boolean(svcReqSn),
+    retry: false,
   });
 }
 

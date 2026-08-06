@@ -2,13 +2,15 @@
 // 서비스 요청서 관리 — 요청자 전용 견적 비교·선택·매칭 관리 (F-SVC-007, F-SVC-009, F-SVC-010)
 // 라우트: /service-requests/:svcReqSn/manage
 //
-// 뼈대만 먼저 잡아둔 상태 — 견적 선택(F-SVC-009/010)은 QUOTE 잠금 포트(황성경3)·서비스 거래 생성
-// 계약(정민재4)이 확정돼야 실제로 동작한다. 그 전까지 "선택하기" 버튼은 비활성화해 둔다.
+// 담당자 7 연결 작업: F-SVC-007 견적 이력 조회와 F-SVC-010 선택 결과(tradeId) 소비 화면이다.
+// 거래 생성·보관금·채팅방을 묶는 서버 오케스트레이션은 각 도메인 제공 계약을 통해 처리한다.
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
+import { useQuoteHistory } from '@hooks/useQuote';
 import { getServiceRequest } from '@api/serviceRequestApi';
-import { getReceivedQuotes } from '@api/quoteApi';
+import { getReceivedQuotes, selectQuoteAndCreateTrade } from '@api/quoteApi';
+import { toImageUrl } from '@api/fileApi';
 import ErrorMessage from '@components/common/ErrorMessage';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
 
@@ -39,6 +41,28 @@ export default function ServiceRequestManagePage() {
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectingQuoteId, setSelectingQuoteId] = useState(null);
+  const [historyQuoteId, setHistoryQuoteId] = useState(null);
+  const { data: quoteHistory = [], isLoading: isHistoryLoading, isError: isHistoryError } = useQuoteHistory(historyQuoteId);
+  const selectedHistoryQuote = quotes.find((quote) => quote.qutSn === historyQuoteId);
+
+  const handleSelectQuote = async (quote) => {
+    if (!['QUTC0001', 'QUTC0002'].includes(quote.statusCode)) return;
+    if (!window.confirm('이 견적을 선택하면 거래와 보관금이 생성됩니다. 계속하시겠습니까?')) return;
+
+    setSelectingQuoteId(quote.qutSn);
+    setError('');
+    try {
+      const response = await selectQuoteAndCreateTrade(svcReqSn, quote.qutSn);
+      const tradeId = response.data?.tradeId;
+      if (!tradeId) throw new Error('거래 생성 결과를 확인할 수 없습니다.');
+      navigate(`/service-trades/${tradeId}`);
+    } catch (selectionError) {
+      setError(selectionError.response?.data?.message || '견적 선택에 실패했습니다. 다시 시도해 주세요.');
+    } finally {
+      setSelectingQuoteId(null);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -131,17 +155,21 @@ export default function ServiceRequestManagePage() {
                     {q.content && (
                       <p className="mt-1 line-clamp-2 text-base text-[#5f5e5a]">{q.content}</p>
                     )}
-                    {/* 견적서 첨부파일 — 필드명은 황성경(3) QUOTE 구조 확정 전 임시(fileUrl/fileName), 확정되면 맞춰서 교체 */}
-                    {q.fileUrl && (
-                      <a
-                        href={q.fileUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={e => e.stopPropagation()}
-                        className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-[#0048bf] hover:underline"
-                      >
-                        📎 {q.fileName || '첨부 견적서'}
-                      </a>
+                    {q.attachments?.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+                        {q.attachments.map((attachment) => (
+                          <a
+                            key={attachment.flSn}
+                            href={toImageUrl(attachment.url)}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={e => e.stopPropagation()}
+                            className="inline-flex items-center gap-1.5 text-sm font-medium text-[#0048bf] hover:underline"
+                          >
+                            📎 {attachment.fileName}
+                          </a>
+                        ))}
+                      </div>
                     )}
                     {q.registeredAt && (
                       <p className="mt-1 text-sm text-[#9a9ba5]">{fmtDate(q.registeredAt)} 제출</p>
@@ -149,11 +177,18 @@ export default function ServiceRequestManagePage() {
                   </div>
                   <button
                     type="button"
-                    title="준비 중인 기능입니다"
-                    disabled
-                    className="shrink-0 cursor-not-allowed rounded-lg bg-[#e2e1dc] px-4 py-2.5 text-lg font-semibold text-[#9a9ba5]"
+                    onClick={() => handleSelectQuote(q)}
+                    disabled={!['QUTC0001', 'QUTC0002'].includes(q.statusCode) || selectingQuoteId != null}
+                    className="shrink-0 rounded-lg bg-primary px-4 py-2.5 text-lg font-semibold text-white transition-colors hover:bg-[#0048bf] disabled:cursor-not-allowed disabled:bg-[#e2e1dc] disabled:text-[#9a9ba5]"
                   >
                     선택하기
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setHistoryQuoteId(q.qutSn)}
+                    className="shrink-0 rounded-lg border border-[#b7d0ff] bg-white px-4 py-2.5 text-lg font-semibold text-primary transition-colors hover:bg-[#f3f7ff]"
+                  >
+                    변경 이력
                   </button>
                 </li>
               ))}
@@ -161,14 +196,47 @@ export default function ServiceRequestManagePage() {
           )}
         </section>
 
-        {/* 견적 변경이력 비교 (F-SVC-007) — 자리만 잡아둠 */}
+        {/* 견적 변경이력 조회 (F-SVC-007) */}
         <section className="mt-6 overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm">
           <div className="border-b border-[#e8e8e8] px-6 py-5">
             <h2 className="text-xl font-bold">견적 변경이력 비교</h2>
           </div>
-          <div className="px-6 py-10 text-center text-lg text-[#888780]">
-            준비 중인 기능입니다.
-          </div>
+          {!historyQuoteId && (
+            <div className="px-6 py-10 text-center text-lg text-[#888780]">
+              견적의 변경 이력을 확인할 수 있습니다.
+            </div>
+          )}
+          {historyQuoteId && isHistoryLoading && (
+            <div className="px-6 py-10 text-center text-lg text-[#888780]">변경 이력을 불러오는 중입니다.</div>
+          )}
+          {historyQuoteId && isHistoryError && (
+            <div className="px-6 py-10 text-center text-lg text-[#d14343]">변경 이력을 불러오지 못했습니다.</div>
+          )}
+          {historyQuoteId && !isHistoryLoading && !isHistoryError && (
+            <div className="px-6 py-5">
+              <p className="mb-4 text-base text-[#5f5e5a]">
+                {selectedHistoryQuote?.providerNm || '선택한 제공자'} 견적의 변경 내역입니다.
+              </p>
+              {quoteHistory.length === 0 ? (
+                <p className="py-5 text-center text-lg text-[#888780]">변경 이력이 없습니다.</p>
+              ) : (
+                <ul className="divide-y divide-[#e8e8e8]">
+                  {quoteHistory.map((history, index) => (
+                    <li key={history.qutHstSn} className="flex items-center justify-between gap-4 py-4">
+                      <div>
+                        <p className="font-semibold">{index + 1}차 견적</p>
+                        {history.content && <p className="mt-1 text-base text-[#5f5e5a]">{history.content}</p>}
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="text-lg font-bold text-primary">{fmtBudget(history.amount)}</p>
+                        <p className="mt-1 text-sm text-[#9a9ba5]">{fmtDate(history.registeredAt)}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </section>
 
       </div>

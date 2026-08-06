@@ -2,6 +2,7 @@
 // 서비스 요청서 상세 — 일반회원 본인 관리 / 제공자 공개 요청 조회·견적 제출
 // 라우트: /service-requests/:svcReqSn
 import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
 import {
@@ -11,6 +12,8 @@ import {
   getServiceRequestComments,
 } from '@api/serviceRequestApi';
 import { getReceivedQuotes, getQuoteHistory } from '@api/quoteApi';
+import { fetchMyProviderQuoteAccess } from '@api/providerProfileApi';
+import { useMyActiveQuote } from '@hooks/useQuote';
 import { toImageUrl } from '@api/fileApi';
 import ReportModal from '@components/common/ReportModal';
 import ImageLightbox from '@components/common/ImageLightbox';
@@ -199,6 +202,9 @@ export default function ServiceRequestDetailPage() {
   const location = useLocation();
   const { user, isAuthenticated, isProvider } = useAuth();
   const authenticatedUserId = user?.id ?? user?.userId ?? user?.userSn ?? user?.usrSn;
+  const { data: myActiveQuote, isLoading: myQuoteLoading } = useMyActiveQuote(
+    isProvider && isAuthenticated ? svcReqSn : null,
+  );
 
   const [request, setRequest] = useState(null);
   const [loadedRequestSn, setLoadedRequestSn] = useState(null);
@@ -216,6 +222,17 @@ export default function ServiceRequestDetailPage() {
   const [cmtTtl, setCmtTtl] = useState('');
   const [cmtCn, setCmtCn] = useState('');
   const [cmtSubmitting, setCmtSubmitting] = useState(false);
+  const quoteAccessQuery = useQuery({
+    queryKey: ['provider', 'quote-access', request?.catSn],
+    queryFn: () => fetchMyProviderQuoteAccess(request.catSn),
+    enabled: Boolean(
+      isProvider
+      && isAuthenticated
+      && request?.svcReqStatusCd === 'SVCC0002'
+      && Number(request?.catSn) > 0,
+    ),
+    retry: false,
+  });
   const loading = String(loadedRequestSn) !== String(svcReqSn);
   const requestOwner = !isProvider
     && request
@@ -347,13 +364,30 @@ export default function ServiceRequestDetailPage() {
       navigate('/login', { state: { from: location } });
       return;
     }
-    // QuoteFormPage(황성경3 소유)는 svcReqSn 등을 쿼리스트링이 아니라 router state로 받는다
-    navigate('/provider/quotes/new', {
+    if (quoteAccessQuery.data !== true) return;
+    navigate(`/provider/quotes/new?svcReqSn=${svcReqSn}`, {
       state: {
         svcReqSn,
         svcReqTitle: request.svcReqTtl,
         category: request.catNm,
         budget: fmtBudget(request.svcReqBdgtAmt),
+      },
+    });
+  };
+
+  const handleQuoteEdit = () => {
+    if (!myActiveQuote?.qutSn) return;
+    navigate(`/provider/quotes/${myActiveQuote.qutSn}/edit?svcReqSn=${svcReqSn}`, {
+      state: {
+        quoteId: myActiveQuote.qutSn,
+        svcReqSn,
+        svcReqTitle: request.svcReqTtl,
+        category: request.catNm,
+        budget: fmtBudget(request.svcReqBdgtAmt),
+        amount: myActiveQuote.amount,
+        content: myActiveQuote.content,
+        duration: myActiveQuote.duration,
+        reviseCnt: myActiveQuote.reviseCnt,
       },
     });
   };
@@ -384,6 +418,8 @@ export default function ServiceRequestDetailPage() {
   const isOpen  = request.svcReqStatusCd === 'SVCC0002';
   const isMatched = request.svcReqStatusCd === 'SVCC0003';
   const canAddComment = isOwner && (isOpen || isMatched) && comments.length < 3;
+  const quoteAccessPending = quoteAccessQuery.isLoading || quoteAccessQuery.isFetching;
+  const canSubmitQuote = quoteAccessQuery.data === true;
 
   const parsedItems = (request.items ?? []).map(parseItemGroup);
   parsedItems.push({ title: MEMO_TITLE, fields: [{ label: null, value: request.svcReqCn ?? '' }] });
@@ -403,7 +439,7 @@ export default function ServiceRequestDetailPage() {
           <button
             type="button"
             className="inline-flex items-center gap-1 rounded-lg border border-[#e2e1dc] bg-white px-4 py-2.5 text-lg font-medium text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary"
-            onClick={() => navigate('/user/mypage?section=service-requests')}
+            onClick={() => navigate(isProvider ? '/service' : '/user/mypage?section=service-requests')}
           >
             ← 목록으로
           </button>
@@ -649,6 +685,22 @@ export default function ServiceRequestDetailPage() {
               <div className="border-b border-[#e8e8e8] px-5 py-4">
                 {isAuthenticated ? (
                   isOpen ? (
+                    myQuoteLoading ? (
+                      <p className="text-center text-lg text-[#888780]">내 견적을 확인하는 중입니다.</p>
+                    ) : myActiveQuote ? (
+                      <div className="rounded-2xl border-2 border-primary bg-[#e5efff] px-6 py-6 text-center">
+                        <p className="mb-4 text-lg font-medium text-[#0048bf]">이 요청에 제출한 견적이 있습니다.</p>
+                        <button
+                          type="button"
+                          className="w-full rounded-lg bg-primary py-3.5 text-lg font-bold text-white transition-colors hover:bg-[#0048bf]"
+                          onClick={handleQuoteEdit}
+                        >
+                          내 견적 수정
+                        </button>
+                      </div>
+                    ) : quoteAccessPending ? (
+                      <p className="text-center text-lg text-[#888780]">견적 제출 권한을 확인하는 중입니다.</p>
+                    ) : canSubmitQuote ? (
                     <div className="rounded-2xl border-2 border-primary bg-[#e5efff] px-6 py-6 text-center">
                       <p className="mb-4 text-lg font-medium text-[#0048bf]">
                         이 요청에 아직 견적을 제출하지 않았습니다
@@ -661,6 +713,9 @@ export default function ServiceRequestDetailPage() {
                         견적 제출하기
                       </button>
                     </div>
+                    ) : (
+                      <p className="text-center text-lg text-[#888780]">이 서비스 분야의 제공자 승인 후 견적을 제출할 수 있습니다.</p>
+                    )
                   ) : (
                     <p className="text-center text-lg text-[#888780]">견적 접수가 종료된 요청입니다.</p>
                   )

@@ -43,6 +43,43 @@
   flex-direction: column;
 }
 
+/* Desktop: enter the quote on the left, attach files above the revision guide on the right. */
+@media (min-width: 769px) {
+  .qf-main-2col {
+    grid-template-areas:
+      "amount attachment"
+      "content attachment"
+      "actions policy";
+    grid-template-rows: auto 1fr auto;
+  }
+
+  .qf-col-left {
+    display: contents;
+  }
+
+  .qf-col-left > .qf-field:nth-child(1) {
+    grid-area: amount;
+  }
+
+  .qf-col-left > .qf-field:nth-child(2) {
+    grid-area: content;
+  }
+
+  .qf-col-left > div:nth-child(3) {
+    grid-area: actions;
+  }
+
+  .qf-col-left > .qf-field:nth-child(4) {
+    grid-area: attachment;
+    align-self: start;
+  }
+
+  .qf-col-right {
+    grid-area: policy;
+    align-self: start;
+  }
+}
+
 /* 50% 컬럼 내 썸네일 그리드 — 5열 1행 */
 .qf-col-left .qf-thumb-grid {
   grid-template-columns: repeat(5, 1fr);
@@ -321,6 +358,10 @@
 
   .qf-thumb-grid {
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  .qf-col-left {
+    display: flex;
   }
 
   .qf-modal-box {

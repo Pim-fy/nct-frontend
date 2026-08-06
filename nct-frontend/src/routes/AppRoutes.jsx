@@ -289,6 +289,7 @@ const AppRoutes = () => {
           <Route path="/provider/profile" element={<ProviderProfilePage />} />
           <Route path="/provider/quotes" element={<MyQuoteListPage />} />
           <Route path="/provider/quotes/new" element={<QuoteFormPage />} />
+          <Route path="/provider/quotes/:quoteId/edit" element={<QuoteFormPage />} />
         </Route>
       </Route>
 

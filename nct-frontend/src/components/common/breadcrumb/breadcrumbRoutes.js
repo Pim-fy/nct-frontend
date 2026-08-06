@@ -232,4 +232,9 @@ export const BREADCRUMB_ROUTES = [
     pageLabel: '견적 작성',
     defaultTrail: [{ label: '내 견적', to: '/provider/quotes' }],
   },
+  {
+    pattern: '/provider/quotes/:quoteId/edit',
+    pageLabel: '견적 수정',
+    defaultTrail: [{ label: '내 견적', to: '/provider/quotes' }],
+  },
 ];
