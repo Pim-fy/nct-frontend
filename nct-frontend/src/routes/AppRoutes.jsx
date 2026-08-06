@@ -81,6 +81,7 @@ import ProductDetailSellerPage from '@pages/product/ProductDetailSellerPage';
 import ServiceRequestFormPage from '@pages/service/ServiceRequestFormPage';
 // F-SVC-003~004: 서비스 요청서 상세 조회/관리
 import ServiceRequestDetailPage from '@pages/service/ServiceRequestDetailPage';
+import QuoteDetailPage from '@pages/service/QuoteDetailPage';
 // F-SVC-004: 내 서비스 요청 목록 (담당자 2)
 import MyServiceRequestListPage from '@pages/service/MyServiceRequestListPage';
 import ServiceTradeDetailRoutePage from '@pages/service/ServiceTradeDetailRoutePage';
@@ -207,6 +208,7 @@ const AppRoutes = () => {
           <Route path="/provider/applications/status" element={<ProviderApplicationStatusPage />} />
           {/* 담당자 7 통합: 일반회원은 본인 요청, 제공자는 공개 요청 상세를 사용합니다. */}
           <Route path="/service-requests/:svcReqSn" element={<ServiceRequestDetailPage />} />
+          <Route path="/service-requests/:svcReqSn/quotes/:quoteId" element={<QuoteDetailPage />} />
           <Route path="/service-trades/:tradeId" element={<ServiceTradeDetailRoutePage />} />
           <Route path="/service-trades/:tradeId/chat" element={<TradeChat />} />
         </Route>

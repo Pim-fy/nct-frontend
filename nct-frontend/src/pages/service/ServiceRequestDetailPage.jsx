@@ -3,7 +3,7 @@
 // 라우트: /service-requests/:svcReqSn
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
 import {
   closeServiceRequest,
@@ -11,11 +11,10 @@ import {
   addServiceRequestComment,
   getServiceRequestComments,
 } from '@api/serviceRequestApi';
-import { getReceivedQuotes, getQuoteHistory, selectQuoteAndCreateTrade } from '@api/quoteApi';
+import { getReceivedQuotes } from '@api/quoteApi';
 import { fetchMyProviderQuoteAccess } from '@api/providerProfileApi';
 import { useMyActiveQuote } from '@hooks/useQuote';
 import { toImageUrl } from '@api/fileApi';
-import ReportModal from '@components/common/ReportModal';
 import ImageLightbox from '@components/common/ImageLightbox';
 import ErrorMessage from '@components/common/ErrorMessage';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
@@ -203,6 +202,7 @@ export default function ServiceRequestDetailPage() {
   const { svcReqSn } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, isAuthenticated, isProvider } = useAuth();
   const authenticatedUserId = user?.id ?? user?.userId ?? user?.userSn ?? user?.usrSn;
   const { data: myActiveQuote, isLoading: myQuoteLoading } = useMyActiveQuote(
@@ -216,12 +216,17 @@ export default function ServiceRequestDetailPage() {
   const [toast, setToast] = useState('');
   const [quotes, setQuotes] = useState([]);
   const [quotesLoadedRequestSn, setQuotesLoadedRequestSn] = useState(null);
-  const [quotePage, setQuotePage] = useState(1);
-  const [quoteDetail, setQuoteDetail] = useState(null); // 상세 모달에 띄울 견적(클릭한 항목)
-  const [quoteHistory, setQuoteHistory] = useState([]);
-  const [quoteHistoryLoading, setQuoteHistoryLoading] = useState(false);
-  const [reportTarget, setReportTarget] = useState(null); // { qutSn, providerUsrSn, providerNm, svcReqSn }
-  const [selecting, setSelecting] = useState(false); // 견적 선택 처리 중
+  // 페이지 번호를 URL 쿼리스트링(?quotePage=)에 반영 — 견적 상세 페이지 갔다가 뒤로가기로
+  // 돌아왔을 때 보던 페이지 그대로 복원되게 하기 위함(컴포넌트가 다시 마운트되면 상태는 사라지므로)
+  const quotePage = Number(searchParams.get('quotePage')) || 1;
+  const setQuotePage = (page) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (page <= 1) next.delete('quotePage');
+      else next.set('quotePage', String(page));
+      return next;
+    }, { replace: true });
+  };
   const [lightboxIndex, setLightboxIndex] = useState(null); // 첨부사진 확대뷰 — null이면 닫힘
   const [comments, setComments] = useState([]);
   const [cmtTtl, setCmtTtl] = useState('');
@@ -288,7 +293,6 @@ export default function ServiceRequestDetailPage() {
         if (cancelled) return;
         setQuotes(res.data ?? []);
         setQuotesLoadedRequestSn(svcReqSn);
-        setQuotePage(1);
       })
       .catch(() => {
         if (cancelled) return;
@@ -348,35 +352,6 @@ export default function ServiceRequestDetailPage() {
       setToast(err.response?.data?.message || '마감에 실패했습니다.');
     } finally {
       setClosing(false);
-    }
-  };
-
-  const openQuoteDetail = (quote) => {
-    setQuoteDetail(quote);
-    setQuoteHistory([]);
-    setQuoteHistoryLoading(true);
-    getQuoteHistory(quote.qutSn)
-      .then(res => setQuoteHistory(res.data ?? []))
-      .catch(() => setQuoteHistory([]))
-      .finally(() => setQuoteHistoryLoading(false));
-  };
-
-  const closeQuoteDetail = () => {
-    setQuoteDetail(null);
-  };
-
-  // F-SVC-009/010: 조우진(7)이 통합한 선택+거래생성 계약 — 성공하면 서비스 거래 상세로 이동
-  const handleSelectQuote = async () => {
-    setSelecting(true);
-    try {
-      const result = await selectQuoteAndCreateTrade(svcReqSn, quoteDetail.qutSn);
-      const tradeId = result.data?.tradeId ?? result.data;
-      closeQuoteDetail();
-      navigate(`/service-trades/${tradeId}`);
-    } catch (err) {
-      setToast(err.response?.data?.message || '견적 선택에 실패했습니다.');
-    } finally {
-      setSelecting(false);
     }
   };
 
@@ -765,7 +740,7 @@ export default function ServiceRequestDetailPage() {
                       <li
                         key={q.qutSn}
                         className="cursor-pointer px-5 py-4 transition-colors hover:bg-[#f9fafb]"
-                        onClick={() => openQuoteDetail(q)}
+                        onClick={() => navigate(`/service-requests/${svcReqSn}/quotes/${q.qutSn}`, { state: { quote: q } })}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <span className="font-semibold text-[#1d1d1f]">{q.providerNm}</span>
@@ -794,107 +769,6 @@ export default function ServiceRequestDetailPage() {
       </div>
 
       {toast && <Toast message={toast} onClose={() => setToast('')} />}
-
-      {/* 견적 상세 모달 — 목록을 아코디언으로 펼치면 견적이 많을 때 가독성이 떨어져서 모달로 처리 */}
-      <div
-        className={`modal ${quoteDetail ? 'open' : ''}`}
-        // ReportModal(성경3 공용 컴포넌트, z-index 500)을 이 위에 띄울 때는 이 모달이
-        // 뒤로 가도록 z-index를 낮춘다 — .modal 기본값(2000)이 ReportModal보다 높아서 안 낮추면 이 모달이 위로 겹친다.
-        style={reportTarget ? { zIndex: 100 } : undefined}
-        onClick={e => { if (e.target === e.currentTarget) closeQuoteDetail(); }}
-      >
-        {quoteDetail && (
-          <div className="modal-box">
-            <div className="flex items-start justify-between gap-3">
-              <h3 className="text-xl font-bold text-[#1d1d1f]">{quoteDetail.providerNm}</h3>
-              <span className="shrink-0 rounded-lg bg-[#f0f0ee] px-3 py-1 text-sm font-medium text-[#5f5e5a]">
-                {QUOTE_STATUS_LABEL[quoteDetail.statusCode] ?? quoteDetail.statusCode}
-              </span>
-            </div>
-            <p className="mt-2 text-2xl font-bold text-primary">{fmtBudget(quoteDetail.amount)}</p>
-            {quoteDetail.content && (
-              <p className="mt-3 whitespace-pre-line text-base leading-relaxed text-[#1d1d1f]">{quoteDetail.content}</p>
-            )}
-            {/* 견적서 첨부파일 — 필드명은 황성경(3) QUOTE 구조 확정 전 임시(fileUrl/fileName), 확정되면 맞춰서 교체 */}
-            {quoteDetail.fileUrl && (
-              <a
-                href={quoteDetail.fileUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[#e2e1dc] px-3 py-2 text-sm font-medium text-[#0048bf] hover:border-primary hover:bg-[#e5efff]"
-              >
-                📎 {quoteDetail.fileName || '첨부 견적서'}
-              </a>
-            )}
-            <p className="mt-3 text-sm text-[#9a9ba5]">
-              {fmtDate(quoteDetail.registeredAt)} 제출
-              {quoteDetail.reviseCnt > 0 && ` · ${quoteDetail.reviseCnt}회 수정됨`}
-            </p>
-
-            {quoteDetail.reviseCnt > 0 && (
-              <div className="mt-5 border-t border-[#e8e8e8] pt-4">
-                <h4 className="mb-2 text-base font-semibold text-[#5f5e5a]">수정 이력</h4>
-                {quoteHistoryLoading ? (
-                  <p className="text-sm text-[#9a9ba5]">불러오는 중...</p>
-                ) : quoteHistory.length === 0 ? (
-                  <p className="text-sm text-[#9a9ba5]">이력이 없습니다.</p>
-                ) : (
-                  <ul className="space-y-3">
-                    {quoteHistory.map(h => (
-                      <li key={h.qutHstSn} className="rounded-lg bg-[#f9fafb] p-3">
-                        <p className="font-semibold text-[#1d1d1f]">{fmtBudget(h.amount)}</p>
-                        {h.content && <p className="mt-1 whitespace-pre-line text-sm text-[#5f5e5a]">{h.content}</p>}
-                        <p className="mt-1 text-xs text-[#9a9ba5]">{fmtDate(h.registeredAt)} 수정 전 내용</p>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
-
-            {/* 신고: 황성경(3) 공용 ReportModal 연동 완료. 선택하기: 조우진(7)의 선택+거래생성 계약 연동 완료(F-SVC-009/010). */}
-            <div className="mt-5 flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={() => setReportTarget({
-                  qutSn: quoteDetail.qutSn,
-                  providerUsrSn: quoteDetail.providerUsrSn,
-                  providerNm: quoteDetail.providerNm,
-                  svcReqSn,
-                })}
-                className="rounded-lg border border-[#e2e1dc] px-4 py-2 text-sm font-semibold text-[#a32d2d] transition-colors hover:bg-[#fcebeb]"
-              >
-                신고
-              </button>
-              <div className="flex gap-2">
-                {quoteDetail.statusCode !== 'QUTC0004' && quoteDetail.statusCode !== 'QUTC0005' && (
-                  <button
-                    type="button"
-                    onClick={handleSelectQuote}
-                    disabled={selecting}
-                    className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0048bf] disabled:opacity-50"
-                  >
-                    {selecting ? '처리 중...' : '이 견적 선택하기'}
-                  </button>
-                )}
-                <button type="button" className="btn btn-ghost" onClick={closeQuoteDetail}>닫기</button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {reportTarget && (
-        <ReportModal
-          open={!!reportTarget}
-          onClose={() => setReportTarget(null)}
-          targetName={reportTarget.providerNm}
-          targetType="service"
-          referenceSn={reportTarget.svcReqSn}
-          reportedUserSn={reportTarget.providerUsrSn}
-          contextLabel={`견적 제공자: ${reportTarget.providerNm}`}
-        />
-      )}
 
       <ImageLightbox
         images={(request.imageList ?? []).map(img => toImageUrl(img.url))}
