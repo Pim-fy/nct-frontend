@@ -138,7 +138,7 @@ export default function MyQuoteListPage({ embedded = false } = {}) {
       toast({ icon: "warning", title: "수정 가능 횟수(3회)를 초과했습니다." });
       return;
     }
-    navigate("/provider/quotes/form", {
+    navigate("/provider/quotes/new", {
       state: {
         quoteId:     quote.qutSn,
         svcReqSn:    quote.svcReqSn,
