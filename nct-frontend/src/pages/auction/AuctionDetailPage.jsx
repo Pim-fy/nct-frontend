@@ -37,6 +37,7 @@ import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import HeaderSearchPortal, {
   SimpleHeaderSearch,
 } from '@components/common/HeaderSearchPortal';
+import ReportModal from '@components/common/ReportModal';
 import PointChargeWidgetModal from '@pages/user/point/components/PointChargeWidgetModal';
 import AuctionBidPanel from './components/AuctionBidPanel';
 import AuctionBuyNowModal from './components/AuctionBuyNowModal';
@@ -96,6 +97,7 @@ const AuctionDetailPageContent = ({ auctionId }) => {
   const [isBuyNowOpen, setIsBuyNowOpen] = useState(false);
   const [isDeliveryAddressModalOpen, setIsDeliveryAddressModalOpen] = useState(false);
   const [isSellerReviewDialogOpen, setIsSellerReviewDialogOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   // 입찰 패널의 "충전" 클릭 시 마이페이지로 이동하지 않고 이 자리에서 바로 모달을 띄운다
   // (헤더 POINT 드롭다운과 같은 방식, 사용자 요청으로 변경 2026-07-28 — 이동하면 입력 중인 입찰 금액이 날아감)
   const [isChargeModalOpen, setIsChargeModalOpen] = useState(false);
@@ -211,6 +213,24 @@ const AuctionDetailPageContent = ({ auctionId }) => {
   ));
 
   const showToast = useCallback((message) => setToastMessage(message), []);
+  const handleReportOpen = useCallback(() => {
+    if (isAuthLoading) return;
+    if (!isAuthenticated) {
+      handleInquiryLoginRequired();
+      return;
+    }
+    if (isOwnAuction) {
+      showToast('본인이 등록한 경매 상품은 신고할 수 없습니다');
+      return;
+    }
+    setIsReportModalOpen(true);
+  }, [
+    handleInquiryLoginRequired,
+    isAuthLoading,
+    isAuthenticated,
+    isOwnAuction,
+    showToast,
+  ]);
   const getErrorMessage = (error) => error?.response?.data?.message || '요청 처리 중 오류가 발생했습니다';
   const openDeliveryAddressModal = () => setIsDeliveryAddressModalOpen(true);
   const deliveryAddressMutation = useMutation({
@@ -303,7 +323,7 @@ const AuctionDetailPageContent = ({ auctionId }) => {
     mutationFn: (payload) => placeAuctionBid(auctionId, payload),
     onSuccess: (updatedAuction) => {
       handleMutationSuccess(updatedAuction);
-      showToast('입찰이 등록되었습니다');
+      showToast('입찰이 완료되었습니다.');
     },
     onError: handleAuctionMutationError,
   });
@@ -438,7 +458,7 @@ const AuctionDetailPageContent = ({ auctionId }) => {
 
   useEffect(() => {
     if (!toastMessage) return undefined;
-    const timerId = window.setTimeout(() => setToastMessage(''), 1800);
+    const timerId = window.setTimeout(() => setToastMessage(''), 2800);
     return () => window.clearTimeout(timerId);
   }, [toastMessage]);
 
@@ -1026,6 +1046,7 @@ const AuctionDetailPageContent = ({ auctionId }) => {
               onBuyNowOpen={handleBuyNowOpen}
               onDeliveryAddressOpen={handleDeliveryAddressOpen}
               onFavoriteToggle={handleFavoriteToggle}
+              onReportOpen={handleReportOpen}
               onChargeClick={() => setIsChargeModalOpen(true)}
             />
           </section>
@@ -1140,6 +1161,15 @@ const AuctionDetailPageContent = ({ auctionId }) => {
           onSave={(address) => deliveryAddressMutation.mutateAsync(address)}
         />
       )}
+      <ReportModal
+        open={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        targetName={auction.sellerName || '판매자'}
+        targetType="auction"
+        referenceSn={Number(auction.auctionId ?? auctionId)}
+        reportedUserSn={Number(auction.sellerId)}
+        contextLabel={`경매: ${auction.title}`}
+      />
       <AuctionToast message={toastMessage} />
       {isChargeModalOpen && (
         <PointChargeWidgetModal
