@@ -40,3 +40,11 @@ export const deleteServiceRequest = (svcReqSn) =>
 /** 요청서 마감 (F-SVC-003) */
 export const closeServiceRequest = (svcReqSn) =>
   api.patch(`/service-requests/${svcReqSn}/close`).then(res => res.data);
+
+/** 요청서 변경사항 추가 — 견적 요청 정책상 최대 3개 */
+export const addServiceRequestComment = (svcReqSn, data) =>
+  api.post(`/service-requests/${svcReqSn}/comments`, data).then(res => res.data);
+
+/** 요청서 변경사항 목록 조회 */
+export const getServiceRequestComments = (svcReqSn) =>
+  api.get(`/service-requests/${svcReqSn}/comments`).then(res => res.data);

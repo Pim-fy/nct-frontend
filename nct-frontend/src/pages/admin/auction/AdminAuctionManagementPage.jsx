@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Search } from 'lucide-react';
 import {
   decideAdminAuctionCancellation,
   fetchAdminAuctionCancellationRequest,
@@ -8,23 +7,39 @@ import {
   fetchAdminAuctions,
 } from '@api/adminAuctionApi';
 import AdminModal from '@components/admin/AdminModal';
+import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import PageMeta from '@components/admin/PageMeta';
-import { formatDateTime } from '@utils/common';
+import { formatDateTime, toast } from '@utils/common';
 import '../audit/adminAuditPage.css';
 import './adminAuctionManagementPage.css';
 
 // 담당자 7 · F-OPS-003/004: 관리자 경매 운영 조회와 판매자 취소 승인 화면입니다.
-const tone = (statusCode) => {
+const auctionStatusTone = (statusCode) => {
   if (statusCode === 'AUCC0006') return 'danger';
   if (statusCode === 'AUCC0005') return 'danger';
   if (statusCode === 'AUCC0003') return 'neutral';
   if (statusCode === 'AUCC0002') return 'info';
   return 'neutral';
+};
+const tradeStatusTone = (statusCode) => {
+  if (statusCode === 'TRDC0008') return 'danger';
+  if (statusCode === 'TRDC0005' || statusCode === 'TRDC0007') return 'warning';
+  if (statusCode === 'TRDC0006') return 'success';
+  if (statusCode === 'TRDC0003' || statusCode === 'TRDC0004') return 'info';
+  return 'neutral';
+};
+const TRADE_STATUS_LABELS = {
+  TRDC0003: '진행중',
+  TRDC0004: '배송/직거래중',
+  TRDC0005: '상대확인대기',
+  TRDC0006: '완료',
+  TRDC0007: '보류',
+  TRDC0008: '취소',
 };
 
 const INITIAL_FILTERS = {
@@ -46,7 +61,6 @@ const AdminAuctionManagementPage = () => {
   const [filterError, setFilterError] = useState('');
   const [selected, setSelected] = useState(null);
   const [reviewReason, setReviewReason] = useState('');
-  const [feedback, setFeedback] = useState('');
   const [page, setPage] = useState(1);
 
   const auctionsQuery = useQuery({
@@ -77,7 +91,11 @@ const AdminAuctionManagementPage = () => {
   const decisionMutation = useMutation({
     mutationFn: decideAdminAuctionCancellation,
     onSuccess: (_, variables) => {
-      setFeedback(`경매 #${variables.auctionId} 취소 요청을 ${variables.decision === 'APPROVED' ? '승인' : '반려'}했습니다.`);
+      toast({
+        icon: 'success',
+        title: `경매 #${variables.auctionId} 취소 요청을 ${variables.decision === 'APPROVED' ? '승인' : '반려'}했습니다.`,
+        timer: 2000,
+      });
       setSelected(null);
       setReviewReason('');
       auctionsQuery.refetch();
@@ -89,9 +107,18 @@ const AdminAuctionManagementPage = () => {
     { key: 'auctionId', label: '경매 번호', render: (value) => `#${value}` },
     { key: 'productName', label: '상품명' },
     { key: 'sellerName', label: '판매자' },
-    { key: 'auctionStatusName', label: '경매', render: (value, row) => <AdminStatusBadge tone={tone(row.auctionStatusCode)}>{value ?? row.auctionStatusCode}</AdminStatusBadge> },
+    { key: 'auctionStatusName', label: '경매 상태', render: (value, row) => <AdminStatusBadge tone={auctionStatusTone(row.auctionStatusCode)}>{value ?? row.auctionStatusCode}</AdminStatusBadge> },
     { key: 'bidCount', label: '입찰', render: (value) => `${value ?? 0}건` },
-    { key: 'tradeStatusName', label: '거래', render: (value, row) => value ?? row.tradeStatusCode ?? '-' },
+    {
+      key: 'tradeStatusName',
+      label: '거래 상태',
+      render: (value, row) => {
+        const statusLabel = value ?? TRADE_STATUS_LABELS[row.tradeStatusCode] ?? row.tradeStatusCode;
+        return statusLabel
+          ? <AdminStatusBadge tone={tradeStatusTone(row.tradeStatusCode)}>{statusLabel}</AdminStatusBadge>
+          : '-';
+      },
+    },
     { key: 'registeredAt', label: '등록일', render: formatDateTime },
     {
       key: 'manage', label: '관리', render: (_, row) => (
@@ -114,6 +141,14 @@ const AdminAuctionManagementPage = () => {
   const productDetail = overview?.product;
   const cancellationDetail = cancellationQuery.data;
   const tradeId = overview?.tradeSn ?? selected?.tradeId;
+  const detailAuctionStatusCode = auctionDetail?.auctionStatusCode ?? selected?.auctionStatusCode;
+  const detailAuctionStatusLabel = auctionDetail?.auctionStatusName
+    ?? selected?.auctionStatusName
+    ?? detailAuctionStatusCode;
+  const detailTradeStatusCode = overview?.tradeStatusCode ?? selected?.tradeStatusCode;
+  const detailTradeStatusLabel = TRADE_STATUS_LABELS[detailTradeStatusCode]
+    ?? selected?.tradeStatusName
+    ?? detailTradeStatusCode;
 
   const submitSearch = (event) => {
     event.preventDefault();
@@ -142,12 +177,12 @@ const AdminAuctionManagementPage = () => {
         <label>경매 상태
           <select onChange={(event) => setFilterForm({ ...filterForm, auctionStatusCode: event.target.value })} value={filterForm.auctionStatusCode}>
             <option value="">전체</option>
-            <option value="AUCC0001">진행 예정</option>
+            <option value="AUCC0006">취소 요청</option>
             <option value="AUCC0002">진행 중</option>
+            <option value="AUCC0001">진행 예정</option>
             <option value="AUCC0003">종료</option>
             <option value="AUCC0004">유찰</option>
             <option value="AUCC0005">취소</option>
-            <option value="AUCC0006">취소 요청</option>
           </select>
         </label>
         <label>거래 상태
@@ -171,11 +206,9 @@ const AdminAuctionManagementPage = () => {
         <label>등록 시작일<input onChange={(event) => setFilterForm({ ...filterForm, registeredFrom: event.target.value })} type="date" value={filterForm.registeredFrom} /></label>
         <label>등록 종료일<input onChange={(event) => setFilterForm({ ...filterForm, registeredTo: event.target.value })} type="date" value={filterForm.registeredTo} /></label>
         <label className="admin-auction-filters__search">검색<input onChange={(event) => setFilterForm({ ...filterForm, keyword: event.target.value })} placeholder="상품명·판매자·경매 번호" value={filterForm.keyword} /></label>
-        <button type="submit"><Search aria-hidden="true" />조회</button>
-        {Object.values(filters).some(Boolean) && <button className="admin-auction-filters__reset" onClick={resetFilters} type="button">초기화</button>}
+        <AdminFilterActions disabled={auctionsQuery.isFetching} onReset={resetFilters} />
       </form>
       {filterError && <p className="admin-auction-page__filter-error" role="alert">{filterError}</p>}
-      {feedback && <p className="admin-auction-page__feedback" role="status">{feedback}</p>}
       {auctionsQuery.isError && <div className="admin-bjn-state is-error">경매 목록을 불러오지 못했습니다. <button className="btn btn-outline" onClick={() => auctionsQuery.refetch()} type="button">다시 시도</button></div>}
       {!auctionsQuery.isError && (
         <AdminSectionCard action={!auctionsQuery.isLoading && <span>총 {auctionsQuery.data?.totalItems ?? 0}건</span>} title="경매·거래 목록">
@@ -207,14 +240,24 @@ const AdminAuctionManagementPage = () => {
               <dt>경매 번호</dt><dd>#{selected.auctionId}</dd>
               <dt>상품 번호</dt><dd>#{productDetail?.prdSn ?? selected.productId}</dd>
               <dt>판매자</dt><dd>{auctionDetail?.sellerName ?? selected.sellerName}</dd>
-              <dt>경매 상태</dt><dd>{auctionDetail?.auctionStatusName ?? selected.auctionStatusName ?? selected.auctionStatusCode}</dd>
+              <dt>경매 상태</dt>
+              <dd>
+                {detailAuctionStatusLabel
+                  ? <AdminStatusBadge tone={auctionStatusTone(detailAuctionStatusCode)}>{detailAuctionStatusLabel}</AdminStatusBadge>
+                  : '-'}
+              </dd>
               <dt>입찰 수</dt><dd>{auctionDetail?.bidCount ?? selected.bidCount ?? 0}건</dd>
               <dt>현재가</dt><dd>{formatAmount(auctionDetail?.currentPrice)}</dd>
               <dt>시작가</dt><dd>{formatAmount(auctionDetail?.startPrice ?? productDetail?.prdStartAmt)}</dd>
               <dt>경매 시작</dt><dd>{formatDateTime(auctionDetail?.startDateTime)}</dd>
               <dt>경매 종료</dt><dd>{formatDateTime(auctionDetail?.endDateTime)}</dd>
               <dt>거래 번호</dt><dd>{tradeId == null ? '-' : `#${tradeId}`}</dd>
-              <dt>거래 상태</dt><dd>{overview?.tradeStatusCode ?? selected.tradeStatusName ?? selected.tradeStatusCode ?? '-'}</dd>
+              <dt>거래 상태</dt>
+              <dd>
+                {detailTradeStatusLabel
+                  ? <AdminStatusBadge tone={tradeStatusTone(detailTradeStatusCode)}>{detailTradeStatusLabel}</AdminStatusBadge>
+                  : '-'}
+              </dd>
               <dt>등록일</dt><dd>{formatDateTime(productDetail?.prdRegDt ?? selected.registeredAt)}</dd>
               {selected.cancelRequestId && (
                 <>

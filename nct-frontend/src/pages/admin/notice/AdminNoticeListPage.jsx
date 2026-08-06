@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { CalendarClock, Eye, FilePlus2, Search } from 'lucide-react';
+import { CalendarClock, Eye, EyeOff, FilePlus2 } from 'lucide-react';
+import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminTable from '@components/admin/AdminTable';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
@@ -9,9 +10,10 @@ import PageMeta from '@components/admin/PageMeta';
 import {
   useAdminNoticeList,
   useAdminNoticeOptions,
+  useHideAdminNotice,
   usePublishAdminNotice,
 } from '@hooks/useAdminNotices';
-import { formatDateTime } from '@utils/common';
+import { formatDateTime, toast } from '@utils/common';
 import './adminContentPages.css';
 
 const PAGE_SIZE = 20;
@@ -25,13 +27,17 @@ const statusTone = (statusCode) => {
 
 const getErrorMessage = (error) => error?.response?.status === 409
   ? '다른 관리자가 먼저 공지를 변경했습니다. 목록을 새로 불러온 뒤 다시 시도해 주세요.'
-  : error?.response?.data?.message || '공지 노출 처리 중 오류가 발생했습니다.';
+  : error?.response?.data?.message || '공지 노출 상태 변경 중 오류가 발생했습니다.';
 
 /** F-OPS-023: 임시저장·게시·숨김을 모두 확인하는 관리자 공지 목록입니다. */
 const AdminNoticeListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [keywordInput, setKeywordInput] = useState(searchParams.get('keyword') || '');
-  const [publishFeedback, setPublishFeedback] = useState(null);
+  const [filterForm, setFilterForm] = useState({
+    typeCode: searchParams.get('typeCode') || '',
+    statusCode: searchParams.get('statusCode') || '',
+    keyword: searchParams.get('keyword') || '',
+  });
+  const [visibilityError, setVisibilityError] = useState('');
   const typeCode = searchParams.get('typeCode') || '';
   const statusCode = searchParams.get('statusCode') || '';
   const keyword = searchParams.get('keyword') || '';
@@ -41,8 +47,9 @@ const AdminNoticeListPage = () => {
   const optionsQuery = useAdminNoticeOptions();
   const noticesQuery = useAdminNoticeList(filters);
   const publishMutation = usePublishAdminNotice();
+  const hideMutation = useHideAdminNotice();
   const noticePage = noticesQuery.data;
-  const hasActiveFilters = Boolean(typeCode || statusCode || keyword);
+  const isVisibilityPending = publishMutation.isPending || hideMutation.isPending;
 
   const changeFilters = (changes) => {
     const next = { typeCode, statusCode, keyword, ...changes };
@@ -56,25 +63,49 @@ const AdminNoticeListPage = () => {
 
   const submitSearch = (event) => {
     event.preventDefault();
-    changeFilters({ keyword: keywordInput.trim(), page: 1 });
+    changeFilters({
+      ...filterForm,
+      keyword: filterForm.keyword.trim(),
+      page: 1,
+    });
+  };
+
+  const resetFilters = () => {
+    const emptyFilters = { typeCode: '', statusCode: '', keyword: '' };
+    setFilterForm(emptyFilters);
+    changeFilters({ ...emptyFilters, page: 1 });
   };
 
   /** 담당자 7 | F-OPS-023: 게시 기간은 보존하고 상태만 게시로 바꿔 감사 가능한 즉시 노출을 제공합니다. */
   const publishNotice = async (notice) => {
-    setPublishFeedback(null);
+    setVisibilityError('');
     try {
       const published = await publishMutation.mutateAsync({
         noticeId: notice.noticeId,
         expectedRevision: notice.revisionToken,
       });
-      setPublishFeedback({
-        tone: published.visibleNow ? 'success' : 'warning',
-        message: published.visibleNow
-          ? '공지의 게시 상태가 변경되었습니다.'
-          : '게시 상태는 변경됐지만 노출 기간 때문에 현재 미노출입니다. 기간을 수정해 주세요.',
+      toast({
+        icon: published.visibleNow ? 'success' : 'warning',
+        title: published.visibleNow
+          ? '공지가 노출되었습니다.'
+          : '게시 상태는 변경됐지만 노출 기간 때문에 현재 미노출입니다.',
+        timer: published.visibleNow ? 1800 : 3000,
       });
     } catch (error) {
-      setPublishFeedback({ tone: 'error', message: getErrorMessage(error) });
+      setVisibilityError(getErrorMessage(error));
+    }
+  };
+
+  /** 담당자 7 | F-OPS-023: 목록에서도 게시 내용과 기간을 유지한 채 공개 상태만 숨김으로 전환합니다. */
+  const hideNotice = async (notice) => {
+    if (!window.confirm('이 공지를 사용자 화면에서 미노출 처리할까요?')) return;
+
+    setVisibilityError('');
+    try {
+      await hideMutation.mutateAsync({ noticeId: notice.noticeId });
+      toast({ icon: 'success', title: '공지가 미노출 처리되었습니다.', timer: 1800 });
+    } catch (error) {
+      setVisibilityError(getErrorMessage(error));
     }
   };
 
@@ -102,11 +133,23 @@ const AdminNoticeListPage = () => {
             <AdminStatusBadge tone={value ? 'success' : 'neutral'}>
               {value ? '노출 중' : '미노출'}
             </AdminStatusBadge>
+            {value && (
+              <button
+                aria-label={`${row.title} 공지 미노출 처리`}
+                className="admin-notice-list__hide-button"
+                disabled={isVisibilityPending}
+                onClick={() => hideNotice(row)}
+                type="button"
+              >
+                <EyeOff aria-hidden="true" />
+                미노출
+              </button>
+            )}
             {canPublishNow && (
               <button
                 aria-label={`${row.title} 공지 노출하기`}
                 className="admin-notice-list__publish-button"
-                disabled={publishMutation.isPending}
+                disabled={isVisibilityPending}
                 onClick={() => publishNotice(row)}
                 type="button"
               >
@@ -131,7 +174,6 @@ const AdminNoticeListPage = () => {
     { key: 'postingStartAt', label: '노출 시작', render: formatDateTime },
     { key: 'postingEndAt', label: '노출 종료', render: formatDateTime },
     { key: 'writerName', label: '작성자' },
-    { key: 'viewCount', label: '조회수', render: (value) => value.toLocaleString('ko-KR') },
   ];
 
   return (
@@ -143,8 +185,6 @@ const AdminNoticeListPage = () => {
             <FilePlus2 aria-hidden="true" /> 공지 작성
           </Link>
         )}
-        description="임시저장·게시·숨김 상태와 노출 기간을 확인하고 공지를 관리합니다."
-        eyebrow="F-OPS-023 · REQ-OPS-027"
         title="공지사항 관리"
       />
 
@@ -152,8 +192,8 @@ const AdminNoticeListPage = () => {
         <label>
           <span>유형</span>
           <select
-            onChange={(event) => changeFilters({ typeCode: event.target.value, page: 1 })}
-            value={typeCode}
+            onChange={(event) => setFilterForm({ ...filterForm, typeCode: event.target.value })}
+            value={filterForm.typeCode}
           >
             <option value="">전체 유형</option>
             {(optionsQuery.data?.types ?? []).map((option) => (
@@ -164,8 +204,8 @@ const AdminNoticeListPage = () => {
         <label>
           <span>게시 상태</span>
           <select
-            onChange={(event) => changeFilters({ statusCode: event.target.value, page: 1 })}
-            value={statusCode}
+            onChange={(event) => setFilterForm({ ...filterForm, statusCode: event.target.value })}
+            value={filterForm.statusCode}
           >
             <option value="">전체 상태</option>
             {(optionsQuery.data?.statuses ?? []).map((option) => (
@@ -175,31 +215,14 @@ const AdminNoticeListPage = () => {
         </label>
         <label className="admin-notice-filters__search">
           <span>제목·내용 검색</span>
-          <div>
-            <input
-              maxLength={100}
-              onChange={(event) => setKeywordInput(event.target.value)}
-              placeholder="검색어를 입력하세요"
-              value={keywordInput}
-            />
-            <button className="btn btn-outline" type="submit">
-              <Search aria-hidden="true" />
-              검색
-            </button>
-          </div>
+          <input
+            maxLength={100}
+            onChange={(event) => setFilterForm({ ...filterForm, keyword: event.target.value })}
+            placeholder="검색어를 입력하세요"
+            value={filterForm.keyword}
+          />
         </label>
-        {hasActiveFilters && (
-          <button
-            className="btn btn-outline admin-notice-filters__reset"
-            onClick={() => {
-              setKeywordInput('');
-              changeFilters({ typeCode: '', statusCode: '', keyword: '', page: 1 });
-            }}
-            type="button"
-          >
-            필터 초기화
-          </button>
-        )}
+        <AdminFilterActions disabled={noticesQuery.isFetching} onReset={resetFilters} />
       </form>
 
       {noticesQuery.isError && (
@@ -217,12 +240,12 @@ const AdminNoticeListPage = () => {
               <small>임시저장·숨김 공지는 목록에서 게시로 전환하고, 예약·종료 기간은 상세에서 수정합니다.</small>
             </div>
           )}
-          {publishFeedback && (
+          {visibilityError && (
             <p
-              aria-live="polite"
-              className={`admin-notice-list__feedback is-${publishFeedback.tone}`}
+              className="admin-notice-list__feedback is-error"
+              role="alert"
             >
-              {publishFeedback.message}
+              {visibilityError}
             </p>
           )}
           <div className="admin-table-scroll">

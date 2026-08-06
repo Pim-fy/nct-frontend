@@ -96,7 +96,7 @@ const FaqPage = () => {
         </section>
       )}
 
-      {faqPage?.totalPages > 1 && (
+      {faqPage?.totalPages > 0 && (
         <ContentPagination
           ariaLabel="FAQ 페이지 이동"
           onChange={setPage}

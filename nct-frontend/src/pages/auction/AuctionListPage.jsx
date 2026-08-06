@@ -17,6 +17,7 @@ import { fetchAuctions } from '@api/auctionApi';
 import { getCategories } from '@api/categoryApi';
 import { fetchReferenceCodes } from '@api/referenceApi';
 import { SORT_OPTIONS } from '@/constants/auctionOptions';
+import { SITE_HEADER_DOCK_EVENT } from '@/constants/layoutEvents';
 import CardGridSkeleton from '@components/skeleton/CardGridSkeleton';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import HeaderSearchPortal from '@components/common/HeaderSearchPortal';
@@ -45,6 +46,7 @@ const FILTER_MESSAGE_CLASS = 'm-0 min-h-5 text-caption text-[#5f5e5a]';
 const FILTER_INPUT_CLASS = 'min-h-10 w-full rounded-lg border border-[#e2e1dc] bg-white px-3 text-body-sm text-[#1a1a18] outline-none transition-colors focus:border-primary md:text-body-md';
 const PAGINATION_BUTTON_CLASS = 'min-h-10 rounded-lg border border-[#e2e1dc] bg-white px-3.5 text-body-md font-semibold text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-45 max-sm:min-h-9 max-sm:min-w-9 max-sm:px-1.5 max-sm:text-caption';
 const PAGINATION_WINDOW_SIZE = 5;
+const MOBILE_HEADER_HEIGHT = 154;
 
 const getPaginationItems = (currentPage, totalPages) => {
   const halfWindow = Math.floor(PAGINATION_WINDOW_SIZE / 2);
@@ -84,7 +86,9 @@ const createDraftFromSearchParams = (searchParams) => ({
 const AuctionListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const shouldScrollAfterPageChangeRef = useRef(false);
+  const filterBarAnchorRef = useRef(null);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [filterBarFixed, setFilterBarFixed] = useState(false);
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [keywordDraft, setKeywordDraft] = useState(searchParams.get('keyword') || '');
   const [categoryDraft, setCategoryDraft] = useState(() => getSelectedValues(searchParams, 'category'));
@@ -138,6 +142,43 @@ const AuctionListPage = () => {
   }, [filterOpen]);
 
   useBodyScrollLock(filterOpen);
+
+  useEffect(() => {
+    const anchor = filterBarAnchorRef.current;
+    if (!anchor) return undefined;
+
+    const mobileQuery = window.matchMedia('(max-width: 767px)');
+    const observer = new IntersectionObserver(([entry]) => {
+      const shouldFix = mobileQuery.matches
+        && !entry.isIntersecting
+        && entry.boundingClientRect.top < MOBILE_HEADER_HEIGHT;
+      setFilterBarFixed(shouldFix);
+    }, {
+      rootMargin: `-${MOBILE_HEADER_HEIGHT}px 0px 0px 0px`,
+      threshold: 0,
+    });
+
+    observer.observe(anchor);
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const syncHeaderDock = () => {
+      window.dispatchEvent(new CustomEvent(SITE_HEADER_DOCK_EVENT, {
+        detail: { docked: filterBarFixed && window.innerWidth < 768 },
+      }));
+    };
+
+    syncHeaderDock();
+    window.addEventListener('resize', syncHeaderDock);
+    return () => {
+      window.removeEventListener('resize', syncHeaderDock);
+      window.dispatchEvent(new CustomEvent(SITE_HEADER_DOCK_EVENT, {
+        detail: { docked: false },
+      }));
+    };
+  }, [filterBarFixed]);
 
   const selectedCategories = getSelectedValues(searchParams, 'category');
   const selectedStatuses = getSelectedValues(searchParams, 'status');
@@ -275,11 +316,15 @@ const AuctionListPage = () => {
     return next;
   };
 
+  const scrollToPageTop = () => {
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    });
+  };
+
   const handleSearch = (keyword) => {
     setSearchParams(createSearchParamsFromDraft(keyword), { replace: false });
-    window.requestAnimationFrame(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
+    scrollToPageTop();
   };
 
   const handleFilterSearch = () => {
@@ -287,6 +332,7 @@ const AuctionListPage = () => {
 
     setSearchParams(next, { replace: false });
     setFilterOpen(false);
+    scrollToPageTop();
   };
 
   const handlePriceDraftChange = (setter, value) => {
@@ -305,6 +351,8 @@ const AuctionListPage = () => {
     setEndingSoonOnlyDraft(false);
     setShowAllCategories(false);
     setSearchParams(new URLSearchParams());
+    setFilterOpen(false);
+    scrollToPageTop();
   };
 
   const goToPage = (nextPage) => {
@@ -344,14 +392,14 @@ const AuctionListPage = () => {
             onClick={() => setFilterOpen(false)}
           />
           <aside
-            className={`fixed inset-x-0 bottom-0 z-[220] flex h-[88dvh] max-h-[88dvh] w-full transform-gpu flex-col gap-[18px] overflow-y-auto overscroll-contain rounded-t-2xl border border-[#f0efec] bg-white p-5 shadow-[0_-8px_28px_rgba(0,0,0,0.18)] transition-transform duration-[420ms] ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform [backface-visibility:hidden] [scrollbar-color:#c8ced8_transparent] [scrollbar-width:thin] motion-reduce:transition-none [&>*]:shrink-0 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#c8ced8] [&::-webkit-scrollbar-track]:bg-transparent ${
+            className={`fixed inset-x-0 bottom-0 z-[220] flex h-[88dvh] max-h-[88dvh] w-full transform-gpu flex-col overflow-hidden rounded-t-2xl border border-[#f0efec] bg-white shadow-[0_-8px_28px_rgba(0,0,0,0.18)] transition-transform duration-[420ms] ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform [backface-visibility:hidden] motion-reduce:transition-none ${
               filterOpen
                 ? 'pointer-events-auto translate-y-0'
                 : 'pointer-events-none translate-y-[101%]'
-            } md:sticky md:top-[82px] md:inset-x-auto md:bottom-auto md:z-auto md:mb-0 md:h-fit md:max-h-[calc(100dvh-122px)] md:w-[280px] md:flex-[0_0_280px] md:self-start md:translate-y-0 md:overflow-y-auto md:rounded-lg md:pointer-events-auto md:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)]`}
+            } md:sticky md:top-[82px] md:inset-x-auto md:bottom-auto md:z-auto md:mb-0 md:h-fit md:max-h-[calc(100dvh-122px)] md:w-[280px] md:flex-[0_0_280px] md:self-start md:translate-y-0 md:rounded-lg md:pointer-events-auto md:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)]`}
             aria-label="경매 목록 필터"
           >
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#f0efec] bg-white p-5 pb-3">
               <h2 className="m-0 text-h3 font-bold">필터</h2>
               <div className="flex items-center gap-2">
                 <button
@@ -374,6 +422,7 @@ const AuctionListPage = () => {
               </div>
             </div>
 
+            <div className="flex min-h-0 flex-1 flex-col gap-[18px] overflow-y-auto overscroll-contain p-5 [scrollbar-color:#c8ced8_transparent] [scrollbar-width:thin] [&>*]:shrink-0 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#c8ced8] [&::-webkit-scrollbar-track]:bg-transparent">
             <fieldset
               className={`${FILTER_GROUP_CLASS} min-h-[214px]`}
               disabled={categoriesQuery.isLoading || categoriesQuery.isError}
@@ -546,8 +595,9 @@ const AuctionListPage = () => {
                 ))}
               </select>
             </label>
+            </div>
 
-            <div className="sticky -bottom-5 z-10 -mx-5 -mb-5 border-t border-[#f0efec] bg-white p-5 pt-3">
+            <div className="shrink-0 border-t border-[#f0efec] bg-white p-5 pt-3">
               <button
                 className="inline-flex min-h-[46px] w-full cursor-pointer items-center justify-center rounded-lg border border-primary bg-primary px-3 text-body-md font-bold text-white transition-colors hover:border-primary-dark hover:bg-primary-dark"
                 type="button"
@@ -565,22 +615,34 @@ const AuctionListPage = () => {
           <section className="min-w-0 flex-1">
             <Link
               className="mb-3 hidden min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-primary bg-primary px-4 font-bold text-white no-underline transition-colors hover:border-primary-dark hover:bg-primary-dark max-md:inline-flex"
+              state={{ from: '/auction' }} /* 전역 브레드크럼 (BJN, 260805): 경매 목록 경유 표시용 */
               to="/product/register"
             >
               <Gavel aria-hidden="true" size={18} strokeWidth={2.2} />
               경매 등록
             </Link>
-            <div className="max-md:sticky max-md:top-[154px] max-md:z-[110] max-md:-mx-4 max-md:mb-3 max-md:bg-white/95 max-md:px-4 max-md:py-2 max-md:backdrop-blur-sm">
-              <button
-                className="hidden min-h-[42px] w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-primary bg-white font-bold text-primary max-md:inline-flex"
-                type="button"
-                aria-haspopup="dialog"
-                aria-expanded={filterOpen}
-                onClick={() => setFilterOpen(true)}
-              >
-                <SlidersHorizontal size={18} />
-                필터
-              </button>
+            <div className="max-md:relative max-md:-mx-4 max-md:mb-3 max-md:h-[58px]">
+              <span
+                ref={filterBarAnchorRef}
+                aria-hidden="true"
+                className="pointer-events-none absolute left-0 top-0 h-px w-px md:hidden"
+              />
+              <div className={`max-md:z-40 max-md:bg-white/95 max-md:px-4 max-md:py-2 max-md:backdrop-blur-sm ${
+                filterBarFixed
+                  ? 'max-md:fixed max-md:inset-x-0 max-md:top-[154px] max-md:shadow-[0_5px_14px_rgba(0,0,0,0.14)]'
+                  : 'max-md:absolute max-md:inset-0'
+              }`}>
+                <button
+                  className="hidden min-h-[42px] w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-primary bg-white font-bold text-primary max-md:inline-flex"
+                  type="button"
+                  aria-haspopup="dialog"
+                  aria-expanded={filterOpen}
+                  onClick={() => setFilterOpen(true)}
+                >
+                  <SlidersHorizontal size={18} />
+                  필터
+                </button>
+              </div>
             </div>
 
             {isLoading ? (

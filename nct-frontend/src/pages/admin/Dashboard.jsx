@@ -10,7 +10,6 @@ import {
   Handshake,
   Megaphone,
   RefreshCw,
-  ScrollText,
   Settings,
   ShieldAlert,
   Siren,
@@ -70,9 +69,8 @@ const SHORTCUTS = [
   { label: '카테고리 관리', to: '/admin/categories', icon: Grid2X2 },
   { label: '환전 관리', to: '/admin/exchanges', icon: WalletCards },
   { label: '공지 관리', to: '/admin/notices', icon: Megaphone },
-  { label: '신고 처리', to: '/admin/reports', icon: Siren },
-  { label: '위험 이벤트', to: '/admin/risk-events', icon: ShieldAlert },
-  { label: '감사 로그', to: '/admin/audit-logs', icon: ScrollText },
+  { label: '신고 관리', to: '/admin/reports', icon: Siren },
+  { label: '운영 기록', to: '/admin/operations-records?tab=risk', icon: ShieldAlert },
   { label: '시스템 설정', to: '/admin/system-settings', icon: Settings },
   { label: '운영 알림', to: '/admin/notifications', icon: Bell },
 ];
@@ -161,7 +159,7 @@ const Dashboard = () => {
           : `운영 확인 필요 ${formatCount(summary.unprocessedRiskEventCount)}건`,
       icon: ShieldAlert,
       tone: 'red',
-      to: '/admin/risk-events',
+      to: '/admin/operations-records?tab=risk',
     },
   ];
   const isRefreshing = summaryQuery.isFetching

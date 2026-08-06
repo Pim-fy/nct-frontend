@@ -76,7 +76,6 @@ const AdminNotificationPage = () => {
     : []), [data]);
 
   const visibleGroups = tab === 'all' ? groups : groups.filter((g) => g.key === tab);
-  const totalCount = groups.reduce((sum, g) => sum + g.items.length, 0);
   const visibleItems = useMemo(
     () => visibleGroups.flatMap((group) => group.items.map((item, index) => ({
       groupKey: group.key,
@@ -107,9 +106,7 @@ const AdminNotificationPage = () => {
   return (
     <div className="admin-bjn-page">
       <AdminPageHeader
-        eyebrow="운영"
         title="알림"
-        description={data ? `확인이 필요한 운영 알림 ${totalCount}건` : '운영 알림을 불러오는 중입니다'}
       />
 
       <div className="admin-noti-tabs">

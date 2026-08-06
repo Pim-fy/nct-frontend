@@ -1,16 +1,19 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import DOMPurify from 'dompurify';
-
-const SANITIZE_OPTIONS = {
-  ALLOWED_TAGS: ['p', 'br', 'b', 'strong', 'i', 'em', 'u', 'ul', 'ol', 'li', 'img', 'div', 'span'],
-  ALLOWED_ATTR: ['src', 'style'],
-};
+import {
+  resolveDescriptionImagesForDisplay,
+  SANITIZE_OPTS,
+} from '@components/product/richTextEditorImages';
 
 const TempComment = ({ content = '' }) => {
   const normalizedContent = typeof content === 'string' ? content : '';
-  const sanitizedContent = useMemo(
-    () => DOMPurify.sanitize(normalizedContent, SANITIZE_OPTIONS),
+  const displayContent = useMemo(
+    () => resolveDescriptionImagesForDisplay(normalizedContent),
     [normalizedContent],
+  );
+  const sanitizedContent = useMemo(
+    () => DOMPurify.sanitize(displayContent, SANITIZE_OPTS),
+    [displayContent],
   );
 
   return (
@@ -30,4 +33,4 @@ const TempComment = ({ content = '' }) => {
   );
 };
 
-export default TempComment;
+export default memo(TempComment);

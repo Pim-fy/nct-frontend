@@ -1,8 +1,26 @@
 import api from './axios';
 
-/** F-PAY-012: 관리자가 수동 환전 지급 결과를 기록하는 계약입니다. */
-export const getAdminPointExchangeOrders = () =>
-  api.get('/admin/point/exchange/orders').then((response) => response.data.data ?? []);
+/** 담당자 7 · F-PAY-012: 처리 전후 환전 주문을 상태·검색 조건으로 페이지 조회합니다. */
+export const getAdminPointExchangeOrders = ({ statusCode, keyword, page = 1, size = 20 } = {}) =>
+  api.get('/admin/point/exchange/orders/search', {
+    params: {
+      ...(statusCode ? { statusCode } : {}),
+      ...(keyword ? { keyword } : {}),
+      page,
+      size,
+    },
+  }).then((response) => response.data.data ?? {
+    items: [],
+    page,
+    size,
+    totalItems: 0,
+    totalPages: 0,
+  });
+
+/** 담당자 7 · F-PAY-012/F-OPS-015: 신청 건의 지급 계좌를 감사기록과 함께 제한 조회합니다. */
+export const getAdminPointExchangeAccount = (orderSn) =>
+  api.get(`/admin/point/exchange/orders/${orderSn}/account`)
+    .then((response) => response.data.data);
 
 export const completeAdminPointExchange = (orderSn) =>
   api.post(`/admin/point/exchange/${orderSn}/complete`).then((response) => response.data);

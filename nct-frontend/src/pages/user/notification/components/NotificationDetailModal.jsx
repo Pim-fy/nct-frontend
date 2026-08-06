@@ -1,5 +1,5 @@
 // src/pages/user/notification/components/NotificationDetailModal.jsx
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 // 참조유형공통코드(REFG01) → 이동할 화면 경로. 페이지가 없는 참조 유형(입찰·견적·거래문제 등)은
 // null을 돌려주고, 이 경우 모달에 "이동" 버튼 없이 내용만 보여준다 (사용자 결정, 2026-07-28).
@@ -26,6 +26,8 @@ const resolveLink = (item) => {
  * item이 null이면 렌더링하지 않는다 (선택된 알림 없음 = 닫힌 상태).
  */
 const NotificationDetailModal = ({ item, onClose }) => {
+  // 전역 브레드크럼 (BJN, 260805): 알림함에서 이동했음을 상세 화면 브레드크럼에 반영하기 위해 현재 경로를 전달
+  const location = useLocation();
   if (!item) return null;
 
   const link = resolveLink(item);
@@ -63,6 +65,7 @@ const NotificationDetailModal = ({ item, onClose }) => {
           <div className="flex justify-end mt-4">
             <Link
               to={link}
+              state={{ from: location.pathname + location.search }}
               onClick={onClose}
               className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg px-4 py-2 transition-colors no-underline"
             >

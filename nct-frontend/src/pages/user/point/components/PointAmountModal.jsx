@@ -8,7 +8,7 @@ import { QUICK_AMOUNTS } from './quickAmounts';
  * (충전은 결제위젯 모달 PointChargeWidgetModal로 단일화 — 사용자 결정, 2026-07-16)
  * - 환전: 방식 확정(D-026, 2026-07-17)으로 실연동 — onSubmit이 실제 신청 API를 호출한다
  */
-const PointAmountModal = ({ title, submitLabel, infoRow, onSubmit, onClose }) => {
+const PointAmountModal = ({ title, submitLabel, infoRow, maxAmount, onSubmit, onClose }) => {
   const [amount, setAmount] = useState('');
 
   // 모달이 떠 있는 동안 뒤 페이지 스크롤을 잠근다 (위젯 모달과 동일한 처리)
@@ -53,12 +53,28 @@ const PointAmountModal = ({ title, submitLabel, infoRow, onSubmit, onClose }) =>
             <button
               key={quick}
               type="button"
-              className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-600 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-              onClick={() => setAmount(String(quick))}
+              className="flex-1 whitespace-nowrap border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center text-gray-600 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+              onClick={() => setAmount((prev) => String((Number(prev) || 0) + quick))}
             >
-              {quick.toLocaleString()} P
+              {quick.toLocaleString()}
             </button>
           ))}
+          {maxAmount != null && (
+            <button
+              type="button"
+              className="flex-1 whitespace-nowrap border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center text-gray-600 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+              onClick={() => setAmount(String(maxAmount))}
+            >
+              전체
+            </button>
+          )}
+          <button
+            type="button"
+            className="flex-1 whitespace-nowrap border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors"
+            onClick={() => setAmount('')}
+          >
+            초기화
+          </button>
         </div>
 
         <input

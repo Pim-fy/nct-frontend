@@ -18,6 +18,7 @@ import {
 } from '@api/tradeChatAdapter';
 import { getTradeChatWebSocketUrl } from '@api/tradeChatSocket';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
+import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
 import '@assets/css/trade-chat.css';
 
 const MAX_MESSAGE_LENGTH = 500;
@@ -55,6 +56,8 @@ const TradeChat = ({
   const tradeId = selectedTradeId ?? routeTradeId;
   const [rooms, setRooms] = useState([]);
   const [activeRoomId, setActiveRoomId] = useState('');
+  // 거래 상세에서 진입한 모바일 채팅은 대화부터, 마이페이지 채팅은 목록부터 연다.
+  const [isMobileConversationOpen, setIsMobileConversationOpen] = useState(() => Boolean(tradeId));
   const [roomFilter, setRoomFilter] = useState('ALL');
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
@@ -153,6 +156,7 @@ const TradeChat = ({
       const loadedMessages = toTradeChatMessages(messageResponse);
 
       setActiveRoomId(roomId);
+      setIsMobileConversationOpen(true);
       setMessages(loadedMessages);
       setRooms((currentRooms) => currentRooms.map((currentRoom) => {
         if (currentRoom.roomId !== roomId) {
@@ -457,6 +461,7 @@ const TradeChat = ({
     setActiveRoomId('');
     setMessages([]);
     setMessageInput('');
+    setIsMobileConversationOpen(false);
   };
 
   return (
@@ -466,12 +471,16 @@ const TradeChat = ({
         : 'trade-chat-page'}
     >
       <main className="container">
-        <header className="trade-chat-page__header">
-          <div>
-            <h1>거래 채팅</h1>
-            <p>거래 당사자만 이용할 수 있는 1:1 채팅입니다.</p>
-          </div>
-        </header>
+        {embedded ? (
+          <MyPageContentHeader title="채팅" />
+        ) : (
+          <header className="trade-chat-page__header">
+            <div>
+              <h1>거래 채팅</h1>
+              <p>거래 당사자만 이용할 수 있는 1:1 채팅입니다.</p>
+            </div>
+          </header>
+        )}
 
         {isLoading && (
           <div className="trade-chat-layout trade-chat-layout--with-room-list">
@@ -498,7 +507,7 @@ const TradeChat = ({
         {!isLoading && !error && (
           <div
             className={showRoomList
-              ? 'trade-chat-layout trade-chat-layout--with-room-list'
+              ? `trade-chat-layout trade-chat-layout--with-room-list${isMobileConversationOpen ? ' trade-chat-layout--mobile-conversation' : ''}`
               : 'trade-chat-layout trade-chat-layout--conversation-only'}
           >
             {showRoomList && (
@@ -629,11 +638,21 @@ const TradeChat = ({
                       </span>
                       {showRoomList && (
                         <button
-                          className="btn btn-ghost trade-chat-conversation__close"
+                          className="btn btn-ghost trade-chat-conversation__close trade-chat-conversation__close--desktop"
                           type="button"
                           onClick={clearSelectedChatRoom}
                         >
                           닫기
+                        </button>
+                      )}
+                      {showRoomList && (
+                        <button
+                          className="btn btn-ghost trade-chat-conversation__close trade-chat-conversation__close--mobile"
+                          type="button"
+                          aria-label="채팅 목록으로"
+                          onClick={clearSelectedChatRoom}
+                        >
+                          목록
                         </button>
                       )}
                     </div>

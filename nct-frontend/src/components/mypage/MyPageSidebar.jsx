@@ -37,13 +37,29 @@ const GENERAL_MENU_ITEMS = [
   { key: "report-list",  label: "내 신고 목록", type: "section" },
 ];
 
+// "정산 관리" 메뉴는 포인트 지갑 화면의 "정산 내역" 탭으로 흡수돼 빠졌다
+// (백종남·옥동민 협의, 2026-08-04 — PointWalletPage.jsx 참고)
 const PROVIDER_MENU_ITEMS = [
   { key: "home",              label: "MY 홈",        type: "section" },
-  { key: "profile",           label: "프로필 관리",   type: "section" },
-  { key: "quote",             label: "내 견적",        type: "section" },
-  { key: "service-trade",     label: "서비스 거래",   type: "section" },
-  { key: "settlement",        label: "정산 관리",     type: "section" },
-  { key: "service-chat",      label: "서비스 채팅",   type: "section" },
+  {
+    key: "provider-profile-menu",
+    label: "프로필",
+    type: "accordion",
+    children: [
+      { key: "provider-profile", label: "제공자 프로필 관리", type: "section" },
+      { key: "profile",          label: "프로필 설정",         type: "section" },
+    ],
+  },
+  {
+    key: "provider-service-menu",
+    label: "서비스",
+    type: "accordion",
+    children: [
+      { key: "quote",         label: "내 견적",      type: "section" },
+      { key: "service-trade", label: "서비스 거래", type: "section" },
+    ],
+  },
+  { key: "chat",              label: "채팅",          type: "section" },
   { key: "wallet",            label: "포인트 지갑",   type: "section" },
   { key: "received-review",   label: "받은 리뷰",     type: "section" },
   { key: "report-list",       label: "내 신고 목록",  type: "section" },
@@ -53,6 +69,8 @@ const PROVIDER_MENU_ITEMS = [
 const ACCORDION_CHILDREN = {
   "auction-history":  ["active-auctions", "auction-bids", "auction-sales"],
   "service-history":  ["service-requests", "received-quotes"],
+  "provider-profile-menu": ["provider-profile", "profile"],
+  "provider-service-menu": ["quote", "service-trade"],
 };
 
 function getParentAccordion(sectionKey) {

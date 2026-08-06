@@ -53,7 +53,7 @@ export default function ProviderProfilePage({ embedded = false } = {}) {
           <button type="button" className="btn btn-outline" onClick={() => navigate('/user/mypage')}>대시보드</button>
         </div>
       )}
-      <div className="space-y-6">
+      <div className={embedded ? 'provider-profile-editor__split' : 'space-y-6'}>
         <ProviderProfileForm key={profileQuery.data.userSn} profile={profileQuery.data} />
         <PortfolioRegistrationSection />
       </div>
@@ -229,51 +229,7 @@ function PortfolioRegistrationSection() {
         )}
       </div>
 
-      {portfoliosQuery.isLoading && <p className="text-sm text-[#666]">등록한 포트폴리오를 불러오는 중입니다.</p>}
-      {portfoliosQuery.isError && (
-        <div className="rounded-lg border border-[#f1c5c8] bg-[#fff8f8] px-4 py-3 text-sm text-[#c62828]">
-          포트폴리오 목록을 불러오지 못했습니다.
-          <button type="button" className="ml-2 underline" onClick={() => portfoliosQuery.refetch()}>다시 시도</button>
-        </div>
-      )}
-      {portfoliosQuery.data?.length > 0 && (
-        <ul className="grid gap-3 sm:grid-cols-2" aria-label="등록한 포트폴리오">
-          {portfoliosQuery.data.map((portfolio) => {
-            const representative = portfolio.files?.find((file) => file.representative)
-              ?? portfolio.files?.[0];
-            return (
-              <li key={portfolio.portfolioSn} className="overflow-hidden rounded-lg border border-[#dfe3ea]">
-                {representative?.url && (
-                  <img
-                    src={toImageUrl(representative.url)}
-                    alt=""
-                    className="aspect-[16/9] w-full object-cover"
-                  />
-                )}
-                <div className="p-4">
-                  <strong className="block truncate text-sm text-[#252525]">{portfolio.title}</strong>
-                  <p className="mt-2 line-clamp-2 min-h-10 text-sm text-[#666]">
-                    {portfolio.content || '등록된 설명이 없습니다.'}
-                  </p>
-                  <div className="mt-4 flex justify-end gap-2">
-                    <button type="button" className="btn btn-outline btn-sm" onClick={() => editPortfolio(portfolio)}>수정</button>
-                    <button
-                      type="button"
-                      className="btn btn-outline btn-sm text-[#d9363e]"
-                      disabled={deleteMutation.isPending}
-                      onClick={() => removePortfolio(portfolio)}
-                    >
-                      삭제
-                    </button>
-                  </div>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
-      <div className="grid gap-5 border-t border-[#ececec] pt-5">
+      <div className="grid gap-5">
         <h3 className="font-bold text-[#303030]">{editingPortfolio ? '포트폴리오 수정' : '새 포트폴리오 등록'}</h3>
         <div>
           <label className="mb-2 block text-sm font-bold text-[#404040]" htmlFor="portfolio-title">포트폴리오 제목</label>
@@ -344,6 +300,53 @@ function PortfolioRegistrationSection() {
         <button type="button" className="btn btn-primary" disabled={isSubmitting} onClick={submitPortfolio}>
           {isSubmitting ? '저장 중' : editingPortfolio ? '수정 저장' : '포트폴리오 등록'}
         </button>
+      </div>
+
+      <div className="grid gap-4 border-t border-[#ececec] pt-5">
+        <h3 className="font-bold text-[#303030]">등록한 포트폴리오 관리</h3>
+        {portfoliosQuery.isLoading && <p className="text-sm text-[#666]">등록한 포트폴리오를 불러오는 중입니다.</p>}
+        {portfoliosQuery.isError && (
+          <div className="rounded-lg border border-[#f1c5c8] bg-[#fff8f8] px-4 py-3 text-sm text-[#c62828]">
+            포트폴리오 목록을 불러오지 못했습니다.
+            <button type="button" className="ml-2 underline" onClick={() => portfoliosQuery.refetch()}>다시 시도</button>
+          </div>
+        )}
+        {portfoliosQuery.data?.length > 0 && (
+          <ul className="grid gap-3 sm:grid-cols-2" aria-label="등록한 포트폴리오">
+            {portfoliosQuery.data.map((portfolio) => {
+              const representative = portfolio.files?.find((file) => file.representative)
+                ?? portfolio.files?.[0];
+              return (
+                <li key={portfolio.portfolioSn} className="overflow-hidden rounded-lg border border-[#dfe3ea]">
+                  {representative?.url && (
+                    <img
+                      src={toImageUrl(representative.url)}
+                      alt=""
+                      className="aspect-[16/9] w-full object-cover"
+                    />
+                  )}
+                  <div className="p-4">
+                    <strong className="block truncate text-sm text-[#252525]">{portfolio.title}</strong>
+                    <p className="mt-2 line-clamp-2 min-h-10 text-sm text-[#666]">
+                      {portfolio.content || '등록된 설명이 없습니다.'}
+                    </p>
+                    <div className="mt-4 flex justify-end gap-2">
+                      <button type="button" className="btn btn-outline btn-sm" onClick={() => editPortfolio(portfolio)}>수정</button>
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm text-[#d9363e]"
+                        disabled={deleteMutation.isPending}
+                        onClick={() => removePortfolio(portfolio)}
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
     </section>
   );

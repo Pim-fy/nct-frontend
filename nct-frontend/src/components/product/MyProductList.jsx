@@ -2,10 +2,10 @@
 // 내 판매 목록 순수 목록 컴포넌트 — MyProductListPage · MyPage 아코디언에서 재사용
 // 마이페이지 공통 목록 컴포넌트를 사용하며 가격·날짜 표시 형식을 유지한다.
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { toImageUrl } from '@api/fileApi';
 import { deleteProduct } from '@api/productApi';
-import { TRADE_LABEL, TRADE_STATUS_LABEL } from '@/constants/productConstants';
+import { TRADE_LABEL, TRADE_STATUS_LABEL, AUC_STATUS_LABEL } from '@/constants/productConstants';
 import { useMyProducts } from '@hooks/useProduct';
 import Pagination from '@components/common/Pagination';
 import Toast from '@components/common/Toast';
@@ -37,15 +37,8 @@ const CLOSED_SUB_FILTERS = [
 ];
 
 // ─── 배지 ────────────────────────────────────────────────────────────────────
-
-const AUC_STATUS_LABEL = {
-  AUCC0001: '준비',
-  AUCC0002: '진행 중',
-  AUCC0003: '낙찰',
-  AUCC0004: '유찰',
-  AUCC0005: '취소',
-  AUCC0006: '취소요청',
-};
+// AUC_STATUS_LABEL(라벨 문구)은 productConstants.js가 단일 소스 — 다른 화면과 표기 어긋남 방지.
+// 배지 클래스는 이 목록 안의 TRADE_BADGE·PRD_STATUS_BADGE와 시각적으로 맞춰야 해서 로컬로 유지.
 
 const AUC_STATUS_BADGE = {
   AUCC0001: 'badge-outline-gray',
@@ -63,6 +56,17 @@ const TRADE_BADGE = {
   TRDC0006: 'badge-outline-gray',
   TRDC0007: 'badge-danger',
   TRDC0008: 'badge-danger',
+};
+
+// 상품이 혼합 방식이어도 실제 낙찰 시 선택한 거래 방식으로 현재 상태를 표시한다.
+const getTradeStatusLabel = (product) => {
+  if (product.tradeStatusCd === 'TRDC0004') {
+    if (product.tradeMethodCd === 'TRDC0009') return '배송 중';
+    if (product.tradeMethodCd === 'TRDC0010') return '직거래 중';
+    return '배송·직거래 중';
+  }
+
+  return TRADE_STATUS_LABEL[product.tradeStatusCd] ?? product.tradeStatusCd;
 };
 
 const PRD_STATUS_LABEL = {
@@ -92,6 +96,11 @@ function fmtDate(d) {
 
 export default function MyProductList({ onOpenTradeDetail }) {
   const navigate = useNavigate();
+  // 전역 브레드크럼 (BJN, 260805): 상세로 이동할 때 접근 경로(state.from)를 전달 —
+  // 이 컴포넌트는 /product/me 단독 페이지와 마이페이지(상품 판매 내역) 양쪽에서 쓰이므로
+  // 현재 위치를 그대로 넘기면 진입 경로별로 브레드크럼이 알맞게 표시된다
+  const location = useLocation();
+  const breadcrumbFrom = { from: location.pathname + location.search };
   const [filter, setFilter]       = useState(null);
   const [subFilter, setSubFilter] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -198,7 +207,7 @@ export default function MyProductList({ onOpenTradeDetail }) {
           action={filter === null ? (
             <button
               type="button"
-              onClick={() => navigate('/product/register')}
+              onClick={() => navigate('/product/register', { state: breadcrumbFrom })}
               className="btn btn-primary"
             >
               경매 등록하기
@@ -210,7 +219,7 @@ export default function MyProductList({ onOpenTradeDetail }) {
           <div className="history-list">
             {visibleList.map((p) => {
               const badgeLabel = p.tradeSn
-                ? (TRADE_STATUS_LABEL[p.tradeStatusCd] ?? p.tradeStatusCd)
+                ? getTradeStatusLabel(p)
                 : p.aucStatusCd
                 ? (AUC_STATUS_LABEL[p.aucStatusCd] ?? p.aucStatusCd)
                 : (PRD_STATUS_LABEL[p.prdStatusCd] ?? p.prdStatusCd);
@@ -244,7 +253,7 @@ export default function MyProductList({ onOpenTradeDetail }) {
                             return;
                           }
 
-                          navigate(`/trades/${p.tradeSn}/seller`);
+                          navigate(`/trades/${p.tradeSn}/seller`, { state: breadcrumbFrom });
                         }}
                         className="btn btn-sm btn-primary"
                       >
@@ -252,22 +261,22 @@ export default function MyProductList({ onOpenTradeDetail }) {
                       </button>
                     )}
                     {!p.tradeSn && isActive && p.aucStatusCd === 'AUCC0005' && (
-                      <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`)} className="btn btn-sm btn-ghost">
+                      <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`, { state: breadcrumbFrom })} className="btn btn-sm btn-ghost">
                         취소 상품 보기
                       </button>
                     )}
                     {!p.tradeSn && isActive && p.aucStatusCd !== 'AUCC0005' && (
-                      <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`)} className="btn btn-sm btn-primary">
+                      <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`, { state: breadcrumbFrom })} className="btn btn-sm btn-primary">
                         판매 관리
                       </button>
                     )}
                     {isDraft && (
-                      <button type="button" onClick={() => navigate('/product/register', { state: { prdSn: p.prdSn } })} className="btn btn-sm btn-ghost">
+                      <button type="button" onClick={() => navigate('/product/register', { state: { prdSn: p.prdSn, ...breadcrumbFrom } })} className="btn btn-sm btn-ghost">
                         등록재개
                       </button>
                     )}
                     {!p.tradeSn && isEnded && (
-                      <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`)} className="btn btn-sm btn-ghost">
+                      <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`, { state: breadcrumbFrom })} className="btn btn-sm btn-ghost">
                         판매 기록
                       </button>
                     )}

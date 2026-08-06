@@ -1,3 +1,5 @@
+import { memo } from 'react';
+import { ChevronRight } from 'lucide-react';
 import TempComment from './TempComment';
 import { SkeletonBlock } from '@components/skeleton/AuctionSkeletons';
 
@@ -14,7 +16,7 @@ const formatSellerReviewCount = (reviewCount) => {
   return `${Number(reviewCount).toLocaleString('ko-KR')}개`;
 };
 
-export const AuctionProductDescriptionSection = ({ auction, sectionId }) => (
+export const AuctionProductDescriptionSection = memo(({ content, sectionId }) => (
   <section
     className="scroll-mt-[208px] border-b border-[#e2e5ea] py-10 md:scroll-mt-[82px] md:py-14"
     id={sectionId}
@@ -29,9 +31,11 @@ export const AuctionProductDescriptionSection = ({ auction, sectionId }) => (
       </h2>
     </header>
 
-    <TempComment content={auction.content} />
+    <TempComment content={content} />
   </section>
-);
+));
+
+AuctionProductDescriptionSection.displayName = 'AuctionProductDescriptionSection';
 
 export const AuctionSellerInformationSection = ({
   auction,
@@ -40,6 +44,7 @@ export const AuctionSellerInformationSection = ({
   sellerRating,
   sellerReviewCount,
   isSellerTrustLoading = false,
+  onSellerReviewsOpen,
   children,
 }) => (
   <section
@@ -76,7 +81,18 @@ export const AuctionSellerInformationSection = ({
         <dd className="m-0 text-body-md text-[#1d1d1f]">
           {isSellerTrustLoading
             ? <SkeletonBlock className="h-5 w-20" />
-            : formatSellerReviewCount(sellerReviewCount)}
+            : Number(sellerReviewCount) > 0 && typeof onSellerReviewsOpen === 'function'
+              ? (
+                <button
+                  className="inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-body-md font-semibold text-primary hover:underline focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  type="button"
+                  onClick={onSellerReviewsOpen}
+                >
+                  {formatSellerReviewCount(sellerReviewCount)}
+                  <ChevronRight aria-hidden="true" size={17} />
+                </button>
+              )
+              : formatSellerReviewCount(sellerReviewCount)}
         </dd>
       </div>
       <div className={SELLER_INFO_ITEM_CLASS}>

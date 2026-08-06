@@ -26,7 +26,9 @@ export default function MyPageListItem({
             {badge}
           </div>
         )}
-        <h2 className="m-0 truncate text-lg leading-6 font-bold text-[#151923]">{title}</h2>
+        {title && (
+          <h2 className="m-0 truncate text-lg leading-6 font-bold text-[#151923]">{title}</h2>
+        )}
         {children && (
           <div className="mt-2 grid max-h-11 gap-1 overflow-hidden text-sm leading-5 text-[#667085] [&_p]:m-0 [&_p]:text-sm [&_p]:leading-5">
             {children}

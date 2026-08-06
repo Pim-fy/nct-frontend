@@ -51,7 +51,7 @@ const Footer = () => {
             <div className="flex flex-col gap-4">
               <span className="text-[20px] font-black tracking-[-2px] text-white">에누리컷</span>
               <nav className="flex flex-wrap gap-x-6 gap-y-2 text-[15px] tracking-[-0.75px]">
-                <Link to="/guide" className="text-white/80 hover:text-white transition-colors">
+                <Link to="/customersupport/guide" className="text-white/80 hover:text-white transition-colors">
                   서비스소개
                 </Link>
                 <button

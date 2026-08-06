@@ -149,7 +149,7 @@ const NoticeListPage = () => {
           {keyword && <p className="public-notice-search__result" aria-live="polite"><strong>“{keyword}”</strong> 검색 결과입니다.</p>}
           <NoticeList notices={noticePage.items} />
 
-          {noticePage.totalPages > 1 && (
+          {noticePage.totalPages > 0 && (
             <ContentPagination
               ariaLabel="공지사항 페이지 이동"
               onChange={changePage}

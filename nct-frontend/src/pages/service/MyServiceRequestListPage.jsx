@@ -3,8 +3,9 @@
 // 라우트: /service-requests/me, 마이페이지 "내 서비스 요청 목록" 섹션에서도 embedded로 재사용
 // 상품 판매 내역(MyProductList.jsx)과 동일한 마이페이지 공통 목록 컴포넌트를 사용한다.
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { deleteServiceRequest, closeServiceRequest } from '@api/serviceRequestApi';
+import { toImageUrl } from '@api/fileApi';
 import { useMyServiceRequests } from '@hooks/useServiceRequest';
 import MyPageListSectionLayout from '@components/mypage/MyPageListSectionLayout';
 import MyPageListItem from '@components/mypage/MyPageListItem';
@@ -52,11 +53,12 @@ const PAGE_SIZE = 10;
 
 export default function MyServiceRequestListPage({ embedded = false }) {
   const navigate = useNavigate();
+  // 전역 브레드크럼 (BJN, 260805): 상세로 이동할 때 접근 경로(state.from)를 전달하기 위해 사용
+  const location = useLocation();
   const [filter, setFilter] = useState(null);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [page, setPage] = useState(1);
   const [toast, setToast] = useState('');
-  const [closeTarget, setCloseTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const { data, isLoading, isError, refetch } = useMyServiceRequests(page, PAGE_SIZE, filter);
@@ -77,17 +79,6 @@ export default function MyServiceRequestListPage({ embedded = false }) {
   const handleFilterChange = (value) => {
     setFilter(value);
     setPage(1);
-  };
-
-  const handleCloseConfirm = async () => {
-    const { svcReqSn } = closeTarget;
-    setCloseTarget(null);
-    try {
-      await closeServiceRequest(svcReqSn);
-      refetch();
-    } catch (err) {
-      setToast(err.response?.data?.message || '마감에 실패했습니다.');
-    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -143,7 +134,7 @@ export default function MyServiceRequestListPage({ embedded = false }) {
         <MyPageListEmpty
           message="해당 조건의 서비스 요청이 없습니다."
           action={filter === null ? (
-            <button type="button" onClick={() => navigate('/service-requests/new')} className="btn btn-primary">
+            <button type="button" onClick={() => navigate('/service-requests/new', { state: { from: location.pathname + location.search } })} className="btn btn-primary">
               견적 요청서 작성하기
             </button>
           ) : null}
@@ -153,45 +144,36 @@ export default function MyServiceRequestListPage({ embedded = false }) {
           <div className="history-list">
             {visibleList.map(item => {
               const isDraft = item.svcReqStatusCd === 'SVCC0001';
-              const isOpen = item.svcReqStatusCd === 'SVCC0002';
 
               return (
                 <MyPageListItem
                   key={item.svcReqSn}
+                  imageSrc={item.repImageUrl ? toImageUrl(item.repImageUrl) : undefined}
+                  imageAlt={item.svcReqTtl}
                   imageFallback={item.catNm}
                   badge={
                     <MyPageStatusBadge className={STATUS_BADGE[item.svcReqStatusCd] ?? 'badge-outline-gray'}>
                       {STATUS_LABEL[item.svcReqStatusCd] ?? item.svcReqStatusCd}
                     </MyPageStatusBadge>
                   }
-                  title={item.svcReqTtl}
                   actions={(
-                    <>
+                    <div className="flex flex-col gap-2">
                       {isDraft && (
                         <button
                           type="button"
-                          onClick={() => navigate('/service-requests/new', { state: { svcReqSn: item.svcReqSn } })}
+                          onClick={() => navigate('/service-requests/new', { state: { svcReqSn: item.svcReqSn, from: location.pathname + location.search } })}
                           className="btn btn-sm btn-primary"
                         >
-                          이어서 작성
+                          작성재개
                         </button>
                       )}
                       {!isDraft && (
                         <button
                           type="button"
-                          onClick={() => navigate(`/service-requests/${item.svcReqSn}`)}
+                          onClick={() => navigate(`/service-requests/${item.svcReqSn}`, { state: { from: location.pathname + location.search } })}
                           className="btn btn-sm btn-primary"
                         >
                           상세보기
-                        </button>
-                      )}
-                      {isOpen && (
-                        <button
-                          type="button"
-                          onClick={() => setCloseTarget({ svcReqSn: item.svcReqSn })}
-                          className="btn btn-sm btn-ghost"
-                        >
-                          마감
                         </button>
                       )}
                       {isDraft && (
@@ -203,11 +185,18 @@ export default function MyServiceRequestListPage({ embedded = false }) {
                           삭제
                         </button>
                       )}
-                    </>
+                    </div>
                   )}
                 >
-                  <p>예산 {fmtBudget(item.svcReqBdgtAmt)}</p>
-                  <p>등록 {fmtDate(item.svcReqRegDt)}</p>
+                  {/* 왼쪽엔 제목, 오른쪽엔 예산·등록일 — MyPageListItem의 title prop은 안 쓰고
+                      직접 좌우로 배치해서 넘긴다 */}
+                  <div className="flex items-start justify-between gap-4">
+                    <h2 className="m-0 truncate text-xl font-bold text-[#151923]">{item.svcReqTtl}</h2>
+                    <div className="shrink-0 text-right text-sm text-[#667085]">
+                      <p className="m-0">{fmtBudget(item.svcReqBdgtAmt)}</p>
+                      <p className="m-0">등록 {fmtDate(item.svcReqRegDt)}</p>
+                    </div>
+                  </div>
                 </MyPageListItem>
               );
             })}
@@ -221,14 +210,6 @@ export default function MyServiceRequestListPage({ embedded = false }) {
         </>
       )}
 
-      <ConfirmModal
-        open={!!closeTarget}
-        message="이 요청서를 마감하시겠습니까?"
-        subMessage="마감 후에는 견적을 받을 수 없습니다."
-        confirmLabel="마감"
-        onConfirm={handleCloseConfirm}
-        onCancel={() => setCloseTarget(null)}
-      />
       <ConfirmModal
         open={!!deleteTarget}
         message="이 요청서를 삭제하시겠습니까?"

@@ -1,5 +1,6 @@
 // src/pages/product/steps/AuctionSettingStep.jsx
-// Step 1: 시작가·기간·시작시점·입찰단위·경매정책 동의
+// 0단계(상품 입력) 하단 영역: 시작가·기간·시작시점·입찰단위·경매정책 동의
+// — 예전 3단계 구조의 "Step 1"이었으나 지금은 ProductInfoStep과 같은 0단계 화면에 함께 렌더된다
 // Props: form, set, policyAgreed, setPolicyAgreed, auctionRange, setAuctionRange,
 //        endDt, bidUnits, submitted, startAmtRef, ibyAmtRef, auctionRangeRef, policyRef
 import { useEffect, useState } from 'react';

@@ -256,10 +256,37 @@ table tr:last-child td { border-bottom: none; }
 .slide-from-right { animation: slideInFromRight 0.22s ease; }
 .slide-from-left  { animation: slideInFromLeft  0.22s ease; }
 
+/* 상품등록 step0 카드(상품정보/경매설정) 2단 배치 — ProductRegisterPage 전용, 모바일에서 1단으로 접힘 */
+.product-register-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: stretch; }
+.product-info-cell { position: relative; }
+.product-info-card { position: absolute; inset: 0; }
+
 @media (max-width: 800px) {
   .seller-auction-layout { grid-template-columns: 1fr; }
   .seller-product { grid-template-columns: 96px minmax(0,1fr); gap: 14px; }
   .seller-product-img { width: 96px; height: 96px; }
+  .grid-2 { grid-template-columns: 1fr; }
+  /* 모바일에서는 카드가 세로로 쌓이는 데다 화면 폭 전체까지 늘어나면 답답해 보여서,
+     탭 바(product-register-steps)와 동일한 폭으로 좁혀 가운데 정렬한다 */
+  .product-register-grid,
+  .product-register-steps {
+    grid-template-columns: 1fr;
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  /* 1단으로 접히면 두 카드가 더 이상 같은 grid row를 공유하지 않아 absolute-stretch 트릭이
+     빈 높이(0)로 무너진다 — 모바일에서는 일반 흐름으로 되돌린다 */
+  .product-info-cell { position: static; }
+  .product-info-card { position: static; inset: auto; }
+}
+
+/* DateRangePicker 두 번째 달 — display:contents로 divider+달 두 요소를 부모 flex의 평평한 아이템으로
+   유지하다가, 모바일 폭에서는 통째로 숨겨 한 달만 보이게 한다 */
+.date-picker-second-month-group { display: contents; }
+@media (max-width: 700px) {
+  .date-picker-second-month-group,
+  .date-picker-second-month-label { display: none; }
 }
 
 /* 폼 필드 — label + input/select/textarea를 세로로 묶는 래퍼
