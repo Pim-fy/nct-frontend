@@ -25,8 +25,8 @@ const GENERAL_MENU_ITEMS = [
   { key: "service-requests", label: "견적 요청", type: "section" },
   { key: "chat",         label: "채팅",         type: "section" },
   { key: "wallet",       label: "포인트 지갑",  type: "section" },
-  { key: "review",       label: "내 리뷰",      type: "section" },
-  { key: "report-list",  label: "내 신고 목록", type: "section" },
+  { key: "review",       label: "리뷰",      type: "section" },
+  { key: "report-list",  label: "신고", type: "section" },
 ];
 
 const PROVIDER_MENU_ITEMS = [
@@ -38,7 +38,7 @@ const PROVIDER_MENU_ITEMS = [
   { key: "service-chat",      label: "서비스 채팅",   type: "section" },
   { key: "wallet",            label: "포인트 지갑",   type: "section" },
   { key: "received-review",   label: "받은 리뷰",     type: "section" },
-  { key: "report-list",       label: "내 신고 목록",  type: "section" },
+  { key: "report-list",       label: "신고",  type: "section" },
 ];
 
 // 아코디언 key → 포함되는 child key 목록

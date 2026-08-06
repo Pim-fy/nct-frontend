@@ -226,13 +226,13 @@ export default function MyServiceRequestListPage({ embedded = false }) {
               );
             })}
           </div>
-
-          {totalPages > 1 && (
-            <div className="mt-5">
-              <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
-            </div>
-          )}
         </>
+      )}
+
+      {!isLoading && (
+        <div className="mt-5">
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} showSinglePage />
+        </div>
       )}
 
       <ConfirmModal

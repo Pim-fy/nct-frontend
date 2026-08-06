@@ -12,57 +12,61 @@ import { useQueryClient } from "@tanstack/react-query";
 import ReviewableItemCard from "@components/review/ReviewableItemCard";
 import WrittenReviewItemCard from "@components/review/WrittenReviewItemCard";
 import Pagination from "@components/common/Pagination";
+import MyPageListSectionLayout from "@components/mypage/MyPageListSectionLayout";
+import MyPageListSkeleton from "@components/skeleton/MyPageListSkeleton";
+import MyPageListEmpty from "@components/mypage/MyPageListEmpty";
+import MyPageListError from "@components/mypage/MyPageListError";
 import { useWritableReviews, useMyReviews } from "@hooks/useReview";
 import { deleteReview } from "@api/reviewApi";
 import { toImageUrl } from "@api/fileApi";
 import { confirm, toast } from "@utils/common";
-import { Skeleton } from "@components/skeleton/BaseSkeleton";
 
 const PAGE_SIZE = 10;
-
-const DEV_WRITABLE = import.meta.env.DEV ? [
-  { id: 1, thumbnail: null, title: "다이슨 V11 무선청소기",       dealType: "goods",   partyLabel: "판매자", partyName: "이**", completedDate: "2026-07-01" },
-  { id: 2, thumbnail: null, title: "성수동 원룸 이사 운반",       dealType: "service", partyLabel: "제공자", partyName: "김**", completedDate: "2026-07-10" },
-  { id: 3, thumbnail: null, title: "PD 4포트 100W 멀티 충전기",   dealType: "goods",   partyLabel: "판매자", partyName: "박**", completedDate: "2026-07-15" },
-] : [];
-
-const DEV_WRITTEN = import.meta.env.DEV ? [
-  { id: 10, thumbnail: null, title: "카본 패턴 게이밍 책상",       dealType: "goods",   rating: 5, content: "배송도 빠르고 상태가 정말 좋았어요. 판매자분도 친절하셨습니다.", photos: [] },
-  { id: 11, thumbnail: null, title: "성수동 원룸 청소 서비스",     dealType: "service", rating: 4, content: "꼼꼼하게 청소해주셨는데 시간이 조금 늦게 끝났어요.", photos: [] },
-] : [];
 
 export default function ReviewListPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("writable");
-  const [page, setPage] = useState(1);
+  const [activeTab, setActiveTab] = useState(() => (
+    location.state?.justWrote || location.state?.justUpdated ? "written" : "all"
+  ));
+  const [writablePage, setWritablePage] = useState(1);
+  const [writtenPage, setWrittenPage] = useState(1);
+  const [allPage, setAllPage] = useState(1);
 
   const writableQuery = useWritableReviews();
   const myReviewsQuery = useMyReviews();
 
-  const writableItems = useMemo(() => {
-    const real = (writableQuery.data ?? []).map((item) => ({ ...item, thumbnail: toImageUrl(item.thumbnail) }));
-    return real.length > 0 ? real : DEV_WRITABLE;
-  }, [writableQuery.data]);
+  const writableItems = useMemo(() => (
+    (writableQuery.data ?? []).map((item) => ({ ...item, thumbnail: toImageUrl(item.thumbnail) }))
+  ), [writableQuery.data]);
 
-  const writtenItems = useMemo(() => {
-    const real = (myReviewsQuery.data ?? []).map((item) => ({ ...item, thumbnail: toImageUrl(item.photos?.[0]) }));
-    return real.length > 0 ? real : DEV_WRITTEN;
-  }, [myReviewsQuery.data]);
+  const writtenItems = useMemo(() => (
+    (myReviewsQuery.data ?? []).map((item) => ({ ...item, thumbnail: toImageUrl(item.photos?.[0]) }))
+  ), [myReviewsQuery.data]);
 
-  const isLoading = activeTab === "writable" ? writableQuery.isLoading : myReviewsQuery.isLoading;
-  const isError   = activeTab === "writable" ? writableQuery.isError   : myReviewsQuery.isError;
-  const refetchCurrent = activeTab === "writable" ? writableQuery.refetch : myReviewsQuery.refetch;
+  // "전체" 탭은 다른 화면들과 같은 방식(하나로 합친 리스트 + 페이지네이션 하나)을 따른다.
+  // 카드 종류가 다른 두 리스트를 completedDate 기준 최신순으로 합친다.
+  const combinedItems = useMemo(() => [
+    ...writableItems.map((item) => ({ ...item, kind: "writable" })),
+    ...writtenItems.map((item) => ({ ...item, kind: "written" })),
+  ].sort((a, b) => new Date(b.completedDate || 0) - new Date(a.completedDate || 0)), [writableItems, writtenItems]);
+
+  const isLoading = activeTab === "all"
+    ? (writableQuery.isLoading || myReviewsQuery.isLoading)
+    : activeTab === "writable" ? writableQuery.isLoading : myReviewsQuery.isLoading;
+  const isError = activeTab === "all"
+    ? (writableQuery.isError || myReviewsQuery.isError)
+    : activeTab === "writable" ? writableQuery.isError : myReviewsQuery.isError;
+  const refetchCurrent = activeTab === "all"
+    ? () => { writableQuery.refetch(); myReviewsQuery.refetch(); }
+    : activeTab === "writable" ? writableQuery.refetch : myReviewsQuery.refetch;
 
   useEffect(() => {
     const { justWrote, justUpdated } = location.state ?? {};
     if (justWrote) {
-      setActiveTab("written");
-      setPage(1);
       toast({ icon: "success", title: "작성한 리뷰 목록에 추가되었습니다." });
     } else if (justUpdated) {
-      setActiveTab("written");
       toast({ icon: "success", title: "리뷰가 수정되었습니다." });
     }
     if (justWrote || justUpdated) {
@@ -72,17 +76,35 @@ export default function ReviewListPage() {
   }, []);
 
   const tabs = [
+    { key: "all",      label: "전체",        count: writableItems.length + writtenItems.length },
     { key: "writable", label: "작성가능 리뷰",  count: writableItems.length },
     { key: "written",  label: "작성완료 리뷰",  count: writtenItems.length },
   ];
 
-  const totalPages = Math.max(1, Math.ceil(writtenItems.length / PAGE_SIZE));
-  const pagedWrittenItems = useMemo(
-    () => writtenItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-    [writtenItems, page],
+  const writableTotalPages = Math.max(1, Math.ceil(writableItems.length / PAGE_SIZE));
+  const pagedWritableItems = useMemo(
+    () => writableItems.slice((writablePage - 1) * PAGE_SIZE, writablePage * PAGE_SIZE),
+    [writableItems, writablePage],
   );
 
-  const handleTabChange = (key) => { setActiveTab(key); setPage(1); };
+  const writtenTotalPages = Math.max(1, Math.ceil(writtenItems.length / PAGE_SIZE));
+  const pagedWrittenItems = useMemo(
+    () => writtenItems.slice((writtenPage - 1) * PAGE_SIZE, writtenPage * PAGE_SIZE),
+    [writtenItems, writtenPage],
+  );
+
+  const allTotalPages = Math.max(1, Math.ceil(combinedItems.length / PAGE_SIZE));
+  const pagedCombinedItems = useMemo(
+    () => combinedItems.slice((allPage - 1) * PAGE_SIZE, allPage * PAGE_SIZE),
+    [combinedItems, allPage],
+  );
+
+  const handleTabChange = (key) => {
+    setActiveTab(key);
+    setWritablePage(1);
+    setWrittenPage(1);
+    setAllPage(1);
+  };
 
   const handleWriteReview = (item) => {
     navigate(`/user/reviews/write/${item.id}`, { state: { item } });
@@ -98,7 +120,8 @@ export default function ReviewListPage() {
     try {
       await deleteReview(item.id);
       await queryClient.invalidateQueries({ queryKey: ["reviews"] });
-      if (pagedWrittenItems.length === 1 && page > 1) setPage(page - 1);
+      if (activeTab === "written" && pagedWrittenItems.length === 1 && writtenPage > 1) setWrittenPage(writtenPage - 1);
+      if (activeTab === "all" && pagedCombinedItems.length === 1 && allPage > 1) setAllPage(allPage - 1);
       toast({ icon: "success", title: "리뷰가 삭제되었습니다." });
     } catch (err) {
       const message = err.response?.data?.message;
@@ -111,84 +134,106 @@ export default function ReviewListPage() {
   };
 
   return (
-    <div className="flex flex-col gap-5">
-      {/* 헤더 */}
-      <h2 className="text-[22px] font-bold text-[#1a1a1a] m-0">리뷰작성</h2>
+    // MyPageListSectionLayout은 자체 trailing mb-5로 다음 콘텐츠와의 간격을 이미 책임진다.
+    // 이걸 flex gap 컨테이너 안에 넣으면 flex item이 되면서 새 블록 서식 맥락(BFC)이 생겨
+    // 내부 mb-5가 밖으로 못 빠져나가고 갇힌 채 부모 gap과 또 더해져 간격이 두 배가 된다.
+    // 그래서 컨테이너 밖에 두고, gap이 실제로 필요한 콘텐츠 블록들만 별도로 감싼다.
+    <>
+      <MyPageListSectionLayout
+        title="리뷰"
+        summaryItems={[
+          { label: '작성가능 리뷰', value: writableItems.length },
+          { label: '작성완료 리뷰', value: writtenItems.length },
+        ]}
+        filterItems={tabs.map((tab) => ({ value: tab.key, label: tab.label, count: tab.count }))}
+        activeFilter={activeTab}
+        onFilterChange={handleTabChange}
+        filterAriaLabel="리뷰 탭"
+        isLoading={isLoading}
+      />
 
-      {/* 탭 */}
-      <div className="tab-group-1">
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.key;
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => handleTabChange(tab.key)}
-              className={`tab-pill${isActive ? " active" : ""} whitespace-nowrap`}
-            >
-              {tab.label}
-              <span className="tab-count">{tab.count}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {isLoading && (
-        <div className="flex flex-col gap-4">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <Skeleton
-              borderRadius={20}
-              height={209}
-              key={index}
-            />
-          ))}
-        </div>
-      )}
+      <div className="flex flex-col gap-5">
+      {isLoading && <MyPageListSkeleton count={3} />}
 
       {/* 에러 */}
       {!isLoading && isError && (
-        <div>
-          <p className="text-[#e63946] text-[15px] mb-2">목록을 불러오지 못했습니다.</p>
-          <button type="button" onClick={() => refetchCurrent()} className="btn btn-ghost btn-sm">
-            다시 시도
-          </button>
-        </div>
+        <MyPageListError message="목록을 불러오지 못했습니다." onRetry={() => refetchCurrent()} />
+      )}
+
+      {/* 전체 — 두 종류를 completedDate 최신순으로 합친 리스트 + 페이지네이션 하나 */}
+      {!isLoading && !isError && activeTab === "all" && (
+        <>
+          {combinedItems.length === 0 ? (
+            <MyPageListEmpty message="아직 리뷰 내역이 없습니다." />
+          ) : (
+            <div className="flex flex-col gap-4">
+              {pagedCombinedItems.map((item) => (
+                item.kind === "writable" ? (
+                  <ReviewableItemCard
+                    key={`writable-${item.id}`}
+                    thumbnail={item.thumbnail}
+                    title={item.title}
+                    dealType={item.dealType}
+                    partyLabel={item.partyLabel}
+                    partyName={item.partyName}
+                    completedDate={item.completedDate}
+                    actionLabel="리뷰 등록"
+                    onAction={() => handleWriteReview(item)}
+                    onViewTarget={() => handleViewTarget(item)}
+                  />
+                ) : (
+                  <WrittenReviewItemCard
+                    key={`written-${item.id}`}
+                    thumbnail={item.thumbnail}
+                    title={item.title}
+                    dealType={item.dealType}
+                    rating={item.rating}
+                    content={item.content}
+                    onEdit={() => handleEditReview(item)}
+                    onDelete={() => handleDeleteReview(item)}
+                    onViewTarget={() => handleViewTarget(item)}
+                  />
+                )
+              ))}
+            </div>
+          )}
+          <Pagination page={allPage} totalPages={allTotalPages} onPageChange={setAllPage} showSinglePage />
+        </>
       )}
 
       {/* 작성가능한 리뷰 */}
       {!isLoading && !isError && activeTab === "writable" && (
-        writableItems.length === 0 ? (
-          <div className="flex items-center justify-center py-20 border border-[rgba(0,0,0,0.08)] rounded-[10px] bg-white">
-            <p className="text-[15px] text-[#969696]">아직 작성 가능한 리뷰가 없습니다.</p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {writableItems.map((item) => (
-              <ReviewableItemCard
-                key={item.id}
-                thumbnail={item.thumbnail}
-                title={item.title}
-                dealType={item.dealType}
-                partyLabel={item.partyLabel}
-                partyName={item.partyName}
-                completedDate={item.completedDate}
-                actionLabel="리뷰 등록"
-                onAction={() => handleWriteReview(item)}
-                onViewTarget={() => handleViewTarget(item)}
-              />
-            ))}
-          </div>
-        )
+        <>
+          {writableItems.length === 0 ? (
+            <MyPageListEmpty message="아직 작성 가능한 리뷰가 없습니다." />
+          ) : (
+            <div className="flex flex-col gap-4">
+              {pagedWritableItems.map((item) => (
+                <ReviewableItemCard
+                  key={item.id}
+                  thumbnail={item.thumbnail}
+                  title={item.title}
+                  dealType={item.dealType}
+                  partyLabel={item.partyLabel}
+                  partyName={item.partyName}
+                  completedDate={item.completedDate}
+                  actionLabel="리뷰 등록"
+                  onAction={() => handleWriteReview(item)}
+                  onViewTarget={() => handleViewTarget(item)}
+                />
+              ))}
+            </div>
+          )}
+          <Pagination page={writablePage} totalPages={writableTotalPages} onPageChange={setWritablePage} showSinglePage />
+        </>
       )}
 
       {/* 작성한 리뷰 */}
       {!isLoading && !isError && activeTab === "written" && (
-        writtenItems.length === 0 ? (
-          <div className="flex items-center justify-center py-20 border border-[rgba(0,0,0,0.08)] rounded-[10px] bg-white">
-            <p className="text-[15px] text-[#969696]">아직 작성한 리뷰가 없습니다.</p>
-          </div>
-        ) : (
-          <>
+        <>
+          {writtenItems.length === 0 ? (
+            <MyPageListEmpty message="아직 작성한 리뷰가 없습니다." />
+          ) : (
             <div className="flex flex-col gap-4">
               {pagedWrittenItems.map((item) => (
                 <WrittenReviewItemCard
@@ -204,10 +249,11 @@ export default function ReviewListPage() {
                 />
               ))}
             </div>
-            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-          </>
-        )
+          )}
+          <Pagination page={writtenPage} totalPages={writtenTotalPages} onPageChange={setWrittenPage} showSinglePage />
+        </>
       )}
-    </div>
+      </div>
+    </>
   );
 }

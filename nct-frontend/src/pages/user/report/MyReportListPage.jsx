@@ -2,8 +2,11 @@
 // F-COM-018: 내 신고 내역 (담당자3 황성경 소유)
 import React, { useState } from "react";
 import Pagination from "@components/common/Pagination";
+import MyPageListSectionLayout from "@components/mypage/MyPageListSectionLayout";
+import MyPageListSkeleton from "@components/skeleton/MyPageListSkeleton";
+import MyPageListEmpty from "@components/mypage/MyPageListEmpty";
+import MyPageListError from "@components/mypage/MyPageListError";
 import { useMyReports } from "@hooks/useAbuseReport";
-import ReportModal from "@components/common/ReportModal";
 
 // ─── 코드 매핑 ────────────────────────────────────────────────────────────────
 
@@ -39,7 +42,7 @@ const STATUS_TABS = [
   { label: "전체",    status: null },
   { label: "접수됨",  status: "ABRC0005" },
   { label: "처리중",  status: "ABRC0006" },
-  { label: "완료/반려", status: "FINISHED" },
+  { label: "처리완료", status: "FINISHED" },
 ];
 
 const PAGE_SIZE = 5;
@@ -142,7 +145,6 @@ function ReportCard({ report, isOpen, onToggle, number }) {
 
 export default function MyReportListPage({ embedded = false }) {
   const [activeTabIdx, setActiveTabIdx] = useState(0);
-  const [reportOpen, setReportOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [openSn, setOpenSn] = useState(null);
 
@@ -150,7 +152,7 @@ export default function MyReportListPage({ embedded = false }) {
 
   const activeTab = STATUS_TABS[activeTabIdx];
 
-  const { data, isLoading, isError } = useMyReports({
+  const { data, isLoading, isError, refetch } = useMyReports({
     status: activeTab.status,
     page,
     size: PAGE_SIZE,
@@ -177,55 +179,26 @@ export default function MyReportListPage({ embedded = false }) {
   return (
     <div className={embedded ? "" : "max-w-[1200px] mx-auto px-4 py-10"}>
 
-      <div className="flex items-center justify-between gap-4 mb-5">
-        <h1 className="text-2xl font-bold text-black m-0">내 신고 목록</h1>
-        {/* 테스트용 버튼 — 확인 후 제거 예정 */}
-        <button type="button" className="btn btn-danger btn-sm shrink-0" onClick={() => setReportOpen(true)}>
-          신고하기 (테스트)
-        </button>
-      </div>
-
-      <ReportModal
-        open={reportOpen}
-        onClose={() => setReportOpen(false)}
-        contextLabel="신고 테스트"
-        targetName="테스트대상"
-        targetType="direct"
+      <MyPageListSectionLayout
+        title="신고"
+        summaryItems={[
+          { label: '접수됨', value: countReceived?.totalCount ?? 0 },
+          { label: '처리중', value: countReview?.totalCount ?? 0 },
+          { label: '처리완료', value: countFinished?.totalCount ?? 0 },
+        ]}
+        filterItems={STATUS_TABS.map((tab, idx) => ({ value: idx, label: tab.label, count: TAB_COUNTS[idx] }))}
+        activeFilter={activeTabIdx}
+        onFilterChange={handleTab}
+        filterAriaLabel="신고 상태"
+        isLoading={isLoading}
       />
 
-      <div className="tab-group-1 mb-5">
-        {STATUS_TABS.map((tab, idx) => {
-          const cnt = TAB_COUNTS[idx];
-          return (
-            <button
-              key={tab.label}
-              type="button"
-              onClick={() => handleTab(idx)}
-              className={`tab-pill${activeTabIdx === idx ? " active" : ""}`}
-            >
-              {tab.label}
-              {cnt > 0 && <span className="tab-count">{cnt}</span>}
-            </button>
-          );
-        })}
-      </div>
-
       {isLoading ? (
-        <div className="flex justify-center py-20">
-          <div className="size-8 border-2 border-[#0064ff] border-t-transparent rounded-full animate-spin" />
-        </div>
+        <MyPageListSkeleton count={PAGE_SIZE} />
       ) : isError ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center border border-[#e5e5e5] rounded-[15px] bg-white">
-          <p className="text-[16px] text-[#969696] m-0">목록을 불러오지 못했습니다.</p>
-        </div>
+        <MyPageListError message="목록을 불러오지 못했습니다." onRetry={() => refetch()} />
       ) : reports.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center rounded-[15px] bg-white border border-[#e4e9f2] shadow-[0_2px_12px_rgba(0,0,0,0.05)]">
-          <svg className="size-12 text-[#d9d9d9] mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <p className="text-[16px] text-[#969696] m-0">신고 내역이 없습니다.</p>
-        </div>
+        <MyPageListEmpty message="신고 내역이 없습니다." />
       ) : (
         <div className="flex flex-col gap-5">
           {reports.map((report, idx) => (
@@ -240,7 +213,7 @@ export default function MyReportListPage({ embedded = false }) {
         </div>
       )}
 
-      {!isLoading && totalPages > 1 && (
+      {!isLoading && (
         <Pagination page={page} totalPages={totalPages} onPageChange={setPage} showSinglePage />
       )}
 
