@@ -7,6 +7,7 @@ import { Home } from 'lucide-react';
 import cursorIcon from '@assets/img/cursorIcon.png';
 import commentIcon from '@assets/img/commentIcon.png';
 import userIcon from '@assets/img/userIcon.png';
+import { useAuth } from '@hooks/useAuth';
 
 // black PNG → #0064ff
 const BLUE_FILTER =
@@ -14,15 +15,23 @@ const BLUE_FILTER =
 // black PNG → gray (비활성)
 const GRAY_FILTER = 'grayscale(100%) brightness(1.4)';
 
-const NAV_ITEMS = [
+const BASE_NAV_ITEMS = [
   { key: 'home',    label: '홈',     to: '/',            type: 'lucide' },
   { key: 'auction', label: '경매',   to: '/auction',     type: 'img', src: cursorIcon },
-  { key: 'service', label: '서비스', to: '/service',    type: 'img', src: commentIcon },
   { key: 'mypage',  label: 'MY',     to: '/user/mypage', type: 'img', src: userIcon },
 ];
 
 export default function MobileBottomNav() {
   const { pathname } = useLocation();
+  const { isProvider } = useAuth();
+  const serviceItem = {
+    key: 'service',
+    label: isProvider ? '견적 목록' : '견적 요청',
+    to: isProvider ? '/service' : '/service-requests/new',
+    type: 'img',
+    src: commentIcon,
+  };
+  const navItems = [BASE_NAV_ITEMS[0], BASE_NAV_ITEMS[1], serviceItem, BASE_NAV_ITEMS[2]];
 
   const isActive = (to) =>
     to === '/' ? pathname === '/' : pathname.startsWith(to);
@@ -33,7 +42,7 @@ export default function MobileBottomNav() {
       style={{ boxShadow: '0 -2px 10px rgba(0,0,0,0.08)' }}
     >
       <div className="flex h-[60px]">
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const active = isActive(item.to);
           return (
             <Link
