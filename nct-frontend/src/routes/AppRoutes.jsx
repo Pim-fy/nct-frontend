@@ -59,11 +59,9 @@ import ServiceListPage from '@pages/service/ServiceListPage';
 import PublicProviderProfilePage from '@pages/provider/PublicProviderProfilePage';
 import ProviderApplyPage from '@pages/provider/ProviderApplyPage';
 import ProviderApplicationStatusPage from '@pages/provider/ProviderApplicationStatusPage';
-import ProviderProfilePage from '@pages/provider/ProviderProfilePage';
 import NotificationPage from '@pages/user/notification/NotificationPage';
 import AuctionFavoritesPage from '@pages/auction/AuctionFavoritesPage';
 import QuoteFormPage from '@pages/provider/QuoteFormPage';
-import MyQuoteListPage from '@pages/provider/MyQuoteListPage';
 import ReviewListPage from '@pages/user/ReviewListPage';
 import ReviewWritePage from '@pages/user/ReviewWritePage';
 import ReviewEditPage from '@pages/user/ReviewEditPage';
@@ -159,7 +157,6 @@ const AppRoutes = () => {
 
         {/* 담당자 7의 F-COM-015 공개 제공자 프로필 화면 */}
         <Route path="/providers/:providerId" element={<PublicProviderProfilePage />} />
-        <Route path="/guide" element={<Navigate replace to="/customersupport/guide" />} />
         <Route element={<CustomerSupportLayout />}>
           <Route path="/customersupport/guide" element={<GuidePage />} />
           <Route path="/customersupport/notice" element={<NoticeListPage />} />
@@ -263,7 +260,6 @@ const AppRoutes = () => {
           <Route path="notices" element={<AdminNoticeListPage />} />
           <Route path="notices/new" element={<AdminNoticeFormPage />} />
           <Route path="notices/:noticeId" element={<AdminNoticeFormPage />} />
-          <Route path="guides" element={<Navigate replace to="/customersupport/guide" />} />
           <Route path="categories" element={<AdminCategoryPage />} />
           <Route path="categories/:categorySn/form" element={<AdminServiceRequestFormPage />} />
           <Route path="services" element={<AdminServiceRequestPage />} />
@@ -273,12 +269,9 @@ const AppRoutes = () => {
           <Route path="exchanges" element={<AdminPointExchangePage />} />
           {/* 담당자 7 · F-OPS-011: 담당자 6의 F-OPS-016 화면을 소비해 운영 기록 탐색만 통합합니다. */}
           <Route path="operations-records" element={<AdminOperationsRecordPage />} />
-          <Route path="risk-events" element={<Navigate replace to="/admin/operations-records?tab=risk" />} />
-          <Route path="audit-logs" element={<Navigate replace to="/admin/operations-records?tab=audit" />} />
           <Route path="system-settings" element={<AdminSystemSettingPage />} />
           {/* 관리자 알림 (담당자6, F-COM-004/005) */}
           <Route path="notifications" element={<AdminNotificationPage />} />
-          <Route path="operations-preview" element={<Navigate replace to="/admin/operations-records?tab=risk" />} />
         </Route>
       </Route>
 
@@ -286,53 +279,10 @@ const AppRoutes = () => {
         <Route element={<UserLayout />}>
           {/* 담당자 7 통합: 공개 요청 검색·목록은 제공자 모드 전용입니다. */}
           <Route path="/service" element={<ServiceListPage />} />
-          <Route path="/provider/profile" element={<ProviderProfilePage />} />
-          <Route path="/provider/quotes" element={<MyQuoteListPage />} />
-          <Route path="/provider/quotes/new" element={<QuoteFormPage />} />
-          <Route path="/provider/quotes/:quoteId/edit" element={<QuoteFormPage />} />
+          <Route path="/service-requests/:svcReqSn/quotes/new" element={<QuoteFormPage />} />
+          <Route path="/service-requests/:svcReqSn/quotes/:quoteId/edit" element={<QuoteFormPage />} />
         </Route>
       </Route>
-
-      {/* ────────────────────────────────
-          로그인 필요 영역 (UserLayout + ProtectedRoute)
-      
-      <Route element={<ProtectedRoute allowedRoles={['ROLE_USER', 'ROLE_ADMIN']} />}>
-        <Route element={<UserLayout />}>
-          {/* 마이페이지 
-          <Route path="/user/mypage" element={<MyPage />} />
-
-          {/* 커뮤니티 글쓰기 
-          <Route path="/showcase/hotplace/write"      element={<CommunityHotplaceWrite />} />
-          <Route path="/showcase/hotplace/write/:id"  element={<CommunityHotplaceWrite />} />
-          <Route path="/showcase/life/write"          element={<CommunityLifeWrite />} />
-          <Route path="/showcase/life/write/:id"      element={<CommunityLifeWrite />} />
-
-        </Route>
-      </Route>
-      ──────────────────────────────── */}
-
-      {/* ────────────────────────────────
-          관리자 전용 (AdminLayout + ProtectedRoute)
-      <Route element={<ProtectedRoute allowedRoles={['ROLE_ADMIN']} />}>
-        <Route path="/admin" element={<AdminLayout />}>
-          {/* 대시보드
-          <Route index element={<Dashboard />} />
-
-          {/* 공통 코드
-          <Route path="common-codes" element={<CommonCodeList />} />
-
-          {/* 회원 관리 
-          <Route path="members">
-            <Route index element={<AdminMemberList />} />
-          </Route>
-
-          {/* 관리자 관리
-          <Route path="managers">
-            <Route index element={<AdminManagerList />} />
-          </Route>
-        </Route>
-      </Route>
-      ──────────────────────────────── */}
       
       {/* 404 폴백 */}
       <Route path="*" element={<NotFoundPage />} />

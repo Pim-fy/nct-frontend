@@ -1,7 +1,7 @@
 // src/pages/provider/QuoteFormPage.jsx
 // F-SVC-005/006: 제공자 견적 제출·수정 (담당자3 황성경 소유)
 import React, { useEffect, useRef, useState } from "react";
-import { useNavigate, useLocation, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useSubmitQuote, useUpdateQuote } from "@hooks/useQuote";
 import { getMyActiveQuote } from "@api/quoteApi";
@@ -24,18 +24,14 @@ const FALLBACK_REQUEST = { title: "서비스 요청", category: "" };
 export default function QuoteFormPage() {
   const navigate   = useNavigate();
   const location   = useLocation();
-  const { quoteId: routeQuoteId } = useParams();
-  const [searchParams] = useSearchParams();
+  const { quoteId: routeQuoteId, svcReqSn: routeSvcReqSn } = useParams();
   const routeState = location.state || {};
   const fileInputRef = useRef(null);
 
-  // router state: { svcReqSn, svcReqTitle, category, location, budget, requester }  → 신규
-  //               { quoteId, svcReqSn, svcReqTitle, amount, content, reviseCnt }    → 수정
-  const querySvcReqSn = Number(searchParams.get("svcReqSn")) || null;
-  const queryQuoteId = Number(searchParams.get("quoteId")) || null;
-  const quoteId = Number(routeQuoteId) || queryQuoteId || routeState.quoteId || null;
+  // 요청번호와 견적번호는 URL 경로에서 받고, 화면 표시용 정보만 router state를 사용한다.
+  const quoteId = Number(routeQuoteId) || null;
   const isEditMode = Boolean(quoteId);
-  const svcReqSn = querySvcReqSn || routeState.svcReqSn || null;
+  const svcReqSn = Number(routeSvcReqSn) || null;
   const [svcReqInfo, setSvcReqInfo] = useState({
     svcReqSn,
     catSn: routeState.catSn || null,
@@ -557,7 +553,7 @@ export default function QuoteFormPage() {
               style={{ marginTop: 24, width: "100%" }}
               onClick={() => {
                 setEditSuccessMsg("");
-                navigate("/mypage?section=quote");
+                navigate("/user/mypage?section=quote");
               }}
             >
               확인
@@ -579,7 +575,7 @@ export default function QuoteFormPage() {
               style={{ marginTop: 24, width: "100%" }}
               onClick={() => {
                 setSubmitSuccess(false);
-                navigate("/mypage?section=quote");
+                navigate("/user/mypage?section=quote");
               }}
             >
               확인
