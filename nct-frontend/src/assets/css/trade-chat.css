@@ -311,6 +311,20 @@
   font-size: 12px;
 }
 
+.trade-chat-conversation__report {
+  min-width: auto;
+  padding: 6px 10px;
+  border-color: #fecaca;
+  color: #dc2626;
+  font-size: 12px;
+}
+
+.trade-chat-conversation__report:hover {
+  border-color: #fca5a5;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
 .trade-chat-conversation__close.trade-chat-conversation__close--mobile {
   display: none;
 }
@@ -511,6 +525,10 @@
   }
 
   .trade-chat-conversation__close {
+    padding: 6px 8px;
+  }
+
+  .trade-chat-conversation__report {
     padding: 6px 8px;
   }
 }
