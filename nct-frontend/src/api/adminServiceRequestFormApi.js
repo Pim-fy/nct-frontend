@@ -13,3 +13,8 @@ export const publishAdminServiceRequestForm = ({ categorySn, formTemplateSn }) =
   api.post(
     `/admin/service-request-forms/categories/${categorySn}/drafts/${formTemplateSn}/publish`,
   ).then(({ data }) => data.data);
+
+export const discardAdminServiceRequestFormDraft = ({ categorySn, formTemplateSn }) =>
+  api.post(
+    `/admin/service-request-forms/categories/${categorySn}/drafts/${formTemplateSn}/discard`,
+  ).then(({ data }) => data.data);

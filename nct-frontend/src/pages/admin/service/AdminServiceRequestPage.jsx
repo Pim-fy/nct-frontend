@@ -5,13 +5,14 @@ import {
   fetchAdminServiceRequests,
 } from '@api/adminServiceRequestApi';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
-import AdminModal from '@components/admin/AdminModal';
+import AdminDetailDrawer from '@components/admin/AdminDetailDrawer';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminTable from '@components/admin/AdminTable';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
+import { ADMIN_HIGH_VOLUME_PAGE_SIZE } from '@/constants/adminPagination';
 import { useAdminCategories } from '@hooks/useAdminCategories';
 import { formatDateTime } from '@utils/common';
 import '../notice/adminContentPages.css';
@@ -24,7 +25,7 @@ const INITIAL_FILTERS = {
   registeredTo: '',
   keyword: '',
 };
-const PAGE_SIZE = 20;
+const PAGE_SIZE = ADMIN_HIGH_VOLUME_PAGE_SIZE;
 const SERVICE_CATEGORY_DOMAIN = 'CATC0002';
 const STATUS_OPTIONS = [
   { value: 'SVCC0002', label: '공개' },
@@ -135,11 +136,11 @@ const AdminServiceRequestPage = () => {
 
   return (
     <div className="admin-content-page admin-service-page">
-      <PageMeta title="서비스 요청 관리" />
-      <AdminPageHeader title="서비스 요청 관리" />
+      <PageMeta title="견적 요청 관리" />
+      <AdminPageHeader title="견적 요청 관리" />
 
       <form
-        aria-label="서비스 요청 검색"
+        aria-label="견적 요청 검색"
         className="card admin-service-filter"
         onSubmit={submitSearch}
       >
@@ -199,7 +200,7 @@ const AdminServiceRequestPage = () => {
       )}
       {requestsQuery.isError && (
         <div className="admin-service-page__state is-error" role="alert">
-          서비스 요청 목록을 불러오지 못했습니다.
+          견적 요청 목록을 불러오지 못했습니다.
           <button className="btn btn-outline" onClick={() => requestsQuery.refetch()} type="button">
             다시 시도
           </button>
@@ -210,19 +211,19 @@ const AdminServiceRequestPage = () => {
         <AdminSectionCard
           action={!requestsQuery.isLoading && <span>총 {requestsQuery.data?.totalItems ?? 0}건</span>}
           className="admin-notice-list admin-service-list"
-          title="서비스 요청 목록"
+          title="견적 요청 목록"
         >
           <div className="admin-table-scroll">
             <AdminTable
               columns={columns}
               data={rows}
-              emptyMessage="조건에 맞는 서비스 요청이 없습니다."
+              emptyMessage="조건에 맞는 견적 요청이 없습니다."
               loading={requestsQuery.isLoading}
               rowKey={(item) => item.serviceRequestId}
             />
           </div>
           <AdminPagination
-            ariaLabel="서비스 요청 목록 페이지 이동"
+            ariaLabel="견적 요청 목록 페이지 이동"
             disabled={requestsQuery.isFetching}
             onPageChange={setPage}
             page={requestsQuery.data?.page ?? page}
@@ -232,13 +233,22 @@ const AdminServiceRequestPage = () => {
       )}
 
       {selected && (
-        <AdminModal onClose={() => setSelected(null)} title="서비스 요청 상세">
+        <AdminDetailDrawer
+          eyebrow="견적 요청"
+          footer={(
+            <button className="btn btn-outline" onClick={() => setSelected(null)} type="button">
+              닫기
+            </button>
+          )}
+          onClose={() => setSelected(null)}
+          title="요청 상세"
+        >
           {detailQuery.isLoading && (
             <div className="admin-service-page__state" aria-live="polite">상세 정보를 불러오는 중입니다.</div>
           )}
           {detailQuery.isError && (
             <div className="admin-service-page__state is-error" role="alert">
-              서비스 요청 상세를 불러오지 못했습니다.
+              견적 요청 상세를 불러오지 못했습니다.
               <button className="btn btn-outline" onClick={() => detailQuery.refetch()} type="button">
                 다시 시도
               </button>
@@ -246,40 +256,55 @@ const AdminServiceRequestPage = () => {
           )}
           {!detailQuery.isLoading && !detailQuery.isError && detail && (
             <section className="admin-service-detail">
-              <div>
-                <span>요청 상세</span>
-                <h2>{detail.title}</h2>
-                <p>{detail.content || '별도로 작성된 요청 내용이 없습니다.'}</p>
+              <div className="admin-service-detail__summary">
+                <div className="admin-service-detail__status-line">
+                  <span>요청 #{detail.serviceRequestId}</span>
+                  {(detail.statusName || detail.statusCode) && (
+                    <AdminStatusBadge tone={statusTone(detail.statusCode)}>
+                      {detail.statusName ?? detail.statusCode}
+                    </AdminStatusBadge>
+                  )}
+                </div>
+                <h3>{detail.title}</h3>
               </div>
-              <dl>
-                <dt>요청번호</dt>
-                <dd>#{detail.serviceRequestId}</dd>
 
-                <dt>요청자</dt>
-                <dd>{detail.requesterName ?? '-'} (회원 #{detail.requesterUserId})</dd>
+              <div className="admin-service-detail__facts">
+                {detail.categoryName && (
+                  <div><span>카테고리</span><strong>{detail.categoryName}</strong></div>
+                )}
+                {detail.budgetAmount != null && (
+                  <div><span>예산</span><strong>{formatAmount(detail.budgetAmount)}</strong></div>
+                )}
+                {(detail.requesterName || detail.requesterUserId != null) && (
+                  <div>
+                    <span>요청자</span>
+                    <strong>
+                      {detail.requesterName || '회원'}
+                      {detail.requesterUserId != null ? ` #${detail.requesterUserId}` : ''}
+                    </strong>
+                  </div>
+                )}
+              </div>
 
-                <dt>카테고리</dt>
-                <dd>{detail.categoryName ?? '-'}</dd>
+              {detail.content?.trim() && (
+                <section className="admin-service-detail__section">
+                  <h4>요청 내용</h4>
+                  <p>{detail.content}</p>
+                </section>
+              )}
 
-                <dt>예산</dt>
-                <dd>{formatAmount(detail.budgetAmount)}</dd>
-
-                <dt>상태</dt>
-                <dd>
-                  <AdminStatusBadge tone={statusTone(detail.statusCode)}>
-                    {detail.statusName ?? detail.statusCode}
-                  </AdminStatusBadge>
-                </dd>
-
-                <dt>등록일</dt>
-                <dd>{formatDateTime(detail.registeredAt)}</dd>
-
-                <dt>수정일</dt>
-                <dd>{formatDateTime(detail.updatedAt)}</dd>
-              </dl>
+              {(detail.registeredAt || detail.updatedAt) && (
+                <section className="admin-service-detail__section is-record">
+                  <h4>기록</h4>
+                  <dl>
+                    {detail.registeredAt && <><dt>등록</dt><dd>{formatDateTime(detail.registeredAt)}</dd></>}
+                    {detail.updatedAt && <><dt>수정</dt><dd>{formatDateTime(detail.updatedAt)}</dd></>}
+                  </dl>
+                </section>
+              )}
             </section>
           )}
-        </AdminModal>
+        </AdminDetailDrawer>
       )}
     </div>
   );

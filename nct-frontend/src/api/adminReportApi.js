@@ -1,7 +1,8 @@
 import api from './axios';
+import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
 
 /** 담당자 7 · F-OPS-007: 관리자 신고 전체·상태별 목록, 상세, 처리 계약입니다. */
-export const getAdminReports = ({ statusCode, keyword, page, size = 20 }) =>
+export const getAdminReports = ({ statusCode, keyword, page, size = ADMIN_PAGE_SIZE }) =>
   api.get('/admin/reports/search', {
     params: {
       ...(statusCode ? { statusCode } : {}),

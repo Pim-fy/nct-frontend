@@ -1,11 +1,12 @@
 // F-OPS-023 관리자 공지 API를 한곳에 모읍니다.
 // 사용자 공개 조회 API와 분리되어 있어, 관리자 화면을 바꿔도 공개 공지 계약은 영향을 받지 않습니다.
 import api from './axios';
+import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
 
 export const fetchAdminNoticeOptions = () =>
   api.get('/admin/notices/options').then((response) => response.data.data);
 
-export const fetchAdminNotices = ({ typeCode, statusCode, keyword, page, size = 20 }) =>
+export const fetchAdminNotices = ({ typeCode, statusCode, keyword, page, size = ADMIN_PAGE_SIZE }) =>
   api.get('/admin/notices', {
     params: {
       ...(typeCode ? { typeCode } : {}),

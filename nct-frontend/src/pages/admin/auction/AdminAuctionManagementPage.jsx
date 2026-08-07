@@ -14,6 +14,7 @@ import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import PageMeta from '@components/admin/PageMeta';
+import { ADMIN_HIGH_VOLUME_PAGE_SIZE } from '@/constants/adminPagination';
 import { formatDateTime, toast } from '@utils/common';
 import '../audit/adminAuditPage.css';
 import './adminAuctionManagementPage.css';
@@ -50,7 +51,7 @@ const INITIAL_FILTERS = {
   registeredFrom: '',
   registeredTo: '',
 };
-const PAGE_SIZE = 20;
+const PAGE_SIZE = ADMIN_HIGH_VOLUME_PAGE_SIZE;
 const formatAmount = (value) => (
   value == null ? '-' : `${Number(value).toLocaleString('ko-KR')}원`
 );
