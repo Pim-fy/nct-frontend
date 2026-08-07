@@ -9,18 +9,18 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getCategories } from '@api/categoryApi';
 import { fetchBannedKeywords, registerProduct, updateProduct, getProduct } from '@api/productApi';
 import { uploadImage } from '@api/fileApi';
+import { formatPoint } from '@/utils/common';
 import ErrorMessage from '@components/common/ErrorMessage';
 import AlertModal from '@components/common/AlertModal';
 import ProductInfoStep from './steps/ProductInfoStep';
 import AuctionSettingStep from './steps/AuctionSettingStep';
 import RegisterConfirmStep from './steps/RegisterConfirmStep';
-import { resolvePendingDescriptionImages } from '@components/product/richTextEditorImages';
 
 // 브라우저 뒤로가기로 이 페이지에 돌아왔을 때 입력하던 내용이 사라지지 않도록,
 // 컴포넌트가 언마운트돼도 살아있는 모듈 스코프 캐시에 폼 상태를 보관해둔다.
 // DB에는 절대 쓰지 않는다 — 실제 저장은 여전히 임시저장·상품등록 클릭 시점에만 일어난다.
 // 새로고침(F5)이나 탭을 닫으면 사라지는 순수 인메모리 캐시다(File 객체를 들고 있어 sessionStorage로 못 옮김).
-let draftCache = null; // { key, form, images, auctionRange, step, policyAgreed, agreed, pendingDescFiles }
+let draftCache = null; // { key, form, images, auctionRange, step, policyAgreed, agreed }
 
 // ─── 거래방식 아이콘 SVG 컴포넌트 ───────────────────────────────────────────
 // deal-options(.line-option) 버튼 안에 표시되는 아이콘
@@ -85,10 +85,6 @@ export default function ProductRegisterPage() {
   const [submitted, setSubmitted] = useState(false);
   const [alertMsg, setAlertMsg] = useState(''); // 화면 중앙 알림 모달(AlertModal) — 유효성 검사 안내용
   const errorRef = useRef(null);
-  // 상품설명 속 이미지(blobUrl -> File, 아직 업로드 안 됨) — RichTextEditor가 직접 채워넣고,
-  // 여기 부모가 갖고 있어야 스텝 전환으로 RichTextEditor가 언마운트돼도 파일이 사라지지 않는다.
-  // Map 자체는 절대 교체되지 않고 내부만 변경되는 안정적인 참조라 useState로 보관한다(렌더 중 ref.current 접근 금지 규칙 회피).
-  const [pendingDescFilesMap] = useState(() => hasCachedDraft ? draftCache.pendingDescFiles : new Map());
   // 임시저장 draft 복원 시 startNow 변경으로 경매기간 초기화 효과가 복원값을 덮어쓰지 않도록 막는 플래그
   const suppressRangeResetRef = useRef(hasCachedDraft);
   // 제출 성공 후에는 캐시 동기화 effect가 다시 draftCache를 채우지 않도록 막는 플래그
@@ -118,8 +114,8 @@ export default function ProductRegisterPage() {
   // 폼·이미지·설명이 바뀔 때마다 모듈 캐시에 동기화 — 뒤로가기로 돌아왔을 때 복원할 원본
   useEffect(() => {
     if (submittedRef.current) return;
-    draftCache = { key: draftKey, form, images, auctionRange, step, policyAgreed, agreed, pendingDescFiles: pendingDescFilesMap };
-  }, [draftKey, form, images, auctionRange, step, policyAgreed, agreed, pendingDescFilesMap]);
+    draftCache = { key: draftKey, form, images, auctionRange, step, policyAgreed, agreed };
+  }, [draftKey, form, images, auctionRange, step, policyAgreed, agreed]);
 
   // ─── 카테고리 목록 + (수정 모드, 캐시 복원이 아닐 때만) 기존 상품 데이터 로드 ─────
   // 세 요청은 서로 독립적이고 결과를 한데 모아 쓰는 곳이 없어서 각자 실행만 한다
@@ -297,8 +293,7 @@ export default function ProductRegisterPage() {
     setLoading(true);
     try {
       // 여기(임시저장·상품등록 클릭)에서만 실제로 서버에 업로드한다 — 그 전까지는 로컬 미리보기(blob:)뿐
-      const [finalPrdCn, uploadedImages] = await Promise.all([
-        resolvePendingDescriptionImages(form.prdCn, pendingDescFilesMap),
+      const [uploadedImages] = await Promise.all([
         Promise.all(images.map(async img => {
           if (img.flSn) return img; // 이미 업로드된(수정 모드 기존) 이미지는 재업로드하지 않음
           const res = await uploadImage(img.file, 'product');
@@ -325,7 +320,7 @@ export default function ProductRegisterPage() {
       const payload = {
         catSn:          Number(form.catSn),
         prdNm:          form.prdNm.trim(),
-        prdCn:          finalPrdCn || null,
+        prdCn:          form.prdCn || null,
         prdStartAmt:    Number(form.prdStartAmt),
         prdIbyAmt:      form.prdIbyAmt ? Number(form.prdIbyAmt) : null,
         prdTrdMethodCd: form.prdTrdMethodCd,
@@ -414,11 +409,11 @@ export default function ProductRegisterPage() {
     }
     if (Number(form.prdStartAmt) % form.bidUnit !== 0) {
       startAmtRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return fail(`시작가는 입찰 단위(${form.bidUnit.toLocaleString()}원)의 배수로 입력해 주세요.`);
+      return fail(`시작가는 입찰 단위(${formatPoint(form.bidUnit)})의 배수로 입력해 주세요.`);
     }
     if (form.prdIbyAmt && Number(form.prdIbyAmt) % form.bidUnit !== 0) {
       ibyAmtRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return fail(`즉시구매가는 입찰 단위(${form.bidUnit.toLocaleString()}원)의 배수로 입력해 주세요.`);
+      return fail(`즉시구매가는 입찰 단위(${formatPoint(form.bidUnit)})의 배수로 입력해 주세요.`);
     }
     if (requirePolicyAgreed && !policyAgreed) {
       policyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -505,7 +500,6 @@ export default function ProductRegisterPage() {
                   onChange={setImages}
                   tradeMethods={TRADE_METHODS}
                   maxImages={MAX_IMAGES}
-                  pendingDescFilesMap={pendingDescFilesMap}
                   submitted={submitted}
                   imgSectionRef={imgSectionRef}
                   prdNmRef={prdNmRef}

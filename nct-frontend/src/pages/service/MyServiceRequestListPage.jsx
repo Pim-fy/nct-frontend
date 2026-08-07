@@ -44,7 +44,7 @@ const STATUS_BADGE = {
 
 function fmtBudget(amt) {
   if (amt == null) return '미정';
-  return Number(amt).toLocaleString('ko-KR') + '원';
+  return Number(amt).toLocaleString('ko-KR') + 'P';
 }
 
 const PAGE_SIZE = 10;
@@ -158,7 +158,7 @@ export default function MyServiceRequestListPage({ embedded = false }) {
                     </MyPageStatusBadge>
                   }
                   title={item.svcReqTtl}
-                  topLine={`등록 ${formatDate(item.svcReqRegDt)}`}
+                  topLine={isDraft ? `수정 ${formatDate(item.svcReqUpdtDt)}` : `등록 ${formatDate(item.svcReqRegDt)}`}
                   priceItems={[
                     { label: '견적 수', value: `${item.quoteCount ?? 0}건` },
                     { label: '예산', value: fmtBudget(item.svcReqBdgtAmt) },
@@ -225,7 +225,9 @@ export default function MyServiceRequestListPage({ embedded = false }) {
                   price={fmtBudget(item.svcReqBdgtAmt)}
                   infoItems={[
                     { icon: MessageSquareText, label: '견적 수', value: `${item.quoteCount ?? 0}건` },
-                    { icon: ClipboardList, label: '등록일', value: formatDate(item.svcReqRegDt) },
+                    isDraft
+                      ? { icon: ClipboardList, label: '수정일', value: formatDate(item.svcReqUpdtDt) }
+                      : { icon: ClipboardList, label: '등록일', value: formatDate(item.svcReqRegDt) },
                   ]}
                   footerLeft={`카테고리 · ${item.catNm}`}
                   actionButton={actionButton}

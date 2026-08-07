@@ -263,7 +263,7 @@ export default function MyPage({
                 }}
               />
             ) : (
-              <MyProductList embedded onOpenTradeDetail={handleOpenSalesTradeDetail} />
+              <MyProductList onOpenTradeDetail={handleOpenSalesTradeDetail} />
             )
           )}
           {activeSection === "service-requests" && <MyServiceRequestListPage embedded />}
