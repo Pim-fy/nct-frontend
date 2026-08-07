@@ -348,14 +348,14 @@ export default function QuoteFormPage() {
 
       {/* 페이지 헤더 */}
       <div className="page-title">
-        <div><h1 style={{ fontWeight: 700 }}>견적 작성</h1></div>
+        <div><h1 style={{ fontWeight: 700 }}>{isEditMode ? '견적 수정' : '견적 작성'}</h1></div>
       </div>
 
       <div className="qf-simple-layout">
 
         {/* 서비스 요청 한 줄 표시 */}
         <p style={{ margin: 0, fontSize: 18, fontWeight: 500 }}>
-          서비스요청 {svcReqInfo.title}
+          {svcReqInfo.title}
           {svcReqInfo.category && (
             <span className="badge badge-blue" style={{ fontSize: 13, borderRadius: 5, marginLeft: 8, verticalAlign: "middle" }}>
               {svcReqInfo.category}
@@ -369,7 +369,7 @@ export default function QuoteFormPage() {
           {/* 좌: 입력 필드 / 우: 수정가능정보 (50/50) */}
           <div className="qf-main-2col">
 
-            {/* 좌측 — 제목·금액·내용·첨부파일 세로 나열 */}
+            {/* 좌측 — 제목·금액·첨부파일 세로 나열 */}
             <div className="qf-col-left">
               <div className="qf-field">
                 <label style={{ display: 'flex', alignItems: 'center' }}>
@@ -411,31 +411,8 @@ export default function QuoteFormPage() {
               </div>
 
               <div className="qf-field">
-                <label style={{ display: 'flex', alignItems: 'center' }}>
-                  <span>내용 <span style={{ color: "#EF4444" }}>*</span></span>
-                  <span className="qf-field-hint" style={{ fontSize: 12, marginLeft: 'auto' }}>{form.message.length} / {MAX_CONTENT_LEN}</span>
-                </label>
-                <textarea
-                  className="input"
-                  rows={7}
-                  placeholder={"견적 내용을 입력하세요\n\n예) 서비스 범위, 예상 일정, 특이사항 등"}
-                  value={form.message}
-                  onChange={e => set("message", e.target.value.slice(0, MAX_CONTENT_LEN))}
-                  maxLength={MAX_CONTENT_LEN}
-                  style={{
-                    resize: "vertical", minHeight: 160,
-                    padding: "10px 12px", lineHeight: 1.6,
-                    borderColor: submitted && !form.message.trim() ? "#EF4444" : undefined,
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* 우측 — 첨부파일 + 수정 가능 정보 */}
-            <div className="qf-col-right">
-              <div className="qf-field">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 18, fontWeight: 500, color: '#333' }}>첨부파일 <span style={{ color: "#EF4444" }}>*</span></span>
+                  <span style={{ fontSize: 20, fontWeight: 500, color: '#333' }}>첨부파일 <span style={{ color: "#EF4444" }}>*</span></span>
                   <span className="qf-field-hint">드래그앤드롭 또는 파일 선택 ({existingAttachments.length + attachFiles.length}/{MAX_ATTACH})</span>
                   <button
                     type="button"
@@ -584,48 +561,66 @@ export default function QuoteFormPage() {
                 </div>
               )}
             </div>
+
+            {/* 우측 — 내용 */}
+            <div className="qf-col-right">
+              <div className="qf-field">
+                <label style={{ display: 'flex', alignItems: 'center' }}>
+                  <span>내용 <span style={{ color: "#EF4444" }}>*</span></span>
+                  <span className="qf-field-hint" style={{ fontSize: 12, marginLeft: 'auto' }}>{form.message.length} / {MAX_CONTENT_LEN}</span>
+                </label>
+                <textarea
+                  className="input"
+                  rows={7}
+                  placeholder={"견적 내용을 입력하세요\n\n예) 서비스 범위, 예상 일정, 특이사항 등"}
+                  value={form.message}
+                  onChange={e => set("message", e.target.value.slice(0, MAX_CONTENT_LEN))}
+                  maxLength={MAX_CONTENT_LEN}
+                  style={{
+                    resize: "vertical", minHeight: 160,
+                    padding: "10px 12px", lineHeight: 1.6,
+                    borderColor: submitted && !form.message.trim() ? "#EF4444" : undefined,
+                  }}
+                />
+              </div>
+            </div>
           </div>
 
         </div>
       </div>
 
-      {/* 버튼 — 전체 영역 밖 */}
-      <div style={{ position: "relative", display: "flex", alignItems: "center", marginBottom: 32, minHeight: 40 }}>
-        {/* 취소·제출(수정) — 중앙 */}
-        <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", display: "flex", gap: 10 }}>
+      {/* 버튼 — 전체 영역 밖, 전체 우측 정렬 */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10, marginBottom: 32 }}>
+        <button
+          type="button"
+          className="btn btn-outline"
+          onClick={() => setCancelConfirm(true)}
+        >
+          취소
+        </button>
+        {isQuoteSubmitted ? (
           <button
             type="button"
-            className="btn btn-outline"
-            onClick={() => setCancelConfirm(true)}
+            className="btn btn-primary"
+            onClick={handleEdit}
+            disabled={loading || editCount >= MAX_EDIT_COUNT}
           >
-            취소
+            {loading ? "수정 중..." : "견적 수정"}
           </button>
-          {isQuoteSubmitted ? (
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handleEdit}
-              disabled={loading || editCount >= MAX_EDIT_COUNT}
-            >
-              {loading ? "수정 중..." : "견적 수정"}
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handleSubmit}
-              disabled={loading}
-            >
-              {loading ? "제출 중..." : "견적 제출"}
-            </button>
-          )}
-        </div>
-        {/* 미리보기 — 우측 */}
+        ) : (
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? "제출 중..." : "견적 제출"}
+          </button>
+        )}
         <button
           type="button"
           className="btn btn-outline"
           onClick={() => setShowPreview(true)}
-          style={{ marginLeft: "auto" }}
         >
           미리보기
         </button>

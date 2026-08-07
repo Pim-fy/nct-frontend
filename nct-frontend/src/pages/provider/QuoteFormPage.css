@@ -38,14 +38,14 @@
   gap: 16px;
 }
 
-/* 마지막 필드(내용)가 남은 세로 공간을 채운다 */
-.qf-col-left .qf-field:last-child {
+/* 첫 번째 필드(내용)가 우측 컬럼의 남은 세로 공간을 채운다 */
+.qf-col-right .qf-field:first-child {
   flex: 1;
   display: flex;
   flex-direction: column;
 }
 
-.qf-col-left .qf-field:last-child textarea {
+.qf-col-right .qf-field:first-child textarea {
   flex: 1;
 }
 
@@ -242,8 +242,6 @@
   background: #e5efff;
   border: 1px solid #c8d8f5;
   padding: 16px;
-  max-height: 245px;
-  overflow-y: auto;
 }
 
 .qf-policy-head {
