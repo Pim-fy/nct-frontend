@@ -4,10 +4,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useSubmitQuote, useUpdateQuote } from "@hooks/useQuote";
-import { getMyActiveQuote } from "@api/quoteApi";
+import { getMyActiveQuote, uploadQuotePhoto, getQuoteHistory } from "@api/quoteApi";
 import { getServiceRequest } from "@api/serviceRequestApi";
 import { fetchMyProviderQuoteAccess } from "@api/providerProfileApi";
-import { uploadQuotePhoto } from "@api/quoteApi";
 import { toImageUrl } from "@api/fileApi";
 import { toast } from "@utils/common";
 import AlertModal from "@components/common/AlertModal";
@@ -49,6 +48,7 @@ export default function QuoteFormPage() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [alertMsg, setAlertMsg] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
   const [policyAgreed, setPolicyAgreed] = useState(isEditMode);
   const [editSuccessMsg, setEditSuccessMsg] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -57,6 +57,7 @@ export default function QuoteFormPage() {
   const [requestLoadFailed, setRequestLoadFailed] = useState(false);
 
   const [form, setForm] = useState({
+    title:  isEditMode ? (routeState.quoteTitle || "") : "",
     amount: isEditMode && routeState.amount != null ? String(routeState.amount) : "",
     message:  isEditMode ? (routeState.content || "") : "",
   });
@@ -112,11 +113,13 @@ export default function QuoteFormPage() {
           }
           setForm((prev) => ({
             ...prev,
+            title:  quote.qutTtl || quote.title  || prev.title,
             amount: quote.amount == null ? prev.amount : String(quote.amount),
             message: quote.content || '',
           }));
           setPrevForm((prev) => ({
             ...prev,
+            title:  quote.qutTtl || quote.title  || prev.title,
             amount: quote.amount == null ? prev.amount : String(quote.amount),
             message: quote.content || '',
           }));
@@ -132,6 +135,24 @@ export default function QuoteFormPage() {
             setActiveQuoteLoading(false);
           }
         });
+
+      getQuoteHistory(quoteId)
+        .then((res) => {
+          if (cancelled) return;
+          const arr = Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [];
+          setRevisions(arr.map((h, idx) => {
+            const prev = arr[idx - 1];
+            const lines = [];
+            if (!prev || String(h.amount) !== String(prev.amount)) lines.push(`금액 ${h.amount != null ? Number(h.amount).toLocaleString() : '-'}원으로 수정했습니다.`);
+            if (!prev || h.content !== prev.content) lines.push('내용을 수정했습니다.');
+            return {
+              round: idx + 1,
+              date: h.registeredAt ? String(h.registeredAt).slice(0, 16).replace('T', ' ') : '',
+              desc: lines.join(' ') || '수정되었습니다.',
+            };
+          }));
+        })
+        .catch(() => {});
     }
     return () => { cancelled = true; };
   }, [svcReqSn, isEditMode, quoteId]);
@@ -144,7 +165,8 @@ export default function QuoteFormPage() {
   ].join(',');
 
   const hasChanges = () =>
-    form.amount !== prevForm.amount ||
+    form.title   !== prevForm.title   ||
+    form.amount  !== prevForm.amount  ||
     form.message !== prevForm.message ||
     attachmentFingerprint() !== initialAttachmentSns.join(',');
 
@@ -155,6 +177,7 @@ export default function QuoteFormPage() {
 
   const validate = () => {
     setSubmitted(true);
+    if (!form.title.trim())                       { setAlertMsg("제목을 입력해 주세요.");          return false; }
     if (!form.amount || Number(form.amount) <= 0) { setAlertMsg("견적 금액을 입력해 주세요.");    return false; }
     if (!form.message.trim())                     { setAlertMsg("내용을 입력해 주세요.");         return false; }
     if (existingAttachments.length + attachFiles.length === 0) {
@@ -181,7 +204,13 @@ export default function QuoteFormPage() {
   }
 
   if (requestLoading || (isEditMode && activeQuoteLoading) || (!isEditMode && quoteAccessQuery.isLoading)) {
-    return <main className="container seller-page"><section className="card mx-auto max-w-[640px] py-12 text-center">견적 정보를 확인하는 중입니다.</section></main>;
+    return (
+      <main className="container seller-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 200px)' }}>
+        <section className="card mx-auto max-w-[640px] py-12 text-center">
+          <p style={{ margin: 0 }}>견적 정보를 확인하는 중입니다.</p>
+        </section>
+      </main>
+    );
   }
 
   if (requestLoadFailed || activeQuoteLoadFailed || (!isEditMode && (quoteAccessQuery.isError || quoteAccessQuery.data !== true))) {
@@ -225,6 +254,17 @@ export default function QuoteFormPage() {
   const fmtSize = (size) =>
     size < 1024 * 1024 ? Math.round(size / 1024) + "KB" : (size / 1024 / 1024).toFixed(1) + "MB";
 
+  const downloadNewFile = (f) => {
+    const url = URL.createObjectURL(f.file);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = f.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const uploadFiles = async () => {
     const results = await Promise.all(attachFiles.map(f => uploadQuotePhoto(f.file)));
     return results.map(r => r.flSn);
@@ -238,6 +278,7 @@ export default function QuoteFormPage() {
       const photoFlSns = await uploadFiles();
       await submitMutation.mutateAsync({
         svcReqSn: svcReqInfo.svcReqSn,
+        title:    form.title,
         amount:   Number(form.amount),
         content:  form.message,
         photoFlSns,
@@ -264,11 +305,13 @@ export default function QuoteFormPage() {
       ];
       await updateMutation.mutateAsync({
         quoteId,
+        title:   form.title,
         amount:  Number(form.amount),
         content: form.message,
         photoFlSns,
       });
       const lines = [];
+      if (form.title   !== prevForm.title)           lines.push("제목을 수정했습니다.");
       if (form.amount  !== prevForm.amount)          lines.push("금액을 수정했습니다.");
       if (form.message !== prevForm.message)         lines.push("내용을 수정했습니다.");
       if (attachmentFingerprint() !== initialAttachmentSns.join(',')) lines.push("첨부파일을 변경했습니다.");
@@ -277,6 +320,21 @@ export default function QuoteFormPage() {
       setRevisions(prev => [...prev, { round: next, date: now(), desc }]);
       setPrevForm({ ...form });
       setEditCount(next);
+      // 첨부파일 기준선 갱신: 다음 수정에서 변경 여부를 정확히 감지하기 위해 서버 상태로 동기화
+      getMyActiveQuote(svcReqSn).then((res) => {
+        const refreshed = res.data;
+        if (!refreshed) return;
+        const refreshedAttachments = refreshed.attachments || [];
+        setExistingAttachments(refreshedAttachments);
+        setInitialAttachmentSns(refreshedAttachments.map((a) => String(a.flSn)));
+        setAttachFiles([]);
+      }).catch(() => {
+        setInitialAttachmentSns([
+          ...existingAttachments.map((a) => String(a.flSn)),
+          ...newPhotoFlSns.map((sn) => String(sn)),
+        ]);
+        setAttachFiles([]);
+      });
       setEditSuccessMsg(`견적이 수정되었습니다.\n남은 수정 횟수: ${MAX_EDIT_COUNT - next}회`);
     } catch (err) {
       toast({ icon: "error", title: err?.response?.data?.message || "견적 수정에 실패했습니다. 다시 시도해 주세요." });
@@ -311,8 +369,23 @@ export default function QuoteFormPage() {
           {/* 좌: 입력 필드 / 우: 수정가능정보 (50/50) */}
           <div className="qf-main-2col">
 
-            {/* 좌측 — 금액·내용·첨부파일 세로 나열 */}
+            {/* 좌측 — 제목·금액·내용·첨부파일 세로 나열 */}
             <div className="qf-col-left">
+              <div className="qf-field">
+                <label style={{ display: 'flex', alignItems: 'center' }}>
+                  <span>제목 <span style={{ color: "#EF4444" }}>*</span></span>
+                  <span className="qf-field-hint" style={{ fontSize: 12, marginLeft: 'auto' }}>{form.title.length} / 50</span>
+                </label>
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="견적 제목을 입력하세요"
+                  value={form.title}
+                  onChange={e => set("title", e.target.value.slice(0, 50))}
+                  maxLength={50}
+                  style={{ borderColor: submitted && !form.title.trim() ? "#EF4444" : undefined }}
+                />
+              </div>
               <div className="qf-field">
                 <label>
                   견적 금액 <span style={{ color: "#EF4444" }}>*</span>
@@ -338,63 +411,42 @@ export default function QuoteFormPage() {
               </div>
 
               <div className="qf-field">
-                <label>
-                  내용 <span style={{ color: "#EF4444" }}>*</span>
-                  <span className="qf-field-hint">{form.message.length} / {MAX_CONTENT_LEN}</span>
+                <label style={{ display: 'flex', alignItems: 'center' }}>
+                  <span>내용 <span style={{ color: "#EF4444" }}>*</span></span>
+                  <span className="qf-field-hint" style={{ fontSize: 12, marginLeft: 'auto' }}>{form.message.length} / {MAX_CONTENT_LEN}</span>
                 </label>
                 <textarea
                   className="input"
-                  rows={9}
+                  rows={7}
                   placeholder={"견적 내용을 입력하세요\n\n예) 서비스 범위, 예상 일정, 특이사항 등"}
                   value={form.message}
                   onChange={e => set("message", e.target.value.slice(0, MAX_CONTENT_LEN))}
                   maxLength={MAX_CONTENT_LEN}
                   style={{
-                    resize: "vertical", minHeight: 180,
+                    resize: "vertical", minHeight: 160,
                     padding: "10px 12px", lineHeight: 1.6,
                     borderColor: submitted && !form.message.trim() ? "#EF4444" : undefined,
                   }}
                 />
               </div>
+            </div>
 
-              {/* 버튼 — 입력 필드 컬럼 하단 */}
-              <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  onClick={() => setCancelConfirm(true)}
-                  style={{ flex: 1 }}
-                >
-                  취소
-                </button>
-                {isQuoteSubmitted ? (
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={handleEdit}
-                    disabled={loading || editCount >= MAX_EDIT_COUNT}
-                    style={{ flex: 1 }}
-                  >
-                    {loading ? "수정 중..." : "견적 수정"}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={handleSubmit}
-                    disabled={loading}
-                    style={{ flex: 1 }}
-                  >
-                    {loading ? "제출 중..." : "견적 제출"}
-                  </button>
-                )}
-              </div>
-
+            {/* 우측 — 첨부파일 + 수정 가능 정보 */}
+            <div className="qf-col-right">
               <div className="qf-field">
-                <label>
-                  첨부파일 <span style={{ color: "#EF4444" }}>*</span>
-                  <span className="qf-field-hint">(최대 {MAX_ATTACH}개)</span>
-                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 18, fontWeight: 500, color: '#333' }}>첨부파일 <span style={{ color: "#EF4444" }}>*</span></span>
+                  <span className="qf-field-hint">드래그앤드롭 또는 파일 선택 ({existingAttachments.length + attachFiles.length}/{MAX_ATTACH})</span>
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={existingAttachments.length + attachFiles.length >= MAX_ATTACH}
+                    style={{ marginLeft: 'auto' }}
+                  >
+                    파일 추가
+                  </button>
+                </div>
                 <div
                   className="qf-thumb-wrap"
                   style={{ borderColor: submitted && existingAttachments.length + attachFiles.length === 0 ? "#EF4444" : undefined }}
@@ -409,19 +461,6 @@ export default function QuoteFormPage() {
                     accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
                     onChange={e => handleFiles(e.target.files)}
                   />
-                  <div className="qf-thumb-header">
-                    <p className="qf-thumb-hint">
-                      드래그앤드롭 또는 파일 선택 · 최대 {MAX_ATTACH}개 ({existingAttachments.length + attachFiles.length}/{MAX_ATTACH})
-                    </p>
-                    <button
-                      type="button"
-                      className="btn btn-outline btn-sm"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={existingAttachments.length + attachFiles.length >= MAX_ATTACH}
-                    >
-                      파일 추가
-                    </button>
-                  </div>
                   <div className="qf-thumb-grid">
                     {existingAttachments.map((attachment) => {
                       const extension = attachment.fileName?.split(".").pop()?.toUpperCase() || "FILE";
@@ -443,12 +482,18 @@ export default function QuoteFormPage() {
                           >×</button>
                           <a
                             href={toImageUrl(attachment.url)}
+                            download={attachment.fileName}
                             target="_blank"
                             rel="noreferrer"
-                            className="qf-thumb-name"
-                            title={`${attachment.fileName} 열기`}
+                            className="qf-thumb-name qf-thumb-dl"
+                            title={attachment.fileName}
                           >
-                            {attachment.fileName}
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                              <polyline points="7 10 12 15 17 10"/>
+                              <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            다운로드
                           </a>
                         </div>
                       );
@@ -468,35 +513,44 @@ export default function QuoteFormPage() {
                           onClick={() => removeFile(f.id)}
                           aria-label="삭제"
                         >×</button>
-                        <span className="qf-thumb-name">{f.name}</span>
+                        <button
+                          type="button"
+                          className="qf-thumb-name qf-thumb-dl"
+                          title={f.name}
+                          onClick={() => downloadNewFile(f)}
+                        >
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                          </svg>
+                          다운로드
+                        </button>
                       </div>
                     ))}
                     {Array.from({ length: MAX_ATTACH - existingAttachments.length - attachFiles.length }, (_, i) => (
-                      <div
-                        key={`empty-${i}`}
-                        className="qf-thumb-empty"
-                        onClick={() => fileInputRef.current?.click()}
-                      >
-                        <span>+</span>
+                      <div key={`empty-${i}`} className="qf-thumb-item">
+                        <div
+                          className="qf-thumb-empty"
+                          style={{ width: '100%' }}
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <span>+</span>
+                        </div>
+                        <span className="qf-thumb-name" aria-hidden="true" style={{ visibility: 'hidden' }}>-</span>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* 우측 — 수정 가능 정보 */}
-            <div className="qf-col-right">
               <div className="qf-policy-wrap">
                 <div className="qf-policy-head">
                   <h4>수정 가능 정보 <span style={{ color: "#c0392b" }}>*</span></h4>
-                  <span>제출 후 최대 3회 수정 가능하며, 이력은 보존됩니다.</span>
-                </div>
-                <p className="qf-policy-remain">
                   {editCount < MAX_EDIT_COUNT
-                    ? <span style={{ color: "#0064ff", fontWeight: 600 }}>남은 수정 횟수: {MAX_EDIT_COUNT - editCount}회</span>
-                    : <span style={{ color: "#EF4444", fontWeight: 600 }}>수정 횟수를 모두 사용했습니다.</span>}
-                </p>
+                    ? <span style={{ marginLeft: 'auto', color: "#0064ff", fontWeight: 600, fontSize: 14 }}>남은 수정 횟수: {MAX_EDIT_COUNT - editCount}회</span>
+                    : <span style={{ marginLeft: 'auto', color: "#EF4444", fontWeight: 600, fontSize: 14 }}>수정 횟수를 모두 사용했습니다.</span>}
+                </div>
+                <span style={{ fontSize: 15, color: '#4e4e4e', display: 'block', marginBottom: 6 }}>제출 후 최대 3회 수정 가능하며, 이력은 보존됩니다.</span>
                 <ul className="qf-policy-list">
                   <li>제출한 견적은 요청자가 선택하기 전까지 수정할 수 있습니다</li>
                   <li>수정할 때마다 이력이 기록되며 요청자에게 공개됩니다</li>
@@ -515,27 +569,171 @@ export default function QuoteFormPage() {
                     </div>
                   ))
                 )}
-                {!isEditMode && (
-                  <div className="qf-policy-agree">
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={policyAgreed}
-                        onChange={e => setPolicyAgreed(e.target.checked)}
-                        style={{ accentColor: "#0048bf" }}
-                      />
-                      위 내용을 확인하였습니다.
-                    </label>
-                  </div>
-                )}
               </div>
+              {!isEditMode && (
+                <div className="qf-policy-agree">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={policyAgreed}
+                      onChange={e => setPolicyAgreed(e.target.checked)}
+                      style={{ accentColor: "#0048bf" }}
+                    />
+                    위 내용을 확인하였습니다.
+                  </label>
+                </div>
+              )}
             </div>
           </div>
 
         </div>
       </div>
 
+      {/* 버튼 — 전체 영역 밖 */}
+      <div style={{ position: "relative", display: "flex", alignItems: "center", marginBottom: 32, minHeight: 40 }}>
+        {/* 취소·제출(수정) — 중앙 */}
+        <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", display: "flex", gap: 10 }}>
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={() => setCancelConfirm(true)}
+          >
+            취소
+          </button>
+          {isQuoteSubmitted ? (
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleEdit}
+              disabled={loading || editCount >= MAX_EDIT_COUNT}
+            >
+              {loading ? "수정 중..." : "견적 수정"}
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleSubmit}
+              disabled={loading}
+            >
+              {loading ? "제출 중..." : "견적 제출"}
+            </button>
+          )}
+        </div>
+        {/* 미리보기 — 우측 */}
+        <button
+          type="button"
+          className="btn btn-outline"
+          onClick={() => setShowPreview(true)}
+          style={{ marginLeft: "auto" }}
+        >
+          미리보기
+        </button>
+      </div>
+
       <AlertModal open={!!alertMsg} message={alertMsg} onClose={() => setAlertMsg("")} />
+
+      {/* 미리보기 모달 */}
+      {showPreview && (
+        <div className="qf-modal-overlay">
+          <div className="qf-modal-box" style={{ maxWidth: 1000, width: '95%', textAlign: 'left', padding: 0, overflow: 'hidden', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+            {/* 타이틀 헤더 */}
+            <div style={{ position: 'relative', background: '#0064ff', padding: '16px 20px', display: 'flex', alignItems: 'center' }}>
+              <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#fff' }}>견적 미리보기</p>
+              <button
+                type="button"
+                onClick={() => setShowPreview(false)}
+                style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#fff', display: 'flex', alignItems: 'center' }}
+                aria-label="닫기"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            {/* 본문 */}
+            <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1 }}>
+            <div style={{ marginBottom: 14 }}>
+              <p style={{ margin: '0 0 4px', fontSize: 13, color: '#888' }}>제목</p>
+              <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#111' }}>{form.title || '—'}</p>
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <p style={{ margin: '0 0 4px', fontSize: 13, color: '#888' }}>견적 금액</p>
+              <p style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#111' }}>
+                {form.amount ? Number(form.amount).toLocaleString() + '원' : '—'}
+              </p>
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <p style={{ margin: '0 0 4px', fontSize: 13, color: '#888' }}>내용</p>
+              <p style={{ margin: 0, fontSize: 14, whiteSpace: 'pre-wrap', color: '#333', background: '#f8f8f6', borderRadius: 8, padding: '10px 12px', maxHeight: 200, overflowY: 'auto' }}>
+                {form.message || '—'}
+              </p>
+            </div>
+            <div style={{ marginBottom: 20 }}>
+              <p style={{ margin: '0 0 8px', fontSize: 13, color: '#888' }}>첨부파일 ({existingAttachments.length + attachFiles.length}개)</p>
+              {existingAttachments.length + attachFiles.length === 0 ? (
+                <p style={{ margin: 0, fontSize: 14, color: '#aaa' }}>없음</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {existingAttachments.map((a, i) => {
+                    const displayName = (a.fileName && !/^\d+$/.test(a.fileName.trim())) ? a.fileName : `첨부파일 ${i + 1}`;
+                    const ext = displayName.split('.').pop().toUpperCase();
+                    const isImg = ['JPG', 'JPEG', 'PNG', 'GIF', 'WEBP'].includes(ext);
+                    return (
+                      <div key={a.flSn} style={{ background: '#f8f8f6', borderRadius: 8, overflow: 'hidden' }}>
+                        {isImg && (
+                          <img src={toImageUrl(a.url)} alt={displayName} style={{ width: '100%', display: 'block', maxHeight: 320, objectFit: 'contain', background: '#eee' }} />
+                        )}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '8px 12px' }}>
+                          <span style={{ fontSize: 14, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{displayName}</span>
+                          <a
+                            href={toImageUrl(a.url)}
+                            download={displayName}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#0064ff', textDecoration: 'none', flexShrink: 0, fontWeight: 500 }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                              <polyline points="7 10 12 15 17 10"/>
+                              <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            다운로드
+                          </a>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {attachFiles.map(f => (
+                    <div key={f.id} style={{ background: '#f8f8f6', borderRadius: 8, overflow: 'hidden' }}>
+                      {f.previewUrl && (
+                        <img src={f.previewUrl} alt={f.name} style={{ width: '100%', display: 'block', maxHeight: 320, objectFit: 'contain', background: '#eee' }} />
+                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '8px 12px' }}>
+                        <span style={{ fontSize: 14, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{f.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => downloadNewFile(f)}
+                          style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#0064ff', background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0, fontWeight: 500 }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                          </svg>
+                          다운로드
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            </div>{/* 본문 끝 */}
+          </div>
+        </div>
+      )}
 
       {/* 견적 수정 완료 팝업 */}
       {editSuccessMsg && (
