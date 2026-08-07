@@ -17,7 +17,6 @@ import {
 } from '@utils/landingCuration';
 
 import HeroSection        from '@components/landing/sections/HeroSection';
-import ServiceMenuSection from '@components/landing/sections/ServiceMenuSection';
 import AuctionSection     from '@components/landing/sections/AuctionSection';
 import MobileLandingSections from '@components/landing/sections/MobileLandingSections';
 
@@ -91,13 +90,8 @@ const LandingPage = () => {
         />
       </div>
 
-      {/* 3~4. 서비스 요청 진입+HOT ITEM / 신규·마감 임박 경매 (데스크톱, lg 이상) */}
+      {/* 3. 신규·마감 임박 경매 (데스크톱, lg 이상) */}
       <div className="hidden lg:block">
-        <ServiceMenuSection
-          hotItems={popularAuctions}
-          isError={popularAuctionQuery.isError}
-          isLoading={popularAuctionQuery.isLoading}
-        />
         <AuctionSection
           closingItems={closingAuctions}
           closingError={closingAuctionQuery.isError}
