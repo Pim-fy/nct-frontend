@@ -79,10 +79,9 @@ import ProductDetailSellerPage from '@pages/product/ProductDetailSellerPage';
 import ServiceRequestFormPage from '@pages/service/ServiceRequestFormPage';
 // F-SVC-003~004: 서비스 요청서 상세 조회/관리
 import ServiceRequestDetailPage from '@pages/service/ServiceRequestDetailPage';
+import QuoteDetailPage from '@pages/service/QuoteDetailPage';
 // F-SVC-004: 내 서비스 요청 목록 (담당자 2)
 import MyServiceRequestListPage from '@pages/service/MyServiceRequestListPage';
-// F-SVC-007, F-SVC-009~010: 견적 비교·선택·매칭 관리 (담당자 2)
-import ServiceRequestManagePage from '@pages/service/ServiceRequestManagePage';
 import ServiceTradeDetailRoutePage from '@pages/service/ServiceTradeDetailRoutePage';
 import ServiceTradeDetailPreviewPage from '@pages/service/ServiceTradeDetailPreviewPage';
 
@@ -207,6 +206,7 @@ const AppRoutes = () => {
           <Route path="/provider/applications/status" element={<ProviderApplicationStatusPage />} />
           {/* 담당자 7 통합: 일반회원은 본인 요청, 제공자는 공개 요청 상세를 사용합니다. */}
           <Route path="/service-requests/:svcReqSn" element={<ServiceRequestDetailPage />} />
+          <Route path="/service-requests/:svcReqSn/quotes/:quoteId" element={<QuoteDetailPage />} />
           <Route path="/service-trades/:tradeId" element={<ServiceTradeDetailRoutePage />} />
           <Route path="/service-trades/:tradeId/chat" element={<TradeChat />} />
         </Route>
@@ -247,8 +247,6 @@ const AppRoutes = () => {
           <Route path="/service-requests/new" element={<ServiceRequestFormPage />} />
           {/* 담당자 2 · F-SVC-004: 내 서비스 요청 목록. 라우트 소유자에게 전달 필요. */}
           <Route path="/service-requests/me" element={<MyServiceRequestListPage />} />
-          {/* 담당자 2 · F-SVC-007, F-SVC-009~010: 견적 비교·선택·매칭 관리 */}
-          <Route path="/service-requests/:svcReqSn/manage" element={<ServiceRequestManagePage />} />
         </Route>
       </Route>
 

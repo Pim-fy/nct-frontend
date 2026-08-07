@@ -14,6 +14,10 @@ export const registerProduct = (data) =>
 export const getMyProducts = (page = 1, size = 10, filterType = null) =>
   api.get('/products/me', { params: { page, size, ...(filterType ? { filterType } : {}) } }).then(res => res.data);
 
+/** 내 판매 목록 필터 탭 개수 — 목록 데이터 없이 개수만 (요약 카드·필터 탭 배지 전용) */
+export const getMyProductsSummary = () =>
+  api.get('/products/me/summary').then(res => res.data);
+
 /** 상품 상세 조회 */
 export const getProduct = (prdSn) =>
   api.get(`/products/${prdSn}`).then(res => res.data);

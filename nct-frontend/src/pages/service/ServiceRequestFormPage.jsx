@@ -20,6 +20,7 @@ import ServiceRequestImageUpload from '@components/service/ServiceRequestImageUp
 import { toImageUrl, uploadImage } from '@api/fileApi';
 import DateRangePicker from '@components/product/DateRangePicker';
 import RegionSelector from '@components/common/RegionSelector';
+import { formatBudget } from '@utils/common';
 import { buildServiceRequestWizardCatalog } from './serviceRequestFormAdapter';
 
 const MAX_IMAGES = 5;
@@ -360,7 +361,7 @@ export default function ServiceRequestFormPage() {
     // 여기까지 온 이상 이미 예산 단계를 지났다고 보고 미정으로 간주한다.
     if (steps[stepId]?.stepKey === 'budget') {
       const hasAmount = s.svcReqBdgtAmt != null;
-      newAnswers[stepId] = hasAmount ? `예산: ${Number(s.svcReqBdgtAmt).toLocaleString('ko-KR')}원` : '예산: 미정';
+      newAnswers[stepId] = hasAmount ? `예산: ${formatBudget(s.svcReqBdgtAmt)}` : '예산: 미정';
       newDraft[stepId] = { 예산: hasAmount ? String(s.svcReqBdgtAmt) : '미정' };
       newChain.push(stepId);
       stepId = steps[stepId].next;
@@ -1300,8 +1301,9 @@ export default function ServiceRequestFormPage() {
                   <ul className="list-disc space-y-2 pl-[18px] text-[15px] leading-[1.7] text-[#1d1d1f]">
                     <li>요청서 등록 후에는 본문을 수정할 수 없으며, 변경사항은 별도로 최대 3회까지 추가할 수 있습니다</li>
                     <li>포인트 홀딩은 제공자의 견적을 선택한 시점부터 시작됩니다</li>
-                    <li>매칭 후 거래를 정당한 사유 없이 취소하면 포인트 패널티가 부과됩니다</li>
                     <li>임시저장 상태의 요청서만 삭제할 수 있습니다</li>
+                    <li>요청서는 등록(공개) 후 5일이 지나면 자동으로 마감됩니다<br />(희망일이 5일보다 먼저면 희망일 기준으로 더 일찍 마감)</li>
+                    <li>견적 선택은 마감 전에 완료해야 하며, 마감 이후에는 도착한 견적을 선택할 수 없습니다</li>
                   </ul>
                   <div className="mt-3 rounded-lg border border-[#f0efec] bg-white px-3.5 py-3">
                     <label className="flex cursor-pointer items-center gap-2 text-sm text-[#1d1d1f]">
@@ -1643,7 +1645,10 @@ export default function ServiceRequestFormPage() {
                                       placeholder={f.placeholder}
                                       disabled={disabledByOther || stepDraft[stepId]?.[f.key] === '미정'}
                                       value={stepDraft[stepId]?.[f.key] === '미정' ? '' : (stepDraft[stepId]?.[f.key] || '')}
-                                      onChange={e => handleFormFieldChange(stepId, f.key, e.target.value)}
+                                      onChange={e => {
+                                        const digits = e.target.value.replace(/[^0-9]/g, '');
+                                        handleFormFieldChange(stepId, f.key, digits ? Number(digits).toLocaleString('ko-KR') : '');
+                                      }}
                                     />
                                     <button type="button"
                                       disabled={disabledByOther}
@@ -1679,7 +1684,7 @@ export default function ServiceRequestFormPage() {
                             </>
                           ) : f.type === 'textarea' ? (
                             <textarea
-                              className="w-full resize-vertical rounded-lg border border-[#e2e1dc] bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary"
+                              className="w-full resize-none overflow-y-auto rounded-lg border border-[#e2e1dc] bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary"
                               rows={3} placeholder={f.placeholder}
                               value={stepDraft[stepId]?.[f.key] || ''}
                               onChange={e => handleFormFieldChange(stepId, f.key, e.target.value)}
@@ -1795,7 +1800,13 @@ export default function ServiceRequestFormPage() {
                           <div className="mt-4 flex justify-end">
                             <button type="button"
                               className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-[#0048bf]"
-                              onClick={() => handleFormConfirm(stepId)}
+                              onClick={() => {
+                                if (!validateFormStep(stepId)) return;
+                                handleFormConfirm(stepId);
+                                // 마지막 카드(다음 단계 없음)는 이 카드만 확정하고 끝내지 않고,
+                                // 화면 하단 "다음" 버튼과 동일하게 요청 확인 탭까지 바로 넘어간다.
+                                if (!step.next) setStep(1);
+                              }}
                             >
                               {step.next ? '다음' : '입력 완료'}
                             </button>

@@ -10,6 +10,7 @@ import { getProduct, postProductComment, fetchProductComments, fetchProductInqui
 import { getAuctionStatus, requestAuctionCancel, fetchAuctionFavoriteStatus } from '@api/auctionApi';
 import { submitInquiryReport } from '@api/abuseReportApi';
 import { TRADE_LABEL, STATUS_LABEL, STATUS_BADGE, AUC_STATUS_LABEL, AUC_STATUS_BADGE } from '@/constants/productConstants';
+import { formatPoint } from '@/utils/common';
 import useCountdown from '@hooks/useCountdown';
 import ErrorMessage from '@components/common/ErrorMessage';
 import MediaDetailSkeleton from '@components/skeleton/MediaDetailSkeleton';
@@ -343,11 +344,11 @@ export default function ProductDetailSellerPage() {
                 </p>
               </div>
               <h2 style={{ fontSize: 22, lineHeight: 1.4, margin: '8px 0 0' }}>{product.prdNm}</h2>
-              <p className="seller-price">{priceLabel} {priceAmt?.toLocaleString()}원</p>
+              <p className="seller-price">{priceLabel} {priceAmt != null ? formatPoint(priceAmt) : ''}</p>
               <p className="muted small" style={{ margin: 0, lineHeight: 1.65 }}>
                 {product.catNm && `${product.catNm} · `}
                 {TRADE_LABEL[product.prdTrdMethodCd] ?? product.prdTrdMethodCd}
-                {product.prdIbyAmt != null && ` · 즉시구매 ${product.prdIbyAmt.toLocaleString()}원`}
+                {product.prdIbyAmt != null && ` · 즉시구매 ${formatPoint(product.prdIbyAmt)}`}
               </p>
               <p className="muted small" style={{ margin: '6px 0 0' }}>{resultText}</p>
             </div>
@@ -639,7 +640,7 @@ export default function ProductDetailSellerPage() {
         <div className="modal-box">
           <h3 style={{ margin: '0 0 16px', fontSize: 18 }}>경매 취소 요청</h3>
           <div className="notice" style={{ marginBottom: 16 }}>
-            {product.prdNm} · 시작가 {product.prdStartAmt?.toLocaleString()}원
+            {product.prdNm} · 시작가 {formatPoint(product.prdStartAmt)}
           </div>
           <div className="field">
             <label>취소 사유 선택</label>

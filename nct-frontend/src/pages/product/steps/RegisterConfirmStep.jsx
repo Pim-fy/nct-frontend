@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import DOMPurify from 'dompurify';
 import { SANITIZE_OPTS, resolveDescriptionImagesForDisplay } from '@components/product/richTextEditorImages';
-import { formatDateTimeAmPm } from '@/utils/common';
+import { formatDateTimeAmPm, formatPoint } from '@/utils/common';
 
 // endDt(Date 객체)를 formatDateTime이 기대하는 오프셋 없는 로컬 ISO 문자열로 변환
 const toNaiveIso = (date) => {
@@ -37,9 +37,9 @@ export default function RegisterConfirmStep({ form, agreed, setAgreed, images, s
           <table style={{ border: '1px solid #d8d6cf', borderRadius: 10 }}>
             <tbody>
               {[
-                ['시작가', form.prdStartAmt ? Number(form.prdStartAmt).toLocaleString() + '원' : '—'],
-                ['즉시구매가', form.prdIbyAmt ? Number(form.prdIbyAmt).toLocaleString() + '원' : '미설정'],
-                ['입찰 단위', form.bidUnit.toLocaleString() + '원'],
+                ['시작가', form.prdStartAmt ? formatPoint(form.prdStartAmt) : '—'],
+                ['즉시구매가', form.prdIbyAmt ? formatPoint(form.prdIbyAmt) : '미설정'],
+                ['입찰 단위', formatPoint(form.bidUnit)],
                 ['경매 기간', (() => {
                   if (!auctionRange?.start || !auctionRange?.end) return '—';
                   const startPart = form.startNow
