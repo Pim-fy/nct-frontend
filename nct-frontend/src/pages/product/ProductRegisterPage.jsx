@@ -209,7 +209,7 @@ export default function ProductRegisterPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => { window.scrollTo(0, 0); }, []);
+  useEffect(() => { window.scrollTo(0, 0); }, [step]);
 
   useEffect(() => {
     if (error && errorRef.current) {
