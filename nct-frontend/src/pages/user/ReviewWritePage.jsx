@@ -9,7 +9,11 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import StarRating from "@components/review/StarRating";
 import { createReview } from "@api/reviewApi";
-import { toast } from "@utils/common";
+import { useAuctionTrade } from "@hooks/useAuctionTrade";
+import { reviewQueryKeys, useMyTradeReview } from "@hooks/useReview";
+import { toImageUrl } from "@api/fileApi";
+import AsyncRouteError from "@components/common/AsyncRouteError";
+import { formatDate, toast } from "@utils/common";
 import "../provider/QuoteFormPage.css";
 
 const MAX_PHOTOS = 5;
@@ -21,13 +25,16 @@ const DEAL_TYPE_STYLE = {
 };
 
 export default function ReviewWritePage() {
-  const { id } = useParams();
+  const { id, auctionId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
   // 목록 페이지에서 navigate(..., { state: { item } }) 로 넘겨준 리뷰 대상 정보.
   // 새로고침 등으로 state 가 없으면(직접 URL 접근) 대상 정보를 알 수 없으므로 안내만 보여준다.
   const item = location.state?.item;
+  const tradeQuery = useAuctionTrade(auctionId);
+  const routeTrade = tradeQuery.data;
+  const reviewQuery = useMyTradeReview(routeTrade?.tradeId);
 
   const [rating, setRating] = useState(0);
   const [content, setContent] = useState("");
@@ -54,11 +61,54 @@ export default function ReviewWritePage() {
     completedDate: "2026-07-01",
   } : null;
 
-  const resolvedItem = item ?? DEV_FALLBACK_ITEM;
+  const routeItem = routeTrade ? {
+    id: routeTrade.tradeId,
+    thumbnail: toImageUrl(routeTrade.productImageUrl),
+    title: routeTrade.productName,
+    dealType: "goods",
+    partyLabel: (routeTrade.viewerRole ?? routeTrade.userRole) === "SELLER" ? "구매자" : "판매자",
+    partyName: routeTrade.counterpartNickname,
+    completedDate: routeTrade.completedAt,
+  } : null;
+  const resolvedItem = routeItem ?? item ?? (!auctionId ? DEV_FALLBACK_ITEM : null);
+  // @ai_generated (담당자1, 2026-08-07): useMyTradeReview는 tradeId가 정해지기 전까지
+  // enabled:false라 isLoading이 false로 남는다. 이 틈에 아래 WRITABLE 가드가 먼저 걸려
+  // "작성할 수 없습니다" 문구가 한 프레임 노출될 수 있어(P3-5), data 도착 전까지도 로딩으로 본다.
+  const reviewStatusPending = Boolean(routeTrade?.tradeId)
+    && reviewQuery.data === undefined
+    && !reviewQuery.isError;
+
+  if (auctionId && (tradeQuery.isLoading || reviewQuery.isLoading || reviewStatusPending)) {
+    return <div className="container py-16">리뷰 작성 정보를 불러오는 중입니다.</div>;
+  }
+
+  if (auctionId && (tradeQuery.isError || reviewQuery.isError)) {
+    const error = tradeQuery.error ?? reviewQuery.error;
+    return (
+      <AsyncRouteError
+        error={error}
+        onRetry={() => {
+          if (tradeQuery.isError) tradeQuery.refetch();
+          if (reviewQuery.isError) reviewQuery.refetch();
+        }}
+      />
+    );
+  }
+
+  if (auctionId && reviewQuery.data?.status !== "WRITABLE") {
+    return (
+      <div className="container py-16 text-center">
+        <p className="text-[#4e4e4e]">현재 이 거래에는 리뷰를 작성할 수 없습니다.</p>
+        <button type="button" onClick={() => navigate(`/auction/${auctionId}/trade`)} className="btn btn-primary mt-6">
+          거래 상세로
+        </button>
+      </div>
+    );
+  }
 
   if (!resolvedItem) {
     return (
-      <div className="mx-auto max-w-[720px] px-4 py-16 text-center">
+      <div className="container py-16 text-center">
         <p className="text-[#4e4e4e]">리뷰 작성 대상 정보를 찾을 수 없습니다.</p>
         <p className="mt-1 text-sm text-[#969696]">목록에서 다시 "리뷰 등록"을 눌러주세요.</p>
         <button
@@ -121,7 +171,7 @@ export default function ReviewWritePage() {
     }
 
     const formData = new FormData();
-    formData.append("targetId", id ?? resolvedItem.id);
+    formData.append("targetId", routeTrade?.tradeId ?? id ?? resolvedItem.id);
     formData.append("rating", rating);
     formData.append("content", content);
     photos.forEach((p) => formData.append("photos", p.file));
@@ -131,8 +181,10 @@ export default function ReviewWritePage() {
       await createReview(formData);
       toast({ icon: "success", title: "리뷰가 등록되었습니다." });
       // 목록 화면의 캐시를 무효화해 다음에 보일 때 방금 등록한 리뷰까지 실제 API로 다시 불러오게 한다.
-      await queryClient.invalidateQueries({ queryKey: ["reviews"] });
-      navigate("/user/mypage?section=review", { state: { justWrote: true } });
+      await queryClient.invalidateQueries({ queryKey: reviewQueryKeys.all });
+      navigate(auctionId ? `/auction/${auctionId}/trade` : "/user/mypage?section=review", {
+        state: { justWrote: true },
+      });
     } catch (err) {
       console.error("리뷰 등록 실패:", err);
       toast({ icon: "error", title: "리뷰 등록에 실패했습니다. 잠시 후 다시 시도해주세요." });
@@ -166,7 +218,7 @@ export default function ReviewWritePage() {
                 <h2 className="text-xl font-bold text-black">{resolvedItem.title}</h2>
                 <div className="mt-1 flex flex-wrap gap-x-4 justify-center md:justify-start text-[15px] text-[#4e4e4e]">
                   <p><span className="font-bold">{resolvedItem.partyLabel}</span>{"  "}{resolvedItem.partyName}</p>
-                  <p><span className="font-bold">완료일</span>{"  "}{resolvedItem.completedDate}</p>
+                  <p><span className="font-bold">완료일</span>{"  "}{formatDate(resolvedItem.completedDate)}</p>
                 </div>
               </div>
             </div>

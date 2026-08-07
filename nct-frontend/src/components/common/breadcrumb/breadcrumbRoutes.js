@@ -114,6 +114,29 @@ export const BREADCRUMB_ENTRIES = [
 export const BREADCRUMB_ROUTES = [
   // 경매
   {
+    pattern: '/auction/:auctionId/trade/review/new',
+    pageLabel: '리뷰 작성',
+    defaultTrail: ({ auctionId }) => [
+      { label: '경매 상세', to: `/auction/${auctionId}` },
+      { label: '거래 상세', to: `/auction/${auctionId}/trade` },
+    ],
+  },
+  {
+    pattern: '/auction/:auctionId/trade/review/edit',
+    pageLabel: '리뷰 수정',
+    defaultTrail: ({ auctionId }) => [
+      { label: '경매 상세', to: `/auction/${auctionId}` },
+      { label: '거래 상세', to: `/auction/${auctionId}/trade` },
+    ],
+  },
+  {
+    pattern: '/auction/:auctionId/trade',
+    pageLabel: '거래 상세',
+    defaultTrail: ({ auctionId }) => [
+      { label: '경매 상세', to: `/auction/${auctionId}` },
+    ],
+  },
+  {
     pattern: '/auction/:auctionId',
     pageLabel: '경매 상세',
     defaultTrail: [{ label: '경매', to: '/auction' }],
@@ -177,6 +200,13 @@ export const BREADCRUMB_ROUTES = [
     pattern: '/service-trades/:tradeId/chat',
     pageLabel: '서비스 채팅',
     defaultTrail: buildMyPageTrail('service-chat'),
+  },
+  {
+    // @ai_generated (담당자1, 2026-08-07): 미등록 상태였다 - 리뷰 목록에서 서비스 거래로
+    // 이동할 때 state.from을 넘겨도 이 라우트가 없어 브레드크럼이 반영되지 않았다(B-3).
+    pattern: '/service-trades/:tradeId',
+    pageLabel: '서비스 거래 상세',
+    defaultTrail: buildMyPageTrail('service-trade'),
   },
 
   // 상품

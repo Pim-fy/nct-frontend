@@ -51,6 +51,14 @@ export const getTradeDetail = async (tradeId) => {
   return response.data;
 };
 
+// @ai_generated
+/** 경매 번호를 외부 식별자로 사용해 현재 사용자의 물건 거래 상세를 조회한다. */
+export const getTradeDetailByAuctionId = async (auctionId) => {
+  const response = await api.get(`${TRADE_ENDPOINT}/auction/${auctionId}`);
+
+  return response.data;
+};
+
 /**
  * 판매자가 본인 직거래의 일시·장소·상세 주소를 저장하거나 수정한다.
  * 서버는 판매자 여부와 직거래 방식 여부를 함께 검증한다.

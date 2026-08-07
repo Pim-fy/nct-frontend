@@ -10,6 +10,7 @@ import {
   useParams,
   useSearchParams,
 } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import Toast from '@components/common/Toast';
 import {
   getTradeDetail,
@@ -17,8 +18,9 @@ import {
 } from '@api/tradeApi';
 import { getDeliveryProofBlob, toImageUrl } from '@api/fileApi';
 import { toTradeDetail } from '@api/tradeAdapter';
+import { reviewQueryKeys } from '@hooks/useReview';
 import TradeTrustSummary from '@components/trade/TradeTrustSummary';
-import { Skeleton } from '@components/skeleton/BaseSkeleton';
+import TradeDetailSkeleton from '@components/trade/TradeDetailSkeleton';
 import '@assets/css/trade-detail.css';
 
 // 상태 코드표가 확정되기 전까지는 이미 합의된 화면 문구만 제한적으로 표시한다.
@@ -37,13 +39,13 @@ const statusInfo = {
   },
   CONFIRM_PENDING: {
     label: '판매자 확인 대기',
-    description: '판매자의 완료 확인 또는 무이의 기간 경과 후 거래가 완료됩니다.',
+    description: '판매자의 완료 확인 또는 이의제기가 없는 기간 경과 후 거래가 완료됩니다.',
     step: 1,
     className: 'trade-status--pending',
   },
   WAITING_CONFIRMATION: {
     label: '판매자 확인 대기',
-    description: '판매자의 완료 확인 또는 무이의 기간 경과 후 거래가 완료됩니다.',
+    description: '판매자의 완료 확인 또는 이의제기가 없는 기간 경과 후 거래가 완료됩니다.',
     step: 1,
     className: 'trade-status--pending',
   },
@@ -77,6 +79,13 @@ const unknownStatus = {
 const TradeDetailBuyer = ({
   embedded = false,
   tradeId: selectedTradeId,
+  // @ai_generated (담당자1, 2026-08-07): AuctionTradeDetailPage가 이미 조회한 상세를 그대로
+  // 주입하면 이 컴포넌트는 같은 tradeId를 다시 GET하지 않는다(P2-2, 3중 API 호출 제거).
+  initialTrade,
+  // @ai_generated (담당자1, 2026-08-07): 재조회를 멈춘 대신, 완료 확인 성공 시 부모의
+  // useAuctionTrade 캐시와 리뷰 상태 캐시를 직접 무효화해야 새로고침 없이도 문구·리뷰 버튼이
+  // 갱신된다(독립 검수에서 발견 - 재조회 제거의 부작용이었다).
+  auctionId,
   onBack,
   onOpenChat,
 }) => {
@@ -84,9 +93,10 @@ const TradeDetailBuyer = ({
   const tradeId = selectedTradeId ?? routeTradeId;
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
-  const [trade, setTrade] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [trade, setTrade] = useState(() => (initialTrade ? toTradeDetail(initialTrade) : null));
+  const [isLoading, setIsLoading] = useState(!initialTrade);
   const [loadError, setLoadError] = useState('');
   const [completionAgreed, setCompletionAgreed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -95,6 +105,7 @@ const TradeDetailBuyer = ({
   const [selectedDeliveryProofIndex, setSelectedDeliveryProofIndex] = useState(null);
   const [isCompletionResultOpen, setIsCompletionResultOpen] = useState(false);
   const isPreview = pathname.startsWith('/trades/preview');
+  const contentClassName = embedded ? 'trade-detail-page__content' : 'container';
   const chatPath = isPreview
     ? `/trades/preview/${tradeId}/chat?from=buyer`
     : `/trades/${tradeId}/chat?from=buyer`;
@@ -143,11 +154,16 @@ const TradeDetailBuyer = ({
   }, [tradeId]);
 
   // 거래 번호가 바뀌면 렌더링 완료 뒤에 해당 거래의 상세를 다시 조회한다.
+  // initialTrade가 주입된 경우(embedded)는 이미 데이터가 있으므로 다시 조회하지 않는다.
   useEffect(() => {
+    if (initialTrade) {
+      return undefined;
+    }
+
     const requestTimer = window.setTimeout(loadTrade, 0);
 
     return () => window.clearTimeout(requestTimer);
-  }, [loadTrade]);
+  }, [loadTrade, initialTrade]);
 
   // 보호된 배송 사진은 axios 요청으로 Blob을 받아, 브라우저가 인증 쿠키를 빠뜨리지 않게 표시한다.
   useEffect(() => {
@@ -237,7 +253,7 @@ const TradeDetailBuyer = ({
       : isBuyerCompletionRequested
         ? {
           title: '판매자 확인 대기',
-          description: '구매자의 완료 확인이 전달되었습니다. 판매자 확인 또는 무이의 기간 경과를 기다려 주세요.',
+          description: '구매자의 완료 확인이 전달되었습니다. 판매자 확인 또는 이의제기가 없는 기간 경과를 기다려 주세요.',
         }
         : {
           title: '상호 완료 확인',
@@ -272,6 +288,13 @@ const TradeDetailBuyer = ({
 
       // 서버가 계산한 자동완료 시각까지 다시 반영해 브라우저 시간과 어긋나지 않게 한다.
       setTrade(updatedTrade);
+      // @ai_generated (담당자1, 2026-08-07): auctionId가 있으면(embedded) 부모 상세 캐시와
+      // 리뷰 상태 캐시를 함께 무효화한다 - 이 컴포넌트는 더 이상 자체 재조회를 하지 않으므로
+      // 완료 확인 직후 리뷰 등록 버튼이 새로고침 없이 뜨려면 이게 필요하다.
+      if (auctionId) {
+        queryClient.invalidateQueries({ queryKey: ['auction-trade', String(auctionId)] });
+        queryClient.invalidateQueries({ queryKey: reviewQueryKeys.trade(tradeId) });
+      }
       setCompletionAgreed(false);
       setIsCompletionResultOpen(true);
       setNotice(
@@ -290,28 +313,13 @@ const TradeDetailBuyer = ({
   };
 
   if (isLoading && !loadError) {
-    return (
-      <div className="trade-detail-page trade-detail-page--buyer">
-        <main className="container">
-          <div className="trade-progress" style={{ gap: 8 }}>
-            {Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton height={38} key={index} style={{ flex: 1 }} />
-            ))}
-          </div>
-          <div className="trade-detail-grid">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton height={140} key={index} style={{ borderRadius: 18 }} />
-            ))}
-          </div>
-        </main>
-      </div>
-    );
+    return <TradeDetailSkeleton embedded={embedded} role="buyer" />;
   }
 
   if (loadError || !trade) {
     return (
       <div className="trade-detail-page trade-detail-page--buyer">
-        <main className="container trade-detail-page__state">
+        <main className={`${contentClassName} trade-detail-page__state`}>
           <section className="trade-detail-card" role="alert">
             <h1>거래 정보를 불러오지 못했습니다.</h1>
             <button className="btn btn-outline" type="button" onClick={loadTrade}>
@@ -325,7 +333,7 @@ const TradeDetailBuyer = ({
 
   return (
     <div className="trade-detail-page trade-detail-page--buyer">
-      <div className="container">
+      <div className={contentClassName}>
         <header className="trade-detail-page__header">
           <div>
             <h1>거래 상세</h1>
@@ -514,7 +522,7 @@ const TradeDetailBuyer = ({
                   거래가 완료되었음을 확인합니다
                 </label>
                 <p className="trade-detail-card__muted">
-                  확인 요청 이후에는 상대방의 확인 또는 무이의 기간 경과가 필요합니다.
+                  확인 요청 이후에는 상대방의 확인 또는 이의제기가 없는 기간 경과가 필요합니다.
                 </p>
               </>
             )}
@@ -613,7 +621,7 @@ const TradeDetailBuyer = ({
             <p>
               {isCompleted
                 ? '구매자와 판매자의 완료 확인이 모두 처리되었습니다.'
-                : '판매자 확인 또는 무이의 기간 경과 후 거래가 완료됩니다. 현재 거래 상태는 판매자 확인 대기입니다.'}
+                : '판매자 확인 또는 이의제기가 없는 기간 경과 후 거래가 완료됩니다. 현재 거래 상태는 판매자 확인 대기입니다.'}
             </p>
             <div className="trade-modal__actions">
               <button

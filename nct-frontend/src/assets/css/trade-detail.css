@@ -4,6 +4,30 @@
   background: transparent;
 }
 
+.trade-detail-page__content {
+  width: 100%;
+  min-width: 0;
+}
+
+/* 정식 경매 거래 상세은 전역 container 안에서 본문과 리뷰를 한 화면으로 조립한다. */
+.auction-trade-detail-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  align-items: start;
+  gap: 24px;
+}
+
+.auction-trade-detail-shell > .trade-detail-page {
+  min-width: 0;
+}
+
+.auction-trade-detail-shell__review {
+  position: sticky;
+  top: 24px;
+  min-width: 0;
+  padding-top: 24px;
+}
+
 .trade-detail-page__header {
   display: flex;
   align-items: flex-end;
@@ -240,6 +264,17 @@
 .trade-detail-page--seller .trade-progress,
 .trade-detail-page--buyer .trade-progress {
   margin-bottom: 16px;
+}
+
+/* 정식 통합 경로에서는 왼쪽 그리드 열 전체를 사용한다. 기존 1040px 중앙 정렬보다 뒤에서 적용한다. */
+.auction-trade-detail-shell .trade-detail-page__header,
+.auction-trade-detail-shell .trade-progress,
+.auction-trade-detail-shell .trade-detail-grid,
+.auction-trade-detail-shell .trade-seller-section,
+.auction-trade-detail-shell .trade-complete-card {
+  max-width: none;
+  margin-right: 0;
+  margin-left: 0;
 }
 
 .trade-success {
@@ -935,4 +970,20 @@
   .trade-detail-page--buyer .trade-complete-card,
   .trade-detail-page--buyer .trade-detail-page__header,
   .trade-detail-page--buyer .trade-progress { max-width: none; }
+}
+
+@media (max-width: 1024px) {
+  .auction-trade-detail-shell {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .auction-trade-detail-shell > .trade-detail-page {
+    padding-bottom: 24px;
+  }
+
+  .auction-trade-detail-shell__review {
+    position: static;
+    padding: 0 0 48px;
+  }
 }

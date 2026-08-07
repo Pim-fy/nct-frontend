@@ -49,6 +49,8 @@ import Unauthorized   from '@pages/error/Unauthorized';
 import MyPage from '@pages/user/MyPage';
 import TradeDetailBuyer from '@pages/trade/TradeDetailBuyer';
 import TradeDetailSeller from '@pages/trade/TradeDetailSeller';
+import AuctionTradeDetailPage from '@pages/trade/AuctionTradeDetailPage';
+import LegacyTradeRedirect from '@pages/trade/LegacyTradeRedirect';
 import TradeChat from '@pages/trade/TradeChat';
 // 담당자 7 공개 콘텐츠 route. 공통 route 소유자(담당자 1)에게 동일 manifest로 전달합니다.
 import GuidePage from '@pages/content/GuidePage';
@@ -66,6 +68,7 @@ import ReviewListPage from '@pages/user/ReviewListPage';
 import ReviewWritePage from '@pages/user/ReviewWritePage';
 import ReviewEditPage from '@pages/user/ReviewEditPage';
 import MyPageReviewLayout from '@layouts/MyPageReviewLayout';
+import LegacyReviewRedirect from '@pages/user/LegacyReviewRedirect';
 // 내 입찰 내역 (F-AUC-022)
 import MyBidHistoryPage from '@pages/user/MyBidHistoryPage';
 import ReportFormPage from '@pages/user/report/ReportFormPage';
@@ -221,17 +224,20 @@ const AppRoutes = () => {
           <Route path="/user/auction-favorites" element={<AuctionFavoritesPage />} />
           <Route path="/user/reviews" element={<Navigate to="/user/mypage?section=review" replace />} />
           <Route element={<MyPageReviewLayout />}>
-            <Route path="/user/reviews/write/:id" element={<ReviewWritePage />} />
-            <Route path="/user/reviews/edit/:id" element={<ReviewEditPage />} />
+            <Route path="/user/reviews/write/:id" element={<LegacyReviewRedirect mode="new" />} />
+            <Route path="/user/reviews/edit/:id" element={<LegacyReviewRedirect mode="edit" />} />
           </Route>
           {/* 경매 거래내역 — 내 입찰 내역 + 내 판매 내역 2탭 (담당자3 HSK, F-AUC-022) */}
           <Route path="/my-bids" element={<MyBidHistoryPage />} />
 
           <Route path="/trades/:tradeId/chat" element={<TradeChat />} />
-          <Route path="/trades/:tradeId" element={<TradeDetailBuyer />} />
+          <Route path="/auction/:auctionId/trade" element={<AuctionTradeDetailPage />} />
+          <Route path="/auction/:auctionId/trade/review/new" element={<ReviewWritePage />} />
+          <Route path="/auction/:auctionId/trade/review/edit" element={<ReviewEditPage />} />
+          <Route path="/trades/:tradeId" element={<LegacyTradeRedirect />} />
           <Route
             path="/trades/:tradeId/seller"
-            element={<TradeDetailSeller />}
+            element={<LegacyTradeRedirect />}
           />
 
           {/* 상품 — 로그인 필요 */}

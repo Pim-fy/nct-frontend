@@ -8,7 +8,6 @@
 //   ReviewEditPage에서 처리하고, 이 화면으로 돌아올 때 TanStack Query 캐시를 무효화해 다시 불러온다.
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
 import MyPageReviewListItem from "@components/mypage/MyPageReviewListItem";
 import Pagination from "@components/common/Pagination";
 import MyPageListSectionLayout from "@components/mypage/MyPageListSectionLayout";
@@ -16,16 +15,14 @@ import MyPageListSkeleton from "@components/skeleton/MyPageListSkeleton";
 import MyPageListEmpty from "@components/mypage/MyPageListEmpty";
 import MyPageListError from "@components/mypage/MyPageListError";
 import { useWritableReviews, useMyReviews } from "@hooks/useReview";
-import { deleteReview } from "@api/reviewApi";
 import { toImageUrl } from "@api/fileApi";
-import { confirm, toast } from "@utils/common";
+import { toast } from "@utils/common";
 
 const PAGE_SIZE = 10;
 
 export default function ReviewListPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState(() => (
     location.state?.justWrote || location.state?.justUpdated ? "written" : "all"
   ));
@@ -128,31 +125,19 @@ export default function ReviewListPage() {
   };
 
   // 전역 브레드크럼 (BJN, 260805): 접근 경로(state.from)를 함께 전달해 브레드크럼에 반영
-  const handleWriteReview = (item) => {
-    navigate(`/user/reviews/write/${item.id}`, { state: { item, from: location.pathname + location.search } });
-  };
-
-  const handleEditReview = (item) => {
-    navigate(`/user/reviews/edit/${item.id}`, { state: { item, from: location.pathname + location.search } });
-  };
-
-  const handleDeleteReview = async (item) => {
-    const ok = await confirm({ title: "리뷰를 삭제하시겠습니까?", text: "삭제한 리뷰는 복구할 수 없습니다." });
-    if (!ok) return;
-    try {
-      await deleteReview(item.id);
-      await queryClient.invalidateQueries({ queryKey: ["reviews"] });
-      if (activeTab === "written" && pagedWrittenItems.length === 1 && writtenPage > 1) setWrittenPage(writtenPage - 1);
-      if (activeTab === "all" && pagedCombinedItems.length === 1 && allPage > 1) setAllPage(allPage - 1);
-      toast({ icon: "success", title: "리뷰가 삭제되었습니다." });
-    } catch (err) {
-      const message = err.response?.data?.message;
-      toast({ icon: "error", title: message || "리뷰 삭제에 실패했습니다. 잠시 후 다시 시도해주세요." });
-    }
-  };
-
   const handleViewTarget = (item) => {
-    navigate(item.dealType === "service" ? `/service/${item.id}` : `/auction/${item.id}`);
+    const from = location.pathname + location.search;
+    if (item.dealType === "service") {
+      navigate(`/service-trades/${item.tradeId ?? item.id}`, { state: { from } });
+      return;
+    }
+    // @ai_generated (담당자1, 2026-08-07): auctionId가 없으면 "/auction/undefined/trade"로
+    // 이동해 400을 받는 대신(P3-7), 안내만 하고 이동을 막는다.
+    if (!item.auctionId) {
+      toast({ icon: "error", title: "거래 상세로 이동할 수 없습니다. 잠시 후 다시 시도해주세요." });
+      return;
+    }
+    navigate(`/auction/${item.auctionId}/trade`, { state: { from } });
   };
 
   return (
@@ -203,8 +188,6 @@ export default function ReviewListPage() {
                     partyLabel={item.partyLabel}
                     partyName={item.partyName}
                     completedDate={item.completedDate}
-                    actionLabel="리뷰 등록"
-                    onAction={() => handleWriteReview(item)}
                     onViewTarget={() => handleViewTarget(item)}
                   />
                 ) : (
@@ -216,8 +199,7 @@ export default function ReviewListPage() {
                     dealType={item.dealType}
                     rating={item.rating}
                     content={item.content}
-                    onEdit={() => handleEditReview(item)}
-                    onDelete={() => handleDeleteReview(item)}
+                    completedDate={item.completedDate}
                     onViewTarget={() => handleViewTarget(item)}
                   />
                 )
@@ -245,8 +227,6 @@ export default function ReviewListPage() {
                   partyLabel={item.partyLabel}
                   partyName={item.partyName}
                   completedDate={item.completedDate}
-                  actionLabel="리뷰 등록"
-                  onAction={() => handleWriteReview(item)}
                   onViewTarget={() => handleViewTarget(item)}
                 />
               ))}
@@ -272,8 +252,7 @@ export default function ReviewListPage() {
                   dealType={item.dealType}
                   rating={item.rating}
                   content={item.content}
-                  onEdit={() => handleEditReview(item)}
-                  onDelete={() => handleDeleteReview(item)}
+                  completedDate={item.completedDate}
                   onViewTarget={() => handleViewTarget(item)}
                 />
               ))}

@@ -8,6 +8,10 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import StarRating from "@components/review/StarRating";
 import { updateReview } from "@api/reviewApi";
+import { useAuctionTrade } from "@hooks/useAuctionTrade";
+import { reviewQueryKeys, useMyTradeReview } from "@hooks/useReview";
+import { toImageUrl } from "@api/fileApi";
+import AsyncRouteError from "@components/common/AsyncRouteError";
 import { toast } from "@utils/common";
 import "../provider/QuoteFormPage.css";
 
@@ -20,32 +24,65 @@ const DEAL_TYPE_STYLE = {
 };
 
 export default function ReviewEditPage() {
-  const { id } = useParams();
+  const { id, auctionId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const queryClient = useQueryClient();
   // 목록 페이지에서 navigate(..., { state: { item } }) 로 넘겨준, 수정 대상 리뷰(기존 rating/content 포함).
   // 새로고침 등으로 state 가 없으면(직접 URL 접근) 대상 정보를 알 수 없으므로 안내만 보여준다.
   const item = location.state?.item;
+  const tradeQuery = useAuctionTrade(auctionId);
+  const routeTrade = tradeQuery.data;
+  const reviewQuery = useMyTradeReview(routeTrade?.tradeId);
+  const routeReview = reviewQuery.data;
+  const routeItem = routeTrade && routeReview ? {
+    id: routeReview.reviewId,
+    thumbnail: toImageUrl(routeTrade.productImageUrl),
+    title: routeTrade.productName,
+    dealType: "goods",
+    rating: routeReview.rating,
+    content: routeReview.content,
+    photos: routeReview.photos,
+  } : null;
+  const resolvedItem = routeItem ?? item;
+  // @ai_generated (담당자1, 2026-08-07): useMyTradeReview는 tradeId가 정해지기 전까지
+  // enabled:false라 isLoading이 false로 남는다. 이 틈에 아래 WRITTEN 가드가 먼저 걸려
+  // "수정할 수 있는 리뷰를 찾을 수 없습니다" 문구가 한 프레임 노출될 수 있어(P3-5), data 도착
+  // 전까지도 로딩으로 본다.
+  const reviewStatusPending = Boolean(routeTrade?.tradeId)
+    && reviewQuery.data === undefined
+    && !reviewQuery.isError;
 
-  const [rating, setRating] = useState(item?.rating ?? 0);
-  const [content, setContent] = useState(item?.content ?? "");
-  const [photos, setPhotos] = useState([]); // [{ id, file, previewUrl }] - 새로 첨부한 사진만 들어간다.
-  const [pickMode, setPickMode] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const fileInputRef = useRef(null);
+  if (auctionId && (tradeQuery.isLoading || reviewQuery.isLoading || reviewStatusPending)) {
+    return <div className="container py-16">리뷰 정보를 불러오는 중입니다.</div>;
+  }
 
-  // 미리보기 URL은 컴포넌트가 사라질 때 반드시 해제해야 메모리 누수가 없다.
-  useEffect(() => {
-    return () => {
-      photos.forEach((p) => URL.revokeObjectURL(p.previewUrl));
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  if (!item) {
+  if (auctionId && (tradeQuery.isError || reviewQuery.isError)) {
+    const error = tradeQuery.error ?? reviewQuery.error;
     return (
-      <div className="mx-auto max-w-[720px] px-4 py-16 text-center">
+      <AsyncRouteError
+        error={error}
+        onRetry={() => {
+          if (tradeQuery.isError) tradeQuery.refetch();
+          if (reviewQuery.isError) reviewQuery.refetch();
+        }}
+      />
+    );
+  }
+
+  if (auctionId && routeReview?.status !== "WRITTEN") {
+    return (
+      <div className="container py-16 text-center">
+        <p className="text-[#4e4e4e]">수정할 수 있는 리뷰를 찾을 수 없습니다.</p>
+        <button type="button" onClick={() => navigate(`/auction/${auctionId}/trade`)} className="btn btn-primary mt-6">
+          거래 상세로
+        </button>
+      </div>
+    );
+  }
+
+  if (!resolvedItem) {
+    return (
+      <div className="container py-16 text-center">
         <p className="text-[#4e4e4e]">수정할 리뷰 정보를 찾을 수 없습니다.</p>
         <p className="mt-1 text-sm text-[#969696]">목록에서 다시 "수정"을 눌러주세요.</p>
         <button
@@ -59,10 +96,43 @@ export default function ReviewEditPage() {
     );
   }
 
-  const dealTypeStyle = DEAL_TYPE_STYLE[item.dealType] ?? DEAL_TYPE_STYLE.goods;
+  // @ai_generated (담당자1, 2026-08-07): 위 가드를 전부 통과한 시점에는 resolvedItem이 이미
+  // 확정돼 있다. 폼 상태(rating/content)는 이 하위 컴포넌트에서 useState 초기값으로만 채우고,
+  // key={resolvedItem.id}로 대상이 바뀔 때만 새로 마운트한다 - "effect 안에서 도착한 데이터로
+  // setState"하던 예전 방식(setTimeout(0)으로 린트만 우회, 실제로는 초기 렌더 빈 폼 플래시와
+  // 편집 중 백그라운드 refetch가 입력값을 덮어쓰는 위험이 있었다, P3-4)을 없앤다.
+  return (
+    <ReviewEditForm
+      key={resolvedItem.id}
+      resolvedItem={resolvedItem}
+      reviewId={routeReview?.reviewId ?? id}
+      auctionId={auctionId}
+    />
+  );
+}
+
+function ReviewEditForm({ resolvedItem, reviewId, auctionId }) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [rating, setRating] = useState(resolvedItem.rating ?? 0);
+  const [content, setContent] = useState(resolvedItem.content ?? "");
+  const [photos, setPhotos] = useState([]); // [{ id, file, previewUrl }] - 새로 첨부한 사진만 들어간다.
+  const [pickMode, setPickMode] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // 미리보기 URL은 컴포넌트가 사라질 때 반드시 해제해야 메모리 누수가 없다.
+  useEffect(() => {
+    return () => {
+      photos.forEach((p) => URL.revokeObjectURL(p.previewUrl));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const dealTypeStyle = DEAL_TYPE_STYLE[resolvedItem.dealType] ?? DEAL_TYPE_STYLE.goods;
   // 서버는 "기존 사진 + 이번에 추가하는 사진"을 합산해서 5장 제한을 검사한다(PUT은 추가만 되는 구조) —
   // 프론트도 새로 고르는 사진 개수만 세면 안 되고 기존 사진 수를 같이 반영해야 한다.
-  const existingPhotoCount = item.photos?.length ?? 0;
+  const existingPhotoCount = resolvedItem.photos?.length ?? 0;
 
   const addFiles = (fileList) => {
     const files = Array.from(fileList);
@@ -88,9 +158,9 @@ export default function ReviewEditPage() {
     });
   };
 
-  const setAsRepresentative = (id) => {
+  const setAsRepresentative = (photoId) => {
     setPhotos((prev) => {
-      const idx = prev.findIndex((p) => p.id === id);
+      const idx = prev.findIndex((p) => p.id === photoId);
       if (idx <= 0) return prev;
       const next = [...prev];
       const [picked] = next.splice(idx, 1);
@@ -117,10 +187,10 @@ export default function ReviewEditPage() {
 
     setSubmitting(true);
     try {
-      await updateReview(id ?? item.id, formData);
-      await queryClient.invalidateQueries({ queryKey: ["reviews"] });
+      await updateReview(reviewId ?? resolvedItem.id, formData);
+      await queryClient.invalidateQueries({ queryKey: reviewQueryKeys.all });
       toast({ icon: "success", title: "리뷰가 수정되었습니다." });
-      navigate("/user/mypage?section=review");
+      navigate(auctionId ? `/auction/${auctionId}/trade` : "/user/mypage?section=review");
     } catch (err) {
       console.error("리뷰 수정 실패:", err);
       toast({ icon: "error", title: "리뷰 수정에 실패했습니다. 잠시 후 다시 시도해주세요." });
@@ -140,8 +210,8 @@ export default function ReviewEditPage() {
             {/* 모바일: 썸네일 위, 정보 아래 (세로+중앙) / 태블릿+: 가로 */}
             <div className="flex flex-col items-center gap-4 md:flex-row md:items-start">
               <div className="size-[129px] shrink-0 overflow-hidden rounded-[10px] border border-[#d9d9d9]">
-                {item.thumbnail && (
-                  <img src={item.thumbnail} alt={item.title} className="size-full object-cover" />
+                {resolvedItem.thumbnail && (
+                  <img src={resolvedItem.thumbnail} alt={resolvedItem.title} className="size-full object-cover" />
                 )}
               </div>
               <div className="min-w-0 text-center md:text-left">
@@ -151,7 +221,7 @@ export default function ReviewEditPage() {
                 >
                   {dealTypeStyle.label}
                 </span>
-                <h2 className="text-xl font-bold text-black">{item.title}</h2>
+                <h2 className="text-xl font-bold text-black">{resolvedItem.title}</h2>
               </div>
             </div>
 

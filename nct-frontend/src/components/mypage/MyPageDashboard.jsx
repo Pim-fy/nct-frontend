@@ -5,7 +5,7 @@
 //       STAT_CARDS/TODAY_ITEMS/WISH_ITEMS를 각 도메인 조회 결과로 교체한다.
 import React, { useState } from "react";
 import { ChevronRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchMyFavoriteAuctions } from "@api/auctionApi";
 import { getMyBidHistory } from "@api/bidApi";
@@ -19,6 +19,8 @@ import { getTradeChatRooms } from "@api/tradeChatApi";
 import { toTradeChatRooms } from "@api/tradeChatAdapter";
 import { usePointBalance } from "@hooks/usePoint";
 import { useMemberProfile } from "@hooks/useMemberProfile";
+import { reviewQueryKeys } from "@hooks/useReview";
+import { toast } from "@utils/common";
 import { assets } from "@components/mypage/assets";
 import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
 import MyPagePanel from "@components/mypage/MyPagePanel";
@@ -108,7 +110,7 @@ const REVIEW_DEAL_TYPE = {
   service: { label: "서비스",   cls: "badge-success" },
 };
 
-function ReviewablePanel({ items, onWrite, onMore }) {
+function ReviewablePanel({ items, onView, onMore }) {
   const fmtDate = (str) => str?.slice(0, 10).replace(/-/g, ".") ?? "-";
   const preview = items.slice(0, 3);
 
@@ -149,10 +151,10 @@ function ReviewablePanel({ items, onWrite, onMore }) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => onWrite(item)}
+                  onClick={() => onView(item)}
                   className="btn btn-sm btn-primary shrink-0"
                 >
-                  리뷰작성
+                  상세보기
                 </button>
               </div>
             );
@@ -224,6 +226,7 @@ export default function MyPageDashboard({
   onOpenAuctionBids,
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const nickname = user?.nickname || "고객";
   const email = user?.email || "";
   const profileQuery = useMemberProfile();
@@ -321,8 +324,10 @@ export default function MyPageDashboard({
   });
 
   // 미작성 리뷰 목록
+  // @ai_generated (담당자1, 2026-08-07): 리터럴 키 대신 useReview.js의 reviewQueryKeys 계약을
+  // 써서, 리뷰 등록/수정/삭제 후 무효화(reviewQueryKeys.all=['reviews'])가 이 캐시도 갱신하게 한다(P4-4).
   const { data: writableReviews = [] } = useQuery({
-    queryKey: ["reviews", "writable"],
+    queryKey: reviewQueryKeys.writable,
     queryFn: getWritableReviews,
     select: (res) => res.data ?? [],
     enabled: !!user,
@@ -427,7 +432,20 @@ export default function MyPageDashboard({
         />
         <ReviewablePanel
           items={writableReviews}
-          onWrite={(item) => navigate(`/user/reviews/write/${item.id}`, { state: { item } })}
+          onView={(item) => {
+            const from = location.pathname + location.search;
+            if (item.dealType === 'service') {
+              navigate(`/service-trades/${item.tradeId ?? item.id}`, { state: { from } });
+              return;
+            }
+            // @ai_generated (담당자1, 2026-08-07): auctionId가 없으면 "/auction/undefined/trade"로
+            // 이동해 400을 받는 대신(P3-7), 안내만 하고 이동을 막는다.
+            if (!item.auctionId) {
+              toast({ icon: 'error', title: '거래 상세로 이동할 수 없습니다. 잠시 후 다시 시도해주세요.' });
+              return;
+            }
+            navigate(`/auction/${item.auctionId}/trade`, { state: { from } });
+          }}
           onMore={() => navigate("/user/mypage?section=review")}
         />
       </div>

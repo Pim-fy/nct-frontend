@@ -12,6 +12,7 @@ import {
   useParams,
   useSearchParams,
 } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import Toast from '@components/common/Toast';
 import {
   getTradeDetail,
@@ -25,8 +26,9 @@ import {
   toImageUrl,
 } from '@api/fileApi';
 import { toTradeDetail } from '@api/tradeAdapter';
+import { reviewQueryKeys } from '@hooks/useReview';
 import TradeTrustSummary from '@components/trade/TradeTrustSummary';
-import { Skeleton } from '@components/skeleton/BaseSkeleton';
+import TradeDetailSkeleton from '@components/trade/TradeDetailSkeleton';
 import '@assets/css/trade-detail.css';
 
 // date 입력의 최소값에 사용할 오늘 날짜를 사용자의 현지 시간 기준으로 만든다.
@@ -86,6 +88,13 @@ const SHIPPING_PROOF_IMAGE_TYPES = [
 const TradeDetailSeller = ({
   embedded = false,
   tradeId: selectedTradeId,
+  // @ai_generated (담당자1, 2026-08-07): AuctionTradeDetailPage가 이미 조회한 상세를 그대로
+  // 주입하면 이 컴포넌트는 같은 tradeId를 다시 GET하지 않는다(P2-2, 3중 API 호출 제거).
+  initialTrade,
+  // @ai_generated (담당자1, 2026-08-07): 재조회를 멈춘 대신, 발송 인증/완료 확인/일정 저장 성공 시
+  // 부모의 useAuctionTrade 캐시와 리뷰 상태 캐시를 직접 무효화해야 새로고침 없이도 문구·리뷰
+  // 버튼이 갱신된다(독립 검수에서 발견 - 재조회 제거의 부작용이었다).
+  auctionId,
   onBack,
   onOpenChat,
 }) => {
@@ -93,9 +102,25 @@ const TradeDetailSeller = ({
   const tradeId = selectedTradeId ?? routeTradeId;
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  // @ai_generated (담당자1, 2026-08-07): 발송 인증/완료 확인/일정 저장 성공 시 공통으로 호출한다.
+  const invalidateAuctionTradeCaches = () => {
+    if (!auctionId) return;
+    queryClient.invalidateQueries({ queryKey: ['auction-trade', String(auctionId)] });
+    queryClient.invalidateQueries({ queryKey: reviewQueryKeys.trade(tradeId) });
+  };
   const [searchParams] = useSearchParams();
-  const [trade, setTrade] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // @ai_generated (담당자1, 2026-08-07): initialTrade가 있으면 최초 렌더에서 한 번만 어댑팅해
+  // 아래 각 상태 초기값을 채운다 - loadTrade의 상태 초기화 로직과 동일하게 맞춘다. useMemo로
+  // 감싸는 이유: 이 값은 useState 초기값 5곳에서만 쓰이고 첫 렌더 이후엔 버려지는데, 그냥 본문에
+  // 두면 매 렌더마다 toTradeDetail을 다시 계산한다(TradeDetailBuyer는 useState(() => ...) 지연
+  // 초기화 하나로 끝나 이 문제가 없다 - Seller는 상태가 여러 개라 같은 값을 공유해야 해서
+  // useMemo로 "한 번만 계산" 시맨틱을 맞췄다. useRef를 쓰면 이 프로젝트 lint 규칙
+  // react-hooks/refs("렌더 중 ref 접근 금지")에 걸린다).
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- 의도적으로 최초 렌더 값만 쓴다
+  const initialDetail = useMemo(() => (initialTrade ? toTradeDetail(initialTrade) : null), []);
+  const [trade, setTrade] = useState(initialDetail);
+  const [isLoading, setIsLoading] = useState(!initialTrade);
   const [loadError, setLoadError] = useState('');
   const [shippingMemo, setShippingMemo] = useState('');
   const [shippingProofFiles, setShippingProofFiles] = useState([]);
@@ -103,11 +128,21 @@ const TradeDetailSeller = ({
   const [shippingProofError, setShippingProofError] = useState('');
   const [completionAgreed, setCompletionAgreed] = useState(false);
   const [isCompletionSubmitting, setIsCompletionSubmitting] = useState(false);
-  const [meetingDate, setMeetingDate] = useState('');
-  const [meetingTime, setMeetingTime] = useState('');
-  const [meetingPlace, setMeetingPlace] = useState('');
-  const [meetingAddress, setMeetingAddress] = useState('');
-  const [meetingProposed, setMeetingProposed] = useState(false);
+  const [meetingDate, setMeetingDate] = useState(
+    initialDetail && initialDetail.meetingDate !== '-' ? initialDetail.meetingDate : '',
+  );
+  const [meetingTime, setMeetingTime] = useState(
+    initialDetail && initialDetail.meetingTime !== '-' ? initialDetail.meetingTime : '',
+  );
+  const [meetingPlace, setMeetingPlace] = useState(
+    initialDetail && initialDetail.meetingPlace !== '-' ? initialDetail.meetingPlace : '',
+  );
+  const [meetingAddress, setMeetingAddress] = useState(
+    initialDetail && initialDetail.meetingAddress !== '-' ? initialDetail.meetingAddress : '',
+  );
+  const [meetingProposed, setMeetingProposed] = useState(
+    Boolean(initialDetail && initialDetail.meetingDate !== '-'),
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -150,13 +185,14 @@ const TradeDetailSeller = ({
     });
   }, [calendarMonth]);
   const isPreview = pathname.startsWith('/trades/preview');
+  const contentClassName = embedded ? 'trade-detail-page__content' : 'container';
   // 판매자 상세도 구매자 상세와 같은 상태 카드 기준을 사용한다.
   const sellerTradeStatusInfo = (() => {
     if (trade?.status === 'COMPLETED') {
       return { label: '거래 완료', description: '거래가 정상적으로 완료되었습니다.', className: 'trade-status--complete' };
     }
     if (['CONFIRM_PENDING', 'WAITING_CONFIRMATION'].includes(trade?.status)) {
-      return { label: '구매자 확인 대기', description: '구매자의 완료 확인 또는 무이의 기간 경과 후 거래가 완료됩니다.', className: 'trade-status--pending' };
+      return { label: '구매자 확인 대기', description: '구매자의 완료 확인 또는 이의제기가 없는 기간 경과 후 거래가 완료됩니다.', className: 'trade-status--pending' };
     }
     if (trade?.status === 'ON_HOLD') {
       return { label: '거래 보류', description: '거래 문제를 확인하는 동안 거래와 정산이 보류됩니다.', className: 'trade-status--problem' };
@@ -266,11 +302,16 @@ const TradeDetailSeller = ({
   }, [tradeId]);
 
   // 거래 번호가 바뀌면 렌더링 완료 뒤에 배송 폼을 해당 거래 정보로 다시 초기화한다.
+  // initialTrade가 주입된 경우(embedded)는 이미 데이터가 있으므로 다시 조회하지 않는다.
   useEffect(() => {
+    if (initialTrade) {
+      return undefined;
+    }
+
     const requestTimer = window.setTimeout(loadTrade, 0);
 
     return () => window.clearTimeout(requestTimer);
-  }, [loadTrade]);
+  }, [loadTrade, initialTrade]);
 
   // 파일을 고른 즉시 업로드하고, 제출 전까지는 파일 번호와 로컬 미리보기만 유지한다.
   const handleShippingProofChange = async (event) => {
@@ -378,6 +419,7 @@ const TradeDetailSeller = ({
       shippingProofFiles.forEach((file) => URL.revokeObjectURL(file.previewUrl));
       setShippingProofFiles([]);
       setTrade(toTradeDetail(response));
+      invalidateAuctionTradeCaches();
       setNotice('발송 인증을 등록했습니다. 구매자가 인증 사진을 확인할 수 있습니다.');
     } catch (submitError) {
       setShippingProofError(
@@ -402,6 +444,7 @@ const TradeDetailSeller = ({
       const updatedTrade = toTradeDetail(response);
 
       setTrade(updatedTrade);
+      invalidateAuctionTradeCaches();
       setCompletionAgreed(false);
       setNotice(
         updatedTrade.status === 'COMPLETED'
@@ -458,6 +501,7 @@ const TradeDetailSeller = ({
         updatedTrade.meetingAddress === '-' ? '' : updatedTrade.meetingAddress,
       );
       setMeetingProposed(true);
+      invalidateAuctionTradeCaches();
       setNotice('직거래 일정과 장소를 저장했습니다.');
     } catch {
       setError('직거래 일정 저장에 실패했습니다. 다시 시도해 주세요.');
@@ -476,28 +520,13 @@ const TradeDetailSeller = ({
   }, []);
 
   if (isLoading && !loadError) {
-    return (
-      <div className="trade-detail-page trade-detail-page--seller">
-        <main className="container">
-          <div className="trade-progress" style={{ gap: 8 }}>
-            {Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton height={38} key={index} style={{ flex: 1 }} />
-            ))}
-          </div>
-          <div className="trade-detail-grid">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton height={140} key={index} style={{ borderRadius: 18 }} />
-            ))}
-          </div>
-        </main>
-      </div>
-    );
+    return <TradeDetailSkeleton embedded={embedded} role="seller" />;
   }
 
   if (loadError || !trade) {
     return (
       <div className="trade-detail-page trade-detail-page--seller">
-        <main className="container trade-detail-page__state">
+        <main className={`${contentClassName} trade-detail-page__state`}>
           <section className="trade-detail-card" role="alert">
             <h1>거래 정보를 불러오지 못했습니다.</h1>
             <button className="btn btn-outline" type="button" onClick={loadTrade}>
@@ -512,7 +541,7 @@ const TradeDetailSeller = ({
   if (trade.method === 'OFFLINE') {
     return (
       <div className="trade-detail-page trade-detail-page--seller">
-        <div className="container">
+        <div className={contentClassName}>
           <header className="trade-detail-page__header">
             <div>
               <h1>거래 상세</h1>
@@ -821,7 +850,7 @@ const TradeDetailSeller = ({
                     거래가 완료되었음을 확인합니다
                   </label>
                   <p className="trade-detail-card__muted">
-                    확인 요청 이후에는 구매자의 확인 또는 무이의 기간 경과가 필요합니다.
+                    확인 요청 이후에는 구매자의 확인 또는 이의제기가 없는 기간 경과가 필요합니다.
                   </p>
                   <div className="trade-detail-actions">
                     <button
@@ -847,7 +876,7 @@ const TradeDetailSeller = ({
   if (trade.method !== 'DELIVERY') {
     return (
       <div className="trade-detail-page trade-detail-page--seller">
-        <main className="container trade-detail-page__state">
+        <main className={`${contentClassName} trade-detail-page__state`}>
           <section className="trade-detail-card">
             <h1>거래 방식 확인</h1>
             <p>거래 방식과 상세 API 계약이 확정된 뒤 화면을 연결합니다.</p>
@@ -866,7 +895,7 @@ const TradeDetailSeller = ({
 
   return (
     <div className="trade-detail-page trade-detail-page--seller">
-      <div className="container">
+      <div className={contentClassName}>
         <header className="trade-detail-page__header">
           <div>
             <h1>거래 상세</h1>
@@ -1001,7 +1030,7 @@ const TradeDetailSeller = ({
                   거래가 완료되었음을 확인합니다
                 </label>
                 <p className="trade-detail-card__muted">
-                  확인 요청 이후에는 구매자의 확인 또는 무이의 기간 경과가 필요합니다.
+                  확인 요청 이후에는 구매자의 확인 또는 이의제기가 없는 기간 경과가 필요합니다.
                 </p>
                 <div className="trade-detail-actions">
                   <button
