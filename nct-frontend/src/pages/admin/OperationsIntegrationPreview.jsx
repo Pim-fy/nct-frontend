@@ -16,28 +16,54 @@ import {
 import { formatDateTime } from '@utils/common';
 import './operationsIntegrationPreview.css';
 
-const EMPTY_FILTERS = { typeCode: '', processed: '', keyword: '' };
+const EMPTY_FILTERS = {
+  typeCode: '',
+  processed: '',
+  keyword: '',
+  dateFrom: '',
+  dateTo: '',
+};
 
 /** 담당자 7 · F-OPS-011/013: 운영 위험 이벤트를 읽기 전용으로 확인하는 화면입니다. */
 const OperationsIntegrationPreview = () => {
   const [filterForm, setFilterForm] = useState(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
-  const { keyword, processed, typeCode } = appliedFilters;
+  const {
+    keyword,
+    processed,
+    typeCode,
+    dateFrom,
+    dateTo,
+  } = appliedFilters;
 
   const filters = useMemo(
     () => ({
       typeCode: typeCode || undefined,
       processed: processed || undefined,
       keyword: keyword || undefined,
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
       page,
       size: ADMIN_PAGE_SIZE,
     }),
-    [keyword, page, processed, typeCode],
+    [dateFrom, dateTo, keyword, page, processed, typeCode],
+  );
+
+  const summaryFilters = useMemo(
+    () => ({
+      typeCode: typeCode || undefined,
+      processed: processed || undefined,
+      keyword: keyword || undefined,
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
+    }),
+    [dateFrom, dateTo, keyword, processed, typeCode],
   );
 
   const eventsQuery = useAdminRiskEvents(filters);
-  const summaryQuery = useAdminRiskEventSummary();
+  const summaryQuery = useAdminRiskEventSummary(summaryFilters);
+  const typeOptionsQuery = useAdminRiskEventSummary();
 
   const columns = useMemo(() => [
     {
@@ -122,7 +148,7 @@ const OperationsIntegrationPreview = () => {
               <div>
                 <span>{item.typeName}</span>
                 <strong>{item.count}건</strong>
-                <small>전체 위험 이벤트</small>
+                <small>조회 조건 기준</small>
               </div>
             </article>
           ))
@@ -146,7 +172,7 @@ const OperationsIntegrationPreview = () => {
               value={filterForm.typeCode}
             >
               <option value="">전체</option>
-              {(summaryQuery.data ?? []).map((item) => (
+              {(typeOptionsQuery.data ?? []).map((item) => (
                 <option key={item.typeCode} value={item.typeCode}>
                   {item.typeName}
                 </option>
@@ -167,6 +193,32 @@ const OperationsIntegrationPreview = () => {
               <option value="N">미처리</option>
               <option value="Y">처리 완료</option>
             </select>
+          </label>
+
+          <label className="operations-date">
+            <span>시작일</span>
+            <input
+              max={filterForm.dateTo || undefined}
+              onChange={(event) => setFilterForm({
+                ...filterForm,
+                dateFrom: event.target.value,
+              })}
+              type="date"
+              value={filterForm.dateFrom}
+            />
+          </label>
+
+          <label className="operations-date">
+            <span>종료일</span>
+            <input
+              min={filterForm.dateFrom || undefined}
+              onChange={(event) => setFilterForm({
+                ...filterForm,
+                dateTo: event.target.value,
+              })}
+              type="date"
+              value={filterForm.dateTo}
+            />
           </label>
 
           <label className="operations-search">
