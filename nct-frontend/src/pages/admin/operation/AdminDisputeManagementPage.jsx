@@ -1,6 +1,10 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { getAdminDispute, getAdminDisputes } from '@api/adminDisputeApi';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  decideAdminDispute,
+  getAdminDispute,
+  getAdminDisputes,
+} from '@api/adminDisputeApi';
 import { fetchReferenceCodes } from '@api/referenceApi';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminModal from '@components/admin/AdminModal';
@@ -16,6 +20,12 @@ import './adminOperationPages.css';
 
 const PAGE_SIZE = ADMIN_PAGE_SIZE;
 const EMPTY_FILTERS = { disputeStatusCode: '', disputeTypeCode: '', keyword: '' };
+const DECISIONS = [
+  { value: 'COMPLETE', label: '처리 완료', description: '분쟁 전 거래 상태로 복구하고 보류 정산을 재개합니다.' },
+  { value: 'REFUND', label: '전액 환불', description: '거래를 취소하고 구매자 또는 요청자에게 보관금 전액을 환불합니다.' },
+  { value: 'HOLD', label: '정산 보류', description: '분쟁을 처리 중으로 유지하고 거래와 정산 보류를 계속합니다.' },
+  { value: 'REJECT', label: '반려', description: '분쟁을 반려하고 분쟁 전 거래 상태와 정산 흐름을 복구합니다.' },
+];
 const formatDate = (value) => (value ? String(value).replace('T', ' ').slice(0, 16) : '-');
 const statusTone = (code) => ({
   TRDC0016: 'warning',
@@ -23,12 +33,16 @@ const statusTone = (code) => ({
   TRDC0018: 'success',
 }[code] ?? 'neutral');
 
-/** 담당자 7 · F-OPS-005: 관리자 분쟁 목록과 조회 전용 상세를 제공합니다. */
+/** 담당자 7 · F-OPS-005/006: 관리자 분쟁 조회와 판정 처리를 제공합니다. */
 const AdminDisputeManagementPage = () => {
+  const queryClient = useQueryClient();
   const [filterForm, setFilterForm] = useState(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
   const [selectedDisputeSn, setSelectedDisputeSn] = useState(null);
+  const [decision, setDecision] = useState('');
+  const [reason, setReason] = useState('');
+  const [refundConfirmed, setRefundConfirmed] = useState(false);
 
   const disputeTypesQuery = useQuery({
     queryKey: ['reference', 'codes', 'TRDG04'],
@@ -53,6 +67,32 @@ const AdminDisputeManagementPage = () => {
     queryFn: () => getAdminDispute(selectedDisputeSn),
     enabled: selectedDisputeSn != null,
   });
+  const decisionMutation = useMutation({
+    mutationFn: (payload) => decideAdminDispute(selectedDisputeSn, payload),
+    onSuccess: async () => {
+      setDecision('');
+      setReason('');
+      setRefundConfirmed(false);
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'disputes'] });
+    },
+  });
+
+  const openDetail = (disputeSn) => {
+    decisionMutation.reset();
+    setDecision('');
+    setReason('');
+    setRefundConfirmed(false);
+    setSelectedDisputeSn(disputeSn);
+  };
+
+  const closeDetail = () => {
+    if (decisionMutation.isPending) return;
+    decisionMutation.reset();
+    setSelectedDisputeSn(null);
+    setDecision('');
+    setReason('');
+    setRefundConfirmed(false);
+  };
 
   const submitSearch = (event) => {
     event.preventDefault();
@@ -101,7 +141,7 @@ const AdminDisputeManagementPage = () => {
       render: (_, row) => (
         <button
           className="btn btn-outline admin-operation-table__action"
-          onClick={() => setSelectedDisputeSn(row.disputeSn)}
+          onClick={() => openDetail(row.disputeSn)}
           type="button"
         >
           상세
@@ -111,6 +151,18 @@ const AdminDisputeManagementPage = () => {
   ];
 
   const detail = detailQuery.data;
+  const canDecide = ['TRDC0016', 'TRDC0017'].includes(detail?.disputeStatusCode);
+  const selectedDecision = DECISIONS.find((option) => option.value === decision);
+  const canSubmitDecision = Boolean(
+    decision
+    && reason.trim()
+    && (decision !== 'REFUND' || refundConfirmed),
+  );
+  const submitDecision = (event) => {
+    event.preventDefault();
+    if (!canDecide || !canSubmitDecision || decisionMutation.isPending) return;
+    decisionMutation.mutate({ decision, reason: reason.trim() });
+  };
   const participantRows = detail?.tradeTypeCode === 'TRDC0002'
     ? [
         ['요청자', detail.requesterUserSn],
@@ -210,7 +262,7 @@ const AdminDisputeManagementPage = () => {
       )}
 
       {selectedDisputeSn && (
-        <AdminModal onClose={() => setSelectedDisputeSn(null)} title="거래 분쟁 상세">
+        <AdminModal onClose={closeDetail} title="거래 분쟁 상세">
           <section className="admin-operation-detail">
             {detailQuery.isLoading && (
               <div className="admin-bjn-state">분쟁 상세를 불러오는 중입니다.</div>
@@ -250,8 +302,25 @@ const AdminDisputeManagementPage = () => {
                         : (detail.settlementStatusName || '정산 없음')}
                     </AdminStatusBadge>
                   </dd>
+                  <dt>분쟁 내용</dt>
+                  <dd className="admin-operation-detail__content">
+                    {detail.disputeContent || '-'}
+                  </dd>
                   <dt>접수일</dt><dd>{formatDate(detail.registeredAt)}</dd>
                   <dt>최종 갱신일</dt><dd>{formatDate(detail.updatedAt)}</dd>
+                  {!canDecide && (
+                    <>
+                      <dt>판정 결과</dt>
+                      <dd>{detail.disputeResultName || detail.disputeResultCode || '반려'}</dd>
+                      <dt>처리자</dt>
+                      <dd>{detail.processorUserSn ? `관리자 #${detail.processorUserSn}` : '-'}</dd>
+                      <dt>처리일</dt><dd>{formatDate(detail.processedAt)}</dd>
+                      <dt>처리 사유</dt>
+                      <dd className="admin-operation-detail__content">
+                        {detail.processReason || '-'}
+                      </dd>
+                    </>
+                  )}
                 </dl>
 
                 <div className="admin-operation-detail__notice">
@@ -267,6 +336,83 @@ const AdminDisputeManagementPage = () => {
                     기존 거래 상세는 당사자 전용입니다. 관리자 읽기 계약이 연결되면 이동 기능을 제공합니다.
                   </span>
                 </div>
+
+                {canDecide && (
+                  <form className="admin-operation-decision" onSubmit={submitDecision}>
+                    <div className="admin-operation-decision__heading">
+                      <strong>관리자 판정</strong>
+                      <span>거래·정산·보관금 처리가 하나의 트랜잭션으로 실행됩니다.</span>
+                    </div>
+                    <label className="admin-operation-decision__select">
+                      판정 결과
+                      <select
+                        disabled={decisionMutation.isPending}
+                        onChange={(event) => {
+                          setDecision(event.target.value);
+                          setRefundConfirmed(false);
+                          decisionMutation.reset();
+                        }}
+                        value={decision}
+                      >
+                        <option value="">판정 결과를 선택하세요</option>
+                        {DECISIONS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </label>
+                    {selectedDecision && (
+                      <p className={decision === 'REFUND'
+                        ? 'admin-operation-decision__warning'
+                        : 'admin-operation-decision__description'}>
+                        {selectedDecision.description}
+                      </p>
+                    )}
+                    <label className="admin-operation-detail__reason">
+                      처리 사유
+                      <textarea
+                        disabled={decisionMutation.isPending}
+                        maxLength={1000}
+                        onChange={(event) => setReason(event.target.value)}
+                        placeholder="판정 근거와 후속 처리 내용을 입력하세요."
+                        value={reason}
+                      />
+                    </label>
+                    {decision === 'REFUND' && (
+                      <label className="admin-operation-confirm">
+                        <input
+                          checked={refundConfirmed}
+                          disabled={decisionMutation.isPending}
+                          onChange={(event) => setRefundConfirmed(event.target.checked)}
+                          type="checkbox"
+                        />
+                        거래 취소와 보관금 전액 환불이 실행됨을 확인했습니다.
+                      </label>
+                    )}
+                    {decisionMutation.isError && (
+                      <p className="admin-operation-error" role="alert">
+                        {decisionMutation.error?.response?.data?.message
+                          ?? '분쟁 판정에 실패했습니다. 현재 상태를 다시 확인해 주세요.'}
+                      </p>
+                    )}
+                    <div className="admin-operation-actions">
+                      <button
+                        className="btn btn-outline"
+                        disabled={decisionMutation.isPending}
+                        onClick={closeDetail}
+                        type="button"
+                      >
+                        닫기
+                      </button>
+                      <button
+                        className="btn btn-primary"
+                        disabled={!canSubmitDecision || decisionMutation.isPending}
+                        type="submit"
+                      >
+                        {decisionMutation.isPending ? '처리 중…' : '판정 적용'}
+                      </button>
+                    </div>
+                  </form>
+                )}
               </>
             )}
           </section>
