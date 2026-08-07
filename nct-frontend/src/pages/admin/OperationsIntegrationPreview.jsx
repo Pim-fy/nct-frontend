@@ -7,6 +7,7 @@ import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
 import PageMeta from '@components/admin/PageMeta';
+import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import {
   useAdminRiskEvents,
@@ -30,7 +31,7 @@ const OperationsIntegrationPreview = () => {
       processed: processed || undefined,
       keyword: keyword || undefined,
       page,
-      size: 20,
+      size: ADMIN_PAGE_SIZE,
     }),
     [keyword, page, processed, typeCode],
   );

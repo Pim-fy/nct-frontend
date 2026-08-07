@@ -111,6 +111,7 @@ import AdminSystemSettingPage from '@pages/admin/setting/AdminSystemSettingPage'
 import AdminAuctionManagementPage from '@pages/admin/auction/AdminAuctionManagementPage';
 import AdminNotificationPage from '@pages/admin/notification/AdminNotificationPage';
 import AdminReportManagementPage from '@pages/admin/operation/AdminReportManagementPage';
+import AdminDisputeManagementPage from '@pages/admin/operation/AdminDisputeManagementPage';
 import AdminPointExchangePage from '@pages/admin/operation/AdminPointExchangePage';
 
 // 개발 환경에서는 별도 env 설정 없이 로그인 없는 거래 화면을 검토할 수 있다.
@@ -266,6 +267,7 @@ const AppRoutes = () => {
           <Route path="provider-applications" element={<AdminProviderApprovalPage />} />
           <Route path="auctions" element={<AdminAuctionManagementPage />} />
           <Route path="reports" element={<AdminReportManagementPage />} />
+          <Route path="disputes" element={<AdminDisputeManagementPage />} />
           <Route path="exchanges" element={<AdminPointExchangePage />} />
           {/* 담당자 7 · F-OPS-011: 담당자 6의 F-OPS-016 화면을 소비해 운영 기록 탐색만 통합합니다. */}
           <Route path="operations-records" element={<AdminOperationsRecordPage />} />

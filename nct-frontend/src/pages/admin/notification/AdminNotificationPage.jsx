@@ -7,6 +7,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
+import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import { useAdminNotificationSummary } from '@hooks/useAdminNotification';
 import useClientPagination from '@hooks/useClientPagination';
@@ -26,7 +27,7 @@ const GROUP_TITLES = {
   auctionService: '경매·서비스',
   exchangeSystem: '환전·시스템',
 };
-const PAGE_SIZE = 8;
+const PAGE_SIZE = ADMIN_PAGE_SIZE;
 
 const AdminNotificationSkeleton = () => (
   <div className="admin-noti-grid admin-noti-grid--skeleton" aria-label="운영 알림을 불러오는 중">

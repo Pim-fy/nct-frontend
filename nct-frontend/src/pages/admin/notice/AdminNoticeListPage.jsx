@@ -7,6 +7,7 @@ import AdminTable from '@components/admin/AdminTable';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
+import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
 import {
   useAdminNoticeList,
   useAdminNoticeOptions,
@@ -16,7 +17,7 @@ import {
 import { formatDateTime, toast } from '@utils/common';
 import './adminContentPages.css';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = ADMIN_PAGE_SIZE;
 const PUBLISHED_STATUS = 'NTCC0006';
 
 const statusTone = (statusCode) => {

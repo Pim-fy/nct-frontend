@@ -7,6 +7,7 @@ import AdminTable from '@components/admin/AdminTable';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
+import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
 import {
   useAdminProviderApplications,
   useApproveProviderApplication,
@@ -43,7 +44,7 @@ const TYPE_NAMES = {
   PRVC0010: '추가',
   PRVC0011: '갱신',
 };
-const PAGE_SIZE = 20;
+const PAGE_SIZE = ADMIN_PAGE_SIZE;
 
 const toDisplayItem = (item) => ({
   ...item,
