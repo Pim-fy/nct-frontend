@@ -4,20 +4,23 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { CalendarCheck, CalendarDays } from 'lucide-react';
 import { toImageUrl } from '@api/fileApi';
 import { getTradeHistory } from '@api/tradeApi';
 import {
   getTradeListItems,
   toTradeHistoryItem,
 } from '@api/tradeAdapter';
+import Pagination from '@components/common/Pagination';
 import MyPageListSkeleton from '@components/skeleton/MyPageListSkeleton';
 import MyPageListSectionLayout from '@components/mypage/MyPageListSectionLayout';
 import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
 import MyPageListEmpty from '@components/mypage/MyPageListEmpty';
 import MyPageListError from '@components/mypage/MyPageListError';
-import MyPageListItem from '@components/mypage/MyPageListItem';
+import MyPageAuctionListItem from '@components/mypage/MyPageAuctionListItem';
 import MyPageStatusBadge from '@components/mypage/MyPageStatusBadge';
+import MyPageMobileCard from '@components/mypage/MyPageMobileCard';
 import '@assets/css/trade-history.css';
 
 const statusInfo = {
@@ -64,6 +67,9 @@ const activeTradeStatuses = new Set([
   'WAITING_CONFIRMATION',
   'CONFIRM_PENDING',
 ]);
+
+// 경매 하위 목록(진행 중인 경매/구매 내역/판매 내역) 공통 페이지당 건수
+const PAGE_SIZE = 10;
 
 const tabs = [
   { value: 'ALL', label: '전체' },
@@ -148,6 +154,7 @@ const TradeHistory = ({
   onOpenTradeDetail = null,
 }) => {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const [allTradeItems, setAllTradeItems] = useState([]);
   const [filteredTradeItems, setFilteredTradeItems] = useState([]);
   const [activeTab, setActiveTab] = useState(fixedRole ?? 'ALL');
@@ -155,6 +162,7 @@ const TradeHistory = ({
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [page, setPage] = useState(1);
 
   // 별도 미리보기 경로에서는 로그인 보호 경로가 아닌 미리보기 상세로 이동한다.
   const isPreview = preview || pathname.startsWith('/trades/preview');
@@ -288,6 +296,18 @@ const TradeHistory = ({
     });
   }, [filteredTradeItems, keyword]);
 
+  const totalPages = Math.max(1, Math.ceil(visibleTrades.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pagedTrades = visibleTrades.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
+
+  const handlePageChange = (nextPage) => {
+    setPage(nextPage);
+    window.scrollTo(0, 0);
+  };
+
   return (
     <div className={embedded
       ? 'trade-history-page trade-history-page--embedded'
@@ -348,7 +368,7 @@ const TradeHistory = ({
                   role="tab"
                   aria-selected={activeTab === tab.value}
                   key={tab.value}
-                  onClick={() => setActiveTab(tab.value)}
+                  onClick={() => { setActiveTab(tab.value); setPage(1); }}
                 >
                   {tab.label} <span>{tradeCounts[tab.value]}</span>
                 </button>
@@ -362,7 +382,7 @@ const TradeHistory = ({
               <input
                 className="input"
                 value={keyword}
-                onChange={(event) => setKeyword(event.target.value)}
+                onChange={(event) => { setKeyword(event.target.value); setPage(1); }}
                 placeholder="상품명, 상대방, 거래번호 검색"
               />
             </label>
@@ -372,7 +392,7 @@ const TradeHistory = ({
                 <select
                   className="input"
                   value={statusFilter}
-                  onChange={(event) => setStatusFilter(event.target.value)}
+                  onChange={(event) => { setStatusFilter(event.target.value); setPage(1); }}
                 >
                   <option value="ALL">전체 상태</option>
                   <option value="DELIVERING">배송중</option>
@@ -386,7 +406,7 @@ const TradeHistory = ({
           </div>}
         </section>
 
-        <section className={`trade-history-list ${fixedRole ? '!mt-0' : ''}`} aria-live="polite">
+        <section className={fixedRole ? '!mt-0' : ''} aria-live="polite">
           {isLoading && <MyPageListSkeleton count={5} />}
 
           {loadError && (
@@ -397,7 +417,11 @@ const TradeHistory = ({
             <MyPageListEmpty message="해당 조건의 구매 내역이 없습니다." />
           )}
 
-          {!isLoading && !loadError && visibleTrades.map((trade) => {
+          {/* history-list의 display:grid가 불레이어 CSS라 Tailwind hidden(@layer utilities)보다 우선
+              적용된다 — hidden/lg:block은 별도 래퍼에 둬서 두 display 선언이 충돌하지 않게 한다. */}
+          <div className="hidden lg:block">
+          <div className="history-list">
+          {!isLoading && !loadError && pagedTrades.map((trade) => {
             const status = getStatusInfo(trade);
             const detailPath = trade.type === 'SELLER'
               ? `${tradeBasePath}/${trade.id}/seller`
@@ -408,7 +432,7 @@ const TradeHistory = ({
               : detailPath;
 
             return (
-              <MyPageListItem
+              <MyPageAuctionListItem
                 key={trade.id}
                 to={onOpenTradeDetail ? undefined : detailTarget}
                 imageSrc={toImageUrl(trade.productImageUrl)}
@@ -416,7 +440,12 @@ const TradeHistory = ({
                 imageFallback="상품 이미지"
                 badge={<MyPageStatusBadge className={status.badgeClass}>{status.label}</MyPageStatusBadge>}
                 title={trade.productName}
-                actions={onOpenTradeDetail ? (
+                topLine={`확정날짜 ${trade.date} / 완료날짜 ${trade.completedDate ?? '-'}`}
+                priceItems={[
+                  { label: '확정 금액', value: trade.amount },
+                ]}
+                tradeMethodLabel={trade.method === 'DELIVERY' ? '배송' : '직거래'}
+                actionButton={onOpenTradeDetail ? (
                   <button
                     className="btn btn-sm btn-primary"
                     type="button"
@@ -427,15 +456,55 @@ const TradeHistory = ({
                 ) : (
                   <span className="btn btn-sm btn-primary">거래 상세</span>
                 )}
-              >
-                <p>{trade.amount} · {trade.date}</p>
-                <p>
-                  {trade.type === 'SELLER' ? '판매자' : '구매자'} 거래 · {trade.counterpart}
-                </p>
-              </MyPageListItem>
+              />
             );
           })}
+          </div>
+          </div>
+
+          <div className="grid gap-4 lg:hidden">
+            {!isLoading && !loadError && pagedTrades.map((trade) => {
+              const status = getStatusInfo(trade);
+              const detailPath = trade.type === 'SELLER'
+                ? `${tradeBasePath}/${trade.id}/seller`
+                : `${tradeBasePath}/${trade.id}`;
+              const detailTarget = embedded
+                ? `${detailPath}?from=mypage&section=${returnSection}`
+                : detailPath;
+              const actionButton = onOpenTradeDetail ? (
+                <button className="btn btn-sm btn-primary" type="button" onClick={() => onOpenTradeDetail(trade.id)}>
+                  거래 상세
+                </button>
+              ) : (
+                <button className="btn btn-sm btn-primary" type="button" onClick={() => navigate(detailTarget)}>
+                  거래 상세
+                </button>
+              );
+
+              return (
+                <MyPageMobileCard
+                  key={trade.id}
+                  imageSrc={toImageUrl(trade.productImageUrl)}
+                  imageAlt={trade.productName}
+                  imageFallbackLabel="상품 이미지"
+                  badge={<MyPageStatusBadge className={status.badgeClass}>{status.label}</MyPageStatusBadge>}
+                  title={trade.productName}
+                  price={trade.amount}
+                  infoItems={[
+                    { icon: CalendarDays, label: '확정날짜', value: trade.date },
+                    { icon: CalendarCheck, label: '완료날짜', value: trade.completedDate ?? '-' },
+                  ]}
+                  footerLeft={`거래 방식 · ${trade.method === 'DELIVERY' ? '배송' : '직거래'}`}
+                  actionButton={actionButton}
+                />
+              );
+            })}
+          </div>
         </section>
+
+        {!isLoading && !loadError && (
+          <Pagination page={currentPage} totalPages={totalPages} onPageChange={handlePageChange} showSinglePage />
+        )}
       </main>
     </div>
   );

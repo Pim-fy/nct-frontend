@@ -1,7 +1,8 @@
 import api from './axios';
+import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
 
 /** 담당자 7 · F-PAY-012: 처리 전후 환전 주문을 상태·검색 조건으로 페이지 조회합니다. */
-export const getAdminPointExchangeOrders = ({ statusCode, keyword, page = 1, size = 20 } = {}) =>
+export const getAdminPointExchangeOrders = ({ statusCode, keyword, page = 1, size = ADMIN_PAGE_SIZE } = {}) =>
   api.get('/admin/point/exchange/orders/search', {
     params: {
       ...(statusCode ? { statusCode } : {}),

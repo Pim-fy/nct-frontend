@@ -325,114 +325,88 @@ export default function ServiceTradeDetailPage({
           ))}
         </ol>
 
-        <div className="service-trade-detail-layout">
-          <div className="service-trade-detail-layout__main">
-            <section className="service-trade-panel" aria-labelledby="service-trade-summary-title">
-              <header className="service-trade-panel__header">
+        <div className="service-trade-overview-grid">
+          <section className="service-trade-card service-trade-card--summary" aria-labelledby="service-trade-summary-title">
+            <header className="service-trade-card__header">
                 <FileText aria-hidden="true" size={20} />
                 <h2 id="service-trade-summary-title">거래 정보</h2>
-              </header>
-              <dl className="service-trade-detail-list">
-                <div><dt>선택 견적</dt><dd>{trade.quoteSummary}</dd></div>
-                <div><dt>서비스 일정</dt><dd>{trade.scheduleLabel || '등록된 일정 정보 없음'}</dd></div>
-                {autoCompleteAtLabel && <div><dt>완료 확인 기한</dt><dd>{autoCompleteAtLabel}</dd></div>}
-                <div><dt>거래 금액</dt><dd className="service-trade-detail-list__amount">{tradeAmountLabel}</dd></div>
-              </dl>
-            </section>
-
-            {Array.isArray(scheduleHistory) && (
-              <section className="service-trade-panel" aria-labelledby="service-trade-schedule-title">
-                <header className="service-trade-panel__header">
-                  <CalendarDays aria-hidden="true" size={20} />
-                  <h2 id="service-trade-schedule-title">일정 이력</h2>
-                </header>
-                {scheduleHistory.length > 0 ? (
-                  <ol className="service-trade-schedule-history">
-                    {scheduleHistory.map((item) => (
-                      <li key={item.id}>
-                        <strong>{item.title}</strong>
-                        <span>{item.occurredAt}</span>
-                        {item.reason && <p>{item.reason}</p>}
-                      </li>
-                    ))}
-                  </ol>
-                ) : <p className="service-trade-panel__empty">등록된 일정 변경·취소 이력이 없습니다.</p>}
-              </section>
+            </header>
+            <dl className="service-trade-detail-list">
+              <div><dt>선택 견적</dt><dd>{trade.quoteSummary}</dd></div>
+              <div><dt>서비스 일정</dt><dd>{trade.scheduleLabel || '등록된 일정 정보 없음'}</dd></div>
+              {autoCompleteAtLabel && <div><dt>완료 확인 기한</dt><dd>{autoCompleteAtLabel}</dd></div>}
+              <div><dt>거래 금액</dt><dd className="service-trade-detail-list__amount">{tradeAmountLabel}</dd></div>
+            </dl>
+            {hasAvailableActions && (
+              <div className="service-trade-inline-actions" aria-label="거래 처리">
+                {(canRequestCompletion || canConfirmCompletion) && (
+                  <div className="service-trade-inline-actions__group service-trade-inline-actions__group--primary">
+                    {canRequestCompletion && (
+                      <button className="btn btn-primary" type="button" onClick={() => openCompletionDialog('REQUEST')}>
+                        <CheckCircle2 aria-hidden="true" size={18} /> 완료 요청 작성
+                      </button>
+                    )}
+                    {canConfirmCompletion && (
+                      <button className="btn btn-primary" type="button" onClick={() => openCompletionDialog('CONFIRM')}>
+                        <CheckCircle2 aria-hidden="true" size={18} /> 거래 완료 확인
+                      </button>
+                    )}
+                  </div>
+                )}
+                {(canOpenChat || canRequestScheduleChange || canRequestScheduleCancellation) && (
+                  <div className="service-trade-inline-actions__group">
+                    {canOpenChat && <Link className="btn service-trade-inline-actions__chat" to={chatPath ?? `/service-trades/${trade.tradeId}/chat`}><MessageSquareText aria-hidden="true" size={18} /> 서비스 채팅</Link>}
+                    {canRequestScheduleChange && <button className="btn btn-ghost" type="button" onClick={() => openScheduleDialog('CHANGE')}><CalendarDays aria-hidden="true" size={18} /> 일정 변경 요청</button>}
+                    {canRequestScheduleCancellation && <button className="btn btn-ghost" type="button" onClick={() => openScheduleDialog('CANCEL')}>일정 취소 요청</button>}
+                  </div>
+                )}
+              </div>
             )}
-          </div>
+          </section>
 
-          <aside className="service-trade-action-panel" aria-label="서비스 거래 처리">
-            <section className="service-trade-action-panel__status">
-              <div className="service-trade-action-panel__status-heading">
+          <aside className="service-trade-card service-trade-card--status" aria-labelledby="service-trade-status-title">
+            <div className="service-trade-card__header">
                 <ShieldCheck aria-hidden="true" size={20} />
-                <h2>현재 거래 상태</h2>
+                <h2 id="service-trade-status-title">현재 거래 상태</h2>
+            </div>
+            <strong className="service-trade-card__status-label">{status.label}</strong>
+            {canSubmitDispute && (
+              <div className="service-trade-card__dispute-action">
+                <button className="btn service-trade-detail-actions__problem" type="button" onClick={openDisputeDialog}>
+                  <CircleAlert aria-hidden="true" size={17} />
+                  거래 문제 접수
+                </button>
+                <p><CircleAlert aria-hidden="true" size={14} /> 문제 접수 시 거래 완료와 정산이 보류됩니다.</p>
               </div>
-              <strong>{status.label}</strong>
-              <p>{status.description}</p>
-            </section>
-
-            <section className="service-trade-escrow-summary" aria-label="서비스 보관금">
-              <div>
-                <WalletCards aria-hidden="true" size={20} />
-                <span>보관금</span>
-              </div>
+            )}
+            <div className="service-trade-card__escrow" aria-label="서비스 보관금">
+              <span><WalletCards aria-hidden="true" size={17} /> 보관금</span>
               <strong>{tradeAmountLabel}</strong>
               <p>{trade.escrowStatusLabel ?? '보관금 상태를 확인하고 있습니다.'}</p>
-            </section>
-
-            {hasAvailableActions ? (
-              <div className="service-trade-detail-actions">
-                {canRequestCompletion && (
-                  <button className="btn btn-primary" type="button" onClick={() => openCompletionDialog('REQUEST')}>
-                    <CheckCircle2 aria-hidden="true" size={18} />
-                    완료 요청
-                  </button>
-                )}
-                {canConfirmCompletion && (
-                  <button className="btn btn-primary" type="button" onClick={() => openCompletionDialog('CONFIRM')}>
-                    <CheckCircle2 aria-hidden="true" size={18} />
-                    완료 확인
-                  </button>
-                )}
-                {canOpenChat && (
-                  <Link className="btn btn-ghost" to={chatPath ?? `/service-trades/${trade.tradeId}/chat`}>
-                    <MessageSquareText aria-hidden="true" size={18} />
-                    거래 채팅
-                  </Link>
-                )}
-                {canRequestScheduleChange && (
-                  <button className="btn btn-ghost" type="button" onClick={() => openScheduleDialog('CHANGE')}>
-                    <CalendarDays aria-hidden="true" size={18} />
-                    일정 변경 요청
-                  </button>
-                )}
-                {canRequestScheduleCancellation && (
-                  <button className="btn btn-ghost" type="button" onClick={() => openScheduleDialog('CANCEL')}>
-                    일정 취소 요청
-                  </button>
-                )}
-                {canSubmitDispute && (
-                  <button className="btn service-trade-detail-actions__problem" type="button" onClick={openDisputeDialog}>
-                    <CircleAlert aria-hidden="true" size={18} />
-                    거래 문제 접수
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="service-trade-action-panel__closed" role="status">
-                <CheckCircle2 aria-hidden="true" size={20} />
-                <span>현재 처리할 거래 요청이 없습니다.</span>
-              </div>
-            )}
-
-            {canSubmitDispute && (
-              <p className="service-trade-action-panel__notice">
-                <CircleAlert aria-hidden="true" size={16} />
-                문제 접수 시 거래 완료와 정산이 보류됩니다.
-              </p>
-            )}
+            </div>
           </aside>
         </div>
+
+        {Array.isArray(scheduleHistory) && (
+          <section className="service-trade-card service-trade-card--schedule" aria-labelledby="service-trade-schedule-title">
+            <header className="service-trade-card__header">
+              <CalendarDays aria-hidden="true" size={20} />
+              <h2 id="service-trade-schedule-title">일정 이력</h2>
+            </header>
+            {scheduleHistory.length > 0 ? (
+              <ol className="service-trade-schedule-history">
+                {scheduleHistory.map((item) => (
+                  <li key={item.id}>
+                    <strong>{item.title}</strong>
+                    <span>{item.occurredAt}</span>
+                    {item.reason && <p>{item.reason}</p>}
+                  </li>
+                ))}
+              </ol>
+            ) : <p className="service-trade-card__empty">등록된 일정 변경·취소 이력이 없습니다.</p>}
+          </section>
+        )}
+
       </div>
 
       {isDisputeDialogOpen && (

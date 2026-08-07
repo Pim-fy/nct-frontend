@@ -10,6 +10,9 @@
 //     open={reportOpen}
 //     onClose={() => setReportOpen(false)}
 //     targetName="홍길동"              // (선택) 신고 대상 이름 pre-fill
+//     targetLabel="경매 상품"          // (선택) 신고 대상 필드 라벨
+//     targetLocked                     // (선택) 신고 대상 이름 수정 방지
+//     hideTitle                        // (선택) 제목 입력을 숨기고 자동 생성
 //     targetType="provider"           // (선택) 'provider'|'auction'|'trade'|'service'|'review'|'direct'
 //     referenceSn={123}               // (선택) 거래번호 등 참조 ID
 //     reportedUserSn={123}            // (선택) 피신고자 회원번호
@@ -56,6 +59,9 @@ export default function ReportModal(props) {
 function ReportModalContent({
   onClose,
   targetName: initialTargetName = "",
+  targetLabel = "신고 대상",
+  targetLocked = false,
+  hideTitle = false,
   targetType = "direct",
   referenceSn,
   reportedUserSn,
@@ -102,7 +108,7 @@ function ReportModalContent({
     const e = {};
     if (form.types.length === 0)  e.types      = "신고 유형을 하나 이상 선택해 주세요.";
     if (!form.targetName.trim())  e.targetName = "신고 대상을 입력해 주세요.";
-    if (!form.title.trim())       e.title      = "제목을 입력해 주세요.";
+    if (!hideTitle && !form.title.trim()) e.title = "제목을 입력해 주세요.";
     if (!form.content.trim())     e.content    = "신고 내용을 입력해 주세요.";
     if (form.content.length > 2000) e.content  = "2,000자 이내로 입력해 주세요.";
     return e;
@@ -114,6 +120,9 @@ function ReportModalContent({
     if (Object.keys(errs).length) { setErrors(errs); return; }
 
     try {
+      const reportTitle = hideTitle
+        ? `[${form.types[0]}] ${form.targetName.trim()}`.slice(0, 100)
+        : form.title.trim();
       // 담당자 7 · F-COM-015: 제공자 신고 대상 회원번호를 공통 신고 계약에 전달합니다.
       await mutateAsync({
         reportTypeCode:    TYPE_CODE_MAP[form.types[0]] ?? "ABRC0004",
@@ -121,7 +130,7 @@ function ReportModalContent({
         referenceTypeCode: REF_TYPE_CODE_MAP[targetType] ?? null,
         referenceSn:       referenceSn ?? null,
         targetName:        form.targetName.trim() || null,
-        title:             form.title.trim(),
+        title:             reportTitle,
         content:           form.content.trim(),
       });
       toast({ icon: "success", title: "신고가 접수되었습니다." });
@@ -197,37 +206,44 @@ function ReportModalContent({
           {/* 신고 대상 이름 */}
           <div>
             <label className="block text-[15px] font-bold text-[#1a1a18] mb-2">
-              신고 대상 <span className="text-red-500">*</span>
+              {targetLabel} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={form.targetName}
-              onChange={(e) => set("targetName", e.target.value)}
+              onChange={targetLocked ? undefined : (e) => set("targetName", e.target.value)}
+              disabled={targetLocked}
               placeholder="신고 대상의 이름 또는 상품명을 입력해 주세요."
-              className={`w-full h-[44px] rounded-[8px] border px-4 text-[15px] text-[#1a1a18] placeholder:text-[#bbb] outline-none focus:border-[#0064ff] transition-colors ${
-                errors.targetName ? "border-red-400 bg-red-50" : "border-[#e8e9ec]"
+              className={`w-full h-[44px] rounded-[8px] border px-4 text-[15px] outline-none transition-colors ${
+                errors.targetName
+                  ? "border-red-400 bg-red-50 text-[#1a1a18]"
+                  : targetLocked
+                    ? "cursor-not-allowed border-[#e8e9ec] bg-[#f5f6f8] text-[#555] opacity-100"
+                    : "border-[#e8e9ec] text-[#1a1a18] placeholder:text-[#bbb] focus:border-[#0064ff]"
               }`}
             />
             {errors.targetName && <p className="text-[13px] text-red-500 mt-1">{errors.targetName}</p>}
           </div>
 
           {/* 제목 */}
-          <div>
-            <label className="block text-[15px] font-bold text-[#1a1a18] mb-2">
-              제목 <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={form.title}
-              onChange={(e) => set("title", e.target.value)}
-              placeholder="신고 제목을 간략히 입력해 주세요."
-              maxLength={100}
-              className={`w-full h-[44px] rounded-[8px] border px-4 text-[15px] text-[#1a1a18] placeholder:text-[#bbb] outline-none focus:border-[#0064ff] transition-colors ${
-                errors.title ? "border-red-400 bg-red-50" : "border-[#e8e9ec]"
-              }`}
-            />
-            {errors.title && <p className="text-[13px] text-red-500 mt-1">{errors.title}</p>}
-          </div>
+          {!hideTitle && (
+            <div>
+              <label className="block text-[15px] font-bold text-[#1a1a18] mb-2">
+                제목 <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={form.title}
+                onChange={(e) => set("title", e.target.value)}
+                placeholder="신고 제목을 간략히 입력해 주세요."
+                maxLength={100}
+                className={`w-full h-[44px] rounded-[8px] border px-4 text-[15px] text-[#1a1a18] placeholder:text-[#bbb] outline-none focus:border-[#0064ff] transition-colors ${
+                  errors.title ? "border-red-400 bg-red-50" : "border-[#e8e9ec]"
+                }`}
+              />
+              {errors.title && <p className="text-[13px] text-red-500 mt-1">{errors.title}</p>}
+            </div>
+          )}
 
           {/* 신고 내용 */}
           <div>
@@ -284,7 +300,7 @@ function ReportModalContent({
             onClick={handleSubmit}
             className="btn btn-danger flex-1"
           >
-            {isPending ? "접수 중…" : "신고 접수하기"}
+            {isPending ? "신고 중…" : "신고하기"}
           </button>
         </div>
       </div>

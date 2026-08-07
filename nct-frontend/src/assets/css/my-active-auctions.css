@@ -103,11 +103,6 @@
   line-height: 1.5;
 }
 
-.my-active-auctions__list {
-  display: grid;
-  gap: 12px;
-}
-
 .my-active-auction-item {
   min-height: 132px;
   padding: 16px;

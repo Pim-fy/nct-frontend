@@ -59,7 +59,7 @@ import {
   parseAmount,
   resolveAuctionResultLabel,
 } from './utils/auctionFormatters';
-import { formatNumber, formatPrice } from '@utils/common';
+import { formatNumber, formatPoint } from '@utils/common';
 
 const DETAIL_PAGE_CLASS = 'bg-white pb-14 text-[#1d1d1f]';
 const DETAIL_CONTAINER_CLASS = 'mx-auto w-[calc(100%_-_52px)] max-w-[1600px] max-lg:w-[calc(100%_-_32px)] max-sm:w-[calc(100%_-_24px)]';
@@ -775,11 +775,11 @@ const AuctionDetailPageContent = ({ auctionId }) => {
     }
     const amount = requestedBidAmount;
     if (amount < minimumBidPrice) {
-      showToast(`최소 ${formatPrice(minimumBidPrice)} 이상 입력해 주세요`);
+      showToast(`최소 ${formatPoint(minimumBidPrice)} 이상 입력해 주세요`);
       return;
     }
     if (!isBidAmountUnitValid) {
-      showToast(`${formatPrice(bidUnitPrice)} 단위에 맞는 금액을 입력해 주세요`);
+      showToast(`${formatPoint(bidUnitPrice)} 단위에 맞는 금액을 입력해 주세요`);
       return;
     }
     if (hasAvailablePoint && availablePoint < amount) {
@@ -1164,11 +1164,13 @@ const AuctionDetailPageContent = ({ auctionId }) => {
       <ReportModal
         open={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
-        targetName={auction.sellerName || '판매자'}
+        targetName={auction.title}
+        targetLabel="경매 상품"
+        targetLocked
+        hideTitle
         targetType="auction"
         referenceSn={Number(auction.auctionId ?? auctionId)}
         reportedUserSn={Number(auction.sellerId)}
-        contextLabel={`경매: ${auction.title}`}
       />
       <AuctionToast message={toastMessage} />
       {isChargeModalOpen && (

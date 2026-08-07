@@ -145,7 +145,7 @@ const Header = () => {
   const hasHeaderSearch = isAuctionSearchRoute || isServiceSearchRoute;
   // 현재 보고 있는 화면이 헤더의 어느 메뉴에 속하는지 — 호버와 무관하게 항상 활성 색상을 보여준다.
   const isAuctionMenuActive = pathname.startsWith('/auction');
-  const isServiceMenuActive = pathname.startsWith('/service') || pathname.startsWith('/provider/quotes');
+  const isServiceMenuActive = pathname.startsWith('/service');
   const isCustomerMenuActive = pathname.startsWith('/customersupport');
   let headerCreateActionType = null;
   const canShowCreateAction = !authLoading && (!user || user.role === 'ROLE_USER');

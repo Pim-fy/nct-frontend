@@ -13,6 +13,7 @@ const PREVIEW_TRADE = {
   escrowStatusLabel: '보관금이 안전하게 예치되어 있습니다.',
   tradeStatusCode: 'TRDC0003',
   viewerRole: 'PROVIDER',
+  chatAvailable: true,
   availableActions: [
     'REQUEST_COMPLETION',
     'REQUEST_SCHEDULE_CHANGE',

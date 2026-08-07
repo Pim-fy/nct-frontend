@@ -13,12 +13,13 @@ import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
 import PageMeta from '@components/admin/PageMeta';
+import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
 import { toast } from '@utils/common';
 import './audit/adminAuditPage.css';
 import './operation/adminOperationPages.css';
 import './AdminMemberList.css';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = ADMIN_PAGE_SIZE;
 const EMPTY_FILTERS = { statusCode: '', keyword: '' };
 const STATUS = {
   USRC0001: { label: '활성', tone: 'success' },
