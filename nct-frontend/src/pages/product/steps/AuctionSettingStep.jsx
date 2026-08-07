@@ -5,6 +5,7 @@
 //        endDt, bidUnits, submitted, startAmtRef, ibyAmtRef, auctionRangeRef, policyRef
 import { useEffect, useState } from 'react';
 import DateRangePicker from '@components/product/DateRangePicker';
+import { formatPoint } from '@/utils/common';
 
 // 등록 시각(현재) 기준 최소 1시간 이후를 10분 단위로 올림한 "HH:mm" 문자열
 // — 당일 즉시시작 종료 시간의 최소 기준(최소 1시간 진행 보장).
@@ -118,7 +119,7 @@ export default function AuctionSettingStep({
             )}
             {(submitted || startAmtTouched) && startAmtInvalid && (
               <span style={{ position: 'absolute', top: '100%', left: 0, fontSize: 17, fontWeight: 700, color: '#c0392b', whiteSpace: 'nowrap' }}>
-                입찰 단위({form.bidUnit.toLocaleString()}원)의 배수로 입력해 주세요
+                입찰 단위({formatPoint(form.bidUnit)})의 배수로 입력해 주세요
               </span>
             )}
           </div>
@@ -153,7 +154,7 @@ export default function AuctionSettingStep({
               onClick={() => set('bidUnit', u)}
               className={`chip ${form.bidUnit === u ? 'active' : ''}`}
             >
-              {u.toLocaleString()}원
+              {formatPoint(u)}
             </button>
           ))}
         </div>

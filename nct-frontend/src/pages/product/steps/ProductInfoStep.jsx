@@ -1,6 +1,6 @@
 // src/pages/product/steps/ProductInfoStep.jsx
 // Step 0: 상품명·카테고리·거래형태·설명·이미지 입력
-// Props: form, set, categories, bannedKeywordError, images, onChange, tradeMethods, maxImages, pendingDescFilesMap,
+// Props: form, set, categories, bannedKeywordError, images, onChange, tradeMethods, maxImages,
 //        submitted, imgSectionRef, prdNmRef, catRef, tradeRef, onTradeRegionsChange
 import ProductImageUpload from '@components/product/ProductImageUpload';
 import RichTextEditor from '@components/product/RichTextEditor';
@@ -9,7 +9,7 @@ import RegionSelector from '@components/common/RegionSelector';
 // 이 값일 때만 희망 거래지역 선택 UI 노출 — 직거래(TRDC0010)·둘 다 가능(TRDC0020)
 const REGION_REQUIRED_TRADE_METHODS = ['TRDC0010', 'TRDC0020'];
 
-export default function ProductInfoStep({ form, set, categories, bannedKeywordError, images, onChange, tradeMethods, maxImages, pendingDescFilesMap, submitted, imgSectionRef, prdNmRef, catRef, tradeRef, onTradeRegionsChange }) {
+export default function ProductInfoStep({ form, set, categories, bannedKeywordError, images, onChange, tradeMethods, maxImages, submitted, imgSectionRef, prdNmRef, catRef, tradeRef, onTradeRegionsChange }) {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <div className="field" ref={prdNmRef}>
@@ -88,7 +88,7 @@ export default function ProductInfoStep({ form, set, categories, bannedKeywordEr
 
       <div className="field" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         <label>상품 설명</label>
-        <RichTextEditor value={form.prdCn} onChange={html => set('prdCn', html)} pendingFilesMap={pendingDescFilesMap} />
+        <RichTextEditor value={form.prdCn} onChange={html => set('prdCn', html)} />
       </div>
 
       {/* 이미지 업로드 (F-AUC-002) — 선택 시엔 로컬 미리보기만, 첫 장이 대표이미지 */}

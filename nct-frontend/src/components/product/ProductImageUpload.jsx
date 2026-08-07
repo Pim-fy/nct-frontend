@@ -8,6 +8,8 @@
 // (F-AUC-002: 저장 버튼을 눌러야만 DB에 반영). flSn이 없는 항목(file만 있는 항목)이 미업로드 상태.
 import { useRef, useState } from 'react';
 import { toImageUrl } from '@api/fileApi';
+import iconImage from '@assets/img/icon_image.png';
+import iconCamera from '@assets/img/icon_camera.png';
 
 export default function ProductImageUpload({ images, onChange, maxImages = 5 }) {
   const [pickMode, setPickMode] = useState(false); // 대표이미지 지정 모드 — 활성화 중 사진 클릭 시 대표로 변경
@@ -70,8 +72,9 @@ export default function ProductImageUpload({ images, onChange, maxImages = 5 }) 
             onClick={() => setPickMode(v => !v)}
             disabled={images.length === 0}
             className="btn btn-ghost"
-            style={pickMode ? { background: '#0064ff', color: '#fff', borderColor: '#0064ff' } : undefined}
+            style={pickMode ? { background: '#0064ff', color: '#fff', borderColor: '#0064ff', gap: 6 } : { gap: 6 }}
           >
+            <img src={iconImage} alt="" style={{ width: 13, height: 13 }} />
             대표이미지로 지정
           </button>
           <button
@@ -79,7 +82,9 @@ export default function ProductImageUpload({ images, onChange, maxImages = 5 }) 
             onClick={() => fileInputRef.current?.click()}
             disabled={images.length >= maxImages}
             className="btn btn-ghost"
+            style={{ gap: 6 }}
           >
+            <img src={iconCamera} alt="" style={{ width: 13, height: 13 }} />
             사진등록
           </button>
         </div>

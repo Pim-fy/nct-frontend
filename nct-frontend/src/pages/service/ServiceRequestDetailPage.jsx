@@ -15,6 +15,7 @@ import { getReceivedQuotes } from '@api/quoteApi';
 import { fetchMyProviderQuoteAccess } from '@api/providerProfileApi';
 import { useMyActiveQuote } from '@hooks/useQuote';
 import { toImageUrl } from '@api/fileApi';
+import { formatBudget } from '@utils/common';
 import ImageLightbox from '@components/common/ImageLightbox';
 import ErrorMessage from '@components/common/ErrorMessage';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
@@ -135,12 +136,12 @@ function renderEntryValue(entry) {
           className={`flex flex-col gap-2 divide-y divide-[#eee] ${k > 0 ? 'border-l border-[#e2e1dc] pl-5' : ''} ${k < subGroups.length - 1 ? 'pr-5' : ''}`}
         >
           {sub.title && (
-            <span className="pb-2 text-base font-bold text-[#1d1d1f]">{sub.title}</span>
+            <span className="pb-2 text-sm font-bold text-[#1d1d1f]">{sub.title}</span>
           )}
           {sub.items.map((item, j) => (
             <div key={j} className={j === 0 ? '' : 'pt-2'}>
               {item.label && (
-                <span className="mb-0.5 block text-base text-[#888780]">{item.label}</span>
+                <span className="mb-0.5 block text-sm text-[#888780]">{item.label}</span>
               )}
               <strong className="block whitespace-pre-line font-semibold text-[#1d1d1f]">{item.value}</strong>
             </div>
@@ -186,11 +187,6 @@ function buildTableRows(entries) {
   });
   if (pending) rows.push([pending, null]);
   return rows;
-}
-
-function fmtBudget(amt) {
-  if (amt == null) return '예산 미정';
-  return Number(amt).toLocaleString('ko-KR') + '원';
 }
 
 function fmtDate(dt) {
@@ -366,7 +362,7 @@ export default function ServiceRequestDetailPage() {
         svcReqSn,
         svcReqTitle: request.svcReqTtl,
         category: request.catNm,
-        budget: fmtBudget(request.svcReqBdgtAmt),
+        budget: formatBudget(request.svcReqBdgtAmt),
       },
     });
   };
@@ -379,7 +375,7 @@ export default function ServiceRequestDetailPage() {
         svcReqSn,
         svcReqTitle: request.svcReqTtl,
         category: request.catNm,
-        budget: fmtBudget(request.svcReqBdgtAmt),
+        budget: formatBudget(request.svcReqBdgtAmt),
         amount: myActiveQuote.amount,
         content: myActiveQuote.content,
         duration: myActiveQuote.duration,
@@ -419,7 +415,18 @@ export default function ServiceRequestDetailPage() {
   const quoteAccessPending = quoteAccessQuery.isLoading || quoteAccessQuery.isFetching;
   const canSubmitQuote = quoteAccessQuery.data === true;
 
-  const parsedItems = (request.items ?? []).map(parseItemGroup);
+  // 복수 선택(예: 추가 옵션) 답변은 DB에 선택지마다 한 줄씩 따로 저장되므로,
+  // 같은 단계 제목이 연달아 나오면 한 항목으로 합쳐서 보여준다 (그대로 두면 같은 제목이 여러 번 번호 매겨짐)
+  const parsedItems = [];
+  (request.items ?? []).forEach(raw => {
+    const parsed = parseItemGroup(raw);
+    const prev = parsedItems[parsedItems.length - 1];
+    if (prev && prev.title === parsed.title) {
+      prev.fields.push(...parsed.fields);
+    } else {
+      parsedItems.push(parsed);
+    }
+  });
   parsedItems.push({ title: MEMO_TITLE, fields: [{ label: null, value: request.svcReqCn ?? '' }] });
 
   const statusBadgeClass = STATUS_BADGE_CLASS[request.svcReqStatusCd] ?? 'bg-[#f0f0ee] text-[#5f5e5a]';
@@ -429,7 +436,7 @@ export default function ServiceRequestDetailPage() {
   return (
     <>
       {headerSearch}
-      <div className="bg-white pb-14 text-base leading-[1.6] text-[#1d1d1f]">
+      <div className="bg-white pb-14 text-sm leading-[1.6] text-[#1d1d1f]">
         <div className="container">
 
         {/* 뒤로가기 */}
@@ -490,7 +497,7 @@ export default function ServiceRequestDetailPage() {
 
               <h1 className="mt-3 text-3xl font-bold leading-[1.4]">{request.svcReqTtl}</h1>
               <p className="mt-2 text-lg text-[#5f5e5a]">
-                {fmtBudget(request.svcReqBdgtAmt)}
+                {formatBudget(request.svcReqBdgtAmt)}
                 {request.svcReqRegDt && <span className="ml-2">· {fmtDate(request.svcReqRegDt)} 등록</span>}
               </p>
             </div>
@@ -600,7 +607,7 @@ export default function ServiceRequestDetailPage() {
                       placeholder="제목 (필수)"
                       value={cmtTtl}
                       onChange={e => setCmtTtl(e.target.value)}
-                      className="w-full rounded-lg border border-[#e2e1dc] px-3 py-2 text-base outline-none focus:border-primary"
+                      className="w-full rounded-lg border border-[#e2e1dc] px-3 py-2 text-sm outline-none focus:border-primary"
                     />
                     <p className={`mt-1 text-right text-xs ${cmtTtl.length >= 30 ? 'text-[#c0392b]' : 'text-[#9a9ba5]'}`}>{cmtTtl.length}/30</p>
                     <textarea
@@ -609,7 +616,7 @@ export default function ServiceRequestDetailPage() {
                       placeholder="내용 (선택)"
                       value={cmtCn}
                       onChange={e => setCmtCn(e.target.value)}
-                      className="mt-2 w-full resize-none rounded-lg border border-[#e2e1dc] px-3 py-2 text-base outline-none focus:border-primary"
+                      className="mt-2 w-full resize-none rounded-lg border border-[#e2e1dc] px-3 py-2 text-sm outline-none focus:border-primary"
                     />
                     <p className={`mt-1 text-right text-xs ${cmtCn.length >= 100 ? 'text-[#c0392b]' : 'text-[#9a9ba5]'}`}>{cmtCn.length}/100</p>
                     <p className="mt-1 text-xs text-[#9a9ba5]">변경사항은 최대 3개까지 등록할 수 있습니다.</p>
@@ -740,7 +747,18 @@ export default function ServiceRequestDetailPage() {
                       <li
                         key={q.qutSn}
                         className="cursor-pointer px-5 py-4 transition-colors hover:bg-[#f9fafb]"
-                        onClick={() => navigate(`/service-requests/${svcReqSn}/quotes/${q.qutSn}`, { state: { quote: q } })}
+                        onClick={() => navigate(`/service-requests/${svcReqSn}/quotes/${q.qutSn}`, {
+                          state: {
+                            quote: q,
+                            requestSummary: {
+                              svcReqTtl: request.svcReqTtl,
+                              catNm: request.catNm,
+                              svcReqBdgtAmt: request.svcReqBdgtAmt,
+                              svcReqStatusCd: request.svcReqStatusCd,
+                              items: request.items,
+                            },
+                          },
+                        })}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <span className="font-semibold text-[#1d1d1f]">{q.providerNm}</span>
@@ -748,9 +766,9 @@ export default function ServiceRequestDetailPage() {
                             {QUOTE_STATUS_LABEL[q.statusCode] ?? q.statusCode}
                           </span>
                         </div>
-                        <p className="mt-1 text-xl font-bold text-primary">{fmtBudget(q.amount)}</p>
+                        <p className="mt-1 text-xl font-bold text-primary">{formatBudget(q.amount)}</p>
                         {q.content && (
-                          <p className="mt-1 line-clamp-2 text-base text-[#5f5e5a]">{q.content}</p>
+                          <p className="mt-1 line-clamp-2 text-sm text-[#5f5e5a]">{q.content}</p>
                         )}
                         {q.registeredAt && (
                           <p className="mt-1 text-sm text-[#9a9ba5]">{fmtDate(q.registeredAt)} 제출</p>

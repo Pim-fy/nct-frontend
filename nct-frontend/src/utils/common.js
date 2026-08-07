@@ -185,6 +185,16 @@ export const formatNumber = (value) => {
 };
 
 /**
+ * 예산·견적 금액을 포인트(P) 단위로 포맷 — 서비스 요청/견적 화면 공용
+ * @param {number|null} amt
+ * @returns {string} 값이 없으면 "예산 미정" (숫자 포맷 자체는 formatPoint와 동일)
+ */
+export const formatBudget = (amt) => {
+  if (amt == null) return '예산 미정';
+  return formatPoint(amt);
+};
+
+/**
  * 날짜를 YYYY.MM.DD 형식으로 포맷
  * @param {string|Date} date
  * @returns {string} 값이 없거나 날짜로 해석할 수 없으면 "-"
