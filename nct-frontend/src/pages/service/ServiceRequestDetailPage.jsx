@@ -357,7 +357,7 @@ export default function ServiceRequestDetailPage() {
       return;
     }
     if (quoteAccessQuery.data !== true) return;
-    navigate(`/provider/quotes/new?svcReqSn=${svcReqSn}`, {
+    navigate(`/service-requests/${svcReqSn}/quotes/new`, {
       state: {
         svcReqSn,
         svcReqTitle: request.svcReqTtl,
@@ -369,7 +369,7 @@ export default function ServiceRequestDetailPage() {
 
   const handleQuoteEdit = () => {
     if (!myActiveQuote?.qutSn) return;
-    navigate(`/provider/quotes/${myActiveQuote.qutSn}/edit?svcReqSn=${svcReqSn}`, {
+    navigate(`/service-requests/${svcReqSn}/quotes/${myActiveQuote.qutSn}/edit`, {
       state: {
         quoteId: myActiveQuote.qutSn,
         svcReqSn,

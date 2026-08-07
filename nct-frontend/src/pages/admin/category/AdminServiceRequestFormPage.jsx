@@ -22,6 +22,7 @@ import PageMeta from '@components/admin/PageMeta';
 import { useSaveAdminCategory } from '@hooks/useAdminCategories';
 import {
   useAdminServiceRequestForm,
+  useDiscardAdminServiceRequestFormDraft,
   usePublishAdminServiceRequestForm,
   useSaveAdminServiceRequestFormDraft,
 } from '@hooks/useAdminServiceRequestForm';
@@ -41,6 +42,73 @@ import './adminServiceRequestFormPage.css';
 
 const SERVICE_DOMAIN = 'CATC0002';
 const clone = (value) => JSON.parse(JSON.stringify(value));
+
+const nullableText = (value) => {
+  const trimmed = value?.trim();
+  return trimmed || null;
+};
+
+const canonicalJson = (value) => {
+  if (!value?.trim()) return null;
+  try {
+    const sortObject = (target) => {
+      if (Array.isArray(target)) return target.map(sortObject);
+      if (!target || typeof target !== 'object') return target;
+      return Object.keys(target).sort().reduce((result, key) => ({
+        ...result,
+        [key]: sortObject(target[key]),
+      }), {});
+    };
+    return sortObject(JSON.parse(value));
+  } catch {
+    return value.trim();
+  }
+};
+
+const normalizedFormPayload = (model) => {
+  const payload = toDraftPayload(model);
+  const option = (item, fieldOption = false) => ({
+    optionKey: item.optionKey.trim(),
+    value: item.value.trim(),
+    label: item.label.trim(),
+    subtitle: fieldOption ? null : nullableText(item.subtitle),
+    nextStepKey: fieldOption ? null : nullableText(item.nextStepKey),
+  });
+  return {
+    subtitle: nullableText(payload.subtitle),
+    uiMetaJson: canonicalJson(payload.uiMetaJson),
+    steps: payload.steps.map((step) => ({
+      stepKey: step.stepKey.trim(),
+      title: step.title.trim(),
+      description: nullableText(step.description),
+      type: step.type,
+      nextStepKey: nullableText(step.nextStepKey),
+      options: step.options.map((item) => option(item)),
+      fields: step.fields.map((field) => ({
+        fieldKey: field.fieldKey.trim(),
+        label: field.label.trim(),
+        type: field.type,
+        placeholder: nullableText(field.placeholder),
+        description: nullableText(field.description),
+        required: field.required,
+        requireDigit: field.requireDigit,
+        sensitive: field.sensitive,
+        maxSelections: field.maxSelections,
+        uiMetaJson: canonicalJson(field.uiMetaJson),
+        options: field.options.map((item) => option(item, true)),
+        rules: field.rules.map((rule) => ({
+          sourceStepKey: nullableText(rule.sourceStepKey),
+          sourceFieldKey: nullableText(rule.sourceFieldKey),
+          compareValue: nullableText(rule.compareValue),
+          operator: rule.operator,
+          action: rule.action,
+        })),
+      })),
+    })),
+  };
+};
+
+const formPayloadSignature = (model) => JSON.stringify(normalizedFormPayload(model));
 
 const NextStepSelect = ({ currentStepKey, label, onChange, steps, value }) => (
   <label className="admin-form-designer__next">
@@ -420,6 +488,7 @@ const AdminServiceRequestFormEditor = ({ categorySn, initialResponse }) => {
   const navigate = useNavigate();
   const categoryMutation = useSaveAdminCategory();
   const saveMutation = useSaveAdminServiceRequestFormDraft(categorySn);
+  const discardMutation = useDiscardAdminServiceRequestFormDraft(categorySn);
   const publishMutation = usePublishAdminServiceRequestForm(categorySn);
   const [model, setModel] = useState(() => toEditorModel(initialResponse));
   const [categoryForm, setCategoryForm] = useState(() => ({
@@ -427,7 +496,9 @@ const AdminServiceRequestFormEditor = ({ categorySn, initialResponse }) => {
     name: initialResponse.categoryName || '',
   }));
   const [categoryFeedback, setCategoryFeedback] = useState('');
-  const [dirty, setDirty] = useState(false);
+  const [baselinePayload, setBaselinePayload] = useState(() => (
+    formPayloadSignature(toEditorModel(initialResponse))
+  ));
   const [feedback, setFeedback] = useState('');
   const [openSteps, setOpenSteps] = useState(() => (
     model.steps[0] ? { [model.steps[0].stepKey]: true } : {}
@@ -439,7 +510,6 @@ const AdminServiceRequestFormEditor = ({ categorySn, initialResponse }) => {
       mutator(next);
       return next;
     });
-    setDirty(true);
     setFeedback('');
   };
 
@@ -511,6 +581,10 @@ const AdminServiceRequestFormEditor = ({ categorySn, initialResponse }) => {
   };
 
   const saveDraft = async () => {
+    if (!dirty) {
+      setFeedback('변경된 내용이 없어 새 초안을 저장하지 않았습니다.');
+      return;
+    }
     if (!model?.steps.length) {
       setFeedback('질문을 한 개 이상 추가해 주세요.');
       return;
@@ -521,8 +595,9 @@ const AdminServiceRequestFormEditor = ({ categorySn, initialResponse }) => {
         categorySn,
         payload: toDraftPayload(model),
       });
-      setModel(toEditorModel(saved));
-      setDirty(false);
+      const savedModel = toEditorModel(saved);
+      setModel(savedModel);
+      setBaselinePayload(formPayloadSignature(savedModel));
       toast({ icon: 'success', title: '새 버전 초안을 저장했습니다.', timer: 1800 });
     } catch (error) {
       setFeedback(error.response?.data?.message || '초안을 저장하지 못했습니다. 질문 연결과 입력값을 확인해 주세요.');
@@ -538,22 +613,50 @@ const AdminServiceRequestFormEditor = ({ categorySn, initialResponse }) => {
       setFeedback('발행할 초안이 없습니다. 내용을 수정하고 초안을 먼저 저장해 주세요.');
       return;
     }
-    if (!window.confirm('이 초안을 사용자 서비스 요청서로 발행하시겠습니까?')) return;
+    if (!window.confirm('이 초안을 사용자 견적 요청서로 발행하시겠습니까?')) return;
     setFeedback('');
     try {
       const published = await publishMutation.mutateAsync({
         categorySn,
         formTemplateSn: model.formTemplateSn,
       });
-      setModel(toEditorModel(published));
-      setDirty(false);
-      toast({ icon: 'success', title: '서비스 요청 폼을 발행했습니다.', timer: 1800 });
+      const publishedModel = toEditorModel(published);
+      setModel(publishedModel);
+      setBaselinePayload(formPayloadSignature(publishedModel));
+      toast({ icon: 'success', title: '견적 요청 폼을 발행했습니다.', timer: 1800 });
     } catch (error) {
       setFeedback(error.response?.data?.message || '폼을 발행하지 못했습니다.');
     }
   };
 
-  const pending = saveMutation.isPending || publishMutation.isPending;
+  const discardDraft = async () => {
+    if (!model?.draft || !model.formTemplateSn) {
+      setFeedback('폐기할 초안이 없습니다.');
+      return;
+    }
+    const message = dirty
+      ? '저장하지 않은 변경 내용과 현재 초안을 함께 폐기하시겠습니까?'
+      : `초안 v${model.formVersion}을 폐기하시겠습니까? 발행 중인 버전은 유지됩니다.`;
+    if (!window.confirm(message)) return;
+    setFeedback('');
+    try {
+      const discarded = await discardMutation.mutateAsync({
+        categorySn,
+        formTemplateSn: model.formTemplateSn,
+      });
+      const discardedModel = toEditorModel(discarded);
+      setModel(discardedModel);
+      setBaselinePayload(formPayloadSignature(discardedModel));
+      toast({ icon: 'success', title: '초안을 폐기했습니다.', timer: 1800 });
+    } catch (error) {
+      setFeedback(error.response?.data?.message || '초안을 폐기하지 못했습니다.');
+    }
+  };
+
+  const dirty = formPayloadSignature(model) !== baselinePayload;
+  const pending = saveMutation.isPending
+    || discardMutation.isPending
+    || publishMutation.isPending;
   return (
     <div className="admin-content-page admin-form-designer">
       <PageMeta title={`${categoryForm.name} 서비스 카테고리 수정`} />
@@ -614,7 +717,12 @@ const AdminServiceRequestFormEditor = ({ categorySn, initialResponse }) => {
           {dirty && <em>저장하지 않은 변경 있음</em>}
         </div>
         <div className="admin-form-designer__save-actions">
-          <button className="btn btn-outline" disabled={pending} onClick={saveDraft} type="button">
+          {model.draft && model.formTemplateSn && (
+            <button className="btn btn-danger" disabled={pending} onClick={discardDraft} type="button">
+              <Trash2 /> {discardMutation.isPending ? '폐기 중' : '초안 폐기'}
+            </button>
+          )}
+          <button className="btn btn-outline" disabled={pending || !dirty} onClick={saveDraft} type="button">
             <Save /> {saveMutation.isPending ? '저장 중' : '초안 저장'}
           </button>
           <button className="btn btn-primary" disabled={pending || !model.draft || dirty} onClick={publish} type="button">
@@ -699,7 +807,7 @@ const AdminServiceRequestFormPage = () => {
     return <div className="admin-content-page"><div className="admin-content-state">폼 구성을 불러오는 중입니다.</div></div>;
   }
   if (formQuery.isError || !formQuery.data) {
-    return <div className="admin-content-page"><div className="admin-content-state is-error">서비스 요청 폼을 불러오지 못했습니다.</div></div>;
+    return <div className="admin-content-page"><div className="admin-content-state is-error">견적 요청 폼을 불러오지 못했습니다.</div></div>;
   }
 
   const response = formQuery.data;

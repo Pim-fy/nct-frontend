@@ -8,6 +8,7 @@ import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminTable from '@components/admin/AdminTable';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
+import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
 import { useAuditLogs } from '@hooks/useAdminAudit';
 import useClientPagination from '@hooks/useClientPagination';
 import './adminAuditPage.css';
@@ -23,7 +24,7 @@ const TYPE_OPTIONS = [
   { value: 'AUDC0006', label: '관리자반려' },
   { value: 'AUDC0007', label: '상태변경' },
 ];
-const PAGE_SIZE = 20;
+const PAGE_SIZE = ADMIN_PAGE_SIZE;
 const EMPTY_FILTER_FORM = { usrSn: '', typeCd: '', from: '', to: '' };
 
 const auditDetails = (value) => {

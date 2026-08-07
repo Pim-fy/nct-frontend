@@ -13,6 +13,7 @@ import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import PageMeta from '@components/admin/PageMeta';
+import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
 import { toast } from '@utils/common';
 import '../audit/adminAuditPage.css';
 import './adminOperationPages.css';
@@ -32,7 +33,7 @@ const REPORT_STATUS = {
 };
 
 const formatDate = (value) => (value ? String(value).replace('T', ' ').slice(0, 16) : '-');
-const PAGE_SIZE = 20;
+const PAGE_SIZE = ADMIN_PAGE_SIZE;
 const EMPTY_FILTERS = { statusCode: '', keyword: '' };
 const reportTypeName = (code) => REPORT_TYPE_NAMES[code] ?? code ?? '-';
 const reportStatus = (code) => REPORT_STATUS[code] ?? { label: code ?? '-', tone: 'neutral' };
