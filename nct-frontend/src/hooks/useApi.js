@@ -44,6 +44,12 @@ export const useApi = () => {
     fetchMe : ()      => execute(() => api.get('/auth/me')),
     login   : (creds) => execute(() => api.post('/auth/login', creds), false),
     logout  : ()      => execute(() => api.post('/auth/logout'), false),
+    // 담당자 7 · F-OPS-001: 권한 불일치 세션 정리는 공통 오류 화면 이동 없이 호출 화면에서 마무리한다.
+    rejectSession: () => execute(() => api.post('/auth/logout', null, {
+      skipAuthRefresh: true,
+      skipAuthStateRedirect: true,
+      skipServerErrorRedirect: true,
+    }), false),
     // 모드 전환 (F-PROV-008): to = 'USER' | 'SERVICE'. 새 토큰은 서버가 쿠키로 내려줘서 별도 저장 불필요.
     switchMode: (to)  => execute(() => api.post('/auth/mode', null, { params: { to } })),
     // ==========================================
