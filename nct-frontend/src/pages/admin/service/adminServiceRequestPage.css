@@ -39,7 +39,7 @@
 }
 
 .admin-service-list table {
-  min-width: 980px;
+  min-width: 1180px;
 }
 
 .admin-service-page__filter-error {
@@ -97,6 +97,13 @@
   color: #64748b;
   font-size: 12px;
   font-weight: 800;
+}
+
+.admin-service-detail__badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
 }
 
 .admin-service-detail__summary h3 {
@@ -180,6 +187,11 @@
 
 .admin-service-detail__section dd {
   color: #273244;
+}
+
+.admin-service-detail__section.is-selected-quote {
+  border-color: #bfdbfe;
+  background: #f8fbff;
 }
 
 @media (max-width: 1250px) {

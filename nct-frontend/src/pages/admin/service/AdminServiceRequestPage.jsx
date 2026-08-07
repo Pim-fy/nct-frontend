@@ -40,6 +40,12 @@ const statusTone = (statusCode) => {
   return 'neutral';
 };
 
+const integratedStatusTone = (statusCode) => {
+  if (statusCode === 'COMPLETED') return 'success';
+  if (statusCode === 'IN_PROGRESS') return 'info';
+  return 'warning';
+};
+
 const formatAmount = (value) => (
   value == null ? '-' : `${Number(value).toLocaleString('ko-KR')}원`
 );
@@ -90,12 +96,26 @@ const AdminServiceRequestPage = () => {
     { key: 'budgetAmount', label: '예산', render: formatAmount },
     {
       key: 'statusName',
-      label: '상태',
+      label: '원본 상태',
       render: (value, row) => (
         <AdminStatusBadge tone={statusTone(row.statusCode)}>
           {value ?? row.statusCode}
         </AdminStatusBadge>
       ),
+    },
+    {
+      key: 'integratedStatusName',
+      label: '통합 상태',
+      render: (value, row) => (
+        <AdminStatusBadge tone={integratedStatusTone(row.integratedStatusCode)}>
+          {value ?? '-'}
+        </AdminStatusBadge>
+      ),
+    },
+    {
+      key: 'totalQuoteCount',
+      label: '견적',
+      render: (value, row) => `${value ?? 0}건${row.activeQuoteCount ? ` · 활성 ${row.activeQuoteCount}` : ''}`,
     },
     { key: 'registeredAt', label: '등록일', render: formatDateTime },
     {
@@ -259,11 +279,18 @@ const AdminServiceRequestPage = () => {
               <div className="admin-service-detail__summary">
                 <div className="admin-service-detail__status-line">
                   <span>요청 #{detail.serviceRequestId}</span>
-                  {(detail.statusName || detail.statusCode) && (
-                    <AdminStatusBadge tone={statusTone(detail.statusCode)}>
-                      {detail.statusName ?? detail.statusCode}
-                    </AdminStatusBadge>
-                  )}
+                  <div className="admin-service-detail__badges">
+                    {(detail.statusName || detail.statusCode) && (
+                      <AdminStatusBadge tone={statusTone(detail.statusCode)}>
+                        원본 · {detail.statusName ?? detail.statusCode}
+                      </AdminStatusBadge>
+                    )}
+                    {detail.integratedStatusName && (
+                      <AdminStatusBadge tone={integratedStatusTone(detail.integratedStatusCode)}>
+                        통합 · {detail.integratedStatusName}
+                      </AdminStatusBadge>
+                    )}
+                  </div>
                 </div>
                 <h3>{detail.title}</h3>
               </div>
@@ -284,7 +311,23 @@ const AdminServiceRequestPage = () => {
                     </strong>
                   </div>
                 )}
+                <div>
+                  <span>제출 견적</span>
+                  <strong>{detail.totalQuoteCount ?? 0}건 · 활성 {detail.activeQuoteCount ?? 0}건</strong>
+                </div>
               </div>
+
+              {detail.selectedQuoteId != null && (
+                <section className="admin-service-detail__section is-selected-quote">
+                  <h4>선택 견적</h4>
+                  <dl>
+                    <dt>견적</dt><dd>#{detail.selectedQuoteId}</dd>
+                    <dt>제공자</dt><dd>#{detail.selectedProviderUserId}</dd>
+                    <dt>금액</dt><dd>{formatAmount(detail.selectedAmount)}</dd>
+                    <dt>원본 상태</dt><dd>{detail.selectedQuoteStatusCode}</dd>
+                  </dl>
+                </section>
+              )}
 
               {detail.content?.trim() && (
                 <section className="admin-service-detail__section">
