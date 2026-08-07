@@ -24,6 +24,7 @@ const TABS = ["전체", "대기중", "진행중", "종료"];
 // ─── 서브 컴포넌트 ────────────────────────────────────────────────────────────
 
 function QuoteCard({ quote, onEdit, onCancel, onDetail }) {
+  const navigate = useNavigate();
   const isDone   = quote.status === "종료";
   const isActive = quote.status === "진행중";
   const canEdit   = !isDone && !isActive && quote.editCount < 3;
@@ -42,7 +43,10 @@ function QuoteCard({ quote, onEdit, onCancel, onDetail }) {
           {quote.catNm && (
             <span className="badge badge-blue" style={{ fontSize: 12, borderRadius: 5, flexShrink: 0 }}>{quote.catNm}</span>
           )}
-          <p className="flex-1 min-w-0 font-bold text-[20px] text-[#333333] leading-none truncate">
+          <p
+            className="flex-1 min-w-0 font-bold text-[20px] text-[#333333] leading-none truncate cursor-pointer hover:text-[#0064ff] hover:underline transition-colors"
+            onClick={() => navigate(`/service-requests/${quote.svcReqSn}`)}
+          >
             {quote.title}
           </p>
         </div>
@@ -95,32 +99,48 @@ function QuoteCard({ quote, onEdit, onCancel, onDetail }) {
       <div className="h-px bg-[#f0f0f0]" />
 
       {/* 하단 메타 정보 */}
-      <div className="flex flex-col gap-1.5 items-end">
-        {quote.svcReqBdgtAmt != null && (
-          <div className="flex items-center gap-1.5">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#969696" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <div className="flex items-start justify-between gap-2">
+        {/* 좌: 의뢰 예산 + 희망일 */}
+        <div className="flex flex-col gap-2" style={{ padding: '8px 0' }}>
+          {quote.svcReqBdgtAmt != null && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#969696" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', flexShrink: 0, position: 'relative', top: -2 }}>
+                <line x1="12" y1="1" x2="12" y2="23"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+              <span style={{ fontSize: 15, color: '#555', lineHeight: 1 }}>의뢰 예산 {fmt(quote.svcReqBdgtAmt)}원</span>
+            </div>
+          )}
+          {quote.svcReqHopeDt && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#969696" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', flexShrink: 0, position: 'relative', top: -2 }}>
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              <span style={{ fontSize: 15, color: '#555', lineHeight: 1 }}>희망일 {quote.svcReqHopeDt}</span>
+            </div>
+          )}
+        </div>
+        {/* 우: 내 견적금액 + 제출일 */}
+        <div className="flex flex-col gap-2 items-end" style={{ background: '#f0f6ff', borderRadius: 10, padding: '8px 14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a7fd4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', flexShrink: 0, position: 'relative', top: -2 }}>
               <line x1="12" y1="1" x2="12" y2="23"/>
               <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
             </svg>
-            <span className="text-[16px] text-[#969696]">의뢰 예산 {fmt(quote.svcReqBdgtAmt)}원</span>
+            <span style={{ fontSize: 15, color: '#1a4fa0', fontWeight: 600, lineHeight: 1 }}>내 견적금액 {fmt(quote.amount)}원</span>
           </div>
-        )}
-        <div className="flex items-center gap-1.5">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#969696" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="1" x2="12" y2="23"/>
-            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-          </svg>
-          <span className="text-[16px] text-[#555]">내 견적금액 {fmt(quote.amount)}원</span>
-        </div>
-
-        <div className="flex items-center gap-1.5">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#969696" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-            <line x1="16" y1="2" x2="16" y2="6"/>
-            <line x1="8" y1="2" x2="8" y2="6"/>
-            <line x1="3" y1="10" x2="21" y2="10"/>
-          </svg>
-          <span className="text-[16px] text-[#969696]">내 견적 제출일 {quote.submittedAt}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a7fd4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', flexShrink: 0, position: 'relative', top: -2 }}>
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            <span style={{ fontSize: 15, color: '#4a7fd4', lineHeight: 1 }}>내 견적 제출일 {quote.submittedAt}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -156,6 +176,7 @@ export default function MyQuoteListPage({ embedded = false } = {}) {
       editCount:     q.reviseCnt,
       catNm:         q.catNm || '',
       svcReqBdgtAmt: q.svcReqBdgtAmt || null,
+      svcReqHopeDt:  q.svcReqRegDt ? String(q.svcReqRegDt).slice(0, 10).replace(/-/g, '.') : null,
     }));
   }, [pageData]);
 
