@@ -1,5 +1,13 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { submitQuote, updateQuote, withdrawQuote, getMyQuotes, getMyActiveQuote, getQuoteHistory } from '../api/quoteApi';
+import {
+  getMyActiveQuote,
+  getMyQuotes,
+  getMyQuoteSummary,
+  getQuoteHistory,
+  submitQuote,
+  updateQuote,
+  withdrawQuote,
+} from '../api/quoteApi';
 
 /** 내 견적 목록 — data: PageResponse { content, totalCount, page, size, hasNext } */
 export function useMyQuotes({ page = 1, size = 50 } = {}) {
@@ -8,6 +16,15 @@ export function useMyQuotes({ page = 1, size = 50 } = {}) {
     queryFn: () => getMyQuotes({ page, size }),
     select: (res) => res.data,
     placeholderData: keepPreviousData,
+  });
+}
+
+/** F-PROV-009: 제공자 대시보드용 활성 견적 수 */
+export function useMyQuoteSummary() {
+  return useQuery({
+    queryKey: ['quotes', 'my', 'summary'],
+    queryFn: getMyQuoteSummary,
+    select: (res) => res.data,
   });
 }
 
