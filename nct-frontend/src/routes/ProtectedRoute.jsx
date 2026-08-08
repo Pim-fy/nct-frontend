@@ -5,8 +5,9 @@ import { useAuth } from '@hooks/useAuth';
 /**
  * 인증이 필요한 라우트를 보호하는 컴포넌트
  * @param {string[]} allowedRoles - 허용할 역할 목록
+ * @param {string} unauthenticatedTo - 비로그인 사용자를 보낼 로그인 경로
  */
-const ProtectedRoute = ({ allowedRoles = [] }) => {
+const ProtectedRoute = ({ allowedRoles = [], unauthenticatedTo = '/login' }) => {
   const { user, loading, isAuthenticated } = useAuth();
   const location = useLocation();
 
@@ -21,7 +22,7 @@ const ProtectedRoute = ({ allowedRoles = [] }) => {
 
   // 비로그인 → 로그인 페이지로
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to={unauthenticatedTo} state={{ from: location }} replace />;
   }
 
   // @ai_generated CHG-032: 현재 DB ROLE과 정확히 일치하는 화면만 통과한다.

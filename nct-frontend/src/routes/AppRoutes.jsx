@@ -26,6 +26,7 @@ import LandingPage        from '@pages/landing/LandingPage';
 import AuctionListPage    from '@pages/auction/AuctionListPage';
 import AuctionDetailPage  from '@pages/auction/AuctionDetailPage';
 import LoginPage          from '@pages/auth/LoginPage';
+import AdminLoginPage     from '@pages/auth/AdminLoginPage';
 import SignupPage         from '@pages/auth/SignupPage';
 import FindEmailPage      from '@pages/auth/FindEmailPage';
 import ResetPasswordPage  from '@pages/auth/ResetPasswordPage';
@@ -133,6 +134,8 @@ const AppRoutes = () => {
       {/* @ai_generated: 입력형 인증 화면은 공통 헤더·푸터를 AuthLayout에서 한 번만 조립한다. */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
+        {/* 담당자 7 · F-OPS-001: 일반 인증 화면과 계약은 공유하고 관리자 입력만 제공한다. */}
+        <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/login/signup" element={<SignupPage />} />
         <Route path="/find-email" element={<FindEmailPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -251,7 +254,14 @@ const AppRoutes = () => {
       </Route>
 
       {/* 임시 화면도 관리자 정보 구조를 보여 주므로 ROLE_ADMIN만 접근할 수 있습니다. */}
-      <Route element={<ProtectedRoute allowedRoles={['ROLE_ADMIN']} />}>
+      <Route
+        element={(
+          <ProtectedRoute
+            allowedRoles={['ROLE_ADMIN']}
+            unauthenticatedTo="/admin/login"
+          />
+        )}
+      >
         <Route path="/admin" element={<AdminLayout />}>
           {/* 대시보드 */}
           <Route index element={<Dashboard />} />

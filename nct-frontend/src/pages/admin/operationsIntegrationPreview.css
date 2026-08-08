@@ -63,6 +63,7 @@
 
 .operations-filters {
   display: flex;
+  flex-wrap: wrap;
   align-items: end;
   justify-content: flex-start;
   gap: 14px;
@@ -71,6 +72,10 @@
   border-bottom: 1px solid var(--admin-border, #e2e8f0) !important;
   border-radius: 0 !important;
   box-shadow: none !important;
+}
+
+.operations-date {
+  flex: 0 1 170px;
 }
 
 .operations-filters label {
