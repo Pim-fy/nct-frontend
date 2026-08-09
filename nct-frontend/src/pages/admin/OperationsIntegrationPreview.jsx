@@ -139,6 +139,22 @@ const OperationsIntegrationPreview = () => {
               </div>
             </article>
           ))
+        ) : summaryQuery.isError ? (
+          <div className="admin-content-state operations-summary__state is-error" role="alert">
+            <strong>위험 이벤트 유형별 집계를 불러오지 못했습니다.</strong>
+            <button
+              className="btn btn-outline"
+              disabled={summaryQuery.isFetching}
+              onClick={() => summaryQuery.refetch()}
+              type="button"
+            >
+              다시 시도
+            </button>
+          </div>
+        ) : (summaryQuery.data ?? []).length === 0 ? (
+          <div className="admin-content-state operations-summary__state">
+            조회 조건에 해당하는 위험 이벤트 집계가 없습니다.
+          </div>
         ) : (
           (summaryQuery.data ?? []).map((item) => (
             <article className="operations-summary__card" key={item.typeCode}>
@@ -156,15 +172,32 @@ const OperationsIntegrationPreview = () => {
       </section>
 
       <AdminSectionCard
-        action={<span>총 {eventsQuery.data?.totalItems ?? 0}건</span>}
+        action={!eventsQuery.isLoading && !eventsQuery.isError
+          ? <span>총 {eventsQuery.data?.totalItems ?? 0}건</span>
+          : null}
         className="operations-card"
         description="내용에는 원문 개인정보 대신 서버에서 마스킹된 정보만 표시됩니다."
         title="위험 이벤트 목록"
       >
         <form className="operations-filters" onSubmit={submitSearch}>
+          {typeOptionsQuery.isError && (
+            <div className="operations-filter-error" role="alert">
+              <span>위험 이벤트 유형을 불러오지 못했습니다.</span>
+              <button
+                className="btn btn-outline"
+                disabled={typeOptionsQuery.isFetching}
+                onClick={() => typeOptionsQuery.refetch()}
+                type="button"
+              >
+                다시 시도
+              </button>
+            </div>
+          )}
+
           <label>
             <span>유형</span>
             <select
+              disabled={typeOptionsQuery.isLoading || typeOptionsQuery.isError}
               onChange={(event) => setFilterForm({
                 ...filterForm,
                 typeCode: event.target.value,
@@ -236,26 +269,40 @@ const OperationsIntegrationPreview = () => {
           <AdminFilterActions disabled={eventsQuery.isFetching} onReset={resetFilters} />
         </form>
 
-        <div className="operations-table-wrap">
-          <AdminTable
-            columns={columns}
-            data={eventsQuery.isError ? [] : (eventsQuery.data?.items ?? [])}
-            emptyMessage={eventsQuery.isError
-              ? '위험 이벤트를 불러오지 못했습니다.'
-              : '조건에 맞는 위험 이벤트가 없습니다.'}
-            loading={eventsQuery.isLoading}
-            rowKey={(item) => item.riskEventId}
-          />
-        </div>
+        {eventsQuery.isError ? (
+          <div className="admin-content-state is-error" role="alert">
+            <strong>위험 이벤트 목록을 불러오지 못했습니다.</strong>
+            <button
+              className="btn btn-outline"
+              disabled={eventsQuery.isFetching}
+              onClick={() => eventsQuery.refetch()}
+              type="button"
+            >
+              다시 시도
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="operations-table-wrap">
+              <AdminTable
+                columns={columns}
+                data={eventsQuery.data?.items ?? []}
+                emptyMessage="조건에 맞는 위험 이벤트가 없습니다."
+                loading={eventsQuery.isLoading}
+                rowKey={(item) => item.riskEventId}
+              />
+            </div>
 
-        <AdminPagination
-          ariaLabel="위험 이벤트 페이지 이동"
-          className="operations-pagination"
-          disabled={eventsQuery.isFetching}
-          onPageChange={setPage}
-          page={eventsQuery.data?.page ?? page}
-          totalPages={eventsQuery.data?.totalPages ?? 0}
-        />
+            <AdminPagination
+              ariaLabel="위험 이벤트 페이지 이동"
+              className="operations-pagination"
+              disabled={eventsQuery.isFetching}
+              onPageChange={setPage}
+              page={eventsQuery.data?.page ?? page}
+              totalPages={eventsQuery.data?.totalPages ?? 0}
+            />
+          </>
+        )}
       </AdminSectionCard>
     </div>
   );
