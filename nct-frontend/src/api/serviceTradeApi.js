@@ -41,3 +41,13 @@ export const requestServiceCompletion = (tradeId, payload) => (
 export const confirmServiceCompletion = (tradeId) => (
   api.post(`/trades/${tradeId}/service-completions`).then((res) => res.data)
 );
+
+/** F-SVC-016: 일정 변경 요청은 거래 상태를 바꾸지 않고 이력으로만 기록한다. */
+export const requestServiceScheduleChange = (tradeId, payload) => (
+  api.post(`/trades/${tradeId}/service-schedule-changes`, payload).then((res) => res.data)
+);
+
+/** F-SVC-016: 일정 취소 요청은 거래 상태를 바꾸지 않고 이력으로만 기록한다. */
+export const requestServiceScheduleCancellation = (tradeId, payload) => (
+  api.post(`/trades/${tradeId}/service-schedule-cancellations`, payload).then((res) => res.data)
+);
