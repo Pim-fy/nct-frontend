@@ -1,12 +1,23 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { fetchReferenceCodes } from '@api/referenceApi';
-import { getServiceTradeDetail } from '@api/serviceTradeApi';
+import {
+  getServiceTradeDetail,
+  requestServiceScheduleCancellation,
+  requestServiceScheduleChange,
+} from '@api/serviceTradeApi';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
 import { SERVICE_TRADE_DISPUTE_TYPE_GROUP_CODE } from '@/constants/serviceTrade';
 import ServiceTradeDetailPage from './ServiceTradeDetailPage';
 
 const serviceTradeDetailQueryKey = (tradeId) => ['service-trade-detail', tradeId];
+
+const SERVICE_TRADE_DISPUTE_TYPE_LABELS = {
+  TRDC0011: '제공자 미방문·연락 두절',
+  TRDC0013: '작업 내용·품질·일정 문제',
+  TRDC0014: '보관금·환불·정산 문제',
+  TRDC0015: '기타 서비스 거래 문제',
+};
 
 export default function ServiceTradeDetailRoutePage() {
   const { tradeId: tradeIdParam } = useParams();
@@ -24,8 +35,11 @@ export default function ServiceTradeDetailRoutePage() {
     queryFn: () => fetchReferenceCodes(SERVICE_TRADE_DISPUTE_TYPE_GROUP_CODE),
     enabled: isValidTradeId,
     select: (codes) => codes
-      .filter((code) => code.code && code.name)
-      .map((code) => ({ code: code.code, label: code.name })),
+      .filter((code) => code.code && SERVICE_TRADE_DISPUTE_TYPE_LABELS[code.code])
+      .map((code) => ({
+        code: code.code,
+        label: SERVICE_TRADE_DISPUTE_TYPE_LABELS[code.code],
+      })),
     staleTime: 30 * 60 * 1000,
     retry: 1,
   });
@@ -83,6 +97,8 @@ export default function ServiceTradeDetailRoutePage() {
       disputeTypesLoading={disputeTypesQuery.isLoading}
       onRetryDisputeTypes={() => disputeTypesQuery.refetch()}
       onActionCompleted={refreshDetail}
+      onRequestScheduleChange={requestServiceScheduleChange}
+      onRequestScheduleCancellation={requestServiceScheduleCancellation}
       trade={detailQuery.data}
     />
   );
