@@ -9,6 +9,7 @@ import {
   Grid2X2,
   LayoutDashboard,
   LogOut,
+  MessageSquareText,
   Megaphone,
   ScrollText,
   Settings,
@@ -41,6 +42,7 @@ const MENU_SECTIONS = [
   ],
   [
     { label: '신고 관리', icon: Siren, to: '/admin/reports' },
+    { label: '문의 관리', icon: MessageSquareText, to: '/admin/inquiries' },
     { label: '거래 분쟁', icon: ShieldAlert, to: '/admin/disputes' },
   ],
   [

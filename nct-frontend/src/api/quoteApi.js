@@ -26,6 +26,10 @@ export const withdrawQuote = (quoteId) =>
 export const getMyQuotes = (params) =>
   api.get('/quotes/me', { params, skipServerErrorRedirect: true }).then((res) => res.data);
 
+/** 제공자 대시보드용 활성 견적 수 조회 */
+export const getMyQuoteSummary = () =>
+  api.get('/quotes/me/summary', { skipServerErrorRedirect: true }).then((res) => res.data);
+
 /** 현재 제공자의 특정 서비스 요청 활성 견적 조회 */
 export const getMyActiveQuote = (svcReqSn) =>
   api.get(`/quotes/me/service-request/${svcReqSn}`, { skipServerErrorRedirect: true }).then((res) => res.data);

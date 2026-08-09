@@ -39,7 +39,20 @@
 }
 
 .admin-service-list table {
-  min-width: 980px;
+  min-width: 1340px;
+}
+
+.admin-service-list__flow {
+  display: grid;
+  justify-items: start;
+  gap: 5px;
+  min-width: 112px;
+}
+
+.admin-service-list__flow > span:not(.admin-badge) {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .admin-service-page__filter-error {
@@ -97,6 +110,13 @@
   color: #64748b;
   font-size: 12px;
   font-weight: 800;
+}
+
+.admin-service-detail__badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
 }
 
 .admin-service-detail__summary h3 {
@@ -180,6 +200,16 @@
 
 .admin-service-detail__section dd {
   color: #273244;
+}
+
+.admin-service-detail__section.is-selected-quote {
+  border-color: #bfdbfe;
+  background: #f8fbff;
+}
+
+.admin-service-detail__section.is-trade-flow {
+  border-color: #cbd5e1;
+  background: #f8fafc;
 }
 
 @media (max-width: 1250px) {

@@ -26,6 +26,21 @@ const redirectToServerError = () => {
   window.location.href = '/500';                    // 브라우저의 현재 주소를 /500으로 변경하여 해당 페이지로 이동시킴.
 };
 
+/**
+ * 담당자 7 · F-OPS-001: 관리자 화면의 세션이 끝나면 전용 로그인으로 보내고 원래 주소를 보존한다.
+ */
+const redirectToLogin = () => {
+  const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  const isAdminPath = window.location.pathname === '/admin'
+    || window.location.pathname.startsWith('/admin/');
+
+  if (isAdminPath && window.location.pathname !== '/admin/login') {
+    sessionStorage.setItem('adminLoginRedirectFrom', currentPath);
+  }
+
+  window.location.href = isAdminPath ? '/admin/login' : '/login';
+};
+
 // 401이 동시에 여러 건 발생해도 refresh 요청은 딱 한 번만 보낸다
 let isRefreshing = false;     // Access Token 재발급 진행중.
                               // T: 이미 다른 요청이 재발급 중. F: 재발급 중이 아님.
@@ -70,10 +85,13 @@ api.interceptors.response.use(
     // @ai_generated: F-AUTH-009 - 세션 도중 계정이 정지/탈퇴되면 매 요청마다 403/410으로 차단된다.
     // 토큰 재발급으로 해결되는 문제가 아니므로 401 refresh 흐름을 타지 않고 즉시 로그아웃 처리한다.
     const errorCode = error.response?.data?.code;
-    if (errorCode === 'ACCOUNT_SUSPENDED' || errorCode === 'WITHDRAWN_USER') {
+    if (
+      (errorCode === 'ACCOUNT_SUSPENDED' || errorCode === 'WITHDRAWN_USER')
+      && !originalRequest.skipAuthStateRedirect
+    ) {
       alert(error.response.data.message);
       localStorage.removeItem('isLogin');
-      window.location.href = '/login';
+      redirectToLogin();
       return Promise.reject(error);
     }
 
@@ -110,7 +128,7 @@ api.interceptors.response.use(
         if (!originalRequest.url?.includes('/auth/me')) {
           alert('보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.');
           localStorage.removeItem('isLogin');     // localStorage의 islogin값 삭제.
-          window.location.href = '/login';        // 브라우저 주소를 `/login`으로 변경. 로그인 페이지로 이동.
+          redirectToLogin();
         }
         
         return Promise.reject(refreshError);      // 호출한 코드에 refresh 실패 전달.

@@ -8,7 +8,9 @@ const resolveLink = (item) => {
   switch (item.refTypeCd) {
     case 'REFC0003': // 경매
       return `/auction/${item.refSn}`;
-    case 'REFC0005': // 거래 — 제공자 대상 알림(audienceCd=NTFC0016)은 판매자 화면으로 보낸다
+    case 'REFC0005': // 거래 — 서비스 도메인은 역할과 무관하게 서비스 거래 상세로 보낸다
+      if (item.domainCd === 'NTFC0012') return `/service-trades/${item.refSn}`;
+      // 물건 거래 제공자 대상 알림(audienceCd=NTFC0016)은 판매자 화면으로 보낸다.
       return item.audienceCd === 'NTFC0016' ? `/trades/${item.refSn}/seller` : `/trades/${item.refSn}`;
     case 'REFC0007': // 서비스 요청
       return `/service-requests/${item.refSn}`;
