@@ -177,6 +177,68 @@
   height: 17px;
 }
 
+.admin-operation-decision {
+  display: grid;
+  gap: 14px;
+  border: 1px solid #dbe4ff;
+  border-radius: 14px;
+  padding: 18px;
+  background: linear-gradient(145deg, #f8faff 0%, #fff 72%);
+}
+
+.admin-operation-decision__heading {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-operation-decision__heading strong {
+  color: #16213e;
+  font-size: 16px;
+}
+
+.admin-operation-decision__heading span,
+.admin-operation-decision__description,
+.admin-operation-decision__warning {
+  margin: 0;
+  color: #5a647f;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.admin-operation-decision__select {
+  display: grid;
+  gap: 8px;
+  color: #404a67;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.admin-operation-decision__select select {
+  width: 100%;
+  height: 44px;
+  border: 1px solid #d7dce7;
+  border-radius: 10px;
+  padding: 0 12px;
+  background: #fff;
+  color: #202945;
+  font: inherit;
+  font-weight: 500;
+}
+
+.admin-operation-decision__select select:focus {
+  border-color: #2f5bff;
+  outline: 3px solid rgb(47 91 255 / 14%);
+}
+
+.admin-operation-decision__warning {
+  border: 1px solid #fed7aa;
+  border-radius: 10px;
+  padding: 11px 12px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-weight: 750;
+}
+
 .admin-operation-account {
   display: flex;
   align-items: center;

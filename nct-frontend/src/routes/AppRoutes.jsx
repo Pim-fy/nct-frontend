@@ -26,6 +26,7 @@ import LandingPage        from '@pages/landing/LandingPage';
 import AuctionListPage    from '@pages/auction/AuctionListPage';
 import AuctionDetailPage  from '@pages/auction/AuctionDetailPage';
 import LoginPage          from '@pages/auth/LoginPage';
+import AdminLoginPage     from '@pages/auth/AdminLoginPage';
 import SignupPage         from '@pages/auth/SignupPage';
 import FindEmailPage      from '@pages/auth/FindEmailPage';
 import ResetPasswordPage  from '@pages/auth/ResetPasswordPage';
@@ -55,6 +56,7 @@ import GuidePage from '@pages/content/GuidePage';
 import FaqPage from '@pages/content/FaqPage';
 import NoticeListPage from '@pages/content/NoticeListPage';
 import NoticeDetailPage from '@pages/content/NoticeDetailPage';
+import CustomerInquiryFormPage from '@pages/content/CustomerInquiryFormPage';
 import ServiceListPage from '@pages/service/ServiceListPage';
 import PublicProviderProfilePage from '@pages/provider/PublicProviderProfilePage';
 import ProviderApplyPage from '@pages/provider/ProviderApplyPage';
@@ -110,6 +112,7 @@ import AdminSystemSettingPage from '@pages/admin/setting/AdminSystemSettingPage'
 import AdminAuctionManagementPage from '@pages/admin/auction/AdminAuctionManagementPage';
 import AdminNotificationPage from '@pages/admin/notification/AdminNotificationPage';
 import AdminReportManagementPage from '@pages/admin/operation/AdminReportManagementPage';
+import AdminCustomerInquiryManagementPage from '@pages/admin/operation/AdminCustomerInquiryManagementPage';
 import AdminDisputeManagementPage from '@pages/admin/operation/AdminDisputeManagementPage';
 import AdminPointExchangePage from '@pages/admin/operation/AdminPointExchangePage';
 
@@ -133,6 +136,8 @@ const AppRoutes = () => {
       {/* @ai_generated: 입력형 인증 화면은 공통 헤더·푸터를 AuthLayout에서 한 번만 조립한다. */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
+        {/* 담당자 7 · F-OPS-001: 일반 인증 화면과 계약은 공유하고 관리자 입력만 제공한다. */}
+        <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/login/signup" element={<SignupPage />} />
         <Route path="/find-email" element={<FindEmailPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -162,6 +167,10 @@ const AppRoutes = () => {
           <Route path="/customersupport/notice" element={<NoticeListPage />} />
           <Route path="/customersupport/notice/:noticeId" element={<NoticeDetailPage />} />
           <Route path="/customersupport/faq" element={<FaqPage />} />
+          {/* 담당자 7 · 관리자 대상 1:1 문의: 고객센터 메뉴는 유지하고 작성 화면만 로그인으로 보호합니다. */}
+          <Route element={<ProtectedRoute allowedRoles={['ROLE_USER', 'ROLE_SERVICE']} />}>
+            <Route path="/customersupport/inquiry" element={<CustomerInquiryFormPage />} />
+          </Route>
         </Route>
       </Route>
 
@@ -251,7 +260,14 @@ const AppRoutes = () => {
       </Route>
 
       {/* 임시 화면도 관리자 정보 구조를 보여 주므로 ROLE_ADMIN만 접근할 수 있습니다. */}
-      <Route element={<ProtectedRoute allowedRoles={['ROLE_ADMIN']} />}>
+      <Route
+        element={(
+          <ProtectedRoute
+            allowedRoles={['ROLE_ADMIN']}
+            unauthenticatedTo="/admin/login"
+          />
+        )}
+      >
         <Route path="/admin" element={<AdminLayout />}>
           {/* 대시보드 */}
           <Route index element={<Dashboard />} />
@@ -265,6 +281,7 @@ const AppRoutes = () => {
           <Route path="provider-applications" element={<AdminProviderApprovalPage />} />
           <Route path="auctions" element={<AdminAuctionManagementPage />} />
           <Route path="reports" element={<AdminReportManagementPage />} />
+          <Route path="inquiries" element={<AdminCustomerInquiryManagementPage />} />
           <Route path="disputes" element={<AdminDisputeManagementPage />} />
           <Route path="exchanges" element={<AdminPointExchangePage />} />
           {/* 담당자 7 · F-OPS-011: 담당자 6의 F-OPS-016 화면을 소비해 운영 기록 탐색만 통합합니다. */}

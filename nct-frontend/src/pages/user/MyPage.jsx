@@ -31,6 +31,7 @@ import MyProductList from "@components/product/MyProductList";
 import PointWalletPage from "@pages/user/point/PointWalletPage";
 import MyReportListPage from "@pages/user/report/MyReportListPage";
 import ReportFormPage from "@pages/user/report/ReportFormPage";
+import MyInquiryListPage from "@pages/user/inquiry/MyInquiryListPage";
 import MyQuoteListPage from "@pages/provider/MyQuoteListPage";
 import MyServiceRequestListPage from "@pages/service/MyServiceRequestListPage";
 import MyServiceTradeListPage from "@pages/service/MyServiceTradeListPage";
@@ -55,6 +56,7 @@ const MYPAGE_SECTION_QUERY_VALUES = new Set([
   "received-review",
   "report-list",
   "report-form",
+  "inquiry-list",
 ]);
 
 const PROVIDER_ONLY_SECTION_QUERY_VALUES = new Set([
@@ -273,6 +275,7 @@ export default function MyPage({
           {!isProvider && activeSection === "review" && <ReviewListPage />}
           {activeSection === "report-list" && <MyReportListPage embedded />}
           {activeSection === "report-form" && <ReportFormPage embedded />}
+          {activeSection === "inquiry-list" && <MyInquiryListPage embedded />}
           {activeSection === "service-trade" && (
             <MyServiceTradeListPage fixedRole={isProvider ? "PROVIDER" : "REQUESTER"} />
           )}

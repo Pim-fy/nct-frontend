@@ -131,7 +131,15 @@ export default function ReviewListPage() {
   };
 
   const handleViewTarget = (item) => {
-    navigate(item.dealType === "service" ? `/service/${item.id}` : `/auction/${item.id}`);
+    const tradeId = item.tradeId ?? item.id;
+
+    if (item.dealType === "service") {
+      navigate(`/service-trades/${tradeId}`);
+      return;
+    }
+
+    const isSeller = item.partyLabel === "구매자";
+    navigate(isSeller ? `/trades/${tradeId}/seller` : `/trades/${tradeId}`);
   };
 
   return (

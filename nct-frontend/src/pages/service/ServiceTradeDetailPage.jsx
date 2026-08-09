@@ -153,6 +153,7 @@ export default function ServiceTradeDetailPage({
     || canSubmitDispute
     || canRequestScheduleChange
     || canRequestScheduleCancellation;
+  const resolvedScheduleHistory = scheduleHistory ?? trade.scheduleHistory;
 
   const openDisputeDialog = () => {
     setDisputeError('');
@@ -387,18 +388,19 @@ export default function ServiceTradeDetailPage({
           </aside>
         </div>
 
-        {Array.isArray(scheduleHistory) && (
+        {Array.isArray(resolvedScheduleHistory) && (
           <section className="service-trade-card service-trade-card--schedule" aria-labelledby="service-trade-schedule-title">
             <header className="service-trade-card__header">
               <CalendarDays aria-hidden="true" size={20} />
               <h2 id="service-trade-schedule-title">일정 이력</h2>
             </header>
-            {scheduleHistory.length > 0 ? (
+            {resolvedScheduleHistory.length > 0 ? (
               <ol className="service-trade-schedule-history">
-                {scheduleHistory.map((item) => (
+                {resolvedScheduleHistory.map((item) => (
                   <li key={item.id}>
-                    <strong>{item.title}</strong>
-                    <span>{item.occurredAt}</span>
+                    <strong>{item.title ?? (item.eventType === 'CHANGE' ? '일정 변경 요청' : '일정 취소 요청')}</strong>
+                    <span>{item.occurredAt ? formatDateTime(item.occurredAt) : '-'}</span>
+                    {item.requestedScheduleAt && <p>변경 희망: {formatDateTime(item.requestedScheduleAt)}</p>}
                     {item.reason && <p>{item.reason}</p>}
                   </li>
                 ))}

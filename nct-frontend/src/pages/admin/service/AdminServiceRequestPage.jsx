@@ -40,6 +40,18 @@ const statusTone = (statusCode) => {
   return 'neutral';
 };
 
+const integratedStatusTone = (statusCode) => {
+  if (statusCode === 'COMPLETED') return 'success';
+  if (statusCode === 'IN_PROGRESS') return 'info';
+  return 'warning';
+};
+
+const tradeStatusTone = (statusCode) => {
+  if (statusCode === 'TRDC0006') return 'success';
+  if (statusCode === 'TRDC0007' || statusCode === 'TRDC0008') return 'danger';
+  return 'info';
+};
+
 const formatAmount = (value) => (
   value == null ? '-' : `${Number(value).toLocaleString('ko-KR')}원`
 );
@@ -90,11 +102,44 @@ const AdminServiceRequestPage = () => {
     { key: 'budgetAmount', label: '예산', render: formatAmount },
     {
       key: 'statusName',
-      label: '상태',
+      label: '원본 상태',
       render: (value, row) => (
         <AdminStatusBadge tone={statusTone(row.statusCode)}>
           {value ?? row.statusCode}
         </AdminStatusBadge>
+      ),
+    },
+    {
+      key: 'integratedStatusName',
+      label: '통합 상태',
+      render: (value, row) => (
+        <AdminStatusBadge tone={integratedStatusTone(row.integratedStatusCode)}>
+          {value ?? '-'}
+        </AdminStatusBadge>
+      ),
+    },
+    {
+      key: 'totalQuoteCount',
+      label: '견적',
+      render: (value, row) => `${value ?? 0}건${row.activeQuoteCount ? ` · 활성 ${row.activeQuoteCount}` : ''}`,
+    },
+    {
+      key: 'tradeStatusName',
+      label: '거래 흐름',
+      render: (value, row) => (
+        row.tradeId == null ? '-' : (
+          <div className="admin-service-list__flow">
+            <AdminStatusBadge tone={tradeStatusTone(row.tradeStatusCode)}>
+              {value ?? row.tradeStatusCode}
+            </AdminStatusBadge>
+            {row.activeDisputeId != null && <span>분쟁 진행 중</span>}
+            {row.activeEscrowAmount > 0 && <span>보관 {formatAmount(row.activeEscrowAmount)}</span>}
+            {row.refundedPointAmount > 0 && <span>환불 {formatAmount(row.refundedPointAmount)}</span>}
+            {row.settlementId != null && (
+              <span>정산 {row.settlementStatusName ?? row.settlementStatusCode}</span>
+            )}
+          </div>
+        )
       ),
     },
     { key: 'registeredAt', label: '등록일', render: formatDateTime },
@@ -259,11 +304,18 @@ const AdminServiceRequestPage = () => {
               <div className="admin-service-detail__summary">
                 <div className="admin-service-detail__status-line">
                   <span>요청 #{detail.serviceRequestId}</span>
-                  {(detail.statusName || detail.statusCode) && (
-                    <AdminStatusBadge tone={statusTone(detail.statusCode)}>
-                      {detail.statusName ?? detail.statusCode}
-                    </AdminStatusBadge>
-                  )}
+                  <div className="admin-service-detail__badges">
+                    {(detail.statusName || detail.statusCode) && (
+                      <AdminStatusBadge tone={statusTone(detail.statusCode)}>
+                        원본 · {detail.statusName ?? detail.statusCode}
+                      </AdminStatusBadge>
+                    )}
+                    {detail.integratedStatusName && (
+                      <AdminStatusBadge tone={integratedStatusTone(detail.integratedStatusCode)}>
+                        통합 · {detail.integratedStatusName}
+                      </AdminStatusBadge>
+                    )}
+                  </div>
                 </div>
                 <h3>{detail.title}</h3>
               </div>
@@ -284,7 +336,59 @@ const AdminServiceRequestPage = () => {
                     </strong>
                   </div>
                 )}
+                <div>
+                  <span>제출 견적</span>
+                  <strong>{detail.totalQuoteCount ?? 0}건 · 활성 {detail.activeQuoteCount ?? 0}건</strong>
+                </div>
               </div>
+
+              {detail.selectedQuoteId != null && (
+                <section className="admin-service-detail__section is-selected-quote">
+                  <h4>선택 견적</h4>
+                  <dl>
+                    <dt>견적</dt><dd>#{detail.selectedQuoteId}</dd>
+                    <dt>제공자</dt><dd>#{detail.selectedProviderUserId}</dd>
+                    <dt>금액</dt><dd>{formatAmount(detail.selectedAmount)}</dd>
+                    <dt>원본 상태</dt><dd>{detail.selectedQuoteStatusCode}</dd>
+                  </dl>
+                </section>
+              )}
+
+              {detail.tradeId != null && (
+                <section className="admin-service-detail__section is-trade-flow">
+                  <h4>거래 · 정산 흐름</h4>
+                  <dl>
+                    <dt>거래</dt><dd>#{detail.tradeId}</dd>
+                    <dt>연결 견적</dt><dd>#{detail.tradeQuoteId}</dd>
+                    <dt>거래 상태</dt>
+                    <dd>{detail.tradeStatusName ?? detail.tradeStatusCode}</dd>
+                    <dt>보관금</dt>
+                    <dd>
+                      {detail.activeEscrowAmount > 0
+                        ? `보관 중 · ${formatAmount(detail.activeEscrowAmount)}`
+                        : '활성 보관금 없음'}
+                    </dd>
+                    <dt>정산</dt>
+                    <dd>
+                      {detail.settlementId == null
+                        ? '정산 건 없음'
+                        : `#${detail.settlementId} · ${detail.settlementStatusName ?? detail.settlementStatusCode}`}
+                    </dd>
+                    {detail.settledPointAmount > 0 && (
+                      <><dt>지급 원장</dt><dd>{formatAmount(detail.settledPointAmount)}</dd></>
+                    )}
+                    {detail.refundedPointAmount > 0 && (
+                      <><dt>환불 원장</dt><dd>{formatAmount(detail.refundedPointAmount)}</dd></>
+                    )}
+                    <dt>진행 분쟁</dt>
+                    <dd>
+                      {detail.activeDisputeId == null
+                        ? '없음'
+                        : `#${detail.activeDisputeId} · ${detail.activeDisputeStatusName ?? detail.activeDisputeStatusCode}`}
+                    </dd>
+                  </dl>
+                </section>
+              )}
 
               {detail.content?.trim() && (
                 <section className="admin-service-detail__section">
