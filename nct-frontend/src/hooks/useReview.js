@@ -5,11 +5,12 @@ import { useQuery } from '@tanstack/react-query';
 import { getWritableReviews, getMyReviews } from '../api/reviewApi';
 
 /** 작성 가능한 리뷰 목록 — data: [{ id, thumbnail, title, dealType, partyLabel, partyName, completedDate }] */
-export function useWritableReviews() {
+export function useWritableReviews({ enabled = true } = {}) {
   return useQuery({
     queryKey: ['reviews', 'writable'],
     queryFn: getWritableReviews,
     select: (res) => res.data,
+    enabled,
   });
 }
 

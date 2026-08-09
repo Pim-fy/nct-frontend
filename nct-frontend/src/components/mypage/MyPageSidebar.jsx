@@ -26,7 +26,8 @@ const GENERAL_MENU_ITEMS = [
   { key: "chat",         label: "채팅",         type: "section" },
   { key: "wallet",       label: "포인트 지갑",  type: "section" },
   { key: "review",       label: "리뷰",      type: "section" },
-  { key: "report-list",  label: "신고", type: "section" },
+  { key: "report-list",   label: "신고",      type: "section" },
+  { key: "inquiry-list",  label: "1:1 문의",   type: "section" },
 ];
 
 // "정산 관리" 메뉴는 포인트 지갑 화면의 "정산 내역" 탭으로 흡수돼 빠졌다
@@ -54,7 +55,8 @@ const PROVIDER_MENU_ITEMS = [
   { key: "chat",              label: "채팅",          type: "section" },
   { key: "wallet",            label: "포인트 지갑",   type: "section" },
   { key: "received-review",   label: "받은 리뷰",     type: "section" },
-  { key: "report-list",       label: "신고",  type: "section" },
+  { key: "report-list",       label: "신고",      type: "section" },
+  { key: "inquiry-list",      label: "1:1 문의",   type: "section" },
 ];
 
 // 아코디언 key → 포함되는 child key 목록
