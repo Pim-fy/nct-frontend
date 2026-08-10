@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { CalendarCheck, CalendarDays } from 'lucide-react';
 import { toImageUrl } from '@api/fileApi';
 import { deleteProduct } from '@api/productApi';
-import { formatDate } from '@utils/common';
+import { formatDate, formatPoint } from '@utils/common';
 import { TRADE_LABEL, TRADE_STATUS_LABEL, AUC_STATUS_LABEL } from '@/constants/productConstants';
 import { useMyProducts, useMyProductsSummary } from '@hooks/useProduct';
 import Pagination from '@components/common/Pagination';
@@ -87,10 +87,6 @@ const PRD_STATUS_BADGE = {
 
 // ─── 헬퍼 ────────────────────────────────────────────────────────────────────
 
-function fmtPrice(n) {
-  return n != null ? `${Number(n).toLocaleString()}원` : '-';
-}
-
 const isReservedProduct = (product) => {
   const draftStartNowYn = product?.prdDraftStartNowYn ?? product?.draftStartNowYn;
   const draftStartDt = product?.prdDraftStartDt ?? product?.draftStartDt;
@@ -121,6 +117,16 @@ const getProductStatusBadgeClass = (product) => {
 
   return PRD_STATUS_BADGE[product.prdStatusCd] ?? 'badge-outline-gray';
 };
+
+// 데스크톱·모바일 두 렌더 블록에서 공통으로 쓰는 배지·상태 판정 — 규칙은 여기 한 곳에서만 정의한다
+// (TradeHistory.jsx의 getStatusInfo()와 동일한 패턴, 호출은 블록마다 반복해도 로직은 하나로 유지)
+const getProductStatusDisplay = (p) => ({
+  badgeLabel: getProductStatusLabel(p),
+  badgeClass: getProductStatusBadgeClass(p),
+  isActive: p.prdStatusCd === 'PRDC0002',
+  isDraft: p.prdStatusCd === 'PRDC0001',
+  isEnded: p.prdStatusCd === 'PRDC0003',
+});
 
 // ─── 컴포넌트 ─────────────────────────────────────────────────────────────────
 
@@ -244,12 +250,7 @@ export default function MyProductList() {
           <div className="hidden lg:block">
           <div className="history-list">
             {visibleList.map((p) => {
-              const badgeLabel = getProductStatusLabel(p);
-              const badgeClass = getProductStatusBadgeClass(p);
-
-              const isActive = p.prdStatusCd === 'PRDC0002';
-              const isDraft  = p.prdStatusCd === 'PRDC0001';
-              const isEnded  = p.prdStatusCd === 'PRDC0003';
+              const { badgeLabel, badgeClass, isActive, isDraft, isEnded } = getProductStatusDisplay(p);
 
               return (
                 <MyPageAuctionListItem
@@ -261,7 +262,7 @@ export default function MyProductList() {
                   title={p.prdNm}
                   topLine={`확정날짜 ${formatDate(p.tradeCreatedAt ?? p.prdRegDt)} / 완료날짜 ${formatDate(p.tradeCompletedAt)}`}
                   priceItems={[
-                    { label: '확정 가격', value: fmtPrice(p.tradeAmount ?? p.prdStartAmt) },
+                    { label: '확정 가격', value: formatPoint(p.tradeAmount ?? p.prdStartAmt) },
                   ]}
                   tradeMethodLabel={TRADE_LABEL[p.prdTrdMethodCd] ?? p.prdTrdMethodCd}
                   actionButton={(
@@ -309,11 +310,7 @@ export default function MyProductList() {
           </div>
           <div className="grid gap-4 lg:hidden">
             {visibleList.map((p) => {
-              const badgeLabel = getProductStatusLabel(p);
-              const badgeClass = getProductStatusBadgeClass(p);
-              const isActive = p.prdStatusCd === 'PRDC0002';
-              const isDraft = p.prdStatusCd === 'PRDC0001';
-              const isEnded = p.prdStatusCd === 'PRDC0003';
+              const { badgeLabel, badgeClass, isActive, isDraft, isEnded } = getProductStatusDisplay(p);
 
               return (
                 <MyPageMobileCard
@@ -323,7 +320,7 @@ export default function MyProductList() {
                   imageFallbackLabel="상품 이미지"
                   badge={<MyPageStatusBadge className={badgeClass}>{badgeLabel}</MyPageStatusBadge>}
                   title={p.prdNm}
-                  price={fmtPrice(p.tradeAmount ?? p.prdStartAmt)}
+                  price={formatPoint(p.tradeAmount ?? p.prdStartAmt)}
                   infoItems={[
                     { icon: CalendarDays, label: '확정날짜', value: formatDate(p.tradeCreatedAt ?? p.prdRegDt) },
                     { icon: CalendarCheck, label: '완료날짜', value: formatDate(p.tradeCompletedAt) },
