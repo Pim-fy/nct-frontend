@@ -5,6 +5,7 @@ import {
   useState,
 } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { getMyPagePath } from '@/routes/myPageRoutes';
 import { CalendarCheck, CalendarDays } from 'lucide-react';
 import { toImageUrl } from '@api/fileApi';
 import { getTradeHistory } from '@api/tradeApi';
@@ -151,7 +152,6 @@ const TradeHistory = ({
   fixedRole = null,
   preview = false,
   returnSection = 'trade-history',
-  onOpenTradeDetail = null,
 }) => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -426,15 +426,15 @@ const TradeHistory = ({
             const detailPath = trade.type === 'SELLER'
               ? `${tradeBasePath}/${trade.id}/seller`
               : `${tradeBasePath}/${trade.id}`;
-            // 마이페이지 안에서 연 상세는 목록 버튼도 진입한 메뉴로 되돌린다.
-            const detailTarget = embedded
-              ? `${detailPath}?from=mypage&section=${returnSection}`
-              : detailPath;
+            const detailState = embedded
+              ? { from: isPreview ? '/user/mypage/preview/trades' : getMyPagePath(returnSection) }
+              : undefined;
 
             return (
               <MyPageAuctionListItem
                 key={trade.id}
-                to={onOpenTradeDetail ? undefined : detailTarget}
+                to={detailPath}
+                state={detailState}
                 imageSrc={toImageUrl(trade.productImageUrl)}
                 imageAlt={trade.productName}
                 imageFallback="상품 이미지"
@@ -445,17 +445,7 @@ const TradeHistory = ({
                   { label: '확정 금액', value: trade.amount },
                 ]}
                 tradeMethodLabel={trade.method === 'DELIVERY' ? '배송' : '직거래'}
-                actionButton={onOpenTradeDetail ? (
-                  <button
-                    className="btn btn-sm btn-primary"
-                    type="button"
-                    onClick={() => onOpenTradeDetail(trade.id)}
-                  >
-                    거래 상세
-                  </button>
-                ) : (
-                  <span className="btn btn-sm btn-primary">거래 상세</span>
-                )}
+                actionButton={<span className="btn btn-sm btn-primary">거래 상세</span>}
               />
             );
           })}
@@ -468,15 +458,11 @@ const TradeHistory = ({
               const detailPath = trade.type === 'SELLER'
                 ? `${tradeBasePath}/${trade.id}/seller`
                 : `${tradeBasePath}/${trade.id}`;
-              const detailTarget = embedded
-                ? `${detailPath}?from=mypage&section=${returnSection}`
-                : detailPath;
-              const actionButton = onOpenTradeDetail ? (
-                <button className="btn btn-sm btn-primary" type="button" onClick={() => onOpenTradeDetail(trade.id)}>
-                  거래 상세
-                </button>
-              ) : (
-                <button className="btn btn-sm btn-primary" type="button" onClick={() => navigate(detailTarget)}>
+              const detailState = embedded
+                ? { from: isPreview ? '/user/mypage/preview/trades' : getMyPagePath(returnSection) }
+                : undefined;
+              const actionButton = (
+                <button className="btn btn-sm btn-primary" type="button" onClick={() => navigate(detailPath, { state: detailState })}>
                   거래 상세
                 </button>
               );

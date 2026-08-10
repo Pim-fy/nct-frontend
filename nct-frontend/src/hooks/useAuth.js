@@ -10,10 +10,25 @@ import { useApi } from '@hooks/useApi';
 import { useConfig } from '@hooks/useConfig';
 import { memberProfileQueryOptions } from '@hooks/useMemberProfile';
 
+const isAdminPath = (path) => (
+  path === '/admin'
+  || path.startsWith('/admin/')
+  || path.startsWith('/admin?')
+  || path.startsWith('/admin#')
+);
+
 export const useAuth = () => {
   const apiTool = useApi();
   const { setConfig } = useConfig();
   const queryClient = useQueryClient();
+
+  // 담당자 7 · F-OPS-001: 관리자 전용 로그인에서 권한 불일치 세션을 화면 이동 없이 제거할 때도 같은 초기화를 사용한다.
+  const clearAuthState = () => {
+    localStorage.removeItem('isLogin');
+    setConfig('user', {});
+    queryClient.setQueryData(['auth', 'user'], null);
+    queryClient.clear();
+  };
 
   /**
    * 1. 내 정보 조회 ==========================
@@ -56,7 +71,7 @@ export const useAuth = () => {
   /**
    * 2. 로그인 Mutation =======================
   */
- const loginMutation = useMutation({
+  const loginMutation = useMutation({
    mutationFn: async (credentials) => {
      const loginRes = await apiTool.login(credentials);
      return loginRes.data;                  // loginRes.data -> 하단의 userData임.
@@ -69,6 +84,20 @@ export const useAuth = () => {
       localStorage.setItem('isLogin', 'true');      // 로컬스토리지에 isLogin값을 true로 저장함
       setConfig('user', userData);      // useConfig의 전역 상태 저장소에 user 값을 userData로 세팅.
       queryClient.setQueryData(['auth', 'user'], userData);   // TanStack Query의 캐시에 직접 값을 주입.
+      void queryClient.prefetchQuery(memberProfileQueryOptions);
+    },
+  });
+
+  // 담당자 7 · F-OPS-001: 관리자 화면은 일반 로그인과 분리된 서버 계약만 호출한다.
+  const adminLoginMutation = useMutation({
+    mutationFn: async (credentials) => {
+      const loginRes = await apiTool.adminLogin(credentials);
+      return loginRes.data;
+    },
+    onSuccess: (userData) => {
+      localStorage.setItem('isLogin', 'true');
+      setConfig('user', userData);
+      queryClient.setQueryData(['auth', 'user'], userData);
       void queryClient.prefetchQuery(memberProfileQueryOptions);
     },
   });
@@ -88,20 +117,15 @@ export const useAuth = () => {
      return currentPath;
     },
     onSuccess: (currentPath) => {
-      // 로그인중이라는 상태를 나타내는 값들을 제거함.
-      localStorage.removeItem('isLogin');
-      setConfig('user', {});
-      queryClient.setQueryData(['auth', 'user'], null);
-      queryClient.clear();      // 앱 전체의 모든 쿼리 캐시를 지움.
+      clearAuthState();
 
       // 인증이 필요한 관리자 화면에서 로그아웃하면 로그인 화면으로, 그 외는 현재 페이지 유지
       // 로그아웃 시 접근 불가한 경로 목록을 배열로 정의함. 현재는 /admin뿐임.
       // 라우트가 많아지면 라우트 정의 쪽(routes/)에서 "보호된 경로" 목록을 따로 관리 고려.
-      const restrictedPaths = ['/admin'];
-      if (restrictedPaths.some((path) => currentPath.startsWith(path))) {   // .some: 배열 요소 중 하나라도 조건 만족 시 true 반환. Array.protorype.some()
+      if (isAdminPath(currentPath)) {
         // 담당자 7: 관리자 로그아웃 뒤 보호 라우트가 잠깐 로그인 화면을 거쳐 메인으로 이동하지 않도록 최종 목적지도 로그인으로 맞춘다.
         // window.location.href: 브라우저를 해당 주소로 강제 이동함. 페이지 전체 새로고침 방식이라 앱을 다시 로드함.
-        window.location.href = '/login';
+        window.location.href = '/admin/login';
       } else {
         window.location.href = currentPath; // 최근 경로로 이동.
       }
@@ -109,11 +133,8 @@ export const useAuth = () => {
     onError: () => {
       // 네트워크 오류 시에도 프론트 상태 강제 초기화
       // 로그인중이라는 상태를 나타내는 값들을 제거함.
-      localStorage.removeItem('isLogin');
-      setConfig('user', {});
-      queryClient.setQueryData(['auth', 'user'], null);
-      queryClient.clear();
-      window.location.href = window.location.pathname.startsWith('/admin') ? '/login' : '/';
+      clearAuthState();
+      window.location.href = isAdminPath(window.location.pathname) ? '/admin/login' : '/';
     },
   });
   // ==========================================
@@ -150,12 +171,21 @@ export const useAuth = () => {
     window.location.href = '/';       // 랜딩 페이지로 이동. 페이지 전체 새로고침 방식 -> 앱 다시 로드.
   };
 
+  /**
+   * 관리자 로그인 결과가 ROLE_ADMIN이 아닐 때 발급된 서버 세션과 로컬 인증 상태를 즉시 폐기한다.
+   * 서버 로그아웃 실패 시에도 로컬 상태는 반드시 제거하며 화면 이동은 호출부가 결정한다.
+   */
+  const rejectSessionMutation = useMutation({
+    mutationFn: () => apiTool.rejectSession(),
+    onSettled: clearAuthState,
+  });
+
   // useAuth의 리턴.
   // 훅이 최종적으로 컴포넌트에 노출하는 값들.
   //
   return {
     user,
-    loading        : isUserLoading || loginMutation.isPending || logoutMutation.isPending,    // useQuery로 조회한 로그인 유저 정보.
+    loading        : isUserLoading || loginMutation.isPending || adminLoginMutation.isPending || logoutMutation.isPending || rejectSessionMutation.isPending,    // useQuery로 조회한 로그인 유저 정보.
     // !!: 논리부정(!)을 두번 사용함 -> 값을 강제로 boolean형으로 변환함.
     // isAuthenticated를 별도 state로 관리하지 않고, user값 하나로부터 파생시킴.
     // user 객체 기반 자동 동기화. user만 갱신되면 자동으로 따라가서 두 값이 따로 놀지 않음.
@@ -164,7 +194,9 @@ export const useAuth = () => {
     // mutateAsync: Promise를 반환함.
     // mutate를 쓰지 않은 이유는 결과를 Promise로 반환하지 않아 await로 완료 대기 불가.
     login          : loginMutation.mutateAsync,
+    adminLogin     : adminLoginMutation.mutateAsync,
     logout         : logoutMutation.mutateAsync,
+    rejectCurrentSession: rejectSessionMutation.mutateAsync,
     // 모드 전환 (F-PROV-008). user.role은 백엔드 로그인/전환 응답에 포함된 필드.
     switchMode     : switchModeMutation.mutateAsync,
     isProvider     : user?.role === 'ROLE_SERVICE',

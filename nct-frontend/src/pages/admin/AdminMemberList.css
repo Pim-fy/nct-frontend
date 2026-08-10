@@ -18,9 +18,13 @@
   min-width: 62px;
 }
 
+.admin-member-modal {
+  width: min(760px, 100%);
+}
+
 .admin-member-detail {
   display: grid;
-  gap: 22px;
+  gap: 0;
 }
 
 .admin-member-detail__summary {
@@ -28,6 +32,10 @@
   grid-template-columns: 110px minmax(0, 1fr);
   gap: 10px 16px;
   margin: 0;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
+  padding: 18px 20px;
+  background: linear-gradient(135deg, #f8fafc 0%, #fff 72%);
 }
 
 .admin-member-detail__summary dt {
@@ -45,8 +53,9 @@
 
 .admin-member-detail__history,
 .admin-member-detail__change {
+  margin-top: 22px;
   border-top: 1px solid #eaecf0;
-  padding-top: 18px;
+  padding-top: 20px;
 }
 
 .admin-member-detail__history h3 {
@@ -101,6 +110,8 @@
 }
 
 .admin-member-detail__change textarea {
+  box-sizing: border-box;
+  width: 100%;
   min-height: 104px;
   resize: vertical;
   border: 1px solid #d0d5dd;
@@ -109,6 +120,7 @@
   color: #101828;
   font: inherit;
   font-weight: 400;
+  line-height: 1.6;
 }
 
 .admin-member-detail__change textarea:disabled {
@@ -122,6 +134,11 @@
   font-size: 13px;
 }
 
+.admin-member-detail__change .admin-operation-actions {
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
 .admin-member__restrict {
   background: #b42318;
 }
@@ -133,5 +150,6 @@
 @media (max-width: 640px) {
   .admin-member-detail__summary {
     grid-template-columns: 88px minmax(0, 1fr);
+    padding: 16px;
   }
 }

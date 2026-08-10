@@ -18,6 +18,7 @@ import { MEMBER_PROFILE_QUERY_KEY, useMemberProfile } from "@hooks/useMemberProf
 import { useNotificationSettings, useSaveNotificationSettings } from "@hooks/useNotification";
 import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
 import MyPagePanel from "@components/mypage/MyPagePanel";
+import ProfileDeliveryAddressManager from "@components/mypage/ProfileDeliveryAddressManager";
 
 const DOMAIN_LABELS = [
   { key: 'AUCTION', label: '경매' },
@@ -211,7 +212,7 @@ export default function MyPageProfileEdit({ user }) {
   // 연동은 OAuth 핸드셰이크(리다이렉트)가 필요해 REST 호출이 아니라 페이지 이동으로 시작한다.
   // 완료 후 어디로 돌아올지는 OAuthRedirectHandler가 이 값을 읽어 사용한다.
   const handleLink = (provider) => {
-    sessionStorage.setItem(MYPAGE_LINK_RETURN_KEY, "/user/mypage?section=profile");
+    sessionStorage.setItem(MYPAGE_LINK_RETURN_KEY, "/user/mypage/profile");
     // 전체 페이지 이동(OAuth 리다이렉트)이라 useAuth.js의 로그아웃 리다이렉트와 동일한 패턴이다.
     // eslint-disable-next-line react-hooks/immutability
     window.location.href = `${import.meta.env.VITE_API_URL}/api/oauth2/authorization/${provider}-link`;
@@ -445,6 +446,8 @@ export default function MyPageProfileEdit({ user }) {
               onChange={handleChange("addressDetail")}
             />
           </div>
+
+          <ProfileDeliveryAddressManager />
 
           {/* 환전계좌 */}
           <div>

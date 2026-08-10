@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  discardAdminServiceRequestFormDraft,
   fetchAdminServiceRequestForm,
   publishAdminServiceRequestForm,
   saveAdminServiceRequestFormDraft,
@@ -19,7 +20,21 @@ export const useSaveAdminServiceRequestFormDraft = (categorySn) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: saveAdminServiceRequestFormDraft,
-    onSuccess: (data) => queryClient.setQueryData(keys.detail(categorySn), data),
+    onSuccess: (data) => {
+      queryClient.setQueryData(keys.detail(categorySn), data);
+      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+    },
+  });
+};
+
+export const useDiscardAdminServiceRequestFormDraft = (categorySn) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: discardAdminServiceRequestFormDraft,
+    onSuccess: (data) => {
+      queryClient.setQueryData(keys.detail(categorySn), data);
+      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+    },
   });
 };
 

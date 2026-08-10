@@ -8,6 +8,10 @@ import api from './axios';
 export const login = (credentials) =>
   api.post('/auth/login', credentials).then(res => res.data);
 
+/** 담당자 7 · F-OPS-001: 관리자 전용 로그인 */
+export const adminLogin = (credentials) =>
+  api.post('/auth/admin/login', credentials).then(res => res.data);
+
 /** 로그아웃 */
 export const logout = () =>
   api.post('/auth/logout').then(res => res.data);

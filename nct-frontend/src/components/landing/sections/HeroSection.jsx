@@ -1,129 +1,109 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { ChevronRight } from "lucide-react";
 import { assets } from "./assets";
-
-const AUCTION_SEARCH = {
-  label: "경매 상품",
-  path: "/auction",
-  placeholder: "원하는 경매 상품을 검색하세요.",
-};
 
 const SLIDE = {
   eyebrow: "START GUIDE",
-  title1: "처음이어도 흐름만 알면",
-  title2: "어렵지 않아요",
+  title1: "처음이어도 흐름만 알면 어렵지",
+  title2: "않아요.",
   sub: "경매와 서비스 요청, 시작부터 완료까지 한눈에 확인하세요.",
   btnLabel: "이용가이드 보기",
   btnRoute: "/customersupport/guide",
   tags: ["경매 거래", "서비스 요청", "안전 거래"],
 };
 
-export default function HeroSection({ hotItems = [] }) {
-  const navigate = useNavigate();
-  const [keyword, setKeyword] = useState("");
-  const hotTags = hotItems.slice(0, 5);
+const ITEM_HEIGHT     = 50;
+const PAGE_SIZE       = 5;
+const STAGGER         = 120;
+const HALF_FLIP       = 350;
+const INTERVAL        = 4500;
+const HOT_W           = 400;
+const HOT_HEADER_H    = 73;
+const HOT_LIST_H      = PAGE_SIZE * ITEM_HEIGHT;
+const HOT_INDICATOR_H = 40;
+const idleStyle       = { transform: "perspective(600px) rotateX(0deg)", transition: "none" };
 
-  const runSearch = (value) => {
-    const trimmed = value.trim();
-    if (!trimmed) return;
-    navigate(`${AUCTION_SEARCH.path}?keyword=${encodeURIComponent(trimmed)}`);
-  };
+export default function HeroSection({ hotItems = [], hotItemsError, hotItemsLoading }) {
+  const navigate = useNavigate();
+
+  const [rowPages,    setRowPages]    = useState(Array(PAGE_SIZE).fill(0));
+  const [rowStyles,   setRowStyles]   = useState(Array(PAGE_SIZE).fill(idleStyle));
+  const [hoveredRow,  setHoveredRow]  = useState(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const busyRef   = useRef(false);
+  const pageCount = Math.max(1, Math.ceil(hotItems.length / PAGE_SIZE));
+  const visiblePage = Math.min(currentPage, pageCount - 1);
+
+  const goToPage = useCallback((targetPage) => {
+    if (busyRef.current || targetPage < 0 || targetPage >= pageCount) return;
+    busyRef.current = true;
+    setCurrentPage(targetPage);
+    Array.from({ length: PAGE_SIZE }).forEach((_, row) => {
+      const t = row * STAGGER;
+      setTimeout(() => {
+        setRowStyles(prev => { const n = [...prev]; n[row] = { transform: "perspective(600px) rotateX(-90deg)", transition: `transform ${HALF_FLIP}ms ease-in` }; return n; });
+      }, t);
+      setTimeout(() => {
+        setRowPages(prev => { const n = [...prev]; n[row] = targetPage; return n; });
+        setRowStyles(prev => { const n = [...prev]; n[row] = { transform: "perspective(600px) rotateX(90deg)", transition: "none" }; return n; });
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          setRowStyles(prev => { const n = [...prev]; n[row] = { transform: "perspective(600px) rotateX(0deg)", transition: `transform ${HALF_FLIP}ms ease-out` }; return n; });
+        }));
+      }, t + HALF_FLIP);
+    });
+    setTimeout(() => { busyRef.current = false; }, (PAGE_SIZE - 1) * STAGGER + HALF_FLIP * 2 + 50);
+  }, [pageCount]);
+
+  useEffect(() => {
+    if (pageCount <= 1) return undefined;
+    const id = setInterval(() => goToPage((visiblePage + 1) % pageCount), INTERVAL);
+    return () => clearInterval(id);
+  }, [goToPage, pageCount, visiblePage]);
 
   return (
     <>
-      {/* 담당자 7 통합: 비회원·일반회원 홈 검색은 공개 경매만 제공합니다. */}
-      <div className="relative z-10 pt-10">
-        <div className="w-[95%] max-w-[880px] mx-auto">
-          <h1 className="text-center text-[50px] font-bold leading-tight tracking-[-2.5px] mb-5">
-            <span className="text-[#474baa]">실시간 경매</span>
-            <span className="text-black">와</span><br />
-            <span className="text-[#00ccd0]">생활 서비스</span>
-            <span className="text-black">를 한 화면에서</span>
-          </h1>
-        </div>
-
-        {hotTags.length > 0 && (
-          <div className="max-w-[1600px] mx-auto px-8 flex justify-center gap-3 mb-5">
-            {hotTags.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => navigate(`/auction/${item.id}`)}
-                className="h-[31px] px-4 rounded-full bg-[#f5f5f4] hover:bg-[#ececec] text-[14px] font-medium text-[#4e4e4e] tracking-[-0.7px] transition-colors shrink-0"
-              >
-                #{item.name}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="w-[95%] max-w-[880px] mx-auto">
-          <div className="flex items-center bg-white rounded-full shadow-[0px_4px_20px_0px_rgba(0,0,0,0.15)] border-2 border-[#0064ff] px-6 h-[73px]">
-            <span className="inline-flex h-[36px] w-[72px] shrink-0 items-center justify-center rounded-[18px] bg-gradient-to-r from-[#0064ff] to-[#0048d9] text-[15px] font-bold text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16),0_2px_5px_rgba(17,24,39,0.14)]">
-              경매
-            </span>
-
-            <div className="w-px h-[32px] bg-[#d9d9d9] mx-4 shrink-0" />
-            <input
-              aria-label={`${AUCTION_SEARCH.label} 검색어`}
-              type="text"
-              value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") runSearch(keyword);
-              }}
-              placeholder={AUCTION_SEARCH.placeholder}
-              className="flex-1 bg-transparent text-[18px] text-black placeholder:text-[#b1b1b1] outline-none"
-            />
-            <button
-              type="button"
-              onClick={() => runSearch(keyword)}
-              className="shrink-0 ml-3"
-            >
-              <img alt="검색" src={assets.searchIcon} className="size-[27px] object-contain" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="relative h-[555px] -mt-[35px] overflow-hidden">
+      <div className="relative overflow-hidden flex flex-col justify-center" style={{ minHeight: 750 }}>
         <div className="absolute inset-0">
           <img src={assets.bgImg} alt="" className="w-full h-full object-cover object-center" />
           <div className="absolute inset-0 bg-black/30" />
         </div>
 
-        <div className="relative h-full max-w-[1600px] mx-auto px-8 pt-[35px] flex items-center justify-center">
-          <div className="relative" style={{ width: 870 }}>
-            <button
-              aria-label="이전 안내"
-              type="button"
-              className="absolute -left-12 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center size-[36px] rounded-full bg-white/70 hover:bg-white transition-colors"
-            >
-              <ChevronLeft size={20} className="text-[#333]" />
-            </button>
+        <div className="relative max-w-[1600px] mx-auto px-8 pb-6 flex flex-col items-center">
+          <h1 className="text-center text-[50px] font-bold leading-tight tracking-[-2.5px] mb-8">
+            <span className="text-[#a0a4ff]">실시간 경매</span>
+            <span className="text-white">와</span><br />
+            <span className="text-[#00e5e8]">생활 서비스</span>
+            <span className="text-white">를 한 화면에서</span>
+          </h1>
+        </div>
 
+        <div className="container relative flex items-center justify-between">
+
+          {/* 슬라이드 카드 */}
+          <div
+            className="shrink-0 flex flex-col rounded-[200px] overflow-hidden shadow-[0px_4px_20px_0px_rgba(0,0,0,0.15)]"
+            style={{ width: 1000, height: 340 }}
+          >
             <div
-            className="bg-white/90 rounded-[41px] overflow-hidden flex items-center px-12 gap-8 cursor-pointer"
-            style={{ height: 303 }}
-            onClick={() => navigate(SLIDE.btnRoute)}
+              className="bg-white/90 flex items-center pl-28 pr-16 gap-16 cursor-pointer"
+              style={{ flex: 1 }}
+              onClick={() => navigate(SLIDE.btnRoute)}
             >
-              <div className="flex-1 min-w-0 text-center">
+              <img
+                src={assets.heroSectionImg}
+                alt=""
+                className="h-[180px] object-contain shrink-0 pointer-events-none"
+              />
+              <div className="flex-1 min-w-0 text-left">
                 <p className="text-[14px] font-bold text-[#0064ff] tracking-[3px] mb-3 leading-normal">
                   {SLIDE.eyebrow}
                 </p>
                 <p className="text-[45px] font-bold text-black leading-[1.2] tracking-[-2.25px]">
                   {SLIDE.title1}<br />{SLIDE.title2}
                 </p>
-                <p className="text-[16px] text-black tracking-[-0.8px] mt-2">{SLIDE.sub}</p>
-                <div className="flex justify-center gap-2 mt-3">
-                  {SLIDE.tags.map((tag) => (
-                    <span key={tag} className="bg-[#eef3ff] text-[#0064ff] text-[13px] font-bold px-3 py-1 rounded-full">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <div className="flex justify-center mt-4">
+                <p className="text-[18px] text-black tracking-[-0.8px] mt-2">{SLIDE.sub}</p>
+                <div className="flex justify-start mt-4">
                   <button
                     type="button"
                     onClick={() => navigate(SLIDE.btnRoute)}
@@ -133,21 +113,91 @@ export default function HeroSection({ hotItems = [] }) {
                   </button>
                 </div>
               </div>
-              <img
-                src={assets.heroSectionImg}
-                alt=""
-                className="h-[220px] object-contain shrink-0 pointer-events-none"
-              />
+            </div>
+            {/* 슬라이드 인디케이터 */}
+            <div className="flex justify-center gap-[6px] items-center bg-white/90" style={{ height: HOT_INDICATOR_H }}>
+              <div className="rounded-full" style={{ width: 16, height: 8, backgroundColor: "#0064ff", boxShadow: "0 0 6px rgba(0,100,255,0.6)" }} />
+            </div>
+          </div>
+
+          {/* HOT ITEM 카드 */}
+          <div
+            className="shrink-0 relative z-10 rounded-[20px] shadow-[0px_4px_20px_0px_rgba(0,0,0,0.15)]"
+            style={{ width: HOT_W }}
+          >
+            <div
+              className="bg-[#0064ff] rounded-tl-[20px] rounded-tr-[20px] flex items-center justify-between px-6"
+              style={{ height: HOT_HEADER_H }}
+            >
+              <span className="text-[25px] font-black text-white tracking-[5px]">HOT ITEM</span>
+              <button
+                type="button"
+                onClick={() => navigate("/auction?sort=popular")}
+                className="flex items-center gap-1 text-[14px] text-white/90 hover:text-white cursor-pointer"
+              >
+                더보기 <ChevronRight size={14} />
+              </button>
             </div>
 
-            <button
-              aria-label="다음 안내"
-              type="button"
-              className="absolute -right-12 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center size-[36px] rounded-full bg-white/70 hover:bg-white transition-colors"
-            >
-              <ChevronRight size={20} className="text-[#333]" />
-            </button>
+            <div className="bg-white" style={{ height: HOT_LIST_H }}>
+              {(hotItemsLoading || hotItemsError || hotItems.length === 0) ? (
+                <p className="grid place-items-center text-[16px] text-[#666] h-full">
+                  {hotItemsLoading ? "인기 경매를 불러오는 중입니다." : hotItemsError ? "인기 경매를 불러오지 못했습니다." : "표시할 인기 경매가 없습니다."}
+                </p>
+              ) : (
+                Array.from({ length: PAGE_SIZE }).map((_, rowIdx) => {
+                  const itemPage  = Math.min(rowPages[rowIdx], pageCount - 1);
+                  const item      = hotItems[itemPage * PAGE_SIZE + rowIdx];
+                  const isHovered = hoveredRow === rowIdx;
+                  if (!item) return <div key={rowIdx} className="border-b border-[#ebebeb]" style={{ height: ITEM_HEIGHT }} />;
+                  return (
+                    <Link
+                      key={rowIdx}
+                      to={`/auction/${item.id}`}
+                      className="flex items-center border-b border-[#ebebeb] px-5 no-underline"
+                      style={{ height: ITEM_HEIGHT, ...rowStyles[rowIdx], transformOrigin: "center center", display: "flex" }}
+                      onMouseEnter={() => setHoveredRow(rowIdx)}
+                      onMouseLeave={() => setHoveredRow(null)}
+                    >
+                      <div
+                        className="flex shrink-0 size-[29px] items-center justify-center rounded-full transition-colors duration-200"
+                        style={{ backgroundColor: isHovered ? "#0064ff" : "#E6F0FF" }}
+                      >
+                        <span className="font-bold text-[13px] tracking-[-0.65px] transition-colors duration-200" style={{ color: isHovered ? "#fff" : "#0064ff" }}>
+                          {item.rank}
+                        </span>
+                      </div>
+                      <span className="flex-1 min-w-0 truncate text-[16px] text-black tracking-[-0.8px] ml-[10px]">{item.name}</span>
+                      <span className="shrink-0 font-bold text-[16px] text-black tracking-[-0.8px]">{item.price}</span>
+                    </Link>
+                  );
+                })
+              )}
+            </div>
+
+            {pageCount > 1 ? (
+              <div
+                className="flex justify-center gap-[6px] items-center bg-white rounded-bl-[20px] rounded-br-[20px]"
+                style={{ height: HOT_INDICATOR_H }}
+              >
+                {Array.from({ length: pageCount }).map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => goToPage(i)}
+                    className="cursor-pointer rounded-full transition-all duration-300"
+                    style={{ width: i === visiblePage ? 16 : 8, height: 8, backgroundColor: i === visiblePage ? "#0064ff" : "#c9d3e0" }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div
+                className="bg-white rounded-bl-[20px] rounded-br-[20px]"
+                style={{ height: HOT_INDICATOR_H }}
+              />
+            )}
           </div>
+
         </div>
       </div>
     </>

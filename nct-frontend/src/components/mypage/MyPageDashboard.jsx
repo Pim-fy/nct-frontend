@@ -6,6 +6,7 @@
 import React, { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getMyPagePath } from "@/routes/myPageRoutes";
 import { useQuery } from "@tanstack/react-query";
 import { fetchMyFavoriteAuctions } from "@api/auctionApi";
 import { getMyBidHistory } from "@api/bidApi";
@@ -221,7 +222,6 @@ export default function MyPageDashboard({
   isProviderApproved,
   onLogout,
   onRequestProviderSwitch,
-  onOpenAuctionBids,
 }) {
   const navigate = useNavigate();
   const nickname = user?.nickname || "고객";
@@ -248,7 +248,7 @@ export default function MyPageDashboard({
 
   const nav = (section) => (event) => {
     event?.stopPropagation();
-    navigate(`/user/mypage?section=${section}`);
+    navigate(getMyPagePath(section));
   };
 
   // ── 실데이터 조회 ──────────────────────────────────────────────────────────
@@ -279,14 +279,14 @@ export default function MyPageDashboard({
   });
   const purchaseCnt = allTradeItems.filter((t) => t.type === "BUYER").length;
 
-  // 일반 모드에서는 요청자로 작성한 서비스 요청만 집계한다.
+  // 담당자 7: 일반회원 서비스 현황은 요청자 전용 조회 계약만 사용한다.
   const { data: svcReqAll } = useQuery({
     queryKey: ["serviceRequests", "me", "total"],
     queryFn: () => getMyServiceRequests(1, 1),
     select: (res) => res.data,
     enabled: !!user,
   });
-  const svcRequestTotalCnt = svcReqAll?.total ?? 0;
+  const svcRequestCnt = svcReqAll?.total ?? 0;
 
   // 견적이 선택된 뒤 실제로 진행 중인 요청자 거래 건수
   const { data: activeServiceTradePage } = useQuery({
@@ -299,7 +299,19 @@ export default function MyPageDashboard({
     }),
     enabled: !!user,
   });
-  const activeServiceTradeCnt = activeServiceTradePage?.totalCount ?? 0;
+  const activeServiceTradeCnt = Number(activeServiceTradePage?.totalCount) || 0;
+
+  const { data: svcTradeCompleted } = useQuery({
+    queryKey: ["my-service-trades", "REQUESTER", "TRDC0006", "", 1, 1],
+    queryFn: () => getMyServiceTrades({
+      role: "REQUESTER",
+      status: "TRDC0006",
+      page: 1,
+      size: 1,
+    }),
+    enabled: !!user,
+  });
+  const svcTradeCompletedCnt = Number(svcTradeCompleted?.totalCount) || 0;
 
   // 경매 판매 건수 (진행 중 상태)
   const { data: auctionActiveSummary } = useQuery({
@@ -370,13 +382,15 @@ export default function MyPageDashboard({
       color: "#0CB8BB",
       icon: assets.iconService,
       label: "견적 요청 내역",
-      value: String(svcRequestTotalCnt),
+      value: String(svcRequestCnt),
       unit: "건",
       meta: (
-        <span className="flex items-center gap-x-2">
-          <button type="button" onClick={nav("service-requests")} className={subBtn}>전체 {svcRequestTotalCnt}건</button>
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <button type="button" onClick={nav("service-requests")} className={subBtn}>전체 요청 {svcRequestCnt}건</button>
           <span className="text-white/70">ㅣ</span>
           <button type="button" onClick={nav("service-trade")} className={subBtn}>진행 {activeServiceTradeCnt}건</button>
+          <span className="text-white/70">ㅣ</span>
+          <button type="button" onClick={nav("service-trade")} className={subBtn}>완료 {svcTradeCompletedCnt}건</button>
         </span>
       ),
       onMore: nav("service-requests"),
@@ -422,13 +436,13 @@ export default function MyPageDashboard({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
         <ActiveChatPanel
           rooms={activeChatRooms}
-          onOpenChat={() => navigate("/user/mypage?section=chat")}
-          onMore={() => navigate("/user/mypage?section=chat")}
+          onOpenChat={() => navigate(getMyPagePath("chat"))}
+          onMore={() => navigate(getMyPagePath("chat"))}
         />
         <ReviewablePanel
           items={writableReviews}
-          onWrite={(item) => navigate(`/user/reviews/write/${item.id}`, { state: { item } })}
-          onMore={() => navigate("/user/mypage?section=review")}
+          onWrite={(item) => navigate(`/user/mypage/reviews/write/${item.id}`, { state: { item } })}
+          onMore={() => navigate(getMyPagePath("review"))}
         />
       </div>
     </div>

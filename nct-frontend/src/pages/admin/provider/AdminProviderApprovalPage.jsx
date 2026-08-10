@@ -7,6 +7,7 @@ import AdminTable from '@components/admin/AdminTable';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
+import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
 import {
   useAdminProviderApplications,
   useApproveProviderApplication,
@@ -14,7 +15,8 @@ import {
 } from '@hooks/useAdminProviderApplications';
 import useClientPagination from '@hooks/useClientPagination';
 import { getAdminProviderApplicationFileDownloadUrl } from '@api/providerApplicationApi';
-import { toast } from '@utils/common';
+import { formatDateTime, toast } from '@utils/common';
+import { formatAdminMemberIdentity } from '@utils/adminMemberIdentity';
 import '../notice/adminContentPages.css';
 import './adminProviderApprovalPage.css';
 
@@ -43,12 +45,12 @@ const TYPE_NAMES = {
   PRVC0010: '추가',
   PRVC0011: '갱신',
 };
-const PAGE_SIZE = 20;
+const PAGE_SIZE = ADMIN_PAGE_SIZE;
 
 const toDisplayItem = (item) => ({
   ...item,
   id: item.applicationSn,
-  name: item.userName,
+  name: formatAdminMemberIdentity(item.applicantMember, item.userSn),
   category: item.categoryName,
   type: TYPE_NAMES[item.applicationTypeCode] ?? item.applicationTypeCode ?? '-',
   status: item.statusCode === 'PRVC0002'
@@ -64,7 +66,7 @@ const toDisplayItem = (item) => ({
       timeStyle: 'short',
     }).format(new Date(item.requestedAt))
     : '-',
-  reason: item.rejectReason,
+  reason: item.processedReason ?? item.rejectReason,
   tone: item.statusCode === 'PRVC0003'
     ? 'success'
     : item.statusCode === 'PRVC0004'
@@ -133,12 +135,15 @@ const AdminProviderApprovalPage = () => {
   };
 
   const decide = async (decision) => {
-    if (!selected || (decision === 'reject' && !rejectReason.trim())) return;
+    if (!selected || !rejectReason.trim()) return;
     setFeedback('');
 
     try {
       if (decision === 'approve') {
-        await approveMutation.mutateAsync(selected.id);
+        await approveMutation.mutateAsync({
+          applicationSn: selected.id,
+          reason: rejectReason.trim(),
+        });
       } else {
         await rejectMutation.mutateAsync({
           applicationSn: selected.id,
@@ -256,7 +261,7 @@ const AdminProviderApprovalPage = () => {
               <h2>{selected.name}</h2>
               <p>
                 {selected.reason
-                  ? `반려 사유: ${selected.reason}`
+                  ? `처리 사유: ${selected.reason}`
                   : '제출 내용을 검토한 뒤 승인 또는 반려할 수 있습니다.'}
               </p>
             </div>
@@ -264,6 +269,12 @@ const AdminProviderApprovalPage = () => {
             <dl>
               <dt>신청번호 / 유형</dt>
               <dd>{selected.id} / {selected.type}</dd>
+
+              <dt>신청자</dt>
+              <dd>{selected.name}</dd>
+
+              <dt>신청 일시</dt>
+              <dd>{formatDateTime(selected.requestedAt)}</dd>
 
               <dt>신청 카테고리</dt>
               <dd>{selected.category}</dd>
@@ -293,16 +304,30 @@ const AdminProviderApprovalPage = () => {
                   {selected.status}
                 </AdminStatusBadge>
               </dd>
+
+              {selected.processedAt && (
+                <>
+                  <dt>처리자</dt>
+                  <dd>{formatAdminMemberIdentity(
+                    selected.processorMember,
+                    selected.processorUserSn,
+                  )}</dd>
+                  <dt>처리 일시</dt>
+                  <dd>{formatDateTime(selected.processedAt)}</dd>
+                  <dt>처리 사유</dt>
+                  <dd>{selected.reason ?? '기록 없음'}</dd>
+                </>
+              )}
             </dl>
 
             {selected.status === '심사 대기' && (
               <>
                 <label className="admin-provider-detail__reason">
-                  반려 사유
+                  처리 사유
                   <textarea
                     maxLength="4000"
                     onChange={(event) => setRejectReason(event.target.value)}
-                    placeholder="반려 또는 보완 요청 사유를 입력합니다."
+                    placeholder="승인 또는 반려 처리 사유를 입력합니다."
                     value={rejectReason}
                   />
                 </label>
@@ -310,7 +335,7 @@ const AdminProviderApprovalPage = () => {
                 <div className="admin-provider-detail__actions">
                   <button
                     className="btn btn-primary"
-                    disabled={isPending}
+                    disabled={isPending || !rejectReason.trim()}
                     onClick={() => decide('approve')}
                     type="button"
                   >

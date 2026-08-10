@@ -16,12 +16,15 @@
 //                           defaultTrail(정식 위치)로 폴백된다.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { getMyPagePath, getMyPageSection } from '@/routes/myPageRoutes';
+
 // 항목 형태: { label: '표시명', to: '이동 경로' } — to가 없으면 링크 없이 텍스트만 표시
 export const HOME_ITEM = { label: '홈', to: '/' };
 
-// 마이페이지 ?section= 값 → 사이드바에 표시되는 실제 메뉴명 (MyPageSidebar.jsx 기준)
+// 마이페이지 계층 경로 → 사이드바에 표시되는 실제 메뉴명 (MyPageSidebar.jsx 기준)
 export const MYPAGE_SECTION_LABELS = {
   'active-auctions': '진행 중인 경매',
+  'bid-history': '상품 입찰 내역',
   'auction-bids': '상품 구매 내역',
   'auction-sales': '상품 판매 내역',
   'service-requests': '내 서비스 요청 목록',
@@ -36,6 +39,7 @@ export const MYPAGE_SECTION_LABELS = {
   'received-review': '받은 리뷰',
   'report-list': '내 신고 목록',
   'report-form': '신고 접수',
+  'inquiry-list': '1:1 문의',
 };
 
 // 마이페이지 트레일 생성 헬퍼 — 진입점 매칭과 MyPage 오버라이드 양쪽에서 재사용한다.
@@ -44,7 +48,7 @@ export const buildMyPageTrail = (sectionKey) => {
   const base = [{ label: '마이페이지', to: '/user/mypage' }];
   const sectionLabel = MYPAGE_SECTION_LABELS[sectionKey];
   return sectionLabel
-    ? [...base, { label: sectionLabel, to: `/user/mypage?section=${sectionKey}` }]
+    ? [...base, { label: sectionLabel, to: getMyPagePath(sectionKey) }]
     : base;
 };
 
@@ -58,34 +62,14 @@ export const BREADCRUMB_ENTRIES = [
     trail: (loc) => [{ label: '경매', to: `/auction${loc.search}` }],
   },
   {
-    pattern: '/user/auction-favorites',
-    trail: () => [{ label: '관심 경매', to: '/user/auction-favorites' }],
-  },
-  {
-    // 마이페이지는 ?section= 값에 따라 "마이페이지 > 섹션명"으로 확장된다
-    pattern: '/user/mypage',
-    trail: (loc) => buildMyPageTrail(new URLSearchParams(loc.search).get('section')),
-  },
-  {
-    pattern: '/my-bids',
-    trail: () => [{ label: '경매 거래내역', to: '/my-bids' }],
-  },
-  {
-    pattern: '/product/me',
-    trail: () => [{ label: '내 판매 내역', to: '/product/me' }],
+    // 담당자 7 경로 통합: 계층 URL에서 현재 마이페이지 섹션을 역산한다.
+    pattern: '/user/mypage/*',
+    trail: (loc) => buildMyPageTrail(getMyPageSection(loc.pathname)),
   },
   {
     // 제공자 모드 전용 — 공개 서비스 요청 목록
     pattern: '/service',
     trail: (loc) => [{ label: '서비스 요청 목록', to: `/service${loc.search}` }],
-  },
-  {
-    pattern: '/service-requests/me',
-    trail: () => [{ label: '내 서비스 요청 목록', to: '/service-requests/me' }],
-  },
-  {
-    pattern: '/provider/quotes',
-    trail: () => [{ label: '견적 제출 내역', to: '/provider/quotes' }],
   },
   {
     pattern: '/customersupport/notice',
@@ -134,7 +118,6 @@ export const BREADCRUMB_ROUTES = [
     pageLabel: '서비스 요청 작성',
     defaultTrail: [],
   },
-  { pattern: '/service-requests/me', hidden: true }, // 목록 페이지 — :svcReqSn 오매치 방지용
   {
     pattern: '/service-requests/:svcReqSn/quotes/new',
     pageLabel: '견적 작성',
@@ -188,15 +171,9 @@ export const BREADCRUMB_ROUTES = [
     defaultTrail: [],
   },
   {
-    // 목록형이지만 사용자 확정으로 예외 등록 — 구 Breadcrumb.jsx(홈 > 내 판매 내역) 대체
-    pattern: '/product/me',
-    pageLabel: '내 판매 내역',
-    defaultTrail: [],
-  },
-  {
     pattern: '/product/:prdSn/seller',
     pageLabel: '상품 상세',
-    defaultTrail: [{ label: '내 판매 내역', to: '/product/me' }],
+    defaultTrail: buildMyPageTrail('auction-sales'),
   },
 
   // 고객센터
@@ -208,19 +185,19 @@ export const BREADCRUMB_ROUTES = [
 
   // 리뷰
   {
-    pattern: '/user/reviews/write/:id',
+    pattern: '/user/mypage/reviews/write/:id',
     pageLabel: '리뷰 작성',
     defaultTrail: buildMyPageTrail('review'),
   },
   {
-    pattern: '/user/reviews/edit/:id',
+    pattern: '/user/mypage/reviews/edit/:id',
     pageLabel: '리뷰 수정',
     defaultTrail: buildMyPageTrail('review'),
   },
 
   // 신고
   {
-    pattern: '/user/reports/new',
+    pattern: '/user/mypage/reports/new',
     pageLabel: '신고 접수',
     defaultTrail: buildMyPageTrail('report-list'),
   },
@@ -235,15 +212,5 @@ export const BREADCRUMB_ROUTES = [
     pattern: '/provider/applications/status',
     pageLabel: '제공자 신청 현황',
     defaultTrail: [{ label: '마이페이지', to: '/user/mypage' }],
-  },
-  {
-    pattern: '/provider/profile',
-    pageLabel: '제공자 프로필 관리',
-    defaultTrail: [{ label: '마이페이지', to: '/user/mypage' }],
-  },
-  {
-    pattern: '/provider/quotes/new',
-    pageLabel: '견적 작성',
-    defaultTrail: [{ label: '견적 제출 내역', to: '/provider/quotes' }],
   },
 ];

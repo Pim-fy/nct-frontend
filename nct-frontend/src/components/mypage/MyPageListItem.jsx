@@ -10,6 +10,7 @@ export default function MyPageListItem({
   actions,
   to,
   onImageClick,
+  state,
 }) {
   const ImageContainer = onImageClick ? 'button' : 'div';
   const content = (
@@ -50,7 +51,7 @@ export default function MyPageListItem({
   );
 
   return to ? (
-    <Link className="block text-inherit no-underline" to={to}>
+    <Link className="block text-inherit no-underline" state={state} to={to}>
       {content}
     </Link>
   ) : content;

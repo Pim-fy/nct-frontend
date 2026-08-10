@@ -6,7 +6,10 @@ const STATUS_BADGE = {
   대기: 'bg-amber-100 text-amber-800',
   보류: 'bg-red-100 text-red-800',
   완료: 'bg-blue-100 text-blue-800',
+  환불종결: 'bg-gray-100 text-gray-700',
 };
+
+const STATUS_FILTERS = ['전체', '대기', '보류', '완료', '환불종결'];
 
 /**
  * 정산 내역 테이블 — 상태 필터 탭 포함 (목업 18_settlement.html 기준)
@@ -18,7 +21,7 @@ const SettlementTable = ({ rows, filter, onFilterChange, loading = false, loadin
   return (
     <section className="mt-6">
       <div className="flex gap-2 mb-3">
-        {['전체', '대기', '보류', '완료'].map((f) => (
+        {STATUS_FILTERS.map((f) => (
           <button
             key={f}
             type="button"

@@ -11,7 +11,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Menu, X, ChevronRight, Bell, Gavel, Truck, Wrench, Wallet, MessageCircle } from 'lucide-react';
+import { Menu, X, ChevronRight, Bell, Gavel, Truck, Wrench, Wallet, MessageCircle, FileText, Headset } from 'lucide-react';
 import { useAuth } from '@hooks/useAuth';
 import { useMyProviderApplications } from '@hooks/useProviderApplications';
 import { useMarkAllRead, useMarkRead, useNotifications } from '@hooks/useNotification';
@@ -34,7 +34,7 @@ import logoImg from '@assets/img/logo.png';
 import bellIcon from '@assets/img/bellIcon.png';
 import walletIcon from '@assets/img/walletIcon.png';
 import userIcon from '@assets/img/userIcon.png';
-import micIcon from '@assets/img/micIcon.png';
+import micIcon from '@assets/img/notice_icon.png';
 
 const NOTICE_ROTATE_MS = 3500;
 const NOTICE_SCROLL_THRESHOLD = 48; // NoticeStrip 높이 정도 스크롤하면 전환
@@ -103,7 +103,7 @@ const Header = () => {
   const [selectedNoti, setSelectedNoti] = useState(null); // 클릭한 알림 상세 팝업
   const balanceQuery = usePointBalance({ enabled: !!user });
   // 헤더 POINT 드롭다운의 충전/환전 버튼 → 마이페이지로 이동하지 않고 이 자리에서 바로 모달을 띄운다
-  // (종전엔 /user/mypage?section=wallet&action=... 로 이동시켜 페이지 도착 후 모달을 열었으나,
+  // (종전엔 /user/mypage/wallet?action=... 로 이동시켜 페이지 도착 후 모달을 열었으나,
   // 사용자 요청으로 페이지 이동 없이 헤더에서 바로 처리하도록 변경, 2026-07-24)
   const [pointModal, setPointModal] = useState(null); // null | 'charge' | 'exchange' | 'convert'
   // 안읽은 알림: 배지 숫자와 드롭다운 목록의 공통 원천
@@ -312,8 +312,10 @@ const Header = () => {
       <div className={`container relative flex items-center justify-between gap-8 ${
         hasHeaderSearch ? 'h-[82px] md:h-full' : 'h-full'
       }`}>
-        {/* 로고 + 메뉴 - 디자인 시안처럼 로고 바로 우측에 붙여 왼쪽에 묶어둔다 */}
-        <div className="flex items-center gap-10">
+        {/* 로고 + 메뉴 - 디자인 시안처럼 로고 바로 우측에 붙여 왼쪽에 묶어둔다.
+            검색이 있는 페이지는 768~1280px 구간에서 검색창이 이 사이에 끼어들도록
+            order를 매겨둔다(순서만 바꾸고 실제 DOM 위치는 그대로, 2026-08-10) */}
+        <div className={`flex items-center gap-10 ${hasHeaderSearch ? 'md:order-1 xl:order-none' : ''}`}>
           <Link to="/" className="flex shrink-0 items-center">
             <img src={logoImg} alt="에누리컷" className="h-[58px] w-auto" />
           </Link>
@@ -375,10 +377,13 @@ const Header = () => {
             >
               <Link
                 to={serviceMenuPath}
-                className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${serviceMenuOpen || isServiceMenuActive ? 'text-primary' : 'text-[#333333]'}`}
+                className={`flex cursor-pointer items-center gap-1.5 text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${serviceMenuOpen || isServiceMenuActive ? 'text-primary' : 'text-[#333333]'}`}
                 onClick={() => setServiceHovered(false)}
               >
-                {isProvider ? '견적 목록' : '견적 요청'}
+                {hasHeaderSearch && <FileText aria-hidden="true" className="size-5 xl:hidden" />}
+                <span className={hasHeaderSearch ? 'hidden xl:inline' : undefined}>
+                  {isProvider ? '견적 목록' : '견적 요청'}
+                </span>
               </Link>
               {serviceMenuOpen && (
                 <div className="absolute left-0 top-full w-[161px] pt-[14px] z-50">
@@ -415,10 +420,11 @@ const Header = () => {
             >
               <Link
                 to="/customersupport/notice"
-                className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${customerOpen || isCustomerMenuActive ? 'text-primary' : 'text-[#333333]'}`}
+                className={`flex cursor-pointer items-center gap-1.5 text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${customerOpen || isCustomerMenuActive ? 'text-primary' : 'text-[#333333]'}`}
                 onClick={() => setCustomerHovered(false)}
               >
-                고객센터
+                {hasHeaderSearch && <Headset aria-hidden="true" className="size-5 xl:hidden" />}
+                <span className={hasHeaderSearch ? 'hidden xl:inline' : undefined}>고객센터</span>
               </Link>
               {customerOpen && (
                 <div className="absolute left-0 top-full w-[161px] pt-[14px] z-50">
@@ -444,6 +450,13 @@ const Header = () => {
                     >
                       FAQ
                     </Link>
+                    <Link
+                      to="/customersupport/inquiry"
+                      className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
+                      onClick={() => setCustomerHovered(false)}
+                    >
+                      1:1 문의
+                    </Link>
                   </div>
                 </div>
               )}
@@ -459,10 +472,10 @@ const Header = () => {
             to={siteNoticeItems.length > 0
               ? `/customersupport/notice/${siteNoticeItems[noticeIndex % siteNoticeItems.length].id}`
               : '/customersupport/notice'}
-            className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-full bg-[#f3f5fa] px-4 py-2 text-[13px] text-[#4e4e4e] transition-opacity duration-300 hover:bg-[#e9edf5] md:flex"
+            className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-full bg-[#f3f5fa] px-4 py-2 text-[15px] text-[#4e4e4e] transition-opacity duration-300 hover:bg-[#e9edf5] md:flex"
             style={{ opacity: scrolled ? 1 : 0, pointerEvents: scrolled ? 'auto' : 'none' }}
           >
-            <img src={micIcon} alt="" width={14} height={14} className="shrink-0 opacity-70" />
+            <img src={micIcon} alt="" width={18} height={18} className="shrink-0 opacity-70" />
             <span className="max-w-[420px] truncate">
               {siteNotices.length > 0
                 ? siteNotices[noticeIndex % siteNotices.length]
@@ -472,7 +485,7 @@ const Header = () => {
         )}
 
         {/* 우측 유틸 영역 */}
-        <div ref={utilRef} className="flex items-center gap-2 md:gap-3">
+        <div ref={utilRef} className={`flex items-center gap-2 md:gap-3 ${hasHeaderSearch ? 'md:order-3 xl:order-none' : ''}`}>
           {/* 알림 */}
           <div className="relative">
             <button
@@ -577,13 +590,25 @@ const Header = () => {
                         <span className="text-[15px] font-bold text-black tracking-[-0.5px]">알림</span>
                         <span className="text-[12px] text-[#0064ff]">{notiCount}</span>
                       </span>
-                      <button
-                        type="button"
-                        className="text-[12px] font-medium text-primary"
-                        onClick={() => markAllReadMutation.mutate()}
-                      >
-                        전체 읽음
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          className="text-[12px] font-medium text-primary"
+                          onClick={() => markAllReadMutation.mutate()}
+                        >
+                          전체 읽음
+                        </button>
+                        {/* 모바일 전체화면 알림함과 동일하게 명시적 닫기 버튼 제공 —
+                            데스크톱은 그동안 바깥 클릭(handleClickOutside)에만 의존해서 닫혔다 (2026-08-10) */}
+                        <button
+                          type="button"
+                          aria-label="닫기"
+                          className="flex size-6 items-center justify-center rounded-full text-[#767676] hover:bg-[#f3f5fa] transition-colors"
+                          onClick={() => setNotiOpen(false)}
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
                     </div>
                     <div className="my-3 h-px bg-[#e5e5e5]" />
                     {notiList}
@@ -617,6 +642,15 @@ const Header = () => {
                 {/* 헤더 */}
                 <div className="flex items-center justify-between">
                   <span className="text-[15px] font-bold text-black tracking-[-0.5px]">POINT</span>
+                  {/* 알림 팝업과 동일하게 명시적 닫기 버튼 추가 (2026-08-10) */}
+                  <button
+                    type="button"
+                    aria-label="닫기"
+                    className="flex size-6 items-center justify-center rounded-full text-[#767676] hover:bg-[#f3f5fa] transition-colors"
+                    onClick={() => setPointOpen(false)}
+                  >
+                    <X size={16} />
+                  </button>
                 </div>
                 <div className="my-3 h-px bg-[#e5e5e5]" />
                 {/* 잔액 */}
@@ -655,7 +689,7 @@ const Header = () => {
                 <button
                   type="button"
                   className="mt-2 h-[34px] w-full rounded-[6px] border border-primary text-[14px] font-bold text-primary hover:bg-[#f0f6ff] transition-colors"                 
-                  onClick={() => { setPointOpen(false); window.scrollTo(0, 0); navigate('/user/mypage?section=wallet'); }}
+                  onClick={() => { setPointOpen(false); window.scrollTo(0, 0); navigate('/user/mypage/wallet'); }}
                 >
                   포인트지갑 상세보기
                 </button>
@@ -694,6 +728,15 @@ const Header = () => {
                   ) : (
                     <span className="text-[14px] text-[#969696]">로그인이 필요합니다</span>
                   )}
+                  {/* 알림 팝업과 동일하게 명시적 닫기 버튼 추가 (2026-08-10) */}
+                  <button
+                    type="button"
+                    aria-label="닫기"
+                    className="flex size-6 items-center justify-center rounded-full text-[#767676] hover:bg-[#f3f5fa] transition-colors"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    <X size={16} />
+                  </button>
                 </div>
                 <div className="my-3 h-px bg-[#e5e5e5]" />
                 {/* 액션 */}
@@ -773,9 +816,14 @@ const Header = () => {
           </button>
         </div>
 
+        {/* 768~1280px 사이는 검색창을 중앙 절대배치 대신 메뉴·아이콘 사이에서 남는 공간을
+            차지하는 flex 요소로 바꿔, 헤더는 항상 1줄(짧게) 유지하면서 검색창도 최소폭 이상을
+            확보한다(2026-08-10, 원래는 고정 38vw 폭으로 중앙배치돼 있어서 이 구간에서 메뉴
+            글자와 겹쳐 보이던 문제였음). 그 구간에서만 견적요청·고객센터 라벨이 아이콘으로
+            줄어든다(위 order 클래스들과 짝). 1280px 이상은 기존 중앙 배치로 복귀. */}
         <div
           className={hasHeaderSearch
-            ? 'absolute left-1/2 top-[92px] z-[1] flex w-[calc(100%-32px)] max-w-[548px] -translate-x-1/2 items-center gap-2 md:top-1/2 md:w-[min(38vw,548px)] md:-translate-y-1/2'
+            ? 'absolute left-1/2 top-[92px] z-[1] flex w-[calc(100%-32px)] max-w-[548px] -translate-x-1/2 items-center gap-2 md:static md:order-2 md:left-auto md:top-auto md:z-auto md:w-auto md:max-w-none md:flex-1 md:min-w-0 md:translate-x-0 xl:absolute xl:order-none xl:left-1/2 xl:top-1/2 xl:z-[1] xl:w-[min(38vw,548px)] xl:max-w-[548px] xl:flex-none xl:-translate-x-1/2 xl:-translate-y-1/2'
             : 'hidden'}
         >
           <div className="min-w-0 flex-1" id={SITE_HEADER_SEARCH_SLOT_ID} />
@@ -931,6 +979,7 @@ const Header = () => {
                   <Link to="/customersupport/notice" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>공지사항</Link>
                   <Link to="/customersupport/guide" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>이용가이드</Link>
                   <Link to="/customersupport/faq" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>FAQ</Link>
+                  <Link to="/customersupport/inquiry" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>1:1 문의</Link>
                 </div>
               )}
             </div>

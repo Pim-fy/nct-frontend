@@ -9,9 +9,11 @@ import {
   Grid2X2,
   LayoutDashboard,
   LogOut,
+  MessageSquareText,
   Megaphone,
   ScrollText,
   Settings,
+  ShieldAlert,
   Siren,
   Users,
   WalletCards,
@@ -31,14 +33,21 @@ const MENU_SECTIONS = [
   ],
   [{ label: '경매 관리', icon: Gavel, to: '/admin/auctions' }],
   [
-    { label: '서비스 요청 관리', icon: BriefcaseBusiness, to: '/admin/services' },
+    { label: '견적 요청 관리', icon: BriefcaseBusiness, to: '/admin/services' },
     { label: '카테고리 관리', icon: Grid2X2, to: '/admin/categories' },
   ],
-  [{ label: '환전 관리', icon: WalletCards, to: '/admin/exchanges' }],
+  [
+    { label: '정산 관리', icon: WalletCards, to: '/admin/settlements' },
+    { label: '환전 관리', icon: WalletCards, to: '/admin/exchanges' },
+  ],
   [
     { label: '공지 관리', icon: Megaphone, to: '/admin/notices' },
   ],
-  [{ label: '신고 관리', icon: Siren, to: '/admin/reports' }],
+  [
+    { label: '신고 관리', icon: Siren, to: '/admin/reports' },
+    { label: '문의 관리', icon: MessageSquareText, to: '/admin/inquiries' },
+    { label: '거래 분쟁', icon: ShieldAlert, to: '/admin/disputes' },
+  ],
   [
     { label: '운영 기록', icon: ScrollText, to: '/admin/operations-records' },
     { label: '시스템 설정', icon: Settings, to: '/admin/system-settings' },

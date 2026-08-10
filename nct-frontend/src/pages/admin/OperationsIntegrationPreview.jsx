@@ -7,6 +7,7 @@ import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
 import PageMeta from '@components/admin/PageMeta';
+import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import {
   useAdminRiskEvents,
@@ -15,28 +16,54 @@ import {
 import { formatDateTime } from '@utils/common';
 import './operationsIntegrationPreview.css';
 
-const EMPTY_FILTERS = { typeCode: '', processed: '', keyword: '' };
+const EMPTY_FILTERS = {
+  typeCode: '',
+  processed: '',
+  keyword: '',
+  dateFrom: '',
+  dateTo: '',
+};
 
 /** 담당자 7 · F-OPS-011/013: 운영 위험 이벤트를 읽기 전용으로 확인하는 화면입니다. */
 const OperationsIntegrationPreview = () => {
   const [filterForm, setFilterForm] = useState(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
-  const { keyword, processed, typeCode } = appliedFilters;
+  const {
+    keyword,
+    processed,
+    typeCode,
+    dateFrom,
+    dateTo,
+  } = appliedFilters;
 
   const filters = useMemo(
     () => ({
       typeCode: typeCode || undefined,
       processed: processed || undefined,
       keyword: keyword || undefined,
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
       page,
-      size: 20,
+      size: ADMIN_PAGE_SIZE,
     }),
-    [keyword, page, processed, typeCode],
+    [dateFrom, dateTo, keyword, page, processed, typeCode],
+  );
+
+  const summaryFilters = useMemo(
+    () => ({
+      typeCode: typeCode || undefined,
+      processed: processed || undefined,
+      keyword: keyword || undefined,
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
+    }),
+    [dateFrom, dateTo, keyword, processed, typeCode],
   );
 
   const eventsQuery = useAdminRiskEvents(filters);
-  const summaryQuery = useAdminRiskEventSummary();
+  const summaryQuery = useAdminRiskEventSummary(summaryFilters);
+  const typeOptionsQuery = useAdminRiskEventSummary();
 
   const columns = useMemo(() => [
     {
@@ -55,7 +82,7 @@ const OperationsIntegrationPreview = () => {
     {
       key: 'content',
       label: '내용',
-      className: 'operations-table__content',
+      className: 'operations-table__content admin-table__long-text',
     },
     {
       key: 'registeredAt',
@@ -112,6 +139,22 @@ const OperationsIntegrationPreview = () => {
               </div>
             </article>
           ))
+        ) : summaryQuery.isError ? (
+          <div className="admin-content-state operations-summary__state is-error" role="alert">
+            <strong>위험 이벤트 유형별 집계를 불러오지 못했습니다.</strong>
+            <button
+              className="btn btn-outline"
+              disabled={summaryQuery.isFetching}
+              onClick={() => summaryQuery.refetch()}
+              type="button"
+            >
+              다시 시도
+            </button>
+          </div>
+        ) : (summaryQuery.data ?? []).length === 0 ? (
+          <div className="admin-content-state operations-summary__state">
+            조회 조건에 해당하는 위험 이벤트 집계가 없습니다.
+          </div>
         ) : (
           (summaryQuery.data ?? []).map((item) => (
             <article className="operations-summary__card" key={item.typeCode}>
@@ -121,7 +164,7 @@ const OperationsIntegrationPreview = () => {
               <div>
                 <span>{item.typeName}</span>
                 <strong>{item.count}건</strong>
-                <small>전체 위험 이벤트</small>
+                <small>조회 조건 기준</small>
               </div>
             </article>
           ))
@@ -129,15 +172,32 @@ const OperationsIntegrationPreview = () => {
       </section>
 
       <AdminSectionCard
-        action={<span>총 {eventsQuery.data?.totalItems ?? 0}건</span>}
+        action={!eventsQuery.isLoading && !eventsQuery.isError
+          ? <span>총 {eventsQuery.data?.totalItems ?? 0}건</span>
+          : null}
         className="operations-card"
         description="내용에는 원문 개인정보 대신 서버에서 마스킹된 정보만 표시됩니다."
         title="위험 이벤트 목록"
       >
         <form className="operations-filters" onSubmit={submitSearch}>
+          {typeOptionsQuery.isError && (
+            <div className="operations-filter-error" role="alert">
+              <span>위험 이벤트 유형을 불러오지 못했습니다.</span>
+              <button
+                className="btn btn-outline"
+                disabled={typeOptionsQuery.isFetching}
+                onClick={() => typeOptionsQuery.refetch()}
+                type="button"
+              >
+                다시 시도
+              </button>
+            </div>
+          )}
+
           <label>
             <span>유형</span>
             <select
+              disabled={typeOptionsQuery.isLoading || typeOptionsQuery.isError}
               onChange={(event) => setFilterForm({
                 ...filterForm,
                 typeCode: event.target.value,
@@ -145,7 +205,7 @@ const OperationsIntegrationPreview = () => {
               value={filterForm.typeCode}
             >
               <option value="">전체</option>
-              {(summaryQuery.data ?? []).map((item) => (
+              {(typeOptionsQuery.data ?? []).map((item) => (
                 <option key={item.typeCode} value={item.typeCode}>
                   {item.typeName}
                 </option>
@@ -168,6 +228,32 @@ const OperationsIntegrationPreview = () => {
             </select>
           </label>
 
+          <label className="operations-date">
+            <span>시작일</span>
+            <input
+              max={filterForm.dateTo || undefined}
+              onChange={(event) => setFilterForm({
+                ...filterForm,
+                dateFrom: event.target.value,
+              })}
+              type="date"
+              value={filterForm.dateFrom}
+            />
+          </label>
+
+          <label className="operations-date">
+            <span>종료일</span>
+            <input
+              min={filterForm.dateFrom || undefined}
+              onChange={(event) => setFilterForm({
+                ...filterForm,
+                dateTo: event.target.value,
+              })}
+              type="date"
+              value={filterForm.dateTo}
+            />
+          </label>
+
           <label className="operations-search">
             <span>검색</span>
             <input
@@ -183,26 +269,40 @@ const OperationsIntegrationPreview = () => {
           <AdminFilterActions disabled={eventsQuery.isFetching} onReset={resetFilters} />
         </form>
 
-        <div className="operations-table-wrap">
-          <AdminTable
-            columns={columns}
-            data={eventsQuery.isError ? [] : (eventsQuery.data?.items ?? [])}
-            emptyMessage={eventsQuery.isError
-              ? '위험 이벤트를 불러오지 못했습니다.'
-              : '조건에 맞는 위험 이벤트가 없습니다.'}
-            loading={eventsQuery.isLoading}
-            rowKey={(item) => item.riskEventId}
-          />
-        </div>
+        {eventsQuery.isError ? (
+          <div className="admin-content-state is-error" role="alert">
+            <strong>위험 이벤트 목록을 불러오지 못했습니다.</strong>
+            <button
+              className="btn btn-outline"
+              disabled={eventsQuery.isFetching}
+              onClick={() => eventsQuery.refetch()}
+              type="button"
+            >
+              다시 시도
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="operations-table-wrap">
+              <AdminTable
+                columns={columns}
+                data={eventsQuery.data?.items ?? []}
+                emptyMessage="조건에 맞는 위험 이벤트가 없습니다."
+                loading={eventsQuery.isLoading}
+                rowKey={(item) => item.riskEventId}
+              />
+            </div>
 
-        <AdminPagination
-          ariaLabel="위험 이벤트 페이지 이동"
-          className="operations-pagination"
-          disabled={eventsQuery.isFetching}
-          onPageChange={setPage}
-          page={eventsQuery.data?.page ?? page}
-          totalPages={eventsQuery.data?.totalPages ?? 0}
-        />
+            <AdminPagination
+              ariaLabel="위험 이벤트 페이지 이동"
+              className="operations-pagination"
+              disabled={eventsQuery.isFetching}
+              onPageChange={setPage}
+              page={eventsQuery.data?.page ?? page}
+              totalPages={eventsQuery.data?.totalPages ?? 0}
+            />
+          </>
+        )}
       </AdminSectionCard>
     </div>
   );

@@ -10,6 +10,16 @@
   vertical-align: middle;
 }
 
+/* 담당자 7: 제목·내용처럼 길이가 유동적인 값은 셀 안에서 줄바꿈해 표 너비를 밀지 않습니다. */
+.admin-table td.admin-table__long-text {
+  width: 32%;
+  max-width: 420px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal !important;
+  word-break: break-word;
+}
+
 .admin-table--loading tbody {
   opacity: 0;
   animation: admin-table-skeleton-reveal 0s linear 250ms forwards;

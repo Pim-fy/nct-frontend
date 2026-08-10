@@ -29,7 +29,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .qf-col-left {
@@ -38,50 +38,44 @@
   gap: 16px;
 }
 
+/* 첫 번째 필드(내용)가 우측 컬럼의 남은 세로 공간을 채운다 */
+.qf-col-right .qf-field:first-child {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.qf-col-right .qf-field:first-child textarea {
+  flex: 1;
+}
+
 .qf-col-right {
   display: flex;
   flex-direction: column;
 }
 
-/* Desktop: enter the quote on the left, attach files above the revision guide on the right. */
+/* Desktop: 좌(제목·금액·내용) / 우(첨부파일·수정가능정보) */
 @media (min-width: 769px) {
   .qf-main-2col {
-    grid-template-areas:
-      "amount attachment"
-      "content attachment"
-      "actions policy";
-    grid-template-rows: auto 1fr auto;
+    grid-template-columns: 1fr 1fr;
+    align-items: stretch;
   }
 
   .qf-col-left {
-    display: contents;
-  }
-
-  .qf-col-left > .qf-field:nth-child(1) {
-    grid-area: amount;
-  }
-
-  .qf-col-left > .qf-field:nth-child(2) {
-    grid-area: content;
-  }
-
-  .qf-col-left > div:nth-child(3) {
-    grid-area: actions;
-  }
-
-  .qf-col-left > .qf-field:nth-child(4) {
-    grid-area: attachment;
-    align-self: start;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
 
   .qf-col-right {
-    grid-area: policy;
-    align-self: start;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
 }
 
-/* 50% 컬럼 내 썸네일 그리드 — 5열 1행 */
-.qf-col-left .qf-thumb-grid {
+/* 우측 컬럼 썸네일 그리드 — 5열 1행 */
+.qf-col-right .qf-thumb-grid {
   grid-template-columns: repeat(5, 1fr);
 }
 
@@ -98,13 +92,13 @@
 }
 
 .qf-field label {
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 500;
   color: #333;
 }
 
 .qf-field-hint {
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 400;
   color: #969696;
   margin-left: 6px;
@@ -112,19 +106,8 @@
 
 /* 썸네일 업로드 래퍼 */
 .qf-thumb-wrap {
-  border-radius: 12px;
-  border: 1px dashed #e2e1dc;
-  background: #fafaf8;
-  padding: 14px;
 }
 
-.qf-thumb-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-  gap: 8px;
-}
 
 .qf-thumb-hint {
   font-size: 12px;
@@ -195,7 +178,7 @@
   padding: 0;
 }
 
-/* 파일명 */
+/* 파일명 / 다운로드 영역 */
 .qf-thumb-name {
   font-size: 10px;
   color: #888;
@@ -204,6 +187,30 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: center;
+}
+
+/* 다운로드 링크/버튼 스타일 */
+.qf-thumb-dl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #0064ff;
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.qf-thumb-dl:hover {
+  color: #0048bf;
+  text-decoration: underline;
 }
 
 /* 빈 슬롯 */
@@ -233,27 +240,27 @@
 .qf-policy-wrap {
   border-radius: 10px;
   background: #e5efff;
+  border: 1px solid #c8d8f5;
   padding: 16px;
 }
 
 .qf-policy-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
   margin-bottom: 6px;
-  flex-wrap: wrap;
 }
 
 .qf-policy-head h4 {
   margin: 0;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 500;
   color: #0048bf;
   flex-shrink: 0;
 }
 
 .qf-policy-head span {
-  font-size: 13px;
+  font-size: 15px;
   color: #4e4e4e;
 }
 
@@ -267,7 +274,7 @@
   list-style: disc;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 2px;
   margin: 0 0 10px;
 }
 
@@ -350,18 +357,12 @@
 }
 
 @media (max-width: 768px) {
-  .qf-row-2col.title-amount,
-  .qf-row-2col.content-attach,
   .qf-main-2col {
     grid-template-columns: 1fr;
   }
 
   .qf-thumb-grid {
     grid-template-columns: repeat(3, 1fr);
-  }
-
-  .qf-col-left {
-    display: flex;
   }
 
   .qf-modal-box {

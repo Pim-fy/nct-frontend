@@ -17,8 +17,8 @@ export const fetchAdminProviderApplications = ({ statusCode } = {}) =>
   api.get('/admin/provider-applications', { params: statusCode ? { statusCode } : {} })
     .then((response) => response.data.data);
 
-export const approveProviderApplication = (applicationSn) =>
-  api.post(`/admin/provider-applications/${applicationSn}/approve`)
+export const approveProviderApplication = ({ applicationSn, reason }) =>
+  api.post(`/admin/provider-applications/${applicationSn}/approve`, { reason })
     .then((response) => response.data.data);
 
 export const rejectProviderApplication = ({ applicationSn, reason }) =>

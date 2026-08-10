@@ -1,4 +1,4 @@
-import { Flag, Heart } from 'lucide-react';
+import { Flag, Heart, MapPin } from 'lucide-react';
 import { formatNumber, formatPoint } from '@utils/common';
 import { resolveTradeMethodLabel } from '../utils/auctionFormatters';
 
@@ -82,6 +82,7 @@ const AuctionBidPanel = ({
   isBuyNowPointSufficient,
   isDeliveryAddressChecking,
   requiresDeliveryAddressRegistration,
+  selectedDeliveryAddressLabel,
   isFavoritePending,
   onBidInputChange,
   onBidInputBlur,
@@ -121,7 +122,8 @@ const AuctionBidPanel = ({
   );
   const isCurrentHighestTradeMethodControl = isAuctionOpen
     && isCurrentHighestBidder
-    && isMixedTradeMethod;
+    && isMixedTradeMethod
+    && !isInstantBuyAmountSelected;
   const isPrimaryActionPending = isCurrentHighestTradeMethodControl
     ? isTradeMethodChangePending
     : isBidPending;
@@ -139,7 +141,7 @@ const AuctionBidPanel = ({
       return `${selectedTradeName}으로 변경${isTradeMethodChangePending ? ' 중' : ''}`;
     }
     if (isInstantBuyAmountSelected) {
-      return isBidPointInsufficient ? '포인트 부족' : '즉시구매 진행';
+      return isBidPointInsufficient ? '포인트 부족' : '즉시구매';
     }
     if (isCurrentHighestBidder) return '최고입찰 중';
     if (isBidPointInsufficient) return '포인트 부족';
@@ -292,31 +294,53 @@ const AuctionBidPanel = ({
                 <span className={`text-caption font-bold ${showTradeMethodError ? 'text-[#b42318]' : 'text-[#666]'}`}>
                   거래 방식
                 </span>
-                <div className="grid w-full max-w-[220px] grid-cols-2 gap-1.5" role="group" aria-label="거래 방식 선택">
-                  {[
-                    { code: 'TRDC0009', label: '배송' },
-                    { code: 'TRDC0010', label: '직거래' },
-                  ].map((method) => {
-                    const selected = selectedTradeMethodCode === method.code;
-                    return (
-                      <button
-                        className={`min-h-8 cursor-pointer rounded-md border px-3 text-caption font-bold transition-colors ${
-                          selected
-                            ? 'border-primary bg-primary-light text-primary-dark'
-                            : (showTradeMethodError
-                              ? 'border-[#e58d86] bg-white text-[#b42318]'
-                              : 'border-[#dadada] bg-white text-[#666] hover:border-primary hover:text-primary-dark')
-                        }`}
-                        key={method.code}
-                        type="button"
-                        aria-pressed={selected}
-                        disabled={!isAuctionOpen || isTradeMethodChangePending}
-                        onClick={() => onTradeMethodChange(method.code)}
-                      >
-                        {method.label}
-                      </button>
-                    );
-                  })}
+                <div className="flex w-full max-w-[305px] items-center justify-end gap-1.5">
+                  <div className="grid min-w-0 flex-1 grid-cols-2 gap-1.5" role="group" aria-label="거래 방식 선택">
+                    {[
+                      { code: 'TRDC0009', label: '배송' },
+                      { code: 'TRDC0010', label: '직거래' },
+                    ].map((method) => {
+                      const selected = selectedTradeMethodCode === method.code;
+                      return (
+                        <button
+                          className={`min-h-8 cursor-pointer rounded-md border px-3 text-caption font-bold transition-colors ${
+                            selected
+                              ? 'border-primary bg-primary-light text-primary-dark'
+                              : (showTradeMethodError
+                                ? 'border-[#e58d86] bg-white text-[#b42318]'
+                                : 'border-[#dadada] bg-white text-[#666] hover:border-primary hover:text-primary-dark')
+                          }`}
+                          key={method.code}
+                          type="button"
+                          aria-pressed={selected}
+                          disabled={!isAuctionOpen || isTradeMethodChangePending}
+                          onClick={() => onTradeMethodChange(method.code)}
+                        >
+                          {method.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button
+                    aria-label="배송지 설정"
+                    className={`inline-flex min-h-8 min-w-[72px] shrink-0 items-center justify-center gap-1 rounded-md border px-2 text-caption font-bold transition-colors ${
+                      selectedTradeMethodCode === 'TRDC0009' && isAuthenticated
+                        ? 'border-[#dadada] bg-white text-[#555] hover:border-primary hover:text-primary-dark'
+                        : 'cursor-not-allowed border-[#e4e4e4] bg-[#f4f4f4] text-[#aaa]'
+                    }`}
+                    disabled={!isAuctionOpen
+                      || isTradeMethodChangePending
+                      || !isAuthenticated
+                      || selectedTradeMethodCode !== 'TRDC0009'}
+                    onClick={onDeliveryAddressOpen}
+                    title={selectedTradeMethodCode === 'TRDC0009'
+                      ? (selectedDeliveryAddressLabel || '배송지 선택')
+                      : '배송을 선택하면 배송지를 설정할 수 있습니다'}
+                    type="button"
+                  >
+                    <MapPin aria-hidden="true" size={14} />
+                    배송지
+                  </button>
                 </div>
                 {showTradeMethodError && (
                   <span className="sr-only" role="alert">배송 또는 직거래 방식을 선택해 주세요</span>
@@ -325,7 +349,36 @@ const AuctionBidPanel = ({
             ) : (
               <div className="flex min-h-10 items-center justify-between gap-4">
                 <span className="text-caption font-bold text-[#666]">거래 방식</span>
-                <strong className="text-body-sm text-[#1d1d1f]">{selectedTradeName}</strong>
+                <div className="flex min-w-0 max-w-[72%] items-center justify-end gap-2">
+                  <strong
+                    className="min-w-0 truncate text-body-sm text-[#1d1d1f]"
+                    title={selectedTradeMethodCode === 'TRDC0009' && isAuthenticated
+                      ? (selectedDeliveryAddressLabel || '선택된 배송지 없음')
+                      : selectedTradeName}
+                  >
+                    {selectedTradeMethodCode === 'TRDC0009' && isAuthenticated
+                      ? (isDeliveryAddressChecking
+                        ? '배송지 확인 중'
+                        : (selectedDeliveryAddressLabel || '선택된 배송지 없음'))
+                      : selectedTradeName}
+                  </strong>
+                  {selectedTradeMethodCode === 'TRDC0009' && (
+                    <button
+                      className={`inline-flex min-h-8 min-w-[72px] shrink-0 items-center justify-center gap-1 rounded-md border px-2 text-caption font-bold transition-colors ${
+                        isAuthenticated && isAuctionOpen
+                          ? 'border-[#dadada] bg-white text-[#555] hover:border-primary hover:text-primary-dark'
+                          : 'cursor-not-allowed border-[#e4e4e4] bg-[#f4f4f4] text-[#aaa]'
+                      }`}
+                      disabled={!isAuthenticated || !isAuctionOpen || isDeliveryAddressChecking}
+                      onClick={onDeliveryAddressOpen}
+                      title={selectedDeliveryAddressLabel || '배송지 선택'}
+                      type="button"
+                    >
+                      <MapPin aria-hidden="true" size={14} />
+                      배송지
+                    </button>
+                  )}
+                </div>
               </div>
             )}
             <div className="mt-6 border-t border-[#e8e8e8] pt-6">
@@ -479,22 +532,24 @@ const AuctionBidPanel = ({
                       >
                         {primaryActionLabel}
                       </button>
-                      <button
-                        className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-white text-body-md font-bold text-primary disabled:cursor-not-allowed disabled:opacity-55 aria-busy:cursor-progress"
-                        id="buyNowBtn"
-                        type="button"
-                        aria-busy={isBuyNowPending}
-                        disabled={!isBuyNowAvailable || isBuyNowPending || isBuyNowPointInsufficient}
-                        onClick={onBuyNowOpen}
-                      >
-                        {!isAuctionOpen
-                          ? '즉시구매 종료'
-                          : (isBuyNowPointInsufficient
-                            ? '포인트 부족'
-                            : (isBuyNowAvailable
-                              ? `즉시구매 ${formatPoint(auction.instantBuyPrice)}`
-                              : '즉시구매 불가'))}
-                      </button>
+                      {!isInstantBuyAmountSelected && (
+                        <button
+                          className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-white text-body-md font-bold text-primary disabled:cursor-not-allowed disabled:opacity-55 aria-busy:cursor-progress"
+                          id="buyNowBtn"
+                          type="button"
+                          aria-busy={isBuyNowPending}
+                          disabled={!isBuyNowAvailable || isBuyNowPending || isBuyNowPointInsufficient}
+                          onClick={onBuyNowOpen}
+                        >
+                          {!isAuctionOpen
+                            ? '즉시구매 종료'
+                            : (isBuyNowPointInsufficient
+                              ? '포인트 부족'
+                              : (isBuyNowAvailable
+                                ? `즉시구매 ${formatPoint(auction.instantBuyPrice)}`
+                                : '즉시구매 불가'))}
+                        </button>
+                      )}
                     </>
                   )}
                 </div>

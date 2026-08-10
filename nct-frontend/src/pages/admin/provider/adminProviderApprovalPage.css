@@ -47,7 +47,6 @@
   grid-template-columns: 1fr auto;
   gap: 12px 20px;
   margin-top: 18px;
-  padding: 22px;
 }
 
 .admin-provider-detail h2 {

@@ -11,6 +11,32 @@ export const getProfile = () =>
 export const updateProfile = (payload) =>
   api.patch('/member/me', payload).then(res => res.data);
 
+/** 로그인 회원의 사용 중인 배송지 목록 */
+export const getDeliveryAddresses = async () => {
+  const response = await api.get('/member/me/delivery-addresses');
+  return response.data.data;
+};
+
+/** 경매 배송 거래에 사용할 배송지 등록 */
+export const createDeliveryAddress = async (payload) => {
+  const response = await api.post('/member/me/delivery-addresses', payload);
+  return response.data.data;
+};
+
+export const updateDeliveryAddress = async (deliveryAddressId, payload) => {
+  const response = await api.patch(`/member/me/delivery-addresses/${deliveryAddressId}`, payload);
+  return response.data.data;
+};
+
+export const deleteDeliveryAddress = async (deliveryAddressId) => {
+  await api.delete(`/member/me/delivery-addresses/${deliveryAddressId}`);
+};
+
+export const setDefaultDeliveryAddress = async (deliveryAddressId) => {
+  const response = await api.patch(`/member/me/delivery-addresses/${deliveryAddressId}/default`);
+  return response.data.data;
+};
+
 /** 로그인 상태 비밀번호 변경 (ISS-022 - 현재 비밀번호 재확인 필요) */
 export const changePassword = (payload) =>
   api.patch('/member/me/password', payload).then(res => res.data);
