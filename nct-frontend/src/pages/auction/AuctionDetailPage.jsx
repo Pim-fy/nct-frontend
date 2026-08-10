@@ -345,7 +345,13 @@ const AuctionDetailPageContent = ({ auctionId }) => {
     onSuccess: (updatedAuction) => {
       handleMutationSuccess(updatedAuction);
       setIsBuyNowOpen(false);
-      showToast('즉시구매가 완료되었습니다');
+      const tradeId = Number(updatedAuction?.tradeId);
+      navigate(
+        Number.isSafeInteger(tradeId) && tradeId > 0
+          ? `/trades/${tradeId}`
+          : '/user/mypage?section=auction-bids',
+        { replace: true },
+      );
     },
     onError: handleAuctionMutationError,
   });
@@ -761,16 +767,16 @@ const AuctionDetailPageContent = ({ auctionId }) => {
       showToast('본인이 등록한 경매에는 입찰할 수 없습니다');
       return;
     }
-    if (isCurrentHighestBidder) {
-      showToast('현재 최고입찰자입니다');
-      return;
-    }
     if (!isAuctionOpen) {
       showToast('종료된 경매에는 입찰할 수 없습니다');
       return;
     }
     if (isInstantBuyAmountSelected) {
       await handleBuyNowOpen();
+      return;
+    }
+    if (isCurrentHighestBidder) {
+      showToast('현재 최고입찰자입니다');
       return;
     }
     const amount = requestedBidAmount;

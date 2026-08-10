@@ -41,8 +41,8 @@ const getTypeNames = (report) => {
 const STATUS_TABS = [
   { label: "전체",    status: null },
   { label: "접수됨",  status: "ABRC0005" },
-  { label: "처리중",  status: "ABRC0006" },
-  { label: "처리완료", status: "FINISHED" },
+  { label: "반려",    status: "ABRC0008" },
+  { label: "처리완료", status: "ABRC0007" },
 ];
 
 const PAGE_SIZE = 5;
@@ -160,13 +160,13 @@ export default function MyReportListPage({ embedded = false }) {
 
   const { data: countAll }      = useMyReports({ status: null,       page: 1, size: 1 });
   const { data: countReceived } = useMyReports({ status: "ABRC0005", page: 1, size: 1 });
-  const { data: countReview }   = useMyReports({ status: "ABRC0006", page: 1, size: 1 });
-  const { data: countFinished } = useMyReports({ status: "FINISHED", page: 1, size: 1 });
+  const { data: countFinished } = useMyReports({ status: "ABRC0007", page: 1, size: 1 });
+  const { data: countRejected } = useMyReports({ status: "ABRC0008", page: 1, size: 1 });
 
   const TAB_COUNTS = [
     countAll?.totalCount,
     countReceived?.totalCount,
-    countReview?.totalCount,
+    countRejected?.totalCount,
     countFinished?.totalCount,
   ];
 
@@ -183,7 +183,7 @@ export default function MyReportListPage({ embedded = false }) {
         title="신고"
         summaryItems={[
           { label: '접수됨', value: countReceived?.totalCount ?? 0 },
-          { label: '처리중', value: countReview?.totalCount ?? 0 },
+          { label: '반려', value: countRejected?.totalCount ?? 0 },
           { label: '처리완료', value: countFinished?.totalCount ?? 0 },
         ]}
         filterItems={STATUS_TABS.map((tab, idx) => ({ value: idx, label: tab.label, count: TAB_COUNTS[idx] }))}
