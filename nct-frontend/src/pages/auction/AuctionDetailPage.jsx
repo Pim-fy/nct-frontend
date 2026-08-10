@@ -32,6 +32,7 @@ import {
   SITE_HEADER_DOCK_EVENT,
   SITE_HEADER_VISIBILITY_EVENT,
 } from '@/constants/layoutEvents';
+import { getMyPagePath } from '@/routes/myPageRoutes';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import HeaderSearchPortal, {
   SimpleHeaderSearch,
@@ -362,7 +363,7 @@ const AuctionDetailPageContent = ({ auctionId }) => {
       navigate(
         Number.isSafeInteger(tradeId) && tradeId > 0
           ? `/trades/${tradeId}`
-          : '/user/mypage?section=auction-bids',
+          : getMyPagePath('auction-bids'),
         { replace: true },
       );
     },

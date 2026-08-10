@@ -10,7 +10,7 @@ import api from './axios';
 export const registerProduct = (data) =>
   api.post('/products', data).then(res => res.data);
 
-/** 내 판매 목록 — filterType: DRAFT | ACTIVE | WON | TRADING | DONE | CANCELED | ENDED | null(전체) */
+/** 내 판매 목록 — filterType: DRAFT | RESERVED | ACTIVE | TRADING | DONE | CANCELED | ENDED | null(전체) */
 export const getMyProducts = (page = 1, size = 10, filterType = null) =>
   api.get('/products/me', { params: { page, size, ...(filterType ? { filterType } : {}) } }).then(res => res.data);
 
