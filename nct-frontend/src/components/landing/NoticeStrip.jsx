@@ -1,7 +1,7 @@
 // src/components/landing/NoticeStrip.jsx
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import micIcon from '@assets/img/micIcon.png';
+import micIcon from '@assets/img/notice_icon_w.png';
 import { usePublicNoticeList } from '@hooks/usePublicNotices';
 import '@assets/css/landing.css';
 
@@ -46,7 +46,7 @@ const NoticeStrip = () => {
             to={link}
             style={{ transition: 'opacity 0.3s', opacity: visible ? 1 : 0 }}
           >
-            <img src={micIcon} alt="" width={16} height={16} />
+            <img src={micIcon} alt="" width={18} height={18} />
             [{badge}] {text}
           </Link>
         </div>
