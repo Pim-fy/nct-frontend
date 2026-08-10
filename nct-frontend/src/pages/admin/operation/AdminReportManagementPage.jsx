@@ -5,7 +5,7 @@ import {
   getAdminReport,
   getAdminReports,
 } from '@api/adminReportApi';
-import AdminModal from '@components/admin/AdminModal';
+import AdminDetailDrawer from '@components/admin/AdminDetailDrawer';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
@@ -205,7 +205,7 @@ const AdminReportManagementPage = () => {
               ...filterForm,
               keyword: event.target.value,
             })}
-            placeholder="신고 번호·회원 번호·내용"
+            placeholder="신고 번호·내용"
             value={filterForm.keyword}
           />
         </label>
@@ -246,7 +246,18 @@ const AdminReportManagementPage = () => {
       )}
 
       {selectedReportSn && (
-        <AdminModal
+        <AdminDetailDrawer
+          eyebrow="신고 관리"
+          footer={(
+            <button
+              className="btn btn-outline"
+              disabled={decisionMutation.isPending}
+              onClick={closeReport}
+              type="button"
+            >
+              닫기
+            </button>
+          )}
           onClose={closeReport}
           title="신고 상세"
         >
@@ -323,7 +334,7 @@ const AdminReportManagementPage = () => {
               </>
             )}
           </section>
-        </AdminModal>
+        </AdminDetailDrawer>
       )}
     </div>
   );

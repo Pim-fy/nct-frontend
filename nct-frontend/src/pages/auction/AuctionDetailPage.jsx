@@ -661,6 +661,9 @@ const AuctionDetailPageContent = ({ auctionId }) => {
     : null;
   const isAuctionOpen = auction.auctionStatusCode === 'AUCC0002'
     && (auctionEndTimestamp === null || auctionEndTimestamp > now);
+  const isInquiryAvailable = (isAuctionReady || isAuctionOpen)
+    && Number.isFinite(auctionEndTimestamp)
+    && auctionEndTimestamp > now;
   const isBuyNowAvailable = isAuctionOpen
     && !isOwnAuction
     && Number(auction.instantBuyPrice || 0) > 0;
@@ -1180,6 +1183,7 @@ const AuctionDetailPageContent = ({ auctionId }) => {
             productId={auction.productId}
             isAuthenticated={isAuthenticated}
             isOwnAuction={isOwnAuction}
+            isInquiryAvailable={isInquiryAvailable}
             currentUserId={authenticatedUserId}
             enabled={supplementalQueriesEnabled}
             onLoginRequired={handleInquiryLoginRequired}
@@ -1221,7 +1225,9 @@ const AuctionDetailPageContent = ({ auctionId }) => {
           isOpen
           sellerId={auction.sellerId}
           sellerName={auction.sellerName}
+          returnPath={returnPath}
           onClose={handleSellerReviewsClose}
+          onToast={showToast}
         />
       )}
       {isDeliveryAddressModalOpen && (
