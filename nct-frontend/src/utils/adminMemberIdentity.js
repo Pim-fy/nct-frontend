@@ -1,4 +1,4 @@
-/** 담당자 7: 관리자 화면에서 비민감 회원 식별정보와 내부 회원번호를 함께 표시합니다. */
+/** 담당자 7: 관리자 화면에는 내부 회원번호를 숨기고 로그인 ID와 이름만 표시합니다. */
 export const formatAdminMemberIdentity = (member, userSn, emptyLabel = '-') => {
   const resolvedUserSn = member?.userSn ?? userSn;
   if (resolvedUserSn == null) return emptyLabel;
@@ -8,9 +8,9 @@ export const formatAdminMemberIdentity = (member, userSn, emptyLabel = '-') => {
   const rawLoginId = member?.loginId?.trim();
   const loginId = rawLoginId?.startsWith('OAUTH_') ? null : rawLoginId;
   const nickname = member?.nickname?.trim();
-  if (!loginId && !nickname) return `회원 #${resolvedUserSn}`;
+  if (!loginId && !nickname) return '회원 정보 없음';
 
   const primary = loginId || nickname;
   const nicknameLabel = loginId && nickname && nickname !== loginId ? ` (${nickname})` : '';
-  return `${primary}${nicknameLabel} · #${resolvedUserSn}`;
+  return `${primary}${nicknameLabel}`;
 };
