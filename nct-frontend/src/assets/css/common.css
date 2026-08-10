@@ -293,7 +293,6 @@ table tr:last-child td { border-bottom: none; }
   .seller-price-row { flex-direction: column; align-items: flex-start; gap: 4px; }
   .seller-price-divider { display: none; }
   .seller-metrics { grid-template-columns: 1fr 1fr; }
-  .seller-metrics > :last-child { grid-column: 1 / -1; }
   .seller-info-split { grid-template-columns: 1fr; }
   .seller-history-split { grid-template-columns: 1fr; }
   .grid-2 { grid-template-columns: 1fr; }

@@ -288,7 +288,7 @@ export default function QuoteDetailPage() {
           )}
 
           {/* 신고: 황성경(3) 공용 ReportModal 연동. 선택하기: 조우진(7)의 선택+거래생성 계약 연동(F-SVC-009/010). */}
-          <div className="mt-6 flex items-center justify-between gap-2 border-t border-[#e8e8e8] pt-5">
+          <div className="mt-6 flex items-center justify-end gap-2 border-t border-[#e8e8e8] pt-5">
             <button
               type="button"
               onClick={() => setReportTarget({
