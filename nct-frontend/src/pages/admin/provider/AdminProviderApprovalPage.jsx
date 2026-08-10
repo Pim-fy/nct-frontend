@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
+import AdminDetailDrawer from '@components/admin/AdminDetailDrawer';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
-import AdminModal from '@components/admin/AdminModal';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminTable from '@components/admin/AdminTable';
@@ -134,6 +134,11 @@ const AdminProviderApprovalPage = () => {
     setFeedback('');
   };
 
+  const closeDetail = () => {
+    if (isPending) return;
+    setSelected(null);
+  };
+
   const decide = async (decision) => {
     if (!selected || !rejectReason.trim()) return;
     setFeedback('');
@@ -157,7 +162,7 @@ const AdminProviderApprovalPage = () => {
         timer: 1800,
       });
       setRejectReason('');
-      setSelected(null);
+      closeDetail();
     } catch (error) {
       setFeedback(error?.response?.data?.message || '심사 처리 중 오류가 발생했습니다.');
     }
@@ -254,7 +259,21 @@ const AdminProviderApprovalPage = () => {
       )}
 
       {selected && (
-        <AdminModal onClose={() => setSelected(null)} title="제공자 심사">
+        <AdminDetailDrawer
+          eyebrow={`신청 #${selected.id}`}
+          footer={(
+            <button
+              className="btn btn-outline"
+              disabled={isPending}
+              onClick={closeDetail}
+              type="button"
+            >
+              닫기
+            </button>
+          )}
+          onClose={closeDetail}
+          title="제공자 심사"
+        >
           <section className="admin-provider-detail">
             <div>
               <span>심사 상세</span>
@@ -291,6 +310,7 @@ const AdminProviderApprovalPage = () => {
                       key={file.applicationFileSn}
                       rel="noreferrer"
                       target="_blank"
+                      title={`${file.fileTypeName} · ${file.fileName}`}
                     >
                       {file.fileTypeName} · {file.fileName}
                     </a>
@@ -353,12 +373,8 @@ const AdminProviderApprovalPage = () => {
               </>
             )}
 
-            <p className="admin-provider-detail__notice">
-              승인·반려는 서버에서 관리자 권한과 현재 상태를 다시 검증합니다. 제출 서류 원문은
-              관리자 전용 API로 열람하며, 서버가 신청-파일 연결과 관리자 권한을 다시 확인합니다.
-            </p>
           </section>
-        </AdminModal>
+        </AdminDetailDrawer>
       )}
     </div>
   );

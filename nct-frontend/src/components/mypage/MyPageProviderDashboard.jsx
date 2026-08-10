@@ -1,9 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
 import { getUserReviews } from '@api/reviewApi';
 import { getMyServiceTrades } from '@api/serviceTradeApi';
 import { useMyProviderProfile } from '@hooks/useProviderProfile';
-import { useNotifications } from '@hooks/useNotification';
 import { usePointBalance } from '@hooks/usePoint';
 import { useMyQuoteSummary } from '@hooks/useQuote';
 import { assets } from '@components/mypage/assets';
@@ -19,9 +17,7 @@ const SERVICE_IN_PROGRESS = 'TRDC0003';
 const SERVICE_COMPLETED = 'TRDC0006';
 
 export default function MyPageProviderDashboard({ user, onLogout, onSwitchToGeneral, onOpenSection }) {
-  const navigate = useNavigate();
   const profileQuery = useMyProviderProfile();
-  const notificationsQuery = useNotifications();
   const pointBalanceQuery = usePointBalance();
   const quoteSummaryQuery = useMyQuoteSummary();
   // 담당자 7 · F-PROV-009: 서비스 거래 목록과 같은 계약으로 대시보드 상태별 건수를 표시합니다.
@@ -57,8 +53,6 @@ export default function MyPageProviderDashboard({ user, onLogout, onSwitchToGene
     }).then((response) => response?.data ?? response),
     enabled: Number.isSafeInteger(providerUserSn) && providerUserSn > 0,
   });
-  const notifications = notificationsQuery.data ?? [];
-  const unreadNotifications = notifications.filter((notification) => !notification.read);
   const pointBalance = pointBalanceQuery.data;
   const receivedReviews = receivedReviewsQuery.data?.content ?? [];
   const nickname = user?.nickname || '제공자';
@@ -86,9 +80,6 @@ export default function MyPageProviderDashboard({ user, onLogout, onSwitchToGene
             onClick: onSwitchToGeneral,
           },
         ]}
-        notifications={unreadNotifications}
-        notificationsLoading={notificationsQuery.isLoading}
-        onOpenNotifications={() => navigate('/user/notification')}
       />
 
       <MyPageDashboardSummaryCards
@@ -130,22 +121,22 @@ export default function MyPageProviderDashboard({ user, onLogout, onSwitchToGene
             key: 'service',
             color: '#005eb5',
             icon: assets.iconService,
-            label: '서비스 현황',
+            label: '견적 진행 내역',
             value: serviceCountValue(inProgressServiceTradesQuery),
             meta: inProgressServiceTradesQuery.isError
-              ? '서비스 현황을 불러오지 못했습니다.'
-              : '진행 중인 서비스를 확인합니다.',
+              ? '견적 진행 내역을 불러오지 못했습니다.'
+              : '진행 중인 견적을 확인합니다.',
             onMore: () => openSection('service-trade'),
           },
           {
             key: 'done',
             color: '#e63946',
             icon: assets.iconEnd2,
-            label: '완료 서비스',
+            label: '완료 견적',
             value: serviceCountValue(completedServiceTradesQuery),
             meta: completedServiceTradesQuery.isError
-              ? '완료 내역을 불러오지 못했습니다.'
-              : '완료된 서비스 내역을 확인합니다.',
+              ? '완료 견적을 불러오지 못했습니다.'
+              : '완료된 견적 내역을 확인합니다.',
             onMore: () => openSection('service-trade'),
           },
         ]}

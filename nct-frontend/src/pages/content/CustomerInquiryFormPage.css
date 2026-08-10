@@ -11,10 +11,8 @@
   border: 1px solid var(--inquiry-line);
   border-radius: 18px;
   padding: 28px;
-  background:
-    radial-gradient(circle at 100% 0, rgb(20 102 245 / 8%), transparent 34%),
-    #fff;
-  box-shadow: 0 16px 45px rgb(35 55 90 / 8%);
+  background: #fff;
+  box-shadow: 0 10px 30px rgb(16 24 40 / 5%);
 }
 
 .customer-inquiry-form__heading {
@@ -47,8 +45,6 @@
   font-size: 14px;
   font-weight: 800;
 }
-
-.customer-inquiry-form > label > strong { color: #e34850; }
 
 .customer-inquiry-form input,
 .customer-inquiry-form select,

@@ -23,16 +23,14 @@ export const HOME_ITEM = { label: '홈', to: '/' };
 
 // 마이페이지 계층 경로 → 사이드바에 표시되는 실제 메뉴명 (MyPageSidebar.jsx 기준)
 export const MYPAGE_SECTION_LABELS = {
-  'active-auctions': '진행 중인 경매',
-  'bid-history': '상품 입찰 내역',
-  'auction-bids': '상품 구매 내역',
-  'auction-sales': '상품 판매 내역',
+  'auction-bids': '상품 구매 목록',
+  'auction-sales': '상품 판매 목록',
   'service-requests': '내 서비스 요청 목록',
   wishlist: '관심 경매',
   chat: '채팅',
   wallet: '포인트 지갑',
   profile: '프로필',
-  quote: '내 견적',
+  quote: '견적 제출 내역',
   review: '내 리뷰',
   'service-trade': '서비스 거래',
   'service-chat': '서비스 채팅',
@@ -98,6 +96,29 @@ export const BREADCRUMB_ENTRIES = [
 export const BREADCRUMB_ROUTES = [
   // 경매
   {
+    pattern: '/auction/:auctionId/trade/review/new',
+    pageLabel: '리뷰 작성',
+    defaultTrail: ({ auctionId }) => [
+      { label: '경매 상세', to: `/auction/${auctionId}` },
+      { label: '거래 상세', to: `/auction/${auctionId}/trade` },
+    ],
+  },
+  {
+    pattern: '/auction/:auctionId/trade/review/edit',
+    pageLabel: '리뷰 수정',
+    defaultTrail: ({ auctionId }) => [
+      { label: '경매 상세', to: `/auction/${auctionId}` },
+      { label: '거래 상세', to: `/auction/${auctionId}/trade` },
+    ],
+  },
+  {
+    pattern: '/auction/:auctionId/trade',
+    pageLabel: '거래 상세',
+    defaultTrail: ({ auctionId }) => [
+      { label: '경매 상세', to: `/auction/${auctionId}` },
+    ],
+  },
+  {
     pattern: '/auction/:auctionId',
     pageLabel: '경매 상세',
     defaultTrail: [{ label: '경매', to: '/auction' }],
@@ -161,6 +182,13 @@ export const BREADCRUMB_ROUTES = [
     pageLabel: '서비스 채팅',
     defaultTrail: buildMyPageTrail('service-chat'),
   },
+  {
+    // @ai_generated (담당자1, 2026-08-07): 미등록 상태였다 - 리뷰 목록에서 서비스 거래로
+    // 이동할 때 state.from을 넘겨도 이 라우트가 없어 브레드크럼이 반영되지 않았다(B-3).
+    pattern: '/service-trades/:tradeId',
+    pageLabel: '서비스 거래 상세',
+    defaultTrail: buildMyPageTrail('service-trade'),
+  },
 
   // 상품
   {
@@ -181,18 +209,6 @@ export const BREADCRUMB_ROUTES = [
     pattern: '/customersupport/notice/:noticeId',
     pageLabel: '공지사항 상세',
     defaultTrail: [{ label: '공지사항', to: '/customersupport/notice' }],
-  },
-
-  // 리뷰
-  {
-    pattern: '/user/mypage/reviews/write/:id',
-    pageLabel: '리뷰 작성',
-    defaultTrail: buildMyPageTrail('review'),
-  },
-  {
-    pattern: '/user/mypage/reviews/edit/:id',
-    pageLabel: '리뷰 수정',
-    defaultTrail: buildMyPageTrail('review'),
   },
 
   // 신고

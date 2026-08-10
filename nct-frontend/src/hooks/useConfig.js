@@ -20,7 +20,7 @@ const defaultValues = {
     slogan          : '실시간 경매와 생활 서비스를 한 화면에서',
     subSlogan       : '누구나 쉽게 이용하는 C2C 마켓플레이스',
     copyright       : '© 2026 에누리컷. All rights reserved.',
-    portfolioNotice : '본 사이트는 포트폴리오 목적으로 제작된 프로젝트입니다.',
+    portfolioNotice : '본 사이트는 실서비스가 아닌 포트폴리오용 프로젝트이며, 실제 거래·결제·서비스 이용을 위한 사이트가 아닙니다.',
     devTeam         : [],
   },
 };

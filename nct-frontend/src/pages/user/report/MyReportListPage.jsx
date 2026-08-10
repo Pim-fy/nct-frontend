@@ -200,7 +200,7 @@ export default function MyReportListPage({ embedded = false }) {
       ) : reports.length === 0 ? (
         <MyPageListEmpty message="신고 내역이 없습니다." />
       ) : (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-3">
           {reports.map((report, idx) => (
             <ReportCard
               key={report.reportSn}
