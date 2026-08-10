@@ -345,7 +345,11 @@ const AuctionDetailPageContent = ({ auctionId }) => {
           ?? null,
       });
       setTradeMethodErrorAuctionId(null);
-      showToast(`${payload.tradeMethod === DELIVERY_TRADE_METHOD_CODE ? '배송 정보' : '직거래'}로 변경되었습니다`);
+      const changedDeliveryAddressOnly = payload.tradeMethod === DELIVERY_TRADE_METHOD_CODE
+        && auction?.myBidTradeMethodCode === DELIVERY_TRADE_METHOD_CODE;
+      showToast(changedDeliveryAddressOnly
+        ? '배송지가 변경되었습니다'
+        : `${payload.tradeMethod === DELIVERY_TRADE_METHOD_CODE ? '배송' : '직거래'}로 변경되었습니다`);
     },
     onError: handleAuctionMutationError,
   });
@@ -1103,9 +1107,7 @@ const AuctionDetailPageContent = ({ auctionId }) => {
               isBuyNowPointSufficient={isBuyNowPointSufficient}
               isDeliveryAddressChecking={isDeliveryAddressChecking}
               requiresDeliveryAddressRegistration={requiresDeliveryAddressRegistration}
-              selectedDeliveryAddressLabel={selectedDeliveryAddress
-                ? `${selectedDeliveryAddress.name} · ${selectedDeliveryAddress.address}`
-                : ''}
+              selectedDeliveryAddressLabel={selectedDeliveryAddress?.name || ''}
               isFavoritePending={favoriteMutation.isPending || favoriteStatusQuery.isFetching}
               onBidInputChange={handleBidInputChange}
               onBidInputBlur={handleBidInputBlur}

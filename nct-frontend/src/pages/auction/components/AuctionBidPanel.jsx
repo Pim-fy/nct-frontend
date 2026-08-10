@@ -321,20 +321,26 @@ const AuctionBidPanel = ({
                       );
                     })}
                   </div>
-                  {selectedTradeMethodCode === 'TRDC0009'
-                    && isAuthenticated
-                    && !showDeliveryAddressGate && (
-                    <button
-                      aria-label="배송지 변경"
-                      className="inline-flex min-h-8 shrink-0 items-center gap-1 rounded-md border border-[#dadada] bg-white px-2 text-caption font-bold text-[#555] hover:border-primary hover:text-primary-dark"
-                      onClick={onDeliveryAddressOpen}
-                      title={selectedDeliveryAddressLabel || '배송지 변경'}
-                      type="button"
-                    >
-                      <MapPin aria-hidden="true" size={14} />
-                      배송지
-                    </button>
-                  )}
+                  <button
+                    aria-label="배송지 설정"
+                    className={`inline-flex min-h-8 min-w-[72px] shrink-0 items-center justify-center gap-1 rounded-md border px-2 text-caption font-bold transition-colors ${
+                      selectedTradeMethodCode === 'TRDC0009' && isAuthenticated
+                        ? 'border-[#dadada] bg-white text-[#555] hover:border-primary hover:text-primary-dark'
+                        : 'cursor-not-allowed border-[#e4e4e4] bg-[#f4f4f4] text-[#aaa]'
+                    }`}
+                    disabled={!isAuctionOpen
+                      || isTradeMethodChangePending
+                      || !isAuthenticated
+                      || selectedTradeMethodCode !== 'TRDC0009'}
+                    onClick={onDeliveryAddressOpen}
+                    title={selectedTradeMethodCode === 'TRDC0009'
+                      ? (selectedDeliveryAddressLabel || '배송지 선택')
+                      : '배송을 선택하면 배송지를 설정할 수 있습니다'}
+                    type="button"
+                  >
+                    <MapPin aria-hidden="true" size={14} />
+                    배송지
+                  </button>
                 </div>
                 {showTradeMethodError && (
                   <span className="sr-only" role="alert">배송 또는 직거래 방식을 선택해 주세요</span>
@@ -343,19 +349,33 @@ const AuctionBidPanel = ({
             ) : (
               <div className="flex min-h-10 items-center justify-between gap-4">
                 <span className="text-caption font-bold text-[#666]">거래 방식</span>
-                <div className="flex items-center gap-2">
-                  <strong className="text-body-sm text-[#1d1d1f]">{selectedTradeName}</strong>
-                  {selectedTradeMethodCode === 'TRDC0009'
-                    && isAuthenticated
-                    && !showDeliveryAddressGate && (
+                <div className="flex min-w-0 max-w-[72%] items-center justify-end gap-2">
+                  <strong
+                    className="min-w-0 truncate text-body-sm text-[#1d1d1f]"
+                    title={selectedTradeMethodCode === 'TRDC0009' && isAuthenticated
+                      ? (selectedDeliveryAddressLabel || '선택된 배송지 없음')
+                      : selectedTradeName}
+                  >
+                    {selectedTradeMethodCode === 'TRDC0009' && isAuthenticated
+                      ? (isDeliveryAddressChecking
+                        ? '배송지 확인 중'
+                        : (selectedDeliveryAddressLabel || '선택된 배송지 없음'))
+                      : selectedTradeName}
+                  </strong>
+                  {selectedTradeMethodCode === 'TRDC0009' && (
                     <button
-                      className="inline-flex min-h-8 items-center gap-1 rounded-md border border-[#dadada] bg-white px-2 text-caption font-bold text-[#555] hover:border-primary hover:text-primary-dark"
+                      className={`inline-flex min-h-8 min-w-[72px] shrink-0 items-center justify-center gap-1 rounded-md border px-2 text-caption font-bold transition-colors ${
+                        isAuthenticated && isAuctionOpen
+                          ? 'border-[#dadada] bg-white text-[#555] hover:border-primary hover:text-primary-dark'
+                          : 'cursor-not-allowed border-[#e4e4e4] bg-[#f4f4f4] text-[#aaa]'
+                      }`}
+                      disabled={!isAuthenticated || !isAuctionOpen || isDeliveryAddressChecking}
                       onClick={onDeliveryAddressOpen}
-                      title={selectedDeliveryAddressLabel || '배송지 변경'}
+                      title={selectedDeliveryAddressLabel || '배송지 선택'}
                       type="button"
                     >
                       <MapPin aria-hidden="true" size={14} />
-                      배송지 변경
+                      배송지
                     </button>
                   )}
                 </div>
