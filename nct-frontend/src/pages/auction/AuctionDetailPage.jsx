@@ -1125,6 +1125,7 @@ const AuctionDetailPageContent = ({ auctionId }) => {
               onFavoriteToggle={handleFavoriteToggle}
               onReportOpen={handleReportOpen}
               onChargeClick={() => setIsChargeModalOpen(true)}
+              onTradeDetailOpen={() => navigate(`/trades/${auction.tradeId}`)}
             />
           </section>
         </div>
