@@ -17,6 +17,7 @@ import { useAuth } from "@hooks/useAuth";
 import { MEMBER_PROFILE_QUERY_KEY, useMemberProfile } from "@hooks/useMemberProfile";
 import { useNotificationSettings, useSaveNotificationSettings } from "@hooks/useNotification";
 import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
+import ProfileDeliveryAddressManager from "@components/mypage/ProfileDeliveryAddressManager";
 
 const DOMAIN_LABELS = [
   { key: 'AUCTION', label: '경매' },
@@ -442,6 +443,8 @@ export default function MyPageProfileEdit({ user }) {
               onChange={handleChange("addressDetail")}
             />
           </div>
+
+          <ProfileDeliveryAddressManager />
 
           {/* 환전계좌 */}
           <div>
