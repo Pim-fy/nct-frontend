@@ -1,4 +1,4 @@
-import { Flag, Heart } from 'lucide-react';
+import { Flag, Heart, MapPin } from 'lucide-react';
 import { formatNumber, formatPoint } from '@utils/common';
 import { resolveTradeMethodLabel } from '../utils/auctionFormatters';
 
@@ -82,6 +82,7 @@ const AuctionBidPanel = ({
   isBuyNowPointSufficient,
   isDeliveryAddressChecking,
   requiresDeliveryAddressRegistration,
+  selectedDeliveryAddressLabel,
   isFavoritePending,
   onBidInputChange,
   onBidInputBlur,
@@ -293,31 +294,47 @@ const AuctionBidPanel = ({
                 <span className={`text-caption font-bold ${showTradeMethodError ? 'text-[#b42318]' : 'text-[#666]'}`}>
                   거래 방식
                 </span>
-                <div className="grid w-full max-w-[220px] grid-cols-2 gap-1.5" role="group" aria-label="거래 방식 선택">
-                  {[
-                    { code: 'TRDC0009', label: '배송' },
-                    { code: 'TRDC0010', label: '직거래' },
-                  ].map((method) => {
-                    const selected = selectedTradeMethodCode === method.code;
-                    return (
-                      <button
-                        className={`min-h-8 cursor-pointer rounded-md border px-3 text-caption font-bold transition-colors ${
-                          selected
-                            ? 'border-primary bg-primary-light text-primary-dark'
-                            : (showTradeMethodError
-                              ? 'border-[#e58d86] bg-white text-[#b42318]'
-                              : 'border-[#dadada] bg-white text-[#666] hover:border-primary hover:text-primary-dark')
-                        }`}
-                        key={method.code}
-                        type="button"
-                        aria-pressed={selected}
-                        disabled={!isAuctionOpen || isTradeMethodChangePending}
-                        onClick={() => onTradeMethodChange(method.code)}
-                      >
-                        {method.label}
-                      </button>
-                    );
-                  })}
+                <div className="flex w-full max-w-[305px] items-center justify-end gap-1.5">
+                  <div className="grid min-w-0 flex-1 grid-cols-2 gap-1.5" role="group" aria-label="거래 방식 선택">
+                    {[
+                      { code: 'TRDC0009', label: '배송' },
+                      { code: 'TRDC0010', label: '직거래' },
+                    ].map((method) => {
+                      const selected = selectedTradeMethodCode === method.code;
+                      return (
+                        <button
+                          className={`min-h-8 cursor-pointer rounded-md border px-3 text-caption font-bold transition-colors ${
+                            selected
+                              ? 'border-primary bg-primary-light text-primary-dark'
+                              : (showTradeMethodError
+                                ? 'border-[#e58d86] bg-white text-[#b42318]'
+                                : 'border-[#dadada] bg-white text-[#666] hover:border-primary hover:text-primary-dark')
+                          }`}
+                          key={method.code}
+                          type="button"
+                          aria-pressed={selected}
+                          disabled={!isAuctionOpen || isTradeMethodChangePending}
+                          onClick={() => onTradeMethodChange(method.code)}
+                        >
+                          {method.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {selectedTradeMethodCode === 'TRDC0009'
+                    && isAuthenticated
+                    && !showDeliveryAddressGate && (
+                    <button
+                      aria-label="배송지 변경"
+                      className="inline-flex min-h-8 shrink-0 items-center gap-1 rounded-md border border-[#dadada] bg-white px-2 text-caption font-bold text-[#555] hover:border-primary hover:text-primary-dark"
+                      onClick={onDeliveryAddressOpen}
+                      title={selectedDeliveryAddressLabel || '배송지 변경'}
+                      type="button"
+                    >
+                      <MapPin aria-hidden="true" size={14} />
+                      배송지
+                    </button>
+                  )}
                 </div>
                 {showTradeMethodError && (
                   <span className="sr-only" role="alert">배송 또는 직거래 방식을 선택해 주세요</span>
@@ -326,7 +343,22 @@ const AuctionBidPanel = ({
             ) : (
               <div className="flex min-h-10 items-center justify-between gap-4">
                 <span className="text-caption font-bold text-[#666]">거래 방식</span>
-                <strong className="text-body-sm text-[#1d1d1f]">{selectedTradeName}</strong>
+                <div className="flex items-center gap-2">
+                  <strong className="text-body-sm text-[#1d1d1f]">{selectedTradeName}</strong>
+                  {selectedTradeMethodCode === 'TRDC0009'
+                    && isAuthenticated
+                    && !showDeliveryAddressGate && (
+                    <button
+                      className="inline-flex min-h-8 items-center gap-1 rounded-md border border-[#dadada] bg-white px-2 text-caption font-bold text-[#555] hover:border-primary hover:text-primary-dark"
+                      onClick={onDeliveryAddressOpen}
+                      title={selectedDeliveryAddressLabel || '배송지 변경'}
+                      type="button"
+                    >
+                      <MapPin aria-hidden="true" size={14} />
+                      배송지 변경
+                    </button>
+                  )}
+                </div>
               </div>
             )}
             <div className="mt-6 border-t border-[#e8e8e8] pt-6">
