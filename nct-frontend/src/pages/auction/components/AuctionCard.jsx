@@ -34,6 +34,7 @@ const AuctionCard = ({ item }) => {
   const now = useCountdown(isCountingDown);
   const imageUrl = toImageUrl(item.thumbnailPath);
   const auctionResultLabel = resolveAuctionResultLabel(item);
+  const isWinningAuction = item.auctionStatusCode === 'AUCC0003';
   const remainingTime = formatAuctionCardTimeLabel(item, now);
   const instantBuyPrice = Number(item.instantBuyPrice || 0);
   const hasInstantBuyPrice = Number.isFinite(instantBuyPrice) && instantBuyPrice > 0;
@@ -70,7 +71,7 @@ const AuctionCard = ({ item }) => {
         <strong className="whitespace-nowrap text-h3 font-extrabold text-primary-dark">
           {formatPoint(item.currentPrice)}
         </strong>
-        {hasInstantBuyPrice && (
+        {!isWinningAuction && hasInstantBuyPrice && (
           <span className="whitespace-nowrap text-caption font-semibold text-[#85847f]">
             / {formatPoint(instantBuyPrice)}
           </span>

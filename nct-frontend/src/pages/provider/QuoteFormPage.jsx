@@ -39,6 +39,7 @@ export default function QuoteFormPage() {
     sub:       routeState.sub          || FALLBACK_REQUEST.sub,
     location:  routeState.location     || FALLBACK_REQUEST.location,
     budget:    routeState.budget       || FALLBACK_REQUEST.budget,
+    budgetRaw: null,
     requester: routeState.requester    || FALLBACK_REQUEST.requester,
   });
 
@@ -94,6 +95,7 @@ export default function QuoteFormPage() {
           budget: request.svcReqBdgtAmt == null
             ? prev.budget
             : `${Number(request.svcReqBdgtAmt).toLocaleString('ko-KR')}원`,
+          budgetRaw: request.svcReqBdgtAmt == null ? prev.budgetRaw : Number(request.svcReqBdgtAmt),
         }));
         setRequestLoadFailed(false);
       })
@@ -178,7 +180,12 @@ export default function QuoteFormPage() {
   const validate = () => {
     setSubmitted(true);
     if (!form.title.trim())                       { setAlertMsg("제목을 입력해 주세요.");          return false; }
-    if (!form.amount || Number(form.amount) <= 0) { setAlertMsg("견적 금액을 입력해 주세요.");    return false; }
+    if (!form.amount || Number(form.amount) < 10000)      { setAlertMsg("견적 금액은 최소 10,000원 이상이어야 합니다.");      return false; }
+    if (Number(form.amount) > 1000000000)                 { setAlertMsg("견적 금액은 최대 1,000,000,000원 이하이어야 합니다."); return false; }
+    if (svcReqInfo.budgetRaw && Number(form.amount) < svcReqInfo.budgetRaw) {
+      setAlertMsg(`견적 금액은 의뢰 예산(${svcReqInfo.budgetRaw.toLocaleString()}원) 이상이어야 합니다.`);
+      return false;
+    }
     if (!form.message.trim())                     { setAlertMsg("내용을 입력해 주세요.");         return false; }
     if (existingAttachments.length + attachFiles.length === 0) {
       setAlertMsg("첨부파일을 추가해 주세요.");
@@ -400,7 +407,12 @@ export default function QuoteFormPage() {
                     onChange={handleAmountInput}
                     style={{
                       paddingRight: 36,
-                      borderColor: submitted && (!form.amount || Number(form.amount) <= 0) ? "#EF4444" : undefined,
+                      borderColor: submitted && (
+                        !form.amount ||
+                        Number(form.amount) < 10000 ||
+                        Number(form.amount) > 1000000000 ||
+                        (svcReqInfo.budgetRaw && Number(form.amount) < svcReqInfo.budgetRaw)
+                      ) ? "#EF4444" : undefined,
                     }}
                   />
                   <span style={{
@@ -408,6 +420,18 @@ export default function QuoteFormPage() {
                     fontSize: 14, color: "#888", pointerEvents: "none",
                   }}>원</span>
                 </div>
+                <p style={{
+                  margin: "4px 0 0", fontSize: 13,
+                  color: form.amount && (
+                    Number(form.amount) < 10000 ||
+                    Number(form.amount) > 1000000000 ||
+                    (svcReqInfo.budgetRaw && Number(form.amount) < svcReqInfo.budgetRaw)
+                  ) ? "#EF4444" : "#888",
+                }}>
+                  {svcReqInfo.budgetRaw
+                    ? `의뢰 예산(${svcReqInfo.budgetRaw.toLocaleString()}원) 이상 · 최대 1,000,000,000원`
+                    : "최소 10,000원 · 최대 1,000,000,000원"}
+                </p>
               </div>
 
               <div className="qf-field">
