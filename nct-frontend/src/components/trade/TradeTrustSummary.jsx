@@ -1,7 +1,4 @@
-import {
-  useEffect,
-  useState,
-} from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Star } from 'lucide-react';
 import { getUserReviewTrust } from '@api/reviewApi';
 
@@ -27,53 +24,19 @@ const formatScore = (score) => {
  * 리뷰가 없거나 API가 아직 배포되지 않은 경우에도 거래 상세 자체는 계속 볼 수 있어야 한다.
  */
 const TradeTrustSummary = ({ counterpartUserId }) => {
-  const [trust, setTrust] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadError, setLoadError] = useState(false);
+  const trustQuery = useQuery({
+    queryKey: ['reviews', 'trust', String(counterpartUserId)],
+    queryFn: () => getUserReviewTrust(counterpartUserId),
+    enabled: Boolean(counterpartUserId),
+    select: unwrapData,
+  });
+  const trust = trustQuery.data;
 
-  useEffect(() => {
-    if (!counterpartUserId) {
-      setTrust(null);
-      return undefined;
-    }
-
-    let isActive = true;
-
-    const loadTrustSummary = async () => {
-      setIsLoading(true);
-      setLoadError(false);
-
-      try {
-        const trustResponse = await getUserReviewTrust(counterpartUserId);
-
-        if (!isActive) {
-          return;
-        }
-
-        setTrust(unwrapData(trustResponse));
-      } catch {
-        if (isActive) {
-          setLoadError(true);
-        }
-      } finally {
-        if (isActive) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadTrustSummary();
-
-    return () => {
-      isActive = false;
-    };
-  }, [counterpartUserId]);
-
-  if (!counterpartUserId || isLoading) {
+  if (!counterpartUserId || trustQuery.isLoading) {
     return null;
   }
 
-  if (loadError) {
+  if (trustQuery.isError) {
     return <span className="trade-trust-score trade-trust-score--muted">신뢰지표 조회 실패</span>;
   }
 

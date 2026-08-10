@@ -170,7 +170,7 @@ export const toTradeDetail = (response) => {
     autoCompleteAt: formatDateTime(trade.autoCompleteAt),
     recipientName: trade.recipientName ?? '-',
     recipientPhone: trade.recipientPhone ?? '-',
-    deliveryRequest: trade.deliveryRequest ?? '-',
+    deliveryRequest: trade.deliveryMessage ?? trade.deliveryRequest ?? '-',
     deliveryId: trade.deliveryId ?? trade.trdDlvrSn ?? null,
     deliveryProofRegisteredAt: formatDateTime(trade.deliveryProofRegisteredAt),
     deliveryProofFiles: trade.deliveryProofFiles ?? [],

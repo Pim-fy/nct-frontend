@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   acceptOfflineScheduleProposal,
   proposeTradeOfflineSchedule,
@@ -45,12 +45,6 @@ const OfflineScheduleProposalPanel = ({
       && trade?.meetingTime && trade.meetingTime !== '-'
       && trade?.meetingPlace && trade.meetingPlace !== '-',
   );
-
-  useEffect(() => {
-    setMeetingDate(getInitialValue(trade?.meetingDate));
-    setMeetingTime(getInitialValue(trade?.meetingTime));
-    setMeetingPlace(formatMeetingPlace(trade?.meetingPlace, trade?.meetingAddress));
-  }, [trade?.meetingAddress, trade?.meetingDate, trade?.meetingPlace, trade?.meetingTime]);
 
   const applyAction = async (action, successMessage) => {
     setIsSubmitting(true);
