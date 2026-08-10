@@ -44,9 +44,9 @@
 
 .admin-provider-detail {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr;
   gap: 12px 20px;
-  margin-top: 18px;
+  margin-top: 0;
 }
 
 .admin-provider-detail h2 {
@@ -144,15 +144,22 @@
 }
 
 .admin-provider-detail__files {
+  min-width: 0;
   flex-direction: column;
   align-items: flex-start !important;
 }
 
 .admin-provider-detail__files a {
+  display: block;
+  overflow: hidden;
+  width: 100%;
+  max-width: 100%;
   color: var(--color-primary-dark, #0048bf);
   font-weight: 700;
   text-decoration: underline;
+  text-overflow: ellipsis;
   text-underline-offset: 3px;
+  white-space: nowrap;
 }
 
 @media (max-width: 850px) {

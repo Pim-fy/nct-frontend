@@ -160,9 +160,12 @@ export default function MyPageProfileEdit({ user }) {
     });
     if (!ok) return;
     try {
-      const res = await updateProfile({
-        nickname: form.nickname,
-        email: user?.email,
+      // 담당자 7 · F-AUTH-010: 두 값을 함께 비워 보내면 서버가 암호화된 빈값이 아니라
+      // 실제 미등록(NULL) 상태로 정리한다. 필수 프로필 값은 현재 저장값을 유지한다.
+      await updateProfile({
+        nickname: profileQuery.data?.nickname || form.nickname,
+        email: profileQuery.data?.email || user?.email,
+        phone: profileQuery.data?.phone || toPhoneDigits(form.phone),
         bankName: "",
         accountNo: "",
       });
@@ -235,9 +238,15 @@ export default function MyPageProfileEdit({ user }) {
       toast({ icon: "error", title: "전화번호를 입력해주세요." });
       return;
     }
+    const bankName = form.bankName.trim();
+    const accountNo = form.accountNo.trim();
+    if (Boolean(bankName) !== Boolean(accountNo)) {
+      toast({ icon: "error", title: "은행명과 계좌번호를 모두 입력하거나 모두 비워주세요." });
+      return;
+    }
     try {
       // email은 이 화면에서 수정하지 않지만 백엔드가 필수값으로 요구해 현재 값을 그대로 함께 보낸다.
-      const res = await updateProfile({
+      await updateProfile({
         nickname: form.nickname,
         email: user?.email,
         phone: toPhoneDigits(form.phone),
@@ -245,8 +254,8 @@ export default function MyPageProfileEdit({ user }) {
         address: form.address.trim(),
         addressDetail: form.addressDetail.trim(),
         profileFileSn: form.profileFileSn,
-        bankName: form.bankName.trim(),
-        accountNo: form.accountNo.trim(),
+        bankName,
+        accountNo,
       });
       queryClient.invalidateQueries({ queryKey: ["auth", "user"] });
       queryClient.invalidateQueries({ queryKey: MEMBER_PROFILE_QUERY_KEY });

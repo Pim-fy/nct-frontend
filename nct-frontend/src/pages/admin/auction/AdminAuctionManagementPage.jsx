@@ -7,7 +7,7 @@ import {
   fetchAdminAuctionOverview,
   fetchAdminAuctions,
 } from '@api/adminAuctionApi';
-import AdminModal from '@components/admin/AdminModal';
+import AdminDetailDrawer from '@components/admin/AdminDetailDrawer';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
@@ -280,7 +280,21 @@ const AdminAuctionManagementPage = () => {
         </AdminSectionCard>
       )}
       {selected && (
-        <AdminModal onClose={() => !decisionMutation.isPending && setSelected(null)} title={selected.cancelRequestId ? '판매자 취소 요청/처리 이력' : '상품·경매 상세'}>
+        <AdminDetailDrawer
+          eyebrow="경매 관리"
+          footer={(
+            <button
+              className="btn btn-outline"
+              disabled={decisionMutation.isPending}
+              onClick={() => !decisionMutation.isPending && setSelected(null)}
+              type="button"
+            >
+              닫기
+            </button>
+          )}
+          onClose={() => !decisionMutation.isPending && setSelected(null)}
+          title={selected.cancelRequestId ? '판매자 취소 요청/처리 이력' : '상품·경매 상세'}
+        >
           <section
             aria-busy={overviewQuery.isLoading || cancellationQuery.isLoading}
             className="admin-auction-cancellation"
@@ -357,7 +371,7 @@ const AdminAuctionManagementPage = () => {
               </div>
             </>}
           </section>
-        </AdminModal>
+        </AdminDetailDrawer>
       )}
         </div>
       )}

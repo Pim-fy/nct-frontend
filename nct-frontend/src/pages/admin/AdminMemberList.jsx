@@ -5,8 +5,8 @@ import {
   getAdminMember,
   getAdminMembers,
 } from '@api/adminMemberApi';
+import AdminDetailDrawer from '@components/admin/AdminDetailDrawer';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
-import AdminModal from '@components/admin/AdminModal';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
@@ -63,7 +63,7 @@ const AdminMemberList = () => {
       toast({
         icon: 'success',
         title: result.changed
-          ? `회원 #${result.userSn}의 상태를 변경했습니다.`
+          ? `${formatAdminMemberIdentity(selectedMember, result.userSn)}의 상태를 변경했습니다.`
           : '이미 같은 상태라 추가 처리하지 않았습니다.',
         timer: 2200,
       });
@@ -109,9 +109,16 @@ const AdminMemberList = () => {
   };
 
   const columns = [
-    { key: 'userSn', label: '회원 번호', render: (value) => `#${value}` },
-    { key: 'loginId', label: '로그인 ID' },
-    { key: 'nickname', label: '닉네임' },
+    {
+      key: 'rowNumber',
+      label: '번호',
+      render: (_, __, index) => ((membersQuery.data?.page ?? page) - 1) * PAGE_SIZE + index + 1,
+    },
+    {
+      key: 'userSn',
+      label: '회원',
+      render: (_, row) => formatAdminMemberIdentity(row, row.userSn),
+    },
     { key: 'roleName', label: '역할', render: (value, row) => value ?? row.roleCode ?? '-' },
     {
       key: 'statusCode',
@@ -173,7 +180,7 @@ const AdminMemberList = () => {
           <input
             maxLength={100}
             onChange={(event) => setFilterForm({ ...filterForm, keyword: event.target.value })}
-            placeholder="회원 번호·로그인 ID·닉네임"
+            placeholder="로그인 ID·이름"
             value={filterForm.keyword}
           />
         </label>
@@ -214,16 +221,30 @@ const AdminMemberList = () => {
       )}
 
       {selectedUserSn && (
-        <AdminModal onClose={closeMember} panelClassName="admin-member-modal" title="회원 상세">
+        <AdminDetailDrawer
+          eyebrow="회원 관리"
+          footer={(
+            <button
+              className="btn btn-outline"
+              disabled={statusMutation.isPending}
+              onClick={closeMember}
+              type="button"
+            >
+              닫기
+            </button>
+          )}
+          onClose={closeMember}
+          panelClassName="admin-member-drawer"
+          title="회원 상세"
+        >
           <section className="admin-member-detail">
             {memberQuery.isLoading && <div className="admin-bjn-state">회원 정보를 불러오는 중입니다.</div>}
             {memberQuery.isError && <div className="admin-bjn-state is-error">회원 정보를 불러오지 못했습니다.</div>}
             {selectedMember && (
               <>
                 <dl className="admin-member-detail__summary">
-                  <dt>회원 번호</dt><dd>#{selectedMember.userSn}</dd>
-                  <dt>로그인 ID</dt><dd>{selectedMember.loginId}</dd>
-                  <dt>닉네임</dt><dd>{selectedMember.nickname}</dd>
+                  <dt>회원</dt>
+                  <dd>{formatAdminMemberIdentity(selectedMember, selectedMember.userSn)}</dd>
                   <dt>역할</dt><dd>{selectedMember.roleName ?? selectedMember.roleCode}</dd>
                   <dt>상태</dt>
                   <dd><AdminStatusBadge tone={selectedStatus.tone}>{selectedStatus.label}</AdminStatusBadge></dd>
@@ -328,7 +349,7 @@ const AdminMemberList = () => {
               </>
             )}
           </section>
-        </AdminModal>
+        </AdminDetailDrawer>
       )}
     </div>
   );

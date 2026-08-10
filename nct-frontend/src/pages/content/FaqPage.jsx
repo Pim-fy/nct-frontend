@@ -64,46 +64,48 @@ const FaqPage = () => {
   return (
     <ContentPageShell className="public-faq-page">
       <Helmet><title>자주 묻는 질문 | 네고컷</title></Helmet>
-      <header className="customer-support-page-header">
+      <header className="customer-support-page-header customer-support-page-header--plain">
         <h1>자주 묻는 질문</h1>
         <p>궁금한 내용을 빠르게 확인해 보세요. 질문을 누르면 답변을 확인할 수 있습니다.</p>
       </header>
 
-      {faqQuery.isLoading && <FaqListSkeleton />}
+      <section className="public-faq-board" aria-label="자주 묻는 질문">
+        {faqQuery.isLoading && <FaqListSkeleton />}
 
-      {faqQuery.isError && (
-        <ContentState
-          actionLabel="다시 불러오기"
-          description="잠시 후 다시 시도해 주세요."
-          onAction={() => faqQuery.refetch()}
-          title="FAQ를 불러오지 못했습니다."
-          tone="error"
-        />
-      )}
+        {faqQuery.isError && (
+          <ContentState
+            actionLabel="다시 불러오기"
+            description="잠시 후 다시 시도해 주세요."
+            onAction={() => faqQuery.refetch()}
+            title="FAQ를 불러오지 못했습니다."
+            tone="error"
+          />
+        )}
 
-      {!faqQuery.isLoading && !faqQuery.isError && faqPage?.items?.length === 0 && (
-        <ContentState
-          description="관리자가 FAQ를 등록하면 이곳에서 확인할 수 있습니다."
-          title="현재 게시 중인 FAQ가 없습니다."
-        />
-      )}
+        {!faqQuery.isLoading && !faqQuery.isError && faqPage?.items?.length === 0 && (
+          <ContentState
+            description="관리자가 FAQ를 등록하면 이곳에서 확인할 수 있습니다."
+            title="현재 게시 중인 FAQ가 없습니다."
+          />
+        )}
 
-      {faqPage?.items?.length > 0 && (
-        <section className="faq-list" aria-label="자주 묻는 질문 목록">
-          {faqPage.items.map((faq) => (
-            <FaqItem faq={faq} key={faq.id} />
-          ))}
-        </section>
-      )}
+        {faqPage?.items?.length > 0 && (
+          <div className="faq-list" aria-label="자주 묻는 질문 목록">
+            {faqPage.items.map((faq) => (
+              <FaqItem faq={faq} key={faq.id} />
+            ))}
+          </div>
+        )}
 
-      {faqPage?.totalPages > 0 && (
-        <ContentPagination
-          ariaLabel="FAQ 페이지 이동"
-          onChange={setPage}
-          page={page}
-          totalPages={faqPage.totalPages}
-        />
-      )}
+        {faqPage?.totalPages > 0 && (
+          <ContentPagination
+            ariaLabel="FAQ 페이지 이동"
+            onChange={setPage}
+            page={page}
+            totalPages={faqPage.totalPages}
+          />
+        )}
+      </section>
     </ContentPageShell>
   );
 };
