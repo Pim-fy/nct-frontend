@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { CalendarCheck, CalendarDays } from 'lucide-react';
 import { toImageUrl } from '@api/fileApi';
 import { deleteProduct } from '@api/productApi';
-import { formatDate } from '@utils/common';
+import { formatDate, formatPoint } from '@utils/common';
 import { TRADE_LABEL, TRADE_STATUS_LABEL, AUC_STATUS_LABEL } from '@/constants/productConstants';
 import { useMyProducts, useMyProductsSummary } from '@hooks/useProduct';
 import Pagination from '@components/common/Pagination';
@@ -86,10 +86,6 @@ const PRD_STATUS_BADGE = {
 };
 
 // ─── 헬퍼 ────────────────────────────────────────────────────────────────────
-
-function fmtPrice(n) {
-  return n != null ? `${Number(n).toLocaleString()}원` : '-';
-}
 
 const isReservedProduct = (product) => {
   const draftStartNowYn = product?.prdDraftStartNowYn ?? product?.draftStartNowYn;
@@ -261,7 +257,7 @@ export default function MyProductList() {
                   title={p.prdNm}
                   topLine={`확정날짜 ${formatDate(p.tradeCreatedAt ?? p.prdRegDt)} / 완료날짜 ${formatDate(p.tradeCompletedAt)}`}
                   priceItems={[
-                    { label: '확정 가격', value: fmtPrice(p.tradeAmount ?? p.prdStartAmt) },
+                    { label: '확정 가격', value: formatPoint(p.tradeAmount ?? p.prdStartAmt) },
                   ]}
                   tradeMethodLabel={TRADE_LABEL[p.prdTrdMethodCd] ?? p.prdTrdMethodCd}
                   actionButton={(
@@ -323,7 +319,7 @@ export default function MyProductList() {
                   imageFallbackLabel="상품 이미지"
                   badge={<MyPageStatusBadge className={badgeClass}>{badgeLabel}</MyPageStatusBadge>}
                   title={p.prdNm}
-                  price={fmtPrice(p.tradeAmount ?? p.prdStartAmt)}
+                  price={formatPoint(p.tradeAmount ?? p.prdStartAmt)}
                   infoItems={[
                     { icon: CalendarDays, label: '확정날짜', value: formatDate(p.tradeCreatedAt ?? p.prdRegDt) },
                     { icon: CalendarCheck, label: '완료날짜', value: formatDate(p.tradeCompletedAt) },

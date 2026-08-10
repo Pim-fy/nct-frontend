@@ -27,7 +27,7 @@ const REQUEST_STATUS_LABEL = {
   SVCC0001: '임시저장',
   SVCC0002: '공개',
   SVCC0003: '매칭완료',
-  SVCC0004: '종료',
+  SVCC0004: '취소',
 };
 
 const REQUEST_STATUS_BADGE_CLASS = {
