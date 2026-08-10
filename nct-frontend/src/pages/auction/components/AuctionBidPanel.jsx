@@ -236,7 +236,7 @@ const AuctionBidPanel = ({
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid min-h-[106px] content-center rounded-lg border border-[#e8e8e8] bg-white px-5 py-4 [container-type:inline-size]">
               <p className="mt-0 mb-2 text-body-md font-bold text-[#3f3f46]">
-                {isAuctionReady ? '경매 시작가' : '현재 최고가'}
+                {isAuctionReady ? '경매 시작가' : (isEndedAuction ? '낙찰가' : '현재 최고가')}
               </p>
               <p
                 className="m-0 max-w-full whitespace-nowrap font-bold leading-tight text-primary-dark tabular-nums"
@@ -325,16 +325,19 @@ const AuctionBidPanel = ({
                   <button
                     aria-label="배송지 설정"
                     className={`inline-flex min-h-8 min-w-[72px] shrink-0 items-center justify-center gap-1 rounded-md border px-2 text-caption font-bold transition-colors ${
-                      selectedTradeMethodCode === 'TRDC0009' && isAuthenticated
+                      selectedTradeMethodCode === 'TRDC0009' && isAuthenticated && !isOwnAuction
                         ? 'border-[#dadada] bg-white text-[#555] hover:border-primary hover:text-primary-dark'
                         : 'cursor-not-allowed border-[#e4e4e4] bg-[#f4f4f4] text-[#aaa]'
                     }`}
                     disabled={!isAuctionOpen
                       || isTradeMethodChangePending
                       || !isAuthenticated
+                      || isOwnAuction
                       || selectedTradeMethodCode !== 'TRDC0009'}
                     onClick={onDeliveryAddressOpen}
-                    title={selectedTradeMethodCode === 'TRDC0009'
+                    title={isOwnAuction
+                      ? '본인 경매 상품에서는 배송지를 설정할 수 없습니다'
+                      : selectedTradeMethodCode === 'TRDC0009'
                       ? (selectedDeliveryAddressLabel || '배송지 선택')
                       : '배송을 선택하면 배송지를 설정할 수 있습니다'}
                     type="button"
@@ -353,11 +356,11 @@ const AuctionBidPanel = ({
                 <div className="flex min-w-0 max-w-[72%] items-center justify-end gap-2">
                   <strong
                     className="min-w-0 truncate text-body-sm text-[#1d1d1f]"
-                    title={selectedTradeMethodCode === 'TRDC0009' && isAuthenticated
+                    title={selectedTradeMethodCode === 'TRDC0009' && isAuthenticated && !isOwnAuction
                       ? (selectedDeliveryAddressLabel || '선택된 배송지 없음')
                       : selectedTradeName}
                   >
-                    {selectedTradeMethodCode === 'TRDC0009' && isAuthenticated
+                    {selectedTradeMethodCode === 'TRDC0009' && isAuthenticated && !isOwnAuction
                       ? (isDeliveryAddressChecking
                         ? '배송지 확인 중'
                         : (selectedDeliveryAddressLabel || '선택된 배송지 없음'))
@@ -366,13 +369,15 @@ const AuctionBidPanel = ({
                   {selectedTradeMethodCode === 'TRDC0009' && (
                     <button
                       className={`inline-flex min-h-8 min-w-[72px] shrink-0 items-center justify-center gap-1 rounded-md border px-2 text-caption font-bold transition-colors ${
-                        isAuthenticated && isAuctionOpen
+                        isAuthenticated && isAuctionOpen && !isOwnAuction
                           ? 'border-[#dadada] bg-white text-[#555] hover:border-primary hover:text-primary-dark'
                           : 'cursor-not-allowed border-[#e4e4e4] bg-[#f4f4f4] text-[#aaa]'
                       }`}
-                      disabled={!isAuthenticated || !isAuctionOpen || isDeliveryAddressChecking}
+                      disabled={!isAuthenticated || !isAuctionOpen || isOwnAuction || isDeliveryAddressChecking}
                       onClick={onDeliveryAddressOpen}
-                      title={selectedDeliveryAddressLabel || '배송지 선택'}
+                      title={isOwnAuction
+                        ? '본인 경매 상품에서는 배송지를 설정할 수 없습니다'
+                        : (selectedDeliveryAddressLabel || '배송지 선택')}
                       type="button"
                     >
                       <MapPin aria-hidden="true" size={14} />
