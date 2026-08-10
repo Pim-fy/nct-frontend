@@ -303,11 +303,15 @@ const ProviderApplyPage = () => {
         {error && <p className="provider-apply-error">{error}</p>}
 
         <div className="provider-apply-actions">
+          {/* 첫 단계(카테고리 선택)는 되돌아갈 곳이 없어 disabled 처리했는데, .btn-outline엔 disabled 전용
+              스타일이 없어 여전히 눌리는 버튼처럼 파랗게 보였다 — visibility:hidden으로 아예 숨기되
+              레이아웃(다음 버튼 우측 정렬)은 그대로 유지한다 (2026-08-10) */}
           <button
             className="btn btn-outline"
             disabled={step === 0 || submitMutation.isPending}
             onClick={() => setStep(step - 1)}
             type="button"
+            style={step === 0 ? { visibility: 'hidden' } : undefined}
           >
             이전
           </button>
