@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import AuthCard from '@components/auth/AuthCard';
 import AuthPageContainer from '@components/auth/AuthPageContainer';
-import BrandLogo from '@components/common/BrandLogo';
 import { useAuth } from '@hooks/useAuth';
 
 const ADMIN_HOME = '/admin';
@@ -31,15 +30,16 @@ const getAdminReturnPath = (location) => {
 
 /**
  * 담당자 7 · F-OPS-001: 관리자 계정만 허용하는 전용 로그인 화면입니다.
- * 일반 로그인 API를 재사용하되 로그인 유지와 소셜·가입 경로는 제공하지 않습니다.
+ * 관리자 전용 로그인 API를 사용하며 소셜·가입 경로는 제공하지 않습니다.
  */
 export default function AdminLoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, rejectCurrentSession, user, loading: authLoading } = useAuth();
+  const { adminLogin, rejectCurrentSession, user, loading: authLoading } = useAuth();
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const rejectingExistingSessionRef = useRef(false);
@@ -85,10 +85,10 @@ export default function AdminLoginPage() {
     setErrorMessage('');
 
     try {
-      const userData = await login({
+      const userData = await adminLogin({
         email: normalizedLoginId,
         password,
-        rememberMe: false,
+        rememberMe,
       });
 
       if (userData?.role !== 'ROLE_ADMIN') {
@@ -116,16 +116,10 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <AuthPageContainer className="bg-slate-950 bg-[radial-gradient(circle_at_top,_#1e3a5f_0,_#0f172a_42%,_#020617_100%)]">
+    <AuthPageContainer className="min-h-screen bg-slate-950 bg-[radial-gradient(circle_at_top,_#1e3a5f_0,_#0f172a_42%,_#020617_100%)]">
       <AuthCard className="max-w-105 border border-slate-200/70 shadow-2xl shadow-slate-950/30">
         <div className="mb-8 text-center">
-          <div className="mb-5 inline-flex rounded-2xl bg-blue-50 p-3 text-blue-700">
-            <ShieldCheck aria-hidden="true" size={30} strokeWidth={1.8} />
-          </div>
-          <div className="flex justify-center">
-            <BrandLogo admin className="brand-logo--auth" />
-          </div>
-          <h1 className="mt-5 text-2xl font-bold tracking-tight text-slate-950">관리자 로그인</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-950">관리자 로그인</h1>
           <p className="mt-2 text-sm leading-6 text-slate-500">
             관리자 권한이 있는 계정으로 로그인해 주세요.
           </p>
@@ -173,6 +167,16 @@ export default function AdminLoginPage() {
             </div>
           </div>
 
+          <label className="flex w-fit cursor-pointer select-none items-center gap-2">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(event) => setRememberMe(event.target.checked)}
+              className="h-4 w-4 cursor-pointer rounded border-slate-300 accent-blue-700"
+            />
+            <span className="text-sm text-slate-500">하루동안 로그인 유지</span>
+          </label>
+
           {errorMessage && (
             <p className="rounded-lg bg-red-50 px-3.5 py-3 text-sm font-medium text-red-700" role="alert">
               {errorMessage}
@@ -187,10 +191,6 @@ export default function AdminLoginPage() {
             {submitting ? '확인 중...' : '관리자 로그인'}
           </button>
         </form>
-
-        <p className="mt-6 border-t border-slate-100 pt-5 text-center text-xs leading-5 text-slate-400">
-          권한이 없는 계정의 접근 시도는 허용되지 않습니다.
-        </p>
       </AuthCard>
     </AuthPageContainer>
   );

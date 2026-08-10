@@ -75,10 +75,6 @@ const AdminSystemSettingPage = () => {
               자동연장 최대횟수
               <input type="number" min="0" value={view.aucExtMaxCnt ?? ''} onChange={(e) => change('aucExtMaxCnt', e.target.value)} />
             </label>
-            <label>
-              최소 입찰 단위 (원)
-              <input type="number" min="1" value={view.minBidUnit ?? ''} onChange={(e) => change('minBidUnit', e.target.value)} />
-            </label>
           </div>
         </section>
 
@@ -113,11 +109,11 @@ const AdminSystemSettingPage = () => {
           <h3>포인트 / 수수료 설정</h3>
           <div className="admin-bjn-setting-grid">
             <label>
-              최소 충전 금액 (원)
+              최소 충전 포인트 (P)
               <input type="number" min="1" value={view.minChrgAmt ?? ''} onChange={(e) => change('minChrgAmt', e.target.value)} />
             </label>
             <label>
-              최대 충전 금액 (원)
+              최대 충전 포인트 (P)
               <input type="number" min="1" value={view.maxChrgAmt ?? ''} onChange={(e) => change('maxChrgAmt', e.target.value)} />
             </label>
             <label>

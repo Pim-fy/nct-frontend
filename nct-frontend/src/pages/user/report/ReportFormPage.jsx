@@ -1,6 +1,6 @@
 // src/pages/user/report/ReportFormPage.jsx
 // F-COM-018 (2단계): 신고 접수 폼 — 담당자3 황성경 소유
-// - 제출 후 /user/mypage?section=report-list 로 이동.
+// - 제출 후 /user/mypage/reports 로 이동.
 import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSubmitCustomerReport } from "@hooks/useAbuseReport";
@@ -49,7 +49,7 @@ export default function ReportFormPage({ embedded = false }) {
 
   const goBack = () =>
     embedded
-      ? navigate("/user/mypage?section=report-list")
+      ? navigate("/user/mypage/reports")
       : navigate(-1);
 
   const { mutateAsync, isPending } = useSubmitCustomerReport();
@@ -117,7 +117,7 @@ export default function ReportFormPage({ embedded = false }) {
         title:      form.title.trim(),
         content:    form.content.trim(),
       });
-      navigate("/user/mypage?section=report-list");
+      navigate("/user/mypage/reports");
     } catch {
       setErrors((prev) => ({ ...prev, _server: "신고 접수 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요." }));
     }

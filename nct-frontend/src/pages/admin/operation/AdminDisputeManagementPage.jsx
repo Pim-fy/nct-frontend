@@ -15,6 +15,7 @@ import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
 import PageMeta from '@components/admin/PageMeta';
 import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
+import { formatAdminMemberIdentity } from '@utils/adminMemberIdentity';
 import '../audit/adminAuditPage.css';
 import './adminOperationPages.css';
 
@@ -112,6 +113,11 @@ const AdminDisputeManagementPage = () => {
   const columns = [
     { key: 'disputeSn', label: '분쟁 번호', render: (value) => `#${value}` },
     { key: 'tradeSn', label: '거래 번호', render: (value) => `#${value}` },
+    {
+      key: 'disputerUserSn',
+      label: '분쟁 제기자',
+      render: (value, row) => formatAdminMemberIdentity(row.disputerMember, value),
+    },
     { key: 'disputeTypeName', label: '분쟁 유형' },
     {
       key: 'disputeStatusName',
@@ -165,12 +171,12 @@ const AdminDisputeManagementPage = () => {
   };
   const participantRows = detail?.tradeTypeCode === 'TRDC0002'
     ? [
-        ['요청자', detail.requesterUserSn],
-        ['제공자', detail.providerUserSn],
+        ['요청자', detail.requesterUserSn, detail.requesterMember],
+        ['제공자', detail.providerUserSn, detail.providerMember],
       ]
     : [
-        ['판매자', detail?.sellerUserSn],
-        ['구매자', detail?.buyerUserSn],
+        ['판매자', detail?.sellerUserSn, detail?.sellerMember],
+        ['구매자', detail?.buyerUserSn, detail?.buyerMember],
       ];
 
   return (
@@ -284,9 +290,9 @@ const AdminDisputeManagementPage = () => {
                   </dd>
                   <dt>거래 유형</dt><dd>{detail.tradeTypeName || detail.tradeTypeCode}</dd>
                   <dt>거래 상태</dt><dd>{detail.tradeStatusName || detail.tradeStatusCode}</dd>
-                  <dt>분쟁 제기자</dt><dd>회원 #{detail.disputerUserSn}</dd>
-                  {participantRows.map(([label, value]) => (
-                    <FragmentRow key={label} label={label} value={value} />
+                  <dt>분쟁 제기자</dt><dd>{formatAdminMemberIdentity(detail.disputerMember, detail.disputerUserSn)}</dd>
+                  {participantRows.map(([label, value, member]) => (
+                    <FragmentRow key={label} label={label} member={member} value={value} />
                   ))}
                   <dt>원본 대상</dt>
                   <dd>
@@ -313,7 +319,7 @@ const AdminDisputeManagementPage = () => {
                       <dt>판정 결과</dt>
                       <dd>{detail.disputeResultName || detail.disputeResultCode || '반려'}</dd>
                       <dt>처리자</dt>
-                      <dd>{detail.processorUserSn ? `관리자 #${detail.processorUserSn}` : '-'}</dd>
+                      <dd>{formatAdminMemberIdentity(detail.processorMember, detail.processorUserSn)}</dd>
                       <dt>처리일</dt><dd>{formatDate(detail.processedAt)}</dd>
                       <dt>처리 사유</dt>
                       <dd className="admin-operation-detail__content">
@@ -422,9 +428,9 @@ const AdminDisputeManagementPage = () => {
   );
 };
 
-const FragmentRow = ({ label, value }) => (
+const FragmentRow = ({ label, member, value }) => (
   <>
-    <dt>{label}</dt><dd>{value == null ? '-' : `회원 #${value}`}</dd>
+    <dt>{label}</dt><dd>{formatAdminMemberIdentity(member, value)}</dd>
   </>
 );
 

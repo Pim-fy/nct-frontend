@@ -16,7 +16,7 @@ import {
   placeAuctionBid,
   removeAuctionFavorite,
 } from '@api/auctionApi';
-import { updateProfile } from '@api/memberApi';
+import { createDeliveryAddress } from '@api/memberApi';
 import { useAuth } from '@hooks/useAuth';
 import { useAuctionStream } from '@hooks/useAuctionStream';
 import { useAuctionViewTracking } from '@hooks/useAuctionViewTracking';
@@ -24,10 +24,9 @@ import useCountdown from '@hooks/useCountdown';
 import useBodyScrollLock from '@hooks/useBodyScrollLock';
 import { usePointBalance } from '@hooks/usePoint';
 import {
-  hasDeliveryAddress,
-  MEMBER_PROFILE_QUERY_KEY,
-  useMemberProfile,
-} from '@hooks/useMemberProfile';
+  DELIVERY_ADDRESSES_QUERY_KEY,
+  useDeliveryAddresses,
+} from '@hooks/useDeliveryAddresses';
 import { getUserReviewTrust } from '@api/reviewApi';
 import {
   SITE_HEADER_DOCK_EVENT,
@@ -86,6 +85,10 @@ const AuctionDetailPageContent = ({ auctionId }) => {
   const [tradeMethodSelection, setTradeMethodSelection] = useState({
     auctionId: null,
     code: '',
+  });
+  const [deliveryAddressSelection, setDeliveryAddressSelection] = useState({
+    auctionId: null,
+    deliveryAddressId: null,
   });
   const [tradeMethodErrorAuctionId, setTradeMethodErrorAuctionId] = useState(null);
   const [showHoldConsentError, setShowHoldConsentError] = useState(false);
@@ -193,7 +196,7 @@ const AuctionDetailPageContent = ({ auctionId }) => {
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
   });
-  const memberProfileQuery = useMemberProfile({ enabled: Boolean(isAuthenticated) });
+  const deliveryAddressesQuery = useDeliveryAddresses({ enabled: Boolean(isAuthenticated) });
   const favoriteStatusQuery = useQuery({
     queryKey: ['auctionFavoriteStatus', auctionId],
     queryFn: () => fetchAuctionFavoriteStatus(auctionId),
@@ -234,31 +237,31 @@ const AuctionDetailPageContent = ({ auctionId }) => {
   const getErrorMessage = (error) => error?.response?.data?.message || '요청 처리 중 오류가 발생했습니다';
   const openDeliveryAddressModal = () => setIsDeliveryAddressModalOpen(true);
   const deliveryAddressMutation = useMutation({
-    mutationFn: async ({ zip, address, addressDetail }) => {
-      let profile = memberProfileQuery.data;
-      if (!profile) {
-        const result = await memberProfileQuery.refetch();
-        profile = result.data;
-      }
-      if (!profile) throw new Error('회원 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
-
-      const response = await updateProfile({
-        nickname: profile.nickname,
-        profileFileSn: profile.profileFileSn ?? null,
-        email: profile.email,
-        bankName: profile.bankName || '',
-        accountNo: profile.accountNo || '',
-        phone: profile.phone || '',
-        zip,
-        address,
-        addressDetail,
+    mutationFn: createDeliveryAddress,
+    onSuccess: (createdAddress) => {
+      queryClient.setQueryData(DELIVERY_ADDRESSES_QUERY_KEY, (current = []) => {
+        const normalized = createdAddress.defaultAddress
+          ? current.map((address) => ({ ...address, defaultAddress: false }))
+          : current;
+        return [...normalized, createdAddress].sort((left, right) => (
+          Number(right.defaultAddress) - Number(left.defaultAddress)
+          || Number(left.deliveryAddressId) - Number(right.deliveryAddressId)
+        ));
       });
-      return response?.data ?? response;
-    },
-    onSuccess: (updatedProfile) => {
-      queryClient.setQueryData(MEMBER_PROFILE_QUERY_KEY, updatedProfile);
+      setDeliveryAddressSelection({
+        auctionId,
+        deliveryAddressId: createdAddress.deliveryAddressId,
+      });
       setIsDeliveryAddressModalOpen(false);
-      showToast('배송지가 저장되었습니다. 입찰 정보를 다시 확인해 주세요');
+      if (auction?.currentHighestBidder
+          && auction?.myBidTradeMethodCode === DELIVERY_TRADE_METHOD_CODE) {
+        tradeMethodChangeMutation.mutate({
+          tradeMethod: DELIVERY_TRADE_METHOD_CODE,
+          deliveryAddressId: createdAddress.deliveryAddressId,
+        });
+        return;
+      }
+      showToast('배송지가 등록되었습니다');
     },
   });
   const handleMutationSuccess = (updatedAuction) => {
@@ -328,15 +331,25 @@ const AuctionDetailPageContent = ({ auctionId }) => {
     onError: handleAuctionMutationError,
   });
   const tradeMethodChangeMutation = useMutation({
-    mutationFn: (tradeMethod) => changeMyAuctionBidTradeMethod(auctionId, { tradeMethod }),
-    onSuccess: (updatedAuction, tradeMethod) => {
+    mutationFn: (payload) => changeMyAuctionBidTradeMethod(auctionId, payload),
+    onSuccess: (updatedAuction, payload) => {
       queryClient.setQueryData(detailQueryKey, updatedAuction);
       setTradeMethodSelection({
         auctionId,
-        code: updatedAuction?.myBidTradeMethodCode || tradeMethod,
+        code: updatedAuction?.myBidTradeMethodCode || payload.tradeMethod,
+      });
+      setDeliveryAddressSelection({
+        auctionId,
+        deliveryAddressId: updatedAuction?.myBidDeliveryAddressId
+          ?? payload.deliveryAddressId
+          ?? null,
       });
       setTradeMethodErrorAuctionId(null);
-      showToast(`${tradeMethod === DELIVERY_TRADE_METHOD_CODE ? '배송' : '직거래'}으로 변경되었습니다`);
+      const changedDeliveryAddressOnly = payload.tradeMethod === DELIVERY_TRADE_METHOD_CODE
+        && auction?.myBidTradeMethodCode === DELIVERY_TRADE_METHOD_CODE;
+      showToast(changedDeliveryAddressOnly
+        ? '배송지가 변경되었습니다'
+        : `${payload.tradeMethod === DELIVERY_TRADE_METHOD_CODE ? '배송' : '직거래'}로 변경되었습니다`);
     },
     onError: handleAuctionMutationError,
   });
@@ -681,17 +694,34 @@ const AuctionDetailPageContent = ({ auctionId }) => {
     && !selectedTradeValue
     && String(tradeMethodErrorAuctionId) === String(auctionId),
   );
+  const deliveryAddresses = Array.isArray(deliveryAddressesQuery.data)
+    ? deliveryAddressesQuery.data
+    : [];
+  const locallySelectedDeliveryAddressId = String(deliveryAddressSelection.auctionId) === String(auctionId)
+    ? deliveryAddressSelection.deliveryAddressId
+    : null;
+  const savedBidDeliveryAddressId = isCurrentHighestBidder
+    ? auction.myBidDeliveryAddressId
+    : null;
+  const selectedDeliveryAddress = deliveryAddresses.find((address) => (
+    Number(address.deliveryAddressId) === Number(locallySelectedDeliveryAddressId)
+  )) || deliveryAddresses.find((address) => (
+    Number(address.deliveryAddressId) === Number(savedBidDeliveryAddressId)
+  )) || deliveryAddresses.find((address) => address.defaultAddress)
+    || deliveryAddresses[0]
+    || null;
+  const selectedDeliveryAddressId = selectedDeliveryAddress?.deliveryAddressId ?? null;
   const isDeliveryAddressChecking = Boolean(
     isAuthenticated
     && selectedTradeValue === DELIVERY_TRADE_METHOD_CODE
-    && memberProfileQuery.isPending,
+    && deliveryAddressesQuery.isPending,
   );
   const requiresDeliveryAddressRegistration = Boolean(
     isAuthenticated
     && isAuctionOpen
     && selectedTradeValue === DELIVERY_TRADE_METHOD_CODE
-    && memberProfileQuery.isSuccess
-    && !hasDeliveryAddress(memberProfileQuery.data),
+    && deliveryAddressesQuery.isSuccess
+    && deliveryAddresses.length === 0,
   );
   const handleDeliveryAddressOpen = () => {
     deliveryAddressMutation.reset();
@@ -705,23 +735,37 @@ const AuctionDetailPageContent = ({ auctionId }) => {
     setTradeMethodErrorAuctionId(auctionId);
     return false;
   };
-  const ensureDeliveryAddress = async () => {
-    if (selectedTradeValue !== DELIVERY_TRADE_METHOD_CODE) return true;
-
-    let profile = memberProfileQuery.data;
-    if (!profile) {
-      const result = await memberProfileQuery.refetch();
-      if (result.error || !result.data) {
-        showToast(getErrorMessage(result.error));
-        return false;
-      }
-      profile = result.data;
+  const resolveRequiredDeliveryAddress = async () => {
+    if (selectedTradeValue !== DELIVERY_TRADE_METHOD_CODE) {
+      return { ready: true, deliveryAddressId: null };
     }
 
-    if (hasDeliveryAddress(profile)) return true;
+    let addresses = deliveryAddressesQuery.data;
+    if (!Array.isArray(addresses)) {
+      const result = await deliveryAddressesQuery.refetch();
+      if (result.error || !result.data) {
+        showToast(getErrorMessage(result.error));
+        return { ready: false, deliveryAddressId: null };
+      }
+      addresses = result.data;
+    }
+
+    const selected = addresses.find((address) => (
+      Number(address.deliveryAddressId) === Number(locallySelectedDeliveryAddressId)
+    )) || addresses.find((address) => (
+      Number(address.deliveryAddressId) === Number(savedBidDeliveryAddressId)
+    )) || addresses.find((address) => address.defaultAddress)
+      || addresses[0];
+    if (selected) {
+      setDeliveryAddressSelection({
+        auctionId,
+        deliveryAddressId: selected.deliveryAddressId,
+      });
+      return { ready: true, deliveryAddressId: selected.deliveryAddressId };
+    }
 
     handleDeliveryAddressOpen();
-    return false;
+    return { ready: false, deliveryAddressId: null };
   };
   const displayedBidAmount = bidAmount || formatNumber(minimumBidPrice);
   const requestedBidAmount = parseAmount(displayedBidAmount);
@@ -803,10 +847,12 @@ const AuctionDetailPageContent = ({ auctionId }) => {
           : '포인트 홀딩 동의가 필요합니다'));
       return;
     }
-    if (!await ensureDeliveryAddress()) return;
+    const deliveryAddress = await resolveRequiredDeliveryAddress();
+    if (!deliveryAddress.ready) return;
     bidMutation.mutate({
       bidAmount: amount,
       tradeMethod: selectedTradeValue,
+      deliveryAddressId: deliveryAddress.deliveryAddressId,
     });
   };
   const handleTradeMethodChangeSubmit = async () => {
@@ -819,9 +865,13 @@ const AuctionDetailPageContent = ({ auctionId }) => {
       return;
     }
     if (!hasTradeMethodChange) return;
-    if (!await ensureDeliveryAddress()) return;
+    const deliveryAddress = await resolveRequiredDeliveryAddress();
+    if (!deliveryAddress.ready) return;
 
-    tradeMethodChangeMutation.mutate(selectedTradeValue);
+    tradeMethodChangeMutation.mutate({
+      tradeMethod: selectedTradeValue,
+      deliveryAddressId: deliveryAddress.deliveryAddressId,
+    });
   };
   const handleBuyNowOpen = async () => {
     if (!isAuthenticated) {
@@ -844,7 +894,8 @@ const AuctionDetailPageContent = ({ auctionId }) => {
       showToast('배송 또는 직거래 방식을 선택해 주세요');
       return;
     }
-    if (!await ensureDeliveryAddress()) return;
+    const deliveryAddress = await resolveRequiredDeliveryAddress();
+    if (!deliveryAddress.ready) return;
     if (hasAvailablePoint && availablePoint < instantBuyPrice) {
       showToast(`사용 가능 포인트가 부족합니다. 필요 ${formatNumber(instantBuyPrice)}P, 보유 ${formatNumber(availablePoint)}P`);
       return;
@@ -864,7 +915,25 @@ const AuctionDetailPageContent = ({ auctionId }) => {
     }
     buyNowMutation.mutate({
       tradeMethod: selectedTradeValue,
+      deliveryAddressId: selectedTradeValue === DELIVERY_TRADE_METHOD_CODE
+        ? selectedDeliveryAddressId
+        : null,
     });
+  };
+  const handleDeliveryAddressSelect = (deliveryAddressId) => {
+    setDeliveryAddressSelection({ auctionId, deliveryAddressId });
+    setIsDeliveryAddressModalOpen(false);
+    if (isCurrentHighestBidder
+        && isAuctionOpen
+        && savedBidTradeMethodCode === DELIVERY_TRADE_METHOD_CODE
+        && Number(deliveryAddressId) !== Number(auction.myBidDeliveryAddressId)) {
+      tradeMethodChangeMutation.mutate({
+        tradeMethod: DELIVERY_TRADE_METHOD_CODE,
+        deliveryAddressId,
+      });
+      return;
+    }
+    showToast('사용할 배송지가 선택되었습니다');
   };
   const handleFavoriteToggle = () => {
     if (!isAuthenticated) {
@@ -1038,6 +1107,7 @@ const AuctionDetailPageContent = ({ auctionId }) => {
               isBuyNowPointSufficient={isBuyNowPointSufficient}
               isDeliveryAddressChecking={isDeliveryAddressChecking}
               requiresDeliveryAddressRegistration={requiresDeliveryAddressRegistration}
+              selectedDeliveryAddressLabel={selectedDeliveryAddress?.name || ''}
               isFavoritePending={favoriteMutation.isPending || favoriteStatusQuery.isFetching}
               onBidInputChange={handleBidInputChange}
               onBidInputBlur={handleBidInputBlur}
@@ -1154,7 +1224,8 @@ const AuctionDetailPageContent = ({ auctionId }) => {
       )}
       {isDeliveryAddressModalOpen && (
         <AuctionDeliveryAddressModal
-          profile={memberProfileQuery.data}
+          addresses={deliveryAddresses}
+          selectedAddressId={selectedDeliveryAddressId}
           isSaving={deliveryAddressMutation.isPending}
           errorMessage={deliveryAddressMutation.error?.response?.data?.message
             || deliveryAddressMutation.error?.message
@@ -1164,6 +1235,7 @@ const AuctionDetailPageContent = ({ auctionId }) => {
             deliveryAddressMutation.reset();
             setIsDeliveryAddressModalOpen(false);
           }}
+          onSelect={handleDeliveryAddressSelect}
           onSave={(address) => deliveryAddressMutation.mutateAsync(address)}
         />
       )}

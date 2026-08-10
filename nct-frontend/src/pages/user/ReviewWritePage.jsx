@@ -76,7 +76,7 @@ export default function ReviewWritePage() {
         <p className="mt-1 text-sm text-[#969696]">리뷰 목록에서 작성 가능 여부를 확인해주세요.</p>
         <button
           type="button"
-          onClick={() => navigate("/user/mypage?section=review")}
+          onClick={() => navigate("/user/mypage/reviews")}
           className="btn btn-primary mt-6"
         >
           리뷰작성 목록으로
@@ -145,7 +145,7 @@ export default function ReviewWritePage() {
       toast({ icon: "success", title: "리뷰가 등록되었습니다." });
       // 목록 화면의 캐시를 무효화해 다음에 보일 때 방금 등록한 리뷰까지 실제 API로 다시 불러오게 한다.
       await queryClient.invalidateQueries({ queryKey: ["reviews"] });
-      navigate("/user/mypage?section=review", { state: { justWrote: true } });
+      navigate("/user/mypage/reviews", { state: { justWrote: true } });
     } catch (err) {
       console.error("리뷰 등록 실패:", err);
       toast({ icon: "error", title: "리뷰 등록에 실패했습니다. 잠시 후 다시 시도해주세요." });

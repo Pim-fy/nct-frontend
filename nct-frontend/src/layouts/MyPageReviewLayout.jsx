@@ -4,13 +4,14 @@ import React from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import MyPageSidebar from "@components/mypage/MyPageSidebar";
 import { useAuth } from "@hooks/useAuth";
+import { getMyPagePath } from "@/routes/myPageRoutes";
 
 export default function MyPageReviewLayout() {
   const navigate = useNavigate();
   const { isProvider } = useAuth();
 
   const handleSelect = (section) => {
-    navigate(`/user/mypage?section=${section}`);
+    navigate(getMyPagePath(section));
   };
 
   return (

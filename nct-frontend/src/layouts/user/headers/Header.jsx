@@ -103,7 +103,7 @@ const Header = () => {
   const [selectedNoti, setSelectedNoti] = useState(null); // 클릭한 알림 상세 팝업
   const balanceQuery = usePointBalance({ enabled: !!user });
   // 헤더 POINT 드롭다운의 충전/환전 버튼 → 마이페이지로 이동하지 않고 이 자리에서 바로 모달을 띄운다
-  // (종전엔 /user/mypage?section=wallet&action=... 로 이동시켜 페이지 도착 후 모달을 열었으나,
+  // (종전엔 /user/mypage/wallet?action=... 로 이동시켜 페이지 도착 후 모달을 열었으나,
   // 사용자 요청으로 페이지 이동 없이 헤더에서 바로 처리하도록 변경, 2026-07-24)
   const [pointModal, setPointModal] = useState(null); // null | 'charge' | 'exchange' | 'convert'
   // 안읽은 알림: 배지 숫자와 드롭다운 목록의 공통 원천
@@ -689,7 +689,7 @@ const Header = () => {
                 <button
                   type="button"
                   className="mt-2 h-[34px] w-full rounded-[6px] border border-primary text-[14px] font-bold text-primary hover:bg-[#f0f6ff] transition-colors"                 
-                  onClick={() => { setPointOpen(false); window.scrollTo(0, 0); navigate('/user/mypage?section=wallet'); }}
+                  onClick={() => { setPointOpen(false); window.scrollTo(0, 0); navigate('/user/mypage/wallet'); }}
                 >
                   포인트지갑 상세보기
                 </button>
