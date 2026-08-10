@@ -67,6 +67,7 @@ const SHORTCUTS = [
   { label: '경매 관리', to: '/admin/auctions', icon: Gavel },
   { label: '견적 요청 관리', to: '/admin/services', icon: BriefcaseBusiness },
   { label: '카테고리 관리', to: '/admin/categories', icon: Grid2X2 },
+  { label: '정산 관리', to: '/admin/settlements', icon: WalletCards },
   { label: '환전 관리', to: '/admin/exchanges', icon: WalletCards },
   { label: '공지 관리', to: '/admin/notices', icon: Megaphone },
   { label: '신고 관리', to: '/admin/reports', icon: Siren },

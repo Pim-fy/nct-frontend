@@ -100,7 +100,7 @@ const AdminAuditLogPage = () => {
     },
     { key: 'ipAddr', label: 'IP', render: (value) => value ?? '-' },
     {
-      key: 'reason', label: '사유·내용', className: 'is-wrap',
+      key: 'reason', label: '사유·내용', className: 'is-wrap admin-table__long-text',
       render: (_, row) => (
         <button
           className="admin-bjn-reason-preview"

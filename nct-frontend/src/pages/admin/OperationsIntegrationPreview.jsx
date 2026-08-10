@@ -82,7 +82,7 @@ const OperationsIntegrationPreview = () => {
     {
       key: 'content',
       label: '내용',
-      className: 'operations-table__content',
+      className: 'operations-table__content admin-table__long-text',
     },
     {
       key: 'registeredAt',

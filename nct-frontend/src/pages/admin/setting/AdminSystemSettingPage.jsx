@@ -33,7 +33,6 @@ const AdminSystemSettingPage = () => {
       // 숫자 입력은 문자열로 들어오므로 서버 계약 타입에 맞춰 변환한다
       aucExtMin: Number(view.aucExtMin),
       aucExtMaxCnt: Number(view.aucExtMaxCnt),
-      minBidUnit: Number(view.minBidUnit),
       trdCfmnDays: Number(view.trdCfmnDays),
       minChrgAmt: Number(view.minChrgAmt),
       maxChrgAmt: Number(view.maxChrgAmt),
