@@ -11,22 +11,7 @@ import { useNavigate } from "react-router-dom";
 import arrowDark from "@assets/img/arrowDark.png";
 import { assets } from "./assets";
 import AuctionCard from "./AuctionCard";
-import { SERVICE_MENU_ITEMS } from "./serviceMenuData";
 
-const AUCTION_SEARCH_PLACEHOLDER = "원하는 경매 상품을 검색하세요.";
-
-const BANNER_SLIDES = [
-  {
-    eyebrow: "START GUIDE",
-    title1: "처음이어도 흐름만 알면",
-    title2: "어렵지 않아요",
-    sub: "경매와 서비스 요청, 시작부터 완료까지 한눈에",
-    btnLabel: "이용가이드 보기",
-    btnRoute: "/customersupport/guide",
-    tags: ["경매 거래", "서비스 요청", "안전 거래"],
-    rightImg: "heroSectionImg",
-  },
-];
 
 export default function MobileLandingSections({
   closingAuctionItems,
@@ -40,20 +25,12 @@ export default function MobileLandingSections({
   newAuctionLoading,
 }) {
   const navigate = useNavigate();
-  const [keyword, setKeyword] = useState("");
-  const [bannerIdx, setBannerIdx] = useState(0);
   const [activeTab, setActiveTab] = useState("new");
   const auctionScrollRef = useRef(null);
 
   const scrollCarousel = (ref, dir) => {
     if (!ref.current) return;
     ref.current.scrollBy({ left: dir * ref.current.clientWidth, behavior: "smooth" });
-  };
-
-  const runSearch = (value) => {
-    const trimmed = value.trim();
-    if (!trimmed) return;
-    navigate(`/auction?keyword=${encodeURIComponent(trimmed)}`);
   };
 
   const auctionItems = activeTab === "new" ? newAuctionItems : closingAuctionItems;
@@ -79,117 +56,39 @@ export default function MobileLandingSections({
             <span className="text-white">를 한 화면에서</span>
           </h1>
 
-          {/* 검색 태그 — hot item 목록 */}
-          <div className="mt-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden justify-start">
-            {hotItems.slice(0, 5).map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => navigate(`/auction/${item.id}`)}
-                className="shrink-0 rounded-full bg-white/20 border border-white/40 px-3 py-1.5 text-[13px] text-white backdrop-blur-sm"
-              >
-                #{item.name.length > 8 ? item.name.slice(0, 7) + "…" : item.name}
-              </button>
-            ))}
-          </div>
-
-          {/* 검색 입력 */}
-          <div className="mt-3 flex items-center gap-2 rounded-full bg-white px-4 py-3 shadow-md">
-            <span className="inline-flex h-[30px] shrink-0 items-center justify-center rounded-full bg-[#0064ff] px-3 text-[14px] font-bold text-white">
-              경매
-            </span>
-            <div className="h-4 w-px bg-[#d9d9d9]" />
-            <input
-              type="text"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") runSearch(keyword); }}
-              placeholder={AUCTION_SEARCH_PLACEHOLDER}
-              className="min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-[#b1b1b1]"
-            />
-            <button type="button" onClick={() => runSearch(keyword)} aria-label="검색">
-              <img src={assets.searchIcon} alt="검색" className="size-[20px] object-contain" />
-            </button>
-          </div>
-
           {/* 슬라이드 배너 */}
-          <div className="mt-4 relative">
-            <div className="relative overflow-hidden rounded-[20px] bg-white/90">
-              {/* 슬라이드 트랙 */}
-              <div
-                className="flex transition-transform duration-500 ease-in-out"
-                style={{ transform: `translateX(${-bannerIdx * 100}%)` }}
-              >
-                {BANNER_SLIDES.map((s, i) => (
-                  <div key={i} className="relative shrink-0 w-full">
-                    <div className="flex items-center gap-2 px-5 py-5">
-                      <div className="flex-1 text-left min-w-0">
-                        {s.eyebrow && (
-                          <p className="text-[11px] font-bold text-[#0064ff] tracking-[2px] mb-1">{s.eyebrow}</p>
-                        )}
-                        <p className="font-bold text-[20px] text-black leading-snug tracking-tight">
-                          {s.title1}<br />{s.title2}
-                        </p>
-                        <p className="text-[12px] text-black mt-1">{s.sub}</p>
-                        {s.tags && (
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {s.tags.map((tag) => (
-                              <span key={tag} className="bg-[#eef3ff] text-[#0064ff] text-[11px] font-bold px-2 py-0.5 rounded-full">{tag}</span>
-                            ))}
-                          </div>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => s.btnRoute && navigate(s.btnRoute)}
-                          className="mt-3 bg-[#0064ff] text-white font-bold text-[14px] px-5 py-[9px] rounded-[10px] cursor-pointer border-none"
-                        >
-                          {s.btnLabel}
-                        </button>
-                      </div>
-                      {s.rightImg && (
-                        <img src={assets[s.rightImg]} alt="" className="w-[100px] object-contain shrink-0 pointer-events-none mr-4" />
-                      )}
-                    </div>
-                  </div>
-                ))}
+          <div className="mt-4">
+            <div
+              className="overflow-hidden rounded-[20px] bg-white/90 cursor-pointer"
+              onClick={() => navigate("/customersupport/guide")}
+            >
+              <div className="flex items-center gap-4 pl-5 pr-4 py-5">
+                <img
+                  src={assets.heroSectionImg}
+                  alt=""
+                  className="h-[90px] object-contain shrink-0 pointer-events-none"
+                />
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-[11px] font-bold text-[#0064ff] tracking-[2px] mb-1">START GUIDE</p>
+                  <p className="font-bold text-[18px] text-black leading-snug tracking-tight">
+                    처음이어도 흐름만 알면 어렵지<br />않아요.
+                  </p>
+                  <p className="text-[12px] text-black mt-1">경매와 서비스 요청, 시작부터 완료까지 한눈에 확인하세요.</p>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); navigate("/customersupport/guide"); }}
+                    className="mt-3 bg-[#0064ff] text-white font-bold text-[13px] px-4 py-2 rounded-[10px] cursor-pointer border-none"
+                  >
+                    이용가이드 보기
+                  </button>
+                </div>
+              </div>
+              {/* 인디케이터 */}
+              <div className="flex justify-center items-center py-2">
+                <div className="rounded-full" style={{ width: 16, height: 8, backgroundColor: "#0064ff", boxShadow: "0 0 6px rgba(0,100,255,0.6)" }} />
               </div>
             </div>
-            {/* 좌우 화살표 */}
-            <button
-              type="button"
-              onClick={() => setBannerIdx((i) => (i === 0 ? BANNER_SLIDES.length - 1 : i - 1))}
-              className="absolute -left-1 top-1/2 -translate-y-1/2 flex size-[32px] items-center justify-center text-[28px] text-[#7b8290] font-light leading-none bg-transparent border-none cursor-pointer"
-              aria-label="이전"
-            >
-              ‹
-            </button>
-            <button
-              type="button"
-              onClick={() => setBannerIdx((i) => (i === BANNER_SLIDES.length - 1 ? 0 : i + 1))}
-              className="absolute -right-1 top-1/2 -translate-y-1/2 flex size-[32px] items-center justify-center text-[28px] text-[#7b8290] font-light leading-none bg-transparent border-none cursor-pointer"
-              aria-label="다음"
-            >
-              ›
-            </button>
           </div>
-        </div>
-      </section>
-
-      {/* 담당자 7 통합: 서비스 메뉴는 견적 요청서 작성 진입점입니다. */}
-      <section className="px-4">
-        <h2 className="mb-3 text-[18px] font-bold">SERVICE MENU</h2>
-        <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {SERVICE_MENU_ITEMS.map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              onClick={() => navigate("/service-requests/new")}
-              className="flex shrink-0 flex-col items-center justify-center gap-2 rounded-2xl border border-[rgba(0,0,0,0.1)] bg-white p-4 size-[92px]"
-            >
-              <img src={item.image} alt="" className="h-[36px] w-[36px] object-contain" />
-              <span className="text-[13px] text-black">{item.label}</span>
-            </button>
-          ))}
         </div>
       </section>
 
