@@ -156,7 +156,7 @@ const AdminCustomerInquiryManagementPage = () => {
       label: '작성자',
       render: (value, row) => formatAdminMemberIdentity(row.writerMember, value),
     },
-    { key: 'title', label: '제목' },
+    { key: 'title', label: '제목', className: 'admin-table__long-text' },
     { key: 'registeredAt', label: '접수일', render: formatDateTime },
     {
       key: 'statusCode',
