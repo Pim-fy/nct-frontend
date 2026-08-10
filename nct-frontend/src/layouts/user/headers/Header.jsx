@@ -11,7 +11,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Menu, X, ChevronRight, Bell, Gavel, Truck, Wrench, Wallet, MessageCircle } from 'lucide-react';
+import { Menu, X, ChevronRight, Bell, Gavel, Truck, Wrench, Wallet, MessageCircle, FileText, Headset } from 'lucide-react';
 import { useAuth } from '@hooks/useAuth';
 import { useMyProviderApplications } from '@hooks/useProviderApplications';
 import { useMarkAllRead, useMarkRead, useNotifications } from '@hooks/useNotification';
@@ -312,8 +312,10 @@ const Header = () => {
       <div className={`container relative flex items-center justify-between gap-8 ${
         hasHeaderSearch ? 'h-[82px] md:h-full' : 'h-full'
       }`}>
-        {/* 로고 + 메뉴 - 디자인 시안처럼 로고 바로 우측에 붙여 왼쪽에 묶어둔다 */}
-        <div className="flex items-center gap-10">
+        {/* 로고 + 메뉴 - 디자인 시안처럼 로고 바로 우측에 붙여 왼쪽에 묶어둔다.
+            검색이 있는 페이지는 768~1280px 구간에서 검색창이 이 사이에 끼어들도록
+            order를 매겨둔다(순서만 바꾸고 실제 DOM 위치는 그대로, 2026-08-10) */}
+        <div className={`flex items-center gap-10 ${hasHeaderSearch ? 'md:order-1 xl:order-none' : ''}`}>
           <Link to="/" className="flex shrink-0 items-center">
             <img src={logoImg} alt="에누리컷" className="h-[58px] w-auto" />
           </Link>
@@ -375,10 +377,13 @@ const Header = () => {
             >
               <Link
                 to={serviceMenuPath}
-                className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${serviceMenuOpen || isServiceMenuActive ? 'text-primary' : 'text-[#333333]'}`}
+                className={`flex cursor-pointer items-center gap-1.5 text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${serviceMenuOpen || isServiceMenuActive ? 'text-primary' : 'text-[#333333]'}`}
                 onClick={() => setServiceHovered(false)}
               >
-                {isProvider ? '견적 목록' : '견적 요청'}
+                {hasHeaderSearch && <FileText aria-hidden="true" className="size-5 xl:hidden" />}
+                <span className={hasHeaderSearch ? 'hidden xl:inline' : undefined}>
+                  {isProvider ? '견적 목록' : '견적 요청'}
+                </span>
               </Link>
               {serviceMenuOpen && (
                 <div className="absolute left-0 top-full w-[161px] pt-[14px] z-50">
@@ -415,10 +420,11 @@ const Header = () => {
             >
               <Link
                 to="/customersupport/notice"
-                className={`cursor-pointer text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${customerOpen || isCustomerMenuActive ? 'text-primary' : 'text-[#333333]'}`}
+                className={`flex cursor-pointer items-center gap-1.5 text-[20px] font-bold tracking-[-0.02em] transition-colors hover:text-primary ${customerOpen || isCustomerMenuActive ? 'text-primary' : 'text-[#333333]'}`}
                 onClick={() => setCustomerHovered(false)}
               >
-                고객센터
+                {hasHeaderSearch && <Headset aria-hidden="true" className="size-5 xl:hidden" />}
+                <span className={hasHeaderSearch ? 'hidden xl:inline' : undefined}>고객센터</span>
               </Link>
               {customerOpen && (
                 <div className="absolute left-0 top-full w-[161px] pt-[14px] z-50">
@@ -479,7 +485,7 @@ const Header = () => {
         )}
 
         {/* 우측 유틸 영역 */}
-        <div ref={utilRef} className="flex items-center gap-2 md:gap-3">
+        <div ref={utilRef} className={`flex items-center gap-2 md:gap-3 ${hasHeaderSearch ? 'md:order-3 xl:order-none' : ''}`}>
           {/* 알림 */}
           <div className="relative">
             <button
@@ -810,9 +816,14 @@ const Header = () => {
           </button>
         </div>
 
+        {/* 768~1280px 사이는 검색창을 중앙 절대배치 대신 메뉴·아이콘 사이에서 남는 공간을
+            차지하는 flex 요소로 바꿔, 헤더는 항상 1줄(짧게) 유지하면서 검색창도 최소폭 이상을
+            확보한다(2026-08-10, 원래는 고정 38vw 폭으로 중앙배치돼 있어서 이 구간에서 메뉴
+            글자와 겹쳐 보이던 문제였음). 그 구간에서만 견적요청·고객센터 라벨이 아이콘으로
+            줄어든다(위 order 클래스들과 짝). 1280px 이상은 기존 중앙 배치로 복귀. */}
         <div
           className={hasHeaderSearch
-            ? 'absolute left-1/2 top-[92px] z-[1] flex w-[calc(100%-32px)] max-w-[548px] -translate-x-1/2 items-center gap-2 md:top-1/2 md:w-[min(38vw,548px)] md:-translate-y-1/2'
+            ? 'absolute left-1/2 top-[92px] z-[1] flex w-[calc(100%-32px)] max-w-[548px] -translate-x-1/2 items-center gap-2 md:static md:order-2 md:left-auto md:top-auto md:z-auto md:w-auto md:max-w-none md:flex-1 md:min-w-0 md:translate-x-0 xl:absolute xl:order-none xl:left-1/2 xl:top-1/2 xl:z-[1] xl:w-[min(38vw,548px)] xl:max-w-[548px] xl:flex-none xl:-translate-x-1/2 xl:-translate-y-1/2'
             : 'hidden'}
         >
           <div className="min-w-0 flex-1" id={SITE_HEADER_SEARCH_SLOT_ID} />
