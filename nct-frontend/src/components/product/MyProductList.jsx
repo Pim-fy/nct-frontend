@@ -118,6 +118,16 @@ const getProductStatusBadgeClass = (product) => {
   return PRD_STATUS_BADGE[product.prdStatusCd] ?? 'badge-outline-gray';
 };
 
+// 데스크톱·모바일 두 렌더 블록에서 공통으로 쓰는 배지·상태 판정 — 규칙은 여기 한 곳에서만 정의한다
+// (TradeHistory.jsx의 getStatusInfo()와 동일한 패턴, 호출은 블록마다 반복해도 로직은 하나로 유지)
+const getProductStatusDisplay = (p) => ({
+  badgeLabel: getProductStatusLabel(p),
+  badgeClass: getProductStatusBadgeClass(p),
+  isActive: p.prdStatusCd === 'PRDC0002',
+  isDraft: p.prdStatusCd === 'PRDC0001',
+  isEnded: p.prdStatusCd === 'PRDC0003',
+});
+
 // ─── 컴포넌트 ─────────────────────────────────────────────────────────────────
 
 export default function MyProductList() {
@@ -240,12 +250,7 @@ export default function MyProductList() {
           <div className="hidden lg:block">
           <div className="history-list">
             {visibleList.map((p) => {
-              const badgeLabel = getProductStatusLabel(p);
-              const badgeClass = getProductStatusBadgeClass(p);
-
-              const isActive = p.prdStatusCd === 'PRDC0002';
-              const isDraft  = p.prdStatusCd === 'PRDC0001';
-              const isEnded  = p.prdStatusCd === 'PRDC0003';
+              const { badgeLabel, badgeClass, isActive, isDraft, isEnded } = getProductStatusDisplay(p);
 
               return (
                 <MyPageAuctionListItem
@@ -305,11 +310,7 @@ export default function MyProductList() {
           </div>
           <div className="grid gap-4 lg:hidden">
             {visibleList.map((p) => {
-              const badgeLabel = getProductStatusLabel(p);
-              const badgeClass = getProductStatusBadgeClass(p);
-              const isActive = p.prdStatusCd === 'PRDC0002';
-              const isDraft = p.prdStatusCd === 'PRDC0001';
-              const isEnded = p.prdStatusCd === 'PRDC0003';
+              const { badgeLabel, badgeClass, isActive, isDraft, isEnded } = getProductStatusDisplay(p);
 
               return (
                 <MyPageMobileCard
