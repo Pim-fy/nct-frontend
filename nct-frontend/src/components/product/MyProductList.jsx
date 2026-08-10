@@ -111,12 +111,11 @@ function fmtPrice(n) {
 
 // ─── 컴포넌트 ─────────────────────────────────────────────────────────────────
 
-export default function MyProductList({ onOpenTradeDetail }) {
+export default function MyProductList() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   // 전역 브레드크럼 (BJN, 260805): 상세로 이동할 때 접근 경로(state.from)를 전달 —
-  // 이 컴포넌트는 /product/me 단독 페이지와 마이페이지(상품 판매 내역) 양쪽에서 쓰이므로
-  // 현재 위치를 그대로 넘기면 진입 경로별로 브레드크럼이 알맞게 표시된다
+  // 담당자 7 경로 통합: 대표 목록인 마이페이지 위치를 상세 브레드크럼 복귀 정보로 전달한다.
   const location = useLocation();
   const breadcrumbFrom = { from: location.pathname + location.search };
   const [filter, setFilter]       = useState(null);
@@ -253,14 +252,7 @@ export default function MyProductList({ onOpenTradeDetail }) {
                     {p.tradeSn && (
                       <button
                         type="button"
-                        onClick={() => {
-                          if (onOpenTradeDetail) {
-                            onOpenTradeDetail(p.tradeSn);
-                            return;
-                          }
-
-                          navigate(`/trades/${p.tradeSn}/seller`, { state: breadcrumbFrom });
-                        }}
+                        onClick={() => navigate(`/trades/${p.tradeSn}/seller`, { state: breadcrumbFrom })}
                         className="btn btn-sm btn-primary"
                       >
                         거래 관리
@@ -319,7 +311,7 @@ export default function MyProductList({ onOpenTradeDetail }) {
                   actionButton={(
                     <>
                       {p.tradeSn && (
-                        <button type="button" onClick={() => onOpenTradeDetail ? onOpenTradeDetail(p.tradeSn) : navigate(`/trades/${p.tradeSn}/seller`, { state: breadcrumbFrom })} className="btn btn-sm btn-primary">거래 관리</button>
+                        <button type="button" onClick={() => navigate(`/trades/${p.tradeSn}/seller`, { state: breadcrumbFrom })} className="btn btn-sm btn-primary">거래 관리</button>
                       )}
                       {!p.tradeSn && isActive && (
                         <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`, { state: breadcrumbFrom })} className={`btn btn-sm ${p.aucStatusCd === 'AUCC0005' ? 'btn-ghost' : 'btn-primary'}`}>

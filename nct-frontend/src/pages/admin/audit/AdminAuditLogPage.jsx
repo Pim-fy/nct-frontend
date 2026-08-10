@@ -11,6 +11,7 @@ import AdminPageHeader from '@components/admin/AdminPageHeader';
 import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
 import { useAuditLogs } from '@hooks/useAdminAudit';
 import useClientPagination from '@hooks/useClientPagination';
+import { formatAdminMemberIdentity } from '@utils/adminMemberIdentity';
 import './adminAuditPage.css';
 
 // 감사 행위 유형 필터 옵션 — 공통코드 AUDG01(기초데이터 v3)과 일치해야 한다
@@ -88,7 +89,9 @@ const AdminAuditLogPage = () => {
     { key: 'date', label: '일시' },
     {
       key: 'userName', label: '행위자',
-      render: (value, row) => (value ? `${value} (#${row.userSn})` : '시스템'),
+      render: (_, row) => (row.userSn == null
+        ? '시스템'
+        : formatAdminMemberIdentity(row.actorMember, row.userSn)),
     },
     { key: 'type', label: '행위 유형' },
     {

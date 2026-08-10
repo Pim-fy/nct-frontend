@@ -315,6 +315,7 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
         </div>
         <button
           className="btn btn-primary admin-category-summary-action"
+          disabled={categoriesQuery.isLoading || categoriesQuery.isError}
           onClick={openCreateDialog}
           type="button"
         >
@@ -323,7 +324,17 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
       </div>
       {moveFeedback && <p className="admin-category-feedback" role="alert">{moveFeedback}</p>}
       {categoriesQuery.isError && (
-        <div className="admin-content-state is-error">{label}를 불러오지 못했습니다.</div>
+        <div className="admin-content-state is-error" role="alert">
+          <strong>{label}를 불러오지 못했습니다.</strong>
+          <button
+            className="btn btn-outline"
+            disabled={categoriesQuery.isFetching}
+            onClick={() => categoriesQuery.refetch()}
+            type="button"
+          >
+            다시 시도
+          </button>
+        </div>
       )}
       {!categoriesQuery.isError && (
         <>

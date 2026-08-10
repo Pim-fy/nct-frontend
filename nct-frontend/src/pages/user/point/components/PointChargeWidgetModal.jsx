@@ -98,7 +98,7 @@ const PointChargeWidgetModal = ({ infoRow, onClose }) => {
     if (!widgetsRef.current || !orderRef.current) return;
     setLoading(true);
     try {
-      // 결제 완료 후 리다이렉트는 항상 포인트지갑(/user/mypage?section=wallet)으로 고정돼 있어서,
+      // 결제 완료 후 복귀는 항상 계층 경로의 포인트지갑(/user/mypage/wallet)으로 고정돼 있어서,
       // 쇼핑 중이던 페이지로 돌아갈 수 있도록 지금 위치를 기억해 둔다 — 승인 처리가 끝난 뒤
       // PointWalletPage가 이 값을 읽어 돌려보낸다. 전체 리다이렉트를 거치므로 컴포넌트 상태로는
       // 못 들고 가고 sessionStorage에 남겨야 한다.
@@ -107,8 +107,8 @@ const PointChargeWidgetModal = ({ infoRow, onClose }) => {
       await widgetsRef.current.requestPayment({
         orderId: orderRef.current.orderId,
         orderName: orderRef.current.orderName,
-        successUrl: `${window.location.origin}/user/mypage?section=wallet&charge=success`,
-        failUrl: `${window.location.origin}/user/mypage?section=wallet&charge=fail`,
+        successUrl: `${window.location.origin}/user/mypage/wallet?charge=success`,
+        failUrl: `${window.location.origin}/user/mypage/wallet?charge=fail`,
       });
       // 성공 시 리다이렉트되므로 이 아래로는 정상 흐름에서 내려오지 않는다
     } catch (err) {

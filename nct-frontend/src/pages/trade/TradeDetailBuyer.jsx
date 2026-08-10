@@ -8,7 +8,6 @@ import {
   useLocation,
   useNavigate,
   useParams,
-  useSearchParams,
 } from 'react-router-dom';
 import Toast from '@components/common/Toast';
 import {
@@ -82,9 +81,9 @@ const TradeDetailBuyer = ({
 }) => {
   const { tradeId: routeTradeId } = useParams();
   const tradeId = selectedTradeId ?? routeTradeId;
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname } = location;
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [trade, setTrade] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -106,22 +105,14 @@ const TradeDetailBuyer = ({
       return;
     }
 
-    if (searchParams.get('from') === 'mypage') {
-      const returnSection = searchParams.get('section');
-      const myPageSection = returnSection === 'auction-bids'
-        ? 'auction-bids'
-        : 'auction-bids';
-      const myPagePath = pathname.startsWith('/trades/preview')
-        ? `/user/mypage/preview/trades?verify=1&section=${myPageSection}`
-        : `/user/mypage?section=${myPageSection}`;
-
-      navigate(myPagePath);
+    if (location.state?.from?.startsWith('/user/mypage/')) {
+      navigate(location.state.from);
       return;
     }
 
     navigate(isPreview
-      ? '/user/mypage/preview/trades?verify=1&section=auction-bids'
-      : '/user/mypage?section=auction-bids');
+      ? '/user/mypage/preview/trades'
+      : '/user/mypage/auctions/purchases');
   };
 
   // URL의 거래 번호로 서버 상세를 조회해 직접 URL 접근에도 같은 데이터를 표시한다.

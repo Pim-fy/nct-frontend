@@ -50,7 +50,7 @@ export default function ReviewEditPage() {
         <p className="mt-1 text-sm text-[#969696]">목록에서 다시 "수정"을 눌러주세요.</p>
         <button
           type="button"
-          onClick={() => navigate("/user/mypage?section=review")}
+          onClick={() => navigate("/user/mypage/reviews")}
           className="btn btn-primary mt-6"
         >
           리뷰작성 목록으로
@@ -120,7 +120,7 @@ export default function ReviewEditPage() {
       await updateReview(id ?? item.id, formData);
       await queryClient.invalidateQueries({ queryKey: ["reviews"] });
       toast({ icon: "success", title: "리뷰가 수정되었습니다." });
-      navigate("/user/mypage?section=review");
+      navigate("/user/mypage/reviews");
     } catch (err) {
       console.error("리뷰 수정 실패:", err);
       toast({ icon: "error", title: "리뷰 수정에 실패했습니다. 잠시 후 다시 시도해주세요." });

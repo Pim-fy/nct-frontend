@@ -43,6 +43,8 @@ export const useApi = () => {
     // 인증 =====================================
     fetchMe : ()      => execute(() => api.get('/auth/me')),
     login   : (creds) => execute(() => api.post('/auth/login', creds), false),
+    // 담당자 7 · F-OPS-001: 관리자 계정은 전용 서버 경로에서만 신규 세션을 발급한다.
+    adminLogin: (creds) => execute(() => api.post('/auth/admin/login', creds), false),
     logout  : ()      => execute(() => api.post('/auth/logout'), false),
     // 담당자 7 · F-OPS-001: 권한 불일치 세션 정리는 공통 오류 화면 이동 없이 호출 화면에서 마무리한다.
     rejectSession: () => execute(() => api.post('/auth/logout', null, {

@@ -71,7 +71,7 @@ export const useAuth = () => {
   /**
    * 2. 로그인 Mutation =======================
   */
- const loginMutation = useMutation({
+  const loginMutation = useMutation({
    mutationFn: async (credentials) => {
      const loginRes = await apiTool.login(credentials);
      return loginRes.data;                  // loginRes.data -> 하단의 userData임.
@@ -84,6 +84,20 @@ export const useAuth = () => {
       localStorage.setItem('isLogin', 'true');      // 로컬스토리지에 isLogin값을 true로 저장함
       setConfig('user', userData);      // useConfig의 전역 상태 저장소에 user 값을 userData로 세팅.
       queryClient.setQueryData(['auth', 'user'], userData);   // TanStack Query의 캐시에 직접 값을 주입.
+      void queryClient.prefetchQuery(memberProfileQueryOptions);
+    },
+  });
+
+  // 담당자 7 · F-OPS-001: 관리자 화면은 일반 로그인과 분리된 서버 계약만 호출한다.
+  const adminLoginMutation = useMutation({
+    mutationFn: async (credentials) => {
+      const loginRes = await apiTool.adminLogin(credentials);
+      return loginRes.data;
+    },
+    onSuccess: (userData) => {
+      localStorage.setItem('isLogin', 'true');
+      setConfig('user', userData);
+      queryClient.setQueryData(['auth', 'user'], userData);
       void queryClient.prefetchQuery(memberProfileQueryOptions);
     },
   });
@@ -171,7 +185,7 @@ export const useAuth = () => {
   //
   return {
     user,
-    loading        : isUserLoading || loginMutation.isPending || logoutMutation.isPending || rejectSessionMutation.isPending,    // useQuery로 조회한 로그인 유저 정보.
+    loading        : isUserLoading || loginMutation.isPending || adminLoginMutation.isPending || logoutMutation.isPending || rejectSessionMutation.isPending,    // useQuery로 조회한 로그인 유저 정보.
     // !!: 논리부정(!)을 두번 사용함 -> 값을 강제로 boolean형으로 변환함.
     // isAuthenticated를 별도 state로 관리하지 않고, user값 하나로부터 파생시킴.
     // user 객체 기반 자동 동기화. user만 갱신되면 자동으로 따라가서 두 값이 따로 놀지 않음.
@@ -180,6 +194,7 @@ export const useAuth = () => {
     // mutateAsync: Promise를 반환함.
     // mutate를 쓰지 않은 이유는 결과를 Promise로 반환하지 않아 await로 완료 대기 불가.
     login          : loginMutation.mutateAsync,
+    adminLogin     : adminLoginMutation.mutateAsync,
     logout         : logoutMutation.mutateAsync,
     rejectCurrentSession: rejectSessionMutation.mutateAsync,
     // 모드 전환 (F-PROV-008). user.role은 백엔드 로그인/전환 응답에 포함된 필드.

@@ -249,7 +249,7 @@ const ProviderApplyPage = () => {
             {!profileQuery.isLoading && hasSettlementAccount && (
               <p className="provider-apply-demo-note">
                 {profileQuery.data.bankName} {profileQuery.data.accountNo} 계좌로 정산됩니다.
-                계좌를 바꾸시려면 <Link className="provider-apply-inline-link" to="/user/mypage?section=profile">마이페이지</Link>에서 먼저 수정해 주세요.
+                계좌를 바꾸시려면 <Link className="provider-apply-inline-link" to="/user/mypage/profile">마이페이지</Link>에서 먼저 수정해 주세요.
               </p>
             )}
 
@@ -257,7 +257,7 @@ const ProviderApplyPage = () => {
               <p className="provider-apply-error">
                 정산 계좌가 아직 등록되지 않았습니다.
                 {' '}
-                <Link className="provider-apply-inline-link" to="/user/mypage?section=profile">마이페이지</Link>에서 계좌를 먼저 등록해 주세요.
+                <Link className="provider-apply-inline-link" to="/user/mypage/profile">마이페이지</Link>에서 계좌를 먼저 등록해 주세요.
               </p>
             )}
           </div>
