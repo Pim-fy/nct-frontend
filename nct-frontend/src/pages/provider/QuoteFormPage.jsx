@@ -746,7 +746,7 @@ export default function QuoteFormPage() {
               style={{ marginTop: 24, width: "100%" }}
               onClick={() => {
                 setEditSuccessMsg("");
-                navigate("/user/mypage?section=quote");
+                navigate("/user/mypage/services/quotes");
               }}
             >
               확인
@@ -768,7 +768,7 @@ export default function QuoteFormPage() {
               style={{ marginTop: 24, width: "100%" }}
               onClick={() => {
                 setSubmitSuccess(false);
-                navigate("/user/mypage?section=quote");
+                navigate("/user/mypage/services/quotes");
               }}
             >
               확인

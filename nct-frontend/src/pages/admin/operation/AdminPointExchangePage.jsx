@@ -16,6 +16,7 @@ import AdminPageHeader from '@components/admin/AdminPageHeader';
 import PageMeta from '@components/admin/PageMeta';
 import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
 import { toast } from '@utils/common';
+import { formatAdminMemberIdentity } from '@utils/adminMemberIdentity';
 import '../audit/adminAuditPage.css';
 import './adminOperationPages.css';
 
@@ -33,7 +34,6 @@ const exchangeStatus = (code, fallback) => (
   EXCHANGE_STATUS[code] ?? { label: fallback || code || '-', tone: 'neutral' }
 );
 const isRequested = (code) => code === 'PEOC0001';
-const formatProcessor = (value) => (value == null ? '-' : `관리자 #${value}`);
 
 /** 담당자 7 · F-PAY-012: 처리 전후 환전 주문을 한 목록에서 조회하고 관리합니다. */
 const AdminPointExchangePage = () => {
@@ -125,9 +125,9 @@ const AdminPointExchangePage = () => {
   const columns = [
     { key: 'id', label: '신청 번호', render: (value) => `#${value}` },
     {
-      key: 'userName',
+      key: 'userSn',
       label: '신청자',
-      render: (value, row) => `${value || '-'} (#${row.userSn})`,
+      render: (value, row) => formatAdminMemberIdentity(row.applicantMember, value),
     },
     { key: 'amount', label: '신청 금액', render: formatAmount },
     {
@@ -273,7 +273,7 @@ const AdminPointExchangePage = () => {
           <section className="admin-operation-detail">
             <dl>
               <dt>신청 번호</dt><dd>#{selected.id}</dd>
-              <dt>신청자</dt><dd>{selected.userName || '-'} (회원 #{selected.userSn})</dd>
+              <dt>신청자</dt><dd>{formatAdminMemberIdentity(selected.applicantMember, selected.userSn)}</dd>
               <dt>신청 금액</dt><dd><strong>{formatAmount(selected.amount)}</strong></dd>
               <dt>상태</dt>
               <dd><AdminStatusBadge tone={selectedStatus.tone}>{selectedStatus.label}</AdminStatusBadge></dd>
@@ -297,7 +297,7 @@ const AdminPointExchangePage = () => {
               <dt>신청일</dt><dd>{formatDate(selected.date)}</dd>
               {!canProcess && (
                 <>
-                  <dt>처리자</dt><dd>{formatProcessor(selected.processedBy)}</dd>
+                  <dt>처리자</dt><dd>{formatAdminMemberIdentity(selected.processorMember, selected.processedBy)}</dd>
                   <dt>처리일</dt><dd>{formatDate(selected.processedDate)}</dd>
                   {selected.statusCode === 'PEOC0003' && (
                     <>

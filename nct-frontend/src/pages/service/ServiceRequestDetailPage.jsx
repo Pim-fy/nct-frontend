@@ -444,7 +444,7 @@ export default function ServiceRequestDetailPage() {
           <button
             type="button"
             className="inline-flex items-center gap-1 rounded-lg border border-[#e2e1dc] bg-white px-4 py-2.5 text-lg font-medium text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary"
-            onClick={() => navigate(isProvider ? '/service' : '/user/mypage?section=service-requests')}
+            onClick={() => navigate(isProvider ? '/service' : '/user/mypage/services/requests')}
           >
             ← 목록으로
           </button>

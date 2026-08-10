@@ -210,7 +210,7 @@ export default function MyPageProfileEdit({ user }) {
   // 연동은 OAuth 핸드셰이크(리다이렉트)가 필요해 REST 호출이 아니라 페이지 이동으로 시작한다.
   // 완료 후 어디로 돌아올지는 OAuthRedirectHandler가 이 값을 읽어 사용한다.
   const handleLink = (provider) => {
-    sessionStorage.setItem(MYPAGE_LINK_RETURN_KEY, "/user/mypage?section=profile");
+    sessionStorage.setItem(MYPAGE_LINK_RETURN_KEY, "/user/mypage/profile");
     // 전체 페이지 이동(OAuth 리다이렉트)이라 useAuth.js의 로그아웃 리다이렉트와 동일한 패턴이다.
     // eslint-disable-next-line react-hooks/immutability
     window.location.href = `${import.meta.env.VITE_API_URL}/api/oauth2/authorization/${provider}-link`;

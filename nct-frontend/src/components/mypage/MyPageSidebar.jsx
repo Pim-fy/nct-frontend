@@ -17,6 +17,7 @@ const GENERAL_MENU_ITEMS = [
     type: "accordion",
     children: [
       { key: "active-auctions", label: "진행 중인 경매", type: "section" },
+      { key: "bid-history",     label: "상품 입찰 내역", type: "section" },
       { key: "auction-bids",    label: "상품 구매 내역", type: "section" },
       { key: "auction-sales",   label: "상품 판매 내역", type: "section" },
       { key: "wishlist",        label: "관심 경매",      type: "section" },
@@ -69,7 +70,7 @@ const PROVIDER_MENU_ITEMS = [
 
 // 아코디언 key → 포함되는 child key 목록
 const ACCORDION_CHILDREN = {
-  "auction-history":  ["active-auctions", "auction-bids", "auction-sales", "wishlist"],
+  "auction-history":  ["active-auctions", "bid-history", "auction-bids", "auction-sales", "wishlist"],
   "general-service-menu": ["service-requests", "service-trade"],
   "provider-profile-menu": ["provider-profile", "profile"],
   "provider-service-menu": ["quote", "service-trade"],

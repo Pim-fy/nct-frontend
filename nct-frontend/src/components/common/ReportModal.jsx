@@ -135,7 +135,7 @@ function ReportModalContent({
       });
       toast({ icon: "success", title: "신고가 접수되었습니다." });
       onClose();
-      navigate("/user/mypage?section=report-list");
+      navigate("/user/mypage/reports");
     } catch {
       setErrors((prev) => ({ ...prev, _server: "신고 접수 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요." }));
     }

@@ -264,7 +264,7 @@ export default function ProductDetailSellerPage() {
   return (
     <main className="container">
       <div className="seller-auction-head" style={{ marginBottom: 16, marginTop: 24 }}>
-        <button className="btn btn-ghost" style={{ marginLeft: 'auto' }} onClick={() => navigate('/user/mypage?section=auction-sales')}>← 내 판매 내역</button>
+        <button className="btn btn-ghost" style={{ marginLeft: 'auto' }} onClick={() => navigate('/user/mypage/auctions/sales')}>← 내 판매 내역</button>
       </div>
 
       {/* 취소 확정된 상품(AUCC0005)은 아래 내용 전체를 블러 처리하고 안내만 보여준다 */}

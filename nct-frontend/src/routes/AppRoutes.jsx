@@ -7,10 +7,11 @@
 //    라우트 추가·수정은 황희준에게 전달 후 반영. 임시로 추가된 상품 라우트
 //    (/product/register, /product/:prdSn/seller) 도 최종 통합 시
 //    황희준에게 전달해 ProtectedRoute 구조에 맞게 정리 필요.
-//    /product/me는 MyProductList가 MyPage 아코디언(황성경)에 통합되어 제거함.
+//    판매 목록은 계층 경로 /user/mypage/auctions/sales 한 곳에서 제공합니다.
 // ─────────────────────────────────────────────────────────────────────────────
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Outlet, Routes, Route, useLocation, useParams } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
+import { MYPAGE_SECTION_PATHS } from './myPageRoutes';
 
 // Layouts
 import LandingLayout from '@layouts/LandingLayout';
@@ -62,15 +63,11 @@ import PublicProviderProfilePage from '@pages/provider/PublicProviderProfilePage
 import ProviderApplyPage from '@pages/provider/ProviderApplyPage';
 import ProviderApplicationStatusPage from '@pages/provider/ProviderApplicationStatusPage';
 import NotificationPage from '@pages/user/notification/NotificationPage';
-import AuctionFavoritesPage from '@pages/auction/AuctionFavoritesPage';
 import QuoteFormPage from '@pages/provider/QuoteFormPage';
 import ReviewListPage from '@pages/user/ReviewListPage';
 import ReviewWritePage from '@pages/user/ReviewWritePage';
 import ReviewEditPage from '@pages/user/ReviewEditPage';
 import MyPageReviewLayout from '@layouts/MyPageReviewLayout';
-// 내 입찰 내역 (F-AUC-022)
-import MyBidHistoryPage from '@pages/user/MyBidHistoryPage';
-import ReportFormPage from '@pages/user/report/ReportFormPage';
 
 // 담당자 7 병합 검증: develop의 상품 route가 참조하는 페이지 import가 누락되어 런타임 빈 화면이 발생해 복구했습니다.
 // 임시 코드는 아니며 상품 기능의 구현·소유권은 기존 상품 담당자에게 그대로 있습니다.
@@ -82,18 +79,13 @@ import ServiceRequestFormPage from '@pages/service/ServiceRequestFormPage';
 // F-SVC-003~004: 서비스 요청서 상세 조회/관리
 import ServiceRequestDetailPage from '@pages/service/ServiceRequestDetailPage';
 import QuoteDetailPage from '@pages/service/QuoteDetailPage';
-// F-SVC-004: 내 서비스 요청 목록 (담당자 2)
-import MyServiceRequestListPage from '@pages/service/MyServiceRequestListPage';
 import ServiceTradeDetailRoutePage from '@pages/service/ServiceTradeDetailRoutePage';
 import ServiceTradeDetailPreviewPage from '@pages/service/ServiceTradeDetailPreviewPage';
 
-// 기존 지갑 주소를 유지하되, 결제 결과·모달 제어용 query string도 함께 전달한다.
-const PointWalletRedirect = () => {
-  const { search } = useLocation();
-  const params = new URLSearchParams(search);
-  params.set('section', 'wallet');
-
-  return <Navigate to={`/user/mypage?${params.toString()}`} replace />;
+/** 담당자 7 경로 정리: 죽은 목록 주소가 동적 상세 ID로 오인되지 않게 숫자 요청 번호만 허용합니다. */
+const ServiceRequestNumberRoute = () => {
+  const { svcReqSn } = useParams();
+  return /^\d+$/.test(svcReqSn ?? '') ? <Outlet /> : <NotFoundPage />;
 };
 
 // ──────────────────────────────────────────
@@ -133,11 +125,12 @@ const AppRoutes = () => {
         <Route path="/landing" element={<LandingPage />} />
       </Route>
 
-      {/* @ai_generated: 입력형 인증 화면은 공통 헤더·푸터를 AuthLayout에서 한 번만 조립한다. */}
+      {/* 담당자 7 · F-OPS-001: 관리자 로그인은 사용자 헤더·푸터가 없는 독립 인증 화면입니다. */}
+      <Route path="/admin/login" element={<AdminLoginPage />} />
+
+      {/* @ai_generated: 일반 사용자 인증 화면은 공통 헤더·푸터를 AuthLayout에서 한 번만 조립한다. */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
-        {/* 담당자 7 · F-OPS-001: 일반 인증 화면과 계약은 공유하고 관리자 입력만 제공한다. */}
-        <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/login/signup" element={<SignupPage />} />
         <Route path="/find-email" element={<FindEmailPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -151,7 +144,6 @@ const AppRoutes = () => {
       <Route path="/403"             element={<Unauthorized />} />
       <Route path="/404"             element={<NotFoundPage />} />
       <Route path="/500"             element={<ServerErrorPage />} />
-
       {/* ────────────────────────────────
           공개 조회 영역 (UserLayout)
       ──────────────────────────────── */}
@@ -170,6 +162,22 @@ const AppRoutes = () => {
           {/* 담당자 7 · 관리자 대상 1:1 문의: 고객센터 메뉴는 유지하고 작성 화면만 로그인으로 보호합니다. */}
           <Route element={<ProtectedRoute allowedRoles={['ROLE_USER', 'ROLE_SERVICE']} />}>
             <Route path="/customersupport/inquiry" element={<CustomerInquiryFormPage />} />
+          </Route>
+        </Route>
+      </Route>
+
+      {/* 담당자 7 경로 정리: 서비스 요청 상세는 숫자 요청 번호 아래에서만 인증·권한 검사를 시작합니다. */}
+      <Route path="/service-requests/:svcReqSn" element={<ServiceRequestNumberRoute />}>
+        <Route element={<ProtectedRoute allowedRoles={['ROLE_USER', 'ROLE_SERVICE']} />}>
+          <Route element={<UserLayout />}>
+            <Route index element={<ServiceRequestDetailPage />} />
+            <Route path="quotes/:quoteId" element={<QuoteDetailPage />} />
+          </Route>
+        </Route>
+        <Route element={<ProtectedRoute allowedRoles={['ROLE_SERVICE']} />}>
+          <Route element={<UserLayout />}>
+            <Route path="quotes/new" element={<QuoteFormPage />} />
+            <Route path="quotes/:quoteId/edit" element={<QuoteFormPage />} />
           </Route>
         </Route>
       </Route>
@@ -208,14 +216,15 @@ const AppRoutes = () => {
       >
         <Route element={<UserLayout />}>
           <Route path="/user/mypage" element={<MyPage />} />
-          <Route path="/user/point" element={<PointWalletRedirect />} />
+          {Object.entries(MYPAGE_SECTION_PATHS)
+            .filter(([section]) => section !== 'home')
+            .map(([section, path]) => (
+              <Route key={section} path={path} element={<MyPage initialSection={section} />} />
+            ))}
           <Route path="/user/notification" element={<NotificationPage />} />
           {/* 담당자 7 · F-PROV-006/012~014: 제공자 모드에서도 추가 분야 심사 신청·상태 조회를 허용합니다. */}
           <Route path="/provider/apply" element={<ProviderApplyPage />} />
           <Route path="/provider/applications/status" element={<ProviderApplicationStatusPage />} />
-          {/* 담당자 7 통합: 일반회원은 본인 요청, 제공자는 공개 요청 상세를 사용합니다. */}
-          <Route path="/service-requests/:svcReqSn" element={<ServiceRequestDetailPage />} />
-          <Route path="/service-requests/:svcReqSn/quotes/:quoteId" element={<QuoteDetailPage />} />
           <Route path="/service-trades/:tradeId" element={<ServiceTradeDetailRoutePage />} />
           <Route path="/service-trades/:tradeId/chat" element={<TradeChat />} />
         </Route>
@@ -228,14 +237,10 @@ const AppRoutes = () => {
         )}
       >
         <Route element={<UserLayout />}>
-          <Route path="/user/auction-favorites" element={<AuctionFavoritesPage />} />
-          <Route path="/user/reviews" element={<Navigate to="/user/mypage?section=review" replace />} />
           <Route element={<MyPageReviewLayout />}>
-            <Route path="/user/reviews/write/:id" element={<ReviewWritePage />} />
-            <Route path="/user/reviews/edit/:id" element={<ReviewEditPage />} />
+            <Route path="/user/mypage/reviews/write/:id" element={<ReviewWritePage />} />
+            <Route path="/user/mypage/reviews/edit/:id" element={<ReviewEditPage />} />
           </Route>
-          {/* 경매 거래내역 — 내 입찰 내역 + 내 판매 내역 2탭 (담당자3 HSK, F-AUC-022) */}
-          <Route path="/my-bids" element={<MyBidHistoryPage />} />
 
           <Route path="/trades/:tradeId/chat" element={<TradeChat />} />
           <Route path="/trades/:tradeId" element={<TradeDetailBuyer />} />
@@ -249,13 +254,9 @@ const AppRoutes = () => {
           <Route path="/product/:prdSn/seller"   element={<ProductDetailSellerPage />} />
 
           {/* 신고 접수 (담당자3 황성경 · F-COM-018) */}
-          <Route path="/user/reports/new" element={<ReportFormPage />} />
-
           {/* 서비스 - 로그인 필요 */}
           {/* 담당자 2 · F-SVC-001~004: 서비스 요청서 작성/임시저장 폼. 라우트 소유자에게 전달 필요. */}
           <Route path="/service-requests/new" element={<ServiceRequestFormPage />} />
-          {/* 담당자 2 · F-SVC-004: 내 서비스 요청 목록. 라우트 소유자에게 전달 필요. */}
-          <Route path="/service-requests/me" element={<MyServiceRequestListPage />} />
         </Route>
       </Route>
 
@@ -296,8 +297,6 @@ const AppRoutes = () => {
         <Route element={<UserLayout />}>
           {/* 담당자 5 · F-COM-002: 공개 요청 검색·목록은 제공자 모드 전용입니다. */}
           <Route path="/service" element={<ServiceListPage />} />
-          <Route path="/service-requests/:svcReqSn/quotes/new" element={<QuoteFormPage />} />
-          <Route path="/service-requests/:svcReqSn/quotes/:quoteId/edit" element={<QuoteFormPage />} />
         </Route>
       </Route>
       

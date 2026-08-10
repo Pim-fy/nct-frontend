@@ -1,6 +1,6 @@
 // src/pages/service/MyServiceRequestListPage.jsx
 // 내 서비스 요청서 목록 페이지 — 임시저장·공개·매칭완료·종료 필터 (F-SVC-004)
-// 라우트: /service-requests/me, 마이페이지 "내 서비스 요청 목록" 섹션에서도 embedded로 재사용
+// 화면 경로: /user/mypage/services/requests (API /service-requests/me와 구분)
 // 상품 판매 내역(MyProductList.jsx)과 동일한 마이페이지 공통 목록 컴포넌트를 사용한다.
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';

@@ -75,7 +75,7 @@ const CustomerInquiryFormPage = () => {
       });
       detectionKeyRef.current = null;
       toast({ icon: 'success', title: '문의가 접수되었습니다.' });
-      navigate('/user/mypage?section=inquiry-list');
+      navigate('/user/mypage/inquiries');
     } catch (error) {
       setErrors((current) => ({
         ...current,

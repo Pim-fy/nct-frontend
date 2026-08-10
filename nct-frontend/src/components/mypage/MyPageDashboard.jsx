@@ -6,6 +6,7 @@
 import React, { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getMyPagePath } from "@/routes/myPageRoutes";
 import { useQuery } from "@tanstack/react-query";
 import { fetchMyFavoriteAuctions } from "@api/auctionApi";
 import { getMyBidHistory } from "@api/bidApi";
@@ -331,7 +332,6 @@ export default function MyPageDashboard({
   isProviderApproved,
   onLogout,
   onRequestProviderSwitch,
-  onOpenAuctionBids,
 }) {
   const navigate = useNavigate();
   const nickname = user?.nickname || "고객";
@@ -356,7 +356,7 @@ export default function MyPageDashboard({
     section: "active-auctions",
   }));
 
-  const nav = (section) => () => navigate(`/user/mypage?section=${section}`);
+  const nav = (section) => () => navigate(getMyPagePath(section));
 
   // ── 실데이터 조회 ──────────────────────────────────────────────────────────
 
@@ -556,21 +556,21 @@ export default function MyPageDashboard({
       {/* 알림 100% */}
       <NotificationPanel
         notifications={allNotifications}
-        onItemClick={(section) => navigate(`/user/mypage?section=${section}`)}
+        onItemClick={(section) => navigate(getMyPagePath(section))}
         onMore={() => navigate("/user/notification")}
       />
       {/* 채팅 + 리뷰 2열 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
         <ActiveChatPanel
           rooms={activeChatRooms}
-          onOpenChat={() => navigate("/user/mypage?section=chat")}
-          onMore={() => navigate("/user/mypage?section=chat")}
+          onOpenChat={() => navigate(getMyPagePath("chat"))}
+          onMore={() => navigate(getMyPagePath("chat"))}
         />
         {writableReviews.length > 0 && (
           <ReviewablePanel
             items={writableReviews}
-            onWrite={(item) => navigate(`/user/reviews/write/${item.id}`, { state: { item } })}
-            onMore={() => navigate("/user/mypage?section=review")}
+            onWrite={(item) => navigate(`/user/mypage/reviews/write/${item.id}`, { state: { item } })}
+            onMore={() => navigate(getMyPagePath("review"))}
           />
         )}
       </div>

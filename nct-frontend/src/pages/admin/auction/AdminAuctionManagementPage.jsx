@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   decideAdminAuctionCancellation,
@@ -16,6 +17,8 @@ import AdminPageHeader from '@components/admin/AdminPageHeader';
 import PageMeta from '@components/admin/PageMeta';
 import { ADMIN_HIGH_VOLUME_PAGE_SIZE } from '@/constants/adminPagination';
 import { formatDateTime, toast } from '@utils/common';
+import { formatAdminMemberIdentity } from '@utils/adminMemberIdentity';
+import AdminBidUnitManagementPanel from './AdminBidUnitManagementPanel';
 import '../audit/adminAuditPage.css';
 import './adminAuctionManagementPage.css';
 
@@ -53,10 +56,12 @@ const INITIAL_FILTERS = {
 };
 const PAGE_SIZE = ADMIN_HIGH_VOLUME_PAGE_SIZE;
 const formatAmount = (value) => (
-  value == null ? '-' : `${Number(value).toLocaleString('ko-KR')}원`
+  value == null ? '-' : `${Number(value).toLocaleString('ko-KR')}P`
 );
 
 const AdminAuctionManagementPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') === 'bid-units' ? 'bid-units' : 'auctions';
   const [filterForm, setFilterForm] = useState(INITIAL_FILTERS);
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [filterError, setFilterError] = useState('');
@@ -78,16 +83,20 @@ const AdminAuctionManagementPage = () => {
       page,
       size: PAGE_SIZE,
     }),
+    enabled: activeTab === 'auctions',
   });
   const overviewQuery = useQuery({
     queryKey: ['admin-auction-overview', selected?.auctionId],
     queryFn: () => fetchAdminAuctionOverview(selected.auctionId),
-    enabled: selected?.auctionId != null,
+    enabled: activeTab === 'auctions' && selected?.auctionId != null,
   });
   const cancellationQuery = useQuery({
     queryKey: ['admin-auction-cancellation-request', selected?.auctionId],
     queryFn: () => fetchAdminAuctionCancellationRequest(selected.auctionId),
-    enabled: selected?.auctionId != null && selected?.cancelRequestId != null,
+    enabled: activeTab === 'auctions'
+      && selected?.auctionId != null
+      && selected?.cancelRequestId != null
+      && selected?.cancelApprovedYn == null,
   });
   const decisionMutation = useMutation({
     mutationFn: decideAdminAuctionCancellation,
@@ -107,7 +116,11 @@ const AdminAuctionManagementPage = () => {
   const columns = useMemo(() => [
     { key: 'auctionId', label: '경매 번호', render: (value) => `#${value}` },
     { key: 'productName', label: '상품명' },
-    { key: 'sellerName', label: '판매자' },
+    {
+      key: 'sellerUserSn',
+      label: '판매자',
+      render: (value, row) => formatAdminMemberIdentity(row.sellerMember, value),
+    },
     { key: 'auctionStatusName', label: '경매 상태', render: (value, row) => <AdminStatusBadge tone={auctionStatusTone(row.auctionStatusCode)}>{value ?? row.auctionStatusCode}</AdminStatusBadge> },
     { key: 'bidCount', label: '입찰', render: (value) => `${value ?? 0}건` },
     {
@@ -124,7 +137,9 @@ const AdminAuctionManagementPage = () => {
     {
       key: 'manage', label: '관리', render: (_, row) => (
         <button className={row.cancelRequestId ? 'btn btn-danger' : 'btn btn-outline'} onClick={() => { setSelected(row); setReviewReason(''); }} type="button">
-          {row.cancelRequestId ? '취소 심사' : '상세 보기'}
+          {row.cancelRequestId
+            ? (row.cancelApprovedYn == null ? '취소 심사' : '취소 처리 이력')
+            : '상세 보기'}
         </button>
       ),
     },
@@ -141,6 +156,8 @@ const AdminAuctionManagementPage = () => {
   const auctionDetail = overview?.auction;
   const productDetail = overview?.product;
   const cancellationDetail = cancellationQuery.data;
+  const cancellationPending = selected?.cancelRequestId != null
+    && selected?.cancelApprovedYn == null;
   const tradeId = overview?.tradeSn ?? selected?.tradeId;
   const detailAuctionStatusCode = auctionDetail?.auctionStatusCode ?? selected?.auctionStatusCode;
   const detailAuctionStatusLabel = auctionDetail?.auctionStatusName
@@ -170,10 +187,42 @@ const AdminAuctionManagementPage = () => {
     setFilters(INITIAL_FILTERS);
   };
 
+  const selectTab = (tab) => {
+    setSelected(null);
+    setReviewReason('');
+    setSearchParams(tab === 'bid-units' ? { tab: 'bid-units' } : {});
+  };
+
   return (
     <div className="admin-bjn-page admin-auction-page">
-      <PageMeta title="상품·경매 조회" />
-      <AdminPageHeader title="상품·경매 조회" />
+      <PageMeta title="경매 관리" />
+      <AdminPageHeader title="경매 관리" />
+      <div aria-label="경매 관리 메뉴" className="admin-auction-tabs" role="tablist">
+        <button
+          aria-selected={activeTab === 'auctions'}
+          className={activeTab === 'auctions' ? 'is-active' : ''}
+          onClick={() => selectTab('auctions')}
+          role="tab"
+          type="button"
+        >
+          상품·경매 조회
+        </button>
+        <button
+          aria-selected={activeTab === 'bid-units'}
+          className={activeTab === 'bid-units' ? 'is-active' : ''}
+          onClick={() => selectTab('bid-units')}
+          role="tab"
+          type="button"
+        >
+          입찰 단위 관리
+        </button>
+      </div>
+      {activeTab === 'bid-units' ? (
+        <div role="tabpanel">
+          <AdminBidUnitManagementPanel />
+        </div>
+      ) : (
+        <div role="tabpanel">
       <form className="admin-bjn-filters admin-auction-filters" onSubmit={submitSearch}>
         <label>경매 상태
           <select onChange={(event) => setFilterForm({ ...filterForm, auctionStatusCode: event.target.value })} value={filterForm.auctionStatusCode}>
@@ -231,7 +280,7 @@ const AdminAuctionManagementPage = () => {
         </AdminSectionCard>
       )}
       {selected && (
-        <AdminModal onClose={() => !decisionMutation.isPending && setSelected(null)} title={selected.cancelRequestId ? '판매자 취소 요청 심사' : '상품·경매 상세'}>
+        <AdminModal onClose={() => !decisionMutation.isPending && setSelected(null)} title={selected.cancelRequestId ? '판매자 취소 요청/처리 이력' : '상품·경매 상세'}>
           <section
             aria-busy={overviewQuery.isLoading || cancellationQuery.isLoading}
             className="admin-auction-cancellation"
@@ -240,7 +289,7 @@ const AdminAuctionManagementPage = () => {
             <dl>
               <dt>경매 번호</dt><dd>#{selected.auctionId}</dd>
               <dt>상품 번호</dt><dd>#{productDetail?.prdSn ?? selected.productId}</dd>
-              <dt>판매자</dt><dd>{auctionDetail?.sellerName ?? selected.sellerName}</dd>
+              <dt>판매자</dt><dd>{formatAdminMemberIdentity(selected.sellerMember, selected.sellerUserSn)}</dd>
               <dt>경매 상태</dt>
               <dd>
                 {detailAuctionStatusLabel
@@ -266,6 +315,21 @@ const AdminAuctionManagementPage = () => {
                   <dd>{formatDateTime(cancellationDetail?.requestedAt ?? selected.cancelRequestedAt)}</dd>
                   <dt>판매자 사유</dt>
                   <dd>{cancellationDetail?.reason ?? selected.cancelReason}</dd>
+                  {selected.cancelApprovedYn != null && (
+                    <>
+                      <dt>처리 결과</dt>
+                      <dd>{selected.cancelApprovedYn === 'Y' ? '승인' : '반려'}</dd>
+                      <dt>처리자</dt>
+                      <dd>{formatAdminMemberIdentity(
+                        selected.cancelProcessorMember,
+                        selected.cancelProcessorUserSn,
+                      )}</dd>
+                      <dt>처리 일시</dt>
+                      <dd>{formatDateTime(selected.cancelProcessedAt)}</dd>
+                      <dt>관리자 처리 사유</dt>
+                      <dd>{selected.cancelProcessReason ?? '-'}</dd>
+                    </>
+                  )}
                 </>
               )}
             </dl>
@@ -274,7 +338,7 @@ const AdminAuctionManagementPage = () => {
                 최신 경매 상세를 불러오지 못해 목록의 요약 정보를 표시합니다.
               </p>
             )}
-            {selected.cancelRequestId && <>
+            {cancellationPending && <>
               {cancellationQuery.isError && (
                 <p className="admin-auction-cancellation__sync-status is-error" role="alert">
                   현재 처리 대기 중인 취소 요청을 확인하지 못했습니다. 목록을 새로 조회해 주세요.
@@ -294,6 +358,8 @@ const AdminAuctionManagementPage = () => {
             </>}
           </section>
         </AdminModal>
+      )}
+        </div>
       )}
     </div>
   );
