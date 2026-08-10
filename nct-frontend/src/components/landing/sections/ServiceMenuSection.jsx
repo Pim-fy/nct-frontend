@@ -55,26 +55,6 @@ export default function ServiceMenuSection({ hotItems = [], isError, isLoading }
     <section className="bg-white py-10">
       <div className="max-w-[1600px] mx-auto px-8 flex items-start gap-8">
 
-        {/* 담당자 7 통합: 서비스 카테고리는 검색이 아니라 견적 요청서 작성 진입점입니다. */}
-        <div className="flex items-center gap-8 flex-1 min-w-0 pt-4">
-          <h2 className="text-[22px] font-bold text-black leading-tight shrink-0">
-            SERVICE<br />MENU
-          </h2>
-          <div className="flex gap-4">
-            {SERVICE_MENU_ITEMS.map((item) => (
-              <button
-                key={item.label}
-                type="button"
-                onClick={() => navigate('/service-requests/new')}
-                className="flex flex-col items-center justify-center bg-white border border-[rgba(0,0,0,0.1)] rounded-[20px] size-[150px] hover:shadow-md transition-shadow shrink-0"
-              >
-                <img src={item.image} alt={item.label} className="w-[53px] h-[47px] object-contain mb-2" />
-                <span className="text-[16px] font-medium text-black tracking-[-1.28px]">{item.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* HOT ITEM 카드: -mt-[73px]로 헤더를 다크 영역 안으로 올림 */}
         <div className="shrink-0 relative z-10 rounded-[20px] shadow-[0px_4px_20px_0px_rgba(0,0,0,0.15)]" style={{ width: HOT_W, marginTop: -(HOT_HEADER_H + 40) }}>
 

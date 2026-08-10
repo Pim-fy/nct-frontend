@@ -26,6 +26,14 @@ export const withdrawQuote = (quoteId) =>
 export const getMyQuotes = (params) =>
   api.get('/quotes/me', { params, skipServerErrorRedirect: true }).then((res) => res.data);
 
+/** 제공자 대시보드용 활성 견적 수 조회 */
+export const getMyQuoteSummary = () =>
+  api.get('/quotes/me/summary', { skipServerErrorRedirect: true }).then((res) => res.data);
+
+/** 현재 제공자의 특정 서비스 요청 활성 견적 조회 */
+export const getMyActiveQuote = (svcReqSn) =>
+  api.get(`/quotes/me/service-request/${svcReqSn}`, { skipServerErrorRedirect: true }).then((res) => res.data);
+
 /** 견적 수정 이력 조회 */
 export const getQuoteHistory = (quoteId) =>
   api.get(`/quotes/${quoteId}/history`).then((res) => res.data);
@@ -33,3 +41,7 @@ export const getQuoteHistory = (quoteId) =>
 /** 받은 견적 목록 조회 (요청자용) */
 export const getReceivedQuotes = (svcReqSn) =>
   api.get(`/quotes/service-request/${svcReqSn}`).then((res) => res.data);
+
+/** F-SVC-010: 요청자 견적 선택과 서비스 거래·보관금 생성을 한 번에 처리한다. */
+export const selectQuoteAndCreateTrade = (svcReqSn, quoteId) =>
+  api.post(`/service-requests/${svcReqSn}/quotes/${quoteId}/select`).then((res) => res.data);

@@ -13,12 +13,14 @@ import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
 import PageMeta from '@components/admin/PageMeta';
+import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
 import { toast } from '@utils/common';
+import { formatAdminMemberIdentity } from '@utils/adminMemberIdentity';
 import './audit/adminAuditPage.css';
 import './operation/adminOperationPages.css';
 import './AdminMemberList.css';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = ADMIN_PAGE_SIZE;
 const EMPTY_FILTERS = { statusCode: '', keyword: '' };
 const STATUS = {
   USRC0001: { label: '활성', tone: 'success' },
@@ -212,7 +214,7 @@ const AdminMemberList = () => {
       )}
 
       {selectedUserSn && (
-        <AdminModal onClose={closeMember} title="회원 상세">
+        <AdminModal onClose={closeMember} panelClassName="admin-member-modal" title="회원 상세">
           <section className="admin-member-detail">
             {memberQuery.isLoading && <div className="admin-bjn-state">회원 정보를 불러오는 중입니다.</div>}
             {memberQuery.isError && <div className="admin-bjn-state is-error">회원 정보를 불러오지 못했습니다.</div>}
@@ -237,8 +239,17 @@ const AdminMemberList = () => {
                         {detail.reports.map((report) => (
                           <li key={report.reportSn}>
                             <span>#{report.reportSn} · {REPORT_STATUS[report.statusCode] ?? report.statusCode}</span>
+                            <span>신고자: {report.reporterUserSn == null
+                              ? '시스템'
+                              : formatAdminMemberIdentity(report.reporterMember, report.reporterUserSn)}</span>
                             <strong>{report.content || '내용 없음'}</strong>
                             <time>{formatDate(report.registeredAt)}</time>
+                            {report.processedAt && (
+                              <span>처리: {formatAdminMemberIdentity(
+                                report.processorMember,
+                                report.processedBy,
+                              )} · {formatDate(report.processedAt)}</span>
+                            )}
                           </li>
                         ))}
                       </ul>
@@ -258,6 +269,10 @@ const AdminMemberList = () => {
                               <span>#{sanction.sanctionSn} · {sanction.sanctionTypeName ?? sanction.sanctionTypeCode}</span>
                               <strong>{sanction.reason}</strong>
                               <time>{formatDate(sanction.startedAt)}</time>
+                              <span>처리자: {formatAdminMemberIdentity(
+                                detail.sanctionProcessorMembers?.[sanction.processedBy],
+                                sanction.processedBy,
+                              )}</span>
                             </li>
                           ))}
                         </ul>

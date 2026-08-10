@@ -9,6 +9,7 @@ export default function MyPageListItem({
   children,
   actions,
   to,
+  state,
 }) {
   const content = (
     <article className="flex flex-col gap-5 rounded-xl border border-[#dce2ed] bg-white p-5 transition-all hover:border-[#c9d9ff] hover:shadow-[0_12px_28px_rgba(20,38,79,0.09)] sm:h-[160px] sm:flex-row sm:items-center">
@@ -45,7 +46,7 @@ export default function MyPageListItem({
   );
 
   return to ? (
-    <Link className="block text-inherit no-underline" to={to}>
+    <Link className="block text-inherit no-underline" state={state} to={to}>
       {content}
     </Link>
   ) : content;

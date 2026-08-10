@@ -9,6 +9,8 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import StarRating from "@components/review/StarRating";
 import { createReview } from "@api/reviewApi";
+import { toImageUrl } from "@api/fileApi";
+import { useWritableReviews } from "@hooks/useReview";
 import { toast } from "@utils/common";
 import "../provider/QuoteFormPage.css";
 
@@ -25,9 +27,21 @@ export default function ReviewWritePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
-  // 목록 페이지에서 navigate(..., { state: { item } }) 로 넘겨준 리뷰 대상 정보.
-  // 새로고침 등으로 state 가 없으면(직접 URL 접근) 대상 정보를 알 수 없으므로 안내만 보여준다.
-  const item = location.state?.item;
+  const routeTradeId = Number(id);
+  const hasValidTradeId = Number.isSafeInteger(routeTradeId) && routeTradeId > 0;
+  const stateItem = Number(location.state?.item?.id) === routeTradeId
+    ? location.state.item
+    : null;
+  // 담당자 3 · 리뷰 작성: 새로고침이나 직접 접근 시에도 가짜 데이터를 사용하지 않고
+  // 서버의 실제 작성 가능 거래 목록에서 URL의 거래번호를 다시 확인합니다.
+  const writableQuery = useWritableReviews({ enabled: !stateItem && hasValidTradeId });
+  const fetchedItem = (writableQuery.data ?? []).find(
+    (candidate) => Number(candidate.id) === routeTradeId,
+  );
+  const rawItem = stateItem ?? fetchedItem;
+  const resolvedItem = rawItem
+    ? { ...rawItem, thumbnail: toImageUrl(rawItem.thumbnail) }
+    : null;
 
   const [rating, setRating] = useState(0);
   const [content, setContent] = useState("");
@@ -44,26 +58,25 @@ export default function ReviewWritePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const DEV_FALLBACK_ITEM = import.meta.env.DEV ? {
-    id: 1,
-    thumbnail: null,
-    title: "다이슨 V11 무선청소기",
-    dealType: "goods",
-    partyLabel: "판매자",
-    partyName: "홍길동",
-    completedDate: "2026-07-01",
-  } : null;
-
-  const resolvedItem = item ?? DEV_FALLBACK_ITEM;
-
-  if (!resolvedItem) {
+  if (!stateItem && hasValidTradeId && writableQuery.isLoading) {
     return (
       <div className="mx-auto max-w-[720px] px-4 py-16 text-center">
-        <p className="text-[#4e4e4e]">리뷰 작성 대상 정보를 찾을 수 없습니다.</p>
-        <p className="mt-1 text-sm text-[#969696]">목록에서 다시 "리뷰 등록"을 눌러주세요.</p>
+        <p className="text-[#4e4e4e]">리뷰 작성 정보를 불러오는 중입니다.</p>
+      </div>
+    );
+  }
+
+  if (!resolvedItem) {
+    const message = writableQuery.isError
+      ? "리뷰 작성 정보를 불러오지 못했습니다."
+      : "작성할 수 있는 리뷰 대상이 아닙니다.";
+    return (
+      <div className="mx-auto max-w-[720px] px-4 py-16 text-center">
+        <p className="text-[#4e4e4e]">{message}</p>
+        <p className="mt-1 text-sm text-[#969696]">리뷰 목록에서 작성 가능 여부를 확인해주세요.</p>
         <button
           type="button"
-          onClick={() => navigate("/user/mypage?section=review")}
+          onClick={() => navigate("/user/mypage/reviews")}
           className="btn btn-primary mt-6"
         >
           리뷰작성 목록으로
@@ -121,7 +134,7 @@ export default function ReviewWritePage() {
     }
 
     const formData = new FormData();
-    formData.append("targetId", id ?? resolvedItem.id);
+    formData.append("targetId", routeTradeId);
     formData.append("rating", rating);
     formData.append("content", content);
     photos.forEach((p) => formData.append("photos", p.file));
@@ -132,7 +145,7 @@ export default function ReviewWritePage() {
       toast({ icon: "success", title: "리뷰가 등록되었습니다." });
       // 목록 화면의 캐시를 무효화해 다음에 보일 때 방금 등록한 리뷰까지 실제 API로 다시 불러오게 한다.
       await queryClient.invalidateQueries({ queryKey: ["reviews"] });
-      navigate("/user/mypage?section=review", { state: { justWrote: true } });
+      navigate("/user/mypage/reviews", { state: { justWrote: true } });
     } catch (err) {
       console.error("리뷰 등록 실패:", err);
       toast({ icon: "error", title: "리뷰 등록에 실패했습니다. 잠시 후 다시 시도해주세요." });

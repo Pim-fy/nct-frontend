@@ -7,6 +7,7 @@ import AdminTable from '@components/admin/AdminTable';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
+import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
 import {
   useAdminCategories,
   useMoveAdminCategory,
@@ -25,7 +26,25 @@ const DOMAINS = [
   { code: SERVICE_DOMAIN, label: '서비스 카테고리' },
 ];
 const EMPTY_FORM = { name: '', active: true };
-const PAGE_SIZE = 20;
+const PAGE_SIZE = ADMIN_PAGE_SIZE;
+
+const normalizeCategoryName = (name) => name.trim().toLocaleLowerCase('ko-KR');
+
+const FormVersionStatus = ({ activeVersion, draftVersion }) => {
+  if (draftVersion) {
+    return (
+      <AdminStatusBadge tone="warning">
+        {activeVersion
+          ? `초안 v${draftVersion} · 운영 v${activeVersion}`
+          : `초안 v${draftVersion} · 미발행`}
+      </AdminStatusBadge>
+    );
+  }
+  if (activeVersion) {
+    return <AdminStatusBadge tone="success">발행 v{activeVersion}</AdminStatusBadge>;
+  }
+  return <AdminStatusBadge tone="neutral">폼 미등록</AdminStatusBadge>;
+};
 
 /** 담당자 7 · F-COM-003: 도메인별 카테고리 생성·수정·순서 관리를 독립적으로 처리한다. */
 const AdminCategoryPanel = ({ domainCode, label }) => {
@@ -82,6 +101,15 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
   const submit = async (event) => {
     event.preventDefault();
     setSaveFeedback('');
+    const normalizedName = normalizeCategoryName(form.name);
+    const duplicate = categories.some((category) => (
+      category.categorySn !== editingId
+      && normalizeCategoryName(category.name) === normalizedName
+    ));
+    if (duplicate) {
+      setSaveFeedback('같은 분류에 동일한 이름의 카테고리가 이미 있습니다.');
+      return;
+    }
     try {
       const saved = await saveMutation.mutateAsync({
         domainCode,
@@ -241,6 +269,16 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
         </AdminStatusBadge>
       ),
     },
+    ...(isServiceDomain ? [{
+      key: 'formStatus',
+      label: '요청 폼',
+      render: (_, row) => (
+        <FormVersionStatus
+          activeVersion={row.activeFormVersion}
+          draftVersion={row.draftFormVersion}
+        />
+      ),
+    }] : []),
     {
       key: 'manage',
       label: '관리',
@@ -252,7 +290,7 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
               onClick={() => navigate(`/admin/categories/${row.categorySn}/form`)}
               type="button"
             >
-              <PencilLine /> 수정
+              <PencilLine /> 폼 관리
             </button>
           ) : (
             <button
@@ -277,6 +315,7 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
         </div>
         <button
           className="btn btn-primary admin-category-summary-action"
+          disabled={categoriesQuery.isLoading || categoriesQuery.isError}
           onClick={openCreateDialog}
           type="button"
         >
@@ -285,7 +324,17 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
       </div>
       {moveFeedback && <p className="admin-category-feedback" role="alert">{moveFeedback}</p>}
       {categoriesQuery.isError && (
-        <div className="admin-content-state is-error">{label}를 불러오지 못했습니다.</div>
+        <div className="admin-content-state is-error" role="alert">
+          <strong>{label}를 불러오지 못했습니다.</strong>
+          <button
+            className="btn btn-outline"
+            disabled={categoriesQuery.isFetching}
+            onClick={() => categoriesQuery.refetch()}
+            type="button"
+          >
+            다시 시도
+          </button>
+        </div>
       )}
       {!categoriesQuery.isError && (
         <>

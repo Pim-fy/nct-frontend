@@ -1,11 +1,20 @@
 import api from './axios';
 
-/** 로그인한 의뢰자·제공자의 서비스 거래 목록을 조회한다. */
-export const getMyServiceTrades = ({ role, status } = {}) => (
+/** 로그인한 의뢰자·제공자의 서비스 거래 목록을 페이지 단위로 조회한다. */
+export const getMyServiceTrades = ({
+  role,
+  status,
+  keyword,
+  page = 1,
+  size = 10,
+} = {}) => (
   api.get('/trades/service', {
     params: {
       ...(role ? { role } : {}),
       ...(status ? { status } : {}),
+      ...(keyword?.trim() ? { keyword: keyword.trim() } : {}),
+      page,
+      size,
     },
   }).then((response) => response.data.data)
 );
@@ -31,4 +40,14 @@ export const requestServiceCompletion = (tradeId, payload) => (
 /** F-SVC-011: 서비스 의뢰자가 완료를 확인하면 서버가 정산까지 함께 처리한다. */
 export const confirmServiceCompletion = (tradeId) => (
   api.post(`/trades/${tradeId}/service-completions`).then((res) => res.data)
+);
+
+/** F-SVC-016: 일정 변경 요청은 거래 상태를 바꾸지 않고 이력으로만 기록한다. */
+export const requestServiceScheduleChange = (tradeId, payload) => (
+  api.post(`/trades/${tradeId}/service-schedule-changes`, payload).then((res) => res.data)
+);
+
+/** F-SVC-016: 일정 취소 요청은 거래 상태를 바꾸지 않고 이력으로만 기록한다. */
+export const requestServiceScheduleCancellation = (tradeId, payload) => (
+  api.post(`/trades/${tradeId}/service-schedule-cancellations`, payload).then((res) => res.data)
 );

@@ -8,8 +8,10 @@ import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminTable from '@components/admin/AdminTable';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
+import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
 import { useAuditLogs } from '@hooks/useAdminAudit';
 import useClientPagination from '@hooks/useClientPagination';
+import { formatAdminMemberIdentity } from '@utils/adminMemberIdentity';
 import './adminAuditPage.css';
 
 // 감사 행위 유형 필터 옵션 — 공통코드 AUDG01(기초데이터 v3)과 일치해야 한다
@@ -23,7 +25,7 @@ const TYPE_OPTIONS = [
   { value: 'AUDC0006', label: '관리자반려' },
   { value: 'AUDC0007', label: '상태변경' },
 ];
-const PAGE_SIZE = 20;
+const PAGE_SIZE = ADMIN_PAGE_SIZE;
 const EMPTY_FILTER_FORM = { usrSn: '', typeCd: '', from: '', to: '' };
 
 const auditDetails = (value) => {
@@ -87,7 +89,9 @@ const AdminAuditLogPage = () => {
     { key: 'date', label: '일시' },
     {
       key: 'userName', label: '행위자',
-      render: (value, row) => (value ? `${value} (#${row.userSn})` : '시스템'),
+      render: (_, row) => (row.userSn == null
+        ? '시스템'
+        : formatAdminMemberIdentity(row.actorMember, row.userSn)),
     },
     { key: 'type', label: '행위 유형' },
     {
@@ -96,7 +100,7 @@ const AdminAuditLogPage = () => {
     },
     { key: 'ipAddr', label: 'IP', render: (value) => value ?? '-' },
     {
-      key: 'reason', label: '사유·내용', className: 'is-wrap',
+      key: 'reason', label: '사유·내용', className: 'is-wrap admin-table__long-text',
       render: (_, row) => (
         <button
           className="admin-bjn-reason-preview"

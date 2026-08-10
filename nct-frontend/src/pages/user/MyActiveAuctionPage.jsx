@@ -11,7 +11,7 @@ import MyPageAuctionListItem from '@components/mypage/MyPageAuctionListItem';
 import MyPageStatusBadge from '@components/mypage/MyPageStatusBadge';
 import useCountdown from '@hooks/useCountdown';
 import { useMyBidHistory } from '@hooks/useBid';
-import { formatPrice } from '@utils/common';
+import { formatPoint } from '@utils/common';
 import MyPageListSkeleton from '@components/skeleton/MyPageListSkeleton';
 import AuctionCard from '@pages/auction/components/AuctionCard';
 import '@assets/css/my-active-auctions.css';
@@ -212,10 +212,10 @@ export default function MyActiveAuctionPage() {
                   title={item.auctionTitle || `경매 #${item.aucSn}`}
                   topLine={remainingTime}
                   priceItems={[
-                    { label: '현재 최고가', value: formatPrice(item.currentPrice) },
+                    { label: '현재 최고가', value: formatPoint(item.currentPrice) },
                     {
                       label: '즉시구매가',
-                      value: Number(item.instantBuyPrice) > 0 ? formatPrice(item.instantBuyPrice) : '없음',
+                      value: Number(item.instantBuyPrice) > 0 ? formatPoint(item.instantBuyPrice) : '없음',
                     },
                   ]}
                   tradeMethodLabel={item.tradeMethodName || '정보 없음'}

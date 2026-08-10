@@ -249,7 +249,7 @@ const ProviderApplyPage = () => {
             {!profileQuery.isLoading && hasSettlementAccount && (
               <p className="provider-apply-demo-note">
                 {profileQuery.data.bankName} {profileQuery.data.accountNo} 계좌로 정산됩니다.
-                계좌를 바꾸시려면 <Link className="provider-apply-inline-link" to="/user/mypage?section=profile">마이페이지</Link>에서 먼저 수정해 주세요.
+                계좌를 바꾸시려면 <Link className="provider-apply-inline-link" to="/user/mypage/profile">마이페이지</Link>에서 먼저 수정해 주세요.
               </p>
             )}
 
@@ -257,7 +257,7 @@ const ProviderApplyPage = () => {
               <p className="provider-apply-error">
                 정산 계좌가 아직 등록되지 않았습니다.
                 {' '}
-                <Link className="provider-apply-inline-link" to="/user/mypage?section=profile">마이페이지</Link>에서 계좌를 먼저 등록해 주세요.
+                <Link className="provider-apply-inline-link" to="/user/mypage/profile">마이페이지</Link>에서 계좌를 먼저 등록해 주세요.
               </p>
             )}
           </div>
@@ -303,11 +303,15 @@ const ProviderApplyPage = () => {
         {error && <p className="provider-apply-error">{error}</p>}
 
         <div className="provider-apply-actions">
+          {/* 첫 단계(카테고리 선택)는 되돌아갈 곳이 없어 disabled 처리했는데, .btn-outline엔 disabled 전용
+              스타일이 없어 여전히 눌리는 버튼처럼 파랗게 보였다 — visibility:hidden으로 아예 숨기되
+              레이아웃(다음 버튼 우측 정렬)은 그대로 유지한다 (2026-08-10) */}
           <button
             className="btn btn-outline"
             disabled={step === 0 || submitMutation.isPending}
             onClick={() => setStep(step - 1)}
             type="button"
+            style={step === 0 ? { visibility: 'hidden' } : undefined}
           >
             이전
           </button>

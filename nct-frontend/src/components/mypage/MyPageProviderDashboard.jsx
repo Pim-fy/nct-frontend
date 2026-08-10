@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { getUserReviews } from '@api/reviewApi';
+import { getMyServiceTrades } from '@api/serviceTradeApi';
 import { useMyProviderProfile } from '@hooks/useProviderProfile';
 import { useNotifications } from '@hooks/useNotification';
 import { usePointBalance } from '@hooks/usePoint';
-import { useMyQuotes } from '@hooks/useQuote';
+import { useMyQuoteSummary } from '@hooks/useQuote';
 import { assets } from '@components/mypage/assets';
 import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
 import {
@@ -13,12 +14,37 @@ import {
 } from '@components/mypage/MyPageDashboardCommon';
 import ProviderApprovedCategorySection from '@components/mypage/ProviderApprovedCategorySection';
 
-export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpenSection }) {
+const PROVIDER_ROLE = 'PROVIDER';
+const SERVICE_IN_PROGRESS = 'TRDC0003';
+const SERVICE_COMPLETED = 'TRDC0006';
+
+export default function MyPageProviderDashboard({ user, onLogout, onSwitchToGeneral, onOpenSection }) {
   const navigate = useNavigate();
   const profileQuery = useMyProviderProfile();
   const notificationsQuery = useNotifications();
   const pointBalanceQuery = usePointBalance();
-  const quotesQuery = useMyQuotes({ page: 1, size: 1 });
+  const quoteSummaryQuery = useMyQuoteSummary();
+  // 담당자 7 · F-PROV-009: 서비스 거래 목록과 같은 계약으로 대시보드 상태별 건수를 표시합니다.
+  const inProgressServiceTradesQuery = useQuery({
+    queryKey: ['my-service-trades', PROVIDER_ROLE, SERVICE_IN_PROGRESS, '', 1, 1],
+    queryFn: () => getMyServiceTrades({
+      role: PROVIDER_ROLE,
+      status: SERVICE_IN_PROGRESS,
+      page: 1,
+      size: 1,
+    }),
+    staleTime: 30 * 1000,
+  });
+  const completedServiceTradesQuery = useQuery({
+    queryKey: ['my-service-trades', PROVIDER_ROLE, SERVICE_COMPLETED, '', 1, 1],
+    queryFn: () => getMyServiceTrades({
+      role: PROVIDER_ROLE,
+      status: SERVICE_COMPLETED,
+      page: 1,
+      size: 1,
+    }),
+    staleTime: 30 * 1000,
+  });
 
   const profile = profileQuery.data;
   const providerUserSn = Number(profile?.userSn);
@@ -47,9 +73,10 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpe
         email={user?.email || ''}
         actions={[
           {
-            key: 'profile',
-            label: '프로필 관리',
-            onClick: () => openSection('provider-profile'),
+            key: 'logout',
+            label: '로그아웃',
+            icon: assets.iconLogout,
+            onClick: onLogout,
           },
           {
             key: 'general-switch',
@@ -72,10 +99,16 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpe
             color: '#776bf8',
             icon: assets.iconPoint,
             label: '포인트 잔액',
-            value: pointBalanceQuery.isLoading ? '…' : formatNumber(pointBalance?.total),
+            value: pointBalanceQuery.isLoading
+              ? '…'
+              : pointBalanceQuery.isError
+                ? '—'
+                : formatNumber(pointBalance?.total),
             meta: pointBalanceQuery.isLoading
               ? '포인트를 불러오는 중입니다.'
-              : `거래가능 ${formatNumber(pointBalance?.available)} · 홀딩 ${formatNumber(pointBalance?.hold)}`,
+              : pointBalanceQuery.isError
+                ? '포인트 잔액을 불러오지 못했습니다.'
+                : `거래가능 ${formatNumber(pointBalance?.available)} · 홀딩 ${formatNumber(pointBalance?.hold)}`,
             onMore: () => openSection('wallet'),
           },
           {
@@ -83,14 +116,14 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpe
             color: '#0064ff',
             icon: assets.iconAction,
             label: '견적 현황',
-            value: quotesQuery.isLoading
+            value: quoteSummaryQuery.isLoading
               ? '…'
-              : quotesQuery.isError
+              : quoteSummaryQuery.isError
                 ? '—'
-                : `${formatNumber(quotesQuery.data?.totalCount)}건`,
-            meta: quotesQuery.isError
+                : `${formatNumber(quoteSummaryQuery.data?.activeQuoteCount)}건`,
+            meta: quoteSummaryQuery.isError
               ? '견적 현황을 불러오지 못했습니다.'
-              : '제출한 견적 목록을 확인합니다.',
+              : '현재 참여 중인 견적을 확인합니다.',
             onMore: () => openSection('quote'),
           },
           {
@@ -98,8 +131,10 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpe
             color: '#005eb5',
             icon: assets.iconService,
             label: '서비스 현황',
-            value: '—',
-            meta: '진행 중인 서비스를 확인합니다.',
+            value: serviceCountValue(inProgressServiceTradesQuery),
+            meta: inProgressServiceTradesQuery.isError
+              ? '서비스 현황을 불러오지 못했습니다.'
+              : '진행 중인 서비스를 확인합니다.',
             onMore: () => openSection('service-trade'),
           },
           {
@@ -107,8 +142,10 @@ export default function MyPageProviderDashboard({ user, onSwitchToGeneral, onOpe
             color: '#e63946',
             icon: assets.iconEnd2,
             label: '완료 서비스',
-            value: '—',
-            meta: '완료된 서비스 내역을 확인합니다.',
+            value: serviceCountValue(completedServiceTradesQuery),
+            meta: completedServiceTradesQuery.isError
+              ? '완료 내역을 불러오지 못했습니다.'
+              : '완료된 서비스 내역을 확인합니다.',
             onMore: () => openSection('service-trade'),
           },
         ]}
@@ -214,4 +251,10 @@ function ReceivedReviewContent({ isLoading, isError, reviews, onRetry }) {
 
 function formatNumber(value) {
   return Number(value ?? 0).toLocaleString('ko-KR');
+}
+
+function serviceCountValue(query) {
+  if (query.isLoading) return '…';
+  if (query.isError) return '—';
+  return `${formatNumber(query.data?.totalCount)}건`;
 }

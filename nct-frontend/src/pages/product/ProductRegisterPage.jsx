@@ -8,19 +8,20 @@ import { useNavigate, useLocation, useNavigationType } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { getCategories } from '@api/categoryApi';
 import { fetchBannedKeywords, registerProduct, updateProduct, getProduct } from '@api/productApi';
+import { fetchReferenceCodes } from '@api/referenceApi';
 import { uploadImage } from '@api/fileApi';
+import { formatPoint } from '@/utils/common';
 import ErrorMessage from '@components/common/ErrorMessage';
 import AlertModal from '@components/common/AlertModal';
 import ProductInfoStep from './steps/ProductInfoStep';
 import AuctionSettingStep from './steps/AuctionSettingStep';
 import RegisterConfirmStep from './steps/RegisterConfirmStep';
-import { resolvePendingDescriptionImages } from '@components/product/richTextEditorImages';
 
 // 브라우저 뒤로가기로 이 페이지에 돌아왔을 때 입력하던 내용이 사라지지 않도록,
 // 컴포넌트가 언마운트돼도 살아있는 모듈 스코프 캐시에 폼 상태를 보관해둔다.
 // DB에는 절대 쓰지 않는다 — 실제 저장은 여전히 임시저장·상품등록 클릭 시점에만 일어난다.
 // 새로고침(F5)이나 탭을 닫으면 사라지는 순수 인메모리 캐시다(File 객체를 들고 있어 sessionStorage로 못 옮김).
-let draftCache = null; // { key, form, images, auctionRange, step, policyAgreed, agreed, pendingDescFiles }
+let draftCache = null; // { key, form, images, auctionRange, step, policyAgreed, agreed }
 
 // ─── 거래방식 아이콘 SVG 컴포넌트 ───────────────────────────────────────────
 // deal-options(.line-option) 버튼 안에 표시되는 아이콘
@@ -48,7 +49,8 @@ const TRADE_METHODS = [
   { value: 'TRDC0020', label: '둘 다 가능', Icon: BothIcon },
 ];
 
-const BID_UNITS = [500, 1000, 5000, 10000, 50000, 100000];
+// 입찰 단위 선택지 — 관리자가 CMM_CODE(AUCG02)에서 추가/삭제하는 옵션 목록을 그대로 쓴다 (하드코딩 금지)
+const BID_UNIT_GROUP_CD = 'AUCG02';
 const PRODUCT_DOMAIN_CD = 'CATC0001';
 const STEP_LABELS = ['상품 입력', '등록 확인'];
 const MAX_IMAGES = 5; // F-AUC-002 — 대표이미지 포함 최대 5장
@@ -81,19 +83,18 @@ export default function ProductRegisterPage() {
     : { start: '', end: '', startTime: '09:00', endTime: '09:00' }); // 경매 기간 범위
   const [images, setImages] = useState(() => hasCachedDraft ? draftCache.images : []); // [{ id, flSn, url, file }] — file이 있으면 아직 미업로드, 첫 번째가 대표
   const [bannedKeywords, setBannedKeywords] = useState([]);
+  const [bidUnits, setBidUnits] = useState([]);
   const [bannedKeywordError, setBannedKeywordError] = useState('');
+  const [bannedKeywordCnError, setBannedKeywordCnError] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [alertMsg, setAlertMsg] = useState(''); // 화면 중앙 알림 모달(AlertModal) — 유효성 검사 안내용
   const errorRef = useRef(null);
-  // 상품설명 속 이미지(blobUrl -> File, 아직 업로드 안 됨) — RichTextEditor가 직접 채워넣고,
-  // 여기 부모가 갖고 있어야 스텝 전환으로 RichTextEditor가 언마운트돼도 파일이 사라지지 않는다.
-  // Map 자체는 절대 교체되지 않고 내부만 변경되는 안정적인 참조라 useState로 보관한다(렌더 중 ref.current 접근 금지 규칙 회피).
-  const [pendingDescFilesMap] = useState(() => hasCachedDraft ? draftCache.pendingDescFiles : new Map());
   // 임시저장 draft 복원 시 startNow 변경으로 경매기간 초기화 효과가 복원값을 덮어쓰지 않도록 막는 플래그
   const suppressRangeResetRef = useRef(hasCachedDraft);
   // 제출 성공 후에는 캐시 동기화 effect가 다시 draftCache를 채우지 않도록 막는 플래그
   const submittedRef = useRef(false);
   const imgSectionRef = useRef(null);
+  const descRef = useRef(null);
   const prdNmRef = useRef(null);
   const catRef = useRef(null);
   const tradeRef = useRef(null);
@@ -118,8 +119,8 @@ export default function ProductRegisterPage() {
   // 폼·이미지·설명이 바뀔 때마다 모듈 캐시에 동기화 — 뒤로가기로 돌아왔을 때 복원할 원본
   useEffect(() => {
     if (submittedRef.current) return;
-    draftCache = { key: draftKey, form, images, auctionRange, step, policyAgreed, agreed, pendingDescFiles: pendingDescFilesMap };
-  }, [draftKey, form, images, auctionRange, step, policyAgreed, agreed, pendingDescFilesMap]);
+    draftCache = { key: draftKey, form, images, auctionRange, step, policyAgreed, agreed };
+  }, [draftKey, form, images, auctionRange, step, policyAgreed, agreed]);
 
   // ─── 카테고리 목록 + (수정 모드, 캐시 복원이 아닐 때만) 기존 상품 데이터 로드 ─────
   // 세 요청은 서로 독립적이고 결과를 한데 모아 쓰는 곳이 없어서 각자 실행만 한다
@@ -133,6 +134,9 @@ export default function ProductRegisterPage() {
       .catch(() => setError('카테고리를 불러오지 못했습니다.'));
     fetchBannedKeywords()
       .then(res => setBannedKeywords(res.data))
+      .catch(() => {});
+    fetchReferenceCodes(BID_UNIT_GROUP_CD)
+      .then(codes => setBidUnits(codes.map(c => Number(c.name)).filter(n => !Number.isNaN(n))))
       .catch(() => {});
 
     // 캐시로 복원된 경우엔 이미 최신 입력값을 들고 있으니 서버에서 다시 불러오지 않는다.
@@ -213,7 +217,7 @@ export default function ProductRegisterPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => { window.scrollTo(0, 0); }, []);
+  useEffect(() => { window.scrollTo(0, 0); }, [step]);
 
   useEffect(() => {
     if (error && errorRef.current) {
@@ -245,6 +249,17 @@ export default function ProductRegisterPage() {
     const found = bannedKeywords.find(kwd => lower.includes(kwd.toLowerCase()));
     setBannedKeywordError(found ? `'${found}'은(는) 등록할 수 없는 키워드입니다.` : '');
   }, [form.prdNm, bannedKeywords]);
+
+  // 상품명만 막으면 본문에 금지 키워드를 넣어 우회할 수 있어 설명도 같은 방식으로 검사한다
+  useEffect(() => {
+    if (!form.prdCn || bannedKeywords.length === 0) {
+      setBannedKeywordCnError('');
+      return;
+    }
+    const lower = form.prdCn.toLowerCase();
+    const found = bannedKeywords.find(kwd => lower.includes(kwd.toLowerCase()));
+    setBannedKeywordCnError(found ? `'${found}'은(는) 등록할 수 없는 키워드입니다.` : '');
+  }, [form.prdCn, bannedKeywords]);
 
   const set = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
 
@@ -297,8 +312,7 @@ export default function ProductRegisterPage() {
     setLoading(true);
     try {
       // 여기(임시저장·상품등록 클릭)에서만 실제로 서버에 업로드한다 — 그 전까지는 로컬 미리보기(blob:)뿐
-      const [finalPrdCn, uploadedImages] = await Promise.all([
-        resolvePendingDescriptionImages(form.prdCn, pendingDescFilesMap),
+      const [uploadedImages] = await Promise.all([
         Promise.all(images.map(async img => {
           if (img.flSn) return img; // 이미 업로드된(수정 모드 기존) 이미지는 재업로드하지 않음
           const res = await uploadImage(img.file, 'product');
@@ -322,10 +336,26 @@ export default function ProductRegisterPage() {
         setAlertMsg('경매 시작 시각이 이미 지났습니다. 이전 단계에서 시작 시각을 다시 확인해 주세요.');
         return;
       }
+      // 등록 진행 중 관리자가 입찰 단위 옵션을 바꿨을 수 있어, 실제 전송 직전에 최신 목록으로 다시 확인한다
+      // (endDt/startDt와 같은 이유 — 화면에 떠 있는 목록은 페이지 진입 시점 스냅샷이라 계속 최신이라는 보장이 없음)
+      if (statusCd === 'PRDC0002') {
+        try {
+          const freshCodes = await fetchReferenceCodes(BID_UNIT_GROUP_CD);
+          const freshUnits = freshCodes.map(c => Number(c.name)).filter(n => !Number.isNaN(n));
+          setBidUnits(freshUnits);
+          if (!freshUnits.includes(form.bidUnit)) {
+            setStep(0);
+            setAlertMsg('관리자가 입찰 단위를 변경했습니다. 목록에서 다시 선택해 주세요.');
+            return;
+          }
+        } catch {
+          // 목록 재조회 실패 시엔 기존 선택값으로 그대로 진행 — 최종 검증은 서버가 한다
+        }
+      }
       const payload = {
         catSn:          Number(form.catSn),
         prdNm:          form.prdNm.trim(),
-        prdCn:          finalPrdCn || null,
+        prdCn:          form.prdCn || null,
         prdStartAmt:    Number(form.prdStartAmt),
         prdIbyAmt:      form.prdIbyAmt ? Number(form.prdIbyAmt) : null,
         prdTrdMethodCd: form.prdTrdMethodCd,
@@ -350,7 +380,7 @@ export default function ProductRegisterPage() {
       submittedRef.current = true;
       draftCache = null; // DB에 반영됐으니 임시 캐시는 정리 — 다음 진입은 "재개" 흐름(서버 재조회)이 담당
       // 임시저장은 판매내역 목록으로, 실제 경매 등록은 방금 만든 상품 상세로 이동
-      navigate(statusCd === 'PRDC0001' ? '/user/mypage?section=auction-sales' : `/product/${prdSn}/seller`);
+      navigate(statusCd === 'PRDC0001' ? '/user/mypage/auctions/sales' : `/product/${prdSn}/seller`);
     } catch (err) {
       const msg = err.response?.data?.message;
       setError(msg || (editPrdSn ? '상품 수정에 실패했습니다.' : '상품 등록에 실패했습니다.'));
@@ -384,6 +414,10 @@ export default function ProductRegisterPage() {
       prdNmRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail(bannedKeywordError);
     }
+    if (bannedKeywordCnError) {
+      descRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return fail(bannedKeywordCnError);
+    }
     if (images.length === 0) {
       imgSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail('상품 사진을 1개 이상 등록해 주세요.');
@@ -414,11 +448,15 @@ export default function ProductRegisterPage() {
     }
     if (Number(form.prdStartAmt) % form.bidUnit !== 0) {
       startAmtRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return fail(`시작가는 입찰 단위(${form.bidUnit.toLocaleString()}원)의 배수로 입력해 주세요.`);
+      return fail(`시작가는 입찰 단위(${formatPoint(form.bidUnit)})의 배수로 입력해 주세요.`);
     }
     if (form.prdIbyAmt && Number(form.prdIbyAmt) % form.bidUnit !== 0) {
       ibyAmtRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return fail(`즉시구매가는 입찰 단위(${form.bidUnit.toLocaleString()}원)의 배수로 입력해 주세요.`);
+      return fail(`즉시구매가는 입찰 단위(${formatPoint(form.bidUnit)})의 배수로 입력해 주세요.`);
+    }
+    if (form.prdIbyAmt && Number(form.prdIbyAmt) <= Number(form.prdStartAmt)) {
+      ibyAmtRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return fail('즉시구매가는 시작가보다 높아야 합니다.');
     }
     if (requirePolicyAgreed && !policyAgreed) {
       policyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -501,13 +539,14 @@ export default function ProductRegisterPage() {
                   set={set}
                   categories={categories}
                   bannedKeywordError={bannedKeywordError}
+                  bannedKeywordCnError={bannedKeywordCnError}
                   images={images}
                   onChange={setImages}
                   tradeMethods={TRADE_METHODS}
                   maxImages={MAX_IMAGES}
-                  pendingDescFilesMap={pendingDescFilesMap}
                   submitted={submitted}
                   imgSectionRef={imgSectionRef}
+                  descRef={descRef}
                   prdNmRef={prdNmRef}
                   catRef={catRef}
                   tradeRef={tradeRef}
@@ -530,7 +569,7 @@ export default function ProductRegisterPage() {
                 auctionRange={auctionRange}
                 setAuctionRange={setAuctionRange}
                 endDt={endDt}
-                bidUnits={BID_UNITS}
+                bidUnits={bidUnits}
                 submitted={submitted}
                 startAmtRef={startAmtRef}
                 ibyAmtRef={ibyAmtRef}

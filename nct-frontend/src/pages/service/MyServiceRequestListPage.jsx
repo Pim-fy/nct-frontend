@@ -1,6 +1,6 @@
 // src/pages/service/MyServiceRequestListPage.jsx
 // 내 서비스 요청서 목록 페이지 — 임시저장·공개·매칭완료·종료 필터 (F-SVC-004)
-// 라우트: /service-requests/me, 마이페이지 "내 서비스 요청 목록" 섹션에서도 embedded로 재사용
+// 화면 경로: /user/mypage/services/requests (API /service-requests/me와 구분)
 // 상품 판매 내역(MyProductList.jsx)과 동일한 마이페이지 공통 목록 컴포넌트를 사용한다.
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -44,7 +44,7 @@ const STATUS_BADGE = {
 
 function fmtBudget(amt) {
   if (amt == null) return '미정';
-  return Number(amt).toLocaleString('ko-KR') + '원';
+  return Number(amt).toLocaleString('ko-KR') + 'P';
 }
 
 const PAGE_SIZE = 10;
@@ -158,7 +158,7 @@ export default function MyServiceRequestListPage({ embedded = false }) {
                     </MyPageStatusBadge>
                   }
                   title={item.svcReqTtl}
-                  topLine={`등록 ${formatDate(item.svcReqRegDt)}`}
+                  topLine={isDraft ? `수정 ${formatDate(item.svcReqUpdtDt)}` : `등록 ${formatDate(item.svcReqRegDt)}`}
                   priceItems={[
                     { label: '견적 수', value: `${item.quoteCount ?? 0}건` },
                     { label: '예산', value: fmtBudget(item.svcReqBdgtAmt) },
@@ -225,7 +225,9 @@ export default function MyServiceRequestListPage({ embedded = false }) {
                   price={fmtBudget(item.svcReqBdgtAmt)}
                   infoItems={[
                     { icon: MessageSquareText, label: '견적 수', value: `${item.quoteCount ?? 0}건` },
-                    { icon: ClipboardList, label: '등록일', value: formatDate(item.svcReqRegDt) },
+                    isDraft
+                      ? { icon: ClipboardList, label: '수정일', value: formatDate(item.svcReqUpdtDt) }
+                      : { icon: ClipboardList, label: '등록일', value: formatDate(item.svcReqRegDt) },
                   ]}
                   footerLeft={`카테고리 · ${item.catNm}`}
                   actionButton={actionButton}

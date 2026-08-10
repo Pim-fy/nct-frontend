@@ -165,13 +165,33 @@ export const formatPrice = (amount) => {
 };
 
 /**
- * 숫자에 천단위 콤마만 표시("원" 없음). 입력창 실시간 포맷팅 등에 사용 — 값이 없으면 0으로 처리
+ * 숫자를 포인트 형식으로 포맷
+ * @param {number} amount
+ * @returns {string} e.g. "1,234,567P". 값이 없으면 "-"
+ */
+export const formatPoint = (amount) => {
+  if (amount == null) return '-';
+  return `${Number(amount).toLocaleString('ko-KR')}P`;
+};
+
+/**
+ * 숫자에 천단위 콤마만 표시(단위 없음). 입력창 실시간 포맷팅 등에 사용 — 값이 없으면 0으로 처리
  * @param {number} value
  * @returns {string} e.g. "1,234,567"
  */
 export const formatNumber = (value) => {
   const number = Number(value || 0);
   return number.toLocaleString('ko-KR');
+};
+
+/**
+ * 예산·견적 금액을 포인트(P) 단위로 포맷 — 서비스 요청/견적 화면 공용
+ * @param {number|null} amt
+ * @returns {string} 값이 없으면 "예산 미정" (숫자 포맷 자체는 formatPoint와 동일)
+ */
+export const formatBudget = (amt) => {
+  if (amt == null) return '예산 미정';
+  return formatPoint(amt);
 };
 
 /**

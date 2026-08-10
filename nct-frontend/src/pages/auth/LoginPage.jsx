@@ -81,17 +81,13 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      const payload  = { email: userId, password: password, rememberMe };
-      const userData = await login(payload);
+      const payload = { email: userId, password: password, rememberMe };
+      await login(payload);
 
       sessionStorage.removeItem('loginRedirectFrom');
 
-      if (userData?.role === 'ROLE_ADMIN') {
-        navigate('/admin', { replace: true });
-      } else {
-        const safePath = from.startsWith('/admin') ? '/' : from;
-        navigate(safePath, { replace: true });
-      }
+      const safePath = from.startsWith('/admin') ? '/' : from;
+      navigate(safePath, { replace: true });
     } catch (error) {
       // @ai_generated: F-AUTH-011 - ACCOUNT_SUSPENDED만 따로 분기해 탈퇴 요청 버튼이 있는 모달로 안내한다.
       // WITHDRAWN_USER 등 나머지는 기존 message alert() 그대로 유지.

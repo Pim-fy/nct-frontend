@@ -13,6 +13,8 @@ import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import PageMeta from '@components/admin/PageMeta';
+import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
+import { formatAdminMemberIdentity } from '@utils/adminMemberIdentity';
 import { toast } from '@utils/common';
 import '../audit/adminAuditPage.css';
 import './adminOperationPages.css';
@@ -32,14 +34,16 @@ const REPORT_STATUS = {
 };
 
 const formatDate = (value) => (value ? String(value).replace('T', ' ').slice(0, 16) : '-');
-const PAGE_SIZE = 20;
+const PAGE_SIZE = ADMIN_PAGE_SIZE;
 const EMPTY_FILTERS = { statusCode: '', keyword: '' };
 const reportTypeName = (code) => REPORT_TYPE_NAMES[code] ?? code ?? '-';
 const reportStatus = (code) => REPORT_STATUS[code] ?? { label: code ?? '-', tone: 'neutral' };
 const isDecidableStatus = (code) => code === 'ABRC0005' || code === 'ABRC0006';
-const formatProcessor = (value) => {
+const formatProcessor = (value, member) => {
   if (!value) return '-';
-  return /^\d+$/.test(String(value)) ? `관리자 #${value}` : value;
+  return /^\d+$/.test(String(value))
+    ? formatAdminMemberIdentity(member, Number(value))
+    : value;
 };
 
 /** 담당자 7 · F-OPS-007: 처리 전후 신고를 한 목록에서 조회하고 관리합니다. */
@@ -117,12 +121,14 @@ const AdminReportManagementPage = () => {
     {
       key: 'reporterUserSn',
       label: '신고자',
-      render: (value) => (value == null ? '시스템' : `회원 #${value}`),
+      render: (value, row) => (value == null
+        ? '시스템'
+        : formatAdminMemberIdentity(row.reporterMember, value)),
     },
     {
       key: 'reportedUserSn',
       label: '신고 대상',
-      render: (value) => (value == null ? '-' : `회원 #${value}`),
+      render: (value, row) => formatAdminMemberIdentity(row.reportedMember, value),
     },
     {
       key: 'referenceTypeCode',
@@ -254,8 +260,8 @@ const AdminReportManagementPage = () => {
                 <dl>
                   <dt>신고 번호</dt><dd>#{detail.reportSn}</dd>
                   <dt>유형</dt><dd>{reportTypeName(detail.reportTypeCode)}</dd>
-                  <dt>신고자</dt><dd>{detail.reporterUserSn == null ? '시스템' : `회원 #${detail.reporterUserSn}`}</dd>
-                  <dt>신고 대상</dt><dd>{detail.reportedUserSn == null ? '-' : `회원 #${detail.reportedUserSn}`}</dd>
+                  <dt>신고자</dt><dd>{detail.reporterUserSn == null ? '시스템' : formatAdminMemberIdentity(detail.reporterMember, detail.reporterUserSn)}</dd>
+                  <dt>신고 대상</dt><dd>{formatAdminMemberIdentity(detail.reportedMember, detail.reportedUserSn)}</dd>
                   <dt>참조 대상</dt><dd>{detail.referenceTypeCode ? `${detail.referenceTypeCode} #${detail.referenceSn}` : '-'}</dd>
                   <dt>위험 이벤트</dt><dd>{detail.riskEventSn == null ? '-' : `#${detail.riskEventSn}`}</dd>
                   <dt>상태</dt>
@@ -264,7 +270,7 @@ const AdminReportManagementPage = () => {
                   <dt>신고 내용</dt><dd className="admin-operation-detail__content">{detail.content || '-'}</dd>
                   {!canDecide && (
                     <>
-                      <dt>처리자</dt><dd>{formatProcessor(detail.processedBy)}</dd>
+                      <dt>처리자</dt><dd>{formatProcessor(detail.processedBy, detail.processorMember)}</dd>
                       <dt>처리일</dt><dd>{formatDate(detail.processedAt)}</dd>
                       <dt>처리 사유</dt>
                       <dd className="admin-operation-detail__content">{detail.processReason || '-'}</dd>

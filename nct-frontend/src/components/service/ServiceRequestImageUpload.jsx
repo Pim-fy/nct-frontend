@@ -5,6 +5,8 @@
 // 썸네일로 쓰인다. 지정 방식은 ProductImageUpload와 동일(지정 모드 켜고 사진 클릭 시 맨 앞으로 이동).
 import { useRef, useState } from 'react';
 import { toImageUrl } from '@api/fileApi';
+import iconImage from '@assets/img/icon_image.png';
+import iconCamera from '@assets/img/icon_camera.png';
 
 export default function ServiceRequestImageUpload({ images, onChange, maxImages = 5 }) {
   const [pickMode, setPickMode] = useState(false); // 대표이미지 지정 모드 — 활성화 중 사진 클릭 시 대표로 변경
@@ -60,18 +62,20 @@ export default function ServiceRequestImageUpload({ images, onChange, maxImages 
             type="button"
             onClick={() => setPickMode(v => !v)}
             disabled={images.length === 0}
-            className={`rounded-lg border px-3 py-1.5 text-sm transition-colors disabled:opacity-50 ${
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors disabled:opacity-50 ${
               pickMode ? 'border-primary bg-primary text-white' : 'border-[#e2e1dc] bg-white text-[#5f5e5a] hover:border-primary hover:text-primary'
             }`}
           >
+            <img src={iconImage} alt="" className="size-[13px]" />
             대표이미지로 지정
           </button>
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={images.length >= maxImages}
-            className="rounded-lg border border-[#e2e1dc] bg-white px-3 py-1.5 text-sm text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[#e2e1dc] bg-white px-3 py-1.5 text-sm text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
           >
+            <img src={iconCamera} alt="" className="size-[13px]" />
             사진 추가
           </button>
         </div>

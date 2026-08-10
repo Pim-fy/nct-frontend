@@ -142,29 +142,8 @@
   box-shadow: 0 10px 28px rgb(16 24 40 / 5%);
 }
 
-/* 담당자 7 · F-COM-014: 공통 가이드 구성은 그대로 두고 카드 깊이와 초점만 보강합니다. */
-.public-guide-page .guide-hero,
-.public-guide-page .guide-feature,
-.public-guide-page .guide-trust {
-  box-shadow: 0 16px 38px rgb(16 24 40 / 7%);
-}
-
-.public-guide-page .guide-mode-tabs button {
-  box-shadow: 0 5px 16px rgb(16 24 40 / 4%);
-}
-
-.public-guide-page .guide-mode-tabs button.is-active {
-  box-shadow: 0 12px 28px rgb(0 100 255 / 10%);
-}
-
 .public-guide-page .guide-feature__steps li {
-  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
-}
-
-.public-guide-page .guide-feature__steps li:hover {
-  border-color: #b9cff5;
-  box-shadow: 0 7px 18px rgb(16 24 40 / 5%);
-  transform: translateY(-1px);
+  position: relative;
 }
 
 .public-guide-page .guide-feature__copy > span:empty {

@@ -23,13 +23,20 @@ export default function useBreadcrumbTrail() {
   }
 
   // 2순위: 중앙 맵 매치 — 배열 순서대로 첫 매치 사용
-  const route = BREADCRUMB_ROUTES.find((r) => matchPath(r.pattern, location.pathname));
-  if (!route || route.hidden) return null;
+  const matchedRoute = BREADCRUMB_ROUTES
+    .map((route) => ({ route, match: matchPath(route.pattern, location.pathname) }))
+    .find(({ match }) => match);
+  if (!matchedRoute || matchedRoute.route.hidden) return null;
+
+  const { route, match } = matchedRoute;
 
   // 접근 경로(state.from)가 허용된 진입점이면 그 경로를, 아니면 정식 위치(defaultTrail)를 사용
   // → 같은 화면이라도 어디서 들어왔는지에 따라 브레드크럼이 달라진다 (요구사항 3)
   const fromTrail = resolveEntryTrail(sanitizeFrom(location.state?.from));
-  const middle = fromTrail ?? route.defaultTrail;
+  const defaultTrail = typeof route.defaultTrail === 'function'
+    ? route.defaultTrail(match.params)
+    : route.defaultTrail;
+  const middle = fromTrail ?? defaultTrail;
 
   return [HOME_ITEM, ...middle, { label: route.pageLabel }];
 }

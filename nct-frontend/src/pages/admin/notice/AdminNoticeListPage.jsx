@@ -7,6 +7,7 @@ import AdminTable from '@components/admin/AdminTable';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
+import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
 import {
   useAdminNoticeList,
   useAdminNoticeOptions,
@@ -14,9 +15,10 @@ import {
   usePublishAdminNotice,
 } from '@hooks/useAdminNotices';
 import { formatDateTime, toast } from '@utils/common';
+import { formatAdminMemberIdentity } from '@utils/adminMemberIdentity';
 import './adminContentPages.css';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = ADMIN_PAGE_SIZE;
 const PUBLISHED_STATUS = 'NTCC0006';
 
 const statusTone = (statusCode) => {
@@ -113,7 +115,7 @@ const AdminNoticeListPage = () => {
     { key: 'noticeId', label: '번호' },
     { key: 'typeName', label: '유형' },
     {
-      key: 'title', label: '제목', className: 'admin-notice-list__title',
+      key: 'title', label: '제목', className: 'admin-notice-list__title admin-table__long-text',
       render: (value, row) => (
         <Link to={`/admin/notices/${row.noticeId}`}>
           {row.pinned && <span aria-label="중요 공지">[중요] </span>}{value}
@@ -173,7 +175,19 @@ const AdminNoticeListPage = () => {
     },
     { key: 'postingStartAt', label: '노출 시작', render: formatDateTime },
     { key: 'postingEndAt', label: '노출 종료', render: formatDateTime },
-    { key: 'writerName', label: '작성자' },
+    {
+      key: 'writerUserId',
+      label: '작성자',
+      render: (value, row) => formatAdminMemberIdentity(row.writerMember, value),
+    },
+    {
+      key: 'updatedAt',
+      label: '최종 처리',
+      render: (value, row) => `${formatAdminMemberIdentity(
+        row.updaterMember,
+        row.updaterUserId,
+      )} · ${formatDateTime(value)}`,
+    },
   ];
 
   return (

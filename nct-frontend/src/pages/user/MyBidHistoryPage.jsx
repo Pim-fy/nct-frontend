@@ -51,7 +51,7 @@ function isUrgent(endDateTime) {
 }
 
 function fmtPrice(n) {
-  return n != null ? `${Number(n).toLocaleString()}원` : '-';
+  return n != null ? `${Number(n).toLocaleString()}P` : '-';
 }
 
 function fmtDate(d) {

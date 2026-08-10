@@ -13,7 +13,8 @@ import {
   useHideAdminNotice,
   useUpdateAdminNotice,
 } from '@hooks/useAdminNotices';
-import { toast } from '@utils/common';
+import { formatDateTime, toast } from '@utils/common';
+import { formatAdminMemberIdentity } from '@utils/adminMemberIdentity';
 import './adminContentPages.css';
 
 const FAQ_TYPE_CODE = 'NTCC0008';
@@ -191,7 +192,11 @@ const AdminNoticeFormPage = () => {
         {!isNew && (
           <div className="admin-notice-form__readonly-meta">
             <span><small>공지 번호</small><strong>{notice.noticeId}</strong></span>
-            <span><small>작성자</small><strong>{notice.writerName}</strong></span>
+            <span><small>작성자</small><strong>{formatAdminMemberIdentity(notice.writerMember, notice.writerUserId)}</strong></span>
+            <span><small>등록 일시</small><strong>{formatDateTime(notice.registeredAt)}</strong></span>
+            <span><small>최종 처리자</small><strong>{formatAdminMemberIdentity(notice.updaterMember, notice.updaterUserId)}</strong></span>
+            <span><small>최종 처리 일시</small><strong>{formatDateTime(notice.updatedAt)}</strong></span>
+            <span><small>최종 처리 사유</small><strong>{notice.lastChangeReason ?? '기록 없음'}</strong></span>
           </div>
         )}
 
