@@ -6,73 +6,40 @@ import {
   useState,
 } from 'react';
 import {
-  Link,
   useLocation,
   useNavigate,
   useParams,
 } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import Toast from '@components/common/Toast';
 import {
   getTradeDetail,
-  proposeTradeOfflineSchedule,
   requestTradeCompletion,
   submitTradeDeliveryProof,
 } from '@api/tradeApi';
+import { startTradeChat } from '@api/tradeChatApi';
 import {
   deleteImage,
+  getDeliveryProofBlob,
   uploadDeliveryProof,
-  toImageUrl,
 } from '@api/fileApi';
-import { toTradeDetail } from '@api/tradeAdapter';
-import TradeTrustSummary from '@components/trade/TradeTrustSummary';
-import { Skeleton } from '@components/skeleton/BaseSkeleton';
+import {
+  canUseTradeChat,
+  getTradeChatButtonLabel,
+  getTradeChatDescription,
+  toTradeDetail,
+} from '@api/tradeAdapter';
+import { splitSentences } from '@utils/common';
+import { reviewQueryKeys } from '@hooks/useReview';
+import TradeDetailSkeleton from '@components/trade/TradeDetailSkeleton';
+import TradeDetailHeader from '@components/trade/TradeDetailHeader';
+import TradeProgressSteps from '@components/trade/TradeProgressSteps';
+import { getOfflineTradeProgressConfig } from '@components/trade/tradeProgressConfig';
+import TradeDetailOverviewCard from '@components/trade/TradeDetailOverviewCard';
+import OfflineScheduleProposalPanel from '@components/trade/OfflineScheduleProposalPanel';
+import TradeDetailErrorState from '@components/trade/TradeDetailErrorState';
+import PhotoLightbox from '@components/common/PhotoLightbox';
 import '@assets/css/trade-detail.css';
-
-// date 입력의 최소값에 사용할 오늘 날짜를 사용자의 현지 시간 기준으로 만든다.
-const getTodayDate = () => {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
-};
-
-// time 입력은 분 단위이므로 현재 분은 이미 지날 수 있어 다음 분부터 제안한다.
-const getNextAvailableTime = () => {
-  const now = new Date();
-  now.setSeconds(0, 0);
-  now.setMinutes(now.getMinutes() + 1);
-
-  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-};
-
-const MEETING_TIME_SLOTS = Array.from({ length: 48 }, (_, index) => {
-  const hour = String(Math.floor(index / 2)).padStart(2, '0');
-  const minute = index % 2 === 0 ? '00' : '30';
-
-  return `${hour}:${minute}`;
-});
-
-const formatDateValue = (date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
-};
-
-const formatDateLabel = (dateValue) => {
-  if (!dateValue) return '날짜 선택';
-
-  const [year, month, day] = dateValue.split('-');
-  return `${year}. ${month}. ${day}.`;
-};
-
-const createCalendarMonth = (dateValue = null) => {
-  const source = dateValue ? new Date(`${dateValue}T00:00:00`) : new Date();
-  return new Date(source.getFullYear(), source.getMonth(), 1);
-};
 
 const MAX_SHIPPING_PROOF_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_SHIPPING_PROOF_FILES = 5;
@@ -85,6 +52,21 @@ const SHIPPING_PROOF_IMAGE_TYPES = [
 const TradeDetailSeller = ({
   embedded = false,
   tradeId: selectedTradeId,
+  // @ai_generated (담당자1, 2026-08-07): AuctionTradeDetailPage가 이미 조회한 상세를 그대로
+  // 주입하면 이 컴포넌트는 같은 tradeId를 다시 GET하지 않는다(P2-2, 3중 API 호출 제거).
+  initialTrade,
+  // @ai_generated (담당자1, 2026-08-07): 재조회를 멈춘 대신, 발송 인증/완료 확인/일정 저장 성공 시
+  // 부모의 useAuctionTrade 캐시와 리뷰 상태 캐시를 직접 무효화해야 새로고침 없이도 문구·리뷰
+  // 버튼이 갱신된다(독립 검수에서 발견 - 재조회 제거의 부작용이었다).
+  auctionId,
+  // @ai_generated (담당자1, 2026-08-07): embedded일 때 진행바를 이 컴포넌트 안이 아니라
+  // AuctionTradeDetailPage의 공용 행(좌우 컬럼을 가로지름)에 그리기 위해, 계산된 단계 값만
+  // 이 콜백으로 올려보낸다. 계산 로직 자체는 여기 그대로 둔다(중복 방지).
+  onStepperChange,
+  // @ai_generated (담당자1, 2026-08-07): 거래 리뷰 카드를 다른 카드들과 같은 3열 그리드 폭으로
+  // 맞추기 위해, AuctionTradeDetailPage가 이미 만든 <TradeReviewSection>을 그대로 받아
+  // trade-detail-grid 맨 끝에 그린다(로직은 그쪽에 그대로 두고 위치만 옮긴다).
+  reviewSlot,
   onBack,
   onOpenChat,
 }) => {
@@ -93,8 +75,24 @@ const TradeDetailSeller = ({
   const location = useLocation();
   const { pathname } = location;
   const navigate = useNavigate();
-  const [trade, setTrade] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
+  // @ai_generated (담당자1, 2026-08-07): 발송 인증/완료 확인/일정 저장 성공 시 공통으로 호출한다.
+  const invalidateAuctionTradeCaches = () => {
+    if (!auctionId) return;
+    queryClient.invalidateQueries({ queryKey: ['auction-trade', String(auctionId)] });
+    queryClient.invalidateQueries({ queryKey: reviewQueryKeys.trade(tradeId) });
+  };
+  // @ai_generated (담당자1, 2026-08-07): initialTrade가 있으면 최초 렌더에서 한 번만 어댑팅해
+  // 아래 각 상태 초기값을 채운다 - loadTrade의 상태 초기화 로직과 동일하게 맞춘다. useMemo로
+  // 감싸는 이유: 이 값은 useState 초기값 5곳에서만 쓰이고 첫 렌더 이후엔 버려지는데, 그냥 본문에
+  // 두면 매 렌더마다 toTradeDetail을 다시 계산한다(TradeDetailBuyer는 useState(() => ...) 지연
+  // 초기화 하나로 끝나 이 문제가 없다 - Seller는 상태가 여러 개라 같은 값을 공유해야 해서
+  // useMemo로 "한 번만 계산" 시맨틱을 맞췄다. useRef를 쓰면 이 프로젝트 lint 규칙
+  // react-hooks/refs("렌더 중 ref 접근 금지")에 걸린다).
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- 의도적으로 최초 렌더 값만 쓴다
+  const initialDetail = useMemo(() => (initialTrade ? toTradeDetail(initialTrade) : null), []);
+  const [trade, setTrade] = useState(initialDetail);
+  const [isLoading, setIsLoading] = useState(!initialTrade);
   const [loadError, setLoadError] = useState('');
   const [shippingMemo, setShippingMemo] = useState('');
   const [shippingProofFiles, setShippingProofFiles] = useState([]);
@@ -102,19 +100,16 @@ const TradeDetailSeller = ({
   const [shippingProofError, setShippingProofError] = useState('');
   const [completionAgreed, setCompletionAgreed] = useState(false);
   const [isCompletionSubmitting, setIsCompletionSubmitting] = useState(false);
-  const [meetingDate, setMeetingDate] = useState('');
-  const [meetingTime, setMeetingTime] = useState('');
-  const [meetingPlace, setMeetingPlace] = useState('');
-  const [meetingAddress, setMeetingAddress] = useState('');
-  const [meetingProposed, setMeetingProposed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [timeRefreshSignal, setTimeRefreshSignal] = useState(0);
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
-  const [calendarMonth, setCalendarMonth] = useState(() => createCalendarMonth());
   const shippingProofFilesRef = useRef(shippingProofFiles);
+
+  const hasMeetingSchedule = Boolean(
+    trade?.meetingDate && trade.meetingDate !== '-'
+      && trade?.meetingTime && trade.meetingTime !== '-'
+      && trade?.meetingPlace && trade.meetingPlace !== '-',
+  );
 
   // 렌더 중이 아니라 커밋 이후에 ref를 최신 shippingProofFiles로 동기화한다(react-hooks/refs 규칙 준수).
   useEffect(() => {
@@ -126,36 +121,69 @@ const TradeDetailSeller = ({
   useEffect(() => () => {
     shippingProofFilesRef.current.forEach((file) => URL.revokeObjectURL(file.previewUrl));
   }, []);
-  const todayDate = getTodayDate();
-  const availableMeetingTimes = useMemo(() => {
-    const minimumTime = meetingDate === todayDate
-      ? getNextAvailableTime()
-      : '00:00';
 
-    return MEETING_TIME_SLOTS.filter((time) => time >= minimumTime);
-  }, [meetingDate, timeRefreshSignal, todayDate]);
-  const calendarDays = useMemo(() => {
-    const firstWeekday = calendarMonth.getDay();
-    const lastDate = new Date(
-      calendarMonth.getFullYear(),
-      calendarMonth.getMonth() + 1,
-      0,
-    ).getDate();
+  // 발송 인증 제출 뒤에는 shippingProofFiles(업로드 폼 미리보기)가 비워지므로, 판매자 본인
+  // 화면에서도 등록한 사진을 계속 볼 수 있게 TradeDetailBuyer와 같은 방식으로 다시 불러온다.
+  const [submittedProofUrls, setSubmittedProofUrls] = useState([]);
+  // 구매자 화면과 동일하게 사진을 눌러 크게 볼 수 있게 한다.
+  const [selectedProofIndex, setSelectedProofIndex] = useState(null);
+  const hasSubmittedProofFiles = Boolean(
+    trade?.deliveryId && trade?.deliveryProofFiles?.length,
+  );
+  const visibleSubmittedProofUrls = hasSubmittedProofFiles ? submittedProofUrls : [];
 
-    return Array.from({ length: firstWeekday + lastDate }, (_, index) => {
-      if (index < firstWeekday) return null;
+  useEffect(() => {
+    if (!hasSubmittedProofFiles) {
+      return undefined;
+    }
 
-      return new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), index - firstWeekday + 1);
-    });
-  }, [calendarMonth]);
+    let isActive = true;
+    const objectUrls = [];
+
+    const loadDeliveryProofs = async () => {
+      try {
+        const files = await Promise.all(trade.deliveryProofFiles.map(async (file) => {
+          const response = await getDeliveryProofBlob(trade.deliveryId, file.fileId);
+          const objectUrl = URL.createObjectURL(response.data);
+
+          objectUrls.push(objectUrl);
+          return { ...file, objectUrl };
+        }));
+
+        if (isActive) {
+          setSubmittedProofUrls(files);
+          setSelectedProofIndex(null);
+        }
+      } catch {
+        if (isActive) {
+          setSubmittedProofUrls([]);
+          setSelectedProofIndex(null);
+        }
+      }
+    };
+
+    loadDeliveryProofs();
+
+    return () => {
+      isActive = false;
+      objectUrls.forEach((objectUrl) => URL.revokeObjectURL(objectUrl));
+    };
+  }, [hasSubmittedProofFiles, trade?.deliveryId, trade?.deliveryProofFiles]);
+
   const isPreview = pathname.startsWith('/trades/preview');
+  const contentClassName = embedded ? 'trade-detail-page__content' : 'container';
   // 판매자 상세도 구매자 상세와 같은 상태 카드 기준을 사용한다.
   const sellerTradeStatusInfo = (() => {
     if (trade?.status === 'COMPLETED') {
       return { label: '거래 완료', description: '거래가 정상적으로 완료되었습니다.', className: 'trade-status--complete' };
     }
     if (['CONFIRM_PENDING', 'WAITING_CONFIRMATION'].includes(trade?.status)) {
-      return { label: '구매자 확인 대기', description: '구매자의 완료 확인 또는 무이의 기간 경과 후 거래가 완료됩니다.', className: 'trade-status--pending' };
+      // 택배 거래는 구매자가 먼저 완료 확인을 해야 하므로, 이 상태에 도달했다는 것 자체가
+      // 이미 구매자 확인이 끝났다는 뜻이다(판매자 확인만 남음). 직거래는 먼저 요청한 쪽에 따라 갈린다.
+      if (trade?.method === 'DELIVERY' || trade?.completionRequestedBy === 'BUYER') {
+        return { label: '판매자 확인 대기', description: '구매자가 거래 완료를 확인했습니다. 판매자가 확인하면 거래가 완료됩니다.', className: 'trade-status--pending' };
+      }
+      return { label: '구매자 확인 대기', description: '판매자의 완료 확인이 전달되었습니다. 구매자 확인을 기다려 주세요.', className: 'trade-status--pending' };
     }
     if (trade?.status === 'ON_HOLD') {
       return { label: '거래 보류', description: '거래 문제를 확인하는 동안 거래와 정산이 보류됩니다.', className: 'trade-status--problem' };
@@ -163,7 +191,7 @@ const TradeDetailSeller = ({
     if (trade?.status === 'CANCELED') {
       return { label: '거래 취소', description: '취소된 거래입니다. 거래 내역에서 취소 사유를 확인해 주세요.', className: 'trade-status--canceled' };
     }
-    if (trade?.method === 'OFFLINE' && meetingProposed) {
+    if (trade?.method === 'OFFLINE' && hasMeetingSchedule) {
       return { label: '직거래 중', description: '구매자와 약속한 일정과 장소에서 직거래를 진행해 주세요.', className: 'trade-status--progress' };
     }
     if (trade?.method === 'DELIVERY' && trade?.status === 'DELIVERING') {
@@ -177,7 +205,7 @@ const TradeDetailSeller = ({
     }
     if (['CONFIRM_PENDING', 'WAITING_CONFIRMATION'].includes(trade?.status)) {
       if (trade?.completionRequestedBy === 'BUYER') {
-        return { label: '판매자 완료 확인 필요', description: '구매자가 완료를 확인했습니다. 판매자 확인 후 거래가 완료됩니다.', className: 'trade-status--pending' };
+        return { label: '판매자 완료 확인 필요', description: '구매자가 거래 완료를 확인했습니다. 판매자가 확인하면 거래가 완료됩니다.', className: 'trade-status--pending' };
       }
       return { label: '구매자 완료 확인 대기', description: '판매자의 완료 확인이 전달되었습니다. 구매자 확인을 기다려 주세요.', className: 'trade-status--pending' };
     }
@@ -193,29 +221,88 @@ const TradeDetailSeller = ({
   // 배송 인증 또는 직거래 일정 저장 뒤, 판매자는 첫 확인을 시작하거나 구매자 요청에 응답할 수 있다.
   const isSellerCompletionReady = (
     (trade?.method === 'DELIVERY' && isDeliveryProofSubmitted)
-    || (trade?.method === 'OFFLINE' && meetingProposed)
+    || (trade?.method === 'OFFLINE' && hasMeetingSchedule)
   );
 
-  const selectMeetingDate = (date) => {
-    const nextDate = formatDateValue(date);
-    setMeetingDate(nextDate);
-    setIsDatePickerOpen(false);
-    setIsTimePickerOpen(false);
-    if (nextDate === todayDate && meetingTime < getNextAvailableTime()) {
-      setMeetingTime('');
+  // @ai_generated (담당자1, 2026-08-07): embedded일 때만 계산된 단계값을 부모로 보고한다.
+  // 직거래/배송 두 분기 중 실제 렌더되는 쪽 기준으로 하나만 보고하면 된다.
+  useEffect(() => {
+    if (!embedded || !trade) return;
+    if (trade.method === 'OFFLINE') {
+      onStepperChange?.(getOfflineTradeProgressConfig(trade));
+    } else if (trade.method === 'DELIVERY') {
+      // 택배 거래는 구매자가 먼저 완료 확인을 해야 하므로, CONFIRM_PENDING/WAITING_CONFIRMATION에
+      // 도달했다는 것 자체가 구매자 확인이 이미 끝났다는 뜻이다(canRequestSellerCompletion의
+      // 순서 강제와 짝을 이룬다). "배송중"과 "구매자 확인 대기"는 백엔드에 이 둘을 구분할 신호
+      // (배송 완료/도착 이벤트)가 없어 하나로 합친다.
+      // ON_HOLD/CANCELED는 기존 3단계 스테퍼(statusInfo의 step: -1)와 동일하게 "어떤 단계도
+      // 활성화하지 않음"으로 처리한다.
+      const deliveryStepIndex = ['ON_HOLD', 'CANCELED'].includes(trade.status)
+        ? -1
+        : trade.status === 'COMPLETED'
+          ? 3
+          : ['CONFIRM_PENDING', 'WAITING_CONFIRMATION'].includes(trade.status)
+            ? 2
+            : trade.status === 'DELIVERING'
+              ? 1
+              : 0;
+
+      onStepperChange?.({
+        steps: ['배송준비중', '배송중(구매자 확인 대기)', '판매자 확인 대기', '완료'],
+        activeIndex: deliveryStepIndex,
+        ariaLabel: '거래 진행 단계',
+      });
     }
-  };
+  }, [embedded, trade, hasMeetingSchedule, timeRefreshSignal, isDeliveryProofSubmitted, onStepperChange]);
+
+  // 택배 거래는 구매자가 먼저 완료 확인을 해야 하므로, 판매자는 구매자가 이미 요청한
+  // 뒤(completionRequestedBy === 'BUYER')에만 확인할 수 있다 - 직거래 이전처럼 먼저 요청하는
+  // 경로는 제거한다. 직거래는 기존대로 누구든 먼저 확인을 진행할 수 있다.
   const canRequestSellerCompletion = isSellerCompletionReady
     && (
-      ['IN_PROGRESS', 'DELIVERING'].includes(trade?.status)
-      || (
-        ['CONFIRM_PENDING', 'WAITING_CONFIRMATION'].includes(trade?.status)
-        && trade?.completionRequestedBy === 'BUYER'
-      )
+      trade?.method === 'DELIVERY'
+        ? (
+          ['CONFIRM_PENDING', 'WAITING_CONFIRMATION'].includes(trade?.status)
+          && trade?.completionRequestedBy === 'BUYER'
+        )
+        : (
+          ['IN_PROGRESS', 'DELIVERING'].includes(trade?.status)
+          || (
+            ['CONFIRM_PENDING', 'WAITING_CONFIRMATION'].includes(trade?.status)
+            && trade?.completionRequestedBy === 'BUYER'
+          )
+        )
     );
   const chatPath = isPreview
     ? `/trades/preview/${tradeId}/chat?from=seller`
     : `/trades/${tradeId}/chat?from=seller`;
+
+  // 상세에서 채팅을 시작할 때만 직거래 채팅방을 만들고, 생성 후 기존 진입 경로를 연다.
+  const openTradeChat = async () => {
+    if (!canUseTradeChat(trade)) {
+      return;
+    }
+
+    setNotice('');
+    try {
+      if (trade.chatRoomStatus === 'NOT_STARTED') {
+        await startTradeChat(tradeId);
+        setTrade((currentTrade) => currentTrade
+          ? { ...currentTrade, chatRoomStatus: 'ACTIVE' }
+          : currentTrade);
+      }
+      if (onOpenChat) onOpenChat(tradeId);
+      else navigate(chatPath);
+    } catch (chatError) {
+      setNotice(chatError.response?.data?.message ?? '거래 채팅을 시작하지 못했습니다.');
+    }
+  };
+
+  const handleOfflineScheduleUpdated = (response) => {
+    const updatedTrade = toTradeDetail(response);
+    setTrade(updatedTrade);
+    invalidateAuctionTradeCaches();
+  };
 
   // 마이페이지에서 진입한 상세는 브라우저 이력 대신 거래내역 탭으로 명확하게 복귀한다.
   const handleBackToList = () => {
@@ -244,11 +331,6 @@ const TradeDetailSeller = ({
       const detail = toTradeDetail(response);
 
       setTrade(detail);
-      setMeetingDate(detail.meetingDate === '-' ? '' : detail.meetingDate);
-      setMeetingTime(detail.meetingTime === '-' ? '' : detail.meetingTime);
-      setMeetingPlace(detail.meetingPlace === '-' ? '' : detail.meetingPlace);
-      setMeetingAddress(detail.meetingAddress === '-' ? '' : detail.meetingAddress);
-      setMeetingProposed(Boolean(detail.meetingDate !== '-'));
     } catch {
       setLoadError('거래 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
@@ -257,11 +339,16 @@ const TradeDetailSeller = ({
   }, [tradeId]);
 
   // 거래 번호가 바뀌면 렌더링 완료 뒤에 배송 폼을 해당 거래 정보로 다시 초기화한다.
+  // initialTrade가 주입된 경우(embedded)는 이미 데이터가 있으므로 다시 조회하지 않는다.
   useEffect(() => {
+    if (initialTrade) {
+      return undefined;
+    }
+
     const requestTimer = window.setTimeout(loadTrade, 0);
 
     return () => window.clearTimeout(requestTimer);
-  }, [loadTrade]);
+  }, [loadTrade, initialTrade]);
 
   // 파일을 고른 즉시 업로드하고, 제출 전까지는 파일 번호와 로컬 미리보기만 유지한다.
   const handleShippingProofChange = async (event) => {
@@ -369,6 +456,7 @@ const TradeDetailSeller = ({
       shippingProofFiles.forEach((file) => URL.revokeObjectURL(file.previewUrl));
       setShippingProofFiles([]);
       setTrade(toTradeDetail(response));
+      invalidateAuctionTradeCaches();
       setNotice('발송 인증을 등록했습니다. 구매자가 인증 사진을 확인할 수 있습니다.');
     } catch (submitError) {
       setShippingProofError(
@@ -393,6 +481,7 @@ const TradeDetailSeller = ({
       const updatedTrade = toTradeDetail(response);
 
       setTrade(updatedTrade);
+      invalidateAuctionTradeCaches();
       setCompletionAgreed(false);
       setNotice(
         updatedTrade.status === 'COMPLETED'
@@ -409,54 +498,6 @@ const TradeDetailSeller = ({
     }
   };
 
-  // 서버에 저장한 뒤 응답 상세로 폼을 다시 채워, 새로고침해도 같은 일정이 보이게 한다.
-  const proposeMeetingSchedule = async (event) => {
-    event.preventDefault();
-
-    if (!meetingDate || !meetingTime || !meetingPlace.trim()) {
-      setError('거래 일시와 장소를 모두 입력해 주세요.');
-      return;
-    }
-
-    // 브라우저 입력을 우회해도 오늘보다 이전 날짜는 일정으로 제안할 수 없다.
-    if (meetingDate < todayDate) {
-      setError('거래 날짜는 오늘 이후로 선택해 주세요.');
-      return;
-    }
-
-    if (new Date(`${meetingDate}T${meetingTime}`) <= new Date()) {
-      setError('거래 시간은 현재 시간 이후로 선택해 주세요.');
-      return;
-    }
-
-    setError('');
-    setIsSubmitting(true);
-
-    try {
-      const response = await proposeTradeOfflineSchedule(tradeId, {
-        meetingDate,
-        meetingTime,
-        meetingPlace: meetingPlace.trim(),
-        meetingAddress: meetingAddress.trim(),
-      });
-      const updatedTrade = toTradeDetail(response);
-
-      setTrade(updatedTrade);
-      setMeetingDate(updatedTrade.meetingDate === '-' ? '' : updatedTrade.meetingDate);
-      setMeetingTime(updatedTrade.meetingTime === '-' ? '' : updatedTrade.meetingTime);
-      setMeetingPlace(updatedTrade.meetingPlace === '-' ? '' : updatedTrade.meetingPlace);
-      setMeetingAddress(
-        updatedTrade.meetingAddress === '-' ? '' : updatedTrade.meetingAddress,
-      );
-      setMeetingProposed(true);
-      setNotice('직거래 일정과 장소를 저장했습니다.');
-    } catch {
-      setError('직거래 일정 저장에 실패했습니다. 다시 시도해 주세요.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   // 오늘 화면을 오래 열어 둔 경우에도 과거 시간대가 남지 않게 목록을 분 단위로 갱신한다.
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -467,367 +508,129 @@ const TradeDetailSeller = ({
   }, []);
 
   if (isLoading && !loadError) {
-    return (
-      <div className="trade-detail-page trade-detail-page--seller">
-        <main className="container">
-          <div className="trade-progress" style={{ gap: 8 }}>
-            {Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton height={38} key={index} style={{ flex: 1 }} />
-            ))}
-          </div>
-          <div className="trade-detail-grid">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton height={140} key={index} style={{ borderRadius: 18 }} />
-            ))}
-          </div>
-        </main>
-      </div>
-    );
+    return <TradeDetailSkeleton embedded={embedded} role="seller" />;
   }
 
   if (loadError || !trade) {
-    return (
-      <div className="trade-detail-page trade-detail-page--seller">
-        <main className="container trade-detail-page__state">
-          <section className="trade-detail-card" role="alert">
-            <h1>거래 정보를 불러오지 못했습니다.</h1>
-            <button className="btn btn-outline" type="button" onClick={loadTrade}>
-              다시 시도
-            </button>
-          </section>
-        </main>
-      </div>
-    );
+    return <TradeDetailErrorState role="seller" contentClassName={contentClassName} onRetry={loadTrade} />;
   }
+
+  const offlineProgressConfig = getOfflineTradeProgressConfig(trade);
+
+  const overviewStatusMessages = trade.method === 'OFFLINE'
+    ? splitSentences(sellerOfflineNextStep.description)
+    : trade.status === 'COMPLETED'
+      ? ['거래가 완료되었습니다.', '구매자와 판매자의 완료 확인이 모두 처리되었습니다.']
+      : ['CONFIRM_PENDING', 'WAITING_CONFIRMATION'].includes(trade.status)
+        ? ['구매자가 거래 완료를 확인했습니다.', '판매자가 확인하면 거래가 완료됩니다.']
+        : trade.status === 'DELIVERING'
+          ? ['발송 인증을 등록했습니다.', '구매자의 확인을 기다리고 있습니다.']
+          : ['발송 인증을 등록해 주세요.', '등록하면 구매자가 확인할 수 있습니다.'];
+  const chatButtonLabel = getTradeChatButtonLabel(trade);
+  const chatDescription = getTradeChatDescription(trade);
 
   if (trade.method === 'OFFLINE') {
     return (
       <div className="trade-detail-page trade-detail-page--seller">
-        <div className="container">
-          <header className="trade-detail-page__header">
-            <div>
-              <h1>거래 상세</h1>
-              <p>물건 거래 · 판매자 · 직거래</p>
-              <p className="trade-detail-page__status">
-                <span className={`trade-status ${sellerTradeStatusInfo.className}`}>{sellerTradeStatusInfo.label}</span>
-                <span>{sellerTradeStatusInfo.description}</span>
-              </p>
-            </div>
-            <button
-              className="btn btn-ghost"
-              type="button"
-              onClick={handleBackToList}
-            >
-              ← 목록으로
-            </button>
-          </header>
+        <div className={contentClassName}>
+          {/* embedded면 AuctionTradeDetailPage의 공용 타이틀 행이 제목·뒤로가기를 대신 그린다 -
+              여기서도 그리면 제목이 중복 표시된다. */}
+          {!embedded && (
+            <TradeDetailHeader
+              title={trade.productName}
+              onBack={handleBackToList}
+            />
+          )}
 
-          <ol className="trade-progress" aria-label="직거래 진행 단계">
-            <li className={meetingProposed
-              ? 'trade-progress__item'
-              : 'trade-progress__item trade-progress__item--active'}
-            >
-              일정 제안
-            </li>
-            <li className={meetingProposed
-              && trade.status !== 'COMPLETED'
-              ? 'trade-progress__item trade-progress__item--active'
-              : 'trade-progress__item'}
-            >
-              구매자 확인 대기
-            </li>
-            <li className={trade.status === 'COMPLETED'
-              ? 'trade-progress__item trade-progress__item--active'
-              : 'trade-progress__item'}
-            >
-              거래 완료
-            </li>
-          </ol>
+          {/* embedded면 AuctionTradeDetailPage의 공용 진행바 행이 대신 그린다(위 onStepperChange로 값 전달). */}
+          {!embedded && (
+            <TradeProgressSteps
+              steps={offlineProgressConfig.steps}
+              activeIndex={offlineProgressConfig.activeIndex}
+              ariaLabel={offlineProgressConfig.ariaLabel}
+            />
+          )}
 
           <div className="trade-detail-grid">
+            {/* 1영역은 배송·직거래가 같은 공통 카드 구조를 사용한다. */}
+            <TradeDetailOverviewCard
+              trade={trade}
+              statusLabel={sellerOfflineNextStep.label}
+              statusClassName={sellerOfflineNextStep.className}
+              statusMessages={overviewStatusMessages}
+              counterpartTitle="구매자 정보"
+              auctionId={auctionId}
+            />
+
+            {/* 가운데: 직거래 일정 협의와 거래 확인을 카드 하나로 합친다. */}
             <section className="trade-detail-card">
-              <h2>상품 정보</h2>
-              <div className="trade-product">
-                <div className="trade-product__image">
-                  {trade.productImageUrl
-                    ? <img src={toImageUrl(trade.productImageUrl)} alt={trade.productName} />
-                    : '상품 이미지'}
-                </div>
-                <div>
-                  <strong>{trade.productName}</strong>
-                  <p>
-                    낙찰가 {trade.price}
-                    <span className="badge badge-gray">직거래</span>
-                  </p>
+              <div className="trade-detail-card__block">
+                <h3>거래 채팅</h3>
+                <p>{chatDescription}</p>
+                <div className="trade-detail-actions trade-detail-actions--end">
+                  <button
+                    className="btn btn-outline"
+                    type="button"
+                    onClick={openTradeChat}
+                    disabled={!canUseTradeChat(trade)}
+                  >
+                    {chatButtonLabel}
+                  </button>
                 </div>
               </div>
-            </section>
-            <section className="trade-detail-card">
-              <h2>구매자 정보</h2>
-              <p>닉네임 {trade.counterpart}</p>
-              <TradeTrustSummary counterpartUserId={trade.counterpartUserId} />
-              <p className="trade-detail-card__muted">
-                저장한 일정과 장소는 구매자 거래 상세에도 바로 표시됩니다.
-              </p>
-            </section>
-            {meetingProposed && (
-              <section className="trade-detail-card">
-                <h2>제안한 직거래 일정</h2>
-                <dl className="trade-meeting-summary">
-                  <div>
-                    <dt>거래 일시</dt>
-                    <dd>{meetingDate} {meetingTime}</dd>
+              <OfflineScheduleProposalPanel
+                key={`${trade.id}-${trade.meetingDate}-${trade.meetingTime}-${trade.meetingPlace}-${trade.meetingAddress}-${trade.pendingScheduleProposalId}`}
+                tradeId={tradeId}
+                trade={trade}
+                onUpdated={handleOfflineScheduleUpdated}
+                onNotice={setNotice}
+                onError={setNotice}
+              />
+              {hasMeetingSchedule && (
+                  <div className="trade-detail-card__block">
+                    <h3>거래 확인</h3>
+                    {splitSentences(
+                      trade.status === 'COMPLETED'
+                        ? '구매자와 판매자의 완료 확인이 모두 처리되었습니다.'
+                        : trade.autoCompleteAt !== '-'
+                        ? `${trade.autoCompleteAt}까지 ${trade.completionRequestedBy === 'BUYER' ? '판매자' : '구매자'} 확인이 없으면 자동으로 거래가 완료됩니다.`
+                        : '거래가 완료되었다면 구매자와 서로 완료 확인을 진행해 주세요.',
+                    ).map((sentence) => <p key={sentence}>{sentence}</p>)}
+                    {trade.status !== 'COMPLETED' && canRequestSellerCompletion && (
+                      <>
+                        <label className="trade-complete-card__check">
+                          <input
+                            type="checkbox"
+                            checked={completionAgreed}
+                            onChange={(event) => setCompletionAgreed(event.target.checked)}
+                            disabled={isCompletionSubmitting}
+                          />
+                          거래가 완료되었음을 확인합니다
+                        </label>
+                        <p className="trade-detail-card__muted">
+                          확인 요청 이후에는 구매자의 확인이나 이의제기 없이 일정 기간이 지나야 합니다.
+                        </p>
+                        <div className="trade-detail-actions trade-detail-actions--end">
+                          <button
+                            className="btn btn-primary"
+                            type="button"
+                            disabled={!completionAgreed || isCompletionSubmitting}
+                            onClick={requestSellerCompletion}
+                          >
+                            {isCompletionSubmitting ? '확인 중...' : '거래 완료 확인'}
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
-                  <div>
-                    <dt>거래 장소</dt>
-                    <dd>{meetingPlace}</dd>
-                  </div>
-                  {meetingAddress && (
-                    <div className="trade-meeting-summary__memo">
-                      <dt>상세 주소</dt>
-                      <dd>{meetingAddress}</dd>
-                    </div>
-                  )}
-                </dl>
-              </section>
-            )}
-            {meetingProposed && (
-              <section className="trade-detail-card">
-                <h2>판매자 진행 안내</h2>
-                <p><span className={`trade-status ${sellerOfflineNextStep.className}`}>{sellerOfflineNextStep.label}</span></p>
-                <p>{sellerOfflineNextStep.description}</p>
-                <div className="trade-detail-actions">
-                  {onOpenChat ? (
-                    <button
-                      className="btn btn-outline"
-                      type="button"
-                      onClick={() => onOpenChat(tradeId)}
-                    >
-                      {trade.status === 'COMPLETED' ? '거래 채팅 기록 보기' : '거래 채팅'}
-                    </button>
-                  ) : (
-                    <Link className="btn btn-outline" to={chatPath}>
-                      {trade.status === 'COMPLETED' ? '거래 채팅 기록 보기' : '거래 채팅'}
-                    </Link>
-                  )}
-                </div>
-              </section>
-            )}
+
+              )}
+            </section>
+
+            {/* 오른쪽: 거래 리뷰 */}
+            {reviewSlot}
           </div>
 
-          {!meetingProposed && (
-            <form
-              className="trade-detail-card trade-seller-section"
-              onSubmit={proposeMeetingSchedule}
-            >
-              <h2>직거래 일정 제안</h2>
-              <p className="trade-notice">
-                구매자가 찾기 쉬운 공개 장소와 거래 가능 시간을 제안해 주세요.
-              </p>
-              <div className="trade-address-grid">
-                <fieldset className="trade-form-field trade-date-picker-field">
-                  <legend>거래 날짜</legend>
-                  <button
-                    aria-expanded={isDatePickerOpen}
-                    className="trade-date-picker-trigger"
-                    type="button"
-                    disabled={isSubmitting}
-                    onClick={() => {
-                      setCalendarMonth(createCalendarMonth(meetingDate));
-                      setIsDatePickerOpen((isOpen) => !isOpen);
-                      setIsTimePickerOpen(false);
-                    }}
-                  >
-                    <span>{formatDateLabel(meetingDate)}</span>
-                    <span aria-hidden="true" className="trade-picker-icon">
-                      <svg viewBox="0 0 24 24" focusable="false">
-                        <rect x="3.5" y="5.5" width="17" height="15" rx="2" />
-                        <path d="M7.5 3.5v4M16.5 3.5v4M3.5 10h17" />
-                      </svg>
-                    </span>
-                  </button>
-                  {isDatePickerOpen && (
-                    <div className="trade-date-picker" role="dialog" aria-label="거래 날짜 선택">
-                      <div className="trade-date-picker__header">
-                        <button
-                          aria-label="이전 달"
-                          className="trade-date-picker__month-button"
-                          type="button"
-                          onClick={() => setCalendarMonth((month) => new Date(month.getFullYear(), month.getMonth() - 1, 1))}
-                        >
-                          ‹
-                        </button>
-                        <strong>{calendarMonth.getFullYear()}년 {calendarMonth.getMonth() + 1}월</strong>
-                        <button
-                          aria-label="다음 달"
-                          className="trade-date-picker__month-button"
-                          type="button"
-                          onClick={() => setCalendarMonth((month) => new Date(month.getFullYear(), month.getMonth() + 1, 1))}
-                        >
-                          ›
-                        </button>
-                      </div>
-                      <div className="trade-date-picker__weekdays" aria-hidden="true">
-                        {['일', '월', '화', '수', '목', '금', '토'].map((day) => <span key={day}>{day}</span>)}
-                      </div>
-                      <div className="trade-date-picker__days" role="grid" aria-label="거래 날짜">
-                        {calendarDays.map((date, index) => {
-                          if (!date) return <span aria-hidden="true" key={`empty-${index}`} />;
-
-                          const dateValue = formatDateValue(date);
-                          const isPastDate = dateValue < todayDate;
-                          const isSelected = dateValue === meetingDate;
-                          return (
-                            <button
-                              aria-pressed={isSelected}
-                              className={isSelected
-                                ? 'trade-date-picker__day trade-date-picker__day--selected'
-                                : 'trade-date-picker__day'}
-                              disabled={isPastDate || isSubmitting}
-                              key={dateValue}
-                              role="gridcell"
-                              type="button"
-                              onClick={() => selectMeetingDate(date)}
-                            >
-                              {date.getDate()}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </fieldset>
-                <fieldset className="trade-form-field trade-time-slots-field">
-                  <legend>거래 시간</legend>
-                  <button
-                    aria-expanded={isTimePickerOpen}
-                    className="trade-time-picker-trigger"
-                    type="button"
-                    disabled={!meetingDate || isSubmitting}
-                    onClick={() => setIsTimePickerOpen((isOpen) => !isOpen)}
-                  >
-                    <span>{meetingTime || '시간 선택'}</span>
-                    <span aria-hidden="true" className="trade-picker-icon">
-                      <svg viewBox="0 0 24 24" focusable="false">
-                        <circle cx="12" cy="12" r="8.5" />
-                        <path d="M12 7v5l3.5 2" />
-                      </svg>
-                    </span>
-                  </button>
-                  {!meetingDate && (
-                    <p className="trade-time-slots__hint">
-                      먼저 거래 날짜를 선택해 주세요.
-                    </p>
-                  )}
-                  {meetingDate && isTimePickerOpen && (
-                    <div className="trade-time-picker" role="dialog" aria-label="거래 시간 선택">
-                      <p>가능한 시간을 선택해 주세요.</p>
-                      <div className="trade-time-slots" role="radiogroup" aria-label="거래 시간">
-                        {availableMeetingTimes.map((time) => (
-                          <button
-                            aria-checked={meetingTime === time}
-                            className={meetingTime === time
-                              ? 'trade-time-slot trade-time-slot--selected'
-                              : 'trade-time-slot'}
-                            key={time}
-                            role="radio"
-                            type="button"
-                            disabled={isSubmitting}
-                            onClick={() => {
-                              setError('');
-                              setMeetingTime(time);
-                              setIsTimePickerOpen(false);
-                            }}
-                          >
-                            {time}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </fieldset>
-              </div>
-              <label className="trade-form-field">
-                거래 장소
-                <input
-                  className="input"
-                  value={meetingPlace}
-                  onChange={(event) => setMeetingPlace(event.target.value)}
-                  placeholder="예: 합정역 8번 출구 앞"
-                  disabled={isSubmitting}
-                />
-              </label>
-              <label className="trade-form-field">
-                상세 주소
-                <span className="trade-detail-card__muted">(선택)</span>
-                <input
-                  className="input"
-                  value={meetingAddress}
-                  onChange={(event) => setMeetingAddress(event.target.value)}
-                  placeholder="예: 서울 마포구 양화로 45"
-                  disabled={isSubmitting}
-                />
-              </label>
-              {error && (
-                <p className="trade-form-error" role="alert">
-                  {error}
-                </p>
-              )}
-              <button
-                className="btn btn-primary"
-                type="submit"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? '저장 중...' : '일정 제안하기'}
-              </button>
-            </form>
-          )}
-
-          {meetingProposed && (
-            <section className="trade-detail-card trade-complete-card">
-              <h2>{trade.status === 'COMPLETED' ? '거래 완료' : '거래 완료 확인'}</h2>
-              <div className="trade-auto-complete">
-                <strong>
-                  {trade.status === 'COMPLETED'
-                    ? '거래가 완료되었습니다.'
-                    : '구매자 확인 대기'}
-                </strong>
-                <p>
-                  {trade.status === 'COMPLETED'
-                    ? '구매자와 판매자의 완료 확인이 모두 처리되었습니다.'
-                    : trade.autoCompleteAt !== '-'
-                    ? `${trade.autoCompleteAt}까지 양쪽 확인이 완료되지 않으면 자동 완료됩니다.`
-                    : '거래가 완료되었다면 구매자와 서로 완료 확인을 진행해 주세요.'}
-                </p>
-              </div>
-              {trade.status !== 'COMPLETED' && canRequestSellerCompletion && (
-                <>
-                  <label className="trade-complete-card__check">
-                    <input
-                      type="checkbox"
-                      checked={completionAgreed}
-                      onChange={(event) => setCompletionAgreed(event.target.checked)}
-                      disabled={isCompletionSubmitting}
-                    />
-                    거래가 완료되었음을 확인합니다
-                  </label>
-                  <p className="trade-detail-card__muted">
-                    확인 요청 이후에는 구매자의 확인 또는 무이의 기간 경과가 필요합니다.
-                  </p>
-                  <div className="trade-detail-actions">
-                    <button
-                      className="btn btn-primary"
-                      type="button"
-                      disabled={!completionAgreed || isCompletionSubmitting}
-                      onClick={requestSellerCompletion}
-                    >
-                      {isCompletionSubmitting ? '확인 중...' : '거래 완료 확인'}
-                    </button>
-                  </div>
-                </>
-              )}
-            </section>
-          )}
         </div>
         {notice && <Toast message={notice} onClose={() => setNotice('')} />}
       </div>
@@ -838,7 +641,7 @@ const TradeDetailSeller = ({
   if (trade.method !== 'DELIVERY') {
     return (
       <div className="trade-detail-page trade-detail-page--seller">
-        <main className="container trade-detail-page__state">
+        <main className={`${contentClassName} trade-detail-page__state`}>
           <section className="trade-detail-card">
             <h1>거래 방식 확인</h1>
             <p>거래 방식과 상세 API 계약이 확정된 뒤 화면을 연결합니다.</p>
@@ -857,237 +660,229 @@ const TradeDetailSeller = ({
 
   return (
     <div className="trade-detail-page trade-detail-page--seller">
-      <div className="container">
-        <header className="trade-detail-page__header">
-          <div>
-            <h1>거래 상세</h1>
-            <p>물건 거래 · 판매자</p>
-            <p className="trade-detail-page__status">
-              <span className={`trade-status ${sellerTradeStatusInfo.className}`}>{sellerTradeStatusInfo.label}</span>
-              <span>{sellerTradeStatusInfo.description}</span>
-            </p>
-          </div>
-          <button
-            className="btn btn-ghost"
-            type="button"
-            onClick={handleBackToList}
-          >
-            ← 목록으로
-          </button>
-        </header>
+      <div className={contentClassName}>
+        {/* embedded면 AuctionTradeDetailPage의 공용 타이틀 행이 제목·뒤로가기를 대신 그린다 -
+            여기서도 그리면 제목이 중복 표시된다. */}
+        {!embedded && (
+          <TradeDetailHeader
+            title={trade.productName}
+            onBack={handleBackToList}
+          />
+        )}
 
-        <ol className="trade-progress" aria-label="거래 진행 단계">
-          <li className={isDeliveryProofSubmitted
-            ? 'trade-progress__item'
-            : 'trade-progress__item trade-progress__item--active'}
-          >
-            배송 등록
-          </li>
-          <li className={isDeliveryProofSubmitted && trade.status !== 'COMPLETED'
-            ? 'trade-progress__item trade-progress__item--active'
-            : 'trade-progress__item'}
-          >
-            구매자 확인 대기
-          </li>
-          <li className={trade.status === 'COMPLETED'
-            ? 'trade-progress__item trade-progress__item--active'
-            : 'trade-progress__item'}
-          >
-            완료
-          </li>
-        </ol>
+        {/* embedded면 AuctionTradeDetailPage의 공용 진행바 행이 대신 그린다(위 onStepperChange로 값 전달). */}
+        {!embedded && (
+          <TradeProgressSteps
+            steps={['배송 등록', '구매자 확인 대기', '완료']}
+            activeIndex={!isDeliveryProofSubmitted ? 0 : trade.status === 'COMPLETED' ? 2 : 1}
+            ariaLabel="거래 진행 단계"
+          />
+        )}
 
         <div className="trade-detail-grid">
-          <section className="trade-detail-card">
-            <h2>상품 정보</h2>
-            <div className="trade-product">
-              <div className="trade-product__image">
-                {trade.productImageUrl
-                  ? <img src={toImageUrl(trade.productImageUrl)} alt={trade.productName} />
-                  : '상품 이미지'}
-              </div>
-              <div>
-                <strong>{trade.productName}</strong>
-                <p>
-                  낙찰가 {trade.price}
-                  <span className="badge badge-gray">배송</span>
-                </p>
-              </div>
-            </div>
-          </section>
-          <section className="trade-detail-card">
-            <h2>구매자 정보</h2>
-            <p>닉네임 {trade.counterpart}</p>
-            <TradeTrustSummary counterpartUserId={trade.counterpartUserId} />
-            <p className="trade-detail-card__muted">
-              택배 거래에서는 거래 채팅방이 생성되지 않습니다.
-            </p>
-          </section>
-        </div>
+          {/* 1영역은 배송·직거래가 같은 공통 카드 구조를 사용한다. */}
+          <TradeDetailOverviewCard
+            trade={trade}
+            statusLabel={sellerTradeStatusInfo.label}
+            statusClassName={sellerTradeStatusInfo.className}
+            statusMessages={overviewStatusMessages}
+            counterpartTitle="구매자 정보"
+            auctionId={auctionId}
+          />
 
-        {/* 낙찰 시점에 고정된 배송지는 판매자가 조회만 할 수 있다. */}
-        <section className="trade-detail-card trade-seller-section">
-          <h2>
-            구매자 배송지
-            <span className="badge badge-success">낙찰 후 고정됨</span>
-          </h2>
-          <div className="trade-address-grid">
-            <label className="trade-form-field">
-              수령인
-              <input className="input" value={trade.recipientName} readOnly />
-            </label>
-            <label className="trade-form-field">
-              연락처
-              <input className="input" value={trade.recipientPhone} readOnly />
-            </label>
-          </div>
-          <label className="trade-form-field">
-            주소
-            <input className="input" value={trade.deliveryAddress} readOnly />
-          </label>
-          <label className="trade-form-field">
-            상세주소
-            <input className="input" value={trade.addressDetail} readOnly />
-          </label>
-          <label className="trade-form-field">
-            배송 요청사항
-            <input className="input" value={trade.deliveryRequest} readOnly />
-          </label>
-          <p className="trade-warning">
-            낙찰 확정 후에는 배송지를 수정할 수 없습니다. 주소 오류는 구매자에게 별도 문의해 주세요.
-          </p>
-        </section>
-
-        {isDeliveryProofSubmitted ? (
-          <section className="trade-detail-card trade-complete-card">
-            <h2>{trade.status === 'COMPLETED' ? '거래 완료' : '거래 완료 확인'}</h2>
-            <div className="trade-auto-complete">
-              <strong>
-                {trade.status === 'COMPLETED'
-                  ? '거래가 완료되었습니다.'
-                  : '구매자 확인 대기'}
-              </strong>
-              <p>
-                {trade.status === 'COMPLETED'
-                  ? '구매자와 판매자의 완료 확인이 모두 처리되었습니다.'
-                  : trade.autoCompleteAt !== '-'
-                  ? `${trade.autoCompleteAt}까지 양쪽 확인이 완료되지 않으면 자동 완료됩니다.`
-                  : '거래가 완료되었다면 구매자와 서로 완료 확인을 진행해 주세요.'}
-              </p>
-            </div>
-            {trade.deliveryMessage !== '-' && (
-              <p className="trade-detail-card__muted">
-                배송 메모: {trade.deliveryMessage}
-              </p>
-            )}
-            {trade.status !== 'COMPLETED' && canRequestSellerCompletion && (
-              <>
-                <label className="trade-complete-card__check">
-                  <input
-                    type="checkbox"
-                    checked={completionAgreed}
-                    onChange={(event) => setCompletionAgreed(event.target.checked)}
-                    disabled={isCompletionSubmitting}
-                  />
-                  거래가 완료되었음을 확인합니다
+          {/* 가운데: 구매자 배송지 + (발송 인증 등록 또는 거래 완료 확인)을 카드 하나로 합친다. */}
+          <section className="trade-detail-card">
+            <div className="trade-detail-card__block">
+              <h3>배송 정보</h3>
+              <div className="trade-address-grid">
+                <label className="trade-form-field">
+                  수령인
+                  <input className="input" value={trade.recipientName} readOnly />
                 </label>
+                <label className="trade-form-field">
+                  연락처
+                  <input className="input" value={trade.recipientPhone} readOnly />
+                </label>
+              </div>
+              <label className="trade-form-field">
+                주소
+                <input className="input" value={trade.deliveryAddress} readOnly />
+              </label>
+              <label className="trade-form-field">
+                배송 요청사항
+                <input className="input" value={trade.deliveryRequest} readOnly />
+              </label>
+            </div>
+            <div className="trade-detail-card__block">
+              <h3>발송 정보</h3>
+              {visibleSubmittedProofUrls.length > 0 && (
+                <div className="trade-delivery-proof-gallery">
+                  <div>
+                    {visibleSubmittedProofUrls.map((file, index) => (
+                      <button
+                        className="trade-delivery-proof-gallery__item"
+                        key={file.fileId}
+                        type="button"
+                        onClick={() => setSelectedProofIndex(index)}
+                      >
+                        <img
+                          src={file.objectUrl}
+                          alt={`발송 인증 사진 ${index + 1} 크게 보기`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {trade.deliveryProofRegisteredAt !== '-' && (
+                <p>등록 시간: {trade.deliveryProofRegisteredAt}</p>
+              )}
+              {trade.deliveryMessage !== '-' && (
+                <p>배송 메모: {trade.deliveryMessage}</p>
+              )}
+              {visibleSubmittedProofUrls.length === 0
+                && trade.deliveryProofRegisteredAt === '-'
+                && trade.deliveryMessage === '-' && (
                 <p className="trade-detail-card__muted">
-                  확인 요청 이후에는 구매자의 확인 또는 무이의 기간 경과가 필요합니다.
+                  아직 발송 인증을 등록하지 않았습니다.
                 </p>
-                <div className="trade-detail-actions">
+              )}
+            </div>
+
+            {isDeliveryProofSubmitted ? (
+              <div className="trade-detail-card__block">
+                <h3>거래 확인</h3>
+                {/* 택배 거래는 구매자가 먼저 완료 확인을 해야 하므로, CONFIRM_PENDING/
+                    WAITING_CONFIRMATION은 항상 구매자가 이미 확인한 뒤라 판매자 확인만 남는다. */}
+                {splitSentences(
+                  trade.status === 'COMPLETED'
+                    ? '구매자와 판매자의 완료 확인이 모두 처리되었습니다.'
+                    : ['CONFIRM_PENDING', 'WAITING_CONFIRMATION'].includes(trade.status)
+                      ? '구매자가 거래 완료를 확인했습니다. 판매자가 확인하면 거래가 완료됩니다.'
+                      : '구매자가 상품을 수령한 뒤 완료 확인을 하면, 판매자 확인 절차로 넘어갑니다.',
+                ).map((sentence) => <p key={sentence}>{sentence}</p>)}
+                {trade.status !== 'COMPLETED' && canRequestSellerCompletion && (
+                  <>
+                    <label className="trade-complete-card__check">
+                      <input
+                        type="checkbox"
+                        checked={completionAgreed}
+                        onChange={(event) => setCompletionAgreed(event.target.checked)}
+                        disabled={isCompletionSubmitting}
+                      />
+                      거래가 완료되었음을 확인합니다
+                    </label>
+                    <p className="trade-detail-card__muted">
+                      확인 요청 이후에는 구매자의 확인이나 이의제기 없이 일정 기간이 지나야 합니다.
+                    </p>
+                    <div className="trade-detail-actions trade-detail-actions--end">
+                      <button
+                        className="btn btn-primary"
+                        type="button"
+                        disabled={!completionAgreed || isCompletionSubmitting}
+                        onClick={requestSellerCompletion}
+                      >
+                        {isCompletionSubmitting ? '확인 중...' : '거래 완료 확인'}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="trade-detail-card__block">
+                <h3>발송 인증 등록</h3>
+                <p className="trade-notice">
+                  발송한 상품과 포장 상태가 보이도록 사진을 최대 5장 등록하고, 배송 메모를 작성해 주세요.
+                </p>
+
+                <div className="trade-proof-upload-area">
+                  <div className="trade-proof-upload-box">
+                    <label className="trade-proof-upload" htmlFor={`shipping-proof-${trade.id}`}>
+                      <input
+                        id={`shipping-proof-${trade.id}`}
+                        className="trade-proof-upload__input"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        multiple
+                        onChange={handleShippingProofChange}
+                        disabled={isUploadingProof || isSubmitting}
+                      />
+                      <span className="trade-proof-upload__icon" aria-hidden="true">
+                        ↑
+                      </span>
+                      <strong>발송 인증 사진 선택</strong>
+                      <span>JPG, PNG, WEBP · 장당 최대 10MB · 최대 5장</span>
+                    </label>
+
+                    {shippingProofFiles.length > 0 && (
+                      <ul className="trade-proof-thumbnail-list" aria-label="업로드한 발송 인증 사진">
+                        {shippingProofFiles.map((file, index) => (
+                          <li key={file.flSn}>
+                            <img src={file.previewUrl} alt={`발송 인증 사진 ${index + 1}`} />
+                            <button
+                              type="button"
+                              onClick={() => removeShippingProof(file)}
+                              disabled={isSubmitting}
+                              aria-label={`발송 인증 사진 ${index + 1} 삭제`}
+                            >
+                              ×
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  {isUploadingProof && <p className="trade-proof-upload__filename">사진을 업로드하는 중입니다.</p>}
+                </div>
+
+                <label className="trade-form-field">
+                  배송 메모
+                  <textarea
+                    className="input trade-form-field__textarea trade-delivery-memo"
+                    value={shippingMemo}
+                    onChange={(event) => setShippingMemo(event.target.value)}
+                    placeholder="예: 7월 20일 오후에 발송했습니다. 포장 상태는 사진으로 확인해 주세요."
+                    maxLength={500}
+                  />
+                  <span className="trade-form-field__count">
+                    {shippingMemo.length.toLocaleString()} / 500
+                  </span>
+                </label>
+
+                {shippingProofError && (
+                  <p className="trade-form-error" role="alert">
+                    {shippingProofError}
+                  </p>
+                )}
+
+                <div className="trade-proof-submit-actions">
                   <button
                     className="btn btn-primary"
                     type="button"
-                    disabled={!completionAgreed || isCompletionSubmitting}
-                    onClick={requestSellerCompletion}
+                    onClick={submitDeliveryProof}
+                    disabled={isUploadingProof || isSubmitting}
                   >
-                    {isCompletionSubmitting ? '확인 중...' : '거래 완료 확인'}
+                    {isSubmitting ? '발송 인증 등록 중...' : '발송 인증 등록하기'}
                   </button>
                 </div>
-              </>
-            )}
-          </section>
-        ) : (
-          <section className="trade-detail-card trade-seller-section">
-            <h2>발송 인증 등록</h2>
-            <p className="trade-notice">
-              발송한 상품과 포장 상태가 보이도록 사진을 최대 5장 등록하고, 배송 메모를 작성해 주세요.
-            </p>
-
-            <div className="trade-proof-upload-area">
-              <div className="trade-proof-upload-box">
-                <label className="trade-proof-upload" htmlFor={`shipping-proof-${trade.id}`}>
-                  <input
-                    id={`shipping-proof-${trade.id}`}
-                    className="trade-proof-upload__input"
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    multiple
-                    onChange={handleShippingProofChange}
-                    disabled={isUploadingProof || isSubmitting}
-                  />
-                  <span className="trade-proof-upload__icon" aria-hidden="true">
-                    ↑
-                  </span>
-                  <strong>발송 인증 사진 선택</strong>
-                  <span>JPG, PNG, WEBP · 장당 최대 10MB · 최대 5장</span>
-                </label>
-
-                {shippingProofFiles.length > 0 && (
-                  <ul className="trade-proof-thumbnail-list" aria-label="업로드한 발송 인증 사진">
-                    {shippingProofFiles.map((file, index) => (
-                      <li key={file.flSn}>
-                        <img src={file.previewUrl} alt={`발송 인증 사진 ${index + 1}`} />
-                        <button
-                          type="button"
-                          onClick={() => removeShippingProof(file)}
-                          disabled={isSubmitting}
-                          aria-label={`발송 인증 사진 ${index + 1} 삭제`}
-                        >
-                          ×
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
               </div>
-
-              {isUploadingProof && <p className="trade-proof-upload__filename">사진을 업로드하는 중입니다.</p>}
-            </div>
-
-            <label className="trade-form-field">
-              배송 메모
-              <textarea
-                className="input trade-form-field__textarea trade-delivery-memo"
-                value={shippingMemo}
-                onChange={(event) => setShippingMemo(event.target.value)}
-                placeholder="예: 7월 20일 오후에 발송했습니다. 포장 상태는 사진으로 확인해 주세요."
-                maxLength={500}
-              />
-              <span className="trade-form-field__count">
-                {shippingMemo.length.toLocaleString()} / 500
-              </span>
-            </label>
-
-            {shippingProofError && (
-              <p className="trade-form-error" role="alert">
-                {shippingProofError}
-              </p>
             )}
-
-            <div className="trade-proof-submit-actions">
-              <button
-                className="btn btn-primary"
-                type="button"
-                onClick={submitDeliveryProof}
-                disabled={isUploadingProof || isSubmitting}
-              >
-                {isSubmitting ? '발송 인증 등록 중...' : '발송 인증 등록하기'}
-              </button>
-            </div>
           </section>
-        )}
+
+          {/* 오른쪽: 거래 리뷰 */}
+          {reviewSlot}
+        </div>
       </div>
+
+      <PhotoLightbox
+        title="발송 인증 사진"
+        photoUrls={visibleSubmittedProofUrls.map((file) => file.objectUrl)}
+        index={hasSubmittedProofFiles ? selectedProofIndex : null}
+        onClose={() => setSelectedProofIndex(null)}
+        onNavigate={setSelectedProofIndex}
+      />
+
       {notice && <Toast message={notice} onClose={() => setNotice('')} />}
     </div>
   );

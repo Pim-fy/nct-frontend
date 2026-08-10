@@ -1,4 +1,9 @@
-import { formatDate, formatDateTime, formatPrice } from '@utils/common';
+import {
+  formatDate,
+  formatDateTime,
+  formatMembershipDuration,
+  formatPoint,
+} from '@utils/common';
 
 const getResponseBody = (response) => response?.data ?? response;
 
@@ -65,6 +70,7 @@ export const getTradeListItems = (response) => {
  */
 export const toTradeHistoryItem = (trade) => {
   const meetingDateTime = splitMeetingDateTime(trade.meetingDateTime);
+  const pendingMeetingDateTime = splitMeetingDateTime(trade.pendingMeetingDateTime);
 
   return {
     id: trade.tradeId ?? trade.id,
@@ -72,7 +78,7 @@ export const toTradeHistoryItem = (trade) => {
     productName: trade.productName ?? trade.itemName ?? '-',
     productImageUrl: trade.productImageUrl ?? trade.imageUrl ?? trade.thumbnailUrl ?? '',
     counterpart: trade.counterpartNickname ?? trade.counterpart ?? '-',
-    amount: formatPrice(trade.price ?? trade.amount ?? trade.tradeAmount),
+    amount: formatPoint(trade.price ?? trade.amount ?? trade.tradeAmount),
     date: formatDate(trade.createdAt ?? trade.tradedAt ?? trade.tradeDate),
     completedDate: trade.completedAt ? formatDate(trade.completedAt) : null,
     method: trade.tradeMethod ?? trade.method,
@@ -80,8 +86,55 @@ export const toTradeHistoryItem = (trade) => {
     meetingDate: trade.meetingDate ?? (meetingDateTime.date === '-' ? null : meetingDateTime.date),
     meetingTime: trade.meetingTime ?? (meetingDateTime.time === '-' ? null : meetingDateTime.time),
     meetingPlace: trade.meetingPlace ?? null,
+    pendingScheduleProposalId: trade.pendingScheduleProposalId ?? null,
+    pendingScheduleProposalType: trade.pendingScheduleProposalType ?? null,
+    pendingScheduleProposalStatus: trade.pendingScheduleProposalStatus ?? null,
+    pendingScheduleProposalProposerRole: trade.pendingScheduleProposalProposerRole ?? null,
+    pendingMeetingDate: trade.pendingMeetingDate ?? (pendingMeetingDateTime.date === '-' ? null : pendingMeetingDateTime.date),
+    pendingMeetingTime: trade.pendingMeetingTime ?? (pendingMeetingDateTime.time === '-' ? null : pendingMeetingDateTime.time),
+    pendingMeetingPlace: trade.pendingMeetingPlace ?? null,
+    pendingMeetingAddress: trade.pendingMeetingAddress ?? null,
+    canRespondToScheduleProposal: Boolean(trade.canRespondToScheduleProposal),
+    canWithdrawScheduleProposal: Boolean(trade.canWithdrawScheduleProposal),
   };
 };
+
+const normalizeTradeChatRoomStatus = (status) => {
+  if (status === 'ACTIVE' || status === 'CHRC0001') {
+    return 'ACTIVE';
+  }
+
+  if (status === 'CLOSED' || status === 'CHRC0002') {
+    return 'CLOSED';
+  }
+
+  return 'NOT_STARTED';
+};
+
+const CLOSED_TRADE_STATUSES = new Set(['COMPLETED', 'CANCELED', 'ON_HOLD']);
+
+export const getTradeChatButtonLabel = (trade) => {
+  const chatRoomStatus = normalizeTradeChatRoomStatus(trade?.chatRoomStatus);
+
+  if (chatRoomStatus === 'ACTIVE') return '거래 채팅 열기';
+  if (chatRoomStatus === 'CLOSED') return '거래 채팅 기록 보기';
+  if (CLOSED_TRADE_STATUSES.has(trade?.status)) return '거래 채팅 기록 없음';
+  return '거래 채팅 시작';
+};
+
+export const getTradeChatDescription = (trade) => {
+  const chatRoomStatus = normalizeTradeChatRoomStatus(trade?.chatRoomStatus);
+
+  if (chatRoomStatus === 'ACTIVE') return '거래 채팅에서 협의한 내용을 확인해 주세요.';
+  if (chatRoomStatus === 'CLOSED') return '거래가 종료되어 채팅 기록만 확인할 수 있습니다.';
+  if (CLOSED_TRADE_STATUSES.has(trade?.status)) return '생성된 거래 채팅 기록이 없습니다.';
+  return '채팅에서 거래 시간과 장소를 협의해 주세요.';
+};
+
+export const canUseTradeChat = (trade) => (
+  normalizeTradeChatRoomStatus(trade?.chatRoomStatus) !== 'NOT_STARTED'
+  || !CLOSED_TRADE_STATUSES.has(trade?.status)
+);
 
 /**
  * 서버 거래 DTO를 구매자·판매자 상세 화면에서 공통으로 사용할 데이터로 변환한다.
@@ -89,18 +142,26 @@ export const toTradeHistoryItem = (trade) => {
 export const toTradeDetail = (response) => {
   const trade = getResponseBody(response);
   const meetingDateTime = splitMeetingDateTime(trade.meetingDateTime);
+  const pendingMeetingDateTime = splitMeetingDateTime(trade.pendingMeetingDateTime);
 
   return {
     id: trade.tradeId ?? trade.id,
     productName: trade.productName ?? trade.itemName ?? '-',
+    category: trade.category ?? '-',
     productImageUrl: trade.productImageUrl ?? trade.imageUrl ?? trade.thumbnailUrl ?? '',
-    price: formatPrice(trade.price ?? trade.amount ?? trade.tradeAmount),
+    price: formatPoint(trade.price ?? trade.amount ?? trade.tradeAmount),
+    createdDate: trade.createdAt ? formatDate(trade.createdAt) : '-',
+    completedDate: trade.completedAt ? formatDate(trade.completedAt) : '-',
     method: trade.tradeMethod ?? trade.method ?? null,
     status: normalizeTradeStatus(trade.tradeStatus ?? trade.status),
+    chatRoomStatus: normalizeTradeChatRoomStatus(trade.chatRoomStatus),
     // 확인 대기 상태에서 첫 완료 확인을 누른 역할을 받아 상대방에게만 두 번째 확인 버튼을 노출한다.
     completionRequestedBy: trade.completionRequestedBy ?? null,
     counterpart: trade.counterpartNickname ?? trade.counterpart ?? '-',
     counterpartUserId: trade.counterpartUserId ?? trade.counterpartUsrSn ?? null,
+    counterpartProfileImageUrl: trade.counterpartProfileImageUrl ?? '',
+    counterpartJoinedLabel: formatMembershipDuration(trade.counterpartJoinedAt),
+    counterpartCompletedTradeCount: trade.counterpartCompletedTradeCount ?? 0,
     rating: trade.counterpartRating ?? trade.rating ?? '-',
     deliveryAddress: trade.deliveryAddress ?? trade.address ?? '-',
     deliveryMessage: trade.deliveryMessage ?? trade.shippingMemo ?? '-',
@@ -109,13 +170,23 @@ export const toTradeDetail = (response) => {
     autoCompleteAt: formatDateTime(trade.autoCompleteAt),
     recipientName: trade.recipientName ?? '-',
     recipientPhone: trade.recipientPhone ?? '-',
-    addressDetail: trade.deliveryDetailAddress ?? trade.addressDetail ?? '-',
     deliveryRequest: trade.deliveryMessage ?? trade.deliveryRequest ?? '-',
     deliveryId: trade.deliveryId ?? trade.trdDlvrSn ?? null,
+    deliveryProofRegisteredAt: formatDateTime(trade.deliveryProofRegisteredAt),
     deliveryProofFiles: trade.deliveryProofFiles ?? [],
     meetingDate: trade.meetingDate ?? meetingDateTime.date,
     meetingTime: trade.meetingTime ?? meetingDateTime.time,
     meetingPlace: trade.meetingPlace ?? '-',
     meetingAddress: trade.meetingAddress ?? '-',
+    pendingScheduleProposalId: trade.pendingScheduleProposalId ?? null,
+    pendingScheduleProposalType: trade.pendingScheduleProposalType ?? null,
+    pendingScheduleProposalStatus: trade.pendingScheduleProposalStatus ?? null,
+    pendingScheduleProposalProposerRole: trade.pendingScheduleProposalProposerRole ?? null,
+    pendingMeetingDate: trade.pendingMeetingDate ?? (pendingMeetingDateTime.date === '-' ? null : pendingMeetingDateTime.date),
+    pendingMeetingTime: trade.pendingMeetingTime ?? (pendingMeetingDateTime.time === '-' ? null : pendingMeetingDateTime.time),
+    pendingMeetingPlace: trade.pendingMeetingPlace ?? null,
+    pendingMeetingAddress: trade.pendingMeetingAddress ?? null,
+    canRespondToScheduleProposal: Boolean(trade.canRespondToScheduleProposal),
+    canWithdrawScheduleProposal: Boolean(trade.canWithdrawScheduleProposal),
   };
 };

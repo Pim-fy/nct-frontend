@@ -136,8 +136,11 @@ function ReportModalContent({
       toast({ icon: "success", title: "신고가 접수되었습니다." });
       onClose();
       navigate("/user/mypage/reports");
-    } catch {
-      setErrors((prev) => ({ ...prev, _server: "신고 접수 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요." }));
+    } catch (err) {
+      const msg = err?.response?.status === 409
+        ? "이미 신고가 접수된 상대입니다. 내 신고 목록에서 접수 현황을 확인해 주세요."
+        : "신고 접수 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+      setErrors((prev) => ({ ...prev, _server: msg }));
     }
   };
 

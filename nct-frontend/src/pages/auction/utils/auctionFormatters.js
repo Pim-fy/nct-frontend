@@ -30,13 +30,7 @@ export const createImageItems = (images = []) => images.map((image, index) => ({
 export const resolveAuctionResultLabel = (auction) => {
   const statusCode = auction?.auctionStatusCode;
 
-  if (statusCode === AUCTION_STATUS.ENDED) {
-    const currentPrice = Number(auction.currentPrice || 0);
-    const instantBuyPrice = Number(auction.instantBuyPrice || 0);
-    return instantBuyPrice > 0 && currentPrice === instantBuyPrice
-      ? '즉시구매 완료'
-      : '낙찰';
-  }
+  if (statusCode === AUCTION_STATUS.ENDED) return '낙찰';
   if (statusCode === AUCTION_STATUS.FAILED) return '유찰';
   if (statusCode === AUCTION_STATUS.CANCELLED) return '취소';
   if (statusCode === AUCTION_STATUS.CANCELLATION_REQUESTED) return '취소 요청';

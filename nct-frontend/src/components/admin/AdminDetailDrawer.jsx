@@ -3,7 +3,14 @@ import { X } from 'lucide-react';
 import './AdminDetailDrawer.css';
 
 /** 담당자 7: 관리자 목록을 유지한 채 핵심 상세와 처리 영역을 보여주는 공통 드로어입니다. */
-const AdminDetailDrawer = ({ children, eyebrow = '상세 정보', footer, onClose, title }) => {
+const AdminDetailDrawer = ({
+  children,
+  eyebrow = '상세 정보',
+  footer,
+  onClose,
+  panelClassName = '',
+  title,
+}) => {
   const titleId = useId();
 
   useEffect(() => {
@@ -28,7 +35,7 @@ const AdminDetailDrawer = ({ children, eyebrow = '상세 정보', footer, onClos
       <aside
         aria-labelledby={titleId}
         aria-modal="true"
-        className="admin-detail-drawer__panel"
+        className={['admin-detail-drawer__panel', panelClassName].filter(Boolean).join(' ')}
         role="dialog"
       >
         <header className="admin-detail-drawer__header">

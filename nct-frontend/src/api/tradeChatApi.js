@@ -3,9 +3,20 @@ import { shouldUseTradePreview } from './tradeApi';
 import {
   getTradePreviewChatMessages,
   getTradePreviewChatRooms,
+  startTradePreviewChat,
 } from '../mocks/tradePreviewData';
 
 const CHAT_ROOM_ENDPOINT = '/chat-rooms';
+
+/** 직거래 당사자가 채팅 시작을 누른 시점에 채팅방을 지연 생성한다. */
+export const startTradeChat = async (tradeId, options = {}) => {
+  if (options.preview || shouldUseTradePreview()) {
+    return startTradePreviewChat(tradeId);
+  }
+
+  const response = await api.post(`${CHAT_ROOM_ENDPOINT}/trades/${tradeId}`);
+  return response.data;
+};
 
 /** 로그인한 물건·서비스 거래 당사자의 채팅방을 조회한다. */
 export const getTradeChatRooms = async (params = {}, options = {}) => {
