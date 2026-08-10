@@ -26,9 +26,9 @@ import MyPageMobileCard from '@components/mypage/MyPageMobileCard';
 const FILTERS = [
   { value: null,      label: '전체' },
   { value: 'DRAFT',   label: '임시저장' },
-  { value: 'ACTIVE',  label: '진행 중' },
-  { value: 'WON',     label: '낙찰' },
-  { value: 'TRADING', label: '거래 중' },
+  { value: 'RESERVED', label: '예약' },
+  { value: 'ACTIVE',  label: '경매중' },
+  { value: 'TRADING', label: '거래중' },
   { value: 'CLOSED',  label: '종료' },
 ];
 
@@ -74,7 +74,7 @@ const getTradeStatusLabel = (product) => {
 
 const PRD_STATUS_LABEL = {
   PRDC0001: '임시저장',
-  PRDC0002: '진행 중',
+  PRDC0002: '경매중',
   PRDC0003: '종료',
 };
 
@@ -90,12 +90,43 @@ function fmtPrice(n) {
   return n != null ? `${Number(n).toLocaleString()}원` : '-';
 }
 
+const isReservedProduct = (product) => {
+  const draftStartNowYn = product?.prdDraftStartNowYn ?? product?.draftStartNowYn;
+  const draftStartDt = product?.prdDraftStartDt ?? product?.draftStartDt;
+  const draftStartTime = new Date(draftStartDt).getTime();
+
+  return product?.prdStatusCd === 'PRDC0001'
+    && draftStartNowYn === 'N'
+    && Number.isFinite(draftStartTime)
+    && draftStartTime > Date.now();
+};
+
+const getProductStatusLabel = (product) => {
+  if (product.tradeSn) return getTradeStatusLabel(product);
+  if (isReservedProduct(product)) return '예약';
+  if (product.aucStatusCd === 'AUCC0002') return '경매중';
+  if (product.aucStatusCd === 'AUCC0003') return '거래중';
+  if (product.aucStatusCd) return AUC_STATUS_LABEL[product.aucStatusCd] ?? product.aucStatusCd;
+
+  return PRD_STATUS_LABEL[product.prdStatusCd] ?? product.prdStatusCd;
+};
+
+const getProductStatusBadgeClass = (product) => {
+  if (product.tradeSn) return TRADE_BADGE[product.tradeStatusCd] ?? 'badge-outline-gray';
+  if (isReservedProduct(product)) return 'badge-outline-orange';
+  if (product.aucStatusCd === 'AUCC0002') return 'badge-outline-orange';
+  if (product.aucStatusCd === 'AUCC0003') return 'badge-teal';
+  if (product.aucStatusCd) return AUC_STATUS_BADGE[product.aucStatusCd] ?? 'badge-outline-gray';
+
+  return PRD_STATUS_BADGE[product.prdStatusCd] ?? 'badge-outline-gray';
+};
+
 // ─── 컴포넌트 ─────────────────────────────────────────────────────────────────
 
 export default function MyProductList({ onOpenTradeDetail }) {
   const navigate = useNavigate();
   // 전역 브레드크럼 (BJN, 260805): 상세로 이동할 때 접근 경로(state.from)를 전달 —
-  // 이 컴포넌트는 /product/me 단독 페이지와 마이페이지(상품 판매 내역) 양쪽에서 쓰이므로
+  // 이 컴포넌트는 /product/me 단독 페이지와 마이페이지(상품 판매 목록) 양쪽에서 쓰이므로
   // 현재 위치를 그대로 넘기면 진입 경로별로 브레드크럼이 알맞게 표시된다
   const location = useLocation();
   const breadcrumbFrom = { from: location.pathname + location.search };
@@ -113,8 +144,8 @@ export default function MyProductList({ onOpenTradeDetail }) {
   const { data, isLoading, isError, refetch } = useMyProducts(page, 10, activeFilterType);
   const { data: allSummaryData, isLoading: isAllSummaryLoading } = useMyProducts(1, 1, null);
   const { data: draftSummaryData, isLoading: isDraftSummaryLoading } = useMyProducts(1, 1, 'DRAFT');
+  const { data: reservedSummaryData, isLoading: isReservedSummaryLoading } = useMyProducts(1, 1, 'RESERVED');
   const { data: activeSummaryData, isLoading: isActiveSummaryLoading } = useMyProducts(1, 1, 'ACTIVE');
-  const { data: wonSummaryData, isLoading: isWonSummaryLoading } = useMyProducts(1, 1, 'WON');
   const { data: tradingSummaryData, isLoading: isTradingSummaryLoading } = useMyProducts(1, 1, 'TRADING');
   const { data: closedSummaryData, isLoading: isClosedSummaryLoading } = useMyProducts(1, 1, 'CLOSED');
   const list       = data?.list       ?? [];
@@ -125,8 +156,8 @@ export default function MyProductList({ onOpenTradeDetail }) {
     : list;
   const isSummaryLoading = isAllSummaryLoading
     || isDraftSummaryLoading
+    || isReservedSummaryLoading
     || isActiveSummaryLoading
-    || isWonSummaryLoading
     || isTradingSummaryLoading
     || isClosedSummaryLoading;
 
@@ -157,7 +188,7 @@ export default function MyProductList({ onOpenTradeDetail }) {
   if (isError) {
     return (
       <>
-        <MyPageContentHeader title="상품 판매 내역" />
+        <MyPageContentHeader title="상품 판매 목록" />
         <MyPageListError message="목록을 불러오지 못했습니다." onRetry={() => refetch()} />
       </>
     );
@@ -166,25 +197,25 @@ export default function MyProductList({ onOpenTradeDetail }) {
   return (
     <>
       <MyPageListSectionLayout
-        title="상품 판매 내역"
+        title="상품 판매 목록"
         summaryItems={[
-          { label: '진행 중', value: activeSummaryData?.total ?? 0 },
-          { label: '낙찰', value: wonSummaryData?.total ?? 0 },
-          { label: '거래 중', value: tradingSummaryData?.total ?? 0 },
+          { label: '경매중', value: activeSummaryData?.total ?? 0 },
+          { label: '거래중', value: tradingSummaryData?.total ?? 0 },
+          { label: '종료', value: closedSummaryData?.total ?? 0 },
         ]}
         filterItems={FILTERS.map((item) => ({
           ...item,
           count: {
             DRAFT: draftSummaryData?.total,
+            RESERVED: reservedSummaryData?.total,
             ACTIVE: activeSummaryData?.total,
-            WON: wonSummaryData?.total,
             TRADING: tradingSummaryData?.total,
             CLOSED: closedSummaryData?.total,
           }[item.value] ?? (item.value === null ? allSummaryData?.total : 0),
         }))}
         activeFilter={filter}
         onFilterChange={handleFilterChange}
-        filterAriaLabel="판매 경매 상태"
+        filterAriaLabel="판매 목록 상태"
         onSearch={setSearchKeyword}
         searchAriaLabel="판매 상품명 검색"
         extraControls={filter === 'CLOSED' ? (
@@ -224,17 +255,8 @@ export default function MyProductList({ onOpenTradeDetail }) {
           <div className="hidden lg:block">
           <div className="history-list">
             {visibleList.map((p) => {
-              const badgeLabel = p.tradeSn
-                ? getTradeStatusLabel(p)
-                : p.aucStatusCd
-                ? (AUC_STATUS_LABEL[p.aucStatusCd] ?? p.aucStatusCd)
-                : (PRD_STATUS_LABEL[p.prdStatusCd] ?? p.prdStatusCd);
-
-              const badgeClass = p.tradeSn
-                ? (TRADE_BADGE[p.tradeStatusCd] ?? 'badge-outline-gray')
-                : p.aucStatusCd
-                ? (AUC_STATUS_BADGE[p.aucStatusCd] ?? 'badge-outline-gray')
-                : (PRD_STATUS_BADGE[p.prdStatusCd] ?? 'badge-outline-gray');
+              const badgeLabel = getProductStatusLabel(p);
+              const badgeClass = getProductStatusBadgeClass(p);
 
               const isActive = p.prdStatusCd === 'PRDC0002';
               const isDraft  = p.prdStatusCd === 'PRDC0001';
@@ -305,16 +327,8 @@ export default function MyProductList({ onOpenTradeDetail }) {
           </div>
           <div className="grid gap-4 lg:hidden">
             {visibleList.map((p) => {
-              const badgeLabel = p.tradeSn
-                ? getTradeStatusLabel(p)
-                : p.aucStatusCd
-                ? (AUC_STATUS_LABEL[p.aucStatusCd] ?? p.aucStatusCd)
-                : (PRD_STATUS_LABEL[p.prdStatusCd] ?? p.prdStatusCd);
-              const badgeClass = p.tradeSn
-                ? (TRADE_BADGE[p.tradeStatusCd] ?? 'badge-outline-gray')
-                : p.aucStatusCd
-                ? (AUC_STATUS_BADGE[p.aucStatusCd] ?? 'badge-outline-gray')
-                : (PRD_STATUS_BADGE[p.prdStatusCd] ?? 'badge-outline-gray');
+              const badgeLabel = getProductStatusLabel(p);
+              const badgeClass = getProductStatusBadgeClass(p);
               const isActive = p.prdStatusCd === 'PRDC0002';
               const isDraft = p.prdStatusCd === 'PRDC0001';
               const isEnded = p.prdStatusCd === 'PRDC0003';

@@ -2,13 +2,12 @@ import {
   useEffect,
   useState,
 } from 'react';
-import {
-  getUserReviews,
-  getUserReviewTrust,
-} from '@api/reviewApi';
-import { Skeleton } from '@components/skeleton/BaseSkeleton';
+import { Star } from 'lucide-react';
+import { getUserReviewTrust } from '@api/reviewApi';
 
 const unwrapData = (response) => response?.data ?? response;
+
+const MAX_SCORE = 5.0;
 
 const formatScore = (score) => {
   const numericScore = Number(score);
@@ -19,19 +18,22 @@ const formatScore = (score) => {
 };
 
 /**
- * 거래 상대방의 물건 거래 신뢰지표와 최근 리뷰를 함께 표시한다.
- * 리뷰 목록이 없거나 API가 아직 배포되지 않은 경우에도 거래 상세 자체는 계속 볼 수 있어야 한다.
+ * 거래 상대방의 물건 거래 신뢰지표(평균 평점/만점)를 별 아이콘과 함께 짧게 표시한다.
+ * @ai_generated: 개별 리뷰 본문까지는 안 보여준다 - 경매는 최고가 입찰로 상대가 정해지는
+ * 구조라 "상대를 고를지" 결정하는 지점이 없고(입찰 전엔 경매 페이지에 별도 리뷰 열람 기능이
+ * 이미 있음), 낙찰·거래 확정 이후에는 리뷰 본문을 봐도 취할 수 있는 행동이 없다. 집계 평점
+ * 정도의 가벼운 참고 신호만 남긴다(사용자 결정, 2026-08-09). "프로필 정보 오른쪽 남는 공간"에
+ * 배지처럼 붙일 수 있도록 인라인 요소 하나로 렌더링한다(박스 없음).
+ * 리뷰가 없거나 API가 아직 배포되지 않은 경우에도 거래 상세 자체는 계속 볼 수 있어야 한다.
  */
 const TradeTrustSummary = ({ counterpartUserId }) => {
   const [trust, setTrust] = useState(null);
-  const [reviews, setReviews] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     if (!counterpartUserId) {
       setTrust(null);
-      setReviews([]);
       return undefined;
     }
 
@@ -42,24 +44,13 @@ const TradeTrustSummary = ({ counterpartUserId }) => {
       setLoadError(false);
 
       try {
-        const [trustResponse, reviewResponse] = await Promise.all([
-          getUserReviewTrust(counterpartUserId),
-          getUserReviews(counterpartUserId, {
-            dealType: 'goods',
-            page: 0,
-            size: 3,
-          }),
-        ]);
+        const trustResponse = await getUserReviewTrust(counterpartUserId);
 
         if (!isActive) {
           return;
         }
 
-        const trustData = unwrapData(trustResponse);
-        const reviewData = unwrapData(reviewResponse);
-
-        setTrust(trustData);
-        setReviews(reviewData?.content ?? []);
+        setTrust(unwrapData(trustResponse));
       } catch {
         if (isActive) {
           setLoadError(true);
@@ -78,53 +69,29 @@ const TradeTrustSummary = ({ counterpartUserId }) => {
     };
   }, [counterpartUserId]);
 
-  if (!counterpartUserId) {
-    return (
-      <div className="trade-trust">
-        실제 거래 상대방 정보가 준비되면 리뷰와 신뢰지표를 표시합니다.
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="trade-trust">
-        <Skeleton height={20} style={{ marginBottom: 10, maxWidth: 220 }} />
-        <Skeleton count={2} height={54} style={{ marginBottom: 8 }} />
-      </div>
-    );
+  if (!counterpartUserId || isLoading) {
+    return null;
   }
 
   if (loadError) {
-    return (
-      <div className="trade-trust">
-        리뷰와 신뢰지표를 지금 불러오지 못했습니다.
-      </div>
-    );
+    return <span className="trade-trust-score trade-trust-score--muted">신뢰지표 조회 실패</span>;
   }
 
   if (!trust?.hasReviews) {
-    return <div className="trade-trust">아직 작성된 거래 리뷰가 없습니다.</div>;
+    return (
+      <span className="trade-trust-score trade-trust-score--muted">
+        <Star size={16} aria-hidden="true" />
+        리뷰 없음
+      </span>
+    );
   }
 
   return (
-    <div className="trade-trust">
-      <p className="trade-trust__score">
-        거래 평점 <strong>★ {formatScore(trust.totalScore)}</strong>
-        <span>리뷰 {trust.totalCount ?? 0}개</span>
-      </p>
-      {reviews.length > 0 && (
-        <ul className="trade-trust__reviews">
-          {reviews.map((review) => (
-            <li key={review.reviewId}>
-              <span>★ {review.rating}</span>
-              <p>{review.content}</p>
-              <small>{review.reviewerName} · {review.createdDate}</small>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <span className="trade-trust-score" aria-label={`거래 평점 ${formatScore(trust.totalScore)}점 만점 ${MAX_SCORE}점`}>
+      <Star size={16} aria-hidden="true" />
+      <strong>{formatScore(trust.totalScore)}</strong>
+      <span className="trade-trust-score__max">/{MAX_SCORE.toFixed(1)}</span>
+    </span>
   );
 };
 

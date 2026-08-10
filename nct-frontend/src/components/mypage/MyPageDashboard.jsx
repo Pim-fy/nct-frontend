@@ -223,7 +223,6 @@ export default function MyPageDashboard({
   isProviderApproved,
   onLogout,
   onRequestProviderSwitch,
-  onOpenAuctionBids,
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -246,7 +245,7 @@ export default function MyPageDashboard({
     meta: item.currentPrice
       ? `현재가 ${Number(item.currentPrice).toLocaleString()}P`
       : "현재가 -",
-    section: "active-auctions",
+    section: "wishlist",
   }));
 
   const nav = (section) => (event) => {
@@ -271,7 +270,7 @@ export default function MyPageDashboard({
       .filter((b) => b.auctionStatusCode === "AUCC0002" && (b.displayStatus === "HIGHEST" || b.displayStatus === "OUTBID"))
       .map((b) => b.aucSn)
   ).size;
-  // 구매 건수 — 상품 구매내역 페이지(TradeHistory fixedRole=BUYER)와 동일한 기준
+  // 구매 건수 — 상품 구매 목록(TradeHistory fixedRole=BUYER)과 동일한 기준
   const { data: allTradeItems = [] } = useQuery({
     queryKey: ["trades", "my", "all"],
     queryFn: async () => {
@@ -361,14 +360,14 @@ export default function MyPageDashboard({
       unit: "건",
       meta: (
         <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <button type="button" onClick={nav("active-auctions")} className={subBtn}>진행중 {activeAuctionCnt}건</button>
+          <button type="button" onClick={nav("auction-bids")} className={subBtn}>입찰중 {activeAuctionCnt}건</button>
           <span className="text-white/70">ㅣ</span>
           <button type="button" onClick={nav("auction-bids")}    className={subBtn}>구매 {purchaseCnt}건</button>
           <span className="text-white/70">ㅣ</span>
           <button type="button" onClick={nav("auction-sales")}   className={subBtn}>판매 {auctionSaleCnt}건</button>
         </span>
       ),
-      onMore: nav("active-auctions"),
+      onMore: nav("auction-bids"),
     },
     {
       key: "service",

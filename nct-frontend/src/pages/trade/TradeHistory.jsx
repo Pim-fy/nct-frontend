@@ -12,6 +12,8 @@ import {
   getTradeListItems,
   toTradeHistoryItem,
 } from '@api/tradeAdapter';
+import { formatDate, formatPoint } from '@utils/common';
+import { useMyBidHistory } from '@hooks/useBid';
 import Pagination from '@components/common/Pagination';
 import MyPageListSkeleton from '@components/skeleton/MyPageListSkeleton';
 import MyPageListSectionLayout from '@components/mypage/MyPageListSectionLayout';
@@ -66,9 +68,10 @@ const activeTradeStatuses = new Set([
   'DELIVERING',
   'WAITING_CONFIRMATION',
   'CONFIRM_PENDING',
+  'ON_HOLD',
 ]);
 
-// 경매 하위 목록(진행 중인 경매/구매 내역/판매 내역) 공통 페이지당 건수
+// 경매 하위 목록(구매 목록/판매 목록) 공통 페이지당 건수
 const PAGE_SIZE = 10;
 
 const tabs = [
@@ -77,15 +80,128 @@ const tabs = [
   { value: 'SELLER', label: '판매 내역' },
 ];
 
-// 마이페이지 경매 거래 내역은 구매자 역할로 고정되므로, 거래 상태만 빠르게 골라본다.
-const buyerStatusFilters = [
+// 마이페이지 상품 구매 목록은 입찰과 구매 거래를 하나의 상태 체계로 보여준다.
+const purchaseFilters = [
   { value: 'ALL', label: '전체' },
-  { value: 'IN_PROGRESS', label: '진행 중' },
-  { value: 'DELIVERING', label: '배송·직거래 중' },
-  { value: 'WAITING_CONFIRMATION', label: '확인 대기' },
+  { value: 'HIGHEST', label: '최고 입찰 중' },
+  { value: 'OUTBID_ACTIVE', label: '재입찰 필요' },
+  { value: 'TRADING', label: '거래 중' },
+  { value: 'CLOSED', label: '종료' },
+];
+
+const purchaseClosedSubFilters = [
+  { value: '', label: '전체 종료' },
   { value: 'COMPLETED', label: '완료' },
   { value: 'CANCELED', label: '취소' },
+  { value: 'FAILED', label: '낙찰 실패' },
 ];
+
+const purchaseStatusPriority = {
+  HIGHEST: 0,
+  OUTBID_ACTIVE: 1,
+  TRADING: 2,
+  COMPLETED: 3,
+  CANCELED: 4,
+  FAILED: 5,
+};
+
+const purchaseStatusMeta = {
+  HIGHEST: {
+    label: '최고 입찰 중',
+    badgeClass: 'badge-primary',
+  },
+  OUTBID_ACTIVE: {
+    label: '재입찰 필요',
+    badgeClass: 'badge-outline-orange',
+  },
+  TRADING: {
+    label: '거래 중',
+    badgeClass: 'badge-teal',
+  },
+  COMPLETED: {
+    label: '거래 완료',
+    badgeClass: 'badge-outline-gray',
+  },
+  CANCELED: {
+    label: '거래 취소',
+    badgeClass: 'badge-danger',
+  },
+  FAILED: {
+    label: '낙찰 실패',
+    badgeClass: 'badge-outline-gray',
+  },
+};
+
+const getBidPurchaseStatus = (bid) => {
+  // 판매자 취소 요청(AUCC0006)은 MyBidHistoryItem에서 UNKNOWN으로 내려올 수 있다.
+  // 구매 목록에서는 참여 경매를 숨기지 않고 종료 > 취소로 흡수한다.
+  if (bid.auctionStatusCode === 'AUCC0006' || bid.displayStatus === 'CANCELED') {
+    return 'CANCELED';
+  }
+
+  if (bid.displayStatus === 'HIGHEST' && bid.auctionStatusCode === 'AUCC0002') {
+    return 'HIGHEST';
+  }
+
+  if (bid.displayStatus === 'OUTBID') {
+    return bid.auctionStatusCode === 'AUCC0002' ? 'OUTBID_ACTIVE' : 'FAILED';
+  }
+
+  // 낙찰과 거래 행은 같은 트랜잭션에서 생성되므로 BID 항목을 별도로 만들지 않는다.
+  if (bid.displayStatus === 'WON') {
+    return null;
+  }
+
+  return null;
+};
+
+const toLatestBids = (bidHistory = []) => {
+  const latestByAuction = new Map();
+
+  [...bidHistory]
+    .sort((left, right) => (
+      new Date(right.bidDateTime || 0).getTime() - new Date(left.bidDateTime || 0).getTime()
+    ))
+    .forEach((bid) => {
+      if (!latestByAuction.has(bid.aucSn)) {
+        latestByAuction.set(bid.aucSn, bid);
+      }
+    });
+
+  return [...latestByAuction.values()];
+};
+
+const toPurchaseItems = (tradeItems = [], bidHistory = []) => {
+  const buyerTrades = tradeItems.filter((trade) => trade.type === 'BUYER');
+  const normalizedTrades = buyerTrades.map((trade) => ({
+    ...trade,
+    kind: 'TRADE',
+    purchaseStatus: activeTradeStatuses.has(trade.status)
+      ? 'TRADING'
+      : trade.status === 'COMPLETED'
+        ? 'COMPLETED'
+        : trade.status === 'CANCELED'
+          ? 'CANCELED'
+          : 'TRADING',
+  }));
+
+  const normalizedBids = toLatestBids(bidHistory)
+    .map((bid) => ({
+      ...bid,
+      kind: 'BID',
+      purchaseStatus: getBidPurchaseStatus(bid),
+      productName: bid.auctionTitle ?? `경매 #${bid.aucSn}`,
+      productImageUrl: bid.thumbnailPath ?? '',
+      counterpart: bid.sellerName ?? '-',
+      date: formatDate(bid.bidDateTime),
+      completedDate: formatDate(bid.auctionEndDateTime),
+      amount: formatPoint(bid.bidAmount),
+      method: bid.tradeMethodCode,
+    }))
+    .filter((bid) => bid.purchaseStatus);
+
+  return [...normalizedTrades, ...normalizedBids];
+};
 
 // 사용자가 입력한 공백 차이로 동일한 상품을 놓치지 않도록 검색용 문자열을 통일한다.
 const normalizeSearchText = (value) => String(value ?? '')
@@ -141,6 +257,49 @@ const getStatusInfo = (trade) => {
   };
 };
 
+const getPurchaseStatusInfo = (item) => {
+  if (item.kind === 'TRADE') {
+    return getStatusInfo(item);
+  }
+
+  return purchaseStatusMeta[item.purchaseStatus] ?? {
+    label: '상태 확인 중',
+    badgeClass: 'badge-orange',
+  };
+};
+
+const getPurchaseTopLine = (item) => {
+  if (item.kind === 'TRADE') {
+    return `확정날짜 ${item.date} / 완료날짜 ${item.completedDate ?? '-'}`;
+  }
+
+  const endLabel = item.purchaseStatus === 'HIGHEST' ? '종료 예정' : '종료날짜';
+  return `입찰날짜 ${item.date} / ${endLabel} ${formatDate(item.auctionEndDateTime)}`;
+};
+
+const getPurchasePriceItems = (item) => {
+  if (item.kind === 'TRADE') {
+    return [{ label: '확정 금액', value: item.amount }];
+  }
+
+  if (item.purchaseStatus === 'HIGHEST') {
+    return [
+      { label: '현재 최고가', value: formatPoint(item.currentPrice) },
+      { label: '내 입찰가', value: formatPoint(item.bidAmount) },
+    ];
+  }
+
+  return [{ label: '내 입찰가', value: formatPoint(item.bidAmount) }];
+};
+
+const getPurchaseMethodLabel = (item) => {
+  if (item.kind === 'TRADE') {
+    return item.method === 'DELIVERY' ? '배송' : '직거래';
+  }
+
+  return item.tradeMethodName || '정보 없음';
+};
+
 /**
  * 거래 목록을 독립 페이지 또는 마이페이지 본문 영역에서 재사용한다.
  * embedded=true이면 마이페이지의 사이드바·여백을 유지하고 목록 영역만 렌더링한다.
@@ -155,14 +314,26 @@ const TradeHistory = ({
 }) => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const isBuyerPurchaseList = fixedRole === 'BUYER';
   const [allTradeItems, setAllTradeItems] = useState([]);
   const [filteredTradeItems, setFilteredTradeItems] = useState([]);
   const [activeTab, setActiveTab] = useState(fixedRole ?? 'ALL');
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [closedSubFilter, setClosedSubFilter] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [page, setPage] = useState(1);
+
+  const {
+    data: bidHistory = [],
+    isLoading: isBidLoading,
+    isError: isBidError,
+    refetch: refetchBids,
+  } = useMyBidHistory({
+    refetchInterval: isBuyerPurchaseList && !preview ? 15_000 : false,
+    enabled: isBuyerPurchaseList && !preview,
+  });
 
   // 별도 미리보기 경로에서는 로그인 보호 경로가 아닌 미리보기 상세로 이동한다.
   const isPreview = preview || pathname.startsWith('/trades/preview');
@@ -203,35 +374,69 @@ const TradeHistory = ({
     }).length;
   }, [allTradeItems, fixedRole]);
 
-  // 상태 버튼의 건수는 검색어와 무관한 전체 구매 거래를 기준으로 표시한다.
-  const buyerStatusCounts = useMemo(() => {
-    const buyerTrades = allTradeItems.filter((trade) => trade.type === 'BUYER');
+  const purchaseItems = useMemo(
+    () => toPurchaseItems(allTradeItems, bidHistory),
+    [allTradeItems, bidHistory],
+  );
 
-    return buyerStatusFilters.reduce((counts, filter) => {
-      counts[filter.value] = filter.value === 'ALL'
-        ? buyerTrades.length
-        : buyerTrades.filter((trade) => trade.status === filter.value).length;
-
+  // 통합 구매 목록의 탭 건수는 검색어·하위 종료 필터와 무관한 전체 목록을 기준으로 표시한다.
+  const purchaseStatusCounts = useMemo(() => purchaseFilters.reduce((counts, filter) => {
+    if (filter.value === 'ALL') {
+      counts[filter.value] = purchaseItems.length;
       return counts;
-    }, {});
-  }, [allTradeItems]);
+    }
+
+    if (filter.value === 'CLOSED') {
+      counts[filter.value] = purchaseItems.filter((item) => (
+        ['COMPLETED', 'CANCELED', 'FAILED'].includes(item.purchaseStatus)
+      )).length;
+      return counts;
+    }
+
+    counts[filter.value] = purchaseItems.filter(
+      (item) => item.purchaseStatus === filter.value,
+    ).length;
+    return counts;
+  }, {}), [purchaseItems]);
 
   // 요약 영역은 조건과 관계없이 로그인한 사용자의 전체 거래를 기준으로 표시한다.
   const loadAllTradeItems = useCallback(async () => {
+    if (isBuyerPurchaseList) {
+      setIsLoading(true);
+    }
+
+    setLoadError('');
+
     try {
-      const response = await getTradeHistory({}, { preview });
+      const response = await getTradeHistory(
+        isBuyerPurchaseList ? { role: 'BUYER' } : {},
+        { preview },
+      );
       const items = getTradeListItems(response).map(toTradeHistoryItem);
 
       setAllTradeItems(items);
+      if (isBuyerPurchaseList) {
+        setFilteredTradeItems(items);
+      }
     } catch (error) {
       // 실제 API·개발용 목업 중 어느 경로가 실패했는지 개발 도구에서 확인한다.
       console.error('[TradeHistory] 전체 거래 목록 조회 실패', error);
-      setLoadError('거래 내역을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+      setLoadError(isBuyerPurchaseList
+        ? '구매 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'
+        : '거래 내역을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+    } finally {
+      if (isBuyerPurchaseList) {
+        setIsLoading(false);
+      }
     }
-  }, [preview]);
+  }, [isBuyerPurchaseList, preview]);
 
   // 탭·상태·검색어가 바뀌면 서버에 조건을 전달해 필요한 거래만 다시 조회한다.
   const loadFilteredTradeItems = useCallback(async () => {
+    if (isBuyerPurchaseList) {
+      return;
+    }
+
     setIsLoading(true);
     setLoadError('');
 
@@ -257,7 +462,7 @@ const TradeHistory = ({
     } finally {
       setIsLoading(false);
     }
-  }, [activeTab, preview, statusFilter]);
+  }, [activeTab, isBuyerPurchaseList, preview, statusFilter]);
 
   // 첫 진입에는 탭별 건수용 전체 목록을 별도로 조회한다.
   useEffect(() => {
@@ -268,19 +473,43 @@ const TradeHistory = ({
 
   // 검색어 입력은 짧게 지연해, 매 글자마다 서버 요청이 쌓이지 않게 한다.
   useEffect(() => {
+    if (isBuyerPurchaseList) {
+      return undefined;
+    }
+
     const requestTimer = window.setTimeout(loadFilteredTradeItems, 250);
 
     return () => window.clearTimeout(requestTimer);
-  }, [loadFilteredTradeItems]);
+  }, [isBuyerPurchaseList, loadFilteredTradeItems]);
+
+  const visiblePurchaseItems = useMemo(() => {
+    if (statusFilter === 'CLOSED') {
+      const closedItems = purchaseItems.filter((item) => (
+        ['COMPLETED', 'CANCELED', 'FAILED'].includes(item.purchaseStatus)
+      ));
+
+      return closedSubFilter
+        ? closedItems.filter((item) => item.purchaseStatus === closedSubFilter)
+        : closedItems;
+    }
+
+    return statusFilter === 'ALL'
+      ? purchaseItems
+      : purchaseItems.filter((item) => item.purchaseStatus === statusFilter);
+  }, [closedSubFilter, purchaseItems, statusFilter]);
 
   // 서버가 골라 준 목록은 현재 필요한 행동이 먼저 보이도록 화면에서만 정렬한다.
   const visibleTrades = useMemo(() => {
     const normalizedKeyword = normalizeSearchText(keyword);
+    const sourceItems = isBuyerPurchaseList ? visiblePurchaseItems : filteredTradeItems;
     const searchedTrades = !normalizedKeyword
-      ? filteredTradeItems
-      : filteredTradeItems.filter((trade) => {
+      ? sourceItems
+      : sourceItems.filter((trade) => {
         const searchTarget = [
           trade.id,
+          trade.tradeId,
+          trade.bidSn,
+          trade.aucSn,
           trade.productName,
           trade.counterpart,
         ].join(' ');
@@ -289,12 +518,16 @@ const TradeHistory = ({
       });
 
     return [...searchedTrades].sort((firstTrade, secondTrade) => {
-      const firstPriority = statusPriority[firstTrade.status] ?? 4;
-      const secondPriority = statusPriority[secondTrade.status] ?? 4;
+      const firstPriority = isBuyerPurchaseList
+        ? (purchaseStatusPriority[firstTrade.purchaseStatus] ?? 6)
+        : (statusPriority[firstTrade.status] ?? 4);
+      const secondPriority = isBuyerPurchaseList
+        ? (purchaseStatusPriority[secondTrade.purchaseStatus] ?? 6)
+        : (statusPriority[secondTrade.status] ?? 4);
 
       return firstPriority - secondPriority;
     });
-  }, [filteredTradeItems, keyword]);
+  }, [filteredTradeItems, isBuyerPurchaseList, keyword, visiblePurchaseItems]);
 
   const totalPages = Math.max(1, Math.ceil(visibleTrades.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -308,6 +541,20 @@ const TradeHistory = ({
     window.scrollTo(0, 0);
   };
 
+  const handleBuyerFilterChange = (nextFilter) => {
+    setStatusFilter(nextFilter);
+    setClosedSubFilter('');
+    setPage(1);
+  };
+
+  const combinedLoading = isLoading || (isBuyerPurchaseList && isBidLoading);
+  const combinedError = loadError || (isBuyerPurchaseList && isBidError
+    ? '입찰 내역을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'
+    : '');
+  const handleRetry = isBuyerPurchaseList
+    ? () => Promise.all([loadAllTradeItems(), refetchBids()])
+    : loadFilteredTradeItems;
+
   return (
     <div className={embedded
       ? 'trade-history-page trade-history-page--embedded'
@@ -319,28 +566,36 @@ const TradeHistory = ({
       >
         {fixedRole === 'BUYER' ? (
           <MyPageListSectionLayout
-            title="상품 구매 내역"
+            title="상품 구매 목록"
             summaryItems={[
-              { label: '진행 중', value: buyerStatusCounts.IN_PROGRESS ?? 0 },
-              { label: '배송·직거래 중', value: buyerStatusCounts.DELIVERING ?? 0 },
-              {
-                label: '확인 대기',
-                value: (buyerStatusCounts.WAITING_CONFIRMATION ?? 0)
-                  + allTradeItems.filter(
-                    (trade) => trade.type === 'BUYER' && trade.status === 'CONFIRM_PENDING',
-                  ).length,
-              },
+              { label: '최고 입찰 중', value: purchaseStatusCounts.HIGHEST ?? 0 },
+              { label: '재입찰 필요', value: purchaseStatusCounts.OUTBID_ACTIVE ?? 0 },
+              { label: '거래 중', value: purchaseStatusCounts.TRADING ?? 0 },
             ]}
-            filterItems={buyerStatusFilters.map((filter) => ({
+            filterItems={purchaseFilters.map((filter) => ({
               ...filter,
-              count: buyerStatusCounts[filter.value] ?? 0,
+              count: purchaseStatusCounts[filter.value] ?? 0,
             }))}
             activeFilter={statusFilter}
-            onFilterChange={setStatusFilter}
-            filterAriaLabel="구매 거래 상태"
+            onFilterChange={handleBuyerFilterChange}
+            filterAriaLabel="구매 목록 상태"
             onSearch={setKeyword}
             searchAriaLabel="구매 거래 검색"
-            isLoading={isLoading}
+            extraControls={statusFilter === 'CLOSED' ? (
+              <select
+                className="h-9 shrink-0 cursor-pointer rounded-lg border border-[#dce2ed] bg-white px-3 text-sm outline-none focus:border-[#1466f5]"
+                value={closedSubFilter}
+                onChange={(event) => { setClosedSubFilter(event.target.value); setPage(1); }}
+                aria-label="종료 상태"
+              >
+                {purchaseClosedSubFilters.map((filter) => (
+                  <option key={filter.value || 'all-closed'} value={filter.value}>
+                    {filter.label}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+            isLoading={combinedLoading}
           />
         ) : (
           <MyPageContentHeader title="거래 내역" />
@@ -407,54 +662,81 @@ const TradeHistory = ({
         </section>
 
         <section className={fixedRole ? '!mt-0' : ''} aria-live="polite">
-          {isLoading && <MyPageListSkeleton count={5} />}
+          {combinedLoading && <MyPageListSkeleton count={5} />}
 
-          {loadError && (
-            <MyPageListError message={loadError} onRetry={loadFilteredTradeItems} />
+          {combinedError && (
+            <MyPageListError message={combinedError} onRetry={handleRetry} />
           )}
 
-          {!isLoading && !loadError && visibleTrades.length === 0 && (
-            <MyPageListEmpty message="해당 조건의 구매 내역이 없습니다." />
+          {!combinedLoading && !combinedError && visibleTrades.length === 0 && (
+            <MyPageListEmpty message={isBuyerPurchaseList
+              ? '해당 조건의 구매 목록이 없습니다.'
+              : '해당 조건의 거래 내역이 없습니다.'}
+            />
           )}
 
           {/* history-list의 display:grid가 불레이어 CSS라 Tailwind hidden(@layer utilities)보다 우선
               적용된다 — hidden/lg:block은 별도 래퍼에 둬서 두 display 선언이 충돌하지 않게 한다. */}
           <div className="hidden lg:block">
           <div className="history-list">
-          {!isLoading && !loadError && pagedTrades.map((trade) => {
-            const status = getStatusInfo(trade);
-            const detailPath = trade.type === 'SELLER'
-              ? `${tradeBasePath}/${trade.id}/seller`
-              : `${tradeBasePath}/${trade.id}`;
+          {!combinedLoading && !combinedError && pagedTrades.map((trade) => {
+            const status = isBuyerPurchaseList
+              ? getPurchaseStatusInfo(trade)
+              : getStatusInfo(trade);
+            const isBidItem = isBuyerPurchaseList && trade.kind === 'BID';
+            const canOpenTradeDetail = Boolean(
+              onOpenTradeDetail && (!isBidItem || trade.tradeId),
+            );
+            const detailPath = isBidItem
+              ? (trade.tradeId
+                ? `${tradeBasePath}/${trade.tradeId}`
+                : `/auction/${trade.aucSn}`)
+              : trade.type === 'SELLER'
+                ? `${tradeBasePath}/${trade.id}/seller`
+                : `${tradeBasePath}/${trade.id}`;
             // 마이페이지 안에서 연 상세는 목록 버튼도 진입한 메뉴로 되돌린다.
             const detailTarget = embedded
-              ? `${detailPath}?from=mypage&section=${returnSection}`
+              ? `${detailPath}${detailPath.includes('?') ? '&' : '?'}from=mypage&section=${returnSection}`
               : detailPath;
+            const openDetail = () => {
+              if (canOpenTradeDetail) {
+                onOpenTradeDetail(isBidItem ? trade.tradeId : trade.id);
+                return;
+              }
+
+              navigate(detailTarget);
+            };
 
             return (
               <MyPageAuctionListItem
-                key={trade.id}
-                to={onOpenTradeDetail ? undefined : detailTarget}
+                key={isBidItem ? `bid-${trade.bidSn}` : `trade-${trade.id}`}
+                to={canOpenTradeDetail ? undefined : detailTarget}
                 imageSrc={toImageUrl(trade.productImageUrl)}
                 imageAlt={trade.productName}
                 imageFallback="상품 이미지"
                 badge={<MyPageStatusBadge className={status.badgeClass}>{status.label}</MyPageStatusBadge>}
                 title={trade.productName}
-                topLine={`확정날짜 ${trade.date} / 완료날짜 ${trade.completedDate ?? '-'}`}
-                priceItems={[
-                  { label: '확정 금액', value: trade.amount },
-                ]}
-                tradeMethodLabel={trade.method === 'DELIVERY' ? '배송' : '직거래'}
-                actionButton={onOpenTradeDetail ? (
+                topLine={isBuyerPurchaseList
+                  ? getPurchaseTopLine(trade)
+                  : `확정날짜 ${trade.date} / 완료날짜 ${trade.completedDate ?? '-'}`}
+                priceItems={isBuyerPurchaseList
+                  ? getPurchasePriceItems(trade)
+                  : [{ label: '확정 금액', value: trade.amount }]}
+                tradeMethodLabel={isBuyerPurchaseList
+                  ? getPurchaseMethodLabel(trade)
+                  : (trade.method === 'DELIVERY' ? '배송' : '직거래')}
+                actionButton={canOpenTradeDetail ? (
                   <button
                     className="btn btn-sm btn-primary"
                     type="button"
-                    onClick={() => onOpenTradeDetail(trade.id)}
+                    onClick={openDetail}
                   >
-                    거래 상세
+                    {isBidItem && !trade.tradeId ? '경매 상세' : '거래 상세'}
                   </button>
                 ) : (
-                  <span className="btn btn-sm btn-primary">거래 상세</span>
+                  <span className="btn btn-sm btn-primary">
+                    {isBidItem && !trade.tradeId ? '경매 상세' : '거래 상세'}
+                  </span>
                 )}
               />
             );
@@ -463,38 +745,66 @@ const TradeHistory = ({
           </div>
 
           <div className="grid gap-4 lg:hidden">
-            {!isLoading && !loadError && pagedTrades.map((trade) => {
-              const status = getStatusInfo(trade);
-              const detailPath = trade.type === 'SELLER'
-                ? `${tradeBasePath}/${trade.id}/seller`
-                : `${tradeBasePath}/${trade.id}`;
+            {!combinedLoading && !combinedError && pagedTrades.map((trade) => {
+              const status = isBuyerPurchaseList
+                ? getPurchaseStatusInfo(trade)
+                : getStatusInfo(trade);
+              const isBidItem = isBuyerPurchaseList && trade.kind === 'BID';
+              const canOpenTradeDetail = Boolean(
+                onOpenTradeDetail && (!isBidItem || trade.tradeId),
+              );
+              const detailPath = isBidItem
+                ? (trade.tradeId
+                  ? `${tradeBasePath}/${trade.tradeId}`
+                  : `/auction/${trade.aucSn}`)
+                : trade.type === 'SELLER'
+                  ? `${tradeBasePath}/${trade.id}/seller`
+                  : `${tradeBasePath}/${trade.id}`;
               const detailTarget = embedded
-                ? `${detailPath}?from=mypage&section=${returnSection}`
+                ? `${detailPath}${detailPath.includes('?') ? '&' : '?'}from=mypage&section=${returnSection}`
                 : detailPath;
-              const actionButton = onOpenTradeDetail ? (
-                <button className="btn btn-sm btn-primary" type="button" onClick={() => onOpenTradeDetail(trade.id)}>
-                  거래 상세
+              const actionButton = canOpenTradeDetail ? (
+                <button
+                  className="btn btn-sm btn-primary"
+                  type="button"
+                  onClick={() => onOpenTradeDetail(isBidItem ? trade.tradeId : trade.id)}
+                >
+                  {isBidItem && !trade.tradeId ? '경매 상세' : '거래 상세'}
                 </button>
               ) : (
                 <button className="btn btn-sm btn-primary" type="button" onClick={() => navigate(detailTarget)}>
-                  거래 상세
+                  {isBidItem && !trade.tradeId ? '경매 상세' : '거래 상세'}
                 </button>
               );
 
               return (
                 <MyPageMobileCard
-                  key={trade.id}
+                  key={isBidItem ? `bid-${trade.bidSn}` : `trade-${trade.id}`}
                   imageSrc={toImageUrl(trade.productImageUrl)}
                   imageAlt={trade.productName}
                   imageFallbackLabel="상품 이미지"
                   badge={<MyPageStatusBadge className={status.badgeClass}>{status.label}</MyPageStatusBadge>}
                   title={trade.productName}
-                  price={trade.amount}
+                  price={isBuyerPurchaseList
+                    ? (isBidItem ? formatPoint(trade.bidAmount) : trade.amount)
+                    : trade.amount}
                   infoItems={[
-                    { icon: CalendarDays, label: '확정날짜', value: trade.date },
-                    { icon: CalendarCheck, label: '완료날짜', value: trade.completedDate ?? '-' },
+                    {
+                      icon: CalendarDays,
+                      label: isBidItem ? '입찰날짜' : '확정날짜',
+                      value: trade.date,
+                    },
+                    {
+                      icon: CalendarCheck,
+                      label: isBidItem ? '종료날짜' : '완료날짜',
+                      value: isBidItem
+                        ? formatDate(trade.auctionEndDateTime)
+                        : trade.completedDate ?? '-',
+                    },
                   ]}
-                  footerLeft={`거래 방식 · ${trade.method === 'DELIVERY' ? '배송' : '직거래'}`}
+                  footerLeft={`거래 방식 · ${isBuyerPurchaseList
+                    ? getPurchaseMethodLabel(trade)
+                    : (trade.method === 'DELIVERY' ? '배송' : '직거래')}`}
                   actionButton={actionButton}
                 />
               );
@@ -502,7 +812,7 @@ const TradeHistory = ({
           </div>
         </section>
 
-        {!isLoading && !loadError && (
+        {!combinedLoading && !combinedError && (
           <Pagination page={currentPage} totalPages={totalPages} onPageChange={handlePageChange} showSinglePage />
         )}
       </main>

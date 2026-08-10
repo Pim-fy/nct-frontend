@@ -41,6 +41,11 @@ export const getMyTradeReview = (tradeId) =>
   api.get(`/trades/${tradeId}/reviews/me`).then(res => res.data);
 
 // @ai_generated
+/** 거래 상세에서 상대방이 나에 대해 작성한 리뷰를 조회한다. */
+export const getCounterpartTradeReview = (tradeId) =>
+  api.get(`/trades/${tradeId}/reviews/counterpart`).then(res => res.data);
+
+// @ai_generated
 /** 기존 reviewId 수정 URL을 auctionId 기반 신규 URL로 전환할 최소 컨텍스트를 조회한다. */
 export const getMyReviewRouteContext = (reviewId) =>
   api.get(`/reviews/${reviewId}/context`).then(res => res.data);

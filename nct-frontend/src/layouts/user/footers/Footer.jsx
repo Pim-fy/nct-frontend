@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SIGNUP_TERMS } from '@pages/auth/signupTerms';
+import { useConfig } from '@hooks/useConfig';
 
 const TermsModal = ({ code, onClose }) => {
   const terms = SIGNUP_TERMS[code];
@@ -41,6 +42,7 @@ const TermsModal = ({ code, onClose }) => {
  */
 const Footer = () => {
   const [activeModal, setActiveModal] = useState(null);
+  const { getConfig } = useConfig();
 
   return (
     <>
@@ -73,6 +75,9 @@ const Footer = () => {
               <p className="text-[15px] leading-[1.6] tracking-[-0.75px] text-white/50 max-w-[720px]">
                 에누리컷은 통신판매중개자로서 통신판매의 당사자가 아니며 개별 판매자가 제공하는 서비스에 대한 이행,
                 계약사항 등과 관련한 의무와 책임은 거래당사자에게 있습니다.
+              </p>
+              <p className="max-w-[720px] text-[13px] leading-[1.6] tracking-[-0.65px] text-white/65">
+                {getConfig('footer.portfolioNotice')}
               </p>
             </div>
 

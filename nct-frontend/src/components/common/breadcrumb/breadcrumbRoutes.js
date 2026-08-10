@@ -21,9 +21,8 @@ export const HOME_ITEM = { label: '홈', to: '/' };
 
 // 마이페이지 ?section= 값 → 사이드바에 표시되는 실제 메뉴명 (MyPageSidebar.jsx 기준)
 export const MYPAGE_SECTION_LABELS = {
-  'active-auctions': '진행 중인 경매',
-  'auction-bids': '상품 구매 내역',
-  'auction-sales': '상품 판매 내역',
+  'auction-bids': '상품 구매 목록',
+  'auction-sales': '상품 판매 목록',
   'service-requests': '내 서비스 요청 목록',
   wishlist: '관심 경매',
   chat: '채팅',

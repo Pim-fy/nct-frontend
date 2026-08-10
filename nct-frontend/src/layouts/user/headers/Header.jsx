@@ -144,7 +144,11 @@ const Header = () => {
   );
   const hasHeaderSearch = isAuctionSearchRoute || isServiceSearchRoute;
   // 현재 보고 있는 화면이 헤더의 어느 메뉴에 속하는지 — 호버와 무관하게 항상 활성 색상을 보여준다.
-  const isAuctionMenuActive = pathname.startsWith('/auction');
+  // @ai_generated (담당자1, 2026-08-07): startsWith('/auction')이던 걸 좁혔다 - 거래·리뷰 경로가
+  // /auction/:auctionId/trade(/review/...) 형태로 재설계되면서, 경매 탐색이 아니라 거래 상세·
+  // 리뷰 작성 화면을 보고 있을 때도 "경매" 메뉴가 계속 활성 색상으로 켜지는 문제가 있었다.
+  // isAuctionSearchRoute와 동일 기준(정확히 /auction 또는 /auction/:id까지만)으로 맞춘다.
+  const isAuctionMenuActive = pathname === '/auction' || /^\/auction\/[^/]+$/.test(pathname);
   const isServiceMenuActive = pathname.startsWith('/service');
   const isCustomerMenuActive = pathname.startsWith('/customersupport');
   let headerCreateActionType = null;

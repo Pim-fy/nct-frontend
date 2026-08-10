@@ -8,10 +8,7 @@
 //   사이드바: 데스크톱(lg+) 좌측 고정 컬럼 / 모바일 상단 가로 스크롤 탭.
 //   콘텐츠: 우측 flex-1 영역.
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-// 전역 브레드크럼 (BJN, 260805): 마이페이지는 URL만으로 위치 표현이 안 되는 화면이라 오버라이드 사용
-import { useBreadcrumbOverride } from "@components/common/breadcrumb/BreadcrumbContext";
-import { HOME_ITEM, buildMyPageTrail } from "@components/common/breadcrumb/breadcrumbRoutes";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import MyPageSidebar from "@components/mypage/MyPageSidebar";
 import MyPageDashboard from "@components/mypage/MyPageDashboard";
 import MyPageProfileEdit from "@components/mypage/MyPageProfileEdit";
@@ -22,11 +19,8 @@ import MyPageTradeChatList from "@components/mypage/MyPageTradeChatList";
 import ProviderProfilePage from "@pages/provider/ProviderProfilePage";
 import TradeChat from "@pages/trade/TradeChat";
 import MyBidHistoryPage from "@pages/user/MyBidHistoryPage";
-import MyActiveAuctionPage from "@pages/user/MyActiveAuctionPage";
 import AuctionFavoritesPage from "@pages/auction/AuctionFavoritesPage";
 import TradeHistory from "@pages/trade/TradeHistory";
-import TradeDetailBuyer from "@pages/trade/TradeDetailBuyer";
-import TradeDetailSeller from "@pages/trade/TradeDetailSeller";
 import MyProductList from "@components/product/MyProductList";
 import PointWalletPage from "@pages/user/point/PointWalletPage";
 import MyReportListPage from "@pages/user/report/MyReportListPage";
@@ -40,7 +34,6 @@ import { useMyProviderApplications } from "@hooks/useProviderApplications";
 import { confirm } from "@utils/common";
 
 const MYPAGE_SECTION_QUERY_VALUES = new Set([
-  "active-auctions",
   "auction-bids",
   "auction-sales",
   "service-requests",
@@ -106,55 +99,28 @@ export default function MyPage({
     return () => window.cancelAnimationFrame(animationFrameId);
   }, [initialSection, isProvider, requestedSection, setSearchParams]);
 
-  const [selectedChatTradeId, setSelectedChatTradeId] = useState("");
-  const [selectedPurchaseTradeId, setSelectedPurchaseTradeId] = useState("");
-  const [selectedSalesTradeId, setSelectedSalesTradeId] = useState("");
-  const [chatReturnSection, setChatReturnSection] = useState("");
   // 사이드바 클릭마다 증가 — 콘텐츠 영역 key로 써서, 같은 섹션을 다시 눌러도 그 섹션 컴포넌트를
   // 강제로 리마운트한다(필터·검색어·페이지 등 내부 state를 처음 진입 상태로 초기화하기 위함).
   const [sectionResetKey, setSectionResetKey] = useState(0);
 
-  // 전역 브레드크럼 (BJN, 260805): 로컬 state로 거래 상세가 열려 있을 때만
-  // "홈 > 마이페이지 > 섹션 > 거래 상세" 트레일을 직접 지정한다 (닫히면 자동 해제).
-  // 섹션 목록 화면 자체는 브레드크럼 비대상이라 아무것도 지정하지 않는다.
-  useBreadcrumbOverride(
-    selectedPurchaseTradeId
-      ? [HOME_ITEM, ...buildMyPageTrail("auction-bids"), { label: "거래 상세" }]
-      : selectedSalesTradeId
-        ? [HOME_ITEM, ...buildMyPageTrail("auction-sales"), { label: "거래 상세" }]
-        : null,
-  );
-
-  // 전역 브레드크럼 (BJN, 260805): 브레드크럼 링크처럼 "같은 마이페이지 URL로의 재이동"도
-  // 새 history 항목이 생기므로, 이동이 일어나면 열려 있던 거래 상세를 닫아 목록으로 돌아가게 한다.
-  // (사이드바 클릭은 handleSelectSection에서 이미 닫고 있어 중복 실행돼도 무해)
-  const { key: locationKey } = useLocation();
-  useEffect(() => {
-    setSelectedPurchaseTradeId("");
-    setSelectedSalesTradeId("");
-  }, [locationKey]);
-
   // 임시저장·외부 링크 등으로 이 페이지에 진입할 때 이전 페이지의 스크롤 위치가 남지 않도록 최상단으로 이동한다.
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
-  // 목록에서 상세를 열 때 이전 목록의 스크롤 위치가 남지 않도록 렌더링 뒤 본문 최상단으로 이동한다.
+  // 마이페이지 안에서 embedded로 직접 렌더링하는 대신, TradeHistory의 비-embedded 모드와 같은
+  // /trades/{id} 경로로 이동한다 - LegacyTradeRedirect를 거쳐 실제 상세 페이지인
+  // /auction/{auctionId}/trade(AuctionTradeDetailPage)로 연결된다. 그래야 카드 병합·스테퍼·
+  // 리뷰 섹션 등 그 페이지의 구조가 마이페이지에서도 동일하게 보인다.
   const handleOpenPurchaseTradeDetail = (tradeId) => {
-    setSelectedPurchaseTradeId(tradeId);
+    navigate(`/trades/${tradeId}?from=mypage&section=auction-bids`);
   };
 
   const handleOpenSalesTradeDetail = (tradeId) => {
-    setSelectedSalesTradeId(tradeId);
+    navigate(`/trades/${tradeId}/seller?from=mypage&section=auction-sales`);
   };
-
-  useEffect(() => {
-    if (selectedPurchaseTradeId || selectedSalesTradeId) {
-      window.scrollTo(0, 0);
-    }
-  }, [selectedPurchaseTradeId, selectedSalesTradeId]);
 
   // 사이드바 메뉴를 누르면 항상 그 섹션의 기본(목록) 화면으로 이동한다.
   // 같은 메뉴를 다시 눌러도 상세 화면에 머물러 있지 않도록, 드릴다운 상태를 무조건 초기화한다
-  // (예: 판매 내역 상세를 보다가 "상품 판매 내역"을 다시 누르면 목록으로 돌아가야 한다).
+  // (예: 판매 내역 상세를 보다가 "상품 판매 목록"을 다시 누르면 목록으로 돌아가야 한다).
   const handleSelectSection = (section) => {
     setActiveSection(section);
     if (MYPAGE_SECTION_QUERY_VALUES.has(section)) {
@@ -162,10 +128,6 @@ export default function MyPage({
     } else {
       setSearchParams({});
     }
-    setSelectedChatTradeId("");
-    setChatReturnSection("");
-    setSelectedPurchaseTradeId("");
-    setSelectedSalesTradeId("");
     setSectionResetKey((key) => key + 1);
     window.scrollTo(0, 0);
   };
@@ -214,7 +176,6 @@ export default function MyPage({
               isProviderApproved={isProviderApproved}
               onLogout={logout}
               onRequestProviderSwitch={handleProviderSwitchRequest}
-              onOpenAuctionBids={() => setActiveSection("auction-bids")}
             />
           )}
           {activeSection === "home" && isProvider && (
@@ -227,44 +188,17 @@ export default function MyPage({
           )}
           {activeSection === "profile" && <MyPageProfileEdit user={user} />}
           {isProvider && activeSection === "provider-profile" && <ProviderProfilePage embedded />}
-          {activeSection === "active-auctions" && <MyActiveAuctionPage />}
           {activeSection === "auction-bids" && (
-            selectedPurchaseTradeId ? (
-              <TradeDetailBuyer
-                embedded
-                tradeId={selectedPurchaseTradeId}
-                onBack={() => setSelectedPurchaseTradeId("")}
-                onOpenChat={(tradeId) => {
-                  setSelectedChatTradeId(tradeId);
-                  setChatReturnSection("auction-bids");
-                  setActiveSection("chat");
-                }}
-              />
-            ) : (
-              <TradeHistory
-                embedded
-                fixedRole="BUYER"
-                preview={previewTrades}
-                returnSection="auction-bids"
-                onOpenTradeDetail={handleOpenPurchaseTradeDetail}
-              />
-            )
+            <TradeHistory
+              embedded
+              fixedRole="BUYER"
+              preview={previewTrades}
+              returnSection="auction-bids"
+              onOpenTradeDetail={handleOpenPurchaseTradeDetail}
+            />
           )}
           {activeSection === "auction-sales" && (
-            selectedSalesTradeId ? (
-              <TradeDetailSeller
-                embedded
-                tradeId={selectedSalesTradeId}
-                onBack={() => setSelectedSalesTradeId("")}
-                onOpenChat={(tradeId) => {
-                  setSelectedChatTradeId(tradeId);
-                  setChatReturnSection("auction-sales");
-                  setActiveSection("chat");
-                }}
-              />
-            ) : (
-              <MyProductList embedded onOpenTradeDetail={handleOpenSalesTradeDetail} />
-            )
+            <MyProductList embedded onOpenTradeDetail={handleOpenSalesTradeDetail} />
           )}
           {activeSection === "service-requests" && <MyServiceRequestListPage embedded />}
           {activeSection === "wishlist" && <AuctionFavoritesPage embedded />}
@@ -284,14 +218,7 @@ export default function MyPage({
             <TradeChat
               embedded
               preview={previewTrades}
-              tradeId={selectedChatTradeId || undefined}
               showRoomList
-              backLabel={chatReturnSection ? "거래 상세" : undefined}
-              onBack={chatReturnSection ? () => {
-                setSelectedChatTradeId("");
-                setActiveSection(chatReturnSection);
-                setChatReturnSection("");
-              } : undefined}
             />
           )}
         </div>

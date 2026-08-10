@@ -65,8 +65,6 @@ import NotificationPage from '@pages/user/notification/NotificationPage';
 import AuctionFavoritesPage from '@pages/auction/AuctionFavoritesPage';
 import QuoteFormPage from '@pages/provider/QuoteFormPage';
 import ReviewListPage from '@pages/user/ReviewListPage';
-import ReviewWritePage from '@pages/user/ReviewWritePage';
-import ReviewEditPage from '@pages/user/ReviewEditPage';
 import MyPageReviewLayout from '@layouts/MyPageReviewLayout';
 import LegacyReviewRedirect from '@pages/user/LegacyReviewRedirect';
 // 내 입찰 내역 (F-AUC-022)
@@ -232,8 +230,6 @@ const AppRoutes = () => {
 
           <Route path="/trades/:tradeId/chat" element={<TradeChat />} />
           <Route path="/auction/:auctionId/trade" element={<AuctionTradeDetailPage />} />
-          <Route path="/auction/:auctionId/trade/review/new" element={<ReviewWritePage />} />
-          <Route path="/auction/:auctionId/trade/review/edit" element={<ReviewEditPage />} />
           <Route path="/trades/:tradeId" element={<LegacyTradeRedirect />} />
           <Route
             path="/trades/:tradeId/seller"

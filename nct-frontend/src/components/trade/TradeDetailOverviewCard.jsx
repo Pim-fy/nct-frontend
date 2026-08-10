@@ -1,0 +1,67 @@
+import { toImageUrl } from '@api/fileApi';
+import TradeProductCard from '@components/trade/TradeProductCard';
+import TradeTrustSummary from '@components/trade/TradeTrustSummary';
+
+/**
+ * 배송·직거래 상세에서 공통으로 사용하는 1영역이다.
+ * 거래 방식별 차이는 상위 화면에서 상태값·안내 문구로만 전달하고,
+ * 진행 안내·상품·거래 상대방의 배치와 태그 위치는 여기서 동일하게 유지한다.
+ */
+export default function TradeDetailOverviewCard({
+  trade,
+  statusLabel,
+  statusClassName,
+  statusMessages,
+  counterpartTitle,
+  auctionId,
+}) {
+  return (
+    <section className="trade-detail-card">
+      <div className="trade-detail-card__block">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h3 style={{ margin: 0 }}>거래 진행 안내</h3>
+          <span className={`trade-status ${statusClassName}`}>
+            {statusLabel}
+          </span>
+        </div>
+        {statusMessages.map((message, index) => (
+          <p key={`${message}-${index}`}>{message}</p>
+        ))}
+      </div>
+
+      <TradeProductCard
+        bare
+        productImageUrl={trade.productImageUrl}
+        productName={trade.productName}
+        price={trade.price}
+        category={trade.category}
+        createdDate={trade.createdDate}
+        completedDate={trade.completedDate}
+        auctionId={auctionId}
+      />
+
+      <div className="trade-detail-card__block">
+        <h3>{counterpartTitle}</h3>
+        <div className="trade-counterpart">
+          <div className="trade-counterpart__profile">
+            <div className="trade-counterpart__avatar">
+              {trade.counterpartProfileImageUrl
+                ? <img src={toImageUrl(trade.counterpartProfileImageUrl)} alt={trade.counterpart} />
+                : (trade.counterpart?.slice(0, 1) ?? '?')}
+            </div>
+            <div>
+              <p>{trade.counterpart}</p>
+              {trade.counterpartJoinedLabel !== '-' && (
+                <>
+                  <p className="trade-detail-card__muted">{trade.counterpartJoinedLabel}</p>
+                  <p className="trade-detail-card__muted">완료한 거래 {trade.counterpartCompletedTradeCount}건</p>
+                </>
+              )}
+            </div>
+          </div>
+          <TradeTrustSummary counterpartUserId={trade.counterpartUserId} />
+        </div>
+      </div>
+    </section>
+  );
+}

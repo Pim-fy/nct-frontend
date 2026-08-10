@@ -9,8 +9,11 @@ export default function TradeDetailSkeleton({ embedded = false, role = 'buyer' }
         aria-busy="true"
         aria-label="거래 상세 정보를 불러오는 중"
       >
-        <div className="trade-progress">
-          {Array.from({ length: 4 }).map((_, index) => (
+        {/* @ai_generated (담당자1, 2026-08-07): trade-progress → trade-stepper 개편에 맞춰
+            3단계로 조정(새 스테퍼는 항상 3단계). trade-stepper는 여전히 display:flex라
+            자리 배치는 맞는다. */}
+        <div className="trade-stepper">
+          {Array.from({ length: 3 }).map((_, index) => (
             <Skeleton height={38} key={index} style={{ flex: 1 }} />
           ))}
         </div>

@@ -2,7 +2,11 @@ import api from './axios';
 import {
   getTradePreviewDetail,
   getTradePreviewList,
+  createTradePreviewCancellationProposal,
+  createTradePreviewScheduleProposal,
+  respondToTradePreviewScheduleProposal,
   updateTradePreviewDetail,
+  withdrawTradePreviewScheduleProposal,
 } from '../mocks/tradePreviewData';
 
 const TRADE_ENDPOINT = '/trades';
@@ -60,22 +64,70 @@ export const getTradeDetailByAuctionId = async (auctionId) => {
 };
 
 /**
- * 판매자가 본인 직거래의 일시·장소·상세 주소를 저장하거나 수정한다.
- * 서버는 판매자 여부와 직거래 방식 여부를 함께 검증한다.
+ * 거래 당사자가 직거래 일정 신규 제안 또는 변경 제안을 등록한다.
+ * 서버는 거래 당사자 여부와 직거래 방식 여부를 함께 검증한다.
  */
 export const proposeTradeOfflineSchedule = async (tradeId, payload) => {
   // preview 경로에서는 저장 형식만 반환해 폼 동작을 확인한다.
   if (shouldUseTradePreview()) {
-    return updateTradePreviewDetail(tradeId, {
-      ...payload,
-      // 직거래 일정 저장 성공은 거래 진행 시작을 의미한다.
-      tradeStatus: 'IN_PROGRESS',
-    });
+    return createTradePreviewScheduleProposal(tradeId, payload);
   }
 
-  const response = await api.put(
-    `${TRADE_ENDPOINT}/${tradeId}/offline-schedule`,
+  const response = await api.post(
+    `${TRADE_ENDPOINT}/${tradeId}/offline-schedule/proposals`,
     payload,
+  );
+
+  return response.data;
+};
+
+/** 확정 직거래 일정 취소를 상대방에게 제안한다. */
+export const requestOfflineScheduleCancellation = async (tradeId) => {
+  if (shouldUseTradePreview()) {
+    return createTradePreviewCancellationProposal(tradeId);
+  }
+
+  const response = await api.post(
+    `${TRADE_ENDPOINT}/${tradeId}/offline-schedule/cancel-requests`,
+  );
+
+  return response.data;
+};
+
+/** 상대방이 제안한 직거래 일정을 수락한다. */
+export const acceptOfflineScheduleProposal = async (tradeId, proposalId) => {
+  if (shouldUseTradePreview()) {
+    return respondToTradePreviewScheduleProposal(tradeId, true);
+  }
+
+  const response = await api.post(
+    `${TRADE_ENDPOINT}/${tradeId}/offline-schedule/proposals/${proposalId}/accept`,
+  );
+
+  return response.data;
+};
+
+/** 상대방이 제안한 직거래 일정을 거절한다. */
+export const rejectOfflineScheduleProposal = async (tradeId, proposalId) => {
+  if (shouldUseTradePreview()) {
+    return respondToTradePreviewScheduleProposal(tradeId, false);
+  }
+
+  const response = await api.post(
+    `${TRADE_ENDPOINT}/${tradeId}/offline-schedule/proposals/${proposalId}/reject`,
+  );
+
+  return response.data;
+};
+
+/** 본인이 등록한 대기 중 직거래 일정 제안을 철회한다. */
+export const withdrawOfflineScheduleProposal = async (tradeId, proposalId) => {
+  if (shouldUseTradePreview()) {
+    return withdrawTradePreviewScheduleProposal(tradeId);
+  }
+
+  const response = await api.delete(
+    `${TRADE_ENDPOINT}/${tradeId}/offline-schedule/proposals/${proposalId}`,
   );
 
   return response.data;
