@@ -32,7 +32,7 @@ const STATUS_OPTIONS = [
   { value: 'SVCC0002', label: '공개' },
   { value: 'SVCC0001', label: '임시저장' },
   { value: 'SVCC0003', label: '매칭완료' },
-  { value: 'SVCC0004', label: '종료' },
+  { value: 'SVCC0004', label: '취소' },
 ];
 
 const statusTone = (statusCode) => {
