@@ -267,20 +267,28 @@ export default function QuoteDetailPage() {
                 <p className="text-sm text-[#9a9ba5]">이력이 없습니다.</p>
               ) : (
                 <ul className="space-y-3">
-                  {quoteHistory.map(h => (
-                    <li key={h.qutHstSn} className="rounded-lg bg-[#f9fafb] p-3">
-                      <p className="font-semibold text-[#1d1d1f]">{formatBudget(h.amount)}</p>
-                      {h.content && <p className="mt-1 whitespace-pre-line text-sm text-[#5f5e5a]">{h.content}</p>}
-                      <p className="mt-1 text-xs text-[#9a9ba5]">{fmtDate(h.registeredAt)} 수정 전 내용</p>
-                    </li>
-                  ))}
+                  {/* 수정 이력은 오래된순으로 오므로, 각 항목의 "이후 금액"은 다음 이력의 금액(마지막이면 현재 견적 금액)이다 */}
+                  {quoteHistory.map((h, i) => {
+                    const nextAmount = quoteHistory[i + 1]?.amount ?? quote.amount;
+                    return (
+                      <li key={h.qutHstSn} className="rounded-lg bg-[#f9fafb] p-3">
+                        <p className="flex flex-wrap items-center gap-1.5 font-semibold text-[#1d1d1f]">
+                          <span className="text-[#9a9ba5] line-through">{formatBudget(h.amount)}</span>
+                          <span className="text-[#9a9ba5]">→</span>
+                          <span>{formatBudget(nextAmount)}</span>
+                        </p>
+                        {h.content && <p className="mt-1 whitespace-pre-line text-sm text-[#5f5e5a]">{h.content}</p>}
+                        <p className="mt-1 text-xs text-[#9a9ba5]">{fmtDate(h.registeredAt)} 수정 전 내용</p>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>
           )}
 
           {/* 신고: 황성경(3) 공용 ReportModal 연동. 선택하기: 조우진(7)의 선택+거래생성 계약 연동(F-SVC-009/010). */}
-          <div className="mt-6 flex items-center justify-between gap-2 border-t border-[#e8e8e8] pt-5">
+          <div className="mt-6 flex items-center justify-end gap-2 border-t border-[#e8e8e8] pt-5">
             <button
               type="button"
               onClick={() => setReportTarget({
