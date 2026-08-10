@@ -17,6 +17,7 @@ import PageMeta from '@components/admin/PageMeta';
 import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
 import { useAuth } from '@hooks/useAuth';
 import { useCustomerInquiryTypes } from '@hooks/useCustomerInquiry';
+import { formatAdminMemberIdentity } from '@utils/adminMemberIdentity';
 import { formatDateTime, toast } from '@utils/common';
 import '../audit/adminAuditPage.css';
 import './adminOperationPages.css';
@@ -150,7 +151,11 @@ const AdminCustomerInquiryManagementPage = () => {
       label: '유형',
       render: (value, row) => row.inquiryTypeName || typeNameByCode[value] || value || '-',
     },
-    { key: 'userSn', label: '작성자', render: (value) => (value == null ? '-' : `회원 #${value}`) },
+    {
+      key: 'userSn',
+      label: '작성자',
+      render: (value, row) => formatAdminMemberIdentity(row.writerMember, value),
+    },
     { key: 'title', label: '제목' },
     { key: 'registeredAt', label: '접수일', render: formatDateTime },
     {
@@ -269,12 +274,12 @@ const AdminCustomerInquiryManagementPage = () => {
                 <dl>
                   <dt>문의 번호</dt><dd>#{detail.inquirySn}</dd>
                   <dt>문의 유형</dt><dd>{detail.inquiryTypeName || typeNameByCode[detail.inquiryTypeCode] || detail.inquiryTypeCode}</dd>
-                  <dt>작성자</dt><dd>{detail.userSn == null ? '-' : `회원 #${detail.userSn}`}</dd>
+                  <dt>작성자</dt><dd>{formatAdminMemberIdentity(detail.writerMember, detail.userSn)}</dd>
                   <dt>상태</dt><dd><AdminStatusBadge tone={detailStatus.tone}>{detailStatus.label}</AdminStatusBadge></dd>
                   <dt>접수일</dt><dd>{formatDateTime(detail.registeredAt)}</dd>
                   <dt>제목</dt><dd>{detail.title}</dd>
                   <dt>문의 내용</dt><dd className="admin-operation-detail__content">{detail.content}</dd>
-                  {detail.processorUserSn != null && <><dt>처리 담당자</dt><dd>관리자 #{detail.processorUserSn}</dd></>}
+                  {detail.processorUserSn != null && <><dt>처리 담당자</dt><dd>{formatAdminMemberIdentity(detail.processorMember, detail.processorUserSn)}</dd></>}
                   {detail.statusCode === 'INQC0009' && (
                     <>
                       <dt>답변일</dt><dd>{formatDateTime(detail.answeredAt)}</dd>

@@ -73,6 +73,7 @@ api.interceptors.response.use(
     // 로그인·refresh 요청 자체가 실패한 경우 재시도 루프 방지
     if (
       originalRequest.url?.includes('/auth/login') ||
+      originalRequest.url?.includes('/auth/admin/login') ||
       originalRequest.url?.includes('/auth/refresh')
     ) {
       return Promise.reject(error);   // 작업 실패처리, error을 호출한 곳에 전달.

@@ -6,11 +6,12 @@
 import React, { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getMyPagePath } from "@/routes/myPageRoutes";
 import { useQuery } from "@tanstack/react-query";
 import { fetchMyFavoriteAuctions } from "@api/auctionApi";
 import { getMyBidHistory } from "@api/bidApi";
 import { getMyServiceRequests } from "@api/serviceRequestApi";
-import { getMyQuotes } from "@api/quoteApi";
+import { getMyServiceTrades } from "@api/serviceTradeApi";
 import { getMyProducts } from "@api/productApi";
 import { getTradeHistory } from "@api/tradeApi";
 import { getTradeListItems, toTradeHistoryItem } from "@api/tradeAdapter";
@@ -331,7 +332,6 @@ export default function MyPageDashboard({
   isProviderApproved,
   onLogout,
   onRequestProviderSwitch,
-  onOpenAuctionBids,
 }) {
   const navigate = useNavigate();
   const nickname = user?.nickname || "고객";
@@ -356,7 +356,7 @@ export default function MyPageDashboard({
     section: "active-auctions",
   }));
 
-  const nav = (section) => () => navigate(`/user/mypage?section=${section}`);
+  const nav = (section) => () => navigate(getMyPagePath(section));
 
   // ── 실데이터 조회 ──────────────────────────────────────────────────────────
 
@@ -393,32 +393,33 @@ export default function MyPageDashboard({
   });
   const purchaseCnt = allTradeItems.filter((t) => t.type === "BUYER").length;
 
-  // 서비스 요청 전체 건수 (구매자 입찰)
+  // 담당자 7: 일반회원 서비스 현황은 요청자 전용 조회 계약만 사용한다.
   const { data: svcReqAll } = useQuery({
     queryKey: ["serviceRequests", "me", "total"],
     queryFn: () => getMyServiceRequests(1, 1),
     select: (res) => res.data,
     enabled: !!user,
   });
-  const svcBidCnt = svcReqAll?.total ?? 0;
+  const svcRequestCnt = svcReqAll?.total ?? 0;
 
-  // 서비스 요청 완료 건수
-  const { data: svcReqClosed } = useQuery({
-    queryKey: ["serviceRequests", "me", "closed"],
-    queryFn: () => getMyServiceRequests(1, 1, "CLOSED"),
-    select: (res) => res.data,
+  const { data: svcTradeAll } = useQuery({
+    queryKey: ["my-service-trades", "REQUESTER", "ALL", "", 1, 1],
+    queryFn: () => getMyServiceTrades({ role: "REQUESTER", page: 1, size: 1 }),
     enabled: !!user,
   });
-  const svcClosedCnt = svcReqClosed?.total ?? 0;
+  const svcTradeCnt = Number(svcTradeAll?.totalCount) || 0;
 
-  // 견적 목록 건수 (제공자 판매)
-  const { data: quotePage } = useQuery({
-    queryKey: ["quotes", "my", { page: 1, size: 1 }],
-    queryFn: () => getMyQuotes({ page: 1, size: 1 }),
-    select: (res) => res.data,
+  const { data: svcTradeCompleted } = useQuery({
+    queryKey: ["my-service-trades", "REQUESTER", "TRDC0006", "", 1, 1],
+    queryFn: () => getMyServiceTrades({
+      role: "REQUESTER",
+      status: "TRDC0006",
+      page: 1,
+      size: 1,
+    }),
     enabled: !!user,
   });
-  const svcSaleCnt = quotePage?.totalCount ?? 0;
+  const svcTradeCompletedCnt = Number(svcTradeCompleted?.totalCount) || 0;
 
   // 경매 판매 건수 (진행 중 상태)
   const { data: auctionActiveSummary } = useQuery({
@@ -489,13 +490,13 @@ export default function MyPageDashboard({
       color: "#0CB8BB",
       icon: assets.iconService,
       label: "서비스 거래",
-      value: String(svcBidCnt + svcSaleCnt),
+      value: String(svcRequestCnt + svcTradeCnt),
       unit: "건",
       meta: (
         <span className="flex items-center gap-x-2">
-          <button type="button" onClick={nav("service-requests")} className={subBtn}>입찰 {svcBidCnt}건</button>
+          <button type="button" onClick={nav("service-requests")} className={subBtn}>견적 요청 {svcRequestCnt}건</button>
           <span className="text-white/70">ㅣ</span>
-          <button type="button" onClick={nav("service-sales")} className={subBtn}>판매 {svcSaleCnt}건</button>
+          <button type="button" onClick={nav("service-trade")} className={subBtn}>서비스 거래 {svcTradeCnt}건</button>
         </span>
       ),
       onMore: nav("service-requests"),
@@ -505,13 +506,13 @@ export default function MyPageDashboard({
       color: "#e63946",
       icon: assets.iconEnd2,
       label: "거래 완료",
-      value: String(wonCnt + svcClosedCnt),
+      value: String(wonCnt + svcTradeCompletedCnt),
       unit: "건",
       meta: (
         <span className="flex items-center gap-x-2">
           <button type="button" onClick={nav("auction-bids")}  className={subBtn}>경매 {wonCnt}건</button>
           <span className="text-white/70">ㅣ</span>
-          <button type="button" onClick={nav("service-sales")} className={subBtn}>서비스 {svcClosedCnt}건</button>
+          <button type="button" onClick={nav("service-trade")} className={subBtn}>서비스 {svcTradeCompletedCnt}건</button>
         </span>
       ),
       onMore: undefined,
@@ -555,21 +556,21 @@ export default function MyPageDashboard({
       {/* 알림 100% */}
       <NotificationPanel
         notifications={allNotifications}
-        onItemClick={(section) => navigate(`/user/mypage?section=${section}`)}
+        onItemClick={(section) => navigate(getMyPagePath(section))}
         onMore={() => navigate("/user/notification")}
       />
       {/* 채팅 + 리뷰 2열 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
         <ActiveChatPanel
           rooms={activeChatRooms}
-          onOpenChat={() => navigate("/user/mypage?section=chat")}
-          onMore={() => navigate("/user/mypage?section=chat")}
+          onOpenChat={() => navigate(getMyPagePath("chat"))}
+          onMore={() => navigate(getMyPagePath("chat"))}
         />
         {writableReviews.length > 0 && (
           <ReviewablePanel
             items={writableReviews}
-            onWrite={(item) => navigate(`/user/reviews/write/${item.id}`, { state: { item } })}
-            onMore={() => navigate("/user/mypage?section=review")}
+            onWrite={(item) => navigate(`/user/mypage/reviews/write/${item.id}`, { state: { item } })}
+            onMore={() => navigate(getMyPagePath("review"))}
           />
         )}
       </div>

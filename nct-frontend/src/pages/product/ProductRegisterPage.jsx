@@ -380,7 +380,7 @@ export default function ProductRegisterPage() {
       submittedRef.current = true;
       draftCache = null; // DB에 반영됐으니 임시 캐시는 정리 — 다음 진입은 "재개" 흐름(서버 재조회)이 담당
       // 임시저장은 판매내역 목록으로, 실제 경매 등록은 방금 만든 상품 상세로 이동
-      navigate(statusCd === 'PRDC0001' ? '/user/mypage?section=auction-sales' : `/product/${prdSn}/seller`);
+      navigate(statusCd === 'PRDC0001' ? '/user/mypage/auctions/sales' : `/product/${prdSn}/seller`);
     } catch (err) {
       const msg = err.response?.data?.message;
       setError(msg || (editPrdSn ? '상품 수정에 실패했습니다.' : '상품 등록에 실패했습니다.'));

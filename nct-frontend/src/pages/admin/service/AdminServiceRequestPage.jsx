@@ -15,6 +15,7 @@ import PageMeta from '@components/admin/PageMeta';
 import { ADMIN_HIGH_VOLUME_PAGE_SIZE } from '@/constants/adminPagination';
 import { useAdminCategories } from '@hooks/useAdminCategories';
 import { formatDateTime } from '@utils/common';
+import { formatAdminMemberIdentity } from '@utils/adminMemberIdentity';
 import '../notice/adminContentPages.css';
 import './adminServiceRequestPage.css';
 
@@ -95,9 +96,9 @@ const AdminServiceRequestPage = () => {
     },
     { key: 'categoryName', label: '카테고리' },
     {
-      key: 'requesterName',
+      key: 'requesterUserId',
       label: '요청자',
-      render: (value, row) => `${value ?? '-'} (#${row.requesterUserId})`,
+      render: (value, row) => formatAdminMemberIdentity(row.requesterMember, value),
     },
     { key: 'budgetAmount', label: '예산', render: formatAmount },
     {
@@ -330,10 +331,10 @@ const AdminServiceRequestPage = () => {
                 {(detail.requesterName || detail.requesterUserId != null) && (
                   <div>
                     <span>요청자</span>
-                    <strong>
-                      {detail.requesterName || '회원'}
-                      {detail.requesterUserId != null ? ` #${detail.requesterUserId}` : ''}
-                    </strong>
+                    <strong>{formatAdminMemberIdentity(
+                      detail.requesterMember,
+                      detail.requesterUserId,
+                    )}</strong>
                   </div>
                 )}
                 <div>
@@ -347,7 +348,10 @@ const AdminServiceRequestPage = () => {
                   <h4>선택 견적</h4>
                   <dl>
                     <dt>견적</dt><dd>#{detail.selectedQuoteId}</dd>
-                    <dt>제공자</dt><dd>#{detail.selectedProviderUserId}</dd>
+                    <dt>제공자</dt><dd>{formatAdminMemberIdentity(
+                      detail.selectedProviderMember,
+                      detail.selectedProviderUserId,
+                    )}</dd>
                     <dt>금액</dt><dd>{formatAmount(detail.selectedAmount)}</dd>
                     <dt>원본 상태</dt><dd>{detail.selectedQuoteStatusCode}</dd>
                   </dl>

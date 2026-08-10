@@ -17,6 +17,7 @@ export default function MyPageAuctionListItem({
   tradeMethodLabel,
   categoryLabel,
   to,
+  state,
 }) {
   return (
     <MyPageListItem
@@ -26,6 +27,7 @@ export default function MyPageAuctionListItem({
       badge={badge}
       title={<span className="text-2xl">{title}</span>}
       to={to}
+      state={state}
       actions={(
         <MyPageListPriceActions topLine={topLine} priceItems={priceItems}>
           {actionButton}

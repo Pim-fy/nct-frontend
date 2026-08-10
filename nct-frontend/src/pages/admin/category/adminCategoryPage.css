@@ -187,7 +187,6 @@
 .admin-category-form {
   display: grid;
   gap: 20px;
-  padding: 22px;
 }
 
 .admin-category-form__domain {

@@ -34,7 +34,7 @@ const LINK_ERROR_MESSAGES = {
   ALREADY_LINKED_SELF: '이미 연동된 소셜 계정입니다.',
 };
 const MYPAGE_LINK_RETURN_KEY = 'mypageLinkReturn';
-const MYPAGE_LINK_RETURN_FALLBACK = '/user/mypage?section=profile';
+const MYPAGE_LINK_RETURN_FALLBACK = '/user/mypage/profile';
 
 const OAuthRedirectHandler = () => {
   const navigate  = useNavigate();

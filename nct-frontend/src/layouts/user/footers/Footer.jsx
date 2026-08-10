@@ -44,7 +44,7 @@ const Footer = () => {
 
   return (
     <>
-      <footer className="bg-[#293341] text-[rgba(255,255,255,0.8)] mt-auto pb-[60px] md:pb-0">
+      <footer className="bg-[#293341] text-[rgba(255,255,255,0.8)] mt-auto md:pb-0">
         <div className="container py-9">
           <div className="flex flex-wrap items-start justify-between gap-8 pt-7 pb-7">
             {/* 좌측: 로고 + 링크 */}

@@ -108,11 +108,11 @@ export default function ReviewListPage() {
 
   // 전역 브레드크럼 (BJN, 260805): 접근 경로(state.from)를 함께 전달해 브레드크럼에 반영
   const handleWriteReview = (item) => {
-    navigate(`/user/reviews/write/${item.id}`, { state: { item, from: location.pathname + location.search } });
+    navigate(`/user/mypage/reviews/write/${item.id}`, { state: { item, from: location.pathname + location.search } });
   };
 
   const handleEditReview = (item) => {
-    navigate(`/user/reviews/edit/${item.id}`, { state: { item, from: location.pathname + location.search } });
+    navigate(`/user/mypage/reviews/edit/${item.id}`, { state: { item, from: location.pathname + location.search } });
   };
 
   const handleDeleteReview = async (item) => {

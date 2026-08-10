@@ -15,6 +15,7 @@ import {
   usePublishAdminNotice,
 } from '@hooks/useAdminNotices';
 import { formatDateTime, toast } from '@utils/common';
+import { formatAdminMemberIdentity } from '@utils/adminMemberIdentity';
 import './adminContentPages.css';
 
 const PAGE_SIZE = ADMIN_PAGE_SIZE;
@@ -174,7 +175,19 @@ const AdminNoticeListPage = () => {
     },
     { key: 'postingStartAt', label: '노출 시작', render: formatDateTime },
     { key: 'postingEndAt', label: '노출 종료', render: formatDateTime },
-    { key: 'writerName', label: '작성자' },
+    {
+      key: 'writerUserId',
+      label: '작성자',
+      render: (value, row) => formatAdminMemberIdentity(row.writerMember, value),
+    },
+    {
+      key: 'updatedAt',
+      label: '최종 처리',
+      render: (value, row) => `${formatAdminMemberIdentity(
+        row.updaterMember,
+        row.updaterUserId,
+      )} · ${formatDateTime(value)}`,
+    },
   ];
 
   return (
