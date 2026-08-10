@@ -122,6 +122,10 @@ const TradeDetailBuyer = ({
   const [notice, setNotice] = useState('');
   const [deliveryProofUrls, setDeliveryProofUrls] = useState([]);
   const [selectedDeliveryProofIndex, setSelectedDeliveryProofIndex] = useState(null);
+  const hasDeliveryProofFiles = Boolean(
+    trade?.deliveryId && trade?.deliveryProofFiles?.length,
+  );
+  const visibleDeliveryProofUrls = hasDeliveryProofFiles ? deliveryProofUrls : [];
   const [isCompletionResultOpen, setIsCompletionResultOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => Date.now());
   const isPreview = pathname.startsWith('/trades/preview');
@@ -216,9 +220,7 @@ const TradeDetailBuyer = ({
 
   // 보호된 배송 사진은 axios 요청으로 Blob을 받아, 브라우저가 인증 쿠키를 빠뜨리지 않게 표시한다.
   useEffect(() => {
-    if (!trade?.deliveryId || !trade.deliveryProofFiles.length) {
-      setDeliveryProofUrls([]);
-      setSelectedDeliveryProofIndex(null);
+    if (!hasDeliveryProofFiles) {
       return undefined;
     }
 
@@ -240,10 +242,12 @@ const TradeDetailBuyer = ({
 
         if (isActive) {
           setDeliveryProofUrls(files);
+          setSelectedDeliveryProofIndex(null);
         }
       } catch {
         if (isActive) {
           setDeliveryProofUrls([]);
+          setSelectedDeliveryProofIndex(null);
         }
       }
     };
@@ -254,7 +258,7 @@ const TradeDetailBuyer = ({
       isActive = false;
       objectUrls.forEach((objectUrl) => URL.revokeObjectURL(objectUrl));
     };
-  }, [trade?.deliveryId, trade?.deliveryProofFiles]);
+  }, [hasDeliveryProofFiles, trade?.deliveryId, trade?.deliveryProofFiles]);
 
   const hasMeetingSchedule = Boolean(
     trade?.meetingDate && trade.meetingDate !== '-'
@@ -303,12 +307,7 @@ const TradeDetailBuyer = ({
     onStepperChange?.(getOfflineTradeProgressConfig(trade, currentTime));
   }, [
     embedded,
-    trade?.method,
-    trade?.status,
-    trade?.meetingDate,
-    trade?.meetingTime,
-    trade?.meetingPlace,
-    trade?.pendingScheduleProposalId,
+    trade,
     currentTime,
     onStepperChange,
   ]);
@@ -491,10 +490,10 @@ const TradeDetailBuyer = ({
                 </div>
                 <div className="trade-detail-card__block">
                   <h3>발송 정보</h3>
-                  {deliveryProofUrls.length > 0 && (
+                  {visibleDeliveryProofUrls.length > 0 && (
                     <div className="trade-delivery-proof-gallery">
                       <div>
-                        {deliveryProofUrls.map((file, index) => (
+                        {visibleDeliveryProofUrls.map((file, index) => (
                           <button
                             className="trade-delivery-proof-gallery__item"
                             key={file.fileId}
@@ -516,7 +515,7 @@ const TradeDetailBuyer = ({
                   {trade.deliveryMessage !== '-' && (
                     <p>배송 메모: {trade.deliveryMessage}</p>
                   )}
-                  {deliveryProofUrls.length === 0
+                  {visibleDeliveryProofUrls.length === 0
                     && trade.deliveryProofRegisteredAt === '-'
                     && trade.deliveryMessage === '-' && (
                     <p className="trade-detail-card__muted">
@@ -601,8 +600,8 @@ const TradeDetailBuyer = ({
 
       <PhotoLightbox
         title="발송 인증 사진"
-        photoUrls={deliveryProofUrls.map((file) => file.objectUrl)}
-        index={selectedDeliveryProofIndex}
+        photoUrls={visibleDeliveryProofUrls.map((file) => file.objectUrl)}
+        index={hasDeliveryProofFiles ? selectedDeliveryProofIndex : null}
         onClose={() => setSelectedDeliveryProofIndex(null)}
         onNavigate={setSelectedDeliveryProofIndex}
       />

@@ -101,7 +101,6 @@ const TradeDetailSeller = ({
   const [completionAgreed, setCompletionAgreed] = useState(false);
   const [isCompletionSubmitting, setIsCompletionSubmitting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [timeRefreshSignal, setTimeRefreshSignal] = useState(0);
   const shippingProofFilesRef = useRef(shippingProofFiles);
@@ -128,10 +127,13 @@ const TradeDetailSeller = ({
   const [submittedProofUrls, setSubmittedProofUrls] = useState([]);
   // 구매자 화면과 동일하게 사진을 눌러 크게 볼 수 있게 한다.
   const [selectedProofIndex, setSelectedProofIndex] = useState(null);
+  const hasSubmittedProofFiles = Boolean(
+    trade?.deliveryId && trade?.deliveryProofFiles?.length,
+  );
+  const visibleSubmittedProofUrls = hasSubmittedProofFiles ? submittedProofUrls : [];
 
   useEffect(() => {
-    if (!trade?.deliveryId || !trade.deliveryProofFiles.length) {
-      setSubmittedProofUrls([]);
+    if (!hasSubmittedProofFiles) {
       return undefined;
     }
 
@@ -148,9 +150,15 @@ const TradeDetailSeller = ({
           return { ...file, objectUrl };
         }));
 
-        if (isActive) setSubmittedProofUrls(files);
+        if (isActive) {
+          setSubmittedProofUrls(files);
+          setSelectedProofIndex(null);
+        }
       } catch {
-        if (isActive) setSubmittedProofUrls([]);
+        if (isActive) {
+          setSubmittedProofUrls([]);
+          setSelectedProofIndex(null);
+        }
       }
     };
 
@@ -160,7 +168,7 @@ const TradeDetailSeller = ({
       isActive = false;
       objectUrls.forEach((objectUrl) => URL.revokeObjectURL(objectUrl));
     };
-  }, [trade?.deliveryId, trade?.deliveryProofFiles]);
+  }, [hasSubmittedProofFiles, trade?.deliveryId, trade?.deliveryProofFiles]);
 
   const isPreview = pathname.startsWith('/trades/preview');
   const contentClassName = embedded ? 'trade-detail-page__content' : 'container';
@@ -275,7 +283,7 @@ const TradeDetailSeller = ({
       return;
     }
 
-    setError('');
+    setNotice('');
     try {
       if (trade.chatRoomStatus === 'NOT_STARTED') {
         await startTradeChat(tradeId);
@@ -286,7 +294,7 @@ const TradeDetailSeller = ({
       if (onOpenChat) onOpenChat(tradeId);
       else navigate(chatPath);
     } catch (chatError) {
-      setError(chatError.response?.data?.message ?? '거래 채팅을 시작하지 못했습니다.');
+      setNotice(chatError.response?.data?.message ?? '거래 채팅을 시작하지 못했습니다.');
     }
   };
 
@@ -576,7 +584,7 @@ const TradeDetailSeller = ({
                 trade={trade}
                 onUpdated={handleOfflineScheduleUpdated}
                 onNotice={setNotice}
-                onError={setError}
+                onError={setNotice}
               />
               {hasMeetingSchedule && (
                   <div className="trade-detail-card__block">
@@ -707,10 +715,10 @@ const TradeDetailSeller = ({
             </div>
             <div className="trade-detail-card__block">
               <h3>발송 정보</h3>
-              {submittedProofUrls.length > 0 && (
+              {visibleSubmittedProofUrls.length > 0 && (
                 <div className="trade-delivery-proof-gallery">
                   <div>
-                    {submittedProofUrls.map((file, index) => (
+                    {visibleSubmittedProofUrls.map((file, index) => (
                       <button
                         className="trade-delivery-proof-gallery__item"
                         key={file.fileId}
@@ -732,7 +740,7 @@ const TradeDetailSeller = ({
               {trade.deliveryMessage !== '-' && (
                 <p>배송 메모: {trade.deliveryMessage}</p>
               )}
-              {submittedProofUrls.length === 0
+              {visibleSubmittedProofUrls.length === 0
                 && trade.deliveryProofRegisteredAt === '-'
                 && trade.deliveryMessage === '-' && (
                 <p className="trade-detail-card__muted">
@@ -869,8 +877,8 @@ const TradeDetailSeller = ({
 
       <PhotoLightbox
         title="발송 인증 사진"
-        photoUrls={submittedProofUrls.map((file) => file.objectUrl)}
-        index={selectedProofIndex}
+        photoUrls={visibleSubmittedProofUrls.map((file) => file.objectUrl)}
+        index={hasSubmittedProofFiles ? selectedProofIndex : null}
         onClose={() => setSelectedProofIndex(null)}
         onNavigate={setSelectedProofIndex}
       />
