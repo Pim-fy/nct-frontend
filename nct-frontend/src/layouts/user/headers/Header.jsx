@@ -34,7 +34,7 @@ import logoImg from '@assets/img/logo.png';
 import bellIcon from '@assets/img/bellIcon.png';
 import walletIcon from '@assets/img/walletIcon.png';
 import userIcon from '@assets/img/userIcon.png';
-import micIcon from '@assets/img/micIcon.png';
+import micIcon from '@assets/img/notice_icon.png';
 
 const NOTICE_ROTATE_MS = 3500;
 const NOTICE_SCROLL_THRESHOLD = 48; // NoticeStrip 높이 정도 스크롤하면 전환
@@ -466,10 +466,10 @@ const Header = () => {
             to={siteNoticeItems.length > 0
               ? `/customersupport/notice/${siteNoticeItems[noticeIndex % siteNoticeItems.length].id}`
               : '/customersupport/notice'}
-            className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-full bg-[#f3f5fa] px-4 py-2 text-[13px] text-[#4e4e4e] transition-opacity duration-300 hover:bg-[#e9edf5] md:flex"
+            className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-full bg-[#f3f5fa] px-4 py-2 text-[15px] text-[#4e4e4e] transition-opacity duration-300 hover:bg-[#e9edf5] md:flex"
             style={{ opacity: scrolled ? 1 : 0, pointerEvents: scrolled ? 'auto' : 'none' }}
           >
-            <img src={micIcon} alt="" width={14} height={14} className="shrink-0 opacity-70" />
+            <img src={micIcon} alt="" width={18} height={18} className="shrink-0 opacity-70" />
             <span className="max-w-[420px] truncate">
               {siteNotices.length > 0
                 ? siteNotices[noticeIndex % siteNotices.length]
@@ -584,13 +584,25 @@ const Header = () => {
                         <span className="text-[15px] font-bold text-black tracking-[-0.5px]">알림</span>
                         <span className="text-[12px] text-[#0064ff]">{notiCount}</span>
                       </span>
-                      <button
-                        type="button"
-                        className="text-[12px] font-medium text-primary"
-                        onClick={() => markAllReadMutation.mutate()}
-                      >
-                        전체 읽음
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          className="text-[12px] font-medium text-primary"
+                          onClick={() => markAllReadMutation.mutate()}
+                        >
+                          전체 읽음
+                        </button>
+                        {/* 모바일 전체화면 알림함과 동일하게 명시적 닫기 버튼 제공 —
+                            데스크톱은 그동안 바깥 클릭(handleClickOutside)에만 의존해서 닫혔다 (2026-08-10) */}
+                        <button
+                          type="button"
+                          aria-label="닫기"
+                          className="flex size-6 items-center justify-center rounded-full text-[#767676] hover:bg-[#f3f5fa] transition-colors"
+                          onClick={() => setNotiOpen(false)}
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
                     </div>
                     <div className="my-3 h-px bg-[#e5e5e5]" />
                     {notiList}
@@ -624,6 +636,15 @@ const Header = () => {
                 {/* 헤더 */}
                 <div className="flex items-center justify-between">
                   <span className="text-[15px] font-bold text-black tracking-[-0.5px]">POINT</span>
+                  {/* 알림 팝업과 동일하게 명시적 닫기 버튼 추가 (2026-08-10) */}
+                  <button
+                    type="button"
+                    aria-label="닫기"
+                    className="flex size-6 items-center justify-center rounded-full text-[#767676] hover:bg-[#f3f5fa] transition-colors"
+                    onClick={() => setPointOpen(false)}
+                  >
+                    <X size={16} />
+                  </button>
                 </div>
                 <div className="my-3 h-px bg-[#e5e5e5]" />
                 {/* 잔액 */}
@@ -701,6 +722,15 @@ const Header = () => {
                   ) : (
                     <span className="text-[14px] text-[#969696]">로그인이 필요합니다</span>
                   )}
+                  {/* 알림 팝업과 동일하게 명시적 닫기 버튼 추가 (2026-08-10) */}
+                  <button
+                    type="button"
+                    aria-label="닫기"
+                    className="flex size-6 items-center justify-center rounded-full text-[#767676] hover:bg-[#f3f5fa] transition-colors"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    <X size={16} />
+                  </button>
                 </div>
                 <div className="my-3 h-px bg-[#e5e5e5]" />
                 {/* 액션 */}

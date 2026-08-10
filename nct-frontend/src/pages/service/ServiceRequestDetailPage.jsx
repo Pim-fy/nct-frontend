@@ -124,9 +124,26 @@ function renderThLabel(entry) {
   );
 }
 
+// 옮길 가전/추가 옵션처럼 라벨 없이 선택값만 여러 개 나열되는 다중선택 항목 — 선택 개수만큼
+// 열을 나누면 개수가 늘어날수록 칸이 좁아져 텍스트가 줄바꿈되므로, 칩으로 만들어 줄바꿈되게 둔다
+function renderMultiSelectValue(fields) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {fields.map((f, i) => (
+        <span key={i} className="rounded-lg bg-[#f5f5f3] px-3 py-1.5 font-semibold text-[#1d1d1f]">
+          {f.value}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 // 항목 하나의 값 영역 — 출발지/도착지처럼 실제로 묶이는 필드는 옅은 구분선으로 나눠 보여준다
 // (양쪽 다 같은 간격을 갖도록 첫 칸엔 오른쪽 여백, 이후 칸엔 왼쪽 여백+구분선을 준다 — 폭이 한쪽으로 치우쳐 보이는 것 방지)
 function renderEntryValue(entry) {
+  if (entry.fields.length > 1 && entry.fields.every(f => !f.label)) {
+    return renderMultiSelectValue(entry.fields);
+  }
   const subGroups = groupByLabelPrefix(entry.fields);
   return (
     <div className="grid gap-0" style={{ gridTemplateColumns: `repeat(${subGroups.length || 1}, minmax(0, 1fr))` }}>

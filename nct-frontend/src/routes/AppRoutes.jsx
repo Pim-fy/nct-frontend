@@ -107,6 +107,7 @@ import AdminReportManagementPage from '@pages/admin/operation/AdminReportManagem
 import AdminCustomerInquiryManagementPage from '@pages/admin/operation/AdminCustomerInquiryManagementPage';
 import AdminDisputeManagementPage from '@pages/admin/operation/AdminDisputeManagementPage';
 import AdminPointExchangePage from '@pages/admin/operation/AdminPointExchangePage';
+import AdminSettlementManagementPage from '@pages/admin/operation/AdminSettlementManagementPage';
 
 // 개발 환경에서는 별도 env 설정 없이 로그인 없는 거래 화면을 검토할 수 있다.
 // 운영 빌드에서는 false가 되어 개발용 더미 경로가 노출되지 않는다.
@@ -285,6 +286,7 @@ const AppRoutes = () => {
           <Route path="inquiries" element={<AdminCustomerInquiryManagementPage />} />
           <Route path="disputes" element={<AdminDisputeManagementPage />} />
           <Route path="exchanges" element={<AdminPointExchangePage />} />
+          <Route path="settlements" element={<AdminSettlementManagementPage />} />
           {/* 담당자 7 · F-OPS-011: 담당자 6의 F-OPS-016 화면을 소비해 운영 기록 탐색만 통합합니다. */}
           <Route path="operations-records" element={<AdminOperationsRecordPage />} />
           <Route path="system-settings" element={<AdminSystemSettingPage />} />
