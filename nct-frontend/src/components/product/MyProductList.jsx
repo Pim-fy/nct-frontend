@@ -27,9 +27,9 @@ import MyPageMobileCard from '@components/mypage/MyPageMobileCard';
 const FILTERS = [
   { value: null,      label: '전체' },
   { value: 'DRAFT',   label: '임시저장' },
-  { value: 'ACTIVE',  label: '진행 중' },
-  { value: 'WON',     label: '낙찰' },
-  { value: 'TRADING', label: '거래 중' },
+  { value: 'RESERVED', label: '예약' },
+  { value: 'ACTIVE',  label: '경매중' },
+  { value: 'TRADING', label: '거래중' },
   { value: 'CLOSED',  label: '종료' },
 ];
 
@@ -73,27 +73,9 @@ const getTradeStatusLabel = (product) => {
   return TRADE_STATUS_LABEL[product.tradeStatusCd] ?? product.tradeStatusCd;
 };
 
-// 데스크톱·모바일 두 렌더 블록에서 공통으로 쓰는 배지·상태 판정 — 규칙은 여기 한 곳에서만 정의한다
-// (TradeHistory.jsx의 getStatusInfo()와 동일한 패턴, 호출은 블록마다 반복해도 로직은 하나로 유지)
-const getProductStatusDisplay = (p) => ({
-  badgeLabel: p.tradeSn
-    ? getTradeStatusLabel(p)
-    : p.aucStatusCd
-    ? (AUC_STATUS_LABEL[p.aucStatusCd] ?? p.aucStatusCd)
-    : (PRD_STATUS_LABEL[p.prdStatusCd] ?? p.prdStatusCd),
-  badgeClass: p.tradeSn
-    ? (TRADE_BADGE[p.tradeStatusCd] ?? 'badge-outline-gray')
-    : p.aucStatusCd
-    ? (AUC_STATUS_BADGE[p.aucStatusCd] ?? 'badge-outline-gray')
-    : (PRD_STATUS_BADGE[p.prdStatusCd] ?? 'badge-outline-gray'),
-  isActive: p.prdStatusCd === 'PRDC0002',
-  isDraft: p.prdStatusCd === 'PRDC0001',
-  isEnded: p.prdStatusCd === 'PRDC0003',
-});
-
 const PRD_STATUS_LABEL = {
   PRDC0001: '임시저장',
-  PRDC0002: '진행 중',
+  PRDC0002: '경매중',
   PRDC0003: '종료',
 };
 
@@ -108,6 +90,37 @@ const PRD_STATUS_BADGE = {
 function fmtPrice(n) {
   return n != null ? `${Number(n).toLocaleString()}원` : '-';
 }
+
+const isReservedProduct = (product) => {
+  const draftStartNowYn = product?.prdDraftStartNowYn ?? product?.draftStartNowYn;
+  const draftStartDt = product?.prdDraftStartDt ?? product?.draftStartDt;
+  const draftStartTime = new Date(draftStartDt).getTime();
+
+  return product?.prdStatusCd === 'PRDC0001'
+    && draftStartNowYn === 'N'
+    && Number.isFinite(draftStartTime)
+    && draftStartTime > Date.now();
+};
+
+const getProductStatusLabel = (product) => {
+  if (product.tradeSn) return getTradeStatusLabel(product);
+  if (isReservedProduct(product)) return '예약';
+  if (product.aucStatusCd === 'AUCC0002') return '경매중';
+  if (product.aucStatusCd === 'AUCC0003') return '거래중';
+  if (product.aucStatusCd) return AUC_STATUS_LABEL[product.aucStatusCd] ?? product.aucStatusCd;
+
+  return PRD_STATUS_LABEL[product.prdStatusCd] ?? product.prdStatusCd;
+};
+
+const getProductStatusBadgeClass = (product) => {
+  if (product.tradeSn) return TRADE_BADGE[product.tradeStatusCd] ?? 'badge-outline-gray';
+  if (isReservedProduct(product)) return 'badge-outline-orange';
+  if (product.aucStatusCd === 'AUCC0002') return 'badge-outline-orange';
+  if (product.aucStatusCd === 'AUCC0003') return 'badge-teal';
+  if (product.aucStatusCd) return AUC_STATUS_BADGE[product.aucStatusCd] ?? 'badge-outline-gray';
+
+  return PRD_STATUS_BADGE[product.prdStatusCd] ?? 'badge-outline-gray';
+};
 
 // ─── 컴포넌트 ─────────────────────────────────────────────────────────────────
 
@@ -137,7 +150,6 @@ export default function MyProductList() {
   const visibleList = normalizedSearchKeyword
     ? list.filter((product) => String(product.prdNm ?? '').toLowerCase().includes(normalizedSearchKeyword))
     : list;
-
   const handleFilterChange = (value) => {
     setFilter(value);
     setSubFilter('');
@@ -165,7 +177,7 @@ export default function MyProductList() {
   if (isError) {
     return (
       <>
-        <MyPageContentHeader title="상품 판매 내역" />
+        <MyPageContentHeader title="상품 판매 목록" />
         <MyPageListError message="목록을 불러오지 못했습니다." onRetry={() => refetch()} />
       </>
     );
@@ -174,25 +186,25 @@ export default function MyProductList() {
   return (
     <>
       <MyPageListSectionLayout
-        title="상품 판매 내역"
+        title="상품 판매 목록"
         summaryItems={[
-          { label: '진행 중', value: summaryData?.active ?? 0 },
-          { label: '낙찰', value: summaryData?.won ?? 0 },
-          { label: '거래 중', value: summaryData?.trading ?? 0 },
+          { label: '경매중', value: summaryData?.active ?? 0 },
+          { label: '거래중', value: summaryData?.trading ?? 0 },
+          { label: '종료', value: summaryData?.closed ?? 0 },
         ]}
         filterItems={FILTERS.map((item) => ({
           ...item,
           count: {
             DRAFT: summaryData?.draft,
+            RESERVED: summaryData?.reserved,
             ACTIVE: summaryData?.active,
-            WON: summaryData?.won,
             TRADING: summaryData?.trading,
             CLOSED: summaryData?.closed,
           }[item.value] ?? (item.value === null ? summaryData?.total : 0),
         }))}
         activeFilter={filter}
         onFilterChange={handleFilterChange}
-        filterAriaLabel="판매 경매 상태"
+        filterAriaLabel="판매 목록 상태"
         onSearch={setSearchKeyword}
         searchAriaLabel="판매 상품명 검색"
         extraControls={filter === 'CLOSED' ? (
@@ -232,7 +244,12 @@ export default function MyProductList() {
           <div className="hidden lg:block">
           <div className="history-list">
             {visibleList.map((p) => {
-              const { badgeLabel, badgeClass, isActive, isDraft, isEnded } = getProductStatusDisplay(p);
+              const badgeLabel = getProductStatusLabel(p);
+              const badgeClass = getProductStatusBadgeClass(p);
+
+              const isActive = p.prdStatusCd === 'PRDC0002';
+              const isDraft  = p.prdStatusCd === 'PRDC0001';
+              const isEnded  = p.prdStatusCd === 'PRDC0003';
 
               return (
                 <MyPageAuctionListItem
@@ -292,7 +309,11 @@ export default function MyProductList() {
           </div>
           <div className="grid gap-4 lg:hidden">
             {visibleList.map((p) => {
-              const { badgeLabel, badgeClass, isActive, isDraft, isEnded } = getProductStatusDisplay(p);
+              const badgeLabel = getProductStatusLabel(p);
+              const badgeClass = getProductStatusBadgeClass(p);
+              const isActive = p.prdStatusCd === 'PRDC0002';
+              const isDraft = p.prdStatusCd === 'PRDC0001';
+              const isEnded = p.prdStatusCd === 'PRDC0003';
 
               return (
                 <MyPageMobileCard

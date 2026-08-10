@@ -5,7 +5,7 @@
 //       STAT_CARDS/TODAY_ITEMS/WISH_ITEMS를 각 도메인 조회 결과로 교체한다.
 import React, { useState } from "react";
 import { ChevronRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { getMyPagePath } from "@/routes/myPageRoutes";
 import { useQuery } from "@tanstack/react-query";
 import { fetchMyFavoriteAuctions } from "@api/auctionApi";
@@ -20,6 +20,8 @@ import { getTradeChatRooms } from "@api/tradeChatApi";
 import { toTradeChatRooms } from "@api/tradeChatAdapter";
 import { usePointBalance } from "@hooks/usePoint";
 import { useMemberProfile } from "@hooks/useMemberProfile";
+import { reviewQueryKeys } from "@hooks/useReview";
+import { toast } from "@utils/common";
 import { assets } from "@components/mypage/assets";
 import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
 import MyPagePanel from "@components/mypage/MyPagePanel";
@@ -109,7 +111,7 @@ const REVIEW_DEAL_TYPE = {
   service: { label: "서비스",   cls: "badge-success" },
 };
 
-function ReviewablePanel({ items, onWrite, onMore }) {
+function ReviewablePanel({ items, onView, onMore }) {
   const fmtDate = (str) => str?.slice(0, 10).replace(/-/g, ".") ?? "-";
   const preview = items.slice(0, 3);
 
@@ -150,10 +152,10 @@ function ReviewablePanel({ items, onWrite, onMore }) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => onWrite(item)}
+                  onClick={() => onView(item)}
                   className="btn btn-sm btn-primary shrink-0"
                 >
-                  리뷰작성
+                  상세보기
                 </button>
               </div>
             );
@@ -224,6 +226,7 @@ export default function MyPageDashboard({
   onRequestProviderSwitch,
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const nickname = user?.nickname || "고객";
   const email = user?.email || "";
   const profileQuery = useMemberProfile();
@@ -243,7 +246,7 @@ export default function MyPageDashboard({
     meta: item.currentPrice
       ? `현재가 ${Number(item.currentPrice).toLocaleString()}P`
       : "현재가 -",
-    section: "active-auctions",
+    section: "wishlist",
   }));
 
   const nav = (section) => (event) => {
@@ -268,7 +271,7 @@ export default function MyPageDashboard({
       .filter((b) => b.auctionStatusCode === "AUCC0002" && (b.displayStatus === "HIGHEST" || b.displayStatus === "OUTBID"))
       .map((b) => b.aucSn)
   ).size;
-  // 구매 건수 — 상품 구매내역 페이지(TradeHistory fixedRole=BUYER)와 동일한 기준
+  // 구매 건수 — 상품 구매 목록(TradeHistory fixedRole=BUYER)과 동일한 기준
   const { data: allTradeItems = [] } = useQuery({
     queryKey: ["trades", "my", "all"],
     queryFn: async () => {
@@ -333,8 +336,10 @@ export default function MyPageDashboard({
   });
 
   // 미작성 리뷰 목록
+  // @ai_generated (담당자1, 2026-08-07): 리터럴 키 대신 useReview.js의 reviewQueryKeys 계약을
+  // 써서, 리뷰 등록/수정/삭제 후 무효화(reviewQueryKeys.all=['reviews'])가 이 캐시도 갱신하게 한다(P4-4).
   const { data: writableReviews = [] } = useQuery({
-    queryKey: ["reviews", "writable"],
+    queryKey: reviewQueryKeys.writable,
     queryFn: getWritableReviews,
     select: (res) => res.data ?? [],
     enabled: !!user,
@@ -368,14 +373,14 @@ export default function MyPageDashboard({
       unit: "건",
       meta: (
         <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <button type="button" onClick={nav("active-auctions")} className={subBtn}>진행중 {activeAuctionCnt}건</button>
+          <button type="button" onClick={nav("auction-bids")} className={subBtn}>입찰중 {activeAuctionCnt}건</button>
           <span className="text-white/70">ㅣ</span>
           <button type="button" onClick={nav("auction-bids")}    className={subBtn}>구매 {purchaseCnt}건</button>
           <span className="text-white/70">ㅣ</span>
           <button type="button" onClick={nav("auction-sales")}   className={subBtn}>판매 {auctionSaleCnt}건</button>
         </span>
       ),
-      onMore: nav("active-auctions"),
+      onMore: nav("auction-bids"),
     },
     {
       key: "service",
@@ -441,7 +446,20 @@ export default function MyPageDashboard({
         />
         <ReviewablePanel
           items={writableReviews}
-          onWrite={(item) => navigate(`/user/mypage/reviews/write/${item.id}`, { state: { item } })}
+          onView={(item) => {
+            const from = location.pathname + location.search;
+            if (item.dealType === 'service') {
+              navigate(`/service-trades/${item.tradeId ?? item.id}`, { state: { from } });
+              return;
+            }
+            // @ai_generated (담당자1, 2026-08-07): auctionId가 없으면 "/auction/undefined/trade"로
+            // 이동해 400을 받는 대신(P3-7), 안내만 하고 이동을 막는다.
+            if (!item.auctionId) {
+              toast({ icon: 'error', title: '거래 상세로 이동할 수 없습니다. 잠시 후 다시 시도해주세요.' });
+              return;
+            }
+            navigate(`/auction/${item.auctionId}/trade`, { state: { from } });
+          }}
           onMore={() => navigate(getMyPagePath("review"))}
         />
       </div>
