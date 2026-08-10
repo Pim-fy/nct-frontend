@@ -36,7 +36,10 @@ const MENU_SECTIONS = [
     { label: '견적 요청 관리', icon: BriefcaseBusiness, to: '/admin/services' },
     { label: '카테고리 관리', icon: Grid2X2, to: '/admin/categories' },
   ],
-  [{ label: '환전 관리', icon: WalletCards, to: '/admin/exchanges' }],
+  [
+    { label: '정산 관리', icon: WalletCards, to: '/admin/settlements' },
+    { label: '환전 관리', icon: WalletCards, to: '/admin/exchanges' },
+  ],
   [
     { label: '공지 관리', icon: Megaphone, to: '/admin/notices' },
   ],

@@ -105,14 +105,12 @@ export default function AuctionSettingStep({
           <div style={{ position: 'relative' }}>
             <input
               className="input no-spinner"
-              type="number"
-              value={form.prdStartAmt}
-              onChange={e => set('prdStartAmt', e.target.value)}
-              onWheel={e => e.target.blur()}
+              type="text"
+              inputMode="numeric"
+              value={form.prdStartAmt ? Number(form.prdStartAmt).toLocaleString('ko-KR') : ''}
+              onChange={e => set('prdStartAmt', e.target.value.replace(/[^0-9]/g, ''))}
               onBlur={() => setStartAmtTouched(true)}
-              min={0}
-              step={form.bidUnit}
-              placeholder="0"
+              placeholder={(form.bidUnit * 10).toLocaleString('ko-KR')}
             />
             {submitted && !form.prdStartAmt && (
               <span style={{ position: 'absolute', top: '100%', left: 0, fontSize: 17, fontWeight: 700, color: '#c0392b', whiteSpace: 'nowrap' }}>시작가 입력은 필수입니다</span>
@@ -128,17 +126,15 @@ export default function AuctionSettingStep({
           <label>즉시구매가 <span style={{ fontWeight: 500, color: '#888780' }}>(백 단위 자동절삭)</span></label>
           <input
             className="input no-spinner"
-            type="number"
-            value={form.prdIbyAmt}
-            onChange={e => set('prdIbyAmt', e.target.value)}
-            onWheel={e => e.target.blur()}
-            onBlur={e => {
-              if (!e.target.value) return;
-              const rounded = Math.floor(Number(e.target.value) / 100) * 100;
+            type="text"
+            inputMode="numeric"
+            value={form.prdIbyAmt ? Number(form.prdIbyAmt).toLocaleString('ko-KR') : ''}
+            onChange={e => set('prdIbyAmt', e.target.value.replace(/[^0-9]/g, ''))}
+            onBlur={() => {
+              if (!form.prdIbyAmt) return;
+              const rounded = Math.floor(Number(form.prdIbyAmt) / 100) * 100;
               set('prdIbyAmt', String(rounded));
             }}
-            min={0}
-            step={100}
             placeholder="입력 시 즉시구매 가능"
           />
         </div>

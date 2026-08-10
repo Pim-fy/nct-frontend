@@ -8,6 +8,7 @@ import { useNavigate, useLocation, useNavigationType } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { getCategories } from '@api/categoryApi';
 import { fetchBannedKeywords, registerProduct, updateProduct, getProduct } from '@api/productApi';
+import { fetchReferenceCodes } from '@api/referenceApi';
 import { uploadImage } from '@api/fileApi';
 import { formatPoint } from '@/utils/common';
 import ErrorMessage from '@components/common/ErrorMessage';
@@ -48,7 +49,8 @@ const TRADE_METHODS = [
   { value: 'TRDC0020', label: '둘 다 가능', Icon: BothIcon },
 ];
 
-const BID_UNITS = [500, 1000, 5000, 10000, 50000, 100000];
+// 입찰 단위 선택지 — 관리자가 CMM_CODE(AUCG02)에서 추가/삭제하는 옵션 목록을 그대로 쓴다 (하드코딩 금지)
+const BID_UNIT_GROUP_CD = 'AUCG02';
 const PRODUCT_DOMAIN_CD = 'CATC0001';
 const STEP_LABELS = ['상품 입력', '등록 확인'];
 const MAX_IMAGES = 5; // F-AUC-002 — 대표이미지 포함 최대 5장
@@ -81,7 +83,9 @@ export default function ProductRegisterPage() {
     : { start: '', end: '', startTime: '09:00', endTime: '09:00' }); // 경매 기간 범위
   const [images, setImages] = useState(() => hasCachedDraft ? draftCache.images : []); // [{ id, flSn, url, file }] — file이 있으면 아직 미업로드, 첫 번째가 대표
   const [bannedKeywords, setBannedKeywords] = useState([]);
+  const [bidUnits, setBidUnits] = useState([]);
   const [bannedKeywordError, setBannedKeywordError] = useState('');
+  const [bannedKeywordCnError, setBannedKeywordCnError] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [alertMsg, setAlertMsg] = useState(''); // 화면 중앙 알림 모달(AlertModal) — 유효성 검사 안내용
   const errorRef = useRef(null);
@@ -90,6 +94,7 @@ export default function ProductRegisterPage() {
   // 제출 성공 후에는 캐시 동기화 effect가 다시 draftCache를 채우지 않도록 막는 플래그
   const submittedRef = useRef(false);
   const imgSectionRef = useRef(null);
+  const descRef = useRef(null);
   const prdNmRef = useRef(null);
   const catRef = useRef(null);
   const tradeRef = useRef(null);
@@ -129,6 +134,9 @@ export default function ProductRegisterPage() {
       .catch(() => setError('카테고리를 불러오지 못했습니다.'));
     fetchBannedKeywords()
       .then(res => setBannedKeywords(res.data))
+      .catch(() => {});
+    fetchReferenceCodes(BID_UNIT_GROUP_CD)
+      .then(codes => setBidUnits(codes.map(c => Number(c.name)).filter(n => !Number.isNaN(n))))
       .catch(() => {});
 
     // 캐시로 복원된 경우엔 이미 최신 입력값을 들고 있으니 서버에서 다시 불러오지 않는다.
@@ -209,7 +217,7 @@ export default function ProductRegisterPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => { window.scrollTo(0, 0); }, []);
+  useEffect(() => { window.scrollTo(0, 0); }, [step]);
 
   useEffect(() => {
     if (error && errorRef.current) {
@@ -241,6 +249,17 @@ export default function ProductRegisterPage() {
     const found = bannedKeywords.find(kwd => lower.includes(kwd.toLowerCase()));
     setBannedKeywordError(found ? `'${found}'은(는) 등록할 수 없는 키워드입니다.` : '');
   }, [form.prdNm, bannedKeywords]);
+
+  // 상품명만 막으면 본문에 금지 키워드를 넣어 우회할 수 있어 설명도 같은 방식으로 검사한다
+  useEffect(() => {
+    if (!form.prdCn || bannedKeywords.length === 0) {
+      setBannedKeywordCnError('');
+      return;
+    }
+    const lower = form.prdCn.toLowerCase();
+    const found = bannedKeywords.find(kwd => lower.includes(kwd.toLowerCase()));
+    setBannedKeywordCnError(found ? `'${found}'은(는) 등록할 수 없는 키워드입니다.` : '');
+  }, [form.prdCn, bannedKeywords]);
 
   const set = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
 
@@ -317,6 +336,22 @@ export default function ProductRegisterPage() {
         setAlertMsg('경매 시작 시각이 이미 지났습니다. 이전 단계에서 시작 시각을 다시 확인해 주세요.');
         return;
       }
+      // 등록 진행 중 관리자가 입찰 단위 옵션을 바꿨을 수 있어, 실제 전송 직전에 최신 목록으로 다시 확인한다
+      // (endDt/startDt와 같은 이유 — 화면에 떠 있는 목록은 페이지 진입 시점 스냅샷이라 계속 최신이라는 보장이 없음)
+      if (statusCd === 'PRDC0002') {
+        try {
+          const freshCodes = await fetchReferenceCodes(BID_UNIT_GROUP_CD);
+          const freshUnits = freshCodes.map(c => Number(c.name)).filter(n => !Number.isNaN(n));
+          setBidUnits(freshUnits);
+          if (!freshUnits.includes(form.bidUnit)) {
+            setStep(0);
+            setAlertMsg('관리자가 입찰 단위를 변경했습니다. 목록에서 다시 선택해 주세요.');
+            return;
+          }
+        } catch {
+          // 목록 재조회 실패 시엔 기존 선택값으로 그대로 진행 — 최종 검증은 서버가 한다
+        }
+      }
       const payload = {
         catSn:          Number(form.catSn),
         prdNm:          form.prdNm.trim(),
@@ -379,6 +414,10 @@ export default function ProductRegisterPage() {
       prdNmRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail(bannedKeywordError);
     }
+    if (bannedKeywordCnError) {
+      descRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return fail(bannedKeywordCnError);
+    }
     if (images.length === 0) {
       imgSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail('상품 사진을 1개 이상 등록해 주세요.');
@@ -414,6 +453,10 @@ export default function ProductRegisterPage() {
     if (form.prdIbyAmt && Number(form.prdIbyAmt) % form.bidUnit !== 0) {
       ibyAmtRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail(`즉시구매가는 입찰 단위(${formatPoint(form.bidUnit)})의 배수로 입력해 주세요.`);
+    }
+    if (form.prdIbyAmt && Number(form.prdIbyAmt) <= Number(form.prdStartAmt)) {
+      ibyAmtRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return fail('즉시구매가는 시작가보다 높아야 합니다.');
     }
     if (requirePolicyAgreed && !policyAgreed) {
       policyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -496,12 +539,14 @@ export default function ProductRegisterPage() {
                   set={set}
                   categories={categories}
                   bannedKeywordError={bannedKeywordError}
+                  bannedKeywordCnError={bannedKeywordCnError}
                   images={images}
                   onChange={setImages}
                   tradeMethods={TRADE_METHODS}
                   maxImages={MAX_IMAGES}
                   submitted={submitted}
                   imgSectionRef={imgSectionRef}
+                  descRef={descRef}
                   prdNmRef={prdNmRef}
                   catRef={catRef}
                   tradeRef={tradeRef}
@@ -524,7 +569,7 @@ export default function ProductRegisterPage() {
                 auctionRange={auctionRange}
                 setAuctionRange={setAuctionRange}
                 endDt={endDt}
-                bidUnits={BID_UNITS}
+                bidUnits={bidUnits}
                 submitted={submitted}
                 startAmtRef={startAmtRef}
                 ibyAmtRef={ibyAmtRef}
