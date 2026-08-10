@@ -121,7 +121,8 @@ const AuctionBidPanel = ({
   );
   const isCurrentHighestTradeMethodControl = isAuctionOpen
     && isCurrentHighestBidder
-    && isMixedTradeMethod;
+    && isMixedTradeMethod
+    && !isInstantBuyAmountSelected;
   const isPrimaryActionPending = isCurrentHighestTradeMethodControl
     ? isTradeMethodChangePending
     : isBidPending;
@@ -139,7 +140,7 @@ const AuctionBidPanel = ({
       return `${selectedTradeName}으로 변경${isTradeMethodChangePending ? ' 중' : ''}`;
     }
     if (isInstantBuyAmountSelected) {
-      return isBidPointInsufficient ? '포인트 부족' : '즉시구매 진행';
+      return isBidPointInsufficient ? '포인트 부족' : '즉시구매';
     }
     if (isCurrentHighestBidder) return '최고입찰 중';
     if (isBidPointInsufficient) return '포인트 부족';
@@ -479,22 +480,24 @@ const AuctionBidPanel = ({
                       >
                         {primaryActionLabel}
                       </button>
-                      <button
-                        className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-white text-body-md font-bold text-primary disabled:cursor-not-allowed disabled:opacity-55 aria-busy:cursor-progress"
-                        id="buyNowBtn"
-                        type="button"
-                        aria-busy={isBuyNowPending}
-                        disabled={!isBuyNowAvailable || isBuyNowPending || isBuyNowPointInsufficient}
-                        onClick={onBuyNowOpen}
-                      >
-                        {!isAuctionOpen
-                          ? '즉시구매 종료'
-                          : (isBuyNowPointInsufficient
-                            ? '포인트 부족'
-                            : (isBuyNowAvailable
-                              ? `즉시구매 ${formatPoint(auction.instantBuyPrice)}`
-                              : '즉시구매 불가'))}
-                      </button>
+                      {!isInstantBuyAmountSelected && (
+                        <button
+                          className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-white text-body-md font-bold text-primary disabled:cursor-not-allowed disabled:opacity-55 aria-busy:cursor-progress"
+                          id="buyNowBtn"
+                          type="button"
+                          aria-busy={isBuyNowPending}
+                          disabled={!isBuyNowAvailable || isBuyNowPending || isBuyNowPointInsufficient}
+                          onClick={onBuyNowOpen}
+                        >
+                          {!isAuctionOpen
+                            ? '즉시구매 종료'
+                            : (isBuyNowPointInsufficient
+                              ? '포인트 부족'
+                              : (isBuyNowAvailable
+                                ? `즉시구매 ${formatPoint(auction.instantBuyPrice)}`
+                                : '즉시구매 불가'))}
+                        </button>
+                      )}
                     </>
                   )}
                 </div>
