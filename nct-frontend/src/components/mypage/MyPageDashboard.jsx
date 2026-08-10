@@ -5,7 +5,7 @@
 //       STAT_CARDS/TODAY_ITEMS/WISH_ITEMS를 각 도메인 조회 결과로 교체한다.
 import React, { useState } from "react";
 import { ChevronRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { getMyPagePath } from "@/routes/myPageRoutes";
 import { useQuery } from "@tanstack/react-query";
 import { fetchMyFavoriteAuctions } from "@api/auctionApi";
@@ -19,11 +19,12 @@ import { getWritableReviews } from "@api/reviewApi";
 import { getTradeChatRooms } from "@api/tradeChatApi";
 import { toTradeChatRooms } from "@api/tradeChatAdapter";
 import { usePointBalance } from "@hooks/usePoint";
-import { useNotifications } from "@hooks/useNotification";
 import { useMemberProfile } from "@hooks/useMemberProfile";
-import relativeTime from "@utils/relativeTime";
+import { reviewQueryKeys } from "@hooks/useReview";
+import { toast } from "@utils/common";
 import { assets } from "@components/mypage/assets";
 import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
+import MyPagePanel from "@components/mypage/MyPagePanel";
 import {
   MyPageDashboardSummaryCards,
   MyPageDashboardTop,
@@ -35,26 +36,6 @@ const WISH_TABS = [
   { label: "서비스요청", section: "wishlist" },
   { label: "입찰",     section: "wishlist" },
 ];
-
-const NOTIF_TABS = ["전체", "경매", "거래", "채팅", "서비스", "운영"];
-
-const DOMAIN_BADGE = {
-  NTFC0010: "badge-urgent",
-  NTFC0011: "badge-blue",
-  NTFC0012: "badge-success",
-  NTFC0013: "badge-primary",
-  NTFC0014: "badge-gray",
-};
-
-const DOMAIN_TO_SECTION = {
-  NTFC0010: "active-auctions",
-  NTFC0011: "auction-bids",
-  NTFC0012: "service-trade",
-  NTFC0013: "wallet",
-  NTFC0014: "chat",
-};
-
-
 
 function ListPanel({ title, items, tabs, onTabClick, onMore, onItemMore }) {
   const [activeIdx, setActiveIdx] = useState(0);
@@ -125,96 +106,20 @@ function ListPanel({ title, items, tabs, onTabClick, onMore, onItemMore }) {
   );
 }
 
-function NotificationPanel({ notifications = [], onItemClick, onMore }) {
-  const [activeIdx, setActiveIdx] = useState(0);
-
-  // 탭 순서: 전체, 경매(NTFC0010), 거래(NTFC0011), 채팅(NTFC0014), 서비스(NTFC0012), 운영(NTFC0013)
-  const NOTIF_TAB_CODES = [null, "NTFC0010", "NTFC0011", "NTFC0014", "NTFC0012", "NTFC0013"];
-  const filtered = notifications
-    .filter((n) => activeIdx === 0 || n.domainCd === NOTIF_TAB_CODES[activeIdx])
-    .slice(0, 6);
-
-  return (
-    <div className="bg-white rounded-[15px] shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-[#e4e9f2] overflow-hidden">
-      {/* 헤더 배경 영역 */}
-      <div className="bg-[#f5f7fc] px-5 border-b border-[#e8e9ec]">
-        <div className="flex items-end justify-between h-[60px] gap-4">
-          <div className="flex items-end gap-5">
-            <h3 className="font-bold text-[18px] text-[#1a1a1a] m-0 shrink-0 pb-[10px]">알림</h3>
-            {NOTIF_TABS.map((tab, i) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setActiveIdx(i)}
-                className={`tab-underline${i === activeIdx ? " active" : ""}`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={onMore}
-            className="bg-transparent border-none cursor-pointer flex items-center gap-1 text-[14px] text-[#969696] shrink-0 pb-[10px]"
-          >
-            더보기 <ChevronRight size={14} className="text-[#969696]" />
-          </button>
-        </div>
-      </div>
-
-      {/* 리스트 영역 */}
-      <div className="px-5 pb-5 min-h-[179px] flex flex-col">
-        {filtered.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center">
-            <p className="text-[15px] text-[#969696] m-0">알림이 없습니다.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-x-4">
-            {filtered.map((n) => (
-              <div
-                key={n.id}
-                onClick={() => onItemClick?.(DOMAIN_TO_SECTION[n.domainCd] ?? "home")}
-                className="flex items-center gap-2 py-3.5 cursor-pointer hover:opacity-70 transition-opacity border-b border-[#e8e9ec]"
-              >
-                <span className={`badge ${DOMAIN_BADGE[n.domainCd] ?? "badge-gray"} shrink-0`} style={{ borderRadius: 5, fontSize: 12 }}>
-                  {n.type}
-                </span>
-                <div className="flex-1 flex items-center gap-1.5 min-w-0">
-                  <span className="text-[15px] text-[#1a1a1a] leading-snug truncate">{n.title}</span>
-                  {!n.read && (
-                    <span className="shrink-0 min-w-[16px] h-[16px] rounded-full bg-[#e63946] text-white text-[10px] font-bold inline-flex items-center justify-center leading-none">
-                      N
-                    </span>
-                  )}
-                </div>
-                <span className="text-[13px] text-[#b0aea8] shrink-0">{relativeTime(n.regDt)}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 const REVIEW_DEAL_TYPE = {
   goods:   { label: "물건거래", cls: "badge-blue" },
   service: { label: "서비스",   cls: "badge-success" },
 };
 
-function ReviewablePanel({ items, onWrite, onMore }) {
+function ReviewablePanel({ items, onView, onMore }) {
   const fmtDate = (str) => str?.slice(0, 10).replace(/-/g, ".") ?? "-";
   const preview = items.slice(0, 3);
 
   return (
-    <div className="bg-white rounded-[15px] shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-[#e4e9f2] overflow-hidden">
-      {/* 헤더 배경 영역 */}
-      <div className="bg-[#f5f7fc] px-5 border-b border-[#e8e9ec]">
-        <div className="flex items-end pb-3 justify-between h-[60px]">
-          <h3 className="font-bold text-[18px] text-[#1a1a1a] m-0">
-            거래 완료 리뷰작성
-            <span className="ml-2 text-[15px] text-[#0064ff] font-bold">{items.length}건</span>
-          </h3>
+    <MyPagePanel
+      title="거래 완료 리뷰작성"
+      count={items.length}
+      action={(
           <button
             type="button"
             onClick={onMore}
@@ -222,63 +127,52 @@ function ReviewablePanel({ items, onWrite, onMore }) {
           >
             더보기 <ChevronRight size={14} className="text-[#969696]" />
           </button>
-        </div>
-      </div>
-
-      {/* 리스트 영역 */}
-      <div className="px-5 pb-5 min-h-[122px]">
-      <div className="divide-y divide-[#e8e9ec]">
-        {preview.map((item) => {
-          const type = REVIEW_DEAL_TYPE[item.dealType] ?? { label: item.dealType, cls: "badge-gray" };
-          return (
-            <div key={item.id} className="flex items-center gap-3 py-3.5">
-              <span className={`badge ${type.cls} shrink-0`} style={{ borderRadius: 5, fontSize: 12 }}>
-                {type.label}
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="text-[15px] font-bold text-[#1a1a1a] m-0 truncate">{item.title}</p>
-                <p className="text-[13px] text-[#969696] m-0 mt-0.5">
-                  {item.partyLabel} {item.partyName} · {fmtDate(item.completedDate)}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => onWrite(item)}
-                className="btn btn-sm btn-primary shrink-0"
-              >
-                리뷰작성
-              </button>
-            </div>
-          );
-        })}
-      </div>
-
-      {items.length > 3 && (
-        <button
-          type="button"
-          onClick={onMore}
-          className="w-full pt-3 text-[14px] text-[#969696] border-t border-[#e8e9ec] hover:text-[#0064ff] transition-colors"
-        >
-          {items.length - 3}건 더 보기
-        </button>
       )}
-      </div>
-    </div>
+      className="h-[280px]"
+      bodyClassName="h-[220px] overflow-hidden px-5 pb-5"
+    >
+      {items.length === 0 ? (
+        <div className="flex items-center justify-center py-10">
+          <p className="text-[15px] text-[#969696] m-0">작성할 리뷰가 없습니다.</p>
+        </div>
+      ) : (
+        <div className="divide-y divide-[#e8e9ec]">
+          {preview.map((item) => {
+            const type = REVIEW_DEAL_TYPE[item.dealType] ?? { label: item.dealType, cls: "badge-gray" };
+            return (
+              <div key={item.id} className="flex items-center gap-3 py-3.5">
+                <span className={`badge ${type.cls} shrink-0`} style={{ borderRadius: 5, fontSize: 12 }}>
+                  {type.label}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[15px] font-bold text-[#1a1a1a] m-0 truncate">{item.title}</p>
+                  <p className="text-[13px] text-[#969696] m-0 mt-0.5">
+                    {item.partyLabel} {item.partyName} · {fmtDate(item.completedDate)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onView(item)}
+                  className="btn btn-sm btn-primary shrink-0"
+                >
+                  상세보기
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+    </MyPagePanel>
   );
 }
 
 function ActiveChatPanel({ rooms, onOpenChat, onMore }) {
   return (
-    <div className="bg-white rounded-[15px] shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-[#e4e9f2] overflow-hidden">
-      {/* 헤더 배경 영역 */}
-      <div className="bg-[#f5f7fc] px-5 border-b border-[#e8e9ec]">
-        <div className="flex items-end pb-3 justify-between h-[60px]">
-          <h3 className="font-bold text-[18px] text-[#1a1a1a] m-0">
-            진행중인 채팅
-            {rooms.length > 0 && (
-              <span className="ml-2 text-[15px] text-[#0064ff] font-bold">{rooms.length}건</span>
-            )}
-          </h3>
+    <MyPagePanel
+      title="진행중인 채팅"
+      count={rooms.length}
+      action={(
           <button
             type="button"
             onClick={onMore}
@@ -286,11 +180,10 @@ function ActiveChatPanel({ rooms, onOpenChat, onMore }) {
           >
             더보기 <ChevronRight size={14} className="text-[#969696]" />
           </button>
-        </div>
-      </div>
-
-      {/* 리스트 영역 */}
-      <div className="px-5 pb-5 min-h-[122px]">
+      )}
+      className="h-[280px]"
+      bodyClassName="h-[220px] overflow-hidden px-5 pb-5"
+    >
       {rooms.length === 0 ? (
         <div className="flex items-center justify-center py-10">
           <p className="text-[15px] text-[#969696] m-0">진행중인 채팅이 없습니다.</p>
@@ -322,8 +215,7 @@ function ActiveChatPanel({ rooms, onOpenChat, onMore }) {
           ))}
         </div>
       )}
-      </div>
-    </div>
+    </MyPagePanel>
   );
 }
 
@@ -334,6 +226,7 @@ export default function MyPageDashboard({
   onRequestProviderSwitch,
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const nickname = user?.nickname || "고객";
   const email = user?.email || "";
   const profileQuery = useMemberProfile();
@@ -353,20 +246,18 @@ export default function MyPageDashboard({
     meta: item.currentPrice
       ? `현재가 ${Number(item.currentPrice).toLocaleString()}P`
       : "현재가 -",
-    section: "active-auctions",
+    section: "wishlist",
   }));
 
-  const nav = (section) => () => navigate(getMyPagePath(section));
+  const nav = (section) => (event) => {
+    event?.stopPropagation();
+    navigate(getMyPagePath(section));
+  };
 
   // ── 실데이터 조회 ──────────────────────────────────────────────────────────
 
   // 포인트 잔액
   const { data: pointBalance } = usePointBalance({ enabled: !!user });
-
-  // 알림 목록 — MY홈 패널에는 안읽은 것만 표시
-  const notificationsQuery = useNotifications({ enabled: !!user });
-  const allNotifications = notificationsQuery.data ?? [];
-  const unreadNotifications = allNotifications.filter((n) => !n.read);
 
   // 경매 입찰 전체 이력 (구매자)
   const { data: bidHistory = [] } = useQuery({
@@ -380,9 +271,7 @@ export default function MyPageDashboard({
       .filter((b) => b.auctionStatusCode === "AUCC0002" && (b.displayStatus === "HIGHEST" || b.displayStatus === "OUTBID"))
       .map((b) => b.aucSn)
   ).size;
-  const wonCnt = new Set(bidHistory.filter((b) => b.displayStatus === "WON").map((b) => b.aucSn)).size;
-
-  // 구매 건수 — 상품 구매내역 페이지(TradeHistory fixedRole=BUYER)와 동일한 기준
+  // 구매 건수 — 상품 구매 목록(TradeHistory fixedRole=BUYER)과 동일한 기준
   const { data: allTradeItems = [] } = useQuery({
     queryKey: ["trades", "my", "all"],
     queryFn: async () => {
@@ -402,12 +291,18 @@ export default function MyPageDashboard({
   });
   const svcRequestCnt = svcReqAll?.total ?? 0;
 
-  const { data: svcTradeAll } = useQuery({
-    queryKey: ["my-service-trades", "REQUESTER", "ALL", "", 1, 1],
-    queryFn: () => getMyServiceTrades({ role: "REQUESTER", page: 1, size: 1 }),
+  // 견적이 선택된 뒤 실제로 진행 중인 요청자 거래 건수
+  const { data: activeServiceTradePage } = useQuery({
+    queryKey: ["my-service-trades", "REQUESTER", "TRDC0003", { page: 1, size: 1 }],
+    queryFn: () => getMyServiceTrades({
+      role: "REQUESTER",
+      status: "TRDC0003",
+      page: 1,
+      size: 1,
+    }),
     enabled: !!user,
   });
-  const svcTradeCnt = Number(svcTradeAll?.totalCount) || 0;
+  const activeServiceTradeCnt = Number(activeServiceTradePage?.totalCount) || 0;
 
   const { data: svcTradeCompleted } = useQuery({
     queryKey: ["my-service-trades", "REQUESTER", "TRDC0006", "", 1, 1],
@@ -441,8 +336,10 @@ export default function MyPageDashboard({
   });
 
   // 미작성 리뷰 목록
+  // @ai_generated (담당자1, 2026-08-07): 리터럴 키 대신 useReview.js의 reviewQueryKeys 계약을
+  // 써서, 리뷰 등록/수정/삭제 후 무효화(reviewQueryKeys.all=['reviews'])가 이 캐시도 갱신하게 한다(P4-4).
   const { data: writableReviews = [] } = useQuery({
-    queryKey: ["reviews", "writable"],
+    queryKey: reviewQueryKeys.writable,
     queryFn: getWritableReviews,
     select: (res) => res.data ?? [],
     enabled: !!user,
@@ -476,46 +373,32 @@ export default function MyPageDashboard({
       unit: "건",
       meta: (
         <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <button type="button" onClick={nav("active-auctions")} className={subBtn}>진행중 {activeAuctionCnt}건</button>
+          <button type="button" onClick={nav("auction-bids")} className={subBtn}>입찰중 {activeAuctionCnt}건</button>
           <span className="text-white/70">ㅣ</span>
           <button type="button" onClick={nav("auction-bids")}    className={subBtn}>구매 {purchaseCnt}건</button>
           <span className="text-white/70">ㅣ</span>
           <button type="button" onClick={nav("auction-sales")}   className={subBtn}>판매 {auctionSaleCnt}건</button>
         </span>
       ),
-      onMore: nav("active-auctions"),
+      onMore: nav("auction-bids"),
     },
     {
       key: "service",
       color: "#0CB8BB",
       icon: assets.iconService,
-      label: "서비스 거래",
-      value: String(svcRequestCnt + svcTradeCnt),
+      label: "견적 요청 내역",
+      value: String(svcRequestCnt),
       unit: "건",
       meta: (
-        <span className="flex items-center gap-x-2">
-          <button type="button" onClick={nav("service-requests")} className={subBtn}>견적 요청 {svcRequestCnt}건</button>
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <button type="button" onClick={nav("service-requests")} className={subBtn}>전체 요청 {svcRequestCnt}건</button>
           <span className="text-white/70">ㅣ</span>
-          <button type="button" onClick={nav("service-trade")} className={subBtn}>서비스 거래 {svcTradeCnt}건</button>
+          <button type="button" onClick={nav("service-trade")} className={subBtn}>진행 {activeServiceTradeCnt}건</button>
+          <span className="text-white/70">ㅣ</span>
+          <button type="button" onClick={nav("service-trade")} className={subBtn}>완료 {svcTradeCompletedCnt}건</button>
         </span>
       ),
       onMore: nav("service-requests"),
-    },
-    {
-      key: "done",
-      color: "#e63946",
-      icon: assets.iconEnd2,
-      label: "거래 완료",
-      value: String(wonCnt + svcTradeCompletedCnt),
-      unit: "건",
-      meta: (
-        <span className="flex items-center gap-x-2">
-          <button type="button" onClick={nav("auction-bids")}  className={subBtn}>경매 {wonCnt}건</button>
-          <span className="text-white/70">ㅣ</span>
-          <button type="button" onClick={nav("service-trade")} className={subBtn}>서비스 {svcTradeCompletedCnt}건</button>
-        </span>
-      ),
-      onMore: undefined,
     },
   ];
 
@@ -523,42 +406,37 @@ export default function MyPageDashboard({
     <div className="space-y-5">
       <MyPageContentHeader title="MY 홈" />
 
-      <MyPageDashboardTop
-        profileImageUrl={profileQuery.data?.profileImageUrl || user?.profileImageUrl}
-        nickname={nickname}
-        email={email}
-        actions={[
-          {
-            key: 'logout',
-            label: '로그아웃',
-            icon: assets.iconLogout,
-            onClick: onLogout,
-          },
-          {
-            key: 'provider-switch',
-            label: isProviderApproved ? '제공자 전환' : '제공자 신청',
-            icon: assets.iconSwitch1,
-            iconClassName: 'size-[10px]',
-            onClick: onRequestProviderSwitch,
-          },
-        ]}
-        notifications={unreadNotifications}
-        notificationsLoading={notificationsQuery.isLoading}
-        onOpenNotifications={() => navigate('/user/notification')}
-      />
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-4 lg:items-stretch">
+        <MyPageDashboardTop
+          className="lg:col-span-1"
+          profileImageUrl={profileQuery.data?.profileImageUrl || user?.profileImageUrl}
+          nickname={nickname}
+          email={email}
+          actions={[
+            {
+              key: 'logout',
+              label: '로그아웃',
+              icon: assets.iconLogout,
+              onClick: onLogout,
+            },
+            {
+              key: 'provider-switch',
+              label: isProviderApproved ? '제공자 전환' : '제공자 신청',
+              icon: assets.iconSwitch1,
+              iconClassName: 'size-[10px]',
+              onClick: onRequestProviderSwitch,
+            },
+          ]}
+        />
 
-      {/* 통계 카드 4개 — 모바일: 4행 1열 / 태블릿: 2×2 / 데스크톱: 1행 4열 */}
-      <MyPageDashboardSummaryCards
-        items={statCards}
-        ariaLabel="일반회원 거래 요약"
-      />
+        <MyPageDashboardSummaryCards
+          className="lg:col-span-3"
+          columns={3}
+          items={statCards}
+          ariaLabel="일반회원 거래 요약"
+        />
+      </div>
 
-      {/* 알림 100% */}
-      <NotificationPanel
-        notifications={allNotifications}
-        onItemClick={(section) => navigate(getMyPagePath(section))}
-        onMore={() => navigate("/user/notification")}
-      />
       {/* 채팅 + 리뷰 2열 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
         <ActiveChatPanel
@@ -566,13 +444,24 @@ export default function MyPageDashboard({
           onOpenChat={() => navigate(getMyPagePath("chat"))}
           onMore={() => navigate(getMyPagePath("chat"))}
         />
-        {writableReviews.length > 0 && (
-          <ReviewablePanel
-            items={writableReviews}
-            onWrite={(item) => navigate(`/user/mypage/reviews/write/${item.id}`, { state: { item } })}
-            onMore={() => navigate(getMyPagePath("review"))}
-          />
-        )}
+        <ReviewablePanel
+          items={writableReviews}
+          onView={(item) => {
+            const from = location.pathname + location.search;
+            if (item.dealType === 'service') {
+              navigate(`/service-trades/${item.tradeId ?? item.id}`, { state: { from } });
+              return;
+            }
+            // @ai_generated (담당자1, 2026-08-07): auctionId가 없으면 "/auction/undefined/trade"로
+            // 이동해 400을 받는 대신(P3-7), 안내만 하고 이동을 막는다.
+            if (!item.auctionId) {
+              toast({ icon: 'error', title: '거래 상세로 이동할 수 없습니다. 잠시 후 다시 시도해주세요.' });
+              return;
+            }
+            navigate(`/auction/${item.auctionId}/trade`, { state: { from } });
+          }}
+          onMore={() => navigate(getMyPagePath("review"))}
+        />
       </div>
     </div>
   );

@@ -88,77 +88,81 @@ const NoticeListPage = () => {
   return (
     <ContentPageShell className="public-notice-page">
       <Helmet><title>공지사항 | 네고컷</title></Helmet>
-      <header className="customer-support-page-header">
+      <header className="customer-support-page-header customer-support-page-header--plain">
         <h1>공지사항</h1>
         <p>서비스 점검, 정책 변경, 이용 안내와 이벤트 소식을 확인하세요.</p>
       </header>
 
-      <section className="public-notice-controls" aria-label="공지사항 검색 및 필터">
-        <NoticeFilterBar
-          hasError={typesQuery.isError}
-          onChange={changeFilter}
-          onRetry={() => typesQuery.refetch()}
-          selectedTypeCode={typeCode}
-          types={typesQuery.data ?? []}
-        />
+      <section className="public-notice-board" aria-label="공지사항 검색 및 목록">
+        <div className="public-notice-controls">
+          <NoticeFilterBar
+            hasError={typesQuery.isError}
+            onChange={changeFilter}
+            onRetry={() => typesQuery.refetch()}
+            selectedTypeCode={typeCode}
+            types={typesQuery.data ?? []}
+          />
 
-        {noticesQuery.isLoading && <NoticeToolbarSkeleton />}
+          {noticesQuery.isLoading && <NoticeToolbarSkeleton />}
 
-        {!noticesQuery.isLoading && !noticesQuery.isError && (
-          <div className="public-notice-list-toolbar">
-            {noticePage?.items?.length > 0 && (
-              <NoticeListSummary total={noticePage.totalItems} />
-            )}
-            <form className="public-notice-search" onSubmit={submitSearch}>
-              <input
-                aria-label="공지 제목 또는 내용 검색"
-                maxLength={100}
-                onChange={(event) => setKeywordInput(event.target.value)}
-                placeholder="제목 또는 내용 검색"
-                value={keywordInput}
-              />
-              <button className="btn btn-primary" type="submit">
-                검색
-              </button>
-            </form>
-          </div>
-        )}
-      </section>
+          {!noticesQuery.isLoading && !noticesQuery.isError && (
+            <div className="public-notice-list-toolbar">
+              {noticePage?.items?.length > 0 && (
+                <NoticeListSummary total={noticePage.totalItems} />
+              )}
+              <form className="public-notice-search" onSubmit={submitSearch}>
+                <input
+                  aria-label="공지 제목 또는 내용 검색"
+                  maxLength={100}
+                  onChange={(event) => setKeywordInput(event.target.value)}
+                  placeholder="제목 또는 내용 검색"
+                  value={keywordInput}
+                />
+                <button className="btn btn-primary" type="submit">
+                  검색
+                </button>
+              </form>
+            </div>
+          )}
+        </div>
 
-      {noticesQuery.isLoading && <NoticeListSkeleton />}
+        <div className="public-notice-board__body">
+          {noticesQuery.isLoading && <NoticeListSkeleton />}
 
-      {noticesQuery.isError && (
-        <ContentState
-          actionLabel="다시 불러오기"
-          description="잠시 후 다시 시도해 주세요."
-          onAction={() => noticesQuery.refetch()}
-          title="공지사항을 불러오지 못했습니다."
-          tone="error"
-        />
-      )}
-
-      {!noticesQuery.isLoading && !noticesQuery.isError && noticePage?.items?.length === 0 && (
-        <ContentState
-          description="새로운 안내가 등록되면 이곳에 표시됩니다."
-          title="현재 게시 중인 공지가 없습니다."
-        />
-      )}
-
-      {!noticesQuery.isLoading && noticePage?.items?.length > 0 && (
-        <>
-          {keyword && <p className="public-notice-search__result" aria-live="polite"><strong>“{keyword}”</strong> 검색 결과입니다.</p>}
-          <NoticeList notices={noticePage.items} />
-
-          {noticePage.totalPages > 0 && (
-            <ContentPagination
-              ariaLabel="공지사항 페이지 이동"
-              onChange={changePage}
-              page={page}
-              totalPages={noticePage.totalPages}
+          {noticesQuery.isError && (
+            <ContentState
+              actionLabel="다시 불러오기"
+              description="잠시 후 다시 시도해 주세요."
+              onAction={() => noticesQuery.refetch()}
+              title="공지사항을 불러오지 못했습니다."
+              tone="error"
             />
           )}
-        </>
-      )}
+
+          {!noticesQuery.isLoading && !noticesQuery.isError && noticePage?.items?.length === 0 && (
+            <ContentState
+              description="새로운 안내가 등록되면 이곳에 표시됩니다."
+              title="현재 게시 중인 공지가 없습니다."
+            />
+          )}
+
+          {!noticesQuery.isLoading && noticePage?.items?.length > 0 && (
+            <>
+              {keyword && <p className="public-notice-search__result" aria-live="polite"><strong>“{keyword}”</strong> 검색 결과입니다.</p>}
+              <NoticeList notices={noticePage.items} />
+
+              {noticePage.totalPages > 0 && (
+                <ContentPagination
+                  ariaLabel="공지사항 페이지 이동"
+                  onChange={changePage}
+                  page={page}
+                  totalPages={noticePage.totalPages}
+                />
+              )}
+            </>
+          )}
+        </div>
+      </section>
     </ContentPageShell>
   );
 };

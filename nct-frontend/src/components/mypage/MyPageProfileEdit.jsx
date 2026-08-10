@@ -17,6 +17,7 @@ import { useAuth } from "@hooks/useAuth";
 import { MEMBER_PROFILE_QUERY_KEY, useMemberProfile } from "@hooks/useMemberProfile";
 import { useNotificationSettings, useSaveNotificationSettings } from "@hooks/useNotification";
 import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
+import MyPagePanel from "@components/mypage/MyPagePanel";
 import ProfileDeliveryAddressManager from "@components/mypage/ProfileDeliveryAddressManager";
 
 const DOMAIN_LABELS = [
@@ -160,9 +161,12 @@ export default function MyPageProfileEdit({ user }) {
     });
     if (!ok) return;
     try {
-      const res = await updateProfile({
-        nickname: form.nickname,
-        email: user?.email,
+      // 담당자 7 · F-AUTH-010: 두 값을 함께 비워 보내면 서버가 암호화된 빈값이 아니라
+      // 실제 미등록(NULL) 상태로 정리한다. 필수 프로필 값은 현재 저장값을 유지한다.
+      await updateProfile({
+        nickname: profileQuery.data?.nickname || form.nickname,
+        email: profileQuery.data?.email || user?.email,
+        phone: profileQuery.data?.phone || toPhoneDigits(form.phone),
         bankName: "",
         accountNo: "",
       });
@@ -235,9 +239,15 @@ export default function MyPageProfileEdit({ user }) {
       toast({ icon: "error", title: "전화번호를 입력해주세요." });
       return;
     }
+    const bankName = form.bankName.trim();
+    const accountNo = form.accountNo.trim();
+    if (Boolean(bankName) !== Boolean(accountNo)) {
+      toast({ icon: "error", title: "은행명과 계좌번호를 모두 입력하거나 모두 비워주세요." });
+      return;
+    }
     try {
       // email은 이 화면에서 수정하지 않지만 백엔드가 필수값으로 요구해 현재 값을 그대로 함께 보낸다.
-      const res = await updateProfile({
+      await updateProfile({
         nickname: form.nickname,
         email: user?.email,
         phone: toPhoneDigits(form.phone),
@@ -245,8 +255,8 @@ export default function MyPageProfileEdit({ user }) {
         address: form.address.trim(),
         addressDetail: form.addressDetail.trim(),
         profileFileSn: form.profileFileSn,
-        bankName: form.bankName.trim(),
-        accountNo: form.accountNo.trim(),
+        bankName,
+        accountNo,
       });
       queryClient.invalidateQueries({ queryKey: ["auth", "user"] });
       queryClient.invalidateQueries({ queryKey: MEMBER_PROFILE_QUERY_KEY });
@@ -291,11 +301,13 @@ export default function MyPageProfileEdit({ user }) {
       <MyPageContentHeader title="프로필" />
       <div className="flex flex-col xl:flex-row gap-4 items-start">
       {/* ── 메인 정보수정 카드 ── */}
-      <div className="flex-1 min-w-0 border border-[#e4e9f2] rounded-[20px] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
-        <div className="bg-[#f5f7fc] px-6 h-[60px] flex items-end pb-3 border-b border-[#e8e9ec]">
-          <p className="font-bold text-[17px] text-[#404040]">정보수정</p>
-        </div>
-
+      <MyPagePanel
+        title="정보수정"
+        className="min-w-0 flex-1"
+        bodyClassName="p-0"
+        variant="profile"
+        headerPaddingClassName="px-6"
+      >
         <form onSubmit={handleSave} className="p-6 space-y-5">
           {/* 프로필 사진 */}
           <div className="flex items-center gap-4">
@@ -484,16 +496,12 @@ export default function MyPageProfileEdit({ user }) {
             </button>
           </div>
         </form>
-      </div>
+      </MyPagePanel>
 
       {/* ── 우측: 소셜 로그인 + 알림설정 ── */}
       <div className="w-full xl:w-[300px] shrink-0 flex flex-col gap-4">
         {/* 소셜 로그인 연동 */}
-        <div className="border border-[#e4e9f2] rounded-[20px] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
-          <div className="bg-[#f5f7fc] px-5 h-[60px] flex items-end pb-3 border-b border-[#e8e9ec]">
-            <p className="font-bold text-[17px] text-black">소셜 로그인 연동</p>
-          </div>
-          <div className="p-5">
+        <MyPagePanel title="소셜 로그인 연동" bodyClassName="p-5" variant="profile" titleClassName="text-black">
             <img
               src={assets.loginIcon}
               alt="구글/네이버/카카오"
@@ -519,13 +527,14 @@ export default function MyPageProfileEdit({ user }) {
                 );
               })}
             </div>
-          </div>
-        </div>
+        </MyPagePanel>
 
         {/* 알림설정 */}
-        <div className="border border-[#e4e9f2] rounded-[20px] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
-          <div className="bg-[#f5f7fc] px-5 h-[60px] flex items-end pb-3 border-b border-[#e8e9ec] justify-between">
-            <p className="font-bold text-[17px] text-black">알림설정</p>
+        <MyPagePanel
+          title="알림설정"
+          variant="profile"
+          titleClassName="text-black"
+          action={(
             <button
               type="button"
               onClick={handleSaveNotify}
@@ -535,8 +544,9 @@ export default function MyPageProfileEdit({ user }) {
             >
               {notifyMutation.isPending ? "저장 중..." : "✓저장"}
             </button>
-          </div>
-          <div className="px-5 pb-4">
+          )}
+          bodyClassName="px-5 pb-4"
+        >
             {/* 컬럼 헤더 */}
             <div className="flex items-center h-[36px] text-[14px] font-medium text-[#969696] border-b border-[#f0f0f0]">
               <span className="flex-1 pl-5">카테고리</span>
@@ -624,8 +634,7 @@ export default function MyPageProfileEdit({ user }) {
                 </div>
               );
             })}
-          </div>
-        </div>
+        </MyPagePanel>
       </div>
 
       {addressSearchOpen ? (

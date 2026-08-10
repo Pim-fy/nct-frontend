@@ -7,7 +7,7 @@ import {
 } from '@api/adminDisputeApi';
 import { fetchReferenceCodes } from '@api/referenceApi';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
-import AdminModal from '@components/admin/AdminModal';
+import AdminDetailDrawer from '@components/admin/AdminDetailDrawer';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
@@ -226,7 +226,7 @@ const AdminDisputeManagementPage = () => {
               ...filterForm,
               keyword: event.target.value,
             })}
-            placeholder="분쟁 번호·거래 번호·회원 번호"
+            placeholder="분쟁 번호·거래 번호"
             value={filterForm.keyword}
           />
         </label>
@@ -268,7 +268,21 @@ const AdminDisputeManagementPage = () => {
       )}
 
       {selectedDisputeSn && (
-        <AdminModal onClose={closeDetail} title="거래 분쟁 상세">
+        <AdminDetailDrawer
+          eyebrow="거래 분쟁"
+          footer={(
+            <button
+              className="btn btn-outline"
+              disabled={decisionMutation.isPending}
+              onClick={closeDetail}
+              type="button"
+            >
+              닫기
+            </button>
+          )}
+          onClose={closeDetail}
+          title="거래 분쟁 상세"
+        >
           <section className="admin-operation-detail">
             {detailQuery.isLoading && (
               <div className="admin-bjn-state">분쟁 상세를 불러오는 중입니다.</div>
@@ -402,14 +416,6 @@ const AdminDisputeManagementPage = () => {
                     )}
                     <div className="admin-operation-actions">
                       <button
-                        className="btn btn-outline"
-                        disabled={decisionMutation.isPending}
-                        onClick={closeDetail}
-                        type="button"
-                      >
-                        닫기
-                      </button>
-                      <button
                         className="btn btn-primary"
                         disabled={!canSubmitDecision || decisionMutation.isPending}
                         type="submit"
@@ -422,7 +428,7 @@ const AdminDisputeManagementPage = () => {
               </>
             )}
           </section>
-        </AdminModal>
+        </AdminDetailDrawer>
       )}
     </div>
   );

@@ -180,6 +180,8 @@ const tradeChatPreviewRooms = [
   },
 ];
 
+let previewProposalSequence = 1;
+
 // 개발 환경에서도 탭·상태·검색 필터를 실제 목록 API처럼 검증할 수 있게 처리한다.
 export const getTradePreviewList = (params = {}) => {
   const { keyword, role, status } = params;
@@ -220,7 +222,16 @@ export const getTradePreviewDetail = (tradeId) => {
     throw new Error('등록되지 않은 개발용 거래 번호입니다.');
   }
 
-  return trade;
+  const chatRoom = tradeChatPreviewRooms.find(
+    (room) => String(room.tradeId) === String(tradeId),
+  );
+
+  return {
+    ...trade,
+    chatRoomStatus: chatRoom
+      ? chatRoom.roomStatus === 'ACTIVE' ? 'ACTIVE' : 'CLOSED'
+      : 'NOT_STARTED',
+  };
 };
 
 // 미리보기에서 저장한 결과도 다시 목록·상세를 열었을 때 유지한다.
@@ -293,6 +304,126 @@ export const updateTradePreviewDetail = (tradeId, changes) => {
   }
 
   return { ...trade };
+};
+
+/** 미리보기에서도 채팅 시작 시점에만 직거래 방을 만든다. */
+export const startTradePreviewChat = (tradeId) => {
+  const trade = getTradePreviewDetail(tradeId);
+  let room = tradeChatPreviewRooms.find(
+    (candidate) => String(candidate.tradeId) === String(tradeId),
+  );
+
+  if (!room) {
+    room = {
+      roomId: `trade-chat-${tradeId}`,
+      tradeId: trade.tradeId,
+      tradeTypeCode: 'TRDC0001',
+      viewerRole: trade.userRole,
+      counterpartNickname: trade.counterpartNickname,
+      productName: trade.productName,
+      roomStatus: 'ACTIVE',
+      lastMessage: '아직 주고받은 메시지가 없습니다.',
+      latestMessageAt: '방금',
+      unreadCount: 0,
+      messages: [],
+    };
+    tradeChatPreviewRooms.push(room);
+  }
+
+  return { roomId: room.roomId, created: true };
+};
+
+const getPreviewPendingProposal = (trade) => (
+  trade.pendingScheduleProposalId
+    ? {
+      id: trade.pendingScheduleProposalId,
+      type: trade.pendingScheduleProposalType,
+      date: trade.pendingMeetingDate,
+      time: trade.pendingMeetingTime,
+      place: trade.pendingMeetingPlace,
+      address: trade.pendingMeetingAddress,
+    }
+    : null
+);
+
+/** 미리보기용 일정 제안/응답 흐름을 실제 API의 응답 형태와 맞춘다. */
+export const createTradePreviewScheduleProposal = (tradeId, payload) => {
+  const trade = getTradePreviewDetail(tradeId);
+  if (getPreviewPendingProposal(trade)) {
+    throw new Error('이미 응답을 기다리는 일정 제안이 있습니다.');
+  }
+
+  Object.assign(trade, {
+    pendingScheduleProposalId: `preview-proposal-${previewProposalSequence++}`,
+    pendingScheduleProposalType: trade.meetingDate ? 'TRDC0031' : 'TRDC0030',
+    pendingScheduleProposalStatus: 'TRDC0025',
+    pendingMeetingDate: payload.meetingDate,
+    pendingMeetingTime: payload.meetingTime,
+    pendingMeetingPlace: payload.meetingPlace,
+    pendingMeetingAddress: payload.meetingAddress,
+    canWithdrawScheduleProposal: true,
+    canRespondToScheduleProposal: false,
+  });
+  return { ...trade };
+};
+
+export const createTradePreviewCancellationProposal = (tradeId) => {
+  const trade = getTradePreviewDetail(tradeId);
+  if (!trade.meetingDate || getPreviewPendingProposal(trade)) {
+    throw new Error('취소할 확정 일정이 없습니다.');
+  }
+
+  Object.assign(trade, {
+    pendingScheduleProposalId: `preview-proposal-${previewProposalSequence++}`,
+    pendingScheduleProposalType: 'TRDC0032',
+    pendingScheduleProposalStatus: 'TRDC0025',
+    canWithdrawScheduleProposal: true,
+    canRespondToScheduleProposal: false,
+  });
+  return { ...trade };
+};
+
+export const respondToTradePreviewScheduleProposal = (tradeId, accept) => {
+  const trade = getTradePreviewDetail(tradeId);
+  const pending = getPreviewPendingProposal(trade);
+  if (!pending) {
+    throw new Error('응답할 일정 제안이 없습니다.');
+  }
+
+  if (accept && pending.type === 'TRDC0032') {
+    trade.meetingDate = null;
+    trade.meetingTime = null;
+    trade.meetingPlace = null;
+    trade.meetingAddress = null;
+  } else if (accept) {
+    trade.meetingDate = pending.date;
+    trade.meetingTime = pending.time;
+    trade.meetingPlace = pending.place;
+    trade.meetingAddress = pending.address;
+    trade.tradeStatus = 'DELIVERING';
+  }
+
+  Object.assign(trade, {
+    pendingScheduleProposalId: null,
+    pendingScheduleProposalType: null,
+    pendingScheduleProposalStatus: null,
+    pendingMeetingDate: null,
+    pendingMeetingTime: null,
+    pendingMeetingPlace: null,
+    pendingMeetingAddress: null,
+    canWithdrawScheduleProposal: false,
+    canRespondToScheduleProposal: false,
+  });
+  return { ...trade };
+};
+
+export const withdrawTradePreviewScheduleProposal = (tradeId) => {
+  const trade = getTradePreviewDetail(tradeId);
+  if (!getPreviewPendingProposal(trade)) {
+    throw new Error('철회할 일정 제안이 없습니다.');
+  }
+
+  return respondToTradePreviewScheduleProposal(tradeId, false);
 };
 
 // 채팅 목록은 메시지 본문을 제외한다.

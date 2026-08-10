@@ -18,7 +18,7 @@
   min-width: 62px;
 }
 
-.admin-member-modal {
+.admin-detail-drawer__panel.admin-member-drawer {
   width: min(760px, 100%);
 }
 
