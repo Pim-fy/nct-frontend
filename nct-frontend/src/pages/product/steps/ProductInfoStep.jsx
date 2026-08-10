@@ -6,8 +6,8 @@ import ProductImageUpload from '@components/product/ProductImageUpload';
 import RichTextEditor from '@components/product/RichTextEditor';
 import RegionSelector from '@components/common/RegionSelector';
 
-// 이 값일 때만 희망 거래지역 선택 UI 노출 — 직거래(TRDC0010)·둘 다 가능(TRDC0020)
-const REGION_REQUIRED_TRADE_METHODS = ['TRDC0010', 'TRDC0020'];
+// 이 값일 때만 희망 거래지역 선택 UI 노출 — 직거래(TRDC0010)
+const REGION_REQUIRED_TRADE_METHODS = ['TRDC0010'];
 
 export default function ProductInfoStep({ form, set, categories, bannedKeywordError, bannedKeywordCnError, images, onChange, tradeMethods, maxImages, submitted, imgSectionRef, prdNmRef, catRef, tradeRef, descRef, onTradeRegionsChange }) {
   return (

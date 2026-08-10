@@ -20,6 +20,7 @@ import ImageLightbox from '@components/common/ImageLightbox';
 import ErrorMessage from '@components/common/ErrorMessage';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
 import Toast from '@components/common/Toast';
+import ConfirmModal from '@components/common/ConfirmModal';
 import Pagination from '@components/common/Pagination';
 import HeaderSearchPortal, {
   SimpleHeaderSearch,
@@ -30,7 +31,7 @@ const STATUS_LABEL = {
   SVCC0001: '임시저장',
   SVCC0002: '공개',
   SVCC0003: '매칭완료',
-  SVCC0004: '종료',
+  SVCC0004: '취소',
 };
 
 const STATUS_BADGE_CLASS = {
@@ -226,6 +227,7 @@ export default function ServiceRequestDetailPage() {
   const [loadedRequestSn, setLoadedRequestSn] = useState(null);
   const [error, setError] = useState('');
   const [closing, setClosing] = useState(false);
+  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [toast, setToast] = useState('');
   const [quotes, setQuotes] = useState([]);
   const [quotesLoadedRequestSn, setQuotesLoadedRequestSn] = useState(null);
@@ -356,6 +358,7 @@ export default function ServiceRequestDetailPage() {
   };
 
   const handleClose = async () => {
+    setCloseConfirmOpen(false);
     setClosing(true);
     try {
       await closeServiceRequest(svcReqSn);
@@ -423,10 +426,13 @@ export default function ServiceRequestDetailPage() {
   const isOwner = !isProvider
     && authenticatedUserId != null
     && String(authenticatedUserId) === String(request.usrSn);
+  // 자기거래 차단(F-SVC-005/006) — 일반회원으로 작성한 본인 요청서를 제공자 모드로 봐도
+  // 견적 제출 영역이 안 뜨게 하려면 모드와 무관하게 "진짜 작성자인지"를 따로 알아야 한다
+  const isActualCreator = authenticatedUserId != null
+    && String(authenticatedUserId) === String(request.usrSn);
   const isDraft = request.svcReqStatusCd === 'SVCC0001';
   const isOpen  = request.svcReqStatusCd === 'SVCC0002';
-  const isMatched = request.svcReqStatusCd === 'SVCC0003';
-  const canAddComment = isOwner && (isOpen || isMatched) && comments.length < 3;
+  const canAddComment = isOwner && isOpen && comments.length < 3;
   const quoteTotalPages = Math.max(1, Math.ceil(quotes.length / QUOTES_PAGE_SIZE));
   const pagedQuotes = quotes.slice((quotePage - 1) * QUOTES_PAGE_SIZE, quotePage * QUOTES_PAGE_SIZE);
   const quoteAccessPending = quoteAccessQuery.isLoading || quoteAccessQuery.isFetching;
@@ -504,7 +510,7 @@ export default function ServiceRequestDetailPage() {
                   <button
                     type="button"
                     className="shrink-0 rounded-lg border border-[#a32d2d] bg-white px-4 py-2.5 text-lg font-semibold text-[#a32d2d] transition-colors hover:bg-[#fcebeb] disabled:opacity-50"
-                    onClick={handleClose}
+                    onClick={() => setCloseConfirmOpen(true)}
                     disabled={closing}
                   >
                     {closing ? '마감 중...' : '요청 마감'}
@@ -613,7 +619,7 @@ export default function ServiceRequestDetailPage() {
             </div>
 
             {/* 변경사항 작성 — 본문 수정 불가 대신 견적 요청 정책상 최대 3개까지 별도 등록. 본인에게만 노출 */}
-            {isOwner && (isOpen || isMatched) && (
+            {isOwner && isOpen && (
               <div className="border-t border-[#e8e8e8] px-6 py-5">
                 <h2 className="mb-4 text-lg font-semibold text-[#5f5e5a]">변경사항 추가</h2>
                 {canAddComment ? (
@@ -694,7 +700,7 @@ export default function ServiceRequestDetailPage() {
             </div>
 
             {/* 액션 영역 */}
-            {!isOwner && isProvider && (
+            {!isOwner && isProvider && !isActualCreator && (
               <div className="border-b border-[#e8e8e8] px-5 py-4">
                 {isAuthenticated ? (
                   isOpen ? (
@@ -804,6 +810,15 @@ export default function ServiceRequestDetailPage() {
       </div>
 
       {toast && <Toast message={toast} onClose={() => setToast('')} />}
+
+      <ConfirmModal
+        open={closeConfirmOpen}
+        message="이 요청서를 마감하시겠습니까?"
+        subMessage="마감하면 더 이상 견적을 받을 수 없습니다."
+        confirmLabel="마감"
+        onConfirm={handleClose}
+        onCancel={() => setCloseConfirmOpen(false)}
+      />
 
       <ImageLightbox
         images={(request.imageList ?? []).map(img => toImageUrl(img.url))}

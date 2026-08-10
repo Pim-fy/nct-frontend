@@ -86,11 +86,11 @@ export const WIZARD_STEPS = {
     type: 'form', next: 'mv_date',
     fields: [
       { key: '출발지 주소', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'origin_addr' },
-      { key: '출발지 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'origin_addr', wide: true, required: true },
+      { key: '출발지 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'origin_addr', wide: true },
       { key: '출발지 층수', type: 'text', placeholder: '예: 3층', row: 'origin_floor', required: true },
       { key: '출발지 엘리베이터', type: 'choice', options: ['있음', '없음'], row: 'origin_floor', required: true },
       { key: '도착지 주소', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'dest_addr' },
-      { key: '도착지 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'dest_addr', wide: true, required: true },
+      { key: '도착지 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'dest_addr', wide: true },
       { key: '도착지 층수', type: 'text', placeholder: '예: 5층', row: 'dest_floor', required: true },
       { key: '도착지 엘리베이터', type: 'choice', options: ['있음', '없음'], row: 'dest_floor', required: true },
     ],
@@ -156,7 +156,7 @@ export const WIZARD_STEPS = {
     type: 'form', next: 'cl_home_size',
     fields: [
       { key: '지역', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'cl_home_addr' },
-      { key: '지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'cl_home_addr', wide: true, required: true },
+      { key: '지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'cl_home_addr', wide: true },
       { key: '층수', type: 'text', placeholder: '예: 3층', row: 'cl_home_addr', required: true, compact: true },
     ],
   },
@@ -224,7 +224,7 @@ export const WIZARD_STEPS = {
     type: 'form', next: 'cl_biz_size',
     fields: [
       { key: '지역', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'cl_biz_addr' },
-      { key: '지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'cl_biz_addr', wide: true, required: true },
+      { key: '지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'cl_biz_addr', wide: true },
       { key: '층수', type: 'text', placeholder: '예: 3층', row: 'cl_biz_addr', required: true, compact: true },
     ],
   },
@@ -435,7 +435,7 @@ export const WIZARD_STEPS = {
     title: '희망일', type: 'form', next: 'ir_location',
     fields: [
       { key: '희망 지역', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'ir_addr' },
-      { key: '희망 지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'ir_addr', wide: true, required: true },
+      { key: '희망 지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'ir_addr', wide: true },
       { key: '층수', type: 'text', placeholder: '예: 3층', row: 'ir_addr', required: true, compact: true },
       { key: '폐기물 처리', type: 'choice', options: ['필요', '불필요'] },
     ],
@@ -483,7 +483,7 @@ export const WIZARD_STEPS = {
     title: '요청사항', type: 'form', next: 'memo',
     fields: [
       { key: '주소', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'it_home_addr' },
-      { key: '상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'it_home_addr', wide: true, required: true },
+      { key: '상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'it_home_addr', wide: true },
       { key: '층수', type: 'text', placeholder: '예: 3층', row: 'it_home_addr', required: true, compact: true },
       { key: '복층 유무', type: 'choice', options: ['있음', '없음'], row: 'it_home_status' },
       { key: '공실 확인', type: 'choice', options: ['공실', '거주 중'], row: 'it_home_status' },
@@ -515,7 +515,7 @@ export const WIZARD_STEPS = {
     title: '요청사항', type: 'form', next: 'memo',
     fields: [
       { key: '주소', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'it_biz_addr' },
-      { key: '상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'it_biz_addr', wide: true, required: true },
+      { key: '상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'it_biz_addr', wide: true },
       { key: '층수', type: 'text', placeholder: '예: 3층', row: 'it_biz_addr', required: true, compact: true },
     ],
   },
@@ -547,7 +547,7 @@ export const WIZARD_STEPS = {
     title: '요청사항', type: 'form', next: 'memo',
     fields: [
       { key: '희망 지역', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'it_reno_addr' },
-      { key: '희망 지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'it_reno_addr', wide: true, required: true },
+      { key: '희망 지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'it_reno_addr', wide: true },
     ],
   },
 
@@ -587,7 +587,7 @@ export const WIZARD_STEPS = {
     title: '요청사항', type: 'form', next: 'memo',
     fields: [
       { key: '희망 지역', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'it_wall_addr' },
-      { key: '희망 지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'it_wall_addr', wide: true, required: true },
+      { key: '희망 지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'it_wall_addr', wide: true },
     ],
   },
 
@@ -704,7 +704,7 @@ export const WIZARD_STEPS = {
       { key: '희망 요일', type: 'select', options: ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일', '협의 가능'], row: 'info_line1', required: true },
       { key: '희망 시간대', type: 'select', options: ['오전', '오후', '협의 가능'], row: 'info_line1', required: true },
       { key: '희망 지역', type: 'region', placeholder: '지역을 선택해 주세요', required: true, row: 'ls_region', maxSelections: 3, desc: '최대 3개까지 선택할 수 있어요.', hideWhen: { step: 'ls_visit', equals: '온라인·화상' } },
-      { key: '희망 지역 상세주소', type: 'text', placeholder: '예: OO동, OO아파트 인근 등', row: 'ls_region', wide: true, required: true, hideWhen: { step: 'ls_visit', equals: '온라인·화상' } },
+      { key: '희망 지역 상세주소', type: 'text', placeholder: '예: OO동, OO아파트 인근 등', row: 'ls_region', wide: true, hideWhen: { step: 'ls_visit', equals: '온라인·화상' } },
     ],
   },
 
