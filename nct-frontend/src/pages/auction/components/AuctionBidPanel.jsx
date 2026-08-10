@@ -96,6 +96,7 @@ const AuctionBidPanel = ({
   onFavoriteToggle,
   onReportOpen,
   onChargeClick,
+  onTradeDetailOpen,
 }) => {
   const isBidPointInsufficient = hasAvailablePoint && !isBidPointSufficient;
   const isBuyNowPointInsufficient = hasAvailablePoint && !isBuyNowPointSufficient;
@@ -411,6 +412,19 @@ const AuctionBidPanel = ({
                 <p className="m-0 text-body-sm leading-6 text-[#666] md:text-body-md">
                   {closedAuctionContent.description}
                 </p>
+                {isEndedAuction && isCurrentHighestBidder && (
+                  Number(auction.tradeId) > 0 ? (
+                    <button
+                      className="mt-2 min-h-10 cursor-pointer rounded-lg border border-primary bg-primary px-4 text-body-sm font-bold text-white transition-colors hover:bg-[#0058df]"
+                      type="button"
+                      onClick={onTradeDetailOpen}
+                    >
+                      거래 상세 보기
+                    </button>
+                  ) : (
+                    <span className="mt-1 text-caption font-bold text-[#666]">거래 생성 중</span>
+                  )
+                )}
               </div>
             </div>
           ) : isOwnAuction ? (
