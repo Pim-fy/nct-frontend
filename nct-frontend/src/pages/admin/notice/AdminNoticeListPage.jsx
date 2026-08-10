@@ -115,7 +115,7 @@ const AdminNoticeListPage = () => {
     { key: 'noticeId', label: '번호' },
     { key: 'typeName', label: '유형' },
     {
-      key: 'title', label: '제목', className: 'admin-notice-list__title',
+      key: 'title', label: '제목', className: 'admin-notice-list__title admin-table__long-text',
       render: (value, row) => (
         <Link to={`/admin/notices/${row.noticeId}`}>
           {row.pinned && <span aria-label="중요 공지">[중요] </span>}{value}

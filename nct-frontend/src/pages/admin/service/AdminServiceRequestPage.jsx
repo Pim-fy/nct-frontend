@@ -91,7 +91,7 @@ const AdminServiceRequestPage = () => {
     {
       key: 'title',
       label: '요청명',
-      className: 'admin-notice-list__title',
+      className: 'admin-notice-list__title admin-table__long-text',
       render: (value) => <strong>{value}</strong>,
     },
     { key: 'categoryName', label: '카테고리' },
