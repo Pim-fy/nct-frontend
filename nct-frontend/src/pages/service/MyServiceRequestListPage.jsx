@@ -25,14 +25,14 @@ const FILTERS = [
   { label: '임시저장', value: 'DRAFT' },
   { label: '공개',     value: 'OPEN' },
   { label: '매칭완료', value: 'MATCHED' },
-  { label: '종료',     value: 'CLOSED' },
+  { label: '취소',     value: 'CLOSED' },
 ];
 
 const STATUS_LABEL = {
   SVCC0001: '임시저장',
   SVCC0002: '공개',
   SVCC0003: '매칭완료',
-  SVCC0004: '종료',
+  SVCC0004: '취소',
 };
 
 const STATUS_BADGE = {
@@ -106,7 +106,7 @@ export default function MyServiceRequestListPage({ embedded = false }) {
         summaryItems={[
           { label: '공개 중',   value: openSummary?.total ?? 0 },
           { label: '매칭완료', value: matchedSummary?.total ?? 0 },
-          { label: '종료',     value: closedSummary?.total ?? 0 },
+          { label: '취소',     value: closedSummary?.total ?? 0 },
         ]}
         filterItems={FILTERS.map(item => ({
           ...item,

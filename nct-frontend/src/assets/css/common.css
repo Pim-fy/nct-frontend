@@ -197,7 +197,7 @@ a.list-row:hover {
 table { width: 100%; border-collapse: separate; border-spacing: 0; background: #fff; border: 1px solid #f0efec; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.06); }
 .card table { box-shadow: none; border: none; }
 th, td { border-bottom: 1px solid #f0efec; padding: 12px 10px; text-align: left; font-size: 16px; vertical-align: top; }
-th { color: #5f5e5a; background: #fafaf8; font-weight: 700; }
+th { color: #5f5e5a; background: #fafaf8; font-weight: 700; white-space: nowrap; }
 table tr:last-child td { border-bottom: none; }
 
 /* 오버레이 모달 — .open 클래스 토글로 표시/숨김 (display:none → flex)
