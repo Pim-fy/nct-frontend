@@ -9,7 +9,7 @@
 //   콘텐츠: 우측 flex-1 영역.
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getMyPagePath } from "@/routes/myPageRoutes";
+import { getMyPageInquiryPath, getMyPagePath } from "@/routes/myPageRoutes";
 import MyPageSidebar from "@components/mypage/MyPageSidebar";
 import MyPageDashboard from "@components/mypage/MyPageDashboard";
 import MyPageProfileEdit from "@components/mypage/MyPageProfileEdit";
@@ -112,19 +112,15 @@ export default function MyPage({
     });
   };
 
-  const handleOpenSalesTradeDetail = (tradeId) => {
-    navigate(`/trades/${tradeId}/seller`, {
-      state: { from: getMyPagePath("auction-sales") },
-    });
-  };
-
   // 사이드바 메뉴를 누르면 항상 그 섹션의 기본(목록) 화면으로 이동한다.
   // 같은 메뉴를 다시 눌러도 상세 화면에 머물러 있지 않도록, 드릴다운 상태를 무조건 초기화한다
   // (예: 판매 내역 상세를 보다가 "상품 판매 목록"을 다시 누르면 목록으로 돌아가야 한다).
   const handleSelectSection = (section) => {
     const nextSection = MYPAGE_SECTIONS.has(section) ? section : "home";
     setActiveSection(nextSection);
-    navigate(getMyPagePath(nextSection));
+    navigate(nextSection === "inquiry-list"
+      ? getMyPageInquiryPath(isProvider)
+      : getMyPagePath(nextSection));
     setSectionResetKey((key) => key + 1);
     window.scrollTo(0, 0);
   };
@@ -194,9 +190,7 @@ export default function MyPage({
               onOpenTradeDetail={handleOpenPurchaseTradeDetail}
             />
           )}
-          {activeSection === "auction-sales" && (
-            <MyProductList embedded onOpenTradeDetail={handleOpenSalesTradeDetail} />
-          )}
+          {activeSection === "auction-sales" && <MyProductList />}
           {activeSection === "service-requests" && <MyServiceRequestListPage embedded />}
           {activeSection === "wishlist" && <AuctionFavoritesPage embedded />}
           {activeSection === "wallet" && <PointWalletPage embedded />}

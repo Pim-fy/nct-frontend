@@ -1,6 +1,6 @@
 // @ai_generated
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import TradeDetailBuyer from '@pages/trade/TradeDetailBuyer';
 import TradeDetailSeller from '@pages/trade/TradeDetailSeller';
 import TradeReviewSection from '@components/trade/TradeReviewSection';
@@ -8,10 +8,12 @@ import TradeProgressSteps from '@components/trade/TradeProgressSteps';
 import { useAuctionTrade } from '@hooks/useAuctionTrade';
 import AsyncRouteError from '@components/common/AsyncRouteError';
 import TradeDetailSkeleton from '@components/trade/TradeDetailSkeleton';
+import { getMyPagePath } from '@routes/myPageRoutes';
 
 export default function AuctionTradeDetailPage() {
   const { auctionId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const tradeQuery = useAuctionTrade(auctionId);
   // @ai_generated (담당자1, 2026-08-07): 진행바를 좌우 컬럼을 가로지르는 공용 행으로 올리기
   // 위해, 실제 단계 계산은 TradeDetailBuyer/Seller에 그대로 두고 결과값만 이 상태로 받는다.
@@ -33,7 +35,12 @@ export default function AuctionTradeDetailPage() {
   const viewerRole = trade.viewerRole ?? trade.userRole;
   const DetailPage = viewerRole === 'SELLER' ? TradeDetailSeller : TradeDetailBuyer;
   const backSection = viewerRole === 'SELLER' ? 'auction-sales' : 'auction-bids';
-  const handleBack = () => navigate(`/user/mypage?section=${backSection}`);
+  const fallbackBackPath = getMyPagePath(backSection);
+  const requestedBackPath = typeof location.state?.from === 'string'
+    && location.state.from.startsWith('/user/mypage')
+    ? location.state.from
+    : fallbackBackPath;
+  const handleBack = () => navigate(requestedBackPath);
 
   return (
     <div className="container auction-trade-detail-shell">

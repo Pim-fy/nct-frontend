@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { getUserReviews } from '@api/reviewApi';
 import { getMyServiceTrades } from '@api/serviceTradeApi';
 import { useMyProviderProfile } from '@hooks/useProviderProfile';
 import { usePointBalance } from '@hooks/usePoint';
 import { useMyQuoteSummary } from '@hooks/useQuote';
+import { getMyPagePath } from '@/routes/myPageRoutes';
 import { assets } from '@components/mypage/assets';
 import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
 import {
@@ -14,9 +16,12 @@ import ProviderApprovedCategorySection from '@components/mypage/ProviderApproved
 
 const PROVIDER_ROLE = 'PROVIDER';
 const SERVICE_IN_PROGRESS = 'TRDC0003';
+const SERVICE_WAITING_CONFIRMATION = 'TRDC0005';
 const SERVICE_COMPLETED = 'TRDC0006';
+const SUB_BUTTON_CLASS_NAME = 'text-white/70 hover:text-white underline underline-offset-2 transition-colors';
 
 export default function MyPageProviderDashboard({ user, onLogout, onSwitchToGeneral, onOpenSection }) {
+  const navigate = useNavigate();
   const profileQuery = useMyProviderProfile();
   const pointBalanceQuery = usePointBalance();
   const quoteSummaryQuery = useMyQuoteSummary();
@@ -26,6 +31,16 @@ export default function MyPageProviderDashboard({ user, onLogout, onSwitchToGene
     queryFn: () => getMyServiceTrades({
       role: PROVIDER_ROLE,
       status: SERVICE_IN_PROGRESS,
+      page: 1,
+      size: 1,
+    }),
+    staleTime: 30 * 1000,
+  });
+  const waitingConfirmationServiceTradesQuery = useQuery({
+    queryKey: ['my-service-trades', PROVIDER_ROLE, SERVICE_WAITING_CONFIRMATION, '', 1, 1],
+    queryFn: () => getMyServiceTrades({
+      role: PROVIDER_ROLE,
+      status: SERVICE_WAITING_CONFIRMATION,
       page: 1,
       size: 1,
     }),
@@ -41,7 +56,11 @@ export default function MyPageProviderDashboard({ user, onLogout, onSwitchToGene
     }),
     staleTime: 30 * 1000,
   });
-
+  const serviceTradeQueries = [
+    inProgressServiceTradesQuery,
+    waitingConfirmationServiceTradesQuery,
+    completedServiceTradesQuery,
+  ];
   const profile = profileQuery.data;
   const providerUserSn = Number(profile?.userSn);
   const receivedReviewsQuery = useQuery({
@@ -57,90 +76,128 @@ export default function MyPageProviderDashboard({ user, onLogout, onSwitchToGene
   const receivedReviews = receivedReviewsQuery.data?.content ?? [];
   const nickname = user?.nickname || '제공자';
   const openSection = (section) => onOpenSection?.(section);
+  const openQuoteTab = (tab) => (event) => {
+    event.stopPropagation();
+    const searchParams = new URLSearchParams({ tab });
+    navigate(`${getMyPagePath('quote')}?${searchParams.toString()}`);
+  };
+  const openServiceTradeStatus = (status) => (event) => {
+    event.stopPropagation();
+    const searchParams = new URLSearchParams({ status });
+    navigate(`${getMyPagePath('service-trade')}?${searchParams.toString()}`);
+  };
 
   return (
     <div className="space-y-5">
       <MyPageContentHeader title="MY 홈" />
-      <MyPageDashboardTop
-        profileImageUrl={user?.profileImageUrl || user?.profileImage}
-        nickname={nickname}
-        email={user?.email || ''}
-        actions={[
-          {
-            key: 'logout',
-            label: '로그아웃',
-            icon: assets.iconLogout,
-            onClick: onLogout,
-          },
-          {
-            key: 'general-switch',
-            label: '일반 모드 전환',
-            icon: assets.iconSwitch1,
-            iconClassName: 'size-[10px]',
-            onClick: onSwitchToGeneral,
-          },
-        ]}
-      />
+      {/* 담당자 7 · F-PROV-009: 일반회원 MY 홈과 같은 프로필 1칸 + 요약 3칸 배치를 사용합니다. */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-4 lg:items-stretch">
+        <MyPageDashboardTop
+          className="lg:col-span-1"
+          profileImageUrl={user?.profileImageUrl || user?.profileImage}
+          nickname={nickname}
+          email={user?.email || ''}
+          actions={[
+            {
+              key: 'logout',
+              label: '로그아웃',
+              icon: assets.iconLogout,
+              onClick: onLogout,
+            },
+            {
+              key: 'general-switch',
+              label: '일반 모드 전환',
+              icon: assets.iconSwitch1,
+              iconClassName: 'size-[10px]',
+              onClick: onSwitchToGeneral,
+            },
+          ]}
+        />
 
-      <MyPageDashboardSummaryCards
-        ariaLabel="제공자 요약"
-        items={[
-          {
-            key: 'point',
-            color: '#776bf8',
-            icon: assets.iconPoint,
-            label: '포인트 잔액',
-            value: pointBalanceQuery.isLoading
-              ? '…'
-              : pointBalanceQuery.isError
-                ? '—'
-                : formatNumber(pointBalance?.total),
-            meta: pointBalanceQuery.isLoading
-              ? '포인트를 불러오는 중입니다.'
-              : pointBalanceQuery.isError
-                ? '포인트 잔액을 불러오지 못했습니다.'
-                : `거래가능 ${formatNumber(pointBalance?.available)} · 홀딩 ${formatNumber(pointBalance?.hold)}`,
-            onMore: () => openSection('wallet'),
-          },
-          {
-            key: 'quote',
-            color: '#0064ff',
-            icon: assets.iconAction,
-            label: '견적 현황',
-            value: quoteSummaryQuery.isLoading
-              ? '…'
-              : quoteSummaryQuery.isError
-                ? '—'
-                : `${formatNumber(quoteSummaryQuery.data?.activeQuoteCount)}건`,
-            meta: quoteSummaryQuery.isError
-              ? '견적 현황을 불러오지 못했습니다.'
-              : '현재 참여 중인 견적을 확인합니다.',
-            onMore: () => openSection('quote'),
-          },
-          {
-            key: 'service',
-            color: '#005eb5',
-            icon: assets.iconService,
-            label: '견적 진행 내역',
-            value: serviceCountValue(inProgressServiceTradesQuery),
-            meta: inProgressServiceTradesQuery.isError
-              ? '견적 진행 내역을 불러오지 못했습니다.'
-              : '진행 중인 견적을 확인합니다.',
-            onMore: () => openSection('service-trade'),
-          },
-          {
-            key: 'done',
-            color: '#e63946',
-            icon: assets.iconEnd2,
-            label: '완료 견적',
-            value: serviceCountValue(completedServiceTradesQuery),
-            meta: completedServiceTradesQuery.isError
-              ? '완료 견적을 불러오지 못했습니다.'
-              : '완료된 견적 내역을 확인합니다.',
-            onMore: () => openSection('service-trade'),
-          },
-        ]}
-      />
+        <MyPageDashboardSummaryCards
+          className="lg:col-span-3"
+          columns={3}
+          ariaLabel="제공자 요약"
+          items={[
+            {
+              key: 'point',
+              color: '#776bf8',
+              icon: assets.iconPoint,
+              label: '포인트 잔액',
+              value: pointBalanceQuery.isLoading
+                ? '…'
+                : pointBalanceQuery.isError
+                  ? '—'
+                  : formatNumber(pointBalance?.total),
+              unit: 'P',
+              meta: pointBalanceQuery.isLoading
+                ? '포인트를 불러오는 중입니다.'
+                : pointBalanceQuery.isError
+                  ? '포인트 잔액을 불러오지 못했습니다.'
+                  : `거래가능 ${formatNumber(pointBalance?.available)}P ㅣ 홀딩 ${formatNumber(pointBalance?.hold)}P`,
+              onMore: () => openSection('wallet'),
+            },
+            {
+              key: 'quote',
+              color: '#3B4DE3',
+              icon: assets.iconAction,
+              label: '견적 현황',
+              value: quoteSummaryQuery.isLoading
+                ? '…'
+                : quoteSummaryQuery.isError
+                  ? '—'
+                  : `${formatNumber(quoteSummaryQuery.data?.totalQuoteCount)}건`,
+              meta: quoteSummaryQuery.isLoading
+                ? '견적 현황을 불러오는 중입니다.'
+                : quoteSummaryQuery.isError
+                  ? '견적 현황을 불러오지 못했습니다.'
+                  : (
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <button type="button" onClick={openQuoteTab('waiting')} className={SUB_BUTTON_CLASS_NAME}>
+                        대기중 {formatNumber(quoteSummaryQuery.data?.activeQuoteCount)}건
+                      </button>
+                      <span className="text-white/70">ㅣ</span>
+                      <button type="button" onClick={openQuoteTab('in-progress')} className={SUB_BUTTON_CLASS_NAME}>
+                        진행중 {formatNumber(quoteSummaryQuery.data?.selectedQuoteCount)}건
+                      </button>
+                      <span className="text-white/70">ㅣ</span>
+                      <button type="button" onClick={openQuoteTab('ended')} className={SUB_BUTTON_CLASS_NAME}>
+                        종료 {formatNumber(quoteSummaryQuery.data?.endedQuoteCount)}건
+                      </button>
+                    </span>
+                  ),
+              onMore: () => openSection('quote'),
+            },
+            {
+              key: 'service',
+              color: '#0CB8BB',
+              icon: assets.iconService,
+              label: '견적 진행 내역',
+              value: serviceCountValue(serviceTradeQueries),
+              meta: serviceTradeQueries.some((query) => query.isLoading)
+                ? '견적 진행 내역을 불러오는 중입니다.'
+                : serviceTradeQueries.some((query) => query.isError)
+                  ? '견적 진행 내역을 불러오지 못했습니다.'
+                  : (
+                    <span className="-mx-2 flex min-w-0 flex-nowrap items-center gap-x-1 whitespace-nowrap">
+                      <button type="button" onClick={openServiceTradeStatus(SERVICE_IN_PROGRESS)} className={SUB_BUTTON_CLASS_NAME}>
+                        진행 중 {formatServiceCount(inProgressServiceTradesQuery)}건
+                      </button>
+                      <span className="text-white/70">ㅣ</span>
+                      <button type="button" onClick={openServiceTradeStatus(SERVICE_WAITING_CONFIRMATION)} className={SUB_BUTTON_CLASS_NAME}>
+                        완료 확인 {formatServiceCount(waitingConfirmationServiceTradesQuery)}건
+                      </button>
+                      <span className="text-white/70">ㅣ</span>
+                      <button type="button" onClick={openServiceTradeStatus(SERVICE_COMPLETED)} className={SUB_BUTTON_CLASS_NAME}>
+                        거래 완료 {formatServiceCount(completedServiceTradesQuery)}건
+                      </button>
+                    </span>
+                  ),
+              onMore: () => openSection('service-trade'),
+            },
+          ]}
+        />
+      </div>
 
       <section className="grid grid-cols-1 gap-5 lg:grid-cols-3" aria-label="서비스 분야 권한과 리뷰">
         <ProviderApprovedCategorySection />
@@ -244,8 +301,17 @@ function formatNumber(value) {
   return Number(value ?? 0).toLocaleString('ko-KR');
 }
 
-function serviceCountValue(query) {
-  if (query.isLoading) return '…';
-  if (query.isError) return '—';
-  return `${formatNumber(query.data?.totalCount)}건`;
+function formatServiceCount(query) {
+  return formatNumber(query.data?.totalCount);
+}
+
+function serviceCountValue(queries) {
+  if (queries.some((query) => query.isLoading)) return '…';
+  if (queries.some((query) => query.isError)) return '—';
+
+  const totalCount = queries.reduce(
+    (sum, query) => sum + Number(query.data?.totalCount ?? 0),
+    0,
+  );
+  return `${formatNumber(totalCount)}건`;
 }

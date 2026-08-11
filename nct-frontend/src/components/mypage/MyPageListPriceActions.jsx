@@ -30,7 +30,9 @@ export default function MyPageListPriceActions({ topLine, priceItems = [], child
         )}
       </div>
       {children && (
-        <div className="flex flex-col items-end gap-2">
+        // 버튼 라벨 길이가 제각각(등록재개/삭제/판매 기록/취소 상품 보기 등)이라 내용 기준으로 폭을
+        // 정하면 버튼마다 크기가 들쭉날쭉해진다. 고정 폭 칼럼으로 묶어 전부 같은 크기로 맞춘다.
+        <div className="flex w-28 flex-col gap-2 [&_.btn]:w-full">
           {children}
         </div>
       )}

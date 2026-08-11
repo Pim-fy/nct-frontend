@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { fetchReferenceCodes } from '@api/referenceApi';
 import {
   getServiceTradeDetail,
+  decideServiceScheduleCancellation,
   requestServiceScheduleCancellation,
   requestServiceScheduleChange,
 } from '@api/serviceTradeApi';
@@ -44,9 +45,15 @@ export default function ServiceTradeDetailRoutePage() {
     retry: 1,
   });
 
-  const refreshDetail = () => queryClient.invalidateQueries({
-    queryKey: serviceTradeDetailQueryKey(tradeId),
-  });
+  // 담당자 7: 거래 상태 변경 후 상세와 마이페이지 목록/대시보드를 함께 최신화합니다.
+  const refreshTradeData = () => Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: serviceTradeDetailQueryKey(tradeId),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: ['my-service-trades'],
+    }),
+  ]);
 
   if (!isValidTradeId) {
     return (
@@ -96,9 +103,10 @@ export default function ServiceTradeDetailRoutePage() {
       disputeTypesError={disputeTypesQuery.isError}
       disputeTypesLoading={disputeTypesQuery.isLoading}
       onRetryDisputeTypes={() => disputeTypesQuery.refetch()}
-      onActionCompleted={refreshDetail}
+      onActionCompleted={refreshTradeData}
       onRequestScheduleChange={requestServiceScheduleChange}
       onRequestScheduleCancellation={requestServiceScheduleCancellation}
+      onDecideScheduleCancellation={decideServiceScheduleCancellation}
       trade={detailQuery.data}
     />
   );
