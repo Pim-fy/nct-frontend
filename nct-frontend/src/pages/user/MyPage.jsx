@@ -9,7 +9,7 @@
 //   콘텐츠: 우측 flex-1 영역.
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getMyPagePath } from "@/routes/myPageRoutes";
+import { getMyPageInquiryPath, getMyPagePath } from "@/routes/myPageRoutes";
 import MyPageSidebar from "@components/mypage/MyPageSidebar";
 import MyPageDashboard from "@components/mypage/MyPageDashboard";
 import MyPageProfileEdit from "@components/mypage/MyPageProfileEdit";
@@ -118,7 +118,9 @@ export default function MyPage({
   const handleSelectSection = (section) => {
     const nextSection = MYPAGE_SECTIONS.has(section) ? section : "home";
     setActiveSection(nextSection);
-    navigate(getMyPagePath(nextSection));
+    navigate(nextSection === "inquiry-list"
+      ? getMyPageInquiryPath(isProvider)
+      : getMyPagePath(nextSection));
     setSectionResetKey((key) => key + 1);
     window.scrollTo(0, 0);
   };

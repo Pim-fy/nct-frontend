@@ -24,13 +24,6 @@ const CUSTOMER_SUPPORT_MENU = [
     type: 'section',
     isActive: (pathname) => pathname === '/customersupport/faq',
   },
-  {
-    key: 'inquiry',
-    label: '1:1 문의',
-    to: '/customersupport/inquiry',
-    type: 'section',
-    isActive: (pathname) => pathname === '/customersupport/inquiry',
-  },
 ];
 
 /**
