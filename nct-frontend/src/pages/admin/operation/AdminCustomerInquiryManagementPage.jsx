@@ -154,10 +154,17 @@ const AdminCustomerInquiryManagementPage = () => {
     {
       key: 'userSn',
       label: '작성자',
+      className: 'admin-table__compact-text',
       render: (value, row) => formatAdminMemberIdentity(row.writerMember, value),
     },
     { key: 'title', label: '제목', className: 'admin-table__long-text' },
     { key: 'registeredAt', label: '접수일', render: formatDateTime },
+    {
+      key: 'answeredAt',
+      label: '처리일',
+      className: 'admin-table__processed-date',
+      render: formatDateTime,
+    },
     {
       key: 'statusCode',
       label: '상태',

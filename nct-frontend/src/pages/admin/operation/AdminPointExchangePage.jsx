@@ -127,6 +127,7 @@ const AdminPointExchangePage = () => {
     {
       key: 'userSn',
       label: '신청자',
+      className: 'admin-table__compact-text',
       render: (value, row) => formatAdminMemberIdentity(row.applicantMember, value),
     },
     { key: 'amount', label: '신청 금액', render: formatAmount },
@@ -136,6 +137,12 @@ const AdminPointExchangePage = () => {
       render: (value, row) => `${row.bankName || '-'} ${value || '-'}`,
     },
     { key: 'date', label: '신청일', render: formatDate },
+    {
+      key: 'processedDate',
+      label: '처리일',
+      className: 'admin-table__processed-date',
+      render: formatDate,
+    },
     {
       key: 'statusCode',
       label: '상태',

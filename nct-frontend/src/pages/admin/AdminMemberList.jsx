@@ -117,6 +117,7 @@ const AdminMemberList = () => {
     {
       key: 'userSn',
       label: '회원',
+      className: 'admin-table__compact-text',
       render: (_, row) => formatAdminMemberIdentity(row, row.userSn),
     },
     { key: 'roleName', label: '역할', render: (value, row) => value ?? row.roleCode ?? '-' },

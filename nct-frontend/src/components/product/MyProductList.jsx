@@ -134,10 +134,9 @@ const getProductStatusDisplay = (p) => ({
 export default function MyProductList() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  // 전역 브레드크럼 (BJN, 260805): 상세로 이동할 때 접근 경로(state.from)를 전달 —
-  // 담당자 7 경로 통합: 대표 목록인 마이페이지 위치를 상세 브레드크럼 복귀 정보로 전달한다.
+  // 담당자 7: 상세·등록 화면에서 목록으로 돌아올 수 있도록 현재 경로를 전달한다.
   const location = useLocation();
-  const breadcrumbFrom = { from: location.pathname + location.search };
+  const returnState = { from: location.pathname + location.search };
   const [filter, setFilter]       = useState(null);
   const [subFilter, setSubFilter] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -238,7 +237,7 @@ export default function MyProductList() {
           action={filter === null ? (
             <button
               type="button"
-              onClick={() => navigate('/product/register', { state: breadcrumbFrom })}
+              onClick={() => navigate('/product/register', { state: returnState })}
               className="btn btn-primary"
             >
               경매 등록하기
@@ -272,29 +271,29 @@ export default function MyProductList() {
                     {p.tradeSn && (
                       <button
                         type="button"
-                        onClick={() => navigate(`/trades/${p.tradeSn}/seller`, { state: breadcrumbFrom })}
+                        onClick={() => navigate(`/trades/${p.tradeSn}/seller`, { state: returnState })}
                         className="btn btn-sm btn-primary"
                       >
                         거래 관리
                       </button>
                     )}
                     {!p.tradeSn && isActive && p.aucStatusCd === 'AUCC0005' && (
-                      <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`, { state: breadcrumbFrom })} className="btn btn-sm btn-ghost">
+                      <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`, { state: returnState })} className="btn btn-sm btn-ghost">
                         취소 상품 보기
                       </button>
                     )}
                     {!p.tradeSn && isActive && p.aucStatusCd !== 'AUCC0005' && (
-                      <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`, { state: breadcrumbFrom })} className="btn btn-sm btn-primary">
+                      <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`, { state: returnState })} className="btn btn-sm btn-primary">
                         판매 관리
                       </button>
                     )}
                     {isDraft && (
-                      <button type="button" onClick={() => navigate('/product/register', { state: { prdSn: p.prdSn, ...breadcrumbFrom } })} className="btn btn-sm btn-ghost">
+                      <button type="button" onClick={() => navigate('/product/register', { state: { prdSn: p.prdSn, ...returnState } })} className="btn btn-sm btn-ghost">
                         등록재개
                       </button>
                     )}
                     {!p.tradeSn && isEnded && (
-                      <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`, { state: breadcrumbFrom })} className="btn btn-sm btn-ghost">
+                      <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`, { state: returnState })} className="btn btn-sm btn-ghost">
                         판매 기록
                       </button>
                     )}
@@ -331,18 +330,18 @@ export default function MyProductList() {
                   actionButton={(
                     <>
                       {p.tradeSn && (
-                        <button type="button" onClick={() => navigate(`/trades/${p.tradeSn}/seller`, { state: breadcrumbFrom })} className="btn btn-sm btn-primary">거래 관리</button>
+                        <button type="button" onClick={() => navigate(`/trades/${p.tradeSn}/seller`, { state: returnState })} className="btn btn-sm btn-primary">거래 관리</button>
                       )}
                       {!p.tradeSn && isActive && (
-                        <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`, { state: breadcrumbFrom })} className={`btn btn-sm ${p.aucStatusCd === 'AUCC0005' ? 'btn-ghost' : 'btn-primary'}`}>
+                        <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`, { state: returnState })} className={`btn btn-sm ${p.aucStatusCd === 'AUCC0005' ? 'btn-ghost' : 'btn-primary'}`}>
                           {p.aucStatusCd === 'AUCC0005' ? '취소 상품 보기' : '판매 관리'}
                         </button>
                       )}
                       {isDraft && (
-                        <button type="button" onClick={() => navigate('/product/register', { state: { prdSn: p.prdSn, ...breadcrumbFrom } })} className="btn btn-sm btn-ghost">등록재개</button>
+                        <button type="button" onClick={() => navigate('/product/register', { state: { prdSn: p.prdSn, ...returnState } })} className="btn btn-sm btn-ghost">등록재개</button>
                       )}
                       {!p.tradeSn && isEnded && (
-                        <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`, { state: breadcrumbFrom })} className="btn btn-sm btn-ghost">판매 기록</button>
+                        <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`, { state: returnState })} className="btn btn-sm btn-ghost">판매 기록</button>
                       )}
                       {(isDraft || isEnded) && !p.tradeSn && p.aucStatusCd !== 'AUCC0003' && (
                         <button type="button" onClick={() => setConfirmTarget({ prdSn: p.prdSn, prdNm: p.prdNm })} className="btn btn-sm btn-danger">삭제</button>

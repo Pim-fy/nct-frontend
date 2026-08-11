@@ -1,4 +1,4 @@
-// Claude Code 작성 (BJN, 260805)
+// 담당자 7 · 공통 브레드크럼 대상과 고정 정보 구조
 // ─────────────────────────────────────────────────────────────────────────────
 // 브레드크럼 중앙 맵 — "어떤 경로에서 브레드크럼을 보여줄지"와 "라벨을 뭐라고 쓸지"를
 // 이 파일 한 곳에서만 관리한다. (라우트 정의 파일 AppRoutes.jsx는 건드리지 않기 위해
@@ -9,14 +9,12 @@
 //  - BREADCRUMB_ROUTES  : 브레드크럼을 표시할 "대상 페이지" 목록.
 //                         여기 등록된 경로만 브레드크럼이 나오고, 미등록 경로(목록/랜딩 등)는
 //                         자동으로 아무것도 표시되지 않는다.
-//  - BREADCRUMB_ENTRIES : "진입점"으로 인정하는 목록성 화면들.
-//                         상세 페이지가 state.from(이전 페이지 경로)을 받았을 때,
-//                         이 목록과 매치되는 경우에만 브레드크럼 중간 단계로 채택한다.
-//                         → 상세→상세 이동처럼 진입점이 아닌 from은 자동 기각되어
-//                           defaultTrail(정식 위치)로 폴백된다.
+//  - 진입 경로(state.from)는 검증된 마이페이지 메뉴일 때만 상위 경로로 반영한다.
+//    알림·검색·홈처럼 단순히 거쳐 온 화면은 브레드크럼 계층에 넣지 않는다.
+//  - 사이드 메뉴가 위치를 이미 보여 주는 마이페이지·고객센터, 관리자, 프로필은 등록하지 않는다.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { getMyPageInquiryPath, getMyPagePath, getMyPageSection } from '@/routes/myPageRoutes';
+import { getMyPageInquiryPath, getMyPagePath } from '@/routes/myPageRoutes';
 
 // 항목 형태: { label: '표시명', to: '이동 경로' } — to가 없으면 링크 없이 텍스트만 표시
 export const HOME_ITEM = { label: '홈', to: '/' };
@@ -33,14 +31,13 @@ export const MYPAGE_SECTION_LABELS = {
   quote: '견적 제출 내역',
   review: '내 리뷰',
   'service-trade': '서비스 거래',
-  'service-chat': '서비스 채팅',
   'received-review': '받은 리뷰',
   'report-list': '내 신고 목록',
   'report-form': '신고 접수',
   'inquiry-list': '1:1 문의',
 };
 
-// 마이페이지 트레일 생성 헬퍼 — 진입점 매칭과 MyPage 오버라이드 양쪽에서 재사용한다.
+// 마이페이지 트레일 생성 헬퍼 — 사이드 메뉴 밖의 독립 상세·작성 화면에서 재사용한다.
 // sectionKey가 있으면 "마이페이지 > 섹션명" 두 단계, 없으면 "마이페이지" 한 단계.
 export const buildMyPageTrail = (sectionKey, isProvider = false) => {
   const base = [{ label: '마이페이지', to: '/user/mypage' }];
@@ -56,46 +53,10 @@ export const buildMyPageTrail = (sectionKey, isProvider = false) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 진입점 목록 — trail(loc)은 { pathname, search } 형태를 받아 브레드크럼 항목 배열을 반환.
-// search까지 to에 붙여주는 이유: 목록의 필터·페이지 상태를 유지한 채 되돌아가게 하기 위해.
-// ─────────────────────────────────────────────────────────────────────────────
-export const BREADCRUMB_ENTRIES = [
-  {
-    pattern: '/auction',
-    trail: (loc) => [{ label: '경매', to: `/auction${loc.search}` }],
-  },
-  {
-    // 담당자 7 경로 통합: 계층 URL에서 현재 마이페이지 섹션을 역산한다.
-    pattern: '/user/mypage/*',
-    trail: (loc) => buildMyPageTrail(
-      getMyPageSection(loc.pathname),
-      loc.pathname.startsWith('/user/mypage/provider/inquiries'),
-    ),
-  },
-  {
-    // 제공자 모드 전용 — 공개 서비스 요청 목록
-    pattern: '/service',
-    trail: (loc) => [{ label: '서비스 요청 목록', to: `/service${loc.search}` }],
-  },
-  {
-    pattern: '/customersupport/notice',
-    trail: () => [{ label: '공지사항', to: '/customersupport/notice' }],
-  },
-  {
-    pattern: '/customersupport/faq',
-    trail: () => [{ label: 'FAQ', to: '/customersupport/faq' }],
-  },
-  {
-    pattern: '/user/notification',
-    trail: () => [{ label: '알림', to: '/user/notification' }],
-  },
-];
-
-// ─────────────────────────────────────────────────────────────────────────────
 // 브레드크럼 대상 페이지 목록.
 //  - pageLabel     : 마지막 항목(현재 페이지)에 표시할 고정 라벨 (실제 데이터 제목은 넣지 않음 — 사용자 확정)
-//  - defaultTrail  : state.from이 없거나(직접 URL 진입·새 탭) 진입점이 아닐 때 쓰는
-//                    "정보 구조상의 정식 상위 경로". 경로 파라미터가 필요하면 함수로 정의한다.
+//  - defaultTrail  : 진입 위치와 무관한 "정보 구조상의 정식 상위 경로".
+//                    경로 파라미터가 필요하면 함수로 정의한다.
 //  - hidden: true  : 파라미터 패턴과 URL이 겹치는 목록 페이지를 명시적으로 제외하기 위한 표시
 //
 // ※ matchPath는 배열 순서대로 첫 매치를 쓰므로, 구체 경로(/service-requests/new)를
@@ -122,9 +83,9 @@ export const BREADCRUMB_ROUTES = [
   {
     pattern: '/auction/:auctionId/trade',
     pageLabel: '거래 상세',
-    defaultTrail: ({ auctionId }) => [
-      { label: '경매 상세', to: `/auction/${auctionId}` },
-    ],
+    // 거래 상세는 경매 상세의 하위 탐색 화면이 아니라 마이페이지에서 관리하는 거래 화면이다.
+    // 구매·판매 역할별 상위 메뉴는 거래 조회 후 AuctionTradeDetailPage가 고정 오버라이드한다.
+    defaultTrail: [],
   },
   {
     pattern: '/auction/:auctionId',
@@ -132,17 +93,9 @@ export const BREADCRUMB_ROUTES = [
     defaultTrail: [{ label: '경매', to: '/auction' }],
   },
 
-  // 제공자 공개 프로필 — 여러 곳(서비스 요청 상세, 리뷰 등)에서 진입하므로 정식 상위는 홈만 둔다
-  {
-    pattern: '/providers/:providerId',
-    pageLabel: '제공자 프로필',
-    defaultTrail: [],
-  },
-
   // 서비스 요청 — /new, /me가 :svcReqSn 패턴과 겹치므로 구체 경로 먼저
   {
-    // 헤더 "견적 요청" 등 홈에서 바로 들어오는 게 기본 흐름이라 정식 상위는 홈만 둔다 (사용자 확정 260805)
-    // — "내 서비스 요청 목록"에서 들어온 경우에는 state.from으로 목록이 중간에 표시된다
+    // 일반회원이 헤더에서 바로 진입하는 독립 작성 화면이라 상위는 홈만 둔다.
     pattern: '/service-requests/new',
     pageLabel: '서비스 요청 작성',
     defaultTrail: [],
@@ -162,8 +115,14 @@ export const BREADCRUMB_ROUTES = [
     ],
   },
   {
-    // 일반회원(본인 요청)과 제공자(공개 요청)가 같은 화면을 쓰므로,
-    // 역할을 단정하지 않도록 정식 상위는 홈만 두고 실제 경로는 state.from으로 구분한다
+    pattern: '/service-requests/:svcReqSn/quotes/:quoteId',
+    pageLabel: '견적 상세',
+    defaultTrail: ({ svcReqSn }) => [
+      { label: '서비스 요청 상세', to: `/service-requests/${svcReqSn}` },
+    ],
+  },
+  {
+    // 일반회원과 제공자가 같은 상세 화면을 사용하므로 역할별 목록을 상위로 단정하지 않는다.
     pattern: '/service-requests/:svcReqSn',
     pageLabel: '서비스 요청 상세',
     defaultTrail: [],
@@ -188,11 +147,10 @@ export const BREADCRUMB_ROUTES = [
   {
     pattern: '/service-trades/:tradeId/chat',
     pageLabel: '서비스 채팅',
-    defaultTrail: buildMyPageTrail('service-chat'),
+    defaultTrail: buildMyPageTrail('chat'),
   },
   {
-    // @ai_generated (담당자1, 2026-08-07): 미등록 상태였다 - 리뷰 목록에서 서비스 거래로
-    // 이동할 때 state.from을 넘겨도 이 라우트가 없어 브레드크럼이 반영되지 않았다(B-3).
+    // 담당자 7: 서비스 거래 상세는 마이페이지의 서비스 거래 목록을 고정 상위로 사용한다.
     pattern: '/service-trades/:tradeId',
     pageLabel: '서비스 거래 상세',
     defaultTrail: buildMyPageTrail('service-trade'),
@@ -200,11 +158,9 @@ export const BREADCRUMB_ROUTES = [
 
   // 상품
   {
-    // 작성 폼은 홈 직행이 기본 흐름 (서비스 요청 작성과 동일 원칙, 사용자 확정 260805)
-    // — 내 판매 내역·경매 목록에서 들어온 경우에는 state.from으로 해당 경로가 표시된다
     pattern: '/product/register',
     pageLabel: '상품 등록',
-    defaultTrail: [],
+    defaultTrail: [{ label: '경매', to: '/auction' }],
   },
   {
     pattern: '/product/:prdSn/seller',
@@ -212,11 +168,16 @@ export const BREADCRUMB_ROUTES = [
     defaultTrail: buildMyPageTrail('auction-sales'),
   },
 
-  // 신고
+  // 마이페이지 사이드 메뉴 밖에서 열리는 1:1 문의 작성 화면
   {
-    pattern: '/user/mypage/reports/new',
-    pageLabel: '신고 접수',
-    defaultTrail: buildMyPageTrail('report-list'),
+    pattern: '/user/mypage/provider/inquiries/new',
+    pageLabel: '문의 작성',
+    defaultTrail: buildMyPageTrail('inquiry-list', true),
+  },
+  {
+    pattern: '/user/mypage/inquiries/new',
+    pageLabel: '문의 작성',
+    defaultTrail: buildMyPageTrail('inquiry-list'),
   },
 
   // 제공자

@@ -22,6 +22,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSubmitCustomerReport } from "@hooks/useAbuseReport";
+import { getMyPagePath } from "@routes/myPageRoutes";
 import { toast } from "@utils/common";
 
 const REPORT_TYPES = [
@@ -70,6 +71,9 @@ function ReportModalContent({
 }) {
   const { mutateAsync, isPending } = useSubmitCustomerReport();
   const navigate = useNavigate();
+  // 담당자 7 · F-COM-015: 실제 대상 ID가 정해진 신고는 표시명도 고정해 대상 불일치를 막습니다.
+  const hasFixedTarget = reportedUserSn != null || referenceSn != null;
+  const isTargetLocked = targetLocked || hasFixedTarget;
 
   const [form, setForm] = useState(() => ({
     ...EMPTY_FORM,
@@ -107,7 +111,7 @@ function ReportModalContent({
   const validate = () => {
     const e = {};
     if (form.types.length === 0)  e.types      = "신고 유형을 하나 이상 선택해 주세요.";
-    if (!form.targetName.trim())  e.targetName = "신고 대상을 입력해 주세요.";
+    if (!hasFixedTarget && !form.targetName.trim()) e.targetName = "신고 대상을 입력해 주세요.";
     if (!hideTitle && !form.title.trim()) e.title = "제목을 입력해 주세요.";
     if (!form.content.trim())     e.content    = "신고 내용을 입력해 주세요.";
     if (form.content.length > 2000) e.content  = "2,000자 이내로 입력해 주세요.";
@@ -135,7 +139,7 @@ function ReportModalContent({
       });
       toast({ icon: "success", title: "신고가 접수되었습니다." });
       onClose();
-      navigate("/user/mypage/reports");
+      navigate(getMyPagePath("report-list"));
     } catch (err) {
       const msg = err?.response?.status === 409
         ? "이미 신고가 접수된 상대입니다. 내 신고 목록에서 접수 현황을 확인해 주세요."
@@ -214,13 +218,15 @@ function ReportModalContent({
             <input
               type="text"
               value={form.targetName}
-              onChange={targetLocked ? undefined : (e) => set("targetName", e.target.value)}
-              disabled={targetLocked}
-              placeholder="신고 대상의 이름 또는 상품명을 입력해 주세요."
+              onChange={isTargetLocked ? undefined : (e) => set("targetName", e.target.value)}
+              disabled={isTargetLocked}
+              placeholder={hasFixedTarget
+                ? "신고 대상이 지정되었습니다."
+                : "신고 대상의 이름 또는 상품명을 입력해 주세요."}
               className={`w-full h-[44px] rounded-[8px] border px-4 text-[15px] outline-none transition-colors ${
                 errors.targetName
                   ? "border-red-400 bg-red-50 text-[#1a1a18]"
-                  : targetLocked
+                  : isTargetLocked
                     ? "cursor-not-allowed border-[#e8e9ec] bg-[#f5f6f8] text-[#555] opacity-100"
                     : "border-[#e8e9ec] text-[#1a1a18] placeholder:text-[#bbb] focus:border-[#0064ff]"
               }`}

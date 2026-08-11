@@ -20,7 +20,7 @@ function ReadOnlyReviewContent({ rating, content, photos }) {
   return (
     <div className="mt-2">
       <StarRatingDisplay rating={rating} size={20} />
-      <p className="mt-3 whitespace-pre-wrap text-[#333]">{content}</p>
+      <p className="trade-review-content mt-3 text-[#333]">{content}</p>
       {photoUrls.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
           {photoUrls.map((url, index) => (
