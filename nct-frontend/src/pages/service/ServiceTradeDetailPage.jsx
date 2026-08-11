@@ -6,9 +6,12 @@ import {
   CircleAlert,
   FileText,
   MessageSquareText,
+  Paperclip,
   ShieldCheck,
   WalletCards,
+  X,
 } from 'lucide-react';
+import { deleteImage, uploadTradeDisputeEvidence } from '@api/fileApi';
 import {
   confirmServiceCompletion,
   requestServiceCompletion,
@@ -43,6 +46,10 @@ const SERVICE_SCHEDULE_TIME_SLOTS = Array.from({ length: 48 }, (_, index) => {
 
   return `${hour}:${minute}`;
 });
+
+const MAX_DISPUTE_EVIDENCE_FILES = 5;
+const MAX_DISPUTE_EVIDENCE_FILE_SIZE = 10 * 1024 * 1024;
+const DISPUTE_EVIDENCE_EXTENSIONS = new Set(['pdf', 'jpg', 'jpeg', 'png', 'webp']);
 
 const formatPointAmount = (amount) => {
   const numericAmount = Number(amount);
@@ -98,10 +105,14 @@ export default function ServiceTradeDetailPage({
   onDecideScheduleCancellation = null,
   chatPath = null,
   onActionCompleted = null,
+  backPath = '/user/mypage/services/trades',
+  backLabel = '목록으로',
+  viewerRoleLabelOverride = null,
 }) {
   const [isDisputeDialogOpen, setIsDisputeDialogOpen] = useState(false);
   const [disputeTypeCode, setDisputeTypeCode] = useState('');
   const [disputeContent, setDisputeContent] = useState('');
+  const [disputeFiles, setDisputeFiles] = useState([]);
   const [disputeError, setDisputeError] = useState('');
   const [isSubmittingDispute, setIsSubmittingDispute] = useState(false);
   const [disputeSubmitted, setDisputeSubmitted] = useState(false);
@@ -172,6 +183,8 @@ export default function ServiceTradeDetailPage({
   const canSubmitSchedule = typeof scheduleHandler === 'function';
   const tradeAmountLabel = trade.tradeAmountLabel ?? formatPointAmount(trade.tradeAmount);
   const autoCompleteAtLabel = formatDateTime(trade.autoCompleteAt);
+  const viewerRoleLabel = viewerRoleLabelOverride
+    ?? (isRequester ? '의뢰자' : isProvider ? '제공자' : '거래 당사자');
   const nextStepLabel = SERVICE_TRADE_STEPS[status.step + 1] ?? '거래 완료';
   const resolvedScheduleHistory = scheduleHistory ?? trade.scheduleHistory;
   const historyCount = Array.isArray(resolvedScheduleHistory) ? resolvedScheduleHistory.length : 0;
@@ -185,6 +198,9 @@ export default function ServiceTradeDetailPage({
     : [];
 
   const openDisputeDialog = () => {
+    setDisputeTypeCode('');
+    setDisputeContent('');
+    setDisputeFiles([]);
     setDisputeError('');
     setDisputeSubmitted(false);
     setIsDisputeDialogOpen(true);
@@ -193,6 +209,49 @@ export default function ServiceTradeDetailPage({
   const closeDisputeDialog = () => {
     if (isSubmittingDispute) return;
     setIsDisputeDialogOpen(false);
+  };
+
+  /** 담당자 7 · F-SVC-012: 접수 전 파일 개수·크기·확장자를 검증하고 실제 업로드는 제출 시 수행합니다. */
+  const handleDisputeFilesChange = (event) => {
+    const selectedFiles = Array.from(event.target.files ?? []);
+    event.target.value = '';
+    if (selectedFiles.length === 0) return;
+
+    if (disputeFiles.length + selectedFiles.length > MAX_DISPUTE_EVIDENCE_FILES) {
+      setDisputeError(`증빙 자료는 최대 ${MAX_DISPUTE_EVIDENCE_FILES}개까지 첨부할 수 있습니다.`);
+      return;
+    }
+
+    const invalidFile = selectedFiles.find((file) => {
+      const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
+      return !DISPUTE_EVIDENCE_EXTENSIONS.has(extension)
+        || file.size <= 0
+        || file.size > MAX_DISPUTE_EVIDENCE_FILE_SIZE;
+    });
+    if (invalidFile) {
+      setDisputeError('PDF, JPG, PNG, WEBP 형식의 10MB 이하 파일만 첨부할 수 있습니다.');
+      return;
+    }
+
+    const currentKeys = new Set(disputeFiles.map(
+      (file) => `${file.name}:${file.size}:${file.lastModified}`,
+    ));
+    const hasDuplicate = selectedFiles.some(
+      (file) => currentKeys.has(`${file.name}:${file.size}:${file.lastModified}`),
+    );
+    if (hasDuplicate) {
+      setDisputeError('이미 선택한 증빙 파일이 포함되어 있습니다.');
+      return;
+    }
+
+    setDisputeError('');
+    setDisputeFiles((current) => [...current, ...selectedFiles]);
+  };
+
+  const removeDisputeFile = (fileToRemove) => {
+    if (isSubmittingDispute) return;
+    setDisputeFiles((current) => current.filter((file) => file !== fileToRemove));
+    setDisputeError('');
   };
 
   const handleDisputeSubmit = async (event) => {
@@ -214,14 +273,35 @@ export default function ServiceTradeDetailPage({
 
     setIsSubmittingDispute(true);
     setDisputeError('');
+    const uploadedFileSns = [];
+    let disputeRegistered = false;
     try {
+      for (const file of disputeFiles) {
+        const uploadResponse = await uploadTradeDisputeEvidence(file);
+        const uploadedFile = uploadResponse.data ?? uploadResponse;
+        if (!uploadedFile.flSn) {
+          throw new Error('업로드한 증빙 파일 번호를 확인하지 못했습니다.');
+        }
+        uploadedFileSns.push(uploadedFile.flSn);
+      }
+
       await onSubmitDispute(trade.tradeId, {
         disputeTypeCode,
         content,
+        fileSns: uploadedFileSns,
       });
-      await onActionCompleted?.();
+      disputeRegistered = true;
       setDisputeSubmitted(true);
+      setDisputeFiles([]);
+      try {
+        await onActionCompleted?.();
+      } catch {
+        // 접수는 이미 성공했으므로 후속 화면 새로고침 실패를 접수 실패로 되돌리지 않습니다.
+      }
     } catch (error) {
+      if (!disputeRegistered && uploadedFileSns.length > 0) {
+        await Promise.allSettled(uploadedFileSns.map((fileSn) => deleteImage(fileSn)));
+      }
       setDisputeError(error.response?.data?.message ?? '거래 문제를 접수하지 못했습니다. 다시 시도해 주세요.');
     } finally {
       setIsSubmittingDispute(false);
@@ -337,15 +417,16 @@ export default function ServiceTradeDetailPage({
         <header className="service-trade-detail-page__header">
           <div className="service-trade-detail-page__heading">
             <div className="service-trade-detail-page__meta">
-              <span className={`service-trade-status service-trade-status--${status.tone}`}>
-                <span aria-hidden="true" />
-                {status.label}
-              </span>
-            </div>
+                <span className={`service-trade-status service-trade-status--${status.tone}`}>
+                  <span aria-hidden="true" />
+                  {status.label}
+                </span>
+                <span className="service-trade-viewer-role">{viewerRoleLabel}</span>
+              </div>
             <h1>서비스 거래 상세</h1>
             <p>{trade.serviceRequestTitle}</p>
           </div>
-          <Link className="btn btn-ghost service-trade-detail-page__list-link" to="/user/mypage/services/trades">목록으로</Link>
+          <Link className="btn btn-ghost service-trade-detail-page__list-link" to={backPath}>{backLabel}</Link>
         </header>
 
         <ol className="service-trade-progress" aria-label="서비스 거래 진행 상태">
@@ -565,6 +646,43 @@ export default function ServiceTradeDetailPage({
                   disabled={isSubmittingDispute}
                 />
                 <p className="service-trade-dispute-form__count">{disputeContent.length}/4,000</p>
+
+                <label htmlFor="service-trade-dispute-files">증빙 자료 (선택)</label>
+                <label
+                  className="service-trade-dispute-file-picker"
+                  htmlFor="service-trade-dispute-files"
+                >
+                  <Paperclip aria-hidden="true" size={18} />
+                  <span>파일 선택</span>
+                  <small>PDF, JPG, PNG, WEBP · 파일당 10MB · 최대 5개</small>
+                </label>
+                <input
+                  accept=".pdf,.jpg,.jpeg,.png,.webp"
+                  className="service-trade-dispute-file-input"
+                  disabled={isSubmittingDispute || disputeFiles.length >= MAX_DISPUTE_EVIDENCE_FILES}
+                  id="service-trade-dispute-files"
+                  multiple
+                  onChange={handleDisputeFilesChange}
+                  type="file"
+                />
+                {disputeFiles.length > 0 && (
+                  <ul className="service-trade-dispute-file-list" aria-label="선택한 증빙 자료">
+                    {disputeFiles.map((file) => (
+                      <li key={`${file.name}:${file.size}:${file.lastModified}`}>
+                        <span title={file.name}>{file.name}</span>
+                        <small>{Math.max(1, Math.ceil(file.size / 1024)).toLocaleString('ko-KR')}KB</small>
+                        <button
+                          aria-label={`${file.name} 첨부 취소`}
+                          disabled={isSubmittingDispute}
+                          onClick={() => removeDisputeFile(file)}
+                          type="button"
+                        >
+                          <X aria-hidden="true" size={15} />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 {disputeError && <p className="service-trade-dispute-form__error" role="alert">{disputeError}</p>}
 
                 <div className="service-trade-dispute-form__actions">

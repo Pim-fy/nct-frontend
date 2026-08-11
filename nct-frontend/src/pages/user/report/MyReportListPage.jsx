@@ -17,11 +17,12 @@ const STATUS_LABEL = {
   ABRC0008: "반려",
 };
 
-const STATUS_BADGE_CLS = {
-  ABRC0005: "badge-urgent",    // 접수됨  → #FFC526 채움
-  ABRC0006: "badge-aqua",      // 검토중  → 청록 채움 (badge-orange는 원래 색으로 복원되어 badge-aqua로 이전)
-  ABRC0007: "badge-gray",      // 처리완료 → 회색 채움 (종료 스타일)
-  ABRC0008: "badge-danger",    // 반려    → 빨강 채움
+// 담당자 7: 신고 유형과 처리 상태를 목록에서 바로 구분할 수 있도록 배지 색상을 분리한다.
+const STATUS_BADGE_STYLE = {
+  ABRC0005: { background: "#fff5d6", color: "#9a6700", borderColor: "#f5d77a" },
+  ABRC0006: { background: "#e8f0fe", color: "#1d4ed8", borderColor: "#b7cdf8" },
+  ABRC0007: { background: "#e8f7ed", color: "#16703b", borderColor: "#b9e3c8" },
+  ABRC0008: { background: "#fdecec", color: "#b42318", borderColor: "#f3b5b0" },
 };
 
 const TYPE_LABEL = {
@@ -30,6 +31,16 @@ const TYPE_LABEL = {
   ABRC0003: "욕설·비방",
   ABRC0004: "기타",
 };
+
+const TYPE_BADGE_STYLE = {
+  "사기·기만": { background: "#fff0f0", color: "#b42318", borderColor: "#f3b5b0" },
+  "불법 거래": { background: "#fff0f0", color: "#b42318", borderColor: "#f3b5b0" },
+  "허위 정보": { background: "#fff7e6", color: "#a15c00", borderColor: "#f3d19c" },
+  "욕설·비방": { background: "#f4edff", color: "#6b3bbd", borderColor: "#d8c5f5" },
+  "기타": { background: "#f2f4f7", color: "#475467", borderColor: "#d0d5dd" },
+};
+
+const DEFAULT_TYPE_BADGE_STYLE = TYPE_BADGE_STYLE["기타"];
 
 const getTypeNames = (report) => {
   if (report.reportTypeNames?.length) return report.reportTypeNames;
@@ -53,12 +64,13 @@ const fmtDate = (str) => str?.slice(0, 10).replace(/-/g, ".") ?? "-";
 
 function StatusBadge({ statusCode, style }) {
   const label = STATUS_LABEL[statusCode] ?? statusCode;
-  const cls   = STATUS_BADGE_CLS[statusCode] ?? "badge-gray";
-  return <span className={`badge ${cls}`} style={style}>{label}</span>;
+  const badgeStyle = STATUS_BADGE_STYLE[statusCode] ?? DEFAULT_TYPE_BADGE_STYLE;
+  return <span className="badge border" style={{ ...badgeStyle, ...style }}>{label}</span>;
 }
 
 function TypeBadge({ typeName, style }) {
-  return <span className="badge badge-success" style={style}>{typeName}</span>;
+  const badgeStyle = TYPE_BADGE_STYLE[typeName] ?? DEFAULT_TYPE_BADGE_STYLE;
+  return <span className="badge border" style={{ ...badgeStyle, ...style }}>{typeName}</span>;
 }
 
 function ReportCard({ report, isOpen, onToggle, number }) {
@@ -78,7 +90,7 @@ function ReportCard({ report, isOpen, onToggle, number }) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 min-w-0">
               {getTypeNames(report).map((name) => (
-                <TypeBadge key={name} typeName={name} style={{ borderRadius: "5px", fontSize: "14px", fontWeight: 400, flexShrink: 0, height: "28px", paddingLeft: "5px", paddingRight: "5px", display: "inline-flex", alignItems: "center", color: "#333333", borderColor: "#555555" }} />
+                <TypeBadge key={name} typeName={name} style={{ borderRadius: "5px", fontSize: "14px", fontWeight: 400, flexShrink: 0, height: "28px", paddingLeft: "7px", paddingRight: "7px", display: "inline-flex", alignItems: "center" }} />
               ))}
               <p className="font-bold text-[18px] text-[#333] truncate mb-0 min-w-0">{report.title}</p>
             </div>
@@ -114,7 +126,7 @@ function ReportCard({ report, isOpen, onToggle, number }) {
               <p className="font-bold text-[16px] text-[#1a1a18] m-0 truncate">{report.targetName || "-"}</p>
             </div>
             <p className="text-[13px] text-[#969696] m-0 shrink-0">
-              접수번호 <strong className="text-[#333] font-medium">#{report.reportSn}</strong>
+              접수번호 <strong className="text-[#333] font-medium">{report.reportSn}</strong>
             </p>
           </div>
 

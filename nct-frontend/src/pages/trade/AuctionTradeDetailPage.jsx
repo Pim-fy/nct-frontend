@@ -9,12 +9,33 @@ import { useAuctionTrade } from '@hooks/useAuctionTrade';
 import AsyncRouteError from '@components/common/AsyncRouteError';
 import TradeDetailSkeleton from '@components/trade/TradeDetailSkeleton';
 import { getMyPagePath } from '@routes/myPageRoutes';
+import { useBreadcrumbOverride } from '@components/common/breadcrumb/BreadcrumbContext';
+import {
+  buildMyPageTrail,
+  HOME_ITEM,
+} from '@components/common/breadcrumb/breadcrumbRoutes';
 
 export default function AuctionTradeDetailPage() {
   const { auctionId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const tradeQuery = useAuctionTrade(auctionId);
+  const viewerRole = tradeQuery.data?.viewerRole ?? tradeQuery.data?.userRole;
+  const breadcrumbSection = viewerRole === 'SELLER'
+    ? 'auction-sales'
+    : viewerRole === 'BUYER'
+      ? 'auction-bids'
+      : null;
+
+  // 담당자 7: 알림·직접 URL 등 진입 위치가 아니라 거래 당사자 역할에 맞는
+  // 마이페이지 구매/판매 목록을 거래 상세의 고정 상위 경로로 사용한다.
+  useBreadcrumbOverride(breadcrumbSection
+    ? [
+        HOME_ITEM,
+        ...buildMyPageTrail(breadcrumbSection),
+        { label: '거래 상세' },
+      ]
+    : null);
   // @ai_generated (담당자1, 2026-08-07): 진행바를 좌우 컬럼을 가로지르는 공용 행으로 올리기
   // 위해, 실제 단계 계산은 TradeDetailBuyer/Seller에 그대로 두고 결과값만 이 상태로 받는다.
   const [stepperConfig, setStepperConfig] = useState(null);
@@ -32,7 +53,6 @@ export default function AuctionTradeDetailPage() {
   }
 
   const trade = tradeQuery.data;
-  const viewerRole = trade.viewerRole ?? trade.userRole;
   const DetailPage = viewerRole === 'SELLER' ? TradeDetailSeller : TradeDetailBuyer;
   const backSection = viewerRole === 'SELLER' ? 'auction-sales' : 'auction-bids';
   const fallbackBackPath = getMyPagePath(backSection);

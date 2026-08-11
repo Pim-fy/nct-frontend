@@ -88,7 +88,7 @@ const AdminAuditLogPage = () => {
   const columns = useMemo(() => [
     { key: 'date', label: '일시' },
     {
-      key: 'userName', label: '행위자',
+      key: 'userName', label: '행위자', className: 'admin-table__compact-text',
       render: (_, row) => (row.userSn == null
         ? '시스템'
         : formatAdminMemberIdentity(row.actorMember, row.userSn)),

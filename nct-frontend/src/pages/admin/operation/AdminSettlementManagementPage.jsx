@@ -29,6 +29,24 @@ const STATUS = {
 };
 const formatAmount = (value) => `${Number(value ?? 0).toLocaleString('ko-KR')}P`;
 const formatDate = (value) => (value ? String(value).replace('T', ' ').slice(0, 16) : '-');
+const laterDate = (first, second) => {
+  if (!first) return second ?? null;
+  if (!second) return first;
+  return new Date(first).getTime() >= new Date(second).getTime() ? first : second;
+};
+const settlementProcessedAt = (row) => {
+  if (['STLC0003', 'STLC0004'].includes(row.statusCode)) return row.updatedAt;
+
+  const latestActionAt = laterDate(row.processedAt, row.updatedAt);
+  if (row.statusCode === 'STLC0002') return latestActionAt;
+  if (row.statusCode !== 'STLC0001') return row.processedAt;
+  if (row.processedAt) return latestActionAt;
+
+  // 최초 대기는 등록과 갱신 시각이 같고, 분쟁 재개 등 실제 상태 전이 때만 갱신 시각이 늦어집니다.
+  return new Date(row.updatedAt).getTime() > new Date(row.registeredAt).getTime()
+    ? row.updatedAt
+    : null;
+};
 const settlementStatus = (code, name) => STATUS[code] ?? {
   label: name || code || '-',
   tone: 'neutral',
@@ -108,6 +126,7 @@ const AdminSettlementManagementPage = () => {
     {
       key: 'userName',
       label: '정산 대상',
+      className: 'admin-table__compact-text',
       render: (value, row) => formatAdminMemberIdentity(
         { nickname: value },
         row.userId,
@@ -123,6 +142,12 @@ const AdminSettlementManagementPage = () => {
       },
     },
     { key: 'registeredAt', label: '등록일', render: formatDate },
+    {
+      key: 'processedAt',
+      label: '처리일',
+      className: 'admin-table__processed-date',
+      render: (_, row) => formatDate(settlementProcessedAt(row)),
+    },
     {
       key: 'manage',
       label: '관리',

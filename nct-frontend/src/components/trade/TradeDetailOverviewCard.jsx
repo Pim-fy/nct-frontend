@@ -1,6 +1,7 @@
 import { toImageUrl } from '@api/fileApi';
 import TradeProductCard from '@components/trade/TradeProductCard';
 import TradeTrustSummary from '@components/trade/TradeTrustSummary';
+import { Link, useLocation } from 'react-router-dom';
 
 /**
  * 배송·직거래 상세에서 공통으로 사용하는 1영역이다.
@@ -15,6 +16,9 @@ export default function TradeDetailOverviewCard({
   counterpartTitle,
   auctionId,
 }) {
+  const location = useLocation();
+  const returnTo = `${location.pathname}${location.search}${location.hash}`;
+
   return (
     <section className="trade-detail-card">
       <div className="trade-detail-card__block">
@@ -50,7 +54,24 @@ export default function TradeDetailOverviewCard({
                 : (trade.counterpart?.slice(0, 1) ?? '?')}
             </div>
             <div>
-              <p>{trade.counterpart}</p>
+              <p>
+                {trade.counterpartUserId
+                  ? (
+                    <Link
+                      className="text-inherit underline-offset-4 hover:text-primary hover:underline"
+                      state={{
+                        tradeProfileReturn: {
+                          label: '거래 상세로 돌아가기',
+                          to: returnTo,
+                        },
+                      }}
+                      to={`/users/${trade.counterpartUserId}`}
+                    >
+                      {trade.counterpart}
+                    </Link>
+                  )
+                  : trade.counterpart}
+              </p>
               {trade.counterpartJoinedLabel !== '-' && (
                 <>
                   <p className="trade-detail-card__muted">{trade.counterpartJoinedLabel}</p>

@@ -121,6 +121,7 @@ const AdminReportManagementPage = () => {
     {
       key: 'reporterUserSn',
       label: '신고자',
+      className: 'admin-table__compact-text',
       render: (value, row) => (value == null
         ? '시스템'
         : formatAdminMemberIdentity(row.reporterMember, value)),
@@ -128,6 +129,7 @@ const AdminReportManagementPage = () => {
     {
       key: 'reportedUserSn',
       label: '신고 대상',
+      className: 'admin-table__compact-text',
       render: (value, row) => formatAdminMemberIdentity(row.reportedMember, value),
     },
     {
@@ -136,6 +138,12 @@ const AdminReportManagementPage = () => {
       render: (value, row) => (value ? `${value} #${row.referenceSn}` : '-'),
     },
     { key: 'registeredAt', label: '접수일', render: formatDate },
+    {
+      key: 'processedAt',
+      label: '처리일',
+      className: 'admin-table__processed-date',
+      render: formatDate,
+    },
     {
       key: 'statusCode',
       label: '상태',

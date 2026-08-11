@@ -55,7 +55,7 @@ const InquiryCard = ({ inquiry, isOpen, number, onToggle }) => {
           {detail && (
             <>
               <div className="my-inquiry-card__meta">
-                <span>문의 번호 <strong>#{detail.inquirySn}</strong></span>
+                <span>문의 번호 <strong>{detail.inquirySn}</strong></span>
                 <span>접수일 {formatDateTime(detail.registeredAt)}</span>
               </div>
               <section>

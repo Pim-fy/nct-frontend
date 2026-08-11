@@ -170,10 +170,16 @@ const AdminProviderApprovalPage = () => {
 
   const columns = useMemo(() => [
     { key: 'id', label: '신청번호' },
-    { key: 'name', label: '신청자', className: 'admin-provider-list__applicant', render: (value) => <strong>{value}</strong> },
-    { key: 'category', label: '카테고리' },
+    { key: 'name', label: '신청자', className: 'admin-provider-list__applicant admin-table__compact-text', render: (value) => <strong>{value}</strong> },
+    { key: 'category', label: '카테고리', className: 'admin-table__compact-text' },
     { key: 'type', label: '신청유형' },
     { key: 'date', label: '신청일' },
+    {
+      key: 'processedAt',
+      label: '처리일',
+      className: 'admin-table__processed-date',
+      render: formatDateTime,
+    },
     {
       key: 'status', label: '심사 상태',
       render: (value, row) => <AdminStatusBadge tone={row.tone}>{value}</AdminStatusBadge>,

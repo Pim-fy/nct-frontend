@@ -115,10 +115,15 @@ const AdminAuctionManagementPage = () => {
   const rows = auctionsQuery.data?.items ?? [];
   const columns = useMemo(() => [
     { key: 'auctionId', label: '경매 번호', render: (value) => `#${value}` },
-    { key: 'productName', label: '상품명' },
+    {
+      key: 'productName',
+      label: '상품명',
+      className: 'admin-table__long-text',
+    },
     {
       key: 'sellerUserSn',
       label: '판매자',
+      className: 'admin-table__compact-text',
       render: (value, row) => formatAdminMemberIdentity(row.sellerMember, value),
     },
     { key: 'auctionStatusName', label: '경매 상태', render: (value, row) => <AdminStatusBadge tone={auctionStatusTone(row.auctionStatusCode)}>{value ?? row.auctionStatusCode}</AdminStatusBadge> },

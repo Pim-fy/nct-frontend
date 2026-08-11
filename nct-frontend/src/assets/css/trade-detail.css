@@ -279,6 +279,7 @@
 
 .trade-counterpart {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
@@ -287,6 +288,7 @@
 
 .trade-counterpart__profile {
   display: flex;
+  flex: 1 1 220px;
   align-items: center;
   gap: 14px;
   min-width: 0;
@@ -297,6 +299,7 @@
   flex-shrink: 0;
   align-items: center;
   gap: 4px;
+  margin-left: auto;
   color: #718098;
   font-size: 14px;
 }
@@ -315,6 +318,13 @@
 .trade-trust-score__max {
   color: #a2acbd;
   font-size: 13px;
+}
+
+.trade-trust-score__reviews {
+  margin-left: 2px;
+  color: #718098;
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .trade-trust-score--muted {
@@ -1109,6 +1119,18 @@
 
 .trade-review-form__content {
   margin-top: 20px;
+}
+
+/* 담당자 7: 공백 없는 긴 리뷰도 카드 폭을 넘지 않게 자르고 최대 3줄까지만 표시한다. */
+.trade-review-content {
+  display: -webkit-box;
+  max-width: 100%;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  word-break: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
 /* .input(App.css)의 min-height:40px보다 확실히 이기도록 부모 클래스와 묶어 특이도를 올린다

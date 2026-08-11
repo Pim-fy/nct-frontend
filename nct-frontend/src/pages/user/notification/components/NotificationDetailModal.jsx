@@ -28,7 +28,7 @@ const resolveLink = (item) => {
  * item이 null이면 렌더링하지 않는다 (선택된 알림 없음 = 닫힌 상태).
  */
 const NotificationDetailModal = ({ item, onClose }) => {
-  // 전역 브레드크럼 (BJN, 260805): 알림함에서 이동했음을 상세 화면 브레드크럼에 반영하기 위해 현재 경로를 전달
+  // 담당자 7: 현재 경로는 대상 화면의 뒤로가기 문맥으로만 전달하며 브레드크럼에는 반영하지 않는다.
   const location = useLocation();
   if (!item) return null;
 

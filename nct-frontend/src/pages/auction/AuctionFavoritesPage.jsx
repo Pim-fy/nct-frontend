@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { HeartOff, RotateCcw } from 'lucide-react';
 import {
@@ -71,6 +71,7 @@ const getVisiblePages = (currentPage, totalPages) => {
 };
 
 const AuctionFavoritesPage = ({ embedded = false }) => {
+  const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [toastMessage, setToastMessage] = useState('');
@@ -349,7 +350,9 @@ const AuctionFavoritesPage = ({ embedded = false }) => {
                     <button
                       type="button"
                       className="btn btn-sm btn-primary"
-                      onClick={() => navigate(`/auction/${item.auctionId}`)}
+                      onClick={() => navigate(`/auction/${item.auctionId}`, {
+                        state: { from: `${location.pathname}${location.search}${location.hash}` },
+                      })}
                     >
                       경매 상세
                     </button>
