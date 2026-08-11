@@ -64,6 +64,24 @@ const formatDateTime = (value) => {
   }).format(date);
 };
 
+const SERVICE_TRADE_HISTORY_LABELS = {
+  CHANGE: '일정 변경 요청',
+  CANCEL_REQUEST: '일정 취소 요청',
+  CANCEL_APPROVED: '일정 취소 동의',
+  CANCEL_REJECTED: '일정 취소 거절',
+  DISPUTE_REPORTED: '거래 문제 접수',
+  ESCROW_HELD: '보관금 예치 완료',
+  COMPLETION_REQUESTED: '서비스 완료 요청',
+  SETTLEMENT_COMPLETED: '정산 완료',
+  ESCROW_REFUNDED: '보관금 환불 완료',
+  DISPUTE_HOLD: '관리자 정산 보류',
+  DISPUTE_COMPLETE: '관리자 처리 완료',
+  ADMIN_REFUND: '관리자 전액 환불',
+  DISPUTE_REJECTED: '관리자 반려',
+};
+
+const SERVICE_TRADE_HISTORY_PAGE_SIZE = 4;
+
 // 실조회 컨테이너와 개발용 입력 양쪽에서 재사용하는 서비스 거래 표현 컴포넌트다.
 export default function ServiceTradeDetailPage({
   trade = null,
@@ -88,6 +106,7 @@ export default function ServiceTradeDetailPage({
   const [isSubmittingDispute, setIsSubmittingDispute] = useState(false);
   const [disputeSubmitted, setDisputeSubmitted] = useState(false);
   const [completionDialogType, setCompletionDialogType] = useState(null);
+  const [historyPage, setHistoryPage] = useState(0);
   const [completionMemo, setCompletionMemo] = useState('');
   const [isSubmittingCompletion, setIsSubmittingCompletion] = useState(false);
   const [completionSubmitted, setCompletionSubmitted] = useState(false);
@@ -160,6 +179,15 @@ export default function ServiceTradeDetailPage({
     || canRequestScheduleCancellation
     || canDecideScheduleCancellation;
   const resolvedScheduleHistory = scheduleHistory ?? trade.scheduleHistory;
+  const historyCount = Array.isArray(resolvedScheduleHistory) ? resolvedScheduleHistory.length : 0;
+  const historyPageCount = Math.ceil(historyCount / SERVICE_TRADE_HISTORY_PAGE_SIZE);
+  const currentHistoryPage = Math.min(historyPage, Math.max(historyPageCount - 1, 0));
+  const visibleHistory = Array.isArray(resolvedScheduleHistory)
+    ? resolvedScheduleHistory.slice(
+      currentHistoryPage * SERVICE_TRADE_HISTORY_PAGE_SIZE,
+      (currentHistoryPage + 1) * SERVICE_TRADE_HISTORY_PAGE_SIZE,
+    )
+    : [];
 
   const openDisputeDialog = () => {
     setDisputeError('');
@@ -373,6 +401,13 @@ export default function ServiceTradeDetailPage({
                     )}
                   </div>
                 )}
+                {(canOpenChat || canRequestScheduleChange || canRequestScheduleCancellation) && (
+                  <div className="service-trade-inline-actions__group">
+                    {canOpenChat && <Link className="btn service-trade-inline-actions__chat" to={chatPath ?? `/service-trades/${trade.tradeId}/chat`}><MessageSquareText aria-hidden="true" size={18} /> 서비스 채팅</Link>}
+                    {canRequestScheduleChange && <button className="btn btn-ghost" type="button" onClick={() => openScheduleDialog('CHANGE')}><CalendarDays aria-hidden="true" size={18} /> 일정 변경 요청</button>}
+                    {canRequestScheduleCancellation && <button className="btn btn-ghost" type="button" onClick={() => openScheduleDialog('CANCEL')}>일정 취소 요청</button>}
+                  </div>
+                )}
                 {canDecideScheduleCancellation && (
                   <div className="service-trade-cancellation-decision" role="status">
                     <div>
@@ -384,13 +419,6 @@ export default function ServiceTradeDetailPage({
                       <button className="btn btn-primary" type="button" disabled={isDecidingScheduleCancellation} onClick={() => handleScheduleCancellationDecision(true)}>{isDecidingScheduleCancellation ? '처리 중...' : '동의하고 취소'}</button>
                     </div>
                     {scheduleCancellationDecisionError && <p className="service-trade-dispute-form__error" role="alert">{scheduleCancellationDecisionError}</p>}
-                  </div>
-                )}
-                {(canOpenChat || canRequestScheduleChange || canRequestScheduleCancellation) && (
-                  <div className="service-trade-inline-actions__group">
-                    {canOpenChat && <Link className="btn service-trade-inline-actions__chat" to={chatPath ?? `/service-trades/${trade.tradeId}/chat`}><MessageSquareText aria-hidden="true" size={18} /> 서비스 채팅</Link>}
-                    {canRequestScheduleChange && <button className="btn btn-ghost" type="button" onClick={() => openScheduleDialog('CHANGE')}><CalendarDays aria-hidden="true" size={18} /> 일정 변경 요청</button>}
-                    {canRequestScheduleCancellation && <button className="btn btn-ghost" type="button" onClick={() => openScheduleDialog('CANCEL')}>일정 취소 요청</button>}
                   </div>
                 )}
               </div>
@@ -424,20 +452,37 @@ export default function ServiceTradeDetailPage({
           <section className="service-trade-card service-trade-card--schedule" aria-labelledby="service-trade-schedule-title">
             <header className="service-trade-card__header">
               <CalendarDays aria-hidden="true" size={20} />
-              <h2 id="service-trade-schedule-title">일정 이력</h2>
+              <h2 id="service-trade-schedule-title">일정 및 거래 이력</h2>
             </header>
             {resolvedScheduleHistory.length > 0 ? (
               <ol className="service-trade-schedule-history">
-                {resolvedScheduleHistory.map((item) => (
+                {visibleHistory.map((item) => (
                   <li key={item.id}>
-                    <strong>{item.eventType === 'CHANGE' ? '일정 변경 요청' : item.eventType === 'CANCEL_REQUEST' ? '일정 취소 요청' : item.eventType === 'CANCEL_APPROVED' ? '일정 취소 동의' : item.eventType === 'CANCEL_REJECTED' ? '일정 취소 거절' : '일정 취소 요청'}</strong>
+                    <strong>
+                      {SERVICE_TRADE_HISTORY_LABELS[item.eventType] ?? '일정 취소 요청'}
+                    </strong>
                     <span>{item.occurredAt ? formatDateTime(item.occurredAt) : '-'}</span>
                     {item.requestedScheduleAt && <p>변경 희망: {formatDateTime(item.requestedScheduleAt)}</p>}
                     {item.reason && <p>{item.reason}</p>}
                   </li>
                 ))}
               </ol>
-            ) : <p className="service-trade-card__empty">등록된 일정 변경·취소 이력이 없습니다.</p>}
+            ) : <p className="service-trade-card__empty">등록된 일정 또는 거래 이력이 없습니다.</p>}
+            {historyPageCount > 1 && (
+              <nav className="service-trade-history-pagination" aria-label="일정 및 거래 이력 페이지">
+                <button
+                  type="button"
+                  disabled={currentHistoryPage === 0}
+                  onClick={() => setHistoryPage((page) => Math.max(page - 1, 0))}
+                >이전</button>
+                <span>{currentHistoryPage + 1} / {historyPageCount}</span>
+                <button
+                  type="button"
+                  disabled={currentHistoryPage >= historyPageCount - 1}
+                  onClick={() => setHistoryPage((page) => Math.min(page + 1, historyPageCount - 1))}
+                >다음</button>
+              </nav>
+            )}
           </section>
         )}
 

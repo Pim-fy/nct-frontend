@@ -4,12 +4,12 @@
 // 항상 같은 최소 너비로 정렬) + 액션 버튼을 한 묶음으로 재사용한다 (진행 중인 경매에서 먼저 확정한 형태).
 const PRICE_MIN_WIDTH = 120; // "999,999원"(6자리) 실측 기준 — 이보다 길면 자연스럽게 늘어난다.
 
-export default function MyPageListPriceActions({ topLine, priceItems = [], children }) {
+export default function MyPageListPriceActions({ topLine, topLineClassName, priceItems = [], children }) {
   return (
     <div className="flex items-center gap-6">
       <div className="flex flex-col items-end gap-3">
         {topLine && (
-          <span className="text-lg font-bold whitespace-nowrap text-[#667085]">{topLine}</span>
+          <span className={`text-lg font-bold whitespace-nowrap ${topLineClassName ?? 'text-[#667085]'}`}>{topLine}</span>
         )}
         {priceItems.length > 0 && (
           <div className="flex items-end gap-4">
