@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import {
   getTradeChatMessages,
   getTradeChatRooms,
@@ -49,6 +49,21 @@ const saveHiddenRoomIds = (roomIds) => {
   );
 };
 
+// 채팅방이 참조하는 거래 유형에 따라 상세 route를 분기한다.
+const getTradeDetailPath = (room, preview) => {
+  if (!room?.tradeId) return null;
+
+  if (room.tradeTypeCode === 'TRDC0002') {
+    return preview
+      ? `/service-trades/preview/${room.tradeId}`
+      : `/service-trades/${room.tradeId}`;
+  }
+
+  return preview
+    ? `/trades/preview/${room.tradeId}`
+    : `/trades/${room.tradeId}`;
+};
+
 const TradeChat = ({
   embedded = false,
   preview = false,
@@ -83,6 +98,7 @@ const TradeChat = ({
   ).length;
   const completedRoomCount = rooms.length - activeRoomCount;
   const isActiveRoomClosed = activeRoom?.roomStatus === 'CLOSED';
+  const activeTradeDetailPath = getTradeDetailPath(activeRoom, preview);
   const subscribedRoomIds = useMemo(
     () => rooms
       .filter((room) => room.roomStatus === 'ACTIVE')
@@ -462,17 +478,6 @@ const TradeChat = ({
     }
   };
 
-  // Enter는 즉시 전송하고, Shift + Enter에서만 여러 줄 메시지를 작성할 수 있게 한다.
-  // 한글 조합 중 Enter는 확정 입력에 쓰이므로 전송으로 처리하지 않는다.
-  const handleMessageKeyDown = (event) => {
-    if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) {
-      return;
-    }
-
-    event.preventDefault();
-    event.currentTarget.form?.requestSubmit();
-  };
-
   // 마이페이지의 목록 복귀는 같은 2열 화면에서 우측 선택만 해제한다.
   const clearSelectedChatRoom = () => {
     setActiveRoomId('');
@@ -653,6 +658,14 @@ const TradeChat = ({
                       >
                         {activeRoom.roomStatus === 'ACTIVE' ? '대화 가능' : '채팅 불가'}
                       </span>
+                      {activeTradeDetailPath && (
+                        <Link
+                          className="btn btn-ghost trade-chat-conversation__trade-detail"
+                          to={activeTradeDetailPath}
+                        >
+                          거래 상세
+                        </Link>
+                      )}
                       <button
                         className="btn btn-ghost trade-chat-conversation__report"
                         type="button"
@@ -716,7 +729,6 @@ const TradeChat = ({
                       maxLength={MAX_MESSAGE_LENGTH}
                       value={messageInput}
                       onChange={(event) => setMessageInput(event.target.value)}
-                      onKeyDown={handleMessageKeyDown}
                       placeholder={isActiveRoomClosed
                         ? '완료된 거래의 채팅 기록입니다.'
                         : '메시지를 입력하세요.'}
