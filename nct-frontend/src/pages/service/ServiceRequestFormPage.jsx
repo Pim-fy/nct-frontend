@@ -3,6 +3,7 @@
 // 라우트: /service-requests/new (신규), location.state.svcReqSn로 임시저장 수정
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Truck, BrushCleaning, Wrench, Armchair, GraduationCap } from 'lucide-react';
 import { getCategories } from '@api/categoryApi';
 import {
@@ -145,6 +146,7 @@ function parseAnswerToDraft(step, value) {
 export default function ServiceRequestFormPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const editSvcReqSn = location.state?.svcReqSn ?? null;
 
   const [categories, setCategories] = useState([]);
@@ -974,6 +976,8 @@ export default function ServiceRequestFormPage() {
         ? await updateServiceRequest(editSvcReqSn, payload)
         : await registerServiceRequest(payload);
       const svcReqSn = result.data?.svcReqSn ?? editSvcReqSn;
+      // 목록으로 돌아갔을 때 방금 임시저장·등록한 내용이 바로 반영되게 캐시 무효화
+      queryClient.invalidateQueries({ queryKey: ['serviceRequests', 'my'] });
       navigate(`/service-requests/${svcReqSn}`);
     } catch (err) {
       setAlertMsg(err.response?.data?.message || (editSvcReqSn ? '요청서 수정에 실패했습니다.' : '요청서 등록에 실패했습니다.'));

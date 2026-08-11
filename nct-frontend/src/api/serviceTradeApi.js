@@ -51,3 +51,8 @@ export const requestServiceScheduleChange = (tradeId, payload) => (
 export const requestServiceScheduleCancellation = (tradeId, payload) => (
   api.post(`/trades/${tradeId}/service-schedule-cancellations`, payload).then((res) => res.data)
 );
+
+/** 상대방의 일정 취소 요청을 동의하거나 거절한다. 동의 시 거래 취소·보관금 환불을 함께 처리한다. */
+export const decideServiceScheduleCancellation = (tradeId, approved) => (
+  api.post(`/trades/${tradeId}/service-schedule-cancellations/decision`, { approved }).then((res) => res.data)
+);

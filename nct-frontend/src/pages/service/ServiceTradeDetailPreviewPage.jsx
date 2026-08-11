@@ -8,6 +8,7 @@ const PREVIEW_TRADE = {
   serviceRequestId: 1,
   serviceRequestTitle: '이사 전 입주 청소 서비스를 요청합니다',
   quoteSummary: '정민 제공자 · 입주 청소 · 3시간',
+  serviceAddressLabel: '(04158) 서울특별시 마포구 마포대로 122, 101호',
   tradeAmountLabel: '120,000P',
   scheduleLabel: '2026. 08. 10. 14:00',
   escrowStatusLabel: '보관금이 안전하게 예치되어 있습니다.',

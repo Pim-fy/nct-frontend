@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { fetchReferenceCodes } from '@api/referenceApi';
 import {
   getServiceTradeDetail,
+  decideServiceScheduleCancellation,
   requestServiceScheduleCancellation,
   requestServiceScheduleChange,
 } from '@api/serviceTradeApi';
@@ -99,6 +100,7 @@ export default function ServiceTradeDetailRoutePage() {
       onActionCompleted={refreshDetail}
       onRequestScheduleChange={requestServiceScheduleChange}
       onRequestScheduleCancellation={requestServiceScheduleCancellation}
+      onDecideScheduleCancellation={decideServiceScheduleCancellation}
       trade={detailQuery.data}
     />
   );

@@ -77,6 +77,7 @@ export default function ServiceTradeDetailPage({
   scheduleHistory = null,
   onRequestScheduleChange = null,
   onRequestScheduleCancellation = null,
+  onDecideScheduleCancellation = null,
   chatPath = null,
   onActionCompleted = null,
 }) {
@@ -99,6 +100,8 @@ export default function ServiceTradeDetailPage({
   const [scheduleError, setScheduleError] = useState('');
   const [isSubmittingSchedule, setIsSubmittingSchedule] = useState(false);
   const [scheduleSubmitted, setScheduleSubmitted] = useState(false);
+  const [isDecidingScheduleCancellation, setIsDecidingScheduleCancellation] = useState(false);
+  const [scheduleCancellationDecisionError, setScheduleCancellationDecisionError] = useState('');
   const todayDate = getTodayDate();
   const availableScheduleTimes = useMemo(() => {
     const minimumTime = requestedScheduleDate === todayDate
@@ -130,6 +133,8 @@ export default function ServiceTradeDetailPage({
     && trade.availableActions?.includes('REQUEST_SCHEDULE_CHANGE');
   const canRequestScheduleCancellation = typeof onRequestScheduleCancellation === 'function'
     && trade.availableActions?.includes('REQUEST_SCHEDULE_CANCELLATION');
+  const canDecideScheduleCancellation = typeof onDecideScheduleCancellation === 'function'
+    && trade.availableActions?.includes('DECIDE_SCHEDULE_CANCELLATION');
   const hasDisputeTypes = disputeTypes.length > 0;
   const disputeTypePlaceholder = disputeTypesLoading
     ? '거래 문제 유형을 불러오는 중입니다.'
@@ -152,7 +157,8 @@ export default function ServiceTradeDetailPage({
     || canConfirmCompletion
     || canSubmitDispute
     || canRequestScheduleChange
-    || canRequestScheduleCancellation;
+    || canRequestScheduleCancellation
+    || canDecideScheduleCancellation;
   const resolvedScheduleHistory = scheduleHistory ?? trade.scheduleHistory;
 
   const openDisputeDialog = () => {
@@ -287,6 +293,21 @@ export default function ServiceTradeDetailPage({
     }
   };
 
+  const handleScheduleCancellationDecision = async (approved) => {
+    setIsDecidingScheduleCancellation(true);
+    setScheduleCancellationDecisionError('');
+    try {
+      await onDecideScheduleCancellation(trade.tradeId, approved);
+      await onActionCompleted?.();
+    } catch (error) {
+      setScheduleCancellationDecisionError(
+        error.response?.data?.message ?? '일정 취소 요청을 처리하지 못했습니다. 다시 시도해 주세요.',
+      );
+    } finally {
+      setIsDecidingScheduleCancellation(false);
+    }
+  };
+
   return (
     <main className="service-trade-detail-page">
       <div className="container">
@@ -302,10 +323,7 @@ export default function ServiceTradeDetailPage({
             <h1>{trade.serviceRequestTitle}</h1>
             <p>{status.description}</p>
           </div>
-          <Link className="btn btn-ghost service-trade-detail-page__request-link" to={`/service-requests/${trade.serviceRequestId}`}>
-            <FileText aria-hidden="true" size={17} />
-            요청 상세
-          </Link>
+          <Link className="btn btn-ghost service-trade-detail-page__list-link" to="/user/mypage/services/trades">목록으로</Link>
         </header>
 
         <ol className="service-trade-progress" aria-label="서비스 거래 진행 상태">
@@ -334,6 +352,7 @@ export default function ServiceTradeDetailPage({
             </header>
             <dl className="service-trade-detail-list">
               <div><dt>선택 견적</dt><dd>{trade.quoteSummary}</dd></div>
+              {trade.serviceAddressLabel && <div><dt>서비스 주소</dt><dd>{trade.serviceAddressLabel}</dd></div>}
               <div><dt>서비스 일정</dt><dd>{trade.scheduleLabel || '등록된 일정 정보 없음'}</dd></div>
               {autoCompleteAtLabel && <div><dt>완료 확인 기한</dt><dd>{autoCompleteAtLabel}</dd></div>}
               <div><dt>거래 금액</dt><dd className="service-trade-detail-list__amount">{tradeAmountLabel}</dd></div>
@@ -352,6 +371,19 @@ export default function ServiceTradeDetailPage({
                         <CheckCircle2 aria-hidden="true" size={18} /> 거래 완료 확인
                       </button>
                     )}
+                  </div>
+                )}
+                {canDecideScheduleCancellation && (
+                  <div className="service-trade-cancellation-decision" role="status">
+                    <div>
+                      <strong>상대방이 일정 취소를 요청했습니다.</strong>
+                      <p>동의하면 거래가 취소되고 보관금은 의뢰자에게 전액 환불됩니다.</p>
+                    </div>
+                    <div className="service-trade-cancellation-decision__actions">
+                      <button className="btn btn-ghost" type="button" disabled={isDecidingScheduleCancellation} onClick={() => handleScheduleCancellationDecision(false)}>거절</button>
+                      <button className="btn btn-primary" type="button" disabled={isDecidingScheduleCancellation} onClick={() => handleScheduleCancellationDecision(true)}>{isDecidingScheduleCancellation ? '처리 중...' : '동의하고 취소'}</button>
+                    </div>
+                    {scheduleCancellationDecisionError && <p className="service-trade-dispute-form__error" role="alert">{scheduleCancellationDecisionError}</p>}
                   </div>
                 )}
                 {(canOpenChat || canRequestScheduleChange || canRequestScheduleCancellation) && (
@@ -398,7 +430,7 @@ export default function ServiceTradeDetailPage({
               <ol className="service-trade-schedule-history">
                 {resolvedScheduleHistory.map((item) => (
                   <li key={item.id}>
-                    <strong>{item.title ?? (item.eventType === 'CHANGE' ? '일정 변경 요청' : '일정 취소 요청')}</strong>
+                    <strong>{item.eventType === 'CHANGE' ? '일정 변경 요청' : item.eventType === 'CANCEL_REQUEST' ? '일정 취소 요청' : item.eventType === 'CANCEL_APPROVED' ? '일정 취소 동의' : item.eventType === 'CANCEL_REJECTED' ? '일정 취소 거절' : '일정 취소 요청'}</strong>
                     <span>{item.occurredAt ? formatDateTime(item.occurredAt) : '-'}</span>
                     {item.requestedScheduleAt && <p>변경 희망: {formatDateTime(item.requestedScheduleAt)}</p>}
                     {item.reason && <p>{item.reason}</p>}
