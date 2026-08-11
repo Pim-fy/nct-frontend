@@ -1,4 +1,4 @@
-import { formatDate, formatDateTime, formatPrice } from '@utils/common';
+import { formatDate, formatDateTime, formatPoint } from '@utils/common';
 
 const getResponseBody = (response) => response?.data ?? response;
 
@@ -72,7 +72,7 @@ export const toTradeHistoryItem = (trade) => {
     productName: trade.productName ?? trade.itemName ?? '-',
     productImageUrl: trade.productImageUrl ?? trade.imageUrl ?? trade.thumbnailUrl ?? '',
     counterpart: trade.counterpartNickname ?? trade.counterpart ?? '-',
-    amount: formatPrice(trade.price ?? trade.amount ?? trade.tradeAmount),
+    amount: formatPoint(trade.price ?? trade.amount ?? trade.tradeAmount),
     date: formatDate(trade.createdAt ?? trade.tradedAt ?? trade.tradeDate),
     completedDate: trade.completedAt ? formatDate(trade.completedAt) : null,
     method: trade.tradeMethod ?? trade.method,
@@ -94,7 +94,7 @@ export const toTradeDetail = (response) => {
     id: trade.tradeId ?? trade.id,
     productName: trade.productName ?? trade.itemName ?? '-',
     productImageUrl: trade.productImageUrl ?? trade.imageUrl ?? trade.thumbnailUrl ?? '',
-    price: formatPrice(trade.price ?? trade.amount ?? trade.tradeAmount),
+    price: formatPoint(trade.price ?? trade.amount ?? trade.tradeAmount),
     method: trade.tradeMethod ?? trade.method ?? null,
     status: normalizeTradeStatus(trade.tradeStatus ?? trade.status),
     // 확인 대기 상태에서 첫 완료 확인을 누른 역할을 받아 상대방에게만 두 번째 확인 버튼을 노출한다.
