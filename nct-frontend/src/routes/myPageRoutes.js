@@ -18,11 +18,34 @@ export const MYPAGE_SECTION_PATHS = Object.freeze({
   'inquiry-list': '/user/mypage/inquiries',
 });
 
+export const MYPAGE_INQUIRY_PATHS = Object.freeze({
+  general: '/user/mypage/inquiries',
+  provider: '/user/mypage/provider/inquiries',
+});
+
+export const getMyPageInquiryPath = (isProvider = false) => (
+  isProvider ? MYPAGE_INQUIRY_PATHS.provider : MYPAGE_INQUIRY_PATHS.general
+);
+
+export const getMyPageInquiryCreatePath = (isProvider = false) => (
+  `${getMyPageInquiryPath(isProvider)}/new`
+);
+
 export const getMyPagePath = (section = 'home') => (
   MYPAGE_SECTION_PATHS[section] ?? MYPAGE_SECTION_PATHS.home
 );
 
-export const getMyPageSection = (pathname) => (
-  Object.entries(MYPAGE_SECTION_PATHS)
-    .find(([, path]) => path === pathname)?.[0] ?? null
-);
+export const getMyPageSection = (pathname) => {
+  if (pathname === MYPAGE_INQUIRY_PATHS.provider
+    || pathname.startsWith(`${MYPAGE_INQUIRY_PATHS.provider}/`)) {
+    return 'inquiry-list';
+  }
+
+  if (pathname === MYPAGE_INQUIRY_PATHS.general
+    || pathname.startsWith(`${MYPAGE_INQUIRY_PATHS.general}/`)) {
+    return 'inquiry-list';
+  }
+
+  return Object.entries(MYPAGE_SECTION_PATHS)
+    .find(([, path]) => path === pathname)?.[0] ?? null;
+};
