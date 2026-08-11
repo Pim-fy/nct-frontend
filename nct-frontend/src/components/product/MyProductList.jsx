@@ -30,6 +30,7 @@ const FILTERS = [
   { value: 'RESERVED', label: '예약' },
   { value: 'ACTIVE',  label: '경매중' },
   { value: 'TRADING', label: '거래중' },
+  { value: 'DISPUTE', label: '보류/분쟁' },
   { value: 'CLOSED',  label: '종료' },
 ];
 
@@ -205,6 +206,7 @@ export default function MyProductList() {
             RESERVED: summaryData?.reserved,
             ACTIVE: summaryData?.active,
             TRADING: summaryData?.trading,
+            DISPUTE: summaryData?.dispute,
             CLOSED: summaryData?.closed,
           }[item.value] ?? (item.value === null ? summaryData?.total : 0),
         }))}

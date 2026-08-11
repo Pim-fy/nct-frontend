@@ -54,7 +54,7 @@ export default function ServiceRequestImageUpload({ images, onChange, maxImages 
       onDrop={e => { e.preventDefault(); handleFilesSelected(e.dataTransfer.files); }}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-[#888780]">
+        <p className="text-sm text-[#888780]">
           {pickMode ? '대표로 지정할 사진을 선택하세요' : `드래그앤드롭 또는 파일 선택 · 최대 ${maxImages}장 (${images.length}/${maxImages})`}
         </p>
         <div className="flex w-full gap-2 sm:w-auto">

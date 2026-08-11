@@ -187,10 +187,10 @@ export const formatNumber = (value) => {
 /**
  * 예산·견적 금액을 포인트(P) 단위로 포맷 — 서비스 요청/견적 화면 공용
  * @param {number|null} amt
- * @returns {string} 값이 없으면 "예산 미정" (숫자 포맷 자체는 formatPoint와 동일)
+ * @returns {string} 값이 없으면 "예산 협의 후 결정" (숫자 포맷 자체는 formatPoint와 동일)
  */
 export const formatBudget = (amt) => {
-  if (amt == null) return '예산 미정';
+  if (amt == null) return '예산 협의 후 결정';
   return formatPoint(amt);
 };
 
