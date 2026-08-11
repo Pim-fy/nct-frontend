@@ -16,6 +16,7 @@ import ErrorMessage from '@components/common/ErrorMessage';
 import MediaDetailSkeleton from '@components/skeleton/MediaDetailSkeleton';
 import Toast from '@components/common/Toast';
 import AlertModal from '@components/common/AlertModal';
+import ConfirmModal from '@components/common/ConfirmModal';
 import Pagination from '@components/common/Pagination';
 import ImageLightbox from '@components/common/ImageLightbox';
 
@@ -96,6 +97,8 @@ export default function ProductDetailSellerPage() {
   const [cancelSubmitting, setCancelSubmitting] = useState(false);
   const [toast, setToast]               = useState('');
   const [alertMsg, setAlertMsg]         = useState(''); // 화면 중앙 알림 모달 — 취소 요청 완료 안내용
+  const [commentConfirmOpen, setCommentConfirmOpen] = useState(false); // 변경사항 추가 — 등록 전 "수정 불가" 안내
+  const [pendingReplySn, setPendingReplySn] = useState(null); // 답변 등록 — 등록 전 "10분 이내 수정 가능" 안내 대상 inquirySn
 
   const rightColRef  = useRef(null);
 
@@ -164,8 +167,13 @@ export default function ProductDetailSellerPage() {
     }
   };
 
-  const handleCommentSubmit = async () => {
+  const requestCommentSubmit = () => {
     if (!cmtTtl.trim()) { alert('제목을 입력해 주세요.'); return; }
+    setCommentConfirmOpen(true);
+  };
+
+  const handleCommentSubmit = async () => {
+    setCommentConfirmOpen(false);
     setCmtSubmitting(true);
     try {
       await postProductComment(prdSn, { ttl: cmtTtl.trim(), cn: cmtCn.trim() || null });
@@ -174,16 +182,22 @@ export default function ProductDetailSellerPage() {
       setCmtTtl('');
       setCmtCn('');
       setToast('수정 이력이 등록되었습니다.');
-    } catch {
-      setToast('추가 공지 등록에 실패했습니다.');
+    } catch (err) {
+      setAlertMsg(err.response?.data?.message || '추가 공지 등록에 실패했습니다.');
     } finally {
       setCmtSubmitting(false);
     }
   };
 
-  const handleReplySubmit = async (inquirySn) => {
+  const requestReplySubmit = (inquirySn) => {
     const text = (replyDrafts[inquirySn] || '').trim();
     if (!text) { setAlertMsg('답변 내용을 입력해 주세요.'); return; }
+    setPendingReplySn(inquirySn);
+  };
+
+  const handleReplySubmit = async (inquirySn) => {
+    const text = (replyDrafts[inquirySn] || '').trim();
+    setPendingReplySn(null);
     setReplySubmitting(true);
     try {
       await postInquiryReply(prdSn, inquirySn, { cn: text });
@@ -191,8 +205,8 @@ export default function ProductDetailSellerPage() {
       setInquiries(groupInquiries(updated.data));
       setReplyDrafts(prev => { const next = { ...prev }; delete next[inquirySn]; return next; });
       setToast('답변이 등록되었습니다.');
-    } catch {
-      setToast('답변 등록에 실패했습니다.');
+    } catch (err) {
+      setAlertMsg(err.response?.data?.message || '답변 등록에 실패했습니다.');
     } finally {
       setReplySubmitting(false);
     }
@@ -208,8 +222,8 @@ export default function ProductDetailSellerPage() {
       setInquiries(groupInquiries(updated.data));
       setEditingSn(null);
       setToast('답변이 수정되었습니다.');
-    } catch {
-      setToast('답변 수정에 실패했습니다. 등록 후 10분이 지났을 수 있습니다.');
+    } catch (err) {
+      setAlertMsg(err.response?.data?.message || '답변 수정에 실패했습니다. 등록 후 10분이 지났을 수 있습니다.');
     } finally {
       setReplySubmitting(false);
     }
@@ -524,7 +538,7 @@ export default function ProductDetailSellerPage() {
                             <button
                               type="button"
                               className="btn btn-primary btn-sm"
-                              onClick={() => handleReplySubmit(inq.inquirySn)}
+                              onClick={() => requestReplySubmit(inq.inquirySn)}
                               disabled={replySubmitting}
                             >
                               {replySubmitting ? '등록 중...' : '답변 등록'}
@@ -575,7 +589,7 @@ export default function ProductDetailSellerPage() {
           {/* 상품 변경사항 추가 (F-AUC-007) — 사이즈 고정, 왼쪽 컬럼 높이에 맞춰 늘어나지 않음 */}
           <aside className="card" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ background: '#eef2fb', padding: '14px 20px' }}>
-              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>상품 변경 사항 추가</h3>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>상품 설명 변경사항 추가</h3>
             </div>
             <div style={{ padding: '16px 20px' }}>
               {isActive && comments.length >= 3 && (
@@ -604,7 +618,7 @@ export default function ProductDetailSellerPage() {
                   <p style={{ margin: '2px 0 4px', fontSize: 12, color: cmtCn.length >= 100 ? '#c0392b' : '#969696', textAlign: 'right' }}>{cmtCn.length}/100</p>
                   <p className="muted" style={{ fontSize: 12, margin: '0 0 4px' }}>변경사항은 최대 3개까지 등록할 수 있습니다.</p>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 2 }}>
-                    <button className="btn btn-primary btn-sm" onClick={handleCommentSubmit} disabled={cmtSubmitting}>
+                    <button className="btn btn-primary btn-sm" onClick={requestCommentSubmit} disabled={cmtSubmitting}>
                       {cmtSubmitting ? '등록 중...' : '등록'}
                     </button>
                   </div>
@@ -699,6 +713,22 @@ export default function ProductDetailSellerPage() {
 
       {toast && <Toast message={toast} onClose={() => setToast('')} />}
       <AlertModal open={!!alertMsg} message={alertMsg} onClose={() => setAlertMsg('')} />
+      <ConfirmModal
+        open={commentConfirmOpen}
+        message="등록 후에는 수정할 수 없습니다."
+        subMessage="이대로 등록하시겠습니까?"
+        confirmLabel="등록"
+        onCancel={() => setCommentConfirmOpen(false)}
+        onConfirm={handleCommentSubmit}
+      />
+      <ConfirmModal
+        open={!!pendingReplySn}
+        message="답변은 등록 후 10분까지만 수정할 수 있습니다."
+        subMessage="이대로 등록하시겠습니까?"
+        confirmLabel="등록"
+        onCancel={() => setPendingReplySn(null)}
+        onConfirm={() => handleReplySubmit(pendingReplySn)}
+      />
       <ImageLightbox
         images={productImages.map(img => toImageUrl(img.url))}
         initialIndex={imgIdx}
