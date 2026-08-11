@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, MessageSquareText, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getMyPageInquiryCreatePath } from '@/routes/myPageRoutes';
 import Pagination from '@components/common/Pagination';
 import MyPageListEmpty from '@components/mypage/MyPageListEmpty';
 import MyPageListError from '@components/mypage/MyPageListError';
@@ -10,6 +11,7 @@ import {
   useMyCustomerInquiries,
   useMyCustomerInquiry,
 } from '@hooks/useCustomerInquiry';
+import { useAuth } from '@hooks/useAuth';
 import { formatDateTime } from '@utils/common';
 import './MyInquiryListPage.css';
 
@@ -85,6 +87,8 @@ const InquiryCard = ({ inquiry, isOpen, number, onToggle }) => {
 /** 담당자 7 · 관리자 대상 1:1 문의: 신고 내역과 분리된 본인 문의 목록·상태·답변 아코디언입니다. */
 const MyInquiryListPage = ({ embedded = false }) => {
   const navigate = useNavigate();
+  const { isProvider } = useAuth();
+  const inquiryCreatePath = getMyPageInquiryCreatePath(isProvider);
   const [activeTab, setActiveTab] = useState(0);
   const [page, setPage] = useState(1);
   const [openInquirySn, setOpenInquirySn] = useState(null);
@@ -126,7 +130,7 @@ const MyInquiryListPage = ({ embedded = false }) => {
           count: counts[index],
         }))}
         headerActions={(
-          <button className="btn btn-primary my-inquiry-create" onClick={() => navigate('/customersupport/inquiry')} type="button">
+          <button className="btn btn-primary my-inquiry-create" onClick={() => navigate(inquiryCreatePath)} type="button">
             <Plus aria-hidden="true" /> 문의하기
           </button>
         )}
@@ -146,7 +150,7 @@ const MyInquiryListPage = ({ embedded = false }) => {
         <MyPageListError message="문의 목록을 불러오지 못했습니다." onRetry={() => inquiriesQuery.refetch()} />
       ) : inquiries.length === 0 ? (
         <MyPageListEmpty
-          action={<button className="btn btn-outline" onClick={() => navigate('/customersupport/inquiry')} type="button">문의 작성</button>}
+          action={<button className="btn btn-outline" onClick={() => navigate(inquiryCreatePath)} type="button">문의 작성</button>}
           message="조건에 맞는 문의가 없습니다."
         />
       ) : (

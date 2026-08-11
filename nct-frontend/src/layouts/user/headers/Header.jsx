@@ -454,13 +454,6 @@ const Header = () => {
                     >
                       FAQ
                     </Link>
-                    <Link
-                      to="/customersupport/inquiry"
-                      className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
-                      onClick={() => setCustomerHovered(false)}
-                    >
-                      1:1 문의
-                    </Link>
                   </div>
                 </div>
               )}
@@ -983,7 +976,6 @@ const Header = () => {
                   <Link to="/customersupport/notice" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>공지사항</Link>
                   <Link to="/customersupport/guide" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>이용가이드</Link>
                   <Link to="/customersupport/faq" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>FAQ</Link>
-                  <Link to="/customersupport/inquiry" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>1:1 문의</Link>
                 </div>
               )}
             </div>

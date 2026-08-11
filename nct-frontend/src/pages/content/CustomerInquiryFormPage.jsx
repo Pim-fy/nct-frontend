@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircleQuestion, ShieldCheck } from 'lucide-react';
 import { ContentPageShell } from '@components/content/ContentUi';
+import { getMyPageInquiryPath } from '@/routes/myPageRoutes';
 import {
   useCreateCustomerInquiry,
   useCustomerInquiryTypes,
@@ -75,7 +76,7 @@ const CustomerInquiryFormPage = () => {
       });
       detectionKeyRef.current = null;
       toast({ icon: 'success', title: '문의가 접수되었습니다.' });
-      navigate('/user/mypage/inquiries');
+      navigate(getMyPageInquiryPath(isProvider));
     } catch (error) {
       setErrors((current) => ({
         ...current,

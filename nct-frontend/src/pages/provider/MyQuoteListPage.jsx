@@ -2,7 +2,7 @@
 // F-SVC-005/006/008 + F-PROV-010: 제공자 내 견적 목록 (담당자3 황성경 소유)
 // - 버튼/배지: PROJECT/ui-preview.html 클래스 시스템 사용 (btn, badge)
 import React, { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { confirm, toast } from "@utils/common";
 import { useMyQuotes, useWithdrawQuote } from "@hooks/useQuote";
 import { getMyActiveQuote } from "@api/quoteApi";
@@ -20,6 +20,18 @@ const STATUS_MAP = {
 };
 
 const TABS = ["전체", "대기중", "진행중", "종료"];
+const TAB_BY_QUERY = {
+  all: "전체",
+  waiting: "대기중",
+  "in-progress": "진행중",
+  ended: "종료",
+};
+const QUERY_BY_TAB = {
+  "전체": "all",
+  "대기중": "waiting",
+  "진행중": "in-progress",
+  "종료": "ended",
+};
 
 // ─── 서브 컴포넌트 ────────────────────────────────────────────────────────────
 
@@ -151,7 +163,9 @@ function QuoteCard({ quote, onEdit, onCancel, onDetail }) {
 
 export default function MyQuoteListPage({ embedded = false } = {}) {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("대기중");
+  const [searchParams, setSearchParams] = useSearchParams();
+  // 담당자 7 · F-PROV-009: 대시보드에서 전달한 탭을 URL에 유지해 직접 진입과 새로고침 결과를 같게 합니다.
+  const activeTab = TAB_BY_QUERY[searchParams.get("tab")] ?? "대기중";
   const [detailModal, setDetailModal] = useState(null);
   const [detailAttachments, setDetailAttachments] = useState([]);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -187,6 +201,11 @@ export default function MyQuoteListPage({ embedded = false } = {}) {
 
   const countOf = (s) => quotes.filter((q) => q.status === s).length;
   const totalCount = quotes.length;
+  const handleTabChange = (tab) => {
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.set("tab", QUERY_BY_TAB[tab]);
+    setSearchParams(nextSearchParams, { replace: true });
+  };
   const pageHeader = embedded
     ? <MyPageContentHeader title="견적 제출 내역" />
     : <h2 className="m-0 text-[22px] font-bold text-[#1a1a1a]">견적 제출 내역</h2>;
@@ -271,7 +290,7 @@ export default function MyQuoteListPage({ embedded = false } = {}) {
             <button
               key={tab}
               type="button"
-              onClick={() => setActiveTab(tab)}
+              onClick={() => handleTabChange(tab)}
               className={`tab-pill${isActive ? " active" : ""}`}
             >
               {tab}
