@@ -20,6 +20,8 @@
   margin-bottom: 20px;
 }
 
+.service-trade-detail-page__list-link { color: #475467; }
+
 .service-trade-detail-page__heading {
   min-width: 0;
 }
@@ -76,15 +78,6 @@
   color: #666;
   font-size: 13px;
   font-weight: 700;
-}
-
-.service-trade-detail-page__request-link {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 42px;
-  border-radius: 10px;
 }
 
 .service-trade-progress {
@@ -157,7 +150,7 @@
 .service-trade-detail-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, .62fr);
-  align-items: start;
+  align-items: center;
   gap: 16px;
 }
 
@@ -212,14 +205,9 @@
   display: grid;
   grid-template-columns: minmax(120px, 180px) minmax(0, 1fr);
   gap: 24px;
-  align-items: start;
+  align-items: center;
   padding: 18px 0;
   border-bottom: 1px solid #edf0f5;
-}
-
-.service-trade-detail-list > div:last-child {
-  padding-bottom: 0;
-  border-bottom: 0;
 }
 
 .service-trade-detail-list dt {
@@ -461,7 +449,12 @@
 
 .service-trade-card__escrow {
   margin-top: auto;
-  padding: 12px;
+  box-sizing: border-box;
+  display: flex;
+  min-height: 148px;
+  flex-direction: column;
+  justify-content: center;
+  padding: 18px;
   border: 1px solid #d9e5fb;
   border-radius: 12px;
   background: #f4f8ff;
@@ -519,6 +512,49 @@
   color: #056838;
 }
 
+.service-trade-cancellation-decision {
+  display: flex;
+  align-items: center;
+  flex: 1 1 100%;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid #f4c7c3;
+  border-radius: 10px;
+  background: #fff8f7;
+}
+
+.service-trade-cancellation-decision strong { color: #9b1c1c; font-size: 14px; }
+.service-trade-cancellation-decision p { margin: 4px 0 0; color: #7a3c38; font-size: 12px; }
+.service-trade-cancellation-decision__actions { display: flex; flex: 0 0 auto; gap: 8px; }
+
+.service-trade-cancellation-decision__actions .btn {
+  display: inline-flex;
+  width: 144px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  font-weight: 800;
+}
+
+.service-trade-cancellation-decision__actions .btn-ghost {
+  border-color: #cbd5e1;
+  background: #fff;
+  color: #475467;
+}
+
+.service-trade-cancellation-decision__actions .btn-primary {
+  border-color: #d92d20;
+  background: #d92d20;
+  color: #fff;
+}
+
+.service-trade-cancellation-decision__actions .btn-primary:hover {
+  border-color: #b42318;
+  background: #b42318;
+}
+
 .service-trade-card__dispute-action {
   display: flex;
   align-items: center;
@@ -548,7 +584,7 @@
   .service-trade-overview-grid { grid-template-columns: 1fr; }
   .service-trade-card--summary { display: block; }
   .service-trade-card--status { min-height: auto; }
-  .service-trade-card__escrow { margin-top: 0; }
+  .service-trade-card__escrow { margin-top: 0; min-height: auto; }
   .service-trade-inline-actions { align-items: stretch; flex-direction: column; margin-top: 18px; }
   .service-trade-inline-actions__group { width: 100%; flex-direction: column; }
   .service-trade-inline-actions__group .btn { width: 100%; }
@@ -668,7 +704,6 @@
   .service-trade-detail-page .container { width: calc(100% - 24px); }
   .service-trade-detail-page__header { align-items: stretch; flex-direction: column; gap: 18px; }
   .service-trade-detail-page h1 { font-size: 28px; }
-  .service-trade-detail-page__request-link { width: 100%; }
   .service-trade-progress {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     overflow-x: hidden;
