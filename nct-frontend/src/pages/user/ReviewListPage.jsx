@@ -187,6 +187,7 @@ export default function ReviewListPage() {
                     partyLabel={item.partyLabel}
                     partyName={item.partyName}
                     completedDate={item.completedDate}
+                    reviewDeadline={item.reviewDeadline}
                     onViewTarget={() => handleViewTarget(item)}
                   />
                 ) : (
@@ -226,6 +227,7 @@ export default function ReviewListPage() {
                   partyLabel={item.partyLabel}
                   partyName={item.partyName}
                   completedDate={item.completedDate}
+                  reviewDeadline={item.reviewDeadline}
                   onViewTarget={() => handleViewTarget(item)}
                 />
               ))}
