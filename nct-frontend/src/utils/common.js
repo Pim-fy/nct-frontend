@@ -208,6 +208,39 @@ export const formatDate = (date) => {
 };
 
 /**
+ * 가입일을 "가입 N일차/N개월차/N년차" 형태로 변환한다 - 거래 상대방 신뢰 보조 지표용.
+ * @param {string} joinedAt - ISO 날짜/일시 문자열
+ * @returns {string} 값이 없으면 "-"
+ */
+export const formatMembershipDuration = (joinedAt) => {
+  if (!joinedAt) return '-';
+  const joined = new Date(joinedAt);
+  if (Number.isNaN(joined.getTime())) return '-';
+
+  const diffDays = Math.max(0, Math.floor((Date.now() - joined.getTime()) / (1000 * 60 * 60 * 24)));
+  if (diffDays < 30) return `가입 ${diffDays + 1}일차`;
+
+  const diffMonths = Math.floor(diffDays / 30);
+  if (diffMonths < 12) return `가입 ${diffMonths}개월차`;
+
+  return `가입 ${Math.floor(diffMonths / 12)}년차`;
+};
+
+/**
+ * 마침표+공백 뒤에서 문장을 나눠 배열로 반환한다 - 여러 문장이 한 문단에 이어붙어
+ * 좁은 카드 폭에서 줄바꿈 없이 한 줄로 표시되는 걸 막고, 문장 단위로 별도 줄에 보여줄 때 쓴다.
+ * @param {string} text
+ * @returns {string[]}
+ */
+export const splitSentences = (text) => {
+  if (!text) return [];
+  const parts = String(text).split('. ');
+  return parts.map((part, index) => (
+    index < parts.length - 1 ? `${part}.` : part
+  ));
+};
+
+/**
  * 날짜+시간을 YYYY.MM.DD HH:mm(24시간제) 형식으로 포맷
  * @param {string} dateTime - ISO LocalDateTime 문자열(예: "2026-07-28T14:30:00")
  * @returns {string} 값이 없으면 "-"

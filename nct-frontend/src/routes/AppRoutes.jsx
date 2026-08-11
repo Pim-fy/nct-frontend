@@ -9,7 +9,7 @@
 //    황희준에게 전달해 ProtectedRoute 구조에 맞게 정리 필요.
 //    판매 목록은 계층 경로 /user/mypage/auctions/sales 한 곳에서 제공합니다.
 // ─────────────────────────────────────────────────────────────────────────────
-import { Outlet, Routes, Route, useLocation, useParams } from 'react-router-dom';
+import { Navigate, Outlet, Routes, Route, useLocation, useParams } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import { MYPAGE_SECTION_PATHS } from './myPageRoutes';
 
@@ -51,6 +51,8 @@ import Unauthorized   from '@pages/error/Unauthorized';
 import MyPage from '@pages/user/MyPage';
 import TradeDetailBuyer from '@pages/trade/TradeDetailBuyer';
 import TradeDetailSeller from '@pages/trade/TradeDetailSeller';
+import AuctionTradeDetailPage from '@pages/trade/AuctionTradeDetailPage';
+import LegacyTradeRedirect from '@pages/trade/LegacyTradeRedirect';
 import TradeChat from '@pages/trade/TradeChat';
 // 담당자 7 공개 콘텐츠 route. 공통 route 소유자(담당자 1)에게 동일 manifest로 전달합니다.
 import GuidePage from '@pages/content/GuidePage';
@@ -65,9 +67,8 @@ import ProviderApplicationStatusPage from '@pages/provider/ProviderApplicationSt
 import NotificationPage from '@pages/user/notification/NotificationPage';
 import QuoteFormPage from '@pages/provider/QuoteFormPage';
 import ReviewListPage from '@pages/user/ReviewListPage';
-import ReviewWritePage from '@pages/user/ReviewWritePage';
-import ReviewEditPage from '@pages/user/ReviewEditPage';
 import MyPageReviewLayout from '@layouts/MyPageReviewLayout';
+import LegacyReviewRedirect from '@pages/user/LegacyReviewRedirect';
 
 // 담당자 7 병합 검증: develop의 상품 route가 참조하는 페이지 import가 누락되어 런타임 빈 화면이 발생해 복구했습니다.
 // 임시 코드는 아니며 상품 기능의 구현·소유권은 기존 상품 담당자에게 그대로 있습니다.
@@ -217,6 +218,14 @@ const AppRoutes = () => {
       >
         <Route element={<UserLayout />}>
           <Route path="/user/mypage" element={<MyPage />} />
+          <Route
+            path="/user/mypage/auctions/active"
+            element={<Navigate replace to={MYPAGE_SECTION_PATHS['auction-bids']} />}
+          />
+          <Route
+            path="/user/mypage/auctions/bids"
+            element={<Navigate replace to={MYPAGE_SECTION_PATHS['auction-bids']} />}
+          />
           {Object.entries(MYPAGE_SECTION_PATHS)
             .filter(([section]) => section !== 'home')
             .map(([section, path]) => (
@@ -239,15 +248,16 @@ const AppRoutes = () => {
       >
         <Route element={<UserLayout />}>
           <Route element={<MyPageReviewLayout />}>
-            <Route path="/user/mypage/reviews/write/:id" element={<ReviewWritePage />} />
-            <Route path="/user/mypage/reviews/edit/:id" element={<ReviewEditPage />} />
+            <Route path="/user/reviews/write/:id" element={<LegacyReviewRedirect mode="new" />} />
+            <Route path="/user/reviews/edit/:id" element={<LegacyReviewRedirect mode="edit" />} />
           </Route>
 
           <Route path="/trades/:tradeId/chat" element={<TradeChat />} />
-          <Route path="/trades/:tradeId" element={<TradeDetailBuyer />} />
+          <Route path="/auction/:auctionId/trade" element={<AuctionTradeDetailPage />} />
+          <Route path="/trades/:tradeId" element={<LegacyTradeRedirect />} />
           <Route
             path="/trades/:tradeId/seller"
-            element={<TradeDetailSeller />}
+            element={<LegacyTradeRedirect />}
           />
 
           {/* 상품 — 로그인 필요 */}

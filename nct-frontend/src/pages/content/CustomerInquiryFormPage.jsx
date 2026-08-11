@@ -91,8 +91,7 @@ const CustomerInquiryFormPage = () => {
     <ContentPageShell className="customer-inquiry-form-page">
       <Helmet><title>1:1 문의 | 에누리컷</title></Helmet>
 
-      <header className="customer-support-page-header">
-        <span>1:1 SUPPORT</span>
+      <header className="customer-support-page-header customer-support-page-header--plain">
         <h1>관리자에게 문의하기</h1>
         <p>서비스 이용 중 확인이 필요한 내용을 남기면 처리 상태와 답변을 마이페이지에서 확인할 수 있습니다.</p>
       </header>
@@ -107,7 +106,7 @@ const CustomerInquiryFormPage = () => {
         </div>
 
         <label>
-          문의 유형 <strong aria-hidden="true">*</strong>
+          문의 유형
           <select
             aria-invalid={Boolean(errors.inquiryTypeCode)}
             disabled={typesQuery.isLoading || typesQuery.isError || createMutation.isPending}
@@ -131,7 +130,7 @@ const CustomerInquiryFormPage = () => {
         </label>
 
         <label>
-          제목 <strong aria-hidden="true">*</strong>
+          제목
           <input
             aria-invalid={Boolean(errors.title)}
             disabled={createMutation.isPending}
@@ -145,7 +144,7 @@ const CustomerInquiryFormPage = () => {
         </label>
 
         <label>
-          문의 내용 <strong aria-hidden="true">*</strong>
+          문의 내용
           <textarea
             aria-invalid={Boolean(errors.content)}
             disabled={createMutation.isPending}

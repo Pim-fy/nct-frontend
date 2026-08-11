@@ -7,7 +7,7 @@ import {
   rejectAdminPointExchange,
 } from '@api/adminPointExchangeApi';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
-import AdminModal from '@components/admin/AdminModal';
+import AdminDetailDrawer from '@components/admin/AdminDetailDrawer';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
@@ -225,7 +225,7 @@ const AdminPointExchangePage = () => {
               ...filterForm,
               keyword: event.target.value,
             })}
-            placeholder="신청 번호·회원 번호·신청자명"
+            placeholder="신청 번호·신청자명"
             value={filterForm.keyword}
           />
         </label>
@@ -266,7 +266,18 @@ const AdminPointExchangePage = () => {
       )}
 
       {selected && (
-        <AdminModal
+        <AdminDetailDrawer
+          eyebrow="포인트 환전"
+          footer={(
+            <button
+              className="btn btn-outline"
+              disabled={accountMutation.isPending || processMutation.isPending}
+              onClick={closeOrder}
+              type="button"
+            >
+              닫기
+            </button>
+          )}
           onClose={closeOrder}
           title={canProcess ? '환전 신청 처리' : '환전 처리 내역'}
         >
@@ -366,7 +377,7 @@ const AdminPointExchangePage = () => {
               </>
             )}
           </section>
-        </AdminModal>
+        </AdminDetailDrawer>
       )}
     </div>
   );

@@ -11,7 +11,7 @@ export default function MyPageFilterTabs({
   return (
     <div className="flex flex-col gap-3 border-b border-[#e5e7eb] px-2 sm:flex-row sm:items-end">
       <div
-        className="flex min-w-0 flex-1 gap-[26px] overflow-x-auto scrollbar-none"
+        className="flex h-11 min-w-0 flex-1 gap-[26px] overflow-x-auto scrollbar-none"
         role="tablist"
         aria-label={ariaLabel}
       >

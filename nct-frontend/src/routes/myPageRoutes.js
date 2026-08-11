@@ -3,8 +3,6 @@ export const MYPAGE_SECTION_PATHS = Object.freeze({
   home: '/user/mypage',
   profile: '/user/mypage/profile',
   'provider-profile': '/user/mypage/provider/profile',
-  'active-auctions': '/user/mypage/auctions/active',
-  'bid-history': '/user/mypage/auctions/bids',
   'auction-bids': '/user/mypage/auctions/purchases',
   'auction-sales': '/user/mypage/auctions/sales',
   wishlist: '/user/mypage/auctions/favorites',

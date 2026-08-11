@@ -19,8 +19,8 @@ const FILTERS = [
   { label: '진행 중', value: 'TRDC0003' },
   { label: '완료 확인', value: 'TRDC0005' },
   { label: '보류', value: 'TRDC0007' },
-  { label: '완료', value: 'TRDC0006' },
-  { label: '취소', value: 'TRDC0008' },
+  { label: '거래 완료', value: 'TRDC0006' },
+  { label: '거래 취소', value: 'TRDC0008' },
 ];
 
 const STATUS_BADGE = {
@@ -106,9 +106,9 @@ export default function MyServiceTradeListPage({ fixedRole = null }) {
   };
 
   return (
-    <section aria-label="서비스 거래 목록">
+    <section aria-label="견적 진행 내역 목록">
       <MyPageListSectionLayout
-        title="서비스 거래"
+        title="견적 진행 내역"
         summaryItems={[
           { label: '진행 중', value: filterCounts.TRDC0003 },
           { label: '완료 확인', value: filterCounts.TRDC0005 },
@@ -120,9 +120,9 @@ export default function MyServiceTradeListPage({ fixedRole = null }) {
         }))}
         activeFilter={activeFilter}
         onFilterChange={handleFilterChange}
-        filterAriaLabel="서비스 거래 상태"
+        filterAriaLabel="견적 진행 내역 상태"
         onSearch={handleSearch}
-        searchAriaLabel="서비스 거래 검색"
+        searchAriaLabel="견적 진행 내역 검색"
         searchPlaceholder="요청 제목 또는 거래 상대 검색"
         isLoading={countsLoading}
       />
@@ -131,11 +131,11 @@ export default function MyServiceTradeListPage({ fixedRole = null }) {
         <MyPageListSkeleton count={4} />
       ) : listQuery.isError ? (
         <MyPageListError
-          message="서비스 거래 목록을 불러오지 못했습니다."
+          message="견적 진행 내역을 불러오지 못했습니다."
           onRetry={() => listQuery.refetch()}
         />
       ) : visibleTrades.length === 0 ? (
-        <MyPageListEmpty message="해당 조건의 서비스 거래가 없습니다." />
+        <MyPageListEmpty message="해당 조건의 견적 진행 내역이 없습니다." />
       ) : (
         <>
           <div className="history-list">
@@ -152,7 +152,7 @@ export default function MyServiceTradeListPage({ fixedRole = null }) {
                       {status.label}
                     </MyPageStatusBadge>
                   )}
-                  title={trade.serviceRequestTitle || '서비스 거래'}
+                  title={trade.serviceRequestTitle || '견적 진행 내역'}
                   actions={(
                     <button
                       type="button"
