@@ -1,13 +1,17 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import {
   decideAdminDispute,
   getAdminDispute,
+  getAdminDisputeEvidenceBlob,
   getAdminDisputes,
 } from '@api/adminDisputeApi';
+import { requestDisputeChatView } from '@api/adminAuditApi';
 import { fetchReferenceCodes } from '@api/referenceApi';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminDetailDrawer from '@components/admin/AdminDetailDrawer';
+import AdminModal from '@components/admin/AdminModal';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
@@ -28,6 +32,18 @@ const DECISIONS = [
   { value: 'REJECT', label: '반려', description: '분쟁을 반려하고 분쟁 전 거래 상태와 정산 흐름을 복구합니다.' },
 ];
 const formatDate = (value) => (value ? String(value).replace('T', ' ').slice(0, 16) : '-');
+const formatFileSize = (value) => {
+  const bytes = Number(value);
+  if (!Number.isFinite(bytes) || bytes < 0) return '-';
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.ceil(bytes / 1024)).toLocaleString('ko-KR')}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+};
+const formatChatSender = (message) => {
+  const loginId = message.senderLoginId?.trim();
+  const nickname = message.senderNickname?.trim();
+  if (loginId && nickname && loginId !== nickname) return `${loginId} (${nickname})`;
+  return loginId || nickname || '회원 정보 없음';
+};
 const statusTone = (code) => ({
   TRDC0016: 'warning',
   TRDC0017: 'info',
@@ -44,6 +60,14 @@ const AdminDisputeManagementPage = () => {
   const [decision, setDecision] = useState('');
   const [reason, setReason] = useState('');
   const [refundConfirmed, setRefundConfirmed] = useState(false);
+  const [openingEvidenceFileSn, setOpeningEvidenceFileSn] = useState(null);
+  const [evidenceReason, setEvidenceReason] = useState('');
+  const [evidenceError, setEvidenceError] = useState('');
+  const [chatReason, setChatReason] = useState('');
+  const [chatResult, setChatResult] = useState(null);
+  const [chatModalOpen, setChatModalOpen] = useState(false);
+  const selectedDisputeSnRef = useRef(null);
+  const chatRequestVersionRef = useRef(0);
 
   const disputeTypesQuery = useQuery({
     queryKey: ['reference', 'codes', 'TRDG04'],
@@ -77,22 +101,111 @@ const AdminDisputeManagementPage = () => {
       await queryClient.invalidateQueries({ queryKey: ['admin', 'disputes'] });
     },
   });
+  const chatViewMutation = useMutation({
+    mutationFn: ({ disputeSn, reason: viewReason, page: requestedPage }) => (
+      requestDisputeChatView(disputeSn, {
+        reason: viewReason,
+        page: requestedPage,
+        size: 50,
+      })
+    ),
+    onSuccess: async (data, variables) => {
+      if (
+        selectedDisputeSnRef.current !== variables.disputeSn
+        || data?.disputeSn !== variables.disputeSn
+        || chatRequestVersionRef.current !== variables.requestVersion
+      ) return;
+      setChatResult(data);
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'audit', 'logs'] });
+    },
+  });
 
   const openDetail = (disputeSn) => {
+    selectedDisputeSnRef.current = disputeSn;
+    chatRequestVersionRef.current += 1;
     decisionMutation.reset();
     setDecision('');
     setReason('');
     setRefundConfirmed(false);
+    setOpeningEvidenceFileSn(null);
+    setEvidenceReason('');
+    setEvidenceError('');
+    setChatReason('');
+    setChatResult(null);
+    setChatModalOpen(false);
+    chatViewMutation.reset();
     setSelectedDisputeSn(disputeSn);
   };
 
   const closeDetail = () => {
-    if (decisionMutation.isPending) return;
+    if (chatModalOpen || decisionMutation.isPending) return;
+    selectedDisputeSnRef.current = null;
+    chatRequestVersionRef.current += 1;
     decisionMutation.reset();
     setSelectedDisputeSn(null);
     setDecision('');
     setReason('');
     setRefundConfirmed(false);
+    setOpeningEvidenceFileSn(null);
+    setEvidenceReason('');
+    setEvidenceError('');
+    setChatReason('');
+    setChatResult(null);
+    setChatModalOpen(false);
+    chatViewMutation.reset();
+  };
+
+  const closeChatModal = () => {
+    chatRequestVersionRef.current += 1;
+    setChatModalOpen(false);
+    setChatResult(null);
+    chatViewMutation.reset();
+  };
+
+  /** 담당자 7 · F-OPS-005: 새 창을 사용자 클릭 시점에 확보한 뒤 보호 API의 Blob만 표시합니다. */
+  const openEvidence = async (fileSn) => {
+    const reason = evidenceReason.trim();
+    if (!selectedDisputeSn || openingEvidenceFileSn != null || !reason) return;
+
+    const previewWindow = window.open('about:blank', '_blank');
+    if (!previewWindow) {
+      setEvidenceError('브라우저의 팝업 차단을 해제한 뒤 다시 시도해 주세요.');
+      return;
+    }
+    previewWindow.opener = null;
+    previewWindow.document.title = '증빙 자료 불러오는 중';
+    previewWindow.document.body.textContent = '증빙 자료를 불러오는 중입니다.';
+
+    setOpeningEvidenceFileSn(fileSn);
+    setEvidenceError('');
+    try {
+      const response = await getAdminDisputeEvidenceBlob(selectedDisputeSn, fileSn, reason);
+      const objectUrl = URL.createObjectURL(response.data);
+      previewWindow.location.replace(objectUrl);
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 5 * 60 * 1000);
+    } catch (error) {
+      previewWindow.close();
+      setEvidenceError(
+        error.response?.data?.message ?? '증빙 자료를 열지 못했습니다. 파일 상태를 확인해 주세요.',
+      );
+    } finally {
+      setOpeningEvidenceFileSn(null);
+    }
+  };
+
+  /** 담당자 7 · F-OPS-014: 사유를 포함해 현재 분쟁에 연결된 채팅 페이지만 제한 조회합니다. */
+  const viewDisputeChat = (requestedPage = 1) => {
+    const viewReason = chatReason.trim();
+    if (!selectedDisputeSn || !viewReason || chatViewMutation.isPending) return;
+    setChatModalOpen(true);
+    const requestVersion = chatRequestVersionRef.current + 1;
+    chatRequestVersionRef.current = requestVersion;
+    chatViewMutation.mutate({
+      disputeSn: selectedDisputeSn,
+      reason: viewReason,
+      page: requestedPage,
+      requestVersion,
+    });
   };
 
   const submitSearch = (event) => {
@@ -116,6 +229,7 @@ const AdminDisputeManagementPage = () => {
     {
       key: 'disputerUserSn',
       label: '분쟁 제기자',
+      className: 'admin-table__compact-text',
       render: (value, row) => formatAdminMemberIdentity(row.disputerMember, value),
     },
     { key: 'disputeTypeName', label: '분쟁 유형' },
@@ -141,6 +255,12 @@ const AdminDisputeManagementPage = () => {
       ),
     },
     { key: 'registeredAt', label: '접수일', render: formatDate },
+    {
+      key: 'processedAt',
+      label: '처리일',
+      className: 'admin-table__processed-date',
+      render: formatDate,
+    },
     {
       key: 'manage',
       label: '관리',
@@ -343,19 +463,96 @@ const AdminDisputeManagementPage = () => {
                   )}
                 </dl>
 
-                <div className="admin-operation-detail__notice">
-                  <strong>증빙 자료</strong>
-                  <span>
-                    현재 거래 분쟁에는 증빙 파일 연결 계약이 없어 파일을 표시할 수 없습니다.
-                  </span>
-                </div>
+                <section className="admin-operation-evidence" aria-labelledby="admin-dispute-evidence-title">
+                  <div className="admin-operation-evidence__heading">
+                    <strong id="admin-dispute-evidence-title">증빙 자료</strong>
+                    <span>{detail.evidenceFiles?.length ?? 0}개</span>
+                  </div>
+                  {(detail.evidenceFiles?.length ?? 0) > 0 && (
+                    <label className="admin-operation-evidence__reason">
+                      <span>원문 열람 사유</span>
+                      <input
+                        maxLength={1000}
+                        onChange={(event) => {
+                          setEvidenceReason(event.target.value);
+                          setEvidenceError('');
+                        }}
+                        placeholder="분쟁 판정에 필요한 열람 사유를 입력하세요."
+                        value={evidenceReason}
+                      />
+                      <small>증빙 원문 열람 시 관리자·분쟁 건·사유·접속 정보가 감사로그에 기록됩니다.</small>
+                    </label>
+                  )}
+                  {(detail.evidenceFiles?.length ?? 0) > 0 ? (
+                    <ul>
+                      {detail.evidenceFiles.map((file) => (
+                        <li key={file.fileSn}>
+                          <div>
+                            <strong title={file.originalName}>{file.originalName}</strong>
+                            <span>{file.extension?.toUpperCase() || 'FILE'} · {formatFileSize(file.sizeAmount)}</span>
+                          </div>
+                          <button
+                            className="btn btn-outline"
+                            disabled={openingEvidenceFileSn != null || !evidenceReason.trim()}
+                            onClick={() => openEvidence(file.fileSn)}
+                            type="button"
+                          >
+                            {openingEvidenceFileSn === file.fileSn ? '여는 중…' : '열람'}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>첨부된 증빙 자료가 없습니다.</p>
+                  )}
+                  {evidenceError && <p className="admin-operation-error" role="alert">{evidenceError}</p>}
+                </section>
 
-                <div className="admin-operation-detail__notice">
-                  <strong>거래 상세</strong>
-                  <span>
-                    기존 거래 상세는 당사자 전용입니다. 관리자 읽기 계약이 연결되면 이동 기능을 제공합니다.
-                  </span>
-                </div>
+                {detail.tradeTypeCode === 'TRDC0002' && (
+                  <div className="admin-operation-trade-link">
+                    <div>
+                      <strong>서비스 거래 상세</strong>
+                      <span>주소 원문과 당사자 처리 기능을 제외한 거래 정보를 확인합니다.</span>
+                    </div>
+                    <Link className="btn btn-outline" to={`/admin/service-trades/${detail.tradeSn}`}>
+                      상세 보기
+                    </Link>
+                  </div>
+                )}
+
+                <section className="admin-operation-chat" aria-labelledby="admin-dispute-chat-title">
+                  <div className="admin-operation-chat__heading">
+                    <div>
+                      <strong id="admin-dispute-chat-title">채팅 내역 열람</strong>
+                      <span>사유를 입력한 뒤 별도 창에서 해당 거래의 대화를 확인합니다.</span>
+                    </div>
+                  </div>
+                  <label className="admin-operation-chat__reason">
+                    <span>열람 사유</span>
+                    <input
+                      maxLength={400}
+                      onChange={(event) => {
+                        chatRequestVersionRef.current += 1;
+                        setChatReason(event.target.value);
+                        setChatResult(null);
+                        chatViewMutation.reset();
+                      }}
+                      placeholder="분쟁 판정에 필요한 채팅 열람 사유를 입력하세요."
+                      value={chatReason}
+                    />
+                    <small>관리자·분쟁 건·열람 사유·접속 정보가 감사로그에 기록됩니다.</small>
+                  </label>
+                  <div className="admin-operation-chat__actions">
+                    <button
+                      className="btn btn-outline"
+                      disabled={!chatReason.trim() || chatViewMutation.isPending}
+                      onClick={() => viewDisputeChat(1)}
+                      type="button"
+                    >
+                      {chatViewMutation.isPending ? '불러오는 중…' : '채팅 내역 보기'}
+                    </button>
+                  </div>
+                </section>
 
                 {canDecide && (
                   <form className="admin-operation-decision" onSubmit={submitDecision}>
@@ -429,6 +626,88 @@ const AdminDisputeManagementPage = () => {
             )}
           </section>
         </AdminDetailDrawer>
+      )}
+
+      {chatModalOpen && (
+        <div className="admin-operation-chat-modal-layer">
+          <AdminModal
+            onClose={closeChatModal}
+            panelClassName="admin-operation-chat-modal"
+            title="채팅 내역"
+          >
+            <div className="admin-operation-chat-modal__summary">
+              <div><span>분쟁</span><strong>#{selectedDisputeSn}</strong></div>
+              <div><span>거래</span><strong>#{detail?.tradeSn ?? '-'}</strong></div>
+              <b>읽기 전용</b>
+            </div>
+            <p className="admin-operation-chat-modal__notice">
+              해당 분쟁 거래에 연결된 채팅만 표시되며 열람 기록은 감사로그에 남습니다.
+            </p>
+
+            {chatViewMutation.isPending && !chatResult && (
+              <div className="admin-bjn-state">채팅 내역을 불러오는 중입니다.</div>
+            )}
+            {chatViewMutation.isError && (
+              <div className="admin-operation-chat-modal__error" role="alert">
+                <p>
+                  {chatViewMutation.error?.response?.data?.message
+                    ?? '채팅 내역을 불러오지 못했습니다.'}
+                </p>
+                <button className="btn btn-outline" onClick={() => viewDisputeChat(1)} type="button">
+                  다시 시도
+                </button>
+              </div>
+            )}
+            {chatResult && !chatResult.chatRoomExists && (
+              <p className="admin-operation-chat__empty">이 거래에는 생성된 채팅방이 없습니다.</p>
+            )}
+            {chatResult?.chatRoomExists && chatResult.totalItems === 0 && (
+              <p className="admin-operation-chat__empty">주고받은 채팅이 없습니다.</p>
+            )}
+            {(chatResult?.messages?.length ?? 0) > 0 && (
+              <>
+                <div className="admin-operation-chat-modal__count">
+                  총 {chatResult.totalItems ?? 0}건
+                </div>
+                <ol className="admin-operation-chat__messages">
+                  {chatResult.messages.map((message) => (
+                    <li key={message.messageSn}>
+                      <div className="admin-operation-chat__meta">
+                        <strong>{formatChatSender(message)}</strong>
+                        <time>{message.sentAt || '-'}</time>
+                      </div>
+                      <p>{message.content || '-'}</p>
+                    </li>
+                  ))}
+                </ol>
+              </>
+            )}
+            {chatResult && chatResult.totalPages > 1 && (
+              <div className="admin-operation-chat__pagination">
+                <button
+                  className="btn btn-outline"
+                  disabled={chatViewMutation.isPending || chatResult.page >= chatResult.totalPages}
+                  onClick={() => viewDisputeChat(chatResult.page + 1)}
+                  type="button"
+                >
+                  더 이전 대화
+                </button>
+                <span>{chatResult.page} / {chatResult.totalPages}</span>
+                <button
+                  className="btn btn-outline"
+                  disabled={chatViewMutation.isPending || chatResult.page <= 1}
+                  onClick={() => viewDisputeChat(chatResult.page - 1)}
+                  type="button"
+                >
+                  더 최근 대화
+                </button>
+              </div>
+            )}
+            <div className="admin-operation-chat-modal__actions">
+              <button className="btn btn-outline" onClick={closeChatModal} type="button">닫기</button>
+            </div>
+          </AdminModal>
+        </div>
       )}
     </div>
   );

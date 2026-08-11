@@ -67,6 +67,7 @@ import ProviderApplicationStatusPage from '@pages/provider/ProviderApplicationSt
 import NotificationPage from '@pages/user/notification/NotificationPage';
 import QuoteFormPage from '@pages/provider/QuoteFormPage';
 import ReviewListPage from '@pages/user/ReviewListPage';
+import PublicTradeProfilePage from '@pages/user/PublicTradeProfilePage';
 import MyPageReviewLayout from '@layouts/MyPageReviewLayout';
 import LegacyReviewRedirect from '@pages/user/LegacyReviewRedirect';
 
@@ -107,6 +108,7 @@ import AdminNotificationPage from '@pages/admin/notification/AdminNotificationPa
 import AdminReportManagementPage from '@pages/admin/operation/AdminReportManagementPage';
 import AdminCustomerInquiryManagementPage from '@pages/admin/operation/AdminCustomerInquiryManagementPage';
 import AdminDisputeManagementPage from '@pages/admin/operation/AdminDisputeManagementPage';
+import AdminServiceTradeDetailRoutePage from '@pages/admin/operation/AdminServiceTradeDetailRoutePage';
 import AdminPointExchangePage from '@pages/admin/operation/AdminPointExchangePage';
 import AdminSettlementManagementPage from '@pages/admin/operation/AdminSettlementManagementPage';
 
@@ -213,6 +215,8 @@ const AppRoutes = () => {
         )}
       >
         <Route element={<UserLayout />}>
+          {/* 담당자 7 · 공개 거래 프로필: 일반·서비스 모드에서 같은 회원 프로필을 조회합니다. */}
+          <Route path="/users/:userSn" element={<PublicTradeProfilePage />} />
           <Route path="/user/mypage" element={<MyPage />} />
           <Route
             path="/user/mypage/auctions/active"
@@ -297,6 +301,7 @@ const AppRoutes = () => {
           <Route path="reports" element={<AdminReportManagementPage />} />
           <Route path="inquiries" element={<AdminCustomerInquiryManagementPage />} />
           <Route path="disputes" element={<AdminDisputeManagementPage />} />
+          <Route path="service-trades/:tradeId" element={<AdminServiceTradeDetailRoutePage />} />
           <Route path="exchanges" element={<AdminPointExchangePage />} />
           <Route path="settlements" element={<AdminSettlementManagementPage />} />
           {/* 담당자 7 · F-OPS-011: 담당자 6의 F-OPS-016 화면을 소비해 운영 기록 탐색만 통합합니다. */}

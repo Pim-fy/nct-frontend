@@ -182,7 +182,7 @@ const AdminNoticeFormPage = () => {
       <AdminPageHeader
         action={!isNew && (
           <AdminStatusBadge tone={notice?.visibleNow ? 'success' : 'neutral'}>
-            {notice?.visibleNow ? '사용자 화면 노출 중' : '현재 미노출'}
+            {notice?.visibleNow ? '사용자 화면 공개' : '현재 비공개'}
           </AdminStatusBadge>
         )}
         title={isNew ? '공지 작성' : '공지 상세'}

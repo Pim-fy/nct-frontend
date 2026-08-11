@@ -106,10 +106,11 @@ const AdminServiceRequestPage = () => {
       className: 'admin-notice-list__title admin-table__long-text',
       render: (value) => <strong>{value}</strong>,
     },
-    { key: 'categoryName', label: '카테고리' },
+    { key: 'categoryName', label: '카테고리', className: 'admin-table__compact-text' },
     {
       key: 'requesterUserId',
       label: '요청자',
+      className: 'admin-table__compact-text',
       render: (value, row) => formatAdminMemberIdentity(row.requesterMember, value),
     },
     { key: 'budgetAmount', label: '예산', render: formatAmount },

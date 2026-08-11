@@ -14,8 +14,19 @@ const formatScore = (score) => {
     : '-';
 };
 
+const toReviewCount = (value) => {
+  if (value == null || value === '') {
+    return null;
+  }
+
+  const numericCount = Number(value);
+  return Number.isInteger(numericCount) && numericCount >= 0
+    ? numericCount
+    : null;
+};
+
 /**
- * 거래 상대방의 물건 거래 신뢰지표(평균 평점/만점)를 별 아이콘과 함께 짧게 표시한다.
+ * 거래 상대방이 받은 리뷰의 평균 별점과 리뷰 수를 짧게 표시한다.
  * @ai_generated: 개별 리뷰 본문까지는 안 보여준다 - 경매는 최고가 입찰로 상대가 정해지는
  * 구조라 "상대를 고를지" 결정하는 지점이 없고(입찰 전엔 경매 페이지에 별도 리뷰 열람 기능이
  * 이미 있음), 낙찰·거래 확정 이후에는 리뷰 본문을 봐도 취할 수 있는 행동이 없다. 집계 평점
@@ -31,16 +42,24 @@ const TradeTrustSummary = ({ counterpartUserId }) => {
     select: unwrapData,
   });
   const trust = trustQuery.data;
+  const goodsReviewCount = toReviewCount(trust?.goodsCount);
+  const goodsScore = trust?.goodsScore == null || trust.goodsScore === ''
+    ? Number.NaN
+    : Number(trust.goodsScore);
 
   if (!counterpartUserId || trustQuery.isLoading) {
     return null;
   }
 
   if (trustQuery.isError) {
-    return <span className="trade-trust-score trade-trust-score--muted">신뢰지표 조회 실패</span>;
+    return <span className="trade-trust-score trade-trust-score--muted">평점 조회 실패</span>;
   }
 
-  if (!trust?.hasReviews) {
+  if (goodsReviewCount == null) {
+    return <span className="trade-trust-score trade-trust-score--muted">평점 정보 없음</span>;
+  }
+
+  if (goodsReviewCount === 0) {
     return (
       <span className="trade-trust-score trade-trust-score--muted">
         <Star size={16} aria-hidden="true" />
@@ -49,11 +68,19 @@ const TradeTrustSummary = ({ counterpartUserId }) => {
     );
   }
 
+  if (!Number.isFinite(goodsScore)) {
+    return <span className="trade-trust-score trade-trust-score--muted">평점 정보 없음</span>;
+  }
+
   return (
-    <span className="trade-trust-score" aria-label={`거래 평점 ${formatScore(trust.totalScore)}점 만점 ${MAX_SCORE}점`}>
+    <span
+      className="trade-trust-score"
+      aria-label={`물건 리뷰 평균 별점 ${formatScore(goodsScore)}점, 5점 만점, 리뷰 ${goodsReviewCount}개`}
+    >
       <Star size={16} aria-hidden="true" />
-      <strong>{formatScore(trust.totalScore)}</strong>
+      <strong>{formatScore(goodsScore)}</strong>
       <span className="trade-trust-score__max">/{MAX_SCORE.toFixed(1)}</span>
+      <span className="trade-trust-score__reviews">· 리뷰 {goodsReviewCount}개</span>
     </span>
   );
 };

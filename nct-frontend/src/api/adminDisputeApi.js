@@ -21,6 +21,12 @@ export const getAdminDisputes = ({
 export const getAdminDispute = (disputeSn) =>
   api.get(`/admin/disputes/${disputeSn}`).then((response) => response.data.data);
 
+/** 담당자 7 · F-OPS-005: 권한·감사 검증을 거친 분쟁 증빙 원문을 Blob으로 받습니다. */
+export const getAdminDisputeEvidenceBlob = (disputeSn, fileSn, reason) =>
+  api.post(`/admin/disputes/${disputeSn}/files/${fileSn}/download`, { reason }, {
+    responseType: 'blob',
+  });
+
 export const decideAdminDispute = (disputeSn, payload) =>
   api.post(`/admin/disputes/${disputeSn}/decision`, payload)
     .then((response) => response.data.data);

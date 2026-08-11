@@ -179,8 +179,8 @@ const AuctionDetailPageContent = ({ auctionId }) => {
     && String(auction.auctionId) === String(auctionId),
   );
   const supplementalQueriesEnabled = Boolean(isCurrentAuctionDetail && auction?.productId);
-  const sellerTrustQuery = useQuery({
-    queryKey: ['userReviewTrust', auction?.sellerId],
+  const sellerRatingQuery = useQuery({
+    queryKey: ['reviews', 'rating', 'goods', auction?.sellerId],
     queryFn: async () => {
       const response = await getUserReviewTrust(auction.sellerId);
       return response?.data ?? response ?? null;
@@ -1194,9 +1194,9 @@ const AuctionDetailPageContent = ({ auctionId }) => {
             auction={auction}
             selectedTradeName={selectedTradeName}
             sectionId={DETAIL_SECTION_ITEMS[3].id}
-            sellerRating={sellerTrustQuery.data?.totalScore ?? auction.sellerRating}
-            sellerReviewCount={sellerTrustQuery.data?.totalCount ?? auction.sellerReviewCount}
-            isSellerTrustLoading={!supplementalQueriesEnabled || sellerTrustQuery.isLoading}
+            sellerRating={sellerRatingQuery.data?.goodsScore ?? auction.sellerRating}
+            sellerReviewCount={sellerRatingQuery.data?.goodsCount ?? auction.sellerReviewCount}
+            isSellerRatingLoading={!supplementalQueriesEnabled || sellerRatingQuery.isLoading}
             onSellerReviewsOpen={handleSellerReviewsOpen}
           >
             <AuctionSellerHistory

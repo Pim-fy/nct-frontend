@@ -114,6 +114,369 @@
   color: #78350f;
 }
 
+.admin-operation-evidence,
+.admin-operation-chat,
+.admin-operation-trade-link {
+  border: 1px solid #dce4f2;
+  border-radius: 12px;
+  padding: 16px;
+  background: #fff;
+}
+
+.admin-operation-chat {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-operation-chat__heading,
+.admin-operation-chat__heading > div,
+.admin-operation-chat__reason {
+  display: grid;
+  gap: 5px;
+}
+
+.admin-operation-chat__heading {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.admin-operation-chat__heading strong {
+  color: #16213e;
+  font-size: 15px;
+}
+
+.admin-operation-chat__heading span,
+.admin-operation-chat__reason small {
+  color: #667085;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.admin-operation-chat__heading b {
+  border-radius: 999px;
+  padding: 3px 9px;
+  background: #edf4ff;
+  color: #155eef;
+  font-size: 12px;
+}
+
+.admin-operation-chat__reason {
+  color: #344054;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-operation-chat__reason input {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #d0d5dd;
+  border-radius: 9px;
+  padding: 10px 12px;
+  color: #101828;
+  background: #fff;
+}
+
+.admin-operation-chat__reason input:focus {
+  border-color: #2e6bff;
+  outline: 3px solid rgb(46 107 255 / 12%);
+}
+
+.admin-operation-chat__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.admin-operation-chat__actions .btn,
+.admin-operation-chat__pagination .btn {
+  min-height: 36px;
+  padding: 0 13px;
+  font-size: 13px;
+}
+
+.admin-operation-chat__messages {
+  display: grid;
+  gap: 8px;
+  max-height: 440px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.admin-operation-chat__messages li {
+  display: grid;
+  gap: 7px;
+  border: 1px solid #e7ebf2;
+  border-radius: 10px;
+  padding: 11px 12px;
+  background: #f9fbfe;
+}
+
+.admin-operation-chat__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-operation-chat__meta strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #26324d;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-operation-chat__meta time {
+  flex: 0 0 auto;
+  color: #7b8499;
+  font-size: 11px;
+}
+
+.admin-operation-chat__messages p,
+.admin-operation-chat__empty {
+  margin: 0;
+  color: #344054;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.admin-operation-chat__empty {
+  border-radius: 9px;
+  padding: 15px;
+  background: #f7f9fc;
+  color: #667085;
+  text-align: center;
+}
+
+.admin-operation-chat__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.admin-operation-chat__pagination span {
+  min-width: 52px;
+  color: #667085;
+  font-size: 12px;
+  text-align: center;
+}
+
+.admin-operation-chat-modal-layer {
+  position: fixed;
+  z-index: 130;
+  inset: 0;
+}
+
+.admin-operation-chat-modal {
+  display: flex;
+  width: min(880px, 100%);
+  max-height: min(820px, calc(100vh - 40px));
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.admin-operation-chat-modal > .admin-modal__body {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 14px;
+  overflow: hidden;
+}
+
+.admin-operation-chat-modal__summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-operation-chat-modal__summary > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #f8fafc;
+}
+
+.admin-operation-chat-modal__summary span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.admin-operation-chat-modal__summary strong {
+  color: #172033;
+  font-size: 14px;
+}
+
+.admin-operation-chat-modal__summary > b {
+  border-radius: 999px;
+  padding: 7px 11px;
+  background: #eaf2ff;
+  color: #0057d9;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.admin-operation-chat-modal__notice,
+.admin-operation-chat-modal__count {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.admin-operation-chat-modal__count {
+  color: #344054;
+  font-weight: 700;
+  text-align: right;
+}
+
+.admin-operation-chat-modal .admin-operation-chat__messages {
+  min-height: 180px;
+  max-height: 52vh;
+}
+
+.admin-operation-chat-modal__error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 10px;
+  padding: 13px 14px;
+  background: #fff1f2;
+  color: #b42318;
+}
+
+.admin-operation-chat-modal__error p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.admin-operation-chat-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 2px;
+}
+
+.admin-operation-evidence__heading,
+.admin-operation-trade-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.admin-operation-evidence__heading strong,
+.admin-operation-trade-link strong {
+  color: #16213e;
+  font-size: 15px;
+}
+
+.admin-operation-evidence__heading > span {
+  border-radius: 999px;
+  padding: 3px 9px;
+  background: #edf4ff;
+  color: #155eef;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-operation-evidence__reason {
+  display: grid;
+  gap: 7px;
+  margin: 14px 0;
+  color: #344054;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-operation-evidence__reason input {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #d0d5dd;
+  border-radius: 9px;
+  color: #101828;
+  background: #fff;
+}
+
+.admin-operation-evidence__reason input:focus {
+  border-color: #2e6bff;
+  outline: 3px solid rgb(46 107 255 / 12%);
+}
+
+.admin-operation-evidence__reason small {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.admin-operation-evidence > p {
+  margin: 14px 0 0;
+  color: #667085;
+  font-size: 13px;
+}
+
+.admin-operation-evidence ul {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-operation-evidence li {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #e7ebf2;
+  border-radius: 10px;
+  padding: 11px 12px;
+  background: #f9fbfe;
+}
+
+.admin-operation-evidence li > div,
+.admin-operation-trade-link > div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.admin-operation-evidence li strong {
+  overflow: hidden;
+  color: #26324d;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-operation-evidence li span,
+.admin-operation-trade-link span {
+  color: #667085;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.admin-operation-evidence li .btn,
+.admin-operation-trade-link .btn {
+  flex: 0 0 auto;
+  min-width: 72px;
+  height: 36px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
 .admin-operation-actions .btn {
   display: inline-flex;
   align-items: center;
@@ -287,5 +650,57 @@
 
   .admin-operation-detail dd {
     padding-top: 5px;
+  }
+
+  .admin-operation-evidence li,
+  .admin-operation-trade-link {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-operation-evidence li .btn,
+  .admin-operation-trade-link .btn {
+    width: 100%;
+  }
+
+  .admin-operation-chat__heading {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operation-chat__actions .btn {
+    width: 100%;
+  }
+
+  .admin-operation-chat__meta {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .admin-operation-chat__pagination {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operation-chat__pagination span {
+    grid-row: 1;
+  }
+
+  .admin-operation-chat-modal {
+    max-height: calc(100vh - 20px);
+  }
+
+  .admin-operation-chat-modal__summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .admin-operation-chat-modal__summary > b {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .admin-operation-chat-modal .admin-operation-chat__messages {
+    min-height: 140px;
+    max-height: 46vh;
   }
 }
