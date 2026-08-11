@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQueries } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { BriefcaseBusiness } from 'lucide-react';
 import { getMyServiceTrades } from '@api/serviceTradeApi';
 import MyPageListSectionLayout from '@components/mypage/MyPageListSectionLayout';
@@ -49,7 +49,12 @@ const formatDate = (value) => {
 
 export default function MyServiceTradeListPage({ fixedRole = null }) {
   const navigate = useNavigate();
-  const [activeFilter, setActiveFilter] = useState('ALL');
+  const [searchParams, setSearchParams] = useSearchParams();
+  // 담당자 7 · F-PROV-009: URL 상태는 이 목록에 정의된 필터 코드만 허용해 직접 진입과 새로고침을 유지합니다.
+  const requestedFilter = searchParams.get('status') ?? 'ALL';
+  const activeFilter = FILTERS.some((filter) => filter.value === requestedFilter)
+    ? requestedFilter
+    : 'ALL';
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
   const normalizedKeyword = keyword.trim();
@@ -96,7 +101,13 @@ export default function MyServiceTradeListPage({ fixedRole = null }) {
   const countsLoading = filterQueries.some((query) => query.isLoading);
 
   const handleFilterChange = (value) => {
-    setActiveFilter(value);
+    const nextSearchParams = new URLSearchParams(searchParams);
+    if (value === 'ALL') {
+      nextSearchParams.delete('status');
+    } else {
+      nextSearchParams.set('status', value);
+    }
+    setSearchParams(nextSearchParams, { replace: true });
     setPage(1);
   };
 

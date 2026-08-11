@@ -16,7 +16,7 @@
 //                           defaultTrail(정식 위치)로 폴백된다.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { getMyPagePath, getMyPageSection } from '@/routes/myPageRoutes';
+import { getMyPageInquiryPath, getMyPagePath, getMyPageSection } from '@/routes/myPageRoutes';
 
 // 항목 형태: { label: '표시명', to: '이동 경로' } — to가 없으면 링크 없이 텍스트만 표시
 export const HOME_ITEM = { label: '홈', to: '/' };
@@ -42,11 +42,16 @@ export const MYPAGE_SECTION_LABELS = {
 
 // 마이페이지 트레일 생성 헬퍼 — 진입점 매칭과 MyPage 오버라이드 양쪽에서 재사용한다.
 // sectionKey가 있으면 "마이페이지 > 섹션명" 두 단계, 없으면 "마이페이지" 한 단계.
-export const buildMyPageTrail = (sectionKey) => {
+export const buildMyPageTrail = (sectionKey, isProvider = false) => {
   const base = [{ label: '마이페이지', to: '/user/mypage' }];
   const sectionLabel = MYPAGE_SECTION_LABELS[sectionKey];
   return sectionLabel
-    ? [...base, { label: sectionLabel, to: getMyPagePath(sectionKey) }]
+    ? [...base, {
+      label: sectionLabel,
+      to: sectionKey === 'inquiry-list'
+        ? getMyPageInquiryPath(isProvider)
+        : getMyPagePath(sectionKey),
+    }]
     : base;
 };
 
@@ -62,7 +67,10 @@ export const BREADCRUMB_ENTRIES = [
   {
     // 담당자 7 경로 통합: 계층 URL에서 현재 마이페이지 섹션을 역산한다.
     pattern: '/user/mypage/*',
-    trail: (loc) => buildMyPageTrail(getMyPageSection(loc.pathname)),
+    trail: (loc) => buildMyPageTrail(
+      getMyPageSection(loc.pathname),
+      loc.pathname.startsWith('/user/mypage/provider/inquiries'),
+    ),
   },
   {
     // 제공자 모드 전용 — 공개 서비스 요청 목록
@@ -202,13 +210,6 @@ export const BREADCRUMB_ROUTES = [
     pattern: '/product/:prdSn/seller',
     pageLabel: '상품 상세',
     defaultTrail: buildMyPageTrail('auction-sales'),
-  },
-
-  // 고객센터
-  {
-    pattern: '/customersupport/notice/:noticeId',
-    pageLabel: '공지사항 상세',
-    defaultTrail: [{ label: '공지사항', to: '/customersupport/notice' }],
   },
 
   // 신고

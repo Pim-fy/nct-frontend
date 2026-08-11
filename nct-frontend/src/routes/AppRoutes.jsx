@@ -11,7 +11,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { Navigate, Outlet, Routes, Route, useLocation, useParams } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
-import { MYPAGE_SECTION_PATHS } from './myPageRoutes';
+import { MYPAGE_INQUIRY_PATHS, MYPAGE_SECTION_PATHS } from './myPageRoutes';
 
 // Layouts
 import LandingLayout from '@layouts/LandingLayout';
@@ -161,10 +161,6 @@ const AppRoutes = () => {
           <Route path="/customersupport/notice" element={<NoticeListPage />} />
           <Route path="/customersupport/notice/:noticeId" element={<NoticeDetailPage />} />
           <Route path="/customersupport/faq" element={<FaqPage />} />
-          {/* 담당자 7 · 관리자 대상 1:1 문의: 고객센터 메뉴는 유지하고 작성 화면만 로그인으로 보호합니다. */}
-          <Route element={<ProtectedRoute allowedRoles={['ROLE_USER', 'ROLE_SERVICE']} />}>
-            <Route path="/customersupport/inquiry" element={<CustomerInquiryFormPage />} />
-          </Route>
         </Route>
       </Route>
 
@@ -231,6 +227,12 @@ const AppRoutes = () => {
             .map(([section, path]) => (
               <Route key={section} path={path} element={<MyPage initialSection={section} />} />
             ))}
+          {/* 담당자 7 · 문의 작성은 진입한 마이페이지 경로의 하위 화면으로 유지합니다. */}
+          <Route path={`${MYPAGE_INQUIRY_PATHS.general}/new`} element={<CustomerInquiryFormPage />} />
+          <Route element={<ProtectedRoute allowedRoles={['ROLE_SERVICE']} />}>
+            <Route path={MYPAGE_INQUIRY_PATHS.provider} element={<MyPage initialSection="inquiry-list" />} />
+            <Route path={`${MYPAGE_INQUIRY_PATHS.provider}/new`} element={<CustomerInquiryFormPage />} />
+          </Route>
           <Route path="/user/notification" element={<NotificationPage />} />
           {/* 담당자 7 · F-PROV-006/012~014: 제공자 모드에서도 추가 분야 심사 신청·상태 조회를 허용합니다. */}
           <Route path="/provider/apply" element={<ProviderApplyPage />} />
