@@ -45,6 +45,8 @@ const LandingPage = () => {
       size: 8,
     }),
     staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
+    refetchIntervalInBackground: false,
     enabled: !isProvider,
   });
   const popularAuctionQuery = useQuery({

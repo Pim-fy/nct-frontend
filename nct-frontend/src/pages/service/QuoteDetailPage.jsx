@@ -236,7 +236,7 @@ export default function QuoteDetailPage() {
               <span className="text-xs font-semibold text-[#9a9ba5]">제출일</span>
               <p className="mt-0.5 text-2xl font-bold text-[#1d1d1f]">{fmtDate(quote.registeredAt)}</p>
               {quote.reviseCnt > 0 && (
-                <p className="mt-0.5 text-xs text-[#9a9ba5]">{quote.reviseCnt}회 수정됨</p>
+                <p className="mt-0.5 text-xs text-[#9a9ba5]">{quote.reviseCnt}회 수정됨 · 최종 수정 {fmtDate(quote.updatedAt)}</p>
               )}
             </div>
           </div>
