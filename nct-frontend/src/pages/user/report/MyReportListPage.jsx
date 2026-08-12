@@ -103,41 +103,76 @@ function ReportCard({ report, isOpen, onToggle, number }) {
         onClick={onToggle}
         className="w-full text-left group bg-white cursor-pointer"
       >
-        <div className="flex items-center py-6 px-5 gap-4">
-          <span className="shrink-0 text-[14px] font-medium text-[#969696] w-6 text-center">{number}</span>
-          <div className="flex-1 min-w-0">
+        <div className="py-4 px-5 sm:py-6">
+
+          {/* ── 모바일 전용 (2행) ───────────────────────────────────── */}
+          <div className="sm:hidden">
+            {/* 1행: 번호 + 타이틀 + 화살표 */}
             <div className="flex items-center gap-2 min-w-0">
-              {getTypeNames(report).map((name) => (
-                  <TypeBadge key={name} typeCode={report.reportTypeCode} typeName={name} style={{ borderRadius: "5px", fontSize: "14px", fontWeight: 400, flexShrink: 0, height: "28px", paddingLeft: "7px", paddingRight: "7px", display: "inline-flex", alignItems: "center" }} />
-              ))}
-              <p className="font-bold text-[18px] text-[#333] truncate mb-0 min-w-0">{report.targetName?.trim() || report.title || '-'}</p>
+              <span className="shrink-0 text-[14px] font-medium text-[#969696] w-6 text-center">{number}</span>
+              <p className="font-bold text-[16px] text-[#333] truncate mb-0 min-w-0 flex-1">
+                {report.targetName?.trim() || report.title || '-'}
+              </p>
+              <svg
+                className={`size-5 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-0 text-[#0064ff]" : "rotate-180 text-[#aaa] group-hover:text-[#0064ff]"}`}
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+            {/* 2행: 날짜 + 접수상태 (번호 너비만큼 indent) */}
+            <div className="flex items-center gap-2 mt-1.5 pl-8">
+              <span className="text-[13px] text-[#969696]">{fmtDate(report.registeredAt)}</span>
+              <StatusBadge statusCode={report.statusCode} style={{ borderRadius: "5px", fontSize: "13px", fontWeight: 400 }} />
             </div>
             {report.processReason && !isOpen && (
-              <div className="flex items-center gap-1 mt-1.5">
+              <div className="flex items-center gap-1 mt-1.5 pl-8">
                 <svg className="size-3.5 shrink-0 text-[#0064ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                     d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                 </svg>
-                <span className="text-[14px] text-[#0064ff]">관리자 답변 있음</span>
+                <span className="text-[13px] text-[#0064ff]">관리자 답변 있음</span>
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2 pl-3 shrink-0">
-            <span className="text-[14px] text-[#969696]">{fmtDate(report.registeredAt)}</span>
-            <StatusBadge statusCode={report.statusCode} style={{ borderRadius: "5px", fontSize: "14px", fontWeight: 400 }} />
-            <svg
-              className={`size-5 transition-transform duration-200 ${isOpen ? "rotate-0 text-[#0064ff]" : "rotate-180 text-[#aaa] group-hover:text-[#0064ff]"}`}
-              fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-            </svg>
+
+          {/* ── 데스크톱 전용 (1행, 기존 유지) ─────────────────────── */}
+          <div className="hidden sm:flex items-center gap-4">
+            <span className="shrink-0 text-[14px] font-medium text-[#969696] w-6 text-center">{number}</span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                {getTypeNames(report).map((name) => (
+                  <TypeBadge key={name} typeCode={report.reportTypeCode} typeName={name} style={{ borderRadius: "5px", fontSize: "14px", fontWeight: 400, flexShrink: 0, height: "28px", paddingLeft: "7px", paddingRight: "7px", display: "inline-flex", alignItems: "center" }} />
+                ))}
+                <p className="font-bold text-[18px] text-[#333] truncate mb-0 min-w-0">{report.targetName?.trim() || report.title || '-'}</p>
+              </div>
+              {report.processReason && !isOpen && (
+                <div className="flex items-center gap-1 mt-1.5">
+                  <svg className="size-3.5 shrink-0 text-[#0064ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                  </svg>
+                  <span className="text-[14px] text-[#0064ff]">관리자 답변 있음</span>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2 pl-3 shrink-0">
+              <span className="text-[14px] text-[#969696]">{fmtDate(report.registeredAt)}</span>
+              <StatusBadge statusCode={report.statusCode} style={{ borderRadius: "5px", fontSize: "14px", fontWeight: 400 }} />
+              <svg
+                className={`size-5 transition-transform duration-200 ${isOpen ? "rotate-0 text-[#0064ff]" : "rotate-180 text-[#aaa] group-hover:text-[#0064ff]"}`}
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
           </div>
         </div>
       </button>
 
       {/* 아코디언 상세 내용 */}
       {isOpen && (
-        <div className="pb-5 space-y-4 border-t border-[#e8e9ec] pr-5 pl-[60px]" style={{ background: "#F8FAFC" }}>
+        <div className="pb-5 space-y-4 border-t border-[#e8e9ec] px-5 sm:pl-[60px]" style={{ background: "#F8FAFC" }}>
           <div className="flex items-center justify-between pt-4 gap-4">
             <div className="flex items-center gap-3 min-w-0">
               <p className="font-bold m-0 shrink-0" style={{ fontSize: "16px", color: "#333333" }}>신고 대상</p>
