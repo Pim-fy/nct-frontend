@@ -35,7 +35,7 @@ const FILTER_LABELS = {
 const VALID_FILTERS = new Set(Object.keys(FILTER_LABELS));
 
 const formatAmount = (amount) => (
-  Number.isFinite(Number(amount)) ? `${Number(amount).toLocaleString()}원` : '-'
+  Number.isFinite(Number(amount)) ? `${Number(amount).toLocaleString()}P` : '-'
 );
 
 const formatDate = (value) => {

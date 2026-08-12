@@ -2,6 +2,11 @@ import { createElement } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
 import {
+  ADMIN_OPERATIONS_RECORDS_PATH,
+  ADMIN_PROVIDER_APPLICATIONS_PATH,
+  ADMIN_SETTINGS_PATH,
+} from '@/routes/adminRoutes';
+import {
   Bell,
   BriefcaseBusiness,
   ClipboardCheck,
@@ -29,7 +34,7 @@ const MENU_SECTIONS = [
   ],
   [
     { label: '회원 관리', icon: Users, to: '/admin/members' },
-    { label: '제공자 심사', icon: ClipboardCheck, to: '/admin/provider-applications' },
+    { label: '제공자 심사', icon: ClipboardCheck, to: ADMIN_PROVIDER_APPLICATIONS_PATH },
   ],
   [{ label: '경매 관리', icon: Gavel, to: '/admin/auctions' }],
   [
@@ -49,8 +54,8 @@ const MENU_SECTIONS = [
     { label: '거래 분쟁', icon: ShieldAlert, to: '/admin/disputes' },
   ],
   [
-    { label: '운영 기록', icon: ScrollText, to: '/admin/operations-records' },
-    { label: '시스템 설정', icon: Settings, to: '/admin/system-settings' },
+    { label: '운영 기록', icon: ScrollText, to: ADMIN_OPERATIONS_RECORDS_PATH },
+    { label: '시스템 설정', icon: Settings, to: ADMIN_SETTINGS_PATH },
   ],
 ];
 

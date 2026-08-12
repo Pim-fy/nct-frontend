@@ -28,3 +28,9 @@ export const getMyReports = (params) =>
 /** F-COM-018: 내 신고 단건 상세 */
 export const getMyReportDetail = (reportSn) =>
   api.get(`/abuse-reports/me/${reportSn}`).then((res) => res.data);
+
+/** 담당자 7 · F-COM-018: 본인 신고에 연결된 보호 첨부를 Blob으로 받습니다. */
+export const getMyReportFileBlob = (reportSn, fileSn) => api.get(
+  `/abuse-reports/me/${reportSn}/files/${fileSn}/download`,
+  { responseType: 'blob' },
+);

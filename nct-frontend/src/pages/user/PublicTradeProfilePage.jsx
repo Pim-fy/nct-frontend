@@ -16,9 +16,9 @@ import './publicTradeProfilePage.css';
 const PAGE_SIZE = 5;
 const MAX_SCORE = 5;
 const REVIEW_ROLE_TABS = [
-  { label: '전체', value: null },
-  { label: '판매자로서', value: 'SELLER' },
-  { label: '구매자로서', value: 'BUYER' },
+  { ariaLabel: '전체 리뷰', label: '전체', value: null },
+  { ariaLabel: '판매자로서 받은 리뷰', label: '판매 리뷰', value: 'SELLER' },
+  { ariaLabel: '구매자로서 받은 리뷰', label: '구매 리뷰', value: 'BUYER' },
 ];
 
 const unwrapData = (response) => response?.data ?? response;
@@ -166,7 +166,8 @@ const PublicTradeProfilePage = () => {
   const reviews = reviewsQuery.data?.content ?? [];
   const totalCount = toCount(reviewsQuery.data?.totalCount) ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
-  const activeRoleLabel = REVIEW_ROLE_TABS.find((tab) => tab.value === reviewRole)?.label ?? '전체';
+  const activeRoleLabel = REVIEW_ROLE_TABS.find((tab) => tab.value === reviewRole)?.ariaLabel
+    ?? '전체 리뷰';
   const emptyReviewTitle = reviewRole === 'SELLER'
     ? '판매자로서 받은 리뷰가 없습니다.'
     : reviewRole === 'BUYER'
@@ -263,37 +264,37 @@ const PublicTradeProfilePage = () => {
         </aside>
 
         <section className="trade-profile-reviews" aria-labelledby="trade-profile-review-title">
+          <h2 className="sr-only" id="trade-profile-review-title">받은 물품 리뷰</h2>
           <div className="trade-profile-reviews__header">
-            <h2 id="trade-profile-review-title">받은 물품 리뷰</h2>
+            <div
+              aria-label="받은 물품 리뷰 유형"
+              className="trade-profile-review-tabs"
+              role="tablist"
+            >
+              {REVIEW_ROLE_TABS.map((tab, tabIndex) => {
+                const selected = tab.value === reviewRole;
+                return (
+                  <button
+                    aria-controls="trade-profile-review-panel"
+                    aria-label={tab.ariaLabel ?? tab.label}
+                    aria-selected={selected}
+                    className={selected ? 'is-active' : ''}
+                    id={`trade-profile-review-tab-${tab.value ?? 'all'}`}
+                    key={tab.value ?? 'all'}
+                    onClick={() => handleReviewRoleChange(tab.value)}
+                    onKeyDown={(event) => handleReviewTabKeyDown(event, tabIndex)}
+                    role="tab"
+                    tabIndex={selected ? 0 : -1}
+                    type="button"
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
             {!reviewsQuery.isLoading && !reviewsQuery.isError && (
               <strong>{totalCount.toLocaleString('ko-KR')}건</strong>
             )}
-          </div>
-
-          <div
-            aria-label="받은 물품 리뷰 유형"
-            className="trade-profile-review-tabs"
-            role="tablist"
-          >
-            {REVIEW_ROLE_TABS.map((tab, tabIndex) => {
-              const selected = tab.value === reviewRole;
-              return (
-                <button
-                  aria-controls="trade-profile-review-panel"
-                  aria-selected={selected}
-                  className={selected ? 'is-active' : ''}
-                  id={`trade-profile-review-tab-${tab.value ?? 'all'}`}
-                  key={tab.value ?? 'all'}
-                  onClick={() => handleReviewRoleChange(tab.value)}
-                  onKeyDown={(event) => handleReviewTabKeyDown(event, tabIndex)}
-                  role="tab"
-                  tabIndex={selected ? 0 : -1}
-                  type="button"
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
           </div>
 
           <div
@@ -304,7 +305,7 @@ const PublicTradeProfilePage = () => {
           >
             {reviewsQuery.isLoading && (
               <div
-                aria-label={`${activeRoleLabel} 리뷰를 불러오는 중`}
+                aria-label={`${activeRoleLabel}를 불러오는 중`}
                 className="trade-profile-review-skeleton"
                 role="status"
               >
@@ -313,7 +314,7 @@ const PublicTradeProfilePage = () => {
             )}
             {reviewsQuery.isError && (
               <div className="trade-profile-review-state" role="alert">
-                <strong>{activeRoleLabel} 리뷰를 불러오지 못했습니다.</strong>
+                <strong>{activeRoleLabel}를 불러오지 못했습니다.</strong>
                 <button onClick={() => reviewsQuery.refetch()} type="button">다시 불러오기</button>
               </div>
             )}
@@ -345,7 +346,7 @@ const PublicTradeProfilePage = () => {
                   ))}
                 </ul>
                 <Pagination
-                  ariaLabel={`${activeRoleLabel} 리뷰 페이지 이동`}
+                  ariaLabel={`${activeRoleLabel} 페이지 이동`}
                   disabled={reviewsQuery.isFetching}
                   maxVisiblePages={5}
                   onPageChange={(nextPage) => setPage(nextPage - 1)}

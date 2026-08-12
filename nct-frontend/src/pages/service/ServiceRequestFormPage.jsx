@@ -21,15 +21,46 @@ import ServiceRequestImageUpload from '@components/service/ServiceRequestImageUp
 import { toImageUrl, uploadImage } from '@api/fileApi';
 import DateRangePicker from '@components/product/DateRangePicker';
 import RegionSelector from '@components/common/RegionSelector';
-import { formatBudget } from '@utils/common';
+import { formatBudget, formatPoint, formatPointUnitText } from '@utils/common';
 import { buildServiceRequestWizardCatalog } from './serviceRequestFormAdapter';
 
 const MAX_IMAGES = 5;
-const MAX_BUDGET_AMT = 1000000000; // 희망 예산 상한 — 10억 원 (사용자 확정, 260810)
+const MAX_BUDGET_AMT = 1000000000; // 희망 예산 상한 — 1,000,000,000P (사용자 확정, 260810)
 
 const SERVICE_DOMAIN_CD = 'CATC0002';
 const ETC = '기타';
 const STEP_LABELS = ['요청 정보 입력', '요청 확인'];
+
+const formatFieldAnswerDisplay = (step, label, value) => {
+  const field = step?.fields?.find(candidate => candidate.key === label);
+  if (!field) return value;
+  if (field.type === 'amount-toggle' && value !== '미정') {
+    const amount = Number(String(value).replaceAll(',', ''));
+    return Number.isFinite(amount) ? formatPoint(amount) : value;
+  }
+  if (field.optionDefs?.some(option => option.label === value)) {
+    return formatPointUnitText(value);
+  }
+  return value;
+};
+
+const formatStepAnswerDisplay = (step, answerText) => {
+  if (!step || typeof answerText !== 'string') return answerText;
+  if (step.type === 'single' || step.type === 'multi') {
+    return answerText.split(', ').map((value) => {
+      if (value.startsWith(`${ETC}(`)) return value;
+      return step.options.some(option => option.label === value)
+        ? formatPointUnitText(value)
+        : value;
+    }).join(', ');
+  }
+  if (step.type !== 'form' || !answerText.includes(': ')) return answerText;
+  return answerText.split(' / ').map((part) => {
+    const parsed = parseFieldPart(part);
+    if (!parsed.label) return part;
+    return `${parsed.label}: ${formatFieldAnswerDisplay(step, parsed.label, parsed.value)}`;
+  }).join(' / ');
+};
 
 // 한글 단어 끝음절 받침 유무에 따라 "을/를" 조사를 붙인다 (유효성 검증 문구용)
 function withEulReul(word) {
@@ -749,7 +780,7 @@ export default function ServiceRequestFormPage() {
     // 필수 입력 검증보다 먼저 걸리도록 한다 (필수/숫자를 전체 필드 두 번 훑지 않음)
     for (const f of visibleFields) {
       const raw = (values[f.key] || '').toString().trim();
-      if (f.required && !raw) {
+      if (f.required && !raw && f.type !== 'amount-toggle') {
         const errKey = `${stepId}:${f.key}`;
         const verb = f.type === 'choice' || f.type === 'select' || f.type === 'calendar' ? '선택' : '입력';
         const msg = `${withEulReul(f.key)} ${verb}해 주세요.`;
@@ -768,7 +799,7 @@ export default function ServiceRequestFormPage() {
       }
       if (f.type === 'amount-toggle' && raw && Number(raw.replace(/,/g, '')) > MAX_BUDGET_AMT) {
         const errKey = `${stepId}:${f.key}`;
-        const msg = `${f.key}은(는) ${MAX_BUDGET_AMT.toLocaleString('ko-KR')}원 이하로 입력해 주세요.`;
+        const msg = `${f.key}은(는) ${MAX_BUDGET_AMT.toLocaleString('ko-KR')}P 이하로 입력해 주세요.`;
         setFieldErrors(prev => ({ ...prev, [errKey]: msg }));
         setAlertMsg(msg);
         scrollToStep(stepId);
@@ -1444,7 +1475,7 @@ export default function ServiceRequestFormPage() {
                     <div className="flex items-center gap-3">
                       {!expanded && (
                         <span className="max-w-[220px] truncate text-right text-[15px] font-semibold text-primary">
-                          {answers[stepId]}
+                          {formatStepAnswerDisplay(step, answers[stepId])}
                         </span>
                       )}
                       {expanded
@@ -1486,7 +1517,7 @@ export default function ServiceRequestFormPage() {
                                 }`}
                               >
                                 {opt.icon && <span className="mb-1.5 text-xl leading-none">{opt.icon}</span>}
-                                <span className="font-medium leading-snug">{opt.label}</span>
+                                <span className="font-medium leading-snug">{formatPointUnitText(opt.label)}</span>
                                 {opt.sub && <span className="mt-0.5 text-xs text-[#888780]">{opt.sub}</span>}
                               </button>
                             );
@@ -1597,7 +1628,7 @@ export default function ServiceRequestFormPage() {
                                   <button key={o} type="button"
                                     className={`rounded-lg border px-3 py-1.5 text-[15px] transition-colors ${stepDraft[stepId]?.[f.key] === o ? 'border-primary bg-[#e5efff] font-semibold text-[#0048bf]' : 'border-[#e2e1dc] bg-white text-[#5f5e5a] hover:border-primary'}`}
                                     onClick={() => handleFormFieldChange(stepId, f.key, f.toggleable && stepDraft[stepId]?.[f.key] === o ? '' : o)}
-                                  >{o}</button>
+                                  >{formatPointUnitText(o)}</button>
                                 ))}
                               </div>
                               {stepDraft[stepId]?.[f.key] === ETC && (
@@ -1616,7 +1647,7 @@ export default function ServiceRequestFormPage() {
                                 onChange={e => handleFormFieldChange(stepId, f.key, e.target.value)}
                               >
                                 <option value="" disabled>선택</option>
-                                {f.options.map(o => <option key={o} value={o}>{o}</option>)}
+                                {f.options.map(o => <option key={o} value={o}>{formatPointUnitText(o)}</option>)}
                               </select>
                               {fieldErrors[`${stepId}:${f.key}`] && (
                                 <p className="mt-1 text-xs text-red-600">{fieldErrors[`${stepId}:${f.key}`]}</p>
@@ -1643,7 +1674,7 @@ export default function ServiceRequestFormPage() {
                                             <button key={o} type="button"
                                               className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${stepDraft[stepId]?.[embedKey] === o ? 'border-primary bg-[#e5efff] font-semibold text-[#0048bf]' : 'border-[#e2e1dc] bg-white text-[#5f5e5a] hover:border-primary'}`}
                                               onClick={() => handleFormFieldChange(stepId, embedKey, o)}
-                                            >{o}</button>
+                                            >{formatPointUnitText(o)}</button>
                                           ))}
                                         </div>
                                         {fieldErrors[`${stepId}:${embedKey}`] && (
@@ -1679,16 +1710,19 @@ export default function ServiceRequestFormPage() {
                               const disabledByOther = f.disabledWhenFilled && !!(stepDraft[stepId]?.[f.disabledWhenFilled] || '').toString().trim();
                               return (
                                 <>
-                                  <input
-                                    className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary disabled:bg-[#f8f8f6] disabled:text-[#9f9e9a] ${fieldErrors[`${stepId}:${f.key}`] ? 'border-red-500' : 'border-[#e2e1dc]'}`}
-                                    placeholder={f.placeholder}
-                                    disabled={disabledByOther}
-                                    value={stepDraft[stepId]?.[f.key] || ''}
-                                    onChange={e => {
-                                      const digits = e.target.value.replace(/[^0-9]/g, '');
-                                      handleFormFieldChange(stepId, f.key, digits ? Number(digits).toLocaleString('ko-KR') : '');
-                                    }}
-                                  />
+                                  <div className="relative">
+                                    <input
+                                      className={`w-full rounded-lg border bg-white px-3 py-2.5 pr-8 text-sm outline-none transition-colors focus:border-primary disabled:bg-[#f8f8f6] disabled:text-[#9f9e9a] ${fieldErrors[`${stepId}:${f.key}`] ? 'border-red-500' : 'border-[#e2e1dc]'}`}
+                                      placeholder={formatPointUnitText(f.placeholder)}
+                                      disabled={disabledByOther}
+                                      value={stepDraft[stepId]?.[f.key] || ''}
+                                      onChange={e => {
+                                        const digits = e.target.value.replace(/[^0-9]/g, '');
+                                        handleFormFieldChange(stepId, f.key, digits ? Number(digits).toLocaleString('ko-KR') : '');
+                                      }}
+                                    />
+                                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[#888780]">P</span>
+                                  </div>
                                   <p className="mt-1 text-sm text-[#9f9e9a]">
                                     미입력 또는 0원 입력 시 예산 협의 후 결정으로 처리됩니다.
                                   </p>
@@ -1706,7 +1740,7 @@ export default function ServiceRequestFormPage() {
                                   onClick={() => setAddressSearchKey(`${stepId}:${f.key}`)}
                                   onFocus={(e) => e.target.blur()}
                                   className={`min-w-0 flex-1 cursor-pointer rounded-lg border bg-[#f8f8f6] px-3 py-2.5 text-sm outline-none ${fieldErrors[`${stepId}:${f.key}`] ? 'border-red-500' : 'border-[#e2e1dc]'}`}
-                                  placeholder={f.placeholder}
+                                  placeholder={formatPointUnitText(f.placeholder)}
                                   value={stepDraft[stepId]?.[f.key] || ''}
                                 />
                                 <button type="button"
@@ -1721,7 +1755,7 @@ export default function ServiceRequestFormPage() {
                           ) : f.type === 'textarea' ? (
                             <textarea
                               className="w-full resize-none overflow-y-auto rounded-lg border border-[#e2e1dc] bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary"
-                              rows={3} placeholder={f.placeholder}
+                              rows={3} placeholder={formatPointUnitText(f.placeholder)}
                               value={stepDraft[stepId]?.[f.key] || ''}
                               onChange={e => handleFormFieldChange(stepId, f.key, e.target.value)}
                             />
@@ -1729,7 +1763,7 @@ export default function ServiceRequestFormPage() {
                             <>
                               <input
                                 className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary ${fieldErrors[`${stepId}:${f.key}`] ? 'border-red-500' : 'border-[#e2e1dc]'}`}
-                                type={f.type} placeholder={f.placeholder}
+                                type={f.type} placeholder={formatPointUnitText(f.placeholder)}
                                 value={stepDraft[stepId]?.[f.key] || ''}
                                 onChange={e => handleFormFieldChange(stepId, f.key, e.target.value)}
                               />
@@ -1761,7 +1795,7 @@ export default function ServiceRequestFormPage() {
                                             <button key={o} type="button"
                                               className={`flex-1 rounded-lg border px-3 py-2.5 text-[15px] transition-colors ${stepDraft[stepId]?.[f.key] === o ? 'border-primary bg-[#e5efff] font-semibold text-[#0048bf]' : 'border-[#e2e1dc] bg-white text-[#5f5e5a] hover:border-primary'}`}
                                               onClick={() => handleFormFieldChange(stepId, f.key, o)}
-                                            >{o}</button>
+                                            >{formatPointUnitText(o)}</button>
                                           ))}
                                         </div>
                                         {fieldErrors[`${stepId}:${f.key}`] && (
@@ -1776,7 +1810,7 @@ export default function ServiceRequestFormPage() {
                                           onChange={e => handleFormFieldChange(stepId, f.key, e.target.value)}
                                         >
                                           <option value="" disabled>선택</option>
-                                          {f.options.map(o => <option key={o} value={o}>{o}</option>)}
+                                          {f.options.map(o => <option key={o} value={o}>{formatPointUnitText(o)}</option>)}
                                         </select>
                                         {fieldErrors[`${stepId}:${f.key}`] && (
                                           <p className="mt-1 text-xs text-red-600">{fieldErrors[`${stepId}:${f.key}`]}</p>
@@ -1787,7 +1821,7 @@ export default function ServiceRequestFormPage() {
                                         <div className="flex gap-2">
                                           <input readOnly
                                             className={`min-w-0 flex-1 rounded-lg border bg-[#f8f8f6] px-3 py-2.5 text-sm outline-none ${fieldErrors[`${stepId}:${f.key}`] ? 'border-red-500' : 'border-[#e2e1dc]'}`}
-                                            placeholder={f.placeholder}
+                                            placeholder={formatPointUnitText(f.placeholder)}
                                             value={stepDraft[stepId]?.[f.key] || ''}
                                           />
                                           <button type="button"
@@ -1803,7 +1837,7 @@ export default function ServiceRequestFormPage() {
                                       <>
                                         <RegionSelector
                                           label={f.key}
-                                          placeholder={f.placeholder}
+                                          placeholder={formatPointUnitText(f.placeholder)}
                                           size="sm"
                                           multiple
                                           maxSelections={f.maxSelections}
@@ -1819,7 +1853,7 @@ export default function ServiceRequestFormPage() {
                                       <>
                                         <input
                                           className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary ${fieldErrors[`${stepId}:${f.key}`] ? 'border-red-500' : 'border-[#e2e1dc]'}`}
-                                          placeholder={f.placeholder}
+                                          placeholder={formatPointUnitText(f.placeholder)}
                                           value={stepDraft[stepId]?.[f.key] || ''}
                                           onChange={e => handleFormFieldChange(stepId, f.key, e.target.value)}
                                         />
@@ -1984,11 +2018,11 @@ export default function ServiceRequestFormPage() {
                                     {parts.map((item, j) => (
                                       <div key={j}>
                                         {item.label && <span className="block text-xs text-[#888780]">{item.label}</span>}
-                                        <span>{item.value}</span>
+                                        <span>{formatFieldAnswerDisplay(wizardSteps[stepId], item.label, item.value)}</span>
                                       </div>
                                     ))}
                                   </div>
-                                ) : stripRedundantFieldLabel(wizardSteps[stepId].title, answerText)}
+                                ) : stripRedundantFieldLabel(wizardSteps[stepId].title, formatStepAnswerDisplay(wizardSteps[stepId], answerText))}
                               </td>
                             </tr>
                           );

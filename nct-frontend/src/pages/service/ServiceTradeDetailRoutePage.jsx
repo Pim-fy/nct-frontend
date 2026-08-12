@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { fetchReferenceCodes } from '@api/referenceApi';
 import {
   getServiceTradeDetail,
@@ -8,7 +8,9 @@ import {
   requestServiceScheduleChange,
 } from '@api/serviceTradeApi';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
+import TradeReviewSection from '@components/trade/TradeReviewSection';
 import { SERVICE_TRADE_DISPUTE_TYPE_GROUP_CODE } from '@/constants/serviceTrade';
+import { getMyPagePath, getMyPageSection } from '@/routes/myPageRoutes';
 import ServiceTradeDetailPage from './ServiceTradeDetailPage';
 
 const serviceTradeDetailQueryKey = (tradeId) => ['service-trade-detail', tradeId];
@@ -22,9 +24,17 @@ const SERVICE_TRADE_DISPUTE_TYPE_LABELS = {
 
 export default function ServiceTradeDetailRoutePage() {
   const { tradeId: tradeIdParam } = useParams();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const tradeId = Number(tradeIdParam);
   const isValidTradeId = Number.isSafeInteger(tradeId) && tradeId > 0;
+  const myPageEntryPath = typeof location.state?.from === 'string'
+    ? location.state.from.split(/[?#]/)[0]
+    : null;
+  const myPageEntrySection = myPageEntryPath ? getMyPageSection(myPageEntryPath) : null;
+  const serviceTradeListPath = getMyPagePath('service-trade');
+  const shouldShowServiceTradeListLink = myPageEntrySection
+    && myPageEntrySection !== 'service-trade';
   const detailQuery = useQuery({
     queryKey: serviceTradeDetailQueryKey(tradeId),
     queryFn: () => getServiceTradeDetail(tradeId),
@@ -99,6 +109,7 @@ export default function ServiceTradeDetailRoutePage() {
 
   return (
     <ServiceTradeDetailPage
+      backPath={shouldShowServiceTradeListLink ? serviceTradeListPath : null}
       disputeTypes={disputeTypesQuery.data ?? []}
       disputeTypesError={disputeTypesQuery.isError}
       disputeTypesLoading={disputeTypesQuery.isLoading}
@@ -108,6 +119,13 @@ export default function ServiceTradeDetailRoutePage() {
       onRequestScheduleCancellation={requestServiceScheduleCancellation}
       onDecideScheduleCancellation={decideServiceScheduleCancellation}
       trade={detailQuery.data}
+      reviewSlot={(
+        <TradeReviewSection
+          tradeId={tradeId}
+          isTradeCompleted={detailQuery.data?.tradeStatusCode === 'TRDC0006'}
+          guidanceText="요청한 작업 내용과 결과가 일치했는지, 일정 준수와 소통은 어땠는지, 좋았거나 아쉬웠던 점을 구체적으로 남겨주세요."
+        />
+      )}
     />
   );
 }

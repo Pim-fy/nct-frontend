@@ -547,6 +547,19 @@
 .service-trade-card--schedule { margin-bottom: 18px; }
 .service-trade-card__empty { margin: 18px 0 0; color: #667085; font-size: 14px; }
 
+.service-trade-review-section {
+  margin-top: 18px;
+}
+
+.service-trade-review-section .auction-trade-detail-shell__review {
+  padding: 0;
+}
+
+.service-trade-review-section .trade-detail-card {
+  border-color: #e1e7f0;
+  border-radius: 10px;
+}
+
 .service-trade-inline-actions {
   display: flex;
   flex-wrap: wrap;
@@ -760,10 +773,15 @@
 .service-trade-dispute-form textarea:focus,
 .service-trade-dispute-form input:focus { border-color: #0064ff; outline: 3px solid #e5efff; }
 .service-trade-schedule-picker-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
-.service-trade-dispute-form .service-trade-schedule-picker-grid > label,
+.service-trade-schedule-date-field,
 .service-trade-time-slots-field { display: grid; align-content: start; gap: 8px; margin: 0; min-width: 0; color: #344054; font-size: 14px; font-weight: 800; }
+.service-trade-schedule-date-field,
+.service-trade-schedule-picker-grid > .service-trade-time-slots-field { grid-column: 1 / -1; }
 .service-trade-time-slots-field { position: relative; }
+.service-trade-schedule-date-field__label,
 .service-trade-time-slots-field__label { line-height: 21px; }
+.service-trade-schedule-date-field__selection { margin: 0; color: #475467; font-size: 13px; font-weight: 600; }
+.service-trade-schedule-date-field.is-disabled { opacity: .65; pointer-events: none; }
 .service-trade-schedule-picker-grid input,
 .service-trade-time-picker-trigger { box-sizing: border-box; height: 44px; }
 .service-trade-time-picker-trigger { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 0 12px; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; color: #344054; cursor: pointer; font: inherit; }
