@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   decideAdminAuctionCancellation,
   fetchAdminAuctionCancellationRequest,
@@ -10,12 +10,14 @@ import {
 } from '@api/adminAuctionApi';
 import AdminDetailDrawer from '@components/admin/AdminDetailDrawer';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
+import AdminHistoryTimeline from '@components/admin/AdminHistoryTimeline';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import PageMeta from '@components/admin/PageMeta';
+import CommonTabs from '@components/common/CommonTabs';
 import { ADMIN_HIGH_VOLUME_PAGE_SIZE } from '@/constants/adminPagination';
 import { formatDateTime, toast } from '@utils/common';
 import { formatAdminMemberIdentity } from '@utils/adminMemberIdentity';
@@ -63,6 +65,7 @@ const createRequestId = () => globalThis.crypto?.randomUUID?.()
   ?? `admin-auction-cancel-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 const AdminAuctionManagementPage = () => {
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') === 'bid-units' ? 'bid-units' : 'auctions';
   const [filterForm, setFilterForm] = useState(INITIAL_FILTERS);
@@ -112,6 +115,7 @@ const AdminAuctionManagementPage = () => {
       });
       setSelected(null);
       setReviewReason('');
+      queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] });
       auctionsQuery.refetch();
     },
   });
@@ -125,6 +129,7 @@ const AdminAuctionManagementPage = () => {
       });
       setSelected(null);
       setForceCancelReason('');
+      queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] });
       auctionsQuery.refetch();
     },
   });
@@ -249,26 +254,16 @@ const AdminAuctionManagementPage = () => {
     <div className="admin-bjn-page admin-auction-page">
       <PageMeta title="경매 관리" />
       <AdminPageHeader title="경매 관리" />
-      <div aria-label="경매 관리 메뉴" className="admin-auction-tabs" role="tablist">
-        <button
-          aria-selected={activeTab === 'auctions'}
-          className={activeTab === 'auctions' ? 'is-active' : ''}
-          onClick={() => selectTab('auctions')}
-          role="tab"
-          type="button"
-        >
-          상품·경매 조회
-        </button>
-        <button
-          aria-selected={activeTab === 'bid-units'}
-          className={activeTab === 'bid-units' ? 'is-active' : ''}
-          onClick={() => selectTab('bid-units')}
-          role="tab"
-          type="button"
-        >
-          입찰 단위 관리
-        </button>
-      </div>
+      <CommonTabs
+        activeValue={activeTab}
+        ariaLabel="경매 관리 메뉴"
+        className="admin-auction-tabs"
+        items={[
+          { value: 'auctions', label: '상품·경매 조회' },
+          { value: 'bid-units', label: '입찰 단위 관리' },
+        ]}
+        onChange={selectTab}
+      />
       {activeTab === 'bid-units' ? (
         <div role="tabpanel">
           <AdminBidUnitManagementPanel />
@@ -468,6 +463,11 @@ const AdminAuctionManagementPage = () => {
                 </div>
               </section>
             )}
+            <AdminHistoryTimeline
+              referenceSn={selected.auctionId}
+              referenceType="AUCTION"
+              title="경매 운영 이력"
+            />
           </section>
         </AdminDetailDrawer>
       )}

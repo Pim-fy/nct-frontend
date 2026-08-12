@@ -11,6 +11,38 @@
   margin-bottom: 0;
 }
 
+.admin-report-case-tabs {
+  margin-bottom: 0;
+}
+
+.admin-report-detail-page {
+  display: grid;
+  gap: 18px;
+}
+
+.admin-report-detail-page__toolbar {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-report-detail-page__toolbar span {
+  color: #667085;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.admin-report-detail-page__body {
+  width: 100%;
+  max-width: 1120px;
+}
+
+.admin-report-detail-page .admin-operation-detail > dl {
+  grid-template-columns: 150px minmax(0, 1fr);
+}
+
 .admin-operation-search label {
   width: auto;
 }
@@ -429,7 +461,7 @@
 
 .admin-operation-chat-modal__summary {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
   gap: 10px;
 }
@@ -452,15 +484,6 @@
 .admin-operation-chat-modal__summary strong {
   color: #172033;
   font-size: 14px;
-}
-
-.admin-operation-chat-modal__summary > b {
-  border-radius: 999px;
-  padding: 7px 11px;
-  background: #eaf2ff;
-  color: #0057d9;
-  font-size: 12px;
-  white-space: nowrap;
 }
 
 .admin-operation-chat-modal__notice,
@@ -937,6 +960,14 @@
 }
 
 @media (max-width: 620px) {
+  .admin-report-detail-page .admin-operation-detail {
+    padding: 0;
+  }
+
+  .admin-report-detail-page .admin-operation-detail > dl {
+    grid-template-columns: 1fr;
+  }
+
   .admin-operation-search__status,
   .admin-operation-search__keyword {
     flex-basis: 100%;
@@ -1022,11 +1053,6 @@
 
   .admin-operation-chat-modal__summary {
     grid-template-columns: 1fr 1fr;
-  }
-
-  .admin-operation-chat-modal__summary > b {
-    grid-column: 1 / -1;
-    justify-self: start;
   }
 
   .admin-operation-chat-modal .admin-operation-chat__messages {

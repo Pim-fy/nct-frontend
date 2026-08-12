@@ -11,6 +11,7 @@ import {
   X,
 } from 'lucide-react';
 import AdminModal from '@components/admin/AdminModal';
+import AdminHistoryTimeline from '@components/admin/AdminHistoryTimeline';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminTable from '@components/admin/AdminTable';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
@@ -499,6 +500,9 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
               </button>
             </div>
           </form>
+          {editingId && (
+            <AdminHistoryTimeline referenceSn={editingId} referenceType="CATEGORY" />
+          )}
         </AdminModal>
       )}
     </section>

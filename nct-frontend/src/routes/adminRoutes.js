@@ -8,6 +8,14 @@ export const ADMIN_OPERATIONS_RECORDS_PATH = `/admin/${ADMIN_OPERATIONS_RECORDS_
 export const ADMIN_SETTINGS_ROUTE = 'settings';
 export const ADMIN_SETTINGS_PATH = `/admin/${ADMIN_SETTINGS_ROUTE}`;
 
+export const ADMIN_REPORTS_ROUTE = 'reports';
+export const ADMIN_REPORTS_PATH = `/admin/${ADMIN_REPORTS_ROUTE}`;
+export const ADMIN_REPORT_DETAIL_ROUTE = `${ADMIN_REPORTS_ROUTE}/:reportSn`;
+export const getAdminReportDetailPath = (reportSn) => `${ADMIN_REPORTS_PATH}/${reportSn}`;
+
+export const ADMIN_SERVICE_REQUESTS_ROUTE = 'services/requests';
+export const ADMIN_SERVICE_REQUESTS_PATH = `/admin/${ADMIN_SERVICE_REQUESTS_ROUTE}`;
+
 export const ADMIN_SERVICE_TRADE_DETAIL_ROUTE = 'services/trades/:tradeId';
 
 export const getAdminServiceTradeDetailPath = (tradeId) => (

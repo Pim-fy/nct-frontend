@@ -21,7 +21,12 @@ const useProviderDecision = (mutationFn) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminProviderApplicationKeys.all }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: adminProviderApplicationKeys.all }),
+        queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] }),
+      ]);
+    },
   });
 };
 

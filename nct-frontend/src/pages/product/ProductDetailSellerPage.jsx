@@ -168,7 +168,7 @@ export default function ProductDetailSellerPage() {
   };
 
   const requestCommentSubmit = () => {
-    if (!cmtTtl.trim()) { alert('제목을 입력해 주세요.'); return; }
+    if (!cmtTtl.trim()) { setAlertMsg('제목을 입력해 주세요.'); return; }
     setCommentConfirmOpen(true);
   };
 
@@ -419,7 +419,7 @@ export default function ProductDetailSellerPage() {
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
                         <p style={{ margin: '0 0 2px', fontWeight: 700, fontSize: 15, color: '#0048bf' }}>{formatPoint(b.bidPrice)}</p>
-                        <span className="badge badge-outline-gray" style={{ fontSize: 11 }}>{b.bidStatusName}</span>
+                        <span className="badge badge-outline-gray">{b.bidStatusName}</span>
                       </div>
                     </div>
                   </li>
@@ -714,6 +714,7 @@ export default function ProductDetailSellerPage() {
         message="등록 후에는 수정할 수 없습니다."
         subMessage="이대로 등록하시겠습니까?"
         confirmLabel="등록"
+        confirmTone="primary"
         onCancel={() => setCommentConfirmOpen(false)}
         onConfirm={handleCommentSubmit}
       />
@@ -722,6 +723,7 @@ export default function ProductDetailSellerPage() {
         message="답변은 등록 후 10분까지만 수정할 수 있습니다."
         subMessage="이대로 등록하시겠습니까?"
         confirmLabel="등록"
+        confirmTone="primary"
         onCancel={() => setPendingReplySn(null)}
         onConfirm={() => handleReplySubmit(pendingReplySn)}
       />

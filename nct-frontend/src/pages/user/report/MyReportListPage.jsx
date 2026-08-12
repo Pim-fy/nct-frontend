@@ -14,30 +14,30 @@ import { REPORT_TYPE_FALLBACK_NAMES } from '@/constants/abuseReportTypes';
 // ─── 코드 매핑 ────────────────────────────────────────────────────────────────
 
 const STATUS_LABEL = {
-  ABRC0005: "접수됨",
-  ABRC0006: "처리중",
-  ABRC0007: "처리완료",
-  ABRC0008: "반려",
+  ABSC0001: "접수됨",
+  ABSC0002: "처리중",
+  ABSC0003: "처리완료",
+  ABSC0004: "반려",
 };
 
 // 담당자 7: 신고 유형과 처리 상태를 목록에서 바로 구분할 수 있도록 배지 색상을 분리한다.
-const STATUS_BADGE_STYLE = {
-  ABRC0005: { background: "#fff5d6", color: "#9a6700", borderColor: "#f5d77a" },
-  ABRC0006: { background: "#e8f0fe", color: "#1d4ed8", borderColor: "#b7cdf8" },
-  ABRC0007: { background: "#e8f7ed", color: "#16703b", borderColor: "#b9e3c8" },
-  ABRC0008: { background: "#fdecec", color: "#b42318", borderColor: "#f3b5b0" },
+const STATUS_BADGE_CLASS = {
+  ABSC0001: "badge-soft-warning",
+  ABSC0002: "badge-soft-info",
+  ABSC0003: "badge-soft-success",
+  ABSC0004: "badge-soft-danger",
 };
 
-const TYPE_BADGE_STYLE = {
-  ABRC0009: { background: "#fff7e6", color: "#a15c00", borderColor: "#f3d19c" },
-  ABRC0010: { background: "#fff0f0", color: "#b42318", borderColor: "#f3b5b0" },
-  ABRC0011: { background: "#f4edff", color: "#6b3bbd", borderColor: "#d8c5f5" },
-  ABRC0012: { background: "#fff0f0", color: "#b42318", borderColor: "#f3b5b0" },
-  ABRC0013: { background: "#e8f0fe", color: "#1d4ed8", borderColor: "#b7cdf8" },
-  ABRC0014: { background: "#fff5d6", color: "#9a6700", borderColor: "#f5d77a" },
+const TYPE_BADGE_CLASS = {
+  ABRC0001: "badge-soft-warning",
+  ABRC0002: "badge-soft-danger",
+  ABRC0003: "badge-soft-purple",
+  ABRC0004: "badge-soft-danger",
+  ABRC0005: "badge-soft-info",
+  ABRC0006: "badge-soft-warning",
 };
 
-const DEFAULT_TYPE_BADGE_STYLE = { background: "#f2f4f7", color: "#475467", borderColor: "#d0d5dd" };
+const DEFAULT_BADGE_CLASS = "badge-soft-neutral";
 
 const getTypeNames = (report) => {
   if (report.reportTypeNames?.length) return report.reportTypeNames;
@@ -48,10 +48,10 @@ const getTypeNames = (report) => {
 
 const STATUS_TABS = [
   { label: "전체",    status: null },
-  { label: "접수됨",  status: "ABRC0005" },
-  { label: "처리중",  status: "ABRC0006" },
-  { label: "반려",    status: "ABRC0008" },
-  { label: "처리완료", status: "ABRC0007" },
+  { label: "접수됨",  status: "ABSC0001" },
+  { label: "처리중",  status: "ABSC0002" },
+  { label: "반려",    status: "ABSC0004" },
+  { label: "처리완료", status: "ABSC0003" },
 ];
 
 const PAGE_SIZE = 5;
@@ -60,15 +60,15 @@ const fmtDate = (str) => str?.slice(0, 10).replace(/-/g, ".") ?? "-";
 
 // ─── 서브 컴포넌트 ────────────────────────────────────────────────────────────
 
-function StatusBadge({ statusCode, style }) {
+function StatusBadge({ statusCode }) {
   const label = STATUS_LABEL[statusCode] ?? statusCode;
-  const badgeStyle = STATUS_BADGE_STYLE[statusCode] ?? DEFAULT_TYPE_BADGE_STYLE;
-  return <span className="badge border" style={{ ...badgeStyle, ...style }}>{label}</span>;
+  const badgeClass = STATUS_BADGE_CLASS[statusCode] ?? DEFAULT_BADGE_CLASS;
+  return <span className={`badge ${badgeClass}`}>{label}</span>;
 }
 
-function TypeBadge({ typeCode, typeName, style }) {
-  const badgeStyle = TYPE_BADGE_STYLE[typeCode] ?? DEFAULT_TYPE_BADGE_STYLE;
-  return <span className="badge border" style={{ ...badgeStyle, ...style }}>{typeName}</span>;
+function TypeBadge({ typeCode, typeName }) {
+  const badgeClass = TYPE_BADGE_CLASS[typeCode] ?? DEFAULT_BADGE_CLASS;
+  return <span className={`badge ${badgeClass}`}>{typeName}</span>;
 }
 
 function ReportCard({ report, isOpen, onToggle, number }) {
@@ -123,7 +123,7 @@ function ReportCard({ report, isOpen, onToggle, number }) {
             {/* 2행: 날짜 + 접수상태 (번호 너비만큼 indent) */}
             <div className="flex items-center gap-2 mt-1.5 pl-8">
               <span className="text-[13px] text-[#969696]">{fmtDate(report.registeredAt)}</span>
-              <StatusBadge statusCode={report.statusCode} style={{ borderRadius: "5px", fontSize: "13px", fontWeight: 400 }} />
+              <StatusBadge statusCode={report.statusCode} />
             </div>
             {report.processReason && !isOpen && (
               <div className="flex items-center gap-1 mt-1.5 pl-8">
@@ -142,7 +142,7 @@ function ReportCard({ report, isOpen, onToggle, number }) {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 min-w-0">
                 {getTypeNames(report).map((name) => (
-                  <TypeBadge key={name} typeCode={report.reportTypeCode} typeName={name} style={{ borderRadius: "5px", fontSize: "14px", fontWeight: 400, flexShrink: 0, height: "28px", paddingLeft: "7px", paddingRight: "7px", display: "inline-flex", alignItems: "center" }} />
+                  <TypeBadge key={name} typeCode={report.reportTypeCode} typeName={name} />
                 ))}
                 <p className="font-bold text-[18px] text-[#333] truncate mb-0 min-w-0">{report.targetName?.trim() || report.title || '-'}</p>
               </div>
@@ -158,7 +158,7 @@ function ReportCard({ report, isOpen, onToggle, number }) {
             </div>
             <div className="flex items-center gap-2 pl-3 shrink-0">
               <span className="text-[14px] text-[#969696]">{fmtDate(report.registeredAt)}</span>
-              <StatusBadge statusCode={report.statusCode} style={{ borderRadius: "5px", fontSize: "14px", fontWeight: 400 }} />
+              <StatusBadge statusCode={report.statusCode} />
               <svg
                 className={`size-5 transition-transform duration-200 ${isOpen ? "rotate-0 text-[#0064ff]" : "rotate-180 text-[#aaa] group-hover:text-[#0064ff]"}`}
                 fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -247,10 +247,10 @@ export default function MyReportListPage({ embedded = false }) {
   });
 
   const { data: countAll }      = useMyReports({ status: null,       page: 1, size: 1 });
-  const { data: countReceived } = useMyReports({ status: "ABRC0005", page: 1, size: 1 });
-  const { data: countProcessing } = useMyReports({ status: "ABRC0006", page: 1, size: 1 });
-  const { data: countFinished } = useMyReports({ status: "ABRC0007", page: 1, size: 1 });
-  const { data: countRejected } = useMyReports({ status: "ABRC0008", page: 1, size: 1 });
+  const { data: countReceived } = useMyReports({ status: "ABSC0001", page: 1, size: 1 });
+  const { data: countProcessing } = useMyReports({ status: "ABSC0002", page: 1, size: 1 });
+  const { data: countFinished } = useMyReports({ status: "ABSC0003", page: 1, size: 1 });
+  const { data: countRejected } = useMyReports({ status: "ABSC0004", page: 1, size: 1 });
 
   const TAB_COUNTS = [
     countAll?.totalCount,

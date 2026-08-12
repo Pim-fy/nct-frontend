@@ -10,6 +10,11 @@ import { fetchMyProviderQuoteAccess } from "@api/providerProfileApi";
 import { toImageUrl } from "@api/fileApi";
 import { formatPoint, toast } from "@utils/common";
 import AlertModal from "@components/common/AlertModal";
+import ConfirmModal from "@components/common/ConfirmModal";
+import {
+  getServiceRequestDetailPath,
+  SERVICE_REQUESTS_PATH,
+} from "@/routes/serviceRequestRoutes";
 import "./QuoteFormPage.css";
 
 const MAX_CONTENT_LEN = 4000;
@@ -204,7 +209,7 @@ export default function QuoteFormPage() {
       <main className="container seller-page">
         <section className="card mx-auto max-w-[640px] py-12 text-center">
           <p className="m-0 text-[22px] font-bold text-[#1d1d1f]">서비스 요청을 먼저 선택해 주세요.</p>
-          <button type="button" className="btn btn-primary mt-6" onClick={() => navigate('/service')}>서비스 요청 목록으로</button>
+          <button type="button" className="btn btn-primary mt-6" onClick={() => navigate(SERVICE_REQUESTS_PATH)}>서비스 요청 목록으로</button>
         </section>
       </main>
     );
@@ -226,7 +231,7 @@ export default function QuoteFormPage() {
         <section className="card mx-auto max-w-[640px] py-12 text-center">
           <p className="m-0 text-[22px] font-bold text-[#1d1d1f]">견적을 작성할 수 없습니다.</p>
           <p className="mb-6 mt-3 text-base text-[#686762]">공개 요청과 제공자 카테고리 승인 상태를 확인해 주세요.</p>
-          <button type="button" className="btn btn-primary" onClick={() => navigate(`/service-requests/${svcReqSn}`)}>요청 상세로 돌아가기</button>
+          <button type="button" className="btn btn-primary" onClick={() => navigate(getServiceRequestDetailPath(svcReqSn))}>요청 상세로 돌아가기</button>
         </section>
       </main>
     );
@@ -257,9 +262,6 @@ export default function QuoteFormPage() {
   const removeExistingAttachment = (flSn) => {
     setExistingAttachments((prev) => prev.filter((attachment) => attachment.flSn !== flSn));
   };
-
-  const fmtSize = (size) =>
-    size < 1024 * 1024 ? Math.round(size / 1024) + "KB" : (size / 1024 / 1024).toFixed(1) + "MB";
 
   const uploadFiles = async () => {
     const results = await Promise.all(attachFiles.map(f => uploadQuotePhoto(f.file)));
@@ -353,7 +355,7 @@ export default function QuoteFormPage() {
         <p style={{ margin: 0, fontSize: 18, fontWeight: 500 }}>
           {svcReqInfo.title}
           {svcReqInfo.category && (
-            <span className="badge badge-blue" style={{ fontSize: 13, borderRadius: 5, marginLeft: 8, verticalAlign: "middle" }}>
+            <span className="badge badge-blue ml-2 align-middle">
               {svcReqInfo.category}
             </span>
           )}
@@ -615,8 +617,8 @@ export default function QuoteFormPage() {
 
       {/* 미리보기 모달 */}
       {showPreview && (
-        <div className="qf-modal-overlay">
-          <div className="qf-modal-box" style={{ maxWidth: 1000, width: '95%', textAlign: 'left', padding: 0, overflow: 'hidden', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+        <div className="qf-preview-modal-overlay">
+          <div className="qf-preview-modal-box" style={{ maxWidth: 1000, width: '95%', textAlign: 'left', padding: 0, overflow: 'hidden', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
             {/* 타이틀 헤더 */}
             <div style={{ position: 'relative', background: '#0064ff', padding: '16px 20px', display: 'flex', alignItems: 'center' }}>
               <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#fff' }}>견적 미리보기</p>
@@ -689,71 +691,37 @@ export default function QuoteFormPage() {
         </div>
       )}
 
-      {/* 견적 수정 완료 팝업 */}
-      {editSuccessMsg && (
-        <div className="qf-modal-overlay" onClick={() => setEditSuccessMsg("")}>
-          <div className="qf-modal-box" onClick={e => e.stopPropagation()}>
-            <div className="qf-modal-icon">✅</div>
-            {editSuccessMsg.split("\n").map((line, i) => (
-              <p key={i} style={{ margin: i === 0 ? "0 0 8px" : 0, fontSize: i === 0 ? 18 : 15, fontWeight: i === 0 ? 700 : 400, color: i === 0 ? "#111" : "#555" }}>
-                {line}
-              </p>
-            ))}
-            <button
-              type="button"
-              className="btn btn-primary"
-              style={{ marginTop: 24, width: "100%" }}
-              onClick={() => {
-                setEditSuccessMsg("");
-                navigate("/user/mypage/services/quotes");
-              }}
-            >
-              확인
-            </button>
-          </div>
-        </div>
-      )}
+      <AlertModal
+        description={editSuccessMsg.split("\n").slice(1).join("\n") || undefined}
+        message={editSuccessMsg.split("\n")[0]}
+        onClose={() => {
+          setEditSuccessMsg("");
+          navigate("/user/mypage/services/quotes");
+        }}
+        open={Boolean(editSuccessMsg)}
+        variant="success"
+      />
 
-      {/* 견적 제출 완료 팝업 */}
-      {submitSuccess && (
-        <div className="qf-modal-overlay">
-          <div className="qf-modal-box">
-            <div className="qf-modal-icon">✅</div>
-            <p style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 700, color: "#111" }}>견적이 제출되었습니다.</p>
-            <p style={{ margin: 0, fontSize: 15, color: "#555" }}>견적 제출 내역에서 확인하실 수 있습니다.</p>
-            <button
-              type="button"
-              className="btn btn-primary"
-              style={{ marginTop: 24, width: "100%" }}
-              onClick={() => {
-                setSubmitSuccess(false);
-                navigate("/user/mypage/services/quotes");
-              }}
-            >
-              확인
-            </button>
-          </div>
-        </div>
-      )}
+      <AlertModal
+        description="견적 제출 내역에서 확인하실 수 있습니다."
+        message="견적이 제출되었습니다."
+        onClose={() => {
+          setSubmitSuccess(false);
+          navigate("/user/mypage/services/quotes");
+        }}
+        open={submitSuccess}
+        variant="success"
+      />
 
-      {/* 취소 확인 팝업 */}
-      {cancelConfirm && (
-        <div className="qf-modal-overlay" onClick={() => setCancelConfirm(false)}>
-          <div className="qf-modal-box" onClick={e => e.stopPropagation()}>
-            <div className="qf-modal-icon">⚠️</div>
-            <p style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 700, color: "#111" }}>작성을 취소하시겠습니까?</p>
-            <p style={{ margin: 0, fontSize: 15, color: "#555" }}>작성 중인 내용은 저장되지 않습니다.</p>
-            <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
-              <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={() => setCancelConfirm(false)}>
-                돌아가기
-              </button>
-              <button type="button" className="btn btn-danger" style={{ flex: 1 }} onClick={() => navigate(-1)}>
-                취소 확인
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        cancelLabel="돌아가기"
+        confirmLabel="취소 확인"
+        message="작성 중인 내용은 저장되지 않습니다."
+        onCancel={() => setCancelConfirm(false)}
+        onConfirm={() => navigate(-1)}
+        open={cancelConfirm}
+        title="작성을 취소하시겠습니까?"
+      />
     </main>
   );
 }

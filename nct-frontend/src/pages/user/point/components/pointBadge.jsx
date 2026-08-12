@@ -9,7 +9,7 @@
 
 const pointBadge = (colorMap) => {
   const badge = (label) => (
-    <span className={`inline-block px-2.5 py-0.5 rounded-lg text-xs font-medium ${colorMap[label] ?? 'bg-gray-100 text-gray-600'}`}>
+    <span className={`badge ${colorMap[label] ?? 'bg-gray-100 text-gray-600'}`}>
       {label}
     </span>
   );

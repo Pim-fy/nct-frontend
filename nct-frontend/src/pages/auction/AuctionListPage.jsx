@@ -37,8 +37,8 @@ const AUCTION_STATUS_FILTERS = [
   { code: 'AUCC0003', label: '종료' },
 ];
 const TRADE_METHOD_FILTERS = [
-  { value: 'delivery', sourceCodes: ['TRDC0009', 'TRDC0020'], label: '배송' },
-  { value: 'direct', sourceCodes: ['TRDC0010', 'TRDC0020'], label: '직거래' },
+  { value: 'delivery', sourceCodes: ['TRDC0009', 'TRDC0015'], label: '배송' },
+  { value: 'direct', sourceCodes: ['TRDC0010', 'TRDC0015'], label: '직거래' },
 ];
 const FILTER_GROUP_CLASS = 'm-0 grid gap-2 border-0 p-0 disabled:opacity-60';
 const FILTER_OPTION_CLASS = 'flex cursor-pointer items-center gap-2 text-body-sm text-[#5f5e5a] md:text-body-md';

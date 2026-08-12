@@ -15,6 +15,7 @@ import {
 } from '@api/tradeAdapter';
 import { formatDate, formatPoint } from '@utils/common';
 import { useMyBidHistory } from '@hooks/useBid';
+import CommonTabs from '@components/common/CommonTabs';
 import Pagination from '@components/common/Pagination';
 import MyPageListSkeleton from '@components/skeleton/MyPageListSkeleton';
 import MyPageListSectionLayout from '@components/mypage/MyPageListSectionLayout';
@@ -614,22 +615,19 @@ const TradeHistory = ({
 
         <section className="trade-history-panel" aria-label="거래 내역 필터">
           {!fixedRole && (
-            <div className="trade-history-tabs" role="tablist">
-              {tabs.map((tab) => (
-                <button
-                  className={`trade-history-tab ${
-                    activeTab === tab.value ? 'trade-history-tab--active' : ''
-                  }`}
-                  type="button"
-                  role="tab"
-                  aria-selected={activeTab === tab.value}
-                  key={tab.value}
-                  onClick={() => { setActiveTab(tab.value); setPage(1); }}
-                >
-                  {tab.label} <span>{tradeCounts[tab.value]}</span>
-                </button>
-              ))}
-            </div>
+            <CommonTabs
+              activeValue={activeTab}
+              ariaLabel="거래 내역 유형"
+              className="trade-history-tabs"
+              items={tabs.map((tab) => ({
+                ...tab,
+                count: tradeCounts[tab.value],
+              }))}
+              onChange={(value) => {
+                setActiveTab(value);
+                setPage(1);
+              }}
+            />
           )}
 
           {!fixedRole && <div className="trade-history-filters">

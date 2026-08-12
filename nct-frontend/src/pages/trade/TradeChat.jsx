@@ -29,6 +29,7 @@ import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
 import { useAuth } from '@hooks/useAuth';
 import { getServiceTradeDetailPath } from '@/routes/myPageRoutes';
+import { confirm } from '@utils/common';
 import '@assets/css/trade-chat.css';
 
 const MAX_MESSAGE_LENGTH = 500;
@@ -237,9 +238,11 @@ const TradeChat = ({
       return;
     }
 
-    const isConfirmed = window.confirm(
-      '이 완료된 채팅을 내 목록에서 삭제할까요?\n상대방 목록과 서버의 대화 기록은 유지됩니다.',
-    );
+    const isConfirmed = await confirm({
+      title: '완료된 채팅을 목록에서 숨길까요?',
+      text: '내 목록에서만 숨겨지며 상대방 목록과 서버의 대화 기록은 유지됩니다.',
+      confirmButtonText: '숨기기',
+    });
 
     if (!isConfirmed) {
       return;

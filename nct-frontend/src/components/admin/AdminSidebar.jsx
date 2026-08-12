@@ -4,6 +4,7 @@ import { useAuth } from '@hooks/useAuth';
 import {
   ADMIN_OPERATIONS_RECORDS_PATH,
   ADMIN_PROVIDER_APPLICATIONS_PATH,
+  ADMIN_SERVICE_REQUESTS_PATH,
   ADMIN_SETTINGS_PATH,
 } from '@/routes/adminRoutes';
 import {
@@ -37,7 +38,7 @@ const MENU_SECTIONS = [
   ],
   [{ label: '경매 관리', icon: Gavel, to: '/admin/auctions' }],
   [
-    { label: '견적 요청 관리', icon: BriefcaseBusiness, to: '/admin/services' },
+    { label: '견적 요청 관리', icon: BriefcaseBusiness, to: ADMIN_SERVICE_REQUESTS_PATH },
     { label: '카테고리 관리', icon: Grid2X2, to: '/admin/categories' },
   ],
   [

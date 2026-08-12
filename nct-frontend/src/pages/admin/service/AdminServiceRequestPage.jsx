@@ -9,6 +9,7 @@ import {
 } from '@api/adminServiceRequestApi';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminDetailDrawer from '@components/admin/AdminDetailDrawer';
+import AdminHistoryTimeline from '@components/admin/AdminHistoryTimeline';
 import AdminModal from '@components/admin/AdminModal';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
@@ -72,6 +73,16 @@ const tradeStatusTone = (statusCode) => {
 const formatAmount = (value) => (
   value == null ? '-' : `${Number(value).toLocaleString('ko-KR')}P`
 );
+
+const getTradeFlowDetails = (row) => [
+  row.activeDisputeId != null ? '분쟁 진행 중' : null,
+  row.activeEscrowAmount > 0 ? `보관 ${formatAmount(row.activeEscrowAmount)}` : null,
+  row.refundedPointAmount > 0 ? `환불 ${formatAmount(row.refundedPointAmount)}` : null,
+  row.settlementId != null
+    ? `정산 ${row.settlementStatusName ?? row.settlementStatusCode}`
+    : null,
+].filter(Boolean);
+
 const createRequestId = () => globalThis.crypto?.randomUUID?.()
   ?? `admin-service-operation-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
@@ -112,6 +123,7 @@ const AdminServiceRequestPage = () => {
       queryClient.invalidateQueries({
         queryKey: ['admin-service-request-detail', selected?.serviceRequestId],
       }),
+      queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] }),
     ]);
   };
   const operationMutation = useMutation({
@@ -143,7 +155,7 @@ const AdminServiceRequestPage = () => {
       key: 'title',
       label: '요청명',
       className: 'admin-notice-list__title admin-table__long-text',
-      render: (value) => <strong>{value}</strong>,
+      render: (value) => <strong title={value}>{value}</strong>,
     },
     { key: 'categoryName', label: '카테고리', className: 'admin-table__compact-text' },
     {
@@ -179,21 +191,29 @@ const AdminServiceRequestPage = () => {
     {
       key: 'tradeStatusName',
       label: '거래 흐름',
-      render: (value, row) => (
-        row.tradeId == null ? '-' : (
-          <div className="admin-service-list__flow">
+      className: 'admin-service-list__flow-cell',
+      render: (value, row) => {
+        if (row.tradeId == null) return '-';
+
+        const tradeStatusLabel = value ?? row.tradeStatusCode;
+        const flowDetails = getTradeFlowDetails(row);
+
+        return (
+          <div
+            className="admin-service-list__flow"
+            title={[tradeStatusLabel, ...flowDetails].join(' · ')}
+          >
             <AdminStatusBadge tone={tradeStatusTone(row.tradeStatusCode)}>
-              {value ?? row.tradeStatusCode}
+              {tradeStatusLabel}
             </AdminStatusBadge>
-            {row.activeDisputeId != null && <span>분쟁 진행 중</span>}
-            {row.activeEscrowAmount > 0 && <span>보관 {formatAmount(row.activeEscrowAmount)}</span>}
-            {row.refundedPointAmount > 0 && <span>환불 {formatAmount(row.refundedPointAmount)}</span>}
-            {row.settlementId != null && (
-              <span>정산 {row.settlementStatusName ?? row.settlementStatusCode}</span>
+            {flowDetails.length > 0 && (
+              <span className="admin-service-list__flow-summary">
+                {flowDetails.join(' · ')}
+              </span>
             )}
           </div>
-        )
-      ),
+        );
+      },
     },
     { key: 'registeredAt', label: '등록일', render: formatDateTime },
     {
@@ -611,6 +631,11 @@ const AdminServiceRequestPage = () => {
                   </div>
                 </section>
               )}
+              <AdminHistoryTimeline
+                referenceSn={detail.serviceRequestId}
+                referenceType="SERVICE_REQUEST"
+                title="견적 요청 운영 이력"
+              />
             </section>
           )}
         </AdminDetailDrawer>

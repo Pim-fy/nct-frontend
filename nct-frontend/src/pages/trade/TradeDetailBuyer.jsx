@@ -86,7 +86,7 @@ const statusInfo = {
 
 const unknownStatus = {
   label: '상태 확인 필요',
-  description: '거래 상태 코드는 API 계약이 확정된 뒤 표시합니다.',
+  description: '현재 거래 상태를 확인할 수 없습니다. 잠시 후 다시 확인해 주세요.',
   step: -1,
   className: 'trade-status--pending',
 };

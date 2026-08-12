@@ -7,6 +7,7 @@ import { toImageUrl } from '@api/fileApi';
 import { getUserReviews, getUserReviewTrust } from '@api/reviewApi';
 import { getTradeProfile } from '@api/tradeProfileApi';
 import ReportModal from '@components/common/ReportModal';
+import CommonTabs from '@components/common/CommonTabs';
 import Pagination from '@components/common/Pagination';
 import { ContentPageShell, ContentState } from '@components/content/ContentUi';
 import ProfileSkeleton from '@components/skeleton/ProfileSkeleton';
@@ -266,32 +267,19 @@ const PublicTradeProfilePage = () => {
         <section className="trade-profile-reviews" aria-labelledby="trade-profile-review-title">
           <h2 className="sr-only" id="trade-profile-review-title">받은 물품 리뷰</h2>
           <div className="trade-profile-reviews__header">
-            <div
-              aria-label="받은 물품 리뷰 유형"
+            <CommonTabs
+              activeValue={reviewRole}
+              ariaLabel="받은 물품 리뷰 유형"
               className="trade-profile-review-tabs"
-              role="tablist"
-            >
-              {REVIEW_ROLE_TABS.map((tab, tabIndex) => {
-                const selected = tab.value === reviewRole;
-                return (
-                  <button
-                    aria-controls="trade-profile-review-panel"
-                    aria-label={tab.ariaLabel ?? tab.label}
-                    aria-selected={selected}
-                    className={selected ? 'is-active' : ''}
-                    id={`trade-profile-review-tab-${tab.value ?? 'all'}`}
-                    key={tab.value ?? 'all'}
-                    onClick={() => handleReviewRoleChange(tab.value)}
-                    onKeyDown={(event) => handleReviewTabKeyDown(event, tabIndex)}
-                    role="tab"
-                    tabIndex={selected ? 0 : -1}
-                    type="button"
-                  >
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
+              items={REVIEW_ROLE_TABS.map((tab, tabIndex) => ({
+                ...tab,
+                ariaControls: 'trade-profile-review-panel',
+                id: `trade-profile-review-tab-${tab.value ?? 'all'}`,
+                onKeyDown: (event) => handleReviewTabKeyDown(event, tabIndex),
+                tabIndex: tab.value === reviewRole ? 0 : -1,
+              }))}
+              onChange={handleReviewRoleChange}
+            />
             {!reviewsQuery.isLoading && !reviewsQuery.isError && (
               <strong>{totalCount.toLocaleString('ko-KR')}건</strong>
             )}

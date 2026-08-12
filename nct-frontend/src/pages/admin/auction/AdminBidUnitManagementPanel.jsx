@@ -7,6 +7,7 @@ import {
   saveAdminBidUnit,
 } from '@api/adminAuctionApi';
 import AdminModal from '@components/admin/AdminModal';
+import AdminHistoryTimeline from '@components/admin/AdminHistoryTimeline';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
@@ -38,6 +39,7 @@ const AdminBidUnitManagementPanel = () => {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['admin-auction-bid-units'] });
       await queryClient.invalidateQueries({ queryKey: ['reference-codes', 'AUCG02'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] });
     },
   });
   const statusMutation = useMutation({
@@ -45,6 +47,7 @@ const AdminBidUnitManagementPanel = () => {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['admin-auction-bid-units'] });
       await queryClient.invalidateQueries({ queryKey: ['reference-codes', 'AUCG02'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] });
     },
   });
 
@@ -246,6 +249,14 @@ const AdminBidUnitManagementPanel = () => {
               <span>변경 사유</span>
               <textarea maxLength="500" name="changeReason" onChange={change} value={form.changeReason} />
             </label>
+            {!editing.isNew && (
+              <AdminHistoryTimeline
+                limit={30}
+                referenceSn={editing.bidUnitSn}
+                referenceType="COMMON_CODE"
+                title="입찰 단위 변경 이력"
+              />
+            )}
             {feedback && <p className="admin-bid-unit-form__feedback" role="alert">{feedback}</p>}
             <div className="admin-bid-unit-form__actions">
               <button className="btn btn-outline" disabled={saveMutation.isPending} onClick={closeDialogs} type="button">취소</button>
@@ -276,6 +287,12 @@ const AdminBidUnitManagementPanel = () => {
                 value={statusReason}
               />
             </label>
+            <AdminHistoryTimeline
+              limit={30}
+              referenceSn={statusChanging.item.bidUnitSn}
+              referenceType="COMMON_CODE"
+              title="입찰 단위 변경 이력"
+            />
             {feedback && <p className="admin-bid-unit-form__feedback" role="alert">{feedback}</p>}
             <div className="admin-bid-unit-form__actions">
               <button className="btn btn-outline" disabled={statusMutation.isPending} onClick={closeDialogs} type="button">취소</button>

@@ -120,10 +120,7 @@ const OperationsIntegrationPreview = () => {
     <div className="operations-preview">
       <PageMeta title="위험 이벤트 조회" />
 
-      <AdminPageHeader
-        action={<AdminStatusBadge tone="info">읽기 전용</AdminStatusBadge>}
-        title="위험 이벤트"
-      />
+      <AdminPageHeader title="위험 이벤트" />
 
       <section
         className={`operations-summary${summaryQuery.isLoading ? ' is-loading' : ''}`}

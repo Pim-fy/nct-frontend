@@ -94,59 +94,10 @@
 }
 
 .guide-mode-tabs {
-  display: inline-flex;
   width: fit-content;
-  gap: 4px;
-  border: 1px solid #e4e7ec;
-  border-radius: 14px;
-  padding: 4px;
-  background: #f2f4f7;
+  max-width: 100%;
+  padding-inline: 0;
 }
-
-.guide-mode-tabs button {
-  display: flex;
-  min-width: 246px;
-  align-items: center;
-  gap: 10px;
-  border: 0;
-  border-radius: 10px;
-  padding: 10px 14px;
-  background: transparent;
-  color: #667085;
-  text-align: left;
-  cursor: pointer;
-  transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
-}
-
-.guide-mode-tabs button:hover { background: rgb(255 255 255 / 58%); }
-.guide-mode-tabs button:focus-visible {
-  outline: 2px solid #7eaeff;
-  outline-offset: 2px;
-}
-
-.guide-mode-tabs button.is-active {
-  background: #fff;
-  color: #005bd8;
-  box-shadow: 0 2px 8px rgb(16 24 40 / 8%);
-}
-
-.guide-mode-tabs button > span {
-  display: inline-grid;
-  width: 34px;
-  height: 34px;
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius: 10px;
-  background: #e4e7ec;
-  color: inherit;
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.guide-mode-tabs button.is-active > span { background: #eaf2ff; }
-.guide-mode-tabs button > div { display: grid; gap: 2px; }
-.guide-mode-tabs strong { color: #101828; font-size: 16px; line-height: 1.35; }
-.guide-mode-tabs small { color: #7b8494; font-size: 13px; line-height: 1.35; }
 
 .guide-feature {
   display: grid;
@@ -1095,8 +1046,6 @@
   .guide-hero { border-radius: 18px; padding: 28px 24px; }
   .guide-hero p { font-size: 15px; }
   .guide-mode-tabs { width: 100%; }
-  .guide-mode-tabs button { min-width: 0; flex: 1; padding: 10px; }
-  .guide-mode-tabs small { display: none; }
   .guide-feature { height: auto; grid-template-columns: 1fr; min-height: 0; gap: 16px; }
   .guide-feature__copy { border-radius: 20px; padding: 24px 20px; }
   .guide-feature__heading h2 { font-size: 25px; }

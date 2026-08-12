@@ -3,6 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { assets } from "./assets";
 import ServiceRequestCard from "./ServiceRequestCard";
+import {
+  getServiceRequestDetailPath,
+  SERVICE_REQUESTS_PATH,
+} from "@/routes/serviceRequestRoutes";
 
 const PAGE_SIZE = 6;
 
@@ -62,7 +66,7 @@ export default function NewServiceSection({ isError, isLoading, items }) {
         {!isLoading && !isError && items.length > 0 && (
           <div className="grid grid-cols-3 gap-x-12 gap-y-5">
             {visibleItems.map((item) => (
-              <ServiceRequestCard key={item.id} item={item} onClick={() => navigate(`/service-requests/${item.id}`)} />
+              <ServiceRequestCard key={item.id} item={item} onClick={() => navigate(getServiceRequestDetailPath(item.id))} />
             ))}
           </div>
         )}
@@ -71,7 +75,7 @@ export default function NewServiceSection({ isError, isLoading, items }) {
         <div className="flex justify-center mt-10">
           <button
             type="button"
-            onClick={() => navigate("/service")}
+            onClick={() => navigate(SERVICE_REQUESTS_PATH)}
             className="h-[45px] w-[100px] rounded-[40px] bg-transparent border border-white/60 text-[14px] text-white hover:bg-white/10 transition-colors"
           >
             더보기

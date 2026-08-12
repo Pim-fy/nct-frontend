@@ -187,7 +187,7 @@ export default function ProviderApprovedCategorySection() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <strong className="text-[16px] text-[#27364b]">{category.catNm}</strong>
-                    <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${status.badgeClass}`}>
+                    <span className={`badge ${status.badgeClass}`}>
                       {status.label}
                     </span>
                   </div>

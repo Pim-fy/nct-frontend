@@ -5,15 +5,15 @@ import './AdminStatusBadge.css';
  * 나중에 디자인팀 공통 Badge가 생기면 이 파일 하나만 교체하면 됩니다.
  */
 const toneClass = {
-  danger: 'admin-badge--danger',
-  warning: 'admin-badge--warning',
-  success: 'admin-badge--success',
-  info: 'admin-badge--info',
-  neutral: 'admin-badge--neutral',
+  danger: 'badge-soft-danger',
+  warning: 'badge-soft-warning',
+  success: 'badge-soft-success',
+  info: 'badge-soft-info',
+  neutral: 'badge-soft-neutral',
 };
 
 const AdminStatusBadge = ({ children, tone = 'neutral' }) => (
-  <span className={`admin-badge ${toneClass[tone] ?? toneClass.neutral}`}>
+  <span className={`badge admin-badge ${toneClass[tone] ?? toneClass.neutral}`}>
     {children}
   </span>
 );

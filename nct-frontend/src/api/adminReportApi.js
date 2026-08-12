@@ -2,11 +2,18 @@ import api from './axios';
 import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
 
 /** 담당자 7 · F-OPS-007: 관리자 신고 전체·상태별 목록, 상세, 처리 계약입니다. */
-export const getAdminReports = ({ statusCode, keyword, page, size = ADMIN_PAGE_SIZE }) =>
+export const getAdminReports = ({
+  statusCode,
+  keyword,
+  caseType = 'ALL',
+  page,
+  size = ADMIN_PAGE_SIZE,
+}) =>
   api.get('/admin/reports/search', {
     params: {
       ...(statusCode ? { statusCode } : {}),
       ...(keyword ? { keyword } : {}),
+      ...(caseType && caseType !== 'ALL' ? { caseType } : {}),
       page,
       size,
     },
@@ -15,8 +22,19 @@ export const getAdminReports = ({ statusCode, keyword, page, size = ADMIN_PAGE_S
 export const getAdminReport = (reportSn) =>
   api.get(`/admin/reports/${reportSn}`).then((response) => response.data.data);
 
-export const decideAdminReport = ({ reportSn, decision, enforcementAction = 'NONE', reason }) =>
-  api.post(`/admin/reports/${reportSn}/decision`, { decision, enforcementAction, reason })
+export const decideAdminReport = ({
+  reportSn,
+  decision,
+  tradeDecision = null,
+  enforcementAction = 'NONE',
+  reason,
+}) =>
+  api.post(`/admin/reports/${reportSn}/decision`, {
+    decision,
+    tradeDecision,
+    enforcementAction,
+    reason,
+  })
     .then((response) => response.data);
 
 export const releaseAdminReportSanction = ({ reportSn, reason }) =>

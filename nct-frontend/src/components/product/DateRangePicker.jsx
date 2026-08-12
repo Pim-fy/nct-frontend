@@ -23,63 +23,68 @@ function addDays(dateStr, days) {
   return toStr(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
-function parseTime(val, defaultHour = 9) {
-  const h24 = val ? Number(val.split(':')[0]) : defaultHour;
-  const m   = val ? Number(val.split(':')[1]) : 0;
-  return { isPm: h24 >= 12, hour12: h24 === 0 ? 12 : h24 > 12 ? h24 - 12 : h24, min: m };
+function parseTime(value, defaultHour = 9) {
+  const hour24 = value ? Number(value.split(':')[0]) : defaultHour;
+  const minute = value ? Number(value.split(':')[1]) : 0;
+  return {
+    isPm: hour24 >= 12,
+    hour12: hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24,
+    minute,
+  };
 }
 
-function toH24str(ampm, h12, m) {
-  const pad = n => String(n).padStart(2, '0');
-  const h24 = ampm === 'am' ? (h12 === 12 ? 0 : h12) : (h12 === 12 ? 12 : h12 + 12);
-  return `${pad(h24)}:${pad(m)}`;
+function toHour24String(period, hour12, minute) {
+  const hour24 = period === 'am'
+    ? (hour12 === 12 ? 0 : hour12)
+    : (hour12 === 12 ? 12 : hour12 + 12);
+  return `${String(hour24).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 }
 
-// minTime("HH:mm")이 있으면 그 시각 이전(당일 이미 지난 시각)은 선택지에서 비활성화한다.
-function TimeRow({ value, onChange: onChangeProp, minTime }) {
-  const pad = n => String(n).padStart(2, '0');
-  const { isPm, hour12, min } = parseTime(value);
-  // 오전/오후 전환·시·분 선택으로 만들어진 조합이 minTime보다 이전(무효)이면 minTime으로 초기화한다.
-  // 예: 오전 9시(min=09:00) 상태에서 오후 2시로 바꿨다가 다시 오전을 누르면 시·분이 그대로 남아
-  // 오전 2시(무효)가 되는 문제를 막는다.
-  const emit = (ampm, h, m) => {
-    if (!onChangeProp) return;
-    const next = toH24str(ampm, h, m);
-    onChangeProp(minTime && next < minTime ? minTime : next);
+/** 담당자 7 | 상품 등록 달력에서 쓰는 기존 10분 단위 선택 상자입니다. */
+function TimeRow({ value, onChange, minTime, disabled = false }) {
+  const { isPm, hour12, minute } = parseTime(value);
+  const period = isPm ? 'pm' : 'am';
+  const minimumHour = minTime ? Number(minTime.split(':')[0]) : null;
+  const minimumMinute = minTime ? Number(minTime.split(':')[1]) : null;
+  const toHour24 = (nextPeriod, nextHour12) => (
+    nextPeriod === 'am'
+      ? (nextHour12 === 12 ? 0 : nextHour12)
+      : (nextHour12 === 12 ? 12 : nextHour12 + 12)
+  );
+  const isHourDisabled = (nextPeriod, nextHour12) => (
+    disabled || (minimumHour != null && toHour24(nextPeriod, nextHour12) < minimumHour)
+  );
+  const isPeriodDisabled = (nextPeriod) => (
+    disabled || Array.from({ length: 12 }, (_, index) => index + 1)
+      .every((nextHour12) => isHourDisabled(nextPeriod, nextHour12))
+  );
+  const isMinuteDisabled = (nextMinute) => {
+    if (disabled) return true;
+    if (minimumHour == null) return false;
+    const hour24 = toHour24(period, hour12);
+    return hour24 < minimumHour || (hour24 === minimumHour && nextMinute < minimumMinute);
   };
-  const ampm = isPm ? 'pm' : 'am';
-
-  const minH24 = minTime ? Number(minTime.split(':')[0]) : null;
-  const minMin = minTime ? Number(minTime.split(':')[1]) : null;
-  const h24For = (ampmVal, h12) => (ampmVal === 'am' ? (h12 === 12 ? 0 : h12) : (h12 === 12 ? 12 : h12 + 12));
-  const isHourDisabled = (ampmVal, h12) => {
-    if (minH24 == null) return false;
-    return h24For(ampmVal, h12) < minH24;
-  };
-  const isAmpmDisabled = (ampmVal) => {
-    if (minH24 == null) return false;
-    for (let h = 1; h <= 12; h++) { if (!isHourDisabled(ampmVal, h)) return false; }
-    return true;
-  };
-  const isMinDisabled = (m) => {
-    if (minH24 == null) return false;
-    const h24 = h24For(ampm, hour12);
-    if (h24 < minH24) return true;
-    if (h24 === minH24) return m < minMin;
-    return false;
+  const emit = (nextPeriod, nextHour12, nextMinute) => {
+    if (!onChange || disabled) return;
+    const nextValue = toHour24String(nextPeriod, nextHour12, nextMinute);
+    onChange(minTime && nextValue < minTime ? minTime : nextValue);
   };
 
   return (
     <div style={{ display: 'flex', gap: 6 }}>
-      <select className="input" value={ampm} onChange={e => emit(e.target.value, hour12, min)} style={{ padding: '5px 8px', fontSize: 15 }}>
-        <option value="am" disabled={isAmpmDisabled('am')}>오전</option>
-        <option value="pm" disabled={isAmpmDisabled('pm')}>오후</option>
+      <select className="input" disabled={disabled} value={period} onChange={(event) => emit(event.target.value, hour12, minute)} style={{ padding: '5px 8px', fontSize: 15 }} aria-label="오전 또는 오후">
+        <option value="am" disabled={isPeriodDisabled('am')}>오전</option>
+        <option value="pm" disabled={isPeriodDisabled('pm')}>오후</option>
       </select>
-      <select className="input" value={hour12} onChange={e => emit(ampm, Number(e.target.value), min)} style={{ padding: '5px 8px', fontSize: 15 }}>
-        {Array.from({ length: 12 }, (_, i) => <option key={i+1} value={i+1} disabled={isHourDisabled(ampm, i+1)}>{i+1}시</option>)}
+      <select className="input" disabled={disabled} value={hour12} onChange={(event) => emit(period, Number(event.target.value), minute)} style={{ padding: '5px 8px', fontSize: 15 }} aria-label="시">
+        {Array.from({ length: 12 }, (_, index) => index + 1).map((nextHour12) => (
+          <option key={nextHour12} value={nextHour12} disabled={isHourDisabled(period, nextHour12)}>{nextHour12}시</option>
+        ))}
       </select>
-      <select className="input" value={min} onChange={e => emit(ampm, hour12, Number(e.target.value))} style={{ padding: '5px 8px', fontSize: 15 }}>
-        {MINS.map(m => <option key={m} value={m} disabled={isMinDisabled(m)}>{pad(m)}분</option>)}
+      <select className="input" disabled={disabled} value={minute} onChange={(event) => emit(period, hour12, Number(event.target.value))} style={{ padding: '5px 8px', fontSize: 15 }} aria-label="분">
+        {MINS.map((nextMinute) => (
+          <option key={nextMinute} value={nextMinute} disabled={isMinuteDisabled(nextMinute)}>{String(nextMinute).padStart(2, '0')}분</option>
+        ))}
       </select>
     </div>
   );
@@ -89,6 +94,7 @@ export default function DateRangePicker({
   startDate, endDate, onChange, maxNavDate, maxDurationDays, fixedStart,
   showTime, startTimeValue, onStartTimeChange,
   endTimeValue, onEndTimeChange, minEndTime,
+  timeUnavailable = false, endTimeUnavailable = false,
   timeLabel = '시작 시간', timeHint = '종료 시간은 시작 시간과 동일하게 적용됩니다', minTime,
   hideStatus, footer, gridPadding = '28px 16px 44px', cellAspectRatio = '1',
 }) {
@@ -313,18 +319,27 @@ export default function DateRangePicker({
         </div>
       )}
 
-      {/* 시간 선택 — showTime을 쓰는(즉시/예약 전환이 있는) 호출부에서만 렌더링.
-          그런 곳에서는 필요 없는 모드에서도 같은 공간을 차지하도록 visibility로 숨긴다(레이아웃이
-          안 튀게). showTime 자체를 안 쓰는 호출부(예: 서비스 요청서)에서는 아예 렌더링하지 않아
-          불필요한 여백이 남지 않는다. */}
+      {/* 상품 등록은 기존의 가로형 선택 상자를 유지하고 분만 10분 단위로 제한한다. */}
       {showTime !== undefined && (
         <div style={{ borderTop: '1px solid #e5e7eb', padding: '4px 16px 6px', visibility: showTime ? 'visible' : 'hidden' }}>
           <span style={{ fontSize: 14, fontWeight: 600, color: '#6b7280', display: 'block', marginBottom: 3 }}>{timeLabel}</span>
-          <TimeRow value={startTimeValue} onChange={onStartTimeChange} minTime={minTime} />
+          <TimeRow
+            value={startTimeValue}
+            onChange={onStartTimeChange}
+            minTime={minTime}
+            disabled={!startDate || timeUnavailable}
+          />
+          {timeUnavailable && <span style={{ fontSize: 12, color: '#b54708', display: 'block', marginTop: 4 }}>선택 가능한 시간이 없습니다. 날짜를 다시 선택해 주세요.</span>}
           {endTimeValue !== undefined ? (
             <>
               <span style={{ fontSize: 14, fontWeight: 600, color: '#6b7280', display: 'block', marginTop: 8, marginBottom: 3 }}>종료 시간</span>
-              <TimeRow value={endTimeValue} onChange={onEndTimeChange} minTime={minEndTime} />
+              <TimeRow
+                value={endTimeValue}
+                onChange={onEndTimeChange}
+                minTime={minEndTime}
+                disabled={!startDate || !endDate || endTimeUnavailable}
+              />
+              {endTimeUnavailable && <span style={{ fontSize: 12, color: '#b54708', display: 'block', marginTop: 4 }}>같은 날 선택 가능한 종료 시간이 없습니다. 종료일을 다음 날짜로 선택해 주세요.</span>}
             </>
           ) : (
             <span style={{ fontSize: 14, color: '#9ca3af', display: 'block', marginTop: 4 }}>{timeHint}</span>

@@ -14,7 +14,7 @@ import {
   useHideAdminNotice,
   usePublishAdminNotice,
 } from '@hooks/useAdminNotices';
-import { formatDateTime, toast } from '@utils/common';
+import { confirm, formatDateTime, toast } from '@utils/common';
 import { formatAdminMemberIdentity } from '@utils/adminMemberIdentity';
 import './adminContentPages.css';
 
@@ -100,7 +100,12 @@ const AdminNoticeListPage = () => {
 
   /** 담당자 7 | F-OPS-023: 목록에서도 게시 내용과 기간을 유지한 채 공개 상태만 숨김으로 전환합니다. */
   const hideNotice = async (notice) => {
-    if (!window.confirm('이 공지를 사용자 화면에서 비공개 처리할까요?')) return;
+    const confirmed = await confirm({
+      title: '공지를 비공개 처리할까요?',
+      text: '공지 내용과 게시 기간은 유지됩니다.',
+      confirmButtonText: '비공개',
+    });
+    if (!confirmed) return;
 
     setVisibilityError('');
     try {

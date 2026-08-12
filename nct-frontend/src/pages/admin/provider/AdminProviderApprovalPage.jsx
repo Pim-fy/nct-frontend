@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import AdminDetailDrawer from '@components/admin/AdminDetailDrawer';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
+import AdminHistoryTimeline from '@components/admin/AdminHistoryTimeline';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminTable from '@components/admin/AdminTable';
@@ -464,7 +465,11 @@ const AdminProviderApprovalPage = () => {
                 </div>
               </>
             )}
-
+            <AdminHistoryTimeline
+              referenceSn={selected.id}
+              referenceType="PROVIDER_APPLICATION"
+              title="제공자 신청 처리 이력"
+            />
           </section>
         </AdminDetailDrawer>
       )}

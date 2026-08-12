@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { SERVICE_REQUEST_SORT_OPTIONS } from '@/constants/serviceDiscovery';
+import { getServiceRequestDetailPath } from '@/routes/serviceRequestRoutes';
 
 const FILTER_GROUP_CLASS = 'm-0 grid gap-2 border-0 p-0 disabled:opacity-60';
 const FILTER_INPUT_CLASS = 'min-h-10 w-full rounded-lg border border-[#e2e1dc] bg-white px-3 text-body-sm text-[#1a1a18] outline-none transition-colors focus:border-primary md:text-body-md';
@@ -176,7 +177,7 @@ const ServiceRequestCard = ({ request }) => {
   <Link
     className="group flex min-h-[410px] w-full min-w-0 flex-col overflow-hidden rounded-lg border border-[#f0efec] bg-white p-5 text-body-sm text-inherit no-underline shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)] transition duration-150 hover:-translate-y-0.5 hover:shadow-[0_6px_18px_rgba(0,0,0,0.1)] max-md:min-h-0 md:text-body-md"
     state={{ from: `${location.pathname}${location.search}${location.hash}` }}
-    to={`/service-requests/${request.id}`}
+    to={getServiceRequestDetailPath(request.id)}
   >
     <div className="relative flex h-[210px] items-center justify-center overflow-hidden rounded-lg bg-[linear-gradient(135deg,#e8f0fe,#f8f8f6)] text-[#5f5e5a]">
       <span className="inline-flex size-24 items-center justify-center rounded-full bg-white/60 text-center text-body-sm font-extrabold">

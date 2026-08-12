@@ -20,7 +20,7 @@ import MyPageStatusBadge from '@components/mypage/MyPageStatusBadge';
 import MyPageListSkeleton from '@components/skeleton/MyPageListSkeleton';
 import Pagination from '@components/common/Pagination';
 import AuctionCard from './components/AuctionCard';
-import AuctionToast from './components/AuctionToast';
+import Toast from '@components/common/Toast';
 import '@assets/css/my-active-auctions.css';
 
 const PAGE_SIZE = 12;
@@ -408,7 +408,7 @@ const AuctionFavoritesPage = ({ embedded = false }) => {
           {content}
         </main>
       )}
-      <AuctionToast message={toastMessage} />
+      <Toast message={toastMessage} variant="info" />
     </div>
   );
 };

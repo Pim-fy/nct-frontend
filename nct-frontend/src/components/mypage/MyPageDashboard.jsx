@@ -21,6 +21,7 @@ import { useMemberProfile } from "@hooks/useMemberProfile";
 import { reviewQueryKeys } from "@hooks/useReview";
 import { toast } from "@utils/common";
 import { assets } from "@components/mypage/assets";
+import CommonTabs from "@components/common/CommonTabs";
 import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
 import MyPagePanel from "@components/mypage/MyPagePanel";
 import {
@@ -55,23 +56,16 @@ function ListPanel({ title, items, tabs, onTabClick, onMore, onItemMore }) {
       </div>
 
       {/* 탭 */}
-      <div className="flex gap-5 border-b border-[#e5e5e5] mb-4">
-        {tabs.map((tab, i) => (
-          <button
-            key={tab.label}
-            type="button"
-            onClick={() => { setActiveIdx(i); onTabClick?.(tab.section); }}
-            style={{ marginBottom: -1 }}
-            className={`pb-2.5 text-[15px] font-medium bg-transparent border-none cursor-pointer transition-colors ${
-              i === activeIdx
-                ? "text-[#0064ff] border-b-2 border-[#0064ff]"
-                : "text-[#969696]"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <CommonTabs
+        activeValue={activeIdx}
+        ariaLabel={`${title} 유형`}
+        className="common-tabs--panel"
+        items={tabs.map((tab, index) => ({ value: index, label: tab.label }))}
+        onChange={(index) => {
+          setActiveIdx(index);
+          onTabClick?.(tabs[index]?.section);
+        }}
+      />
 
       {/* 카드 그리드 */}
       {items.length === 0 ? (
@@ -87,7 +81,7 @@ function ListPanel({ title, items, tabs, onTabClick, onMore, onItemMore }) {
             >
               <div className="flex flex-wrap gap-1 mb-2">
                 {item.badges.map((badge) => (
-                  <span key={badge.label} className={`badge ${badge.cls}`} style={{ fontSize: 13, height: 30, borderRadius: 5 }}>
+                  <span key={badge.label} className={`badge ${badge.cls}`}>
                     {badge.label}
                   </span>
                 ))}
@@ -116,62 +110,19 @@ const CHAT_PANEL_TABS = [
   { key: "service", label: "견적거래" },
 ];
 
-function TabBadge({ count, active }) {
-  return (
-    <span
-      className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[11px] font-bold"
-      style={{ background: active ? "#0064ff" : "#e5e5e5", color: active ? "#fff" : "#969696" }}
-    >
-      {count ?? 0}
-    </span>
-  );
-}
-
 function PanelTabs({ tabs, counts, activeKey, onChange, header = false }) {
-  if (header) {
-    return (
-      <div className="flex items-stretch self-stretch gap-4">
-        {tabs.map((tab) => {
-          const active = activeKey === tab.key;
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => onChange(tab.key)}
-              style={{ borderBottom: active ? "2px solid #0064ff" : "2px solid transparent", marginBottom: -1 }}
-              className={`flex items-center gap-1.5 text-[14px] font-medium bg-transparent border-none cursor-pointer transition-colors px-0 ${
-                active ? "text-[#0064ff]" : "text-[#969696]"
-              }`}
-            >
-              {tab.label}
-              <TabBadge count={counts[tab.key]} active={active} />
-            </button>
-          );
-        })}
-      </div>
-    );
-  }
-
   return (
-    <div className="flex gap-5 border-b border-[#e5e5e5] mb-4">
-      {tabs.map((tab) => {
-        const active = activeKey === tab.key;
-        return (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => onChange(tab.key)}
-            style={{ marginBottom: -1 }}
-            className={`pb-2.5 text-[15px] font-medium bg-transparent border-none cursor-pointer transition-colors flex items-center gap-1.5 ${
-              active ? "text-[#0064ff] border-b-2 border-[#0064ff]" : "text-[#969696]"
-            }`}
-          >
-            {tab.label}
-            <TabBadge count={counts[tab.key]} active={active} />
-          </button>
-        );
-      })}
-    </div>
+    <CommonTabs
+      activeValue={activeKey}
+      ariaLabel="대시보드 목록 유형"
+      className={header ? "common-tabs--panel-header" : "common-tabs--panel"}
+      items={tabs.map((tab) => ({
+        value: tab.key,
+        label: tab.label,
+        count: counts[tab.key],
+      }))}
+      onChange={onChange}
+    />
   );
 }
 
