@@ -15,8 +15,12 @@ export const getAdminReports = ({ statusCode, keyword, page, size = ADMIN_PAGE_S
 export const getAdminReport = (reportSn) =>
   api.get(`/admin/reports/${reportSn}`).then((response) => response.data.data);
 
-export const decideAdminReport = ({ reportSn, decision, reason }) =>
-  api.post(`/admin/reports/${reportSn}/decision`, { decision, reason })
+export const decideAdminReport = ({ reportSn, decision, enforcementAction = 'NONE', reason }) =>
+  api.post(`/admin/reports/${reportSn}/decision`, { decision, enforcementAction, reason })
+    .then((response) => response.data);
+
+export const releaseAdminReportSanction = ({ reportSn, reason }) =>
+  api.post(`/admin/reports/${reportSn}/sanction/release`, { reason })
     .then((response) => response.data);
 
 /** 담당자 7 · F-OPS-007/015: 열람 사유와 함께 신고 첨부 원문을 요청합니다. */

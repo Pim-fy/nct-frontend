@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Paperclip } from 'lucide-react';
+import { Paperclip, ShieldAlert, UnlockKeyhole } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { fetchAdminAuctionOverview } from '@api/adminAuctionApi';
 import {
   decideAdminReport,
   getAdminReportFileBlob,
   getAdminReport,
   getAdminReports,
+  releaseAdminReportSanction,
 } from '@api/adminReportApi';
 import AdminDetailDrawer from '@components/admin/AdminDetailDrawer';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
@@ -59,6 +61,54 @@ const TRADE_STATUS_NAMES = {
 const formatDate = (value) => (value ? String(value).replace('T', ' ').slice(0, 16) : '-');
 const PAGE_SIZE = ADMIN_PAGE_SIZE;
 const EMPTY_FILTERS = { statusCode: '', keyword: '' };
+const ENFORCEMENT_OPTIONS = [
+  {
+    value: 'NONE',
+    label: '제재 없음',
+    description: '신고 위반만 확정하고 계정이나 진행 중인 업무는 변경하지 않습니다.',
+  },
+  {
+    value: 'TEMPORARY_SUSPENSION_7_DAYS',
+    label: '7일 이용정지',
+    description: '계정과 진행 중인 경매, 서비스 요청, 거래를 멈추고 해제 시 남은 기간으로 복구합니다.',
+  },
+  {
+    value: 'PERMANENT_SUSPENSION',
+    label: '영구 이용정지',
+    description: '취소 가능한 경매와 요청을 종료하고, 안전하게 자동 취소할 수 없는 거래는 관리자 검토 상태로 둡니다.',
+  },
+];
+const IMPACT_ACTION_NAMES = {
+  PAUSED: '일시정지',
+  CANCELED: '취소',
+  BID_CANCELED: '최고입찰 취소',
+  HELD_FOR_REVIEW: '관리자 검토 보류',
+};
+const DISPUTE_STATUS_NAMES = {
+  TRDC0016: '접수',
+  TRDC0017: '처리 중',
+  TRDC0018: '처리 완료',
+  TRDC0019: '반려',
+};
+const DISPUTE_TYPE_NAMES = {
+  TRDC0011: '미방문·연락 두절',
+  TRDC0012: '분실·파손·오배송',
+  TRDC0013: '서비스 품질·일정',
+  TRDC0014: '환불·보관금·정산',
+  TRDC0015: '기타',
+};
+const DISPUTE_RESULT_NAMES = {
+  TRDC0021: '처리 완료',
+  TRDC0022: '전액 환불',
+  TRDC0023: '정산 보류',
+};
+const IMPACT_STATUS_NAMES = {
+  ACTIVE: '적용 중',
+  RELEASE_PENDING: '복구 대기',
+  RESOLVED: '처리 완료',
+  RESTORED: '복구 완료',
+  SKIPPED: '자동 복구 제외',
+};
 const reportTypeName = (code, serverName) => (
   serverName?.trim() || REPORT_TYPE_FALLBACK_NAMES[code] || code || '-'
 );
@@ -120,6 +170,9 @@ const AdminReportManagementPage = () => {
   const [page, setPage] = useState(1);
   const [selectedReportSn, setSelectedReportSn] = useState(null);
   const [reason, setReason] = useState('');
+  const [enforcementAction, setEnforcementAction] = useState('NONE');
+  const [permanentConfirmed, setPermanentConfirmed] = useState(false);
+  const [releaseReason, setReleaseReason] = useState('');
   const [fileViewReason, setFileViewReason] = useState('');
   const [fileError, setFileError] = useState('');
   const [openingFileSn, setOpeningFileSn] = useState(null);
@@ -149,7 +202,7 @@ const AdminReportManagementPage = () => {
       const actionLabel = variables.decision === 'PROCESSING'
         ? '처리 시작'
         : variables.decision === 'PROCESSED'
-          ? '처리 완료'
+          ? '위반 확정'
           : '반려';
       toast({
         icon: 'success',
@@ -157,13 +210,28 @@ const AdminReportManagementPage = () => {
         timer: 2000,
       });
       setReason('');
+      setEnforcementAction('NONE');
+      setPermanentConfirmed(false);
       reportsQuery.refetch();
-      if (variables.decision === 'PROCESSING') {
+      if (variables.decision === 'PROCESSING' || variables.decision === 'PROCESSED') {
         reportDetailQuery.refetch();
         return;
       }
       setSelectedReportSn(null);
       if (page !== 1) setPage(1);
+    },
+  });
+  const releaseMutation = useMutation({
+    mutationFn: releaseAdminReportSanction,
+    onSuccess: (_, variables) => {
+      toast({
+        icon: 'success',
+        title: `신고 #${variables.reportSn}의 7일 이용정지를 해제했습니다.`,
+        timer: 2000,
+      });
+      setReleaseReason('');
+      reportsQuery.refetch();
+      reportDetailQuery.refetch();
     },
   });
 
@@ -186,19 +254,27 @@ const AdminReportManagementPage = () => {
     setSelectedReportSn(reportSn);
     setReferenceAuctionSn(null);
     setReason('');
+    setEnforcementAction('NONE');
+    setPermanentConfirmed(false);
+    setReleaseReason('');
     setFileViewReason('');
     setFileError('');
     decisionMutation.reset();
+    releaseMutation.reset();
   };
 
   const closeReport = () => {
-    if (decisionMutation.isPending) return;
+    if (decisionMutation.isPending || releaseMutation.isPending) return;
     setSelectedReportSn(null);
     setReferenceAuctionSn(null);
     setReason('');
+    setEnforcementAction('NONE');
+    setPermanentConfirmed(false);
+    setReleaseReason('');
     setFileViewReason('');
     setFileError('');
     decisionMutation.reset();
+    releaseMutation.reset();
   };
 
   const columns = [
@@ -267,12 +343,23 @@ const AdminReportManagementPage = () => {
 
   const decide = (decision) => {
     const normalizedReason = reason.trim();
-    if (!selectedReportSn || !normalizedReason || decisionMutation.isPending) return;
+    const selectedAction = decision === 'PROCESSED' ? enforcementAction : 'NONE';
+    if (!selectedReportSn
+      || !normalizedReason
+      || decisionMutation.isPending
+      || (selectedAction === 'PERMANENT_SUSPENSION' && !permanentConfirmed)) return;
     decisionMutation.mutate({
       reportSn: selectedReportSn,
       decision,
+      enforcementAction: selectedAction,
       reason: normalizedReason,
     });
+  };
+
+  const releaseSanction = () => {
+    const normalizedReason = releaseReason.trim();
+    if (!selectedReportSn || !normalizedReason || releaseMutation.isPending) return;
+    releaseMutation.mutate({ reportSn: selectedReportSn, reason: normalizedReason });
   };
 
   const openReportFile = async (file) => {
@@ -308,6 +395,11 @@ const AdminReportManagementPage = () => {
   const canStart = detail?.statusCode === 'ABRC0005';
   const canFinalize = detail?.statusCode === 'ABRC0006';
   const isActionable = canStart || canFinalize;
+  const selectedEnforcement = ENFORCEMENT_OPTIONS.find(
+    (option) => option.value === enforcementAction,
+  );
+  const hasTemporarySanction = detail?.enforcementAction === 'TEMPORARY_SUSPENSION_7_DAYS';
+  const canReleaseSanction = hasTemporarySanction && !detail?.sanctionReleased;
   const referenceOverview = referenceAuctionQuery.data;
   const referenceAuction = referenceOverview?.auction;
   const referenceProduct = referenceOverview?.product;
@@ -398,7 +490,7 @@ const AdminReportManagementPage = () => {
           footer={(
             <button
               className="btn btn-outline"
-              disabled={decisionMutation.isPending}
+              disabled={decisionMutation.isPending || releaseMutation.isPending}
               onClick={closeReport}
               type="button"
             >
@@ -460,6 +552,112 @@ const AdminReportManagementPage = () => {
                     </>
                   )}
                 </dl>
+                {detail.linkedDisputeSn && (
+                  <section className="admin-report-sanction" aria-label="거래 문제 처리정보">
+                    <div className="admin-report-sanction__heading">
+                      <div>
+                        <span>거래 문제 처리 #{detail.linkedDisputeSn}</span>
+                        <h3>{DISPUTE_STATUS_NAMES[detail.linkedDisputeStatusCode]
+                          ?? detail.linkedDisputeStatusCode
+                          ?? '상태 확인 필요'}</h3>
+                      </div>
+                      <AdminStatusBadge tone={detail.linkedDisputeStatusCode === 'TRDC0018' ? 'success' : 'warning'}>
+                        {DISPUTE_RESULT_NAMES[detail.linkedDisputeResultCode]
+                          ?? detail.linkedDisputeResultCode
+                          ?? '판정 전'}
+                      </AdminStatusBadge>
+                    </div>
+                    <dl className="admin-report-sanction__meta">
+                      <dt>문제 유형</dt>
+                      <dd>{DISPUTE_TYPE_NAMES[detail.linkedDisputeTypeCode]
+                        ?? detail.linkedDisputeTypeCode
+                        ?? '-'}</dd>
+                      <dt>접수 전 거래 상태</dt>
+                      <dd>{TRADE_STATUS_NAMES[detail.linkedPreviousTradeStatusCode]
+                        ?? detail.linkedPreviousTradeStatusCode
+                        ?? '-'}</dd>
+                    </dl>
+                    {['TRDC0016', 'TRDC0017'].includes(detail.linkedDisputeStatusCode) && (
+                      <Link
+                        className="btn btn-outline"
+                        to={`/admin/disputes?disputeSn=${detail.linkedDisputeSn}`}
+                      >
+                        거래 문제 판정 열기
+                      </Link>
+                    )}
+                  </section>
+                )}
+                {detail.sanctionSn && (
+                  <section className="admin-report-sanction" aria-label="계정 제재 결과">
+                    <div className="admin-report-sanction__heading">
+                      <div>
+                        <span>계정 제재 #{detail.sanctionSn}</span>
+                        <h3>
+                          {detail.enforcementAction === 'PERMANENT_SUSPENSION'
+                            ? '영구 이용정지'
+                            : '7일 이용정지'}
+                        </h3>
+                      </div>
+                      <AdminStatusBadge tone={detail.sanctionReleased ? 'neutral' : 'danger'}>
+                        {detail.sanctionReleased ? '해제됨' : '적용 중'}
+                      </AdminStatusBadge>
+                    </div>
+                    <dl className="admin-report-sanction__meta">
+                      <dt>시작</dt><dd>{formatDate(detail.sanctionStartedAt)}</dd>
+                      <dt>종료 예정</dt>
+                      <dd>{detail.sanctionEndedAt ? formatDate(detail.sanctionEndedAt) : '기한 없음'}</dd>
+                    </dl>
+                    {detail.sanctionImpacts?.length > 0 && (
+                      <ul className="admin-report-sanction__impacts">
+                        {detail.sanctionImpacts.map((impact, index) => (
+                          <li key={`${impact.referenceTypeCode}-${impact.referenceSn}-${index}`}>
+                            <div>
+                              <strong>
+                                {REPORT_REFERENCE_NAMES[impact.referenceTypeCode]
+                                  ?? impact.referenceTypeCode} #{impact.referenceSn}
+                              </strong>
+                              <span>
+                                {IMPACT_ACTION_NAMES[impact.actionCode] ?? impact.actionCode}
+                                {' · '}
+                                {IMPACT_STATUS_NAMES[impact.statusCode] ?? impact.statusCode}
+                              </span>
+                            </div>
+                            <p>{impact.result}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {canReleaseSanction && (
+                      <div className="admin-report-sanction__release">
+                        <label>
+                          조기 해제 사유
+                          <textarea
+                            disabled={releaseMutation.isPending}
+                            maxLength={1000}
+                            onChange={(event) => setReleaseReason(event.target.value)}
+                            placeholder="7일 이용정지를 조기 해제하는 사유를 입력하세요."
+                            value={releaseReason}
+                          />
+                        </label>
+                        {releaseMutation.isError && (
+                          <p className="admin-operation-error" role="alert">
+                            {releaseMutation.error?.response?.data?.message
+                              ?? '이용정지 해제에 실패했습니다. 현재 제재 상태를 확인해 주세요.'}
+                          </p>
+                        )}
+                        <button
+                          className="btn btn-outline"
+                          disabled={!releaseReason.trim() || releaseMutation.isPending}
+                          onClick={releaseSanction}
+                          type="button"
+                        >
+                          <UnlockKeyhole size={16} aria-hidden="true" />
+                          {releaseMutation.isPending ? '해제 중…' : '7일 정지 조기 해제'}
+                        </button>
+                      </div>
+                    )}
+                  </section>
+                )}
                 {detail.files?.length > 0 && (
                   <section className="admin-operation-detail__files">
                     <h3><Paperclip size={16} aria-hidden="true" /> 첨부파일</h3>
@@ -494,15 +692,55 @@ const AdminReportManagementPage = () => {
                 )}
                 {isActionable && (
                   <>
+                    {canFinalize && (
+                      <section className="admin-operation-decision">
+                        <div className="admin-operation-decision__heading">
+                          <strong>위반 확정 조치</strong>
+                          <span>신고를 위반으로 확정할 때 계정과 진행 중인 업무에 적용할 조치를 선택합니다.</span>
+                        </div>
+                        <label className="admin-operation-decision__select">
+                          계정 조치
+                          <select
+                            disabled={decisionMutation.isPending}
+                            onChange={(event) => {
+                              setEnforcementAction(event.target.value);
+                              setPermanentConfirmed(false);
+                              decisionMutation.reset();
+                            }}
+                            value={enforcementAction}
+                          >
+                            {ENFORCEMENT_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>{option.label}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <p className={enforcementAction === 'PERMANENT_SUSPENSION'
+                          ? 'admin-operation-decision__warning'
+                          : 'admin-operation-decision__description'}>
+                          {selectedEnforcement?.description}
+                        </p>
+                        {enforcementAction === 'PERMANENT_SUSPENSION' && (
+                          <label className="admin-operation-confirm admin-operation-confirm--danger">
+                            <input
+                              checked={permanentConfirmed}
+                              disabled={decisionMutation.isPending}
+                              onChange={(event) => setPermanentConfirmed(event.target.checked)}
+                              type="checkbox"
+                            />
+                            취소 가능한 경매·요청·견적이 즉시 종료되는 것을 확인했습니다.
+                          </label>
+                        )}
+                      </section>
+                    )}
                     <label className="admin-operation-detail__reason">
-                      {canStart ? '처리 시작 사유' : '최종 처리 사유'}
+                      {canStart ? '처리 시작 사유' : '최종 판정 사유'}
                       <textarea
                         disabled={decisionMutation.isPending}
                         maxLength={4000}
                         onChange={(event) => setReason(event.target.value)}
                         placeholder={canStart
                           ? '처리를 시작하는 이유나 확인 계획을 입력하세요.'
-                          : '완료 또는 반려 사유를 입력하세요.'}
+                          : '위반 확정 또는 반려 사유를 입력하세요.'}
                         value={reason}
                       />
                     </label>
@@ -510,7 +748,7 @@ const AdminReportManagementPage = () => {
                       <p className="admin-operation-validation" role="alert">
                         {canStart
                           ? '처리 시작 사유를 입력해야 합니다.'
-                          : '최종 처리 사유를 입력해야 완료 또는 반려할 수 있습니다.'}
+                          : '최종 판정 사유를 입력해야 위반 확정 또는 반려할 수 있습니다.'}
                       </p>
                     )}
                     {decisionMutation.isError && (
@@ -541,11 +779,15 @@ const AdminReportManagementPage = () => {
                           </button>
                           <button
                             className="btn btn-primary"
-                            disabled={!reason.trim() || decisionMutation.isPending}
+                            disabled={!reason.trim()
+                              || decisionMutation.isPending
+                              || (enforcementAction === 'PERMANENT_SUSPENSION'
+                                && !permanentConfirmed)}
                             onClick={() => decide('PROCESSED')}
                             type="button"
                           >
-                            {decisionMutation.isPending ? '처리 중…' : '처리 완료'}
+                            <ShieldAlert size={16} aria-hidden="true" />
+                            {decisionMutation.isPending ? '처리 중…' : '위반 확정'}
                           </button>
                         </>
                       )}

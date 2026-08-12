@@ -730,6 +730,128 @@
   height: 17px;
 }
 
+.admin-operation-confirm--danger {
+  border-color: #fecaca;
+  background: #fff1f2;
+  color: #9f1239;
+}
+
+.admin-report-sanction {
+  display: grid;
+  gap: 14px;
+  border: 1px solid #d7dce7;
+  border-radius: 8px;
+  padding: 16px;
+  background: #fff;
+}
+
+.admin-report-sanction__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-report-sanction__heading > div {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-report-sanction__heading span {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-report-sanction__heading h3 {
+  margin: 0;
+  color: #172033;
+  font-size: 17px;
+}
+
+.admin-report-sanction .admin-report-sanction__meta {
+  grid-template-columns: 90px minmax(0, 1fr);
+  border-radius: 8px;
+}
+
+.admin-report-sanction__impacts {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-report-sanction__impacts li {
+  display: grid;
+  gap: 5px;
+  border: 1px solid #e6e9f0;
+  border-radius: 8px;
+  padding: 11px 12px;
+  background: #f8fafc;
+}
+
+.admin-report-sanction__impacts li > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+.admin-report-sanction__impacts strong {
+  color: #202945;
+  font-size: 14px;
+}
+
+.admin-report-sanction__impacts span,
+.admin-report-sanction__impacts p {
+  color: #667085;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.admin-report-sanction__impacts p {
+  margin: 0;
+}
+
+.admin-report-sanction__release {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid #e6e9f0;
+  padding-top: 14px;
+}
+
+.admin-report-sanction__release label {
+  display: grid;
+  gap: 7px;
+  color: #404a67;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.admin-report-sanction__release textarea {
+  width: 100%;
+  min-height: 84px;
+  resize: vertical;
+  border: 1px solid #d7dce7;
+  border-radius: 8px;
+  padding: 10px 11px;
+  color: #202945;
+  font: inherit;
+  font-weight: 400;
+  line-height: 1.55;
+}
+
+.admin-report-sanction__release textarea:focus {
+  border-color: #2f5bff;
+  outline: 3px solid rgb(47 91 255 / 14%);
+}
+
+.admin-report-sanction__release .btn {
+  justify-self: end;
+}
+
 .admin-operation-decision {
   display: grid;
   gap: 14px;

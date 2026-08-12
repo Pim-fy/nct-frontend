@@ -3,6 +3,8 @@ import {
   approveProviderApplication,
   fetchAdminProviderApplications,
   rejectProviderApplication,
+  restoreProviderPermission,
+  stopProviderPermission,
 } from '@api/providerApplicationApi';
 
 export const adminProviderApplicationKeys = {
@@ -25,3 +27,5 @@ const useProviderDecision = (mutationFn) => {
 
 export const useApproveProviderApplication = () => useProviderDecision(approveProviderApplication);
 export const useRejectProviderApplication = () => useProviderDecision(rejectProviderApplication);
+export const useStopProviderPermission = () => useProviderDecision(stopProviderPermission);
+export const useRestoreProviderPermission = () => useProviderDecision(restoreProviderPermission);

@@ -18,7 +18,6 @@ import {
   Megaphone,
   ScrollText,
   Settings,
-  ShieldAlert,
   Siren,
   Users,
   WalletCards,
@@ -51,7 +50,6 @@ const MENU_SECTIONS = [
   [
     { label: '신고 관리', icon: Siren, to: '/admin/reports' },
     { label: '문의 관리', icon: MessageSquareText, to: '/admin/inquiries' },
-    { label: '거래 분쟁', icon: ShieldAlert, to: '/admin/disputes' },
   ],
   [
     { label: '운영 기록', icon: ScrollText, to: ADMIN_OPERATIONS_RECORDS_PATH },

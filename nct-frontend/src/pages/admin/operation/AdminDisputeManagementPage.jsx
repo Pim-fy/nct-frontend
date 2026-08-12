@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   decideAdminDispute,
   getAdminDispute,
@@ -54,10 +54,15 @@ const statusTone = (code) => ({
 /** 담당자 7 · F-OPS-005/006: 관리자 분쟁 조회와 판정 처리를 제공합니다. */
 const AdminDisputeManagementPage = () => {
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const linkedDisputeSn = Number(searchParams.get('disputeSn'));
+  const initialDisputeSn = Number.isSafeInteger(linkedDisputeSn) && linkedDisputeSn > 0
+    ? linkedDisputeSn
+    : null;
   const [filterForm, setFilterForm] = useState(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
-  const [selectedDisputeSn, setSelectedDisputeSn] = useState(null);
+  const [selectedDisputeSn, setSelectedDisputeSn] = useState(initialDisputeSn);
   const [decision, setDecision] = useState('');
   const [reason, setReason] = useState('');
   const [refundConfirmed, setRefundConfirmed] = useState(false);
@@ -67,7 +72,7 @@ const AdminDisputeManagementPage = () => {
   const [chatReason, setChatReason] = useState('');
   const [chatResult, setChatResult] = useState(null);
   const [chatModalOpen, setChatModalOpen] = useState(false);
-  const selectedDisputeSnRef = useRef(null);
+  const selectedDisputeSnRef = useRef(initialDisputeSn);
   const chatRequestVersionRef = useRef(0);
 
   const disputeTypesQuery = useQuery({

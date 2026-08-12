@@ -28,4 +28,8 @@ export const REPORT_TYPE_FALLBACK_NAMES = Object.freeze({
   ABRC0013: '개인정보 노출·침해',
   ABRC0014: '스팸·광고·도배',
   ABRC0015: '기타',
+  ABRC0016: '거래 미이행·연락두절',
+  ABRC0017: '배송·파손·오배송',
+  ABRC0018: '서비스 품질·일정',
+  ABRC0019: '환불·보관금·정산',
 });

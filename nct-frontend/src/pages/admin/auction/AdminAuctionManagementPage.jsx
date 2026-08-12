@@ -6,6 +6,7 @@ import {
   fetchAdminAuctionCancellationRequest,
   fetchAdminAuctionOverview,
   fetchAdminAuctions,
+  forceCancelAdminAuction,
 } from '@api/adminAuctionApi';
 import AdminDetailDrawer from '@components/admin/AdminDetailDrawer';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
@@ -58,6 +59,8 @@ const PAGE_SIZE = ADMIN_HIGH_VOLUME_PAGE_SIZE;
 const formatAmount = (value) => (
   value == null ? '-' : `${Number(value).toLocaleString('ko-KR')}P`
 );
+const createRequestId = () => globalThis.crypto?.randomUUID?.()
+  ?? `admin-auction-cancel-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 const AdminAuctionManagementPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -67,6 +70,7 @@ const AdminAuctionManagementPage = () => {
   const [filterError, setFilterError] = useState('');
   const [selected, setSelected] = useState(null);
   const [reviewReason, setReviewReason] = useState('');
+  const [forceCancelReason, setForceCancelReason] = useState('');
   const [page, setPage] = useState(1);
 
   const auctionsQuery = useQuery({
@@ -111,11 +115,25 @@ const AdminAuctionManagementPage = () => {
       auctionsQuery.refetch();
     },
   });
+  const forceCancelMutation = useMutation({
+    mutationFn: forceCancelAdminAuction,
+    onSuccess: (_, variables) => {
+      toast({
+        icon: 'success',
+        title: `경매 #${variables.auctionId}를 취소했습니다.`,
+        timer: 2000,
+      });
+      setSelected(null);
+      setForceCancelReason('');
+      auctionsQuery.refetch();
+    },
+  });
 
   const closeDetail = () => {
-    if (decisionMutation.isPending) return;
+    if (decisionMutation.isPending || forceCancelMutation.isPending) return;
     setSelected(null);
     setReviewReason('');
+    setForceCancelReason('');
   };
 
   const rows = auctionsQuery.data?.items ?? [];
@@ -124,7 +142,8 @@ const AdminAuctionManagementPage = () => {
     {
       key: 'productName',
       label: '상품명',
-      className: 'admin-table__long-text',
+      className: 'admin-table__long-text admin-auction-table__product-name',
+      render: (value) => <strong title={value}>{value}</strong>,
     },
     {
       key: 'sellerUserSn',
@@ -147,7 +166,7 @@ const AdminAuctionManagementPage = () => {
     { key: 'registeredAt', label: '등록일', render: formatDateTime },
     {
       key: 'manage', label: '관리', render: (_, row) => (
-        <button className={row.cancelRequestId ? 'btn btn-danger' : 'btn btn-outline'} onClick={() => { setSelected(row); setReviewReason(''); }} type="button">
+        <button className={row.cancelRequestId ? 'btn btn-danger' : 'btn btn-outline'} onClick={() => { setSelected(row); setReviewReason(''); setForceCancelReason(''); }} type="button">
           {row.cancelRequestId
             ? (row.cancelApprovedYn == null ? '취소 심사' : '취소 처리 이력')
             : '상세 보기'}
@@ -187,6 +206,19 @@ const AdminAuctionManagementPage = () => {
     )
     : auctionDetail?.sellerName?.trim()
       || formatAdminMemberIdentity(null, auctionDetail?.sellerId ?? productDetail?.usrSn);
+  const canForceCancel = ['AUCC0001', 'AUCC0002', 'AUCC0003'].includes(
+    detailAuctionStatusCode,
+  ) && !cancellationPending;
+
+  const forceCancel = () => {
+    const reason = forceCancelReason.trim();
+    if (!selected?.auctionId || !reason || forceCancelMutation.isPending) return;
+    forceCancelMutation.mutate({
+      auctionId: selected.auctionId,
+      reason,
+      requestId: createRequestId(),
+    });
+  };
 
   const submitSearch = (event) => {
     event.preventDefault();
@@ -305,7 +337,7 @@ const AdminAuctionManagementPage = () => {
           footer={(
             <button
               className="btn btn-outline"
-              disabled={decisionMutation.isPending}
+              disabled={decisionMutation.isPending || forceCancelMutation.isPending}
               onClick={closeDetail}
               type="button"
             >
@@ -398,6 +430,44 @@ const AdminAuctionManagementPage = () => {
                 <button className="btn btn-primary" disabled={!reviewReason.trim() || decisionMutation.isPending || cancellationQuery.isLoading || cancellationQuery.isError} onClick={() => decide('APPROVED')} type="button">{decisionMutation.isPending ? '처리 중…' : '취소 승인'}</button>
               </div>
             </>}
+            {canForceCancel && (
+              <section className="admin-auction-force-cancel">
+                <h4>관리자 강제 취소</h4>
+                <p>
+                  입찰·보관금·거래가 있으면 경매 취소 전용 서비스에서 함께 정리합니다.
+                </p>
+                <label>
+                  취소 사유
+                  <textarea
+                    disabled={forceCancelMutation.isPending}
+                    maxLength="1000"
+                    onChange={(event) => setForceCancelReason(event.target.value)}
+                    placeholder="강제 취소 사유를 입력하세요."
+                    value={forceCancelReason}
+                  />
+                </label>
+                {!forceCancelReason.trim() && (
+                  <p className="admin-auction-cancellation__validation" role="alert">
+                    취소 사유를 입력해야 강제 취소할 수 있습니다.
+                  </p>
+                )}
+                {forceCancelMutation.isError && (
+                  <p className="admin-bjn-state is-error" role="alert">
+                    경매를 취소하지 못했습니다. 현재 경매·거래 상태를 확인해 주세요.
+                  </p>
+                )}
+                <div className="admin-auction-cancellation__actions">
+                  <button
+                    className="btn btn-danger"
+                    disabled={!forceCancelReason.trim() || forceCancelMutation.isPending}
+                    onClick={forceCancel}
+                    type="button"
+                  >
+                    {forceCancelMutation.isPending ? '취소 처리 중…' : '경매 강제 취소'}
+                  </button>
+                </div>
+              </section>
+            )}
           </section>
         </AdminDetailDrawer>
       )}

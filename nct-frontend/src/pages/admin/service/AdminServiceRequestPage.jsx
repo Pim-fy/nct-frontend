@@ -1,11 +1,15 @@
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  cancelAdminServiceRequest,
+  changeAdminServiceRequestVisibility,
   fetchAdminServiceRequestDetail,
   fetchAdminServiceRequests,
+  invalidateAdminQuote,
 } from '@api/adminServiceRequestApi';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminDetailDrawer from '@components/admin/AdminDetailDrawer';
+import AdminModal from '@components/admin/AdminModal';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminTable from '@components/admin/AdminTable';
@@ -14,7 +18,7 @@ import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
 import { ADMIN_HIGH_VOLUME_PAGE_SIZE } from '@/constants/adminPagination';
 import { useAdminCategories } from '@hooks/useAdminCategories';
-import { formatDateTime } from '@utils/common';
+import { formatDateTime, toast } from '@utils/common';
 import { formatAdminMemberIdentity } from '@utils/adminMemberIdentity';
 import '../notice/adminContentPages.css';
 import './adminServiceRequestPage.css';
@@ -68,6 +72,8 @@ const tradeStatusTone = (statusCode) => {
 const formatAmount = (value) => (
   value == null ? '-' : `${Number(value).toLocaleString('ko-KR')}P`
 );
+const createRequestId = () => globalThis.crypto?.randomUUID?.()
+  ?? `admin-service-operation-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 /** 담당자 7: 관리자 서비스 요청을 실제 API로 검색하고 상세 조회하는 화면이다. */
 const AdminServiceRequestPage = () => {
@@ -75,7 +81,11 @@ const AdminServiceRequestPage = () => {
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [filterError, setFilterError] = useState('');
   const [selected, setSelected] = useState(null);
+  const [operation, setOperation] = useState(null);
+  const [operationReason, setOperationReason] = useState('');
+  const [operationFeedback, setOperationFeedback] = useState('');
   const [page, setPage] = useState(1);
+  const queryClient = useQueryClient();
 
   const categoriesQuery = useAdminCategories(SERVICE_CATEGORY_DOMAIN);
   const requestsQuery = useQuery({
@@ -94,6 +104,35 @@ const AdminServiceRequestPage = () => {
     queryKey: ['admin-service-request-detail', selected?.serviceRequestId],
     queryFn: () => fetchAdminServiceRequestDetail(selected.serviceRequestId),
     enabled: selected?.serviceRequestId != null,
+  });
+
+  const refreshServiceRequest = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['admin-service-requests'] }),
+      queryClient.invalidateQueries({
+        queryKey: ['admin-service-request-detail', selected?.serviceRequestId],
+      }),
+    ]);
+  };
+  const operationMutation = useMutation({
+    mutationFn: (variables) => {
+      if (variables.type === 'CANCEL_REQUEST') return cancelAdminServiceRequest(variables);
+      if (variables.type === 'CHANGE_VISIBILITY') {
+        return changeAdminServiceRequestVisibility(variables);
+      }
+      return invalidateAdminQuote(variables);
+    },
+    onSuccess: async (_, variables) => {
+      await refreshServiceRequest();
+      toast({
+        icon: 'success',
+        title: variables.successMessage,
+        timer: 1800,
+      });
+      setOperation(null);
+      setOperationReason('');
+      setOperationFeedback('');
+    },
   });
 
   const rows = requestsQuery.data?.items ?? [];
@@ -193,6 +232,38 @@ const AdminServiceRequestPage = () => {
 
   const detail = detailQuery.data ?? selected;
   const quotes = detail?.quotes ?? [];
+  const canOperateRequest = detail?.statusCode === 'SVCC0002' && detail?.tradeId == null;
+
+  const openOperation = (nextOperation) => {
+    setOperation(nextOperation);
+    setOperationReason('');
+    setOperationFeedback('');
+  };
+
+  const closeOperation = () => {
+    if (operationMutation.isPending) return;
+    setOperation(null);
+    setOperationReason('');
+    setOperationFeedback('');
+  };
+
+  const submitOperation = async () => {
+    const reason = operationReason.trim();
+    if (!operation || !reason || operationMutation.isPending) return;
+    setOperationFeedback('');
+    try {
+      await operationMutation.mutateAsync({
+        ...operation,
+        serviceRequestId: detail.serviceRequestId,
+        reason,
+        requestId: createRequestId(),
+      });
+    } catch (error) {
+      setOperationFeedback(
+        error?.response?.data?.message || '운영 처리를 완료하지 못했습니다.',
+      );
+    }
+  };
 
   return (
     <div className="admin-content-page admin-service-page">
@@ -321,10 +392,13 @@ const AdminServiceRequestPage = () => {
                   <span>요청 #{detail.serviceRequestId}</span>
                   <div className="admin-service-detail__badges">
                     {(detail.statusName || detail.statusCode) && (
-                      <AdminStatusBadge tone={statusTone(detail.statusCode)}>
+                    <AdminStatusBadge tone={statusTone(detail.statusCode)}>
                         원본 · {detail.statusName ?? detail.statusCode}
                       </AdminStatusBadge>
                     )}
+                    <AdminStatusBadge tone={detail.visible ? 'success' : 'danger'}>
+                      {detail.visible ? '노출' : '숨김'}
+                    </AdminStatusBadge>
                     {detail.integratedStatusName && (
                       <AdminStatusBadge tone={integratedStatusTone(detail.integratedStatusCode)}>
                         통합 · {detail.integratedStatusName}
@@ -404,6 +478,25 @@ const AdminServiceRequestPage = () => {
                               <dd>{quote.reviseCount ?? 0}회</dd>
                             </div>
                           </dl>
+                          {canOperateRequest
+                            && ['QUTC0001', 'QUTC0002'].includes(quote.statusCode) && (
+                              <div className="admin-service-detail__quote-actions">
+                                <button
+                                  className="btn btn-outline"
+                                  onClick={() => openOperation({
+                                    type: 'INVALIDATE_QUOTE',
+                                    quoteId: quote.quoteId,
+                                    title: `견적 #${quote.quoteId} 무효화`,
+                                    description: '제출·수정 상태의 견적만 철회 상태로 전환합니다.',
+                                    confirmLabel: '견적 무효화',
+                                    successMessage: `견적 #${quote.quoteId}를 무효화했습니다.`,
+                                  })}
+                                  type="button"
+                                >
+                                  견적 무효화
+                                </button>
+                              </div>
+                            )}
                         </article>
                       );
                     })}
@@ -478,9 +571,95 @@ const AdminServiceRequestPage = () => {
                   </dl>
                 </section>
               )}
+
+              {canOperateRequest && (
+                <section className="admin-service-detail__section is-operations">
+                  <h4>운영 처리</h4>
+                  <p>거래 생성 전 공개 요청만 숨김·복구하거나 취소할 수 있습니다.</p>
+                  <div className="admin-service-detail__operation-actions">
+                    <button
+                      className="btn btn-outline"
+                      onClick={() => openOperation({
+                        type: 'CHANGE_VISIBILITY',
+                        visible: !detail.visible,
+                        title: detail.visible ? '견적 요청 숨김' : '견적 요청 노출 복구',
+                        description: detail.visible
+                          ? '요청과 견적 이력은 유지하고 제공자 목록에서만 숨깁니다.'
+                          : '제공자 견적 요청 목록에 다시 노출합니다.',
+                        confirmLabel: detail.visible ? '숨김 처리' : '노출 복구',
+                        successMessage: detail.visible
+                          ? '견적 요청을 숨김 처리했습니다.'
+                          : '견적 요청 노출을 복구했습니다.',
+                      })}
+                      type="button"
+                    >
+                      {detail.visible ? '요청 숨김' : '노출 복구'}
+                    </button>
+                    <button
+                      className="btn btn-danger"
+                      onClick={() => openOperation({
+                        type: 'CANCEL_REQUEST',
+                        title: '견적 요청 취소',
+                        description: '요청을 취소하고 제출·수정 상태의 활성 견적을 함께 철회합니다.',
+                        confirmLabel: '요청 취소',
+                        successMessage: '견적 요청을 취소했습니다.',
+                      })}
+                      type="button"
+                    >
+                      요청 취소
+                    </button>
+                  </div>
+                </section>
+              )}
             </section>
           )}
         </AdminDetailDrawer>
+      )}
+
+      {operation && (
+        <AdminModal onClose={closeOperation} title={operation.title}>
+          <section className="admin-service-operation-modal">
+            <p>{operation.description}</p>
+            <label>
+              처리 사유
+              <textarea
+                disabled={operationMutation.isPending}
+                maxLength="1000"
+                onChange={(event) => setOperationReason(event.target.value)}
+                placeholder="관리자 처리 사유를 입력하세요."
+                value={operationReason}
+              />
+            </label>
+            {!operationReason.trim() && (
+              <p className="admin-service-operation-modal__validation" role="alert">
+                처리 사유를 입력해야 실행할 수 있습니다.
+              </p>
+            )}
+            {operationFeedback && (
+              <p className="admin-service-operation-modal__feedback" role="alert">
+                {operationFeedback}
+              </p>
+            )}
+            <div className="admin-service-operation-modal__actions">
+              <button
+                className="btn btn-outline"
+                disabled={operationMutation.isPending}
+                onClick={closeOperation}
+                type="button"
+              >
+                취소
+              </button>
+              <button
+                className="btn btn-danger"
+                disabled={!operationReason.trim() || operationMutation.isPending}
+                onClick={submitOperation}
+                type="button"
+              >
+                {operationMutation.isPending ? '처리 중…' : operation.confirmLabel}
+              </button>
+            </div>
+          </section>
+        </AdminModal>
       )}
     </div>
   );

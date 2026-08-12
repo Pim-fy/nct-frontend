@@ -56,6 +56,21 @@
 .admin-auction-cancellation__sync-status.is-error { background: #fff1f0; color: #b42318; }
 .admin-auction-cancellation__actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
 .admin-auction-cancellation__result { margin: 20px 0 0; padding: 12px; border-radius: 8px; background: #f3f5fa; color: #3d4665; line-height: 1.6; }
+.admin-auction-force-cancel { margin-top: 22px; padding: 18px; border: 1px solid #fecaca; border-radius: 10px; background: #fff8f7; }
+.admin-auction-force-cancel h4 { margin: 0 0 8px; color: #8f1d18; }
+.admin-auction-force-cancel > p { margin: 0; color: #6b4b49; font-size: 13px; line-height: 1.55; }
+.admin-auction-force-cancel label { display: grid; gap: 8px; margin-top: 16px; color: #522d2a; font-weight: 700; }
+.admin-auction-force-cancel textarea { min-height: 88px; padding: 10px; border: 1px solid #e7bbb7; border-radius: 8px; font: inherit; resize: vertical; }
+
+.admin-table td.admin-auction-table__product-name {
+  width: 320px;
+  min-width: 320px;
+  max-width: 320px;
+}
+
+.admin-table td.admin-auction-table__product-name > .admin-table__ellipsis-content {
+  max-width: 320px;
+}
 
 @media (max-width: 560px) {
   .admin-auction-tabs {
