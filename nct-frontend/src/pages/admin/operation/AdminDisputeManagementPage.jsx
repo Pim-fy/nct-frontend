@@ -19,6 +19,7 @@ import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
 import PageMeta from '@components/admin/PageMeta';
 import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
+import { getAdminServiceTradeDetailPath } from '@/routes/adminRoutes';
 import { formatAdminMemberIdentity } from '@utils/adminMemberIdentity';
 import '../audit/adminAuditPage.css';
 import './adminOperationPages.css';
@@ -514,7 +515,7 @@ const AdminDisputeManagementPage = () => {
                       <strong>서비스 거래 상세</strong>
                       <span>주소 원문과 당사자 처리 기능을 제외한 거래 정보를 확인합니다.</span>
                     </div>
-                    <Link className="btn btn-outline" to={`/admin/service-trades/${detail.tradeSn}`}>
+                    <Link className="btn btn-outline" to={getAdminServiceTradeDetailPath(detail.tradeSn)}>
                       상세 보기
                     </Link>
                   </div>

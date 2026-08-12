@@ -1,12 +1,15 @@
 // src/pages/user/report/MyReportListPage.jsx
 // F-COM-018: 내 신고 내역 (담당자3 황성경 소유)
 import React, { useState } from "react";
+import { Paperclip } from 'lucide-react';
 import Pagination from "@components/common/Pagination";
 import MyPageListSectionLayout from "@components/mypage/MyPageListSectionLayout";
 import MyPageListSkeleton from "@components/skeleton/MyPageListSkeleton";
 import MyPageListEmpty from "@components/mypage/MyPageListEmpty";
 import MyPageListError from "@components/mypage/MyPageListError";
-import { useMyReports } from "@hooks/useAbuseReport";
+import { useMyReportDetail, useMyReports } from "@hooks/useAbuseReport";
+import { getMyReportFileBlob } from '@api/abuseReportApi';
+import { REPORT_TYPE_FALLBACK_NAMES } from '@/constants/abuseReportTypes';
 
 // ─── 코드 매핑 ────────────────────────────────────────────────────────────────
 
@@ -25,33 +28,28 @@ const STATUS_BADGE_STYLE = {
   ABRC0008: { background: "#fdecec", color: "#b42318", borderColor: "#f3b5b0" },
 };
 
-const TYPE_LABEL = {
-  ABRC0001: "사기·기만",
-  ABRC0002: "허위 정보",
-  ABRC0003: "욕설·비방",
-  ABRC0004: "기타",
-};
-
 const TYPE_BADGE_STYLE = {
-  "사기·기만": { background: "#fff0f0", color: "#b42318", borderColor: "#f3b5b0" },
-  "불법 거래": { background: "#fff0f0", color: "#b42318", borderColor: "#f3b5b0" },
-  "허위 정보": { background: "#fff7e6", color: "#a15c00", borderColor: "#f3d19c" },
-  "욕설·비방": { background: "#f4edff", color: "#6b3bbd", borderColor: "#d8c5f5" },
-  "기타": { background: "#f2f4f7", color: "#475467", borderColor: "#d0d5dd" },
+  ABRC0009: { background: "#fff7e6", color: "#a15c00", borderColor: "#f3d19c" },
+  ABRC0010: { background: "#fff0f0", color: "#b42318", borderColor: "#f3b5b0" },
+  ABRC0011: { background: "#f4edff", color: "#6b3bbd", borderColor: "#d8c5f5" },
+  ABRC0012: { background: "#fff0f0", color: "#b42318", borderColor: "#f3b5b0" },
+  ABRC0013: { background: "#e8f0fe", color: "#1d4ed8", borderColor: "#b7cdf8" },
+  ABRC0014: { background: "#fff5d6", color: "#9a6700", borderColor: "#f5d77a" },
 };
 
-const DEFAULT_TYPE_BADGE_STYLE = TYPE_BADGE_STYLE["기타"];
+const DEFAULT_TYPE_BADGE_STYLE = { background: "#f2f4f7", color: "#475467", borderColor: "#d0d5dd" };
 
 const getTypeNames = (report) => {
   if (report.reportTypeNames?.length) return report.reportTypeNames;
   const code = report.reportTypeCode;
-  const name = TYPE_LABEL[code] ?? report.reportTypeName;
+  const name = report.reportTypeName ?? REPORT_TYPE_FALLBACK_NAMES[code];
   return name ? [name] : [];
 };
 
 const STATUS_TABS = [
   { label: "전체",    status: null },
   { label: "접수됨",  status: "ABRC0005" },
+  { label: "처리중",  status: "ABRC0006" },
   { label: "반려",    status: "ABRC0008" },
   { label: "처리완료", status: "ABRC0007" },
 ];
@@ -68,21 +66,41 @@ function StatusBadge({ statusCode, style }) {
   return <span className="badge border" style={{ ...badgeStyle, ...style }}>{label}</span>;
 }
 
-function TypeBadge({ typeName, style }) {
-  const badgeStyle = TYPE_BADGE_STYLE[typeName] ?? DEFAULT_TYPE_BADGE_STYLE;
+function TypeBadge({ typeCode, typeName, style }) {
+  const badgeStyle = TYPE_BADGE_STYLE[typeCode] ?? DEFAULT_TYPE_BADGE_STYLE;
   return <span className="badge border" style={{ ...badgeStyle, ...style }}>{typeName}</span>;
 }
 
 function ReportCard({ report, isOpen, onToggle, number }) {
-  const [hovered, setHovered] = React.useState(false);
+  const [fileError, setFileError] = React.useState('');
+  const [openingFileSn, setOpeningFileSn] = React.useState(null);
+  const detailQuery = useMyReportDetail(report.reportSn, isOpen);
+  const detail = detailQuery.data ?? report;
+
+  const openFile = async (file) => {
+    setFileError('');
+    setOpeningFileSn(file.fileSn);
+    try {
+      const response = await getMyReportFileBlob(report.reportSn, file.fileSn);
+      const url = URL.createObjectURL(response.data);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.target = '_blank';
+      anchor.rel = 'noreferrer';
+      anchor.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (error) {
+      setFileError(error?.response?.data?.message ?? '첨부파일을 열지 못했습니다.');
+    } finally {
+      setOpeningFileSn(null);
+    }
+  };
   return (
     <div className="transition-all bg-white overflow-hidden rounded-[15px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] border border-[#e4e9f2] hover:border-[#a0aec0] cursor-pointer">
       {/* 헤더 행 */}
       <button
         type="button"
         onClick={onToggle}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
         className="w-full text-left group bg-white cursor-pointer"
       >
         <div className="flex items-center py-6 px-5 gap-4">
@@ -90,9 +108,9 @@ function ReportCard({ report, isOpen, onToggle, number }) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 min-w-0">
               {getTypeNames(report).map((name) => (
-                <TypeBadge key={name} typeName={name} style={{ borderRadius: "5px", fontSize: "14px", fontWeight: 400, flexShrink: 0, height: "28px", paddingLeft: "7px", paddingRight: "7px", display: "inline-flex", alignItems: "center" }} />
+                  <TypeBadge key={name} typeCode={report.reportTypeCode} typeName={name} style={{ borderRadius: "5px", fontSize: "14px", fontWeight: 400, flexShrink: 0, height: "28px", paddingLeft: "7px", paddingRight: "7px", display: "inline-flex", alignItems: "center" }} />
               ))}
-              <p className="font-bold text-[18px] text-[#333] truncate mb-0 min-w-0">{report.title}</p>
+              <p className="font-bold text-[18px] text-[#333] truncate mb-0 min-w-0">{report.targetName?.trim() || report.title || '-'}</p>
             </div>
             {report.processReason && !isOpen && (
               <div className="flex items-center gap-1 mt-1.5">
@@ -123,7 +141,7 @@ function ReportCard({ report, isOpen, onToggle, number }) {
           <div className="flex items-center justify-between pt-4 gap-4">
             <div className="flex items-center gap-3 min-w-0">
               <p className="font-bold m-0 shrink-0" style={{ fontSize: "16px", color: "#333333" }}>신고 대상</p>
-              <p className="font-bold text-[16px] text-[#1a1a18] m-0 truncate">{report.targetName || "-"}</p>
+              <p className="font-bold text-[16px] text-[#1a1a18] m-0 truncate">{detail.targetName || "-"}</p>
             </div>
             <p className="text-[13px] text-[#969696] m-0 shrink-0">
               접수번호 <strong className="text-[#333] font-medium">{report.reportSn}</strong>
@@ -132,10 +150,33 @@ function ReportCard({ report, isOpen, onToggle, number }) {
 
           <div className="pb-1">
             <p className="font-bold m-0 mb-2" style={{ fontSize: "16px", color: "#333333" }}>신고 내용</p>
-            <p className="text-[16px] text-[#444] leading-relaxed m-0">{report.content}</p>
+            <p className="text-[16px] text-[#444] leading-relaxed m-0">{detail.content}</p>
           </div>
 
-          {report.processReason && (
+          {detailQuery.isLoading && <p className="text-[13px] text-[#777]">첨부 정보를 불러오는 중입니다.</p>}
+          {detailQuery.isError && <p className="text-[13px] text-red-500">첨부 정보를 불러오지 못했습니다.</p>}
+          {detail.files?.length > 0 && (
+            <div>
+              <p className="font-bold m-0 mb-2" style={{ fontSize: "16px", color: "#333333" }}>첨부파일</p>
+              <div className="flex flex-wrap gap-2">
+                {detail.files.map((file) => (
+                  <button
+                    className="btn btn-outline btn-sm max-w-full"
+                    disabled={openingFileSn === file.fileSn}
+                    key={file.fileSn}
+                    onClick={() => openFile(file)}
+                    type="button"
+                  >
+                    <Paperclip size={14} aria-hidden="true" />
+                    <span className="truncate">{file.originalName}</span>
+                  </button>
+                ))}
+              </div>
+              {fileError && <p className="mt-2 text-[13px] text-red-500" role="alert">{fileError}</p>}
+            </div>
+          )}
+
+          {detail.processReason && (
             <div className="rounded-[8px] p-4 border border-[#e8e9ec]" style={{ background: "#ffffff" }}>
               <div className="flex items-center gap-1.5 mb-2">
                 <svg className="size-4 text-[#0064ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -144,7 +185,7 @@ function ReportCard({ report, isOpen, onToggle, number }) {
                 </svg>
                 <p className="text-[16px] font-bold text-[#0064ff] m-0">관리자 답변</p>
               </div>
-              <p className="text-[16px] text-[#1a1a18] leading-relaxed m-0">{report.processReason}</p>
+              <p className="text-[16px] text-[#1a1a18] leading-relaxed m-0">{detail.processReason}</p>
             </div>
           )}
         </div>
@@ -172,12 +213,14 @@ export default function MyReportListPage({ embedded = false }) {
 
   const { data: countAll }      = useMyReports({ status: null,       page: 1, size: 1 });
   const { data: countReceived } = useMyReports({ status: "ABRC0005", page: 1, size: 1 });
+  const { data: countProcessing } = useMyReports({ status: "ABRC0006", page: 1, size: 1 });
   const { data: countFinished } = useMyReports({ status: "ABRC0007", page: 1, size: 1 });
   const { data: countRejected } = useMyReports({ status: "ABRC0008", page: 1, size: 1 });
 
   const TAB_COUNTS = [
     countAll?.totalCount,
     countReceived?.totalCount,
+    countProcessing?.totalCount,
     countRejected?.totalCount,
     countFinished?.totalCount,
   ];
@@ -195,6 +238,7 @@ export default function MyReportListPage({ embedded = false }) {
         title="신고"
         summaryItems={[
           { label: '접수됨', value: countReceived?.totalCount ?? 0 },
+          { label: '처리중', value: countProcessing?.totalCount ?? 0 },
           { label: '반려', value: countRejected?.totalCount ?? 0 },
           { label: '처리완료', value: countFinished?.totalCount ?? 0 },
         ]}

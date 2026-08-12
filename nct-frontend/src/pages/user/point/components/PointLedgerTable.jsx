@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useMyBidHistory } from '@hooks/useBid';
 import PointTable from './PointTable';
 import pointBadge from './pointBadge';
+import { formatPointLedgerReason, reasonSummary } from './pointLedgerReason';
 
 // 원장유형(PTLG02)별 배지 색 — 목업 badge-success/warning/blue/gray 매핑
 const TYPE_BADGE = {
@@ -56,13 +57,6 @@ const withProductName = (row, bidByBidSn) => {
 // 고정 문구만 기본 표시하고, 전체 텍스트는 title 툴팁으로 남긴다 (2026-08-04, 가독성 개선).
 // "(정산번호 446)" 같은 내부 참조번호도 화면엔 안 보여준다 — 사용자가 조회·문의에 쓸 방법이
 // 없는 내부 식별자라 노출 실익이 없다(데이터는 원장 사유 그대로 DB에 남는다, 표시만 정리).
-export const reasonSummary = (reason) => {
-  if (!reason) return reason;
-  const colonIndex = reason.indexOf(':');
-  const truncated = colonIndex === -1 ? reason : reason.slice(0, colonIndex);
-  return truncated.replace(/\s*\(정산번호\s*\d+\)/g, '').trim();
-};
-
 // 표 배치는 공용 셸(PointTable)이 담당 — 여기는 컬럼 구성과 셀 내용만 정의한다 (2026-07-20 통합)
 // widthClass 퍼센트는 앞 3열(일시/배지/금액)만 충전·환전 내역 표와 맞춰뒀다 — 이 표는 잔액
 // 컬럼이 하나 더 있어 컬럼 수가 달라서, 뒤쪽(잔액/관련/사유)까지 세 표를 전부 맞추진 못한다
@@ -97,7 +91,7 @@ const buildColumns = (bidByBidSn) => [
   },
   {
     key: 'reason', header: '사유', widthClass: 'w-[26%]', cellClass: 'truncate text-gray-500',
-    render: (r) => <span title={r.reason}>{reasonSummary(r.reason)}</span>,
+    render: (r) => <span title={formatPointLedgerReason(r.reason)}>{reasonSummary(r.reason)}</span>,
   },
 ];
 
@@ -120,7 +114,7 @@ const buildRenderCard = (bidByBidSn) => (r) => {
           잔액 {r.balanceAfter.toLocaleString()}P
         </span>
       </div>
-      {r.reason && <div className="mt-1 text-[13px] leading-snug text-gray-500" title={r.reason}>{reasonSummary(r.reason)}</div>}
+      {r.reason && <div className="mt-1 text-[13px] leading-snug text-gray-500" title={formatPointLedgerReason(r.reason)}>{reasonSummary(r.reason)}</div>}
       {label && (
         link
           ? <Link to={link} className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline">↗ {label}</Link>

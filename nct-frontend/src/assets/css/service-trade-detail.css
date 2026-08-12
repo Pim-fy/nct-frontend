@@ -4,7 +4,6 @@
   background: #fff;
   overflow-x: clip;
 }
-
 .service-trade-detail-page .container {
   display: grid;
   grid-template-columns: 1fr;

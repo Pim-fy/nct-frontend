@@ -16,6 +16,7 @@ import ErrorMessage from '@components/common/ErrorMessage';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
 import Toast from '@components/common/Toast';
 import { formatBudget } from '@utils/common';
+import { getServiceTradeDetailPath } from '@/routes/myPageRoutes';
 
 const QUOTE_STATUS_LABEL = {
   QUTC0001: '제출됨',
@@ -164,16 +165,12 @@ export default function QuoteDetailPage() {
     setSelecting(true);
     try {
       const result = await selectQuoteAndCreateTrade(svcReqSn, quote.qutSn);
-      navigate(`/service-trades/${result.data.tradeId}`);
+      navigate(getServiceTradeDetailPath(result.data.tradeId));
     } catch (err) {
       setToast(err.response?.data?.message || '견적 선택에 실패했습니다.');
     } finally {
       setSelecting(false);
     }
-  };
-
-  const handleBack = () => {
-    navigate(returnPath || `/service-requests/${svcReqSn}`);
   };
 
   const handleEditOwnQuote = () => {
@@ -198,17 +195,7 @@ export default function QuoteDetailPage() {
     <div className="bg-white pb-14 text-sm leading-[1.6] text-[#1d1d1f]">
       <div className="container max-w-5xl">
 
-        <div className="flex justify-end pt-9 pb-4">
-          <button
-            type="button"
-            className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[#e2e1dc] bg-white px-4 py-2.5 text-lg font-medium text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary"
-            onClick={handleBack}
-          >
-            ← {isProvider && returnPath?.startsWith('/user/mypage') ? '견적 제출 내역으로' : '요청서 상세로'}
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_300px]">
+        <div className="grid grid-cols-1 items-start gap-6 pt-9 lg:grid-cols-[1fr_300px]">
 
         <article className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white p-6 shadow-sm">
           <div className="flex items-start justify-between gap-3">
@@ -249,7 +236,7 @@ export default function QuoteDetailPage() {
               <span className="text-xs font-semibold text-[#9a9ba5]">제출일</span>
               <p className="mt-0.5 text-2xl font-bold text-[#1d1d1f]">{fmtDate(quote.registeredAt)}</p>
               {quote.reviseCnt > 0 && (
-                <p className="mt-0.5 text-xs text-[#9a9ba5]">{quote.reviseCnt}회 수정됨</p>
+                <p className="mt-0.5 text-xs text-[#9a9ba5]">{quote.reviseCnt}회 수정됨 · 최종 수정 {fmtDate(quote.updatedAt)}</p>
               )}
             </div>
           </div>

@@ -320,7 +320,7 @@ const Header = () => {
             검색이 있는 페이지는 768~1280px 구간에서 검색창이 이 사이에 끼어들도록
             order를 매겨둔다(순서만 바꾸고 실제 DOM 위치는 그대로, 2026-08-10) */}
         <div className={`flex items-center gap-10 ${hasHeaderSearch ? 'md:order-1 xl:order-none' : ''}`}>
-          <Link to="/" className="flex shrink-0 items-center">
+          <Link to="/" className="flex shrink-0 items-center" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             <img src={logoImg} alt="에누리컷" className="h-[58px] w-auto" />
           </Link>
 

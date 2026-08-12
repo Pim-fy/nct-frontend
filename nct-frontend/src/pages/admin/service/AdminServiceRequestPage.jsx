@@ -66,7 +66,7 @@ const tradeStatusTone = (statusCode) => {
 };
 
 const formatAmount = (value) => (
-  value == null ? '-' : `${Number(value).toLocaleString('ko-KR')}원`
+  value == null ? '-' : `${Number(value).toLocaleString('ko-KR')}P`
 );
 
 /** 담당자 7: 관리자 서비스 요청을 실제 API로 검색하고 상세 조회하는 화면이다. */

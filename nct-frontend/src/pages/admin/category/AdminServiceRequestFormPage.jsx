@@ -26,7 +26,7 @@ import {
   usePublishAdminServiceRequestForm,
   useSaveAdminServiceRequestFormDraft,
 } from '@hooks/useAdminServiceRequestForm';
-import { toast } from '@utils/common';
+import { formatPointUnitText, toast } from '@utils/common';
 import {
   changeFieldType,
   changeStepType,
@@ -426,16 +426,19 @@ const StepEditor = ({
 };
 
 const PreviewField = ({ field }) => {
-  if (field.type === 'TEXTAREA') return <textarea disabled placeholder={field.placeholder} />;
+  if (field.type === 'TEXTAREA') return <textarea disabled placeholder={formatPointUnitText(field.placeholder)} />;
   if (field.type === 'CHOICE') {
     return <div className="admin-form-preview__mini-options">
-      {field.options.map((option) => <span key={option.optionKey}>{option.label}</span>)}
+      {field.options.map((option) => <span key={option.optionKey}>{formatPointUnitText(option.label)}</span>)}
     </div>;
   }
   if (field.type === 'SELECT') {
-    return <select disabled><option>{field.placeholder || '선택해 주세요'}</option></select>;
+    return <select disabled><option>{formatPointUnitText(field.placeholder) || '선택해 주세요'}</option></select>;
   }
-  return <input disabled placeholder={field.placeholder || '입력해 주세요'} />;
+  if (field.type === 'AMOUNT_TOGGLE') {
+    return <input disabled placeholder={formatPointUnitText(field.placeholder) || 'P 단위 금액을 입력해 주세요'} />;
+  }
+  return <input disabled placeholder={formatPointUnitText(field.placeholder) || '입력해 주세요'} />;
 };
 
 const FormPreview = ({ model }) => (
@@ -461,7 +464,7 @@ const FormPreview = ({ model }) => (
             <div className="admin-form-preview__options">
               {step.options.map((option) => (
                 <div key={option.optionKey}>
-                  <strong>{option.label || '선택지'}</strong>
+                  <strong>{formatPointUnitText(option.label) || '선택지'}</strong>
                   {option.subtitle && <small>{option.subtitle}</small>}
                 </div>
               ))}

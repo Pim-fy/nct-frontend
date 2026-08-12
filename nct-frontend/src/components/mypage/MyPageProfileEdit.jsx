@@ -19,6 +19,7 @@ import { useNotificationSettings, useSaveNotificationSettings } from "@hooks/use
 import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
 import MyPagePanel from "@components/mypage/MyPagePanel";
 import ProfileDeliveryAddressManager from "@components/mypage/ProfileDeliveryAddressManager";
+import WithdrawConfirmModal from "@components/mypage/WithdrawConfirmModal";
 
 const DOMAIN_LABELS = [
   { key: 'AUCTION', label: '경매' },
@@ -69,6 +70,8 @@ export default function MyPageProfileEdit({ user }) {
   const [saveAlertOpen, setSaveAlertOpen] = useState(false);
   const [profileSaveAlertOpen, setProfileSaveAlertOpen] = useState(false);
   const [photoUploadAlertOpen, setPhotoUploadAlertOpen] = useState(false);
+  // @ai_generated: F-AUTH-011/POL-AUTH-013 - 회원 탈퇴 버튼 신설(ISS-026)
+  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
   const serverEvents = notifyQuery.data?.events ?? [];
   const notifyEvents = notifyEdits ?? serverEvents;
 
@@ -487,7 +490,14 @@ export default function MyPageProfileEdit({ user }) {
             </div>
           </div>
 
-          <div className="flex justify-end pt-2">
+          <div className="flex justify-between items-center pt-2">
+            <button
+              type="button"
+              onClick={() => setWithdrawModalOpen(true)}
+              className="text-[13px] text-[#969696] underline hover:text-[#a32d2d]"
+            >
+              회원 탈퇴
+            </button>
             <button
               type="submit"
               className="btn btn-primary"
@@ -669,6 +679,11 @@ export default function MyPageProfileEdit({ user }) {
         open={photoUploadAlertOpen}
         message={"사진이 업로드되었습니다.\n저장을 눌러야 반영됩니다."}
         onClose={() => setPhotoUploadAlertOpen(false)}
+      />
+      <WithdrawConfirmModal
+        open={withdrawModalOpen}
+        onClose={() => setWithdrawModalOpen(false)}
+        passwordChangeable={passwordChangeable}
       />
     </>
   );
