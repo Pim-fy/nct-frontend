@@ -31,15 +31,18 @@ export const toast = ({ icon, title, html, position = 'bottom-end', timer = 1500
 export const confirm = async ({
   title,
   text,
+  html,
   icon = 'warning',
   confirmButtonText = '확인',
   cancelButtonText  = '취소',
   showCancelButton = true,
   scrollbarPadding = true,
+  reverseButtons = true,
 }) => {
   const result = await Swal.fire({
     title,
     text,
+    html,
     icon,
     showCancelButton,
     scrollbarPadding,
@@ -47,7 +50,7 @@ export const confirm = async ({
     cancelButtonColor    : '#0F9B73',
     confirmButtonText,
     cancelButtonText,
-    reverseButtons       : true,
+    reverseButtons,
   });
   return result.isConfirmed;
 };

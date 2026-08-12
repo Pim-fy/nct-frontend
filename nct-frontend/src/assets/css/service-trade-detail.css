@@ -547,6 +547,19 @@
 .service-trade-card--schedule { margin-bottom: 18px; }
 .service-trade-card__empty { margin: 18px 0 0; color: #667085; font-size: 14px; }
 
+.service-trade-review-section {
+  margin-top: 18px;
+}
+
+.service-trade-review-section .auction-trade-detail-shell__review {
+  padding: 0;
+}
+
+.service-trade-review-section .trade-detail-card {
+  border-color: #e1e7f0;
+  border-radius: 10px;
+}
+
 .service-trade-inline-actions {
   display: flex;
   flex-wrap: wrap;
