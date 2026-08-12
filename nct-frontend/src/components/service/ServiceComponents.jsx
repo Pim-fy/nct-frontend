@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toImageUrl } from '@api/fileApi';
+import CommonTabs from '@components/common/CommonTabs';
 import './ServicePages.css';
 
 export const ServiceSearchBar = ({ keyword, onKeywordChange, onSubmit }) => (
@@ -29,26 +30,16 @@ export const ServiceSearchBar = ({ keyword, onKeywordChange, onSubmit }) => (
 );
 
 export const DiscoveryTabs = ({ activeView, onChange, requestCount, providerCount }) => (
-  <div className="service-discovery-tabs" role="tablist" aria-label="검색 결과 유형">
-    <button
-      aria-selected={activeView === 'requests'}
-      className={activeView === 'requests' ? 'is-active' : ''}
-      onClick={() => onChange('requests')}
-      role="tab"
-      type="button"
-    >
-      서비스 요청 {requestCount != null && <span>{requestCount}</span>}
-    </button>
-    <button
-      aria-selected={activeView === 'providers'}
-      className={activeView === 'providers' ? 'is-active' : ''}
-      onClick={() => onChange('providers')}
-      role="tab"
-      type="button"
-    >
-      제공자 {providerCount != null && <span>{providerCount}</span>}
-    </button>
-  </div>
+  <CommonTabs
+    activeValue={activeView}
+    ariaLabel="검색 결과 유형"
+    className="service-discovery-tabs"
+    items={[
+      { value: 'requests', label: '서비스 요청', count: requestCount },
+      { value: 'providers', label: '제공자', count: providerCount },
+    ]}
+    onChange={onChange}
+  />
 );
 
 export const ServiceFilterPanel = ({
@@ -238,10 +229,16 @@ export const ProviderProfile = ({
     </aside>
 
     <section className="provider-public-content">
-      <div className="provider-public-tabs" role="tablist" aria-label="제공자 상세 정보">
-        <button aria-selected={activeTab === 'reviews'} className={activeTab === 'reviews' ? 'is-active' : ''} onClick={() => onTabChange('reviews')} role="tab" type="button">리뷰</button>
-        <button aria-selected={activeTab === 'portfolio'} className={activeTab === 'portfolio' ? 'is-active' : ''} onClick={() => onTabChange('portfolio')} role="tab" type="button">포트폴리오</button>
-      </div>
+      <CommonTabs
+        activeValue={activeTab}
+        ariaLabel="제공자 상세 정보"
+        className="provider-public-tabs"
+        items={[
+          { value: 'reviews', label: '리뷰' },
+          { value: 'portfolio', label: '포트폴리오' },
+        ]}
+        onChange={onTabChange}
+      />
 
       {activeTab === 'reviews' && (
         <div className="provider-review-list" role="tabpanel">

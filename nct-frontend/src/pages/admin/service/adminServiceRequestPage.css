@@ -42,17 +42,39 @@
   min-width: 1340px;
 }
 
-.admin-service-list__flow {
-  display: grid;
-  justify-items: start;
-  gap: 5px;
-  min-width: 112px;
+.admin-layout .admin-service-list td.admin-notice-list__title {
+  text-align: center !important;
 }
 
-.admin-service-list__flow > span:not(.admin-badge) {
+.admin-service-list td.admin-service-list__flow-cell {
+  width: 190px;
+  min-width: 190px;
+  max-width: 190px;
+}
+
+.admin-service-list__flow {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.admin-service-list__flow > .admin-badge {
+  flex: 0 0 auto;
+}
+
+.admin-service-list__flow-summary {
+  min-width: 0;
+  overflow: hidden;
   color: #64748b;
   font-size: 11px;
   font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .admin-service-page__filter-error {
@@ -284,6 +306,12 @@
   grid-column: 1 / -1;
 }
 
+.admin-service-detail__quote-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
 .admin-service-detail__empty {
   padding: 16px;
   border-radius: 10px;
@@ -300,6 +328,54 @@
 .admin-service-detail__section.is-trade-flow {
   border-color: #cbd5e1;
   background: #f8fafc;
+}
+
+.admin-service-detail__section.is-operations {
+  border-color: #fed7aa;
+  background: #fffaf2;
+}
+
+.admin-service-detail__operation-actions,
+.admin-service-operation-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.admin-service-operation-modal {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-service-operation-modal > p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.admin-service-operation-modal label {
+  display: grid;
+  gap: 8px;
+  color: #334155;
+  font-weight: 700;
+}
+
+.admin-service-operation-modal textarea {
+  min-height: 112px;
+  padding: 12px;
+  border: 1px solid #d8dee9;
+  border-radius: 9px;
+  font: inherit;
+  resize: vertical;
+}
+
+.admin-service-operation-modal__validation,
+.admin-service-operation-modal__feedback {
+  margin: 0;
+  color: #b42318;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 @media (max-width: 1250px) {
@@ -343,5 +419,11 @@
 
   .admin-service-detail__quote-provider {
     grid-column: auto;
+  }
+
+  .admin-service-detail__operation-actions,
+  .admin-service-operation-modal__actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

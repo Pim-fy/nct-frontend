@@ -757,6 +757,8 @@
 
 .service-trade-dialog {
   width: min(100%, 520px);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
   border-radius: 8px;
   background: #fff;
   box-shadow: 0 24px 70px rgba(15, 23, 42, .26);
@@ -770,7 +772,6 @@
   border-bottom: 1px solid #e9edf4;
 }
 
-.service-trade-dialog__header p { margin: 0 0 4px; color: #0064ff; font-size: 13px; font-weight: 800; }
 .service-trade-dialog__header h2 { margin: 0; color: #1d1d1f; font-size: 22px; }
 .service-trade-dialog__close { border: 0; background: transparent; color: #667085; font-size: 28px; line-height: 1; cursor: pointer; }
 
@@ -806,17 +807,10 @@
 .service-trade-time-picker-trigger { box-sizing: border-box; height: 44px; }
 .service-trade-time-picker-trigger { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 0 12px; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; color: #344054; cursor: pointer; font: inherit; }
 .service-trade-time-picker-trigger:disabled { background: #f2f4f7; color: #98a2b3; cursor: not-allowed; }
-.service-trade-time-slots-field > p,
-.service-trade-time-picker > p { margin: 0; color: #667085; font-size: 12px; font-weight: 400; line-height: 1.5; }
-.service-trade-time-picker { position: absolute; z-index: 2; top: 76px; right: 0; left: 0; max-height: 180px; overflow-y: auto; padding: 10px; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; box-shadow: 0 8px 16px rgb(16 24 40 / 12%); }
+.service-trade-time-slots-field > p { margin: 0; color: #667085; font-size: 12px; font-weight: 400; line-height: 1.5; }
 .service-trade-date-picker { position: absolute; z-index: 3; top: 76px; right: 0; left: 0; overflow: hidden; border-radius: 8px; box-shadow: 0 8px 16px rgb(16 24 40 / 12%); }
 .service-trade-date-picker .date-picker-second-month-group,
 .service-trade-date-picker .date-picker-second-month-label { display: none; }
-.service-trade-time-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-.service-trade-time-slot { display: flex; min-height: 46px; align-items: center; justify-content: center; flex-direction: column; gap: 2px; border: 1px solid #d0d5dd; border-radius: 7px; background: #fff; color: #475467; cursor: pointer; font-size: 11px; font-weight: 700; line-height: 1.2; }
-.service-trade-time-slot strong { font-size: 13px; font-weight: 800; }
-.service-trade-time-slot:hover,
-.service-trade-time-slot--selected { border-color: #0064ff; background: #e5efff; color: #0048bf; }
 .service-trade-dispute-form__notice { margin: 0 0 4px; padding: 12px; border-radius: 8px; background: #fff6df; color: #8a5900; font-size: 14px; line-height: 1.5; }
 .service-trade-dispute-form__help,
 .service-trade-dispute-form__count { margin: 0; color: #667085; font-size: 12px; text-align: right; }

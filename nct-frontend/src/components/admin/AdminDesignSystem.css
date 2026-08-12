@@ -314,45 +314,6 @@
   color: #b42318;
 }
 
-.admin-layout :is(.admin-category-tabs, .admin-noti-tabs) {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 18px;
-  border: 1px solid var(--admin-border);
-  border-radius: 12px;
-  padding: 5px;
-  background: #fff;
-  box-shadow: 0 2px 8px rgb(15 23 42 / 4%);
-}
-
-.admin-layout :is(.admin-category-tabs button, .admin-noti-tab) {
-  min-height: 36px;
-  border: 0;
-  border-radius: 8px;
-  padding: 0 14px;
-  background: transparent;
-  color: #64748b;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.admin-layout :is(.admin-category-tabs button.is-active, .admin-noti-tab.is-active) {
-  border-color: var(--admin-accent);
-  background: var(--admin-accent);
-  color: #fff;
-}
-
-.admin-layout .admin-badge--info {
-  background: #edf4ff;
-  color: #0057d9;
-}
-
-.admin-layout .admin-badge--neutral {
-  background: #f1f5f9;
-  color: #475569;
-}
-
 .admin-layout .admin-bjn-setting-form {
   gap: 18px;
 }

@@ -1,4 +1,5 @@
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
+import CommonTabs from '@components/common/CommonTabs';
 import OperationsIntegrationPreview from '@pages/admin/OperationsIntegrationPreview';
 import AdminAuditLogPage from '@pages/admin/audit/AdminAuditLogPage';
 import './adminOperationsRecordPage.css';
@@ -16,18 +17,16 @@ const AdminOperationsRecordPage = () => {
 
   return (
     <div className="admin-operations-records">
-      <nav className="admin-operations-records__tabs" aria-label="운영 기록 종류">
-        {TABS.map((tab) => (
-          <Link
-            aria-current={activeTab === tab.key ? 'page' : undefined}
-            className={activeTab === tab.key ? 'is-active' : ''}
-            key={tab.key}
-            to={`?tab=${tab.key}`}
-          >
-            {tab.label}
-          </Link>
-        ))}
-      </nav>
+      <CommonTabs
+        activeValue={activeTab}
+        ariaLabel="운영 기록 종류"
+        className="admin-operations-records__tabs"
+        items={TABS.map((tab) => ({
+          value: tab.key,
+          label: tab.label,
+          to: `?tab=${tab.key}`,
+        }))}
+      />
 
       <section>
         {activeTab === 'risk'

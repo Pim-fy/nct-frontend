@@ -2,15 +2,16 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '@assets/css/landing.css';
+import { SERVICE_REQUESTS_PATH } from '@/routes/serviceRequestRoutes';
 
 const SEARCH_TAGS = [
   { label: '#마감임박경매', href: '/auction?keyword=마감임박경매' },
-  { label: '#청소견적',     href: '/service?keyword=청소견적', active: true },
+  { label: '#청소견적',     href: `${SERVICE_REQUESTS_PATH}?keyword=청소견적`, active: true },
   { label: '#전자기기',     href: '/auction?category=전자기기' },
-  { label: '#이사도움',     href: '/service?category=이사·운반' },
+  { label: '#이사도움',     href: `${SERVICE_REQUESTS_PATH}?category=이사·운반` },
   { label: '#직거래',       href: '/auction?keyword=직거래' },
   { label: '#포인트충전',   href: '/point' },
-  { label: '#수리설치',     href: '/service?category=수리·설치' },
+  { label: '#수리설치',     href: `${SERVICE_REQUESTS_PATH}?category=수리·설치` },
   { label: '#무료나눔',     href: '/auction?keyword=무료나눔' },
   { label: '#안전거래안내', href: '/customersupport/notice' },
 ];

@@ -7,7 +7,7 @@ import {
   requestServiceScheduleChange,
 } from '@api/serviceTradeApi';
 import { reviewQueryKeys } from '@hooks/useReview';
-import ViewSkeleton from '@components/skeleton/ViewSkeleton';
+import ServiceTradeDetailSkeleton from '@components/skeleton/ServiceTradeDetailSkeleton';
 import ServiceTradeDetailPage from './ServiceTradeDetailPage';
 
 const serviceTradeDetailQueryKey = (tradeId) => ['service-trade-detail', tradeId];
@@ -58,7 +58,7 @@ export default function ServiceTradeDetailRoutePage() {
     return (
       <main className="service-trade-detail-page">
         <section className="container">
-          <ViewSkeleton />
+          <ServiceTradeDetailSkeleton />
         </section>
       </main>
     );

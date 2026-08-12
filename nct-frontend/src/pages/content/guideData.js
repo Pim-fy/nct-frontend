@@ -1,4 +1,6 @@
 // 담당자 7 · F-COM-014: 단계 제목·설명은 /api/guides에서 받고, 여기에는 화면 표현 메타데이터만 둡니다.
+import { SERVICE_REQUEST_CREATE_PATH } from '@/routes/serviceRequestRoutes';
+
 export const GUIDE_FLOW_PRESENTATION = {
   'product-register': { journey: 'auction', preview: { type: 'product-register' } },
   'service-request': { journey: 'service', preview: { type: 'service-request' } },
@@ -28,7 +30,7 @@ export const GUIDE_JOURNEYS = [
     description: '견적 요청 작성부터 거래 완료와 정산 확인까지 이어지는 흐름입니다.',
     flowIds: ['service-request', 'quote-selection', 'trade-completion', 'point-exchange'],
     ctaLabel: '견적 요청하기',
-    ctaRoute: '/service-requests/new',
+    ctaRoute: SERVICE_REQUEST_CREATE_PATH,
     previewType: 'service-request',
     secondaryPreviewType: 'point-wallet',
   },

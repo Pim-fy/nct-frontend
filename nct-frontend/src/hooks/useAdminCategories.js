@@ -19,6 +19,7 @@ export const useSaveAdminCategory = () => {
     mutationFn: saveAdminCategory,
     onSuccess: (category, { categorySn }) => {
       queryClient.invalidateQueries({ queryKey: keys.all });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] });
       if (!categorySn) return;
       queryClient.setQueryData(
         ['admin-service-request-form', String(categorySn)],
@@ -36,7 +37,12 @@ export const useMoveAdminCategory = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: moveAdminCategory,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: keys.all }),
+        queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] }),
+      ]);
+    },
   });
 };
 
@@ -47,6 +53,7 @@ export const useReorderAdminCategories = () => {
     onSuccess: (categories, { domainCode }) => {
       queryClient.setQueryData(keys.list(domainCode), categories);
       queryClient.invalidateQueries({ queryKey: keys.all });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] });
     },
   });
 };

@@ -1,6 +1,6 @@
 // src/pages/service/ServiceRequestFormPage.jsx
 // 서비스 요청서 작성 — 아코디언 위저드 (F-SVC-001~004)
-// 라우트: /service-requests/new (신규), location.state.svcReqSn로 임시저장 수정
+// 라우트: /services/requests/new (신규), location.state.svcReqSn로 임시저장 수정
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -22,6 +22,7 @@ import { toImageUrl, uploadImage } from '@api/fileApi';
 import DateRangePicker from '@components/product/DateRangePicker';
 import RegionSelector from '@components/common/RegionSelector';
 import { formatPoint, formatPointUnitText } from '@utils/common';
+import { getServiceRequestDetailPath } from '@/routes/serviceRequestRoutes';
 import { buildServiceRequestWizardCatalog } from './serviceRequestFormAdapter';
 
 const MAX_IMAGES = 5;
@@ -939,7 +940,7 @@ export default function ServiceRequestFormPage() {
       const svcReqSn = result.data?.svcReqSn ?? editSvcReqSn;
       // 목록으로 돌아갔을 때 방금 임시저장·등록한 내용이 바로 반영되게 캐시 무효화
       queryClient.invalidateQueries({ queryKey: ['serviceRequests', 'my'] });
-      navigate(`/service-requests/${svcReqSn}`);
+      navigate(getServiceRequestDetailPath(svcReqSn));
     } catch (err) {
       setAlertMsg(err.response?.data?.message || (editSvcReqSn ? '요청서 수정에 실패했습니다.' : '요청서 등록에 실패했습니다.'));
     } finally {

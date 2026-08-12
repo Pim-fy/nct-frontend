@@ -30,6 +30,10 @@ import NotificationDetailModal from '@pages/user/notification/components/Notific
 import PointChargeWidgetModal from '@pages/user/point/components/PointChargeWidgetModal';
 import PointAmountModal from '@pages/user/point/components/PointAmountModal';
 import { submitPointAmount } from '@pages/user/point/components/pointSubmitActions';
+import {
+  SERVICE_REQUEST_CREATE_PATH,
+  SERVICE_REQUESTS_PATH,
+} from '@/routes/serviceRequestRoutes';
 import logoImg from '@assets/img/logo.png';
 import bellIcon from '@assets/img/bellIcon.png';
 import walletIcon from '@assets/img/walletIcon.png';
@@ -121,7 +125,7 @@ const Header = () => {
 
   const [serviceHovered, setServiceHovered] = useState(false);
   const serviceMenuOpen = isProvider && serviceHovered;
-  const serviceMenuPath = isProvider ? '/service' : '/service-requests/new';
+  const serviceMenuPath = isProvider ? SERVICE_REQUESTS_PATH : SERVICE_REQUEST_CREATE_PATH;
 
   const [customerHovered, setCustomerHovered] = useState(false);
   const customerOpen = customerHovered;
@@ -140,7 +144,8 @@ const Header = () => {
   const isAuctionSearchRoute = pathname === '/auction'
     || /^\/auction\/[^/]+$/.test(pathname);
   const isServiceSearchRoute = isProvider && (
-    pathname === '/service' || /^\/service-requests\/\d+$/.test(pathname)
+    pathname === SERVICE_REQUESTS_PATH
+    || /^\/services\/requests\/\d+$/.test(pathname)
   );
   const hasHeaderSearch = isAuctionSearchRoute || isServiceSearchRoute;
   // 현재 보고 있는 화면이 헤더의 어느 메뉴에 속하는지 — 호버와 무관하게 항상 활성 색상을 보여준다.
@@ -149,7 +154,8 @@ const Header = () => {
   // 리뷰 작성 화면을 보고 있을 때도 "경매" 메뉴가 계속 활성 색상으로 켜지는 문제가 있었다.
   // isAuctionSearchRoute와 동일 기준(정확히 /auction 또는 /auction/:id까지만)으로 맞춘다.
   const isAuctionMenuActive = pathname === '/auction' || /^\/auction\/[^/]+$/.test(pathname);
-  const isServiceMenuActive = pathname.startsWith('/service');
+  const isServiceMenuActive = pathname === SERVICE_REQUESTS_PATH
+    || pathname.startsWith(`${SERVICE_REQUESTS_PATH}/`);
   const isCustomerMenuActive = pathname.startsWith('/customersupport');
   let headerCreateActionType = null;
   const canShowCreateAction = !authLoading && (!user || user.role === 'ROLE_USER');
@@ -393,7 +399,7 @@ const Header = () => {
                 <div className="absolute left-0 top-full w-[161px] pt-[14px] z-50">
                   <div className="rounded-[5px] border border-[#4e4e4e] bg-white py-1 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)]">
                     <Link
-                      to="/service"
+                      to={SERVICE_REQUESTS_PATH}
                       className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
                       onClick={() => setServiceHovered(false)}
                     >
@@ -402,7 +408,7 @@ const Header = () => {
                     {SERVICE_CATEGORIES.map((label) => (
                       <Link
                         key={label}
-                        to={`/service?category=${encodeURIComponent(label)}`}
+                        to={`${SERVICE_REQUESTS_PATH}?category=${encodeURIComponent(label)}`}
                         className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
                         onClick={() => setServiceHovered(false)}
                       >
@@ -933,13 +939,13 @@ const Header = () => {
                 </button>
                 {mobileServiceOpen && (
                   <div className="flex flex-col gap-1 pb-3 pl-2">
-                    <Link to="/service" className="py-2 text-[16px] font-bold text-primary" onClick={closeMobileMenu}>
+                    <Link to={SERVICE_REQUESTS_PATH} className="py-2 text-[16px] font-bold text-primary" onClick={closeMobileMenu}>
                       전체보기
                     </Link>
                     {SERVICE_CATEGORIES.map((label) => (
                       <Link
                         key={label}
-                        to={`/service?category=${encodeURIComponent(label)}`}
+                        to={`${SERVICE_REQUESTS_PATH}?category=${encodeURIComponent(label)}`}
                         className="py-2 text-[15px] text-[#4e4e4e]"
                         onClick={closeMobileMenu}
                       >
@@ -952,7 +958,7 @@ const Header = () => {
             ) : (
               <div className="border-b border-[#f0f0f0]">
                 <Link
-                  to="/service-requests/new"
+                  to={SERVICE_REQUEST_CREATE_PATH}
                   className="flex w-full items-center justify-between py-4 text-[20px] font-bold text-[#333333]"
                   onClick={closeMobileMenu}
                 >

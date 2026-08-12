@@ -11,6 +11,7 @@ import AppRoutes from '@routes/AppRoutes';
 import ScrollToTopOnNavigation from '@components/common/ScrollToTopOnNavigation';
 import './App.css';
 import '@assets/css/common.css';
+import '@components/common/FeedbackDialog.css';
 
 function App() {
   return (

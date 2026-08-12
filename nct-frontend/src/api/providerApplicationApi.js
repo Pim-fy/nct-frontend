@@ -25,6 +25,14 @@ export const rejectProviderApplication = ({ applicationSn, reason }) =>
   api.post(`/admin/provider-applications/${applicationSn}/reject`, { reason })
     .then((response) => response.data.data);
 
+export const stopProviderPermission = ({ applicationSn, reason, requestId }) =>
+  api.post(`/admin/provider-applications/${applicationSn}/permission/stop`, { reason, requestId })
+    .then((response) => response.data.data);
+
+export const restoreProviderPermission = ({ applicationSn, reason, requestId }) =>
+  api.post(`/admin/provider-applications/${applicationSn}/permission/restore`, { reason, requestId })
+    .then((response) => response.data.data);
+
 // 담당자 7 · F-PROV-003: 관리자 제공자 심사 모달에서 제출 서류 원문을 새 탭으로 열기 위한 URL입니다.
 // 실제 파일 접근 권한과 신청-파일 연결 여부는 백엔드 AdminProviderFileController가 다시 검증합니다.
 export const getAdminProviderApplicationFileDownloadUrl = ({ applicationSn, flSn }) =>

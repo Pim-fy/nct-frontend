@@ -51,26 +51,14 @@
 }
 
 .provider-public-page .provider-public-tabs {
-  gap: 24px;
   margin-bottom: 30px;
 }
 
-.provider-public-page .provider-public-tabs button {
-  padding: 0 0 13px;
-}
+.provider-public-page .provider-public-tabs .common-tabs__list { gap: 24px; }
 
 .provider-public-page .provider-panel-empty {
   margin: 0;
   padding: 72px 20px;
-}
-
-.provider-public-page .provider-public-tabs button {
-  transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease;
-}
-
-.provider-public-page .provider-public-tabs button:hover {
-  color: #0057dc;
-  background: #f7faff;
 }
 
 .provider-public-page .provider-review-list article,
