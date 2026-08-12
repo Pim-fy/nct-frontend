@@ -9,6 +9,7 @@ import { Link, useParams } from 'react-router-dom';
 import {
   ExternalLink,
   Flag,
+  List,
   X,
 } from 'lucide-react';
 import {
@@ -681,6 +682,7 @@ const TradeChat = ({
                       <div className="trade-chat-conversation__action-group">
                         {activeTradeDetailPath && (
                           <Link
+                            aria-label="거래 상세로 이동"
                             className="btn trade-chat-conversation__trade-detail"
                             to={activeTradeDetailPath}
                           >
@@ -689,6 +691,7 @@ const TradeChat = ({
                           </Link>
                         )}
                         <button
+                          aria-label="채팅 신고하기"
                           className="btn trade-chat-conversation__report"
                           type="button"
                           onClick={() => setIsReportOpen(true)}
@@ -713,6 +716,7 @@ const TradeChat = ({
                             aria-label="채팅 목록으로"
                             onClick={clearSelectedChatRoom}
                           >
+                            <List size={17} aria-hidden="true" />
                             <span>목록</span>
                           </button>
                         )}
@@ -749,28 +753,30 @@ const TradeChat = ({
                     <label className="sr-only" htmlFor="trade-chat-message">
                       메시지 입력
                     </label>
-                    <textarea
-                      id="trade-chat-message"
-                      maxLength={MAX_MESSAGE_LENGTH}
-                      value={messageInput}
-                      onChange={(event) => setMessageInput(event.target.value)}
-                      onKeyDown={handleMessageInputKeyDown}
-                      placeholder={isActiveRoomClosed
-                        ? '완료된 거래의 채팅 기록입니다.'
-                        : '메시지를 입력하세요.'}
-                      disabled={isSubmitting || isActiveRoomClosed}
-                    />
-                    <div className="trade-chat-composer__footer">
-                      <span>{messageInput.length}/{MAX_MESSAGE_LENGTH}</span>
+                    <div className="trade-chat-composer__input-row">
+                      <textarea
+                        id="trade-chat-message"
+                        maxLength={MAX_MESSAGE_LENGTH}
+                        value={messageInput}
+                        onChange={(event) => setMessageInput(event.target.value)}
+                        onKeyDown={handleMessageInputKeyDown}
+                        placeholder={isActiveRoomClosed
+                          ? '완료된 거래의 채팅 기록입니다.'
+                          : '메시지를 입력하세요.'}
+                        disabled={isSubmitting || isActiveRoomClosed}
+                      />
                       {!isActiveRoomClosed && (
                         <button
-                          className="btn btn-primary"
+                          className="btn btn-primary trade-chat-composer__send"
                           type="submit"
-                          disabled={isSubmitting}
+                          disabled={isSubmitting || !messageInput.trim()}
                         >
                           {isSubmitting ? '전송 중...' : '전송'}
                         </button>
                       )}
+                    </div>
+                    <div className="trade-chat-composer__footer">
+                      <span>{messageInput.length}/{MAX_MESSAGE_LENGTH}</span>
                     </div>
                   </form>
                 </>

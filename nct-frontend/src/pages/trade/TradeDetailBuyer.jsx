@@ -160,7 +160,7 @@ const TradeDetailBuyer = ({
       if (trade.chatRoomStatus === 'NOT_STARTED') {
         await startTradeChat(tradeId);
         setTrade((currentTrade) => currentTrade
-          ? { ...currentTrade, chatRoomStatus: 'ACTIVE' }
+          ? { ...currentTrade, chatRoomStatus: 'ACTIVE', chatAvailable: true }
           : currentTrade);
       }
       if (onOpenChat) onOpenChat(tradeId);
