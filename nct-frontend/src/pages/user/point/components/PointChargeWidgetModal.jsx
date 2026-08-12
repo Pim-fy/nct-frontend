@@ -133,7 +133,9 @@ const PointChargeWidgetModal = ({ infoRow, onClose }) => {
       >
         ×
       </button>
-      <div className="user-modal-overlay flex items-center justify-center bg-black/40 p-6" onClick={onClose}>
+      {/* 결제 주문이 이미 생성된 상태일 수 있어 바깥 클릭으로 실수로 닫히지 않게 한다 —
+          닫기는 명시적 버튼(우상단 X, 상단 "닫기", ESC)으로만 가능 */}
+      <div className="user-modal-overlay flex items-center justify-center bg-black/40 p-6">
         <div
           className="w-full max-w-[560px] max-h-[85vh] overflow-y-auto overscroll-contain bg-white rounded-2xl p-6 shadow-[0_20px_80px_rgba(0,0,0,0.25)]"
           aria-labelledby="point-charge-modal-title"
