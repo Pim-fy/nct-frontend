@@ -21,7 +21,7 @@ import ServiceRequestImageUpload from '@components/service/ServiceRequestImageUp
 import { toImageUrl, uploadImage } from '@api/fileApi';
 import DateRangePicker from '@components/product/DateRangePicker';
 import RegionSelector from '@components/common/RegionSelector';
-import { formatBudget, formatPoint, formatPointUnitText } from '@utils/common';
+import { formatPoint, formatPointUnitText } from '@utils/common';
 import { buildServiceRequestWizardCatalog } from './serviceRequestFormAdapter';
 
 const MAX_IMAGES = 5;
@@ -155,35 +155,6 @@ function buildPreviewSteps(steps, startStepId, excludeIds) {
     cur = getDefaultNextStep(steps, cur);
   }
   return preview;
-}
-
-function parseAnswerToDraft(step, value) {
-  if (step.type === 'multi') {
-    const labels = value ? value.split(', ') : [];
-    const freeText = {};
-    const draft = labels.map(l => {
-      const m = l.match(/^기타\((.*)\)$/);
-      if (m) { freeText[ETC] = m[1]; return ETC; }
-      return l;
-    });
-    return { draft, freeText };
-  }
-  if (step.type === 'form') {
-    if (value === '(입력 없음)') return { draft: {}, freeText: {} };
-    const draft = {};
-    const freeText = {};
-    value.split(' / ').forEach(pair => {
-      const sep = pair.indexOf(': ');
-      if (sep === -1) return;
-      const key = pair.slice(0, sep);
-      let v = pair.slice(sep + 2);
-      const m = v.match(/^기타\((.*)\)$/);
-      if (m) { freeText[key] = m[1]; v = ETC; }
-      draft[key] = v;
-    });
-    return { draft, freeText };
-  }
-  return { draft: undefined, freeText: {} };
 }
 
 export default function ServiceRequestFormPage() {
@@ -365,68 +336,15 @@ export default function ServiceRequestFormPage() {
       setAddressDraft(newAddressDraft);
       const lastId = newChain[newChain.length - 1];
       setIsComplete(Boolean(lastId && newAnswers[lastId] !== undefined && !steps[lastId]?.next));
+      // 이어서 작성 시 마지막 카드가 아직 미답변 상태면(임시저장 시점에 답변 전이었던 단계)
+      // 새로 시작할 때(handleCategorySelect)처럼 그 카드를 자동으로 펼쳐서, 사용자가 직접
+      // 스크롤해서 다음에 뭘 눌러야 할지 찾지 않아도 되게 한다
+      if (lastId && newAnswers[lastId] === undefined) {
+        setExpandedStepId(lastId);
+      }
       setImages((s.imageList ?? []).map(img => ({ id: img.flSn, flSn: img.flSn, url: img.url, file: null })));
       if (newChain.length > 0) setPolicyAgreed(true);
-      return;
     }
-
-    const items = Array.isArray(s.items) ? s.items : [];
-    let stepId = firstStepId;
-    let idx = 0;
-    const newChain = [];
-    const newAnswers = {};
-    const newDraft = {};
-    const newFreeText = {};
-
-    while (stepId && steps[stepId] && idx < items.length) {
-      const step = steps[stepId];
-      const raw = items[idx];
-      const prefix = `${step.title}: `;
-      if (typeof raw !== 'string' || !raw.startsWith(prefix)) break;
-
-      const value = raw.slice(prefix.length);
-      newAnswers[stepId] = value;
-      const parsed = parseAnswerToDraft(step, value);
-      newDraft[stepId] = parsed.draft;
-      Object.entries(parsed.freeText).forEach(([key, text]) => { newFreeText[`${stepId}:${key}`] = text; });
-      newChain.push(stepId);
-      idx += 1;
-
-      let nextId = step.next;
-      if (step.type === 'single') {
-        const answerLabel = value.startsWith(`${ETC}(`) ? ETC : value;
-        const opt = step.options.find(o => o.label === answerLabel);
-        if (opt?.next) nextId = opt.next;
-      }
-      stepId = nextId;
-    }
-
-    // budget/memo는 저장 시 items 배열에서 빠지고 svcReqBdgtAmt/svcReqCn으로 따로 저장되므로,
-    // 위 루프가 자연스럽게 소비를 못 하고 budget 직전에서 멈춘다. 여기서 체인에 직접 이어붙인다.
-    // svcReqBdgtAmt가 null이면 "아직 예산 단계에 도달 못 함"과 "협의 후 결정을 선택함"을 구분할 수 없는데,
-    // 여기까지 온 이상 이미 예산 단계를 지났다고 보고 협의 후 결정으로 간주한다.
-    if (steps[stepId]?.stepKey === 'budget') {
-      const hasAmount = s.svcReqBdgtAmt != null;
-      newAnswers[stepId] = hasAmount ? `예산: ${formatBudget(s.svcReqBdgtAmt)}` : '예산: 협의 후 결정';
-      newDraft[stepId] = { 예산: hasAmount ? String(s.svcReqBdgtAmt) : '' };
-      newChain.push(stepId);
-      stepId = steps[stepId].next;
-    }
-    if (steps[stepId]?.stepKey === 'memo') {
-      newAnswers[stepId] = s.svcReqCn ? `메모: ${s.svcReqCn}` : '(입력 없음)';
-      newDraft[stepId] = { 메모: s.svcReqCn || '' };
-      newChain.push(stepId);
-    }
-
-    setChain(newChain);
-    setAnswers(newAnswers);
-    setStepDraft(prev => ({ ...prev, ...newDraft }));
-    setFreeTextDraft(prev => ({ ...prev, ...newFreeText }));
-    setAddressDraft({});
-    setImages((s.imageList ?? []).map(img => ({ id: img.flSn, flSn: img.flSn, url: img.url, file: null })));
-    // 기존에 임시저장된 요청서를 이어서 작성하는 경우 — 이미 답변된 단계가 있다는 건
-    // 정책 안내 단계를 지나 여기까지 진행했다는 뜻이므로 다시 체크하게 하지 않는다.
-    if (newChain.length > 0) setPolicyAgreed(true);
   }
 
   useEffect(() => {
