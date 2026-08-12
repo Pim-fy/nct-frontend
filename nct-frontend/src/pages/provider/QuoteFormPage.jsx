@@ -261,17 +261,6 @@ export default function QuoteFormPage() {
   const fmtSize = (size) =>
     size < 1024 * 1024 ? Math.round(size / 1024) + "KB" : (size / 1024 / 1024).toFixed(1) + "MB";
 
-  const downloadNewFile = (f) => {
-    const url = URL.createObjectURL(f.file);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = f.name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   const uploadFiles = async () => {
     const results = await Promise.all(attachFiles.map(f => uploadQuotePhoto(f.file)));
     return results.map(r => r.flSn);
@@ -481,21 +470,6 @@ export default function QuoteFormPage() {
                             onClick={() => removeExistingAttachment(attachment.flSn)}
                             aria-label="기존 첨부파일 삭제"
                           >×</button>
-                          <a
-                            href={toImageUrl(attachment.url)}
-                            download={attachment.fileName}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="qf-thumb-name qf-thumb-dl"
-                            title={attachment.fileName}
-                          >
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                              <polyline points="7 10 12 15 17 10"/>
-                              <line x1="12" y1="15" x2="12" y2="3"/>
-                            </svg>
-                            다운로드
-                          </a>
                         </div>
                       );
                     })}
@@ -514,19 +488,6 @@ export default function QuoteFormPage() {
                           onClick={() => removeFile(f.id)}
                           aria-label="삭제"
                         >×</button>
-                        <button
-                          type="button"
-                          className="qf-thumb-name qf-thumb-dl"
-                          title={f.name}
-                          onClick={() => downloadNewFile(f)}
-                        >
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                            <polyline points="7 10 12 15 17 10"/>
-                            <line x1="12" y1="15" x2="12" y2="3"/>
-                          </svg>
-                          다운로드
-                        </button>
                       </div>
                     ))}
                     {Array.from({ length: MAX_ATTACH - existingAttachments.length - attachFiles.length }, (_, i) => (
@@ -704,22 +665,8 @@ export default function QuoteFormPage() {
                         {isImg && (
                           <img src={toImageUrl(a.url)} alt={displayName} style={{ width: '100%', display: 'block', maxHeight: 320, objectFit: 'contain', background: '#eee' }} />
                         )}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '8px 12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px' }}>
                           <span style={{ fontSize: 14, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{displayName}</span>
-                          <a
-                            href={toImageUrl(a.url)}
-                            download={displayName}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#0064ff', textDecoration: 'none', flexShrink: 0, fontWeight: 500 }}
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                              <polyline points="7 10 12 15 17 10"/>
-                              <line x1="12" y1="15" x2="12" y2="3"/>
-                            </svg>
-                            다운로드
-                          </a>
                         </div>
                       </div>
                     );
@@ -729,20 +676,8 @@ export default function QuoteFormPage() {
                       {f.previewUrl && (
                         <img src={f.previewUrl} alt={f.name} style={{ width: '100%', display: 'block', maxHeight: 320, objectFit: 'contain', background: '#eee' }} />
                       )}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '8px 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px' }}>
                         <span style={{ fontSize: 14, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{f.name}</span>
-                        <button
-                          type="button"
-                          onClick={() => downloadNewFile(f)}
-                          style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#0064ff', background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0, fontWeight: 500 }}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                            <polyline points="7 10 12 15 17 10"/>
-                            <line x1="12" y1="15" x2="12" y2="3"/>
-                          </svg>
-                          다운로드
-                        </button>
                       </div>
                     </div>
                   ))}
