@@ -89,9 +89,7 @@
 }
 
 .trade-history-tabs {
-  display: flex;
-  gap: 6px;
-  padding-bottom: 18px;
+  margin-bottom: 18px;
 }
 
 /* 구매 거래 목록은 참조 시안처럼 상태별 탭을 한 줄로 두어 빠르게 전환한다. */
@@ -143,29 +141,6 @@
 
 .trade-history-buyer-filter--active span {
   background: #1466f5;
-}
-
-.trade-history-tab {
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: #7b8595;
-  cursor: pointer;
-  padding: 10px 16px;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.trade-history-tab--active {
-  background: #e9f0ff;
-  color: #155eef;
-}
-
-.trade-history-tab span {
-  margin-left: 3px;
-  color: inherit;
-  font-size: 12px;
 }
 
 .trade-history-filters {

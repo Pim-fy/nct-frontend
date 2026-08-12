@@ -2,6 +2,7 @@
 // 프론트엔드가 백엔드 API를 호출할 때 쓰는 공통 통신 설정 파일.
 // 타 API 파일에서 이 파일의 api라는 Axios 인스턴스를 가져다 씀.
 import axios from 'axios';
+import { notify } from '@utils/common';
 
 export const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -90,7 +91,10 @@ api.interceptors.response.use(
       (errorCode === 'ACCOUNT_SUSPENDED' || errorCode === 'WITHDRAWN_USER')
       && !originalRequest.skipAuthStateRedirect
     ) {
-      alert(error.response.data.message);
+      await notify({
+        icon: 'warning',
+        title: error.response.data.message,
+      });
       localStorage.removeItem('isLogin');
       redirectToLogin();
       return Promise.reject(error);
@@ -127,7 +131,11 @@ api.interceptors.response.use(
 
         // 비로그인 상태를 오류처럼 안내하지 않기 위한 처리.
         if (!originalRequest.url?.includes('/auth/me')) {
-          alert('보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.');
+          await notify({
+            icon: 'warning',
+            title: '로그인이 만료되었습니다.',
+            text: '보안을 위해 다시 로그인해 주세요.',
+          });
           localStorage.removeItem('isLogin');     // localStorage의 islogin값 삭제.
           redirectToLogin();
         }

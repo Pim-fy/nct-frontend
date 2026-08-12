@@ -1,6 +1,6 @@
 // src/pages/service/QuoteDetailPage.jsx
 // 담당자 7 연결 · F-SVC-005~010: 요청자는 신고·선택, 제공자는 본인 견적 조회·수정을 하는 공용 상세 화면
-// 라우트: /service-requests/:svcReqSn/quotes/:quoteId
+// 라우트: /services/requests/:svcReqSn/quotes/:quoteId
 //
 // 목록에서 클릭할 때 넘겨준 견적 데이터를 우선 쓰고(location.state.quote), 새로고침 등으로
 // state가 없으면 역할별 단건·목록 조회 계약으로 quoteId를 복구한다.
@@ -17,6 +17,10 @@ import ViewSkeleton from '@components/skeleton/ViewSkeleton';
 import Toast from '@components/common/Toast';
 import { formatBudget } from '@utils/common';
 import { getServiceTradeDetailPath } from '@/routes/myPageRoutes';
+import {
+  getServiceRequestDetailPath,
+  getServiceRequestQuoteEditPath,
+} from '@/routes/serviceRequestRoutes';
 
 const QUOTE_STATUS_LABEL = {
   QUTC0001: '제출됨',
@@ -38,6 +42,8 @@ const REQUEST_STATUS_BADGE_CLASS = {
   SVCC0003: 'bg-[#e8f0fe] text-[#1a56a4]',
   SVCC0004: 'bg-[#f0f0ee] text-[#5f5e5a]',
 };
+
+const REQUEST_ITEM_PREVIEW_LIMIT = 8;
 
 function fmtDate(dt) {
   if (!dt) return '';
@@ -99,6 +105,7 @@ export default function QuoteDetailPage() {
     : [];
   const quoteHistoryLoading = hasQuoteHistory
     && quoteHistoryResult.quoteId !== quoteHistoryTargetId;
+  const groupedRequestItems = groupRequestItems(request?.items);
 
   // 이 견적이 속한 요청서 요약 — 영역에 비해 견적 내용만으로는 휑해서 참고용으로 같이 보여준다.
   // 목록에서 넘어올 때 이미 요청서 상세를 불러온 상태라 그걸 그대로 받아쓰고, 새로고침 등으로
@@ -174,7 +181,7 @@ export default function QuoteDetailPage() {
   };
 
   const handleEditOwnQuote = () => {
-    navigate(`/service-requests/${svcReqSn}/quotes/${quote.qutSn}/edit`, {
+    navigate(getServiceRequestQuoteEditPath(svcReqSn, quote.qutSn), {
       state: {
         from: returnPath || '/user/mypage/services/quotes',
         quoteTitle: quote.qutTtl || '',
@@ -222,9 +229,11 @@ export default function QuoteDetailPage() {
                 </p>
               </div>
             </div>
-            <span className="shrink-0 rounded-lg bg-[#f0f0ee] px-3 py-1 text-sm font-medium text-[#5f5e5a]">
-              {QUOTE_STATUS_LABEL[quote.statusCode] ?? quote.statusCode}
-            </span>
+            {['QUTC0004', 'QUTC0005'].includes(quote.statusCode) && (
+              <span className="shrink-0 rounded-lg bg-[#f0f0ee] px-3 py-1 text-sm font-medium text-[#5f5e5a]">
+                {QUOTE_STATUS_LABEL[quote.statusCode] ?? quote.statusCode}
+              </span>
+            )}
           </div>
 
           <div className="mt-5 grid grid-cols-2 gap-3">
@@ -348,22 +357,34 @@ export default function QuoteDetailPage() {
           )}
         </article>
 
-        <aside className="sticky top-6 rounded-2xl border border-[#e8e8e8] bg-[#f9fafb] p-5">
-          <span className="text-xs font-semibold text-[#9a9ba5]">이 요청서 요약</span>
-          <div className="mt-1">
+        <aside className="sticky top-6 rounded-2xl border border-[#e8e8e8] bg-[#f9fafb] p-4">
+          <div className="flex items-center justify-between gap-2">
+            {request && (
+              <span className={`inline-block rounded-lg px-2.5 py-1 text-xs font-medium ${REQUEST_STATUS_BADGE_CLASS[request.svcReqStatusCd] ?? 'bg-[#f0f0ee] text-[#5f5e5a]'}`}>
+                {REQUEST_STATUS_LABEL[request.svcReqStatusCd] ?? request.svcReqStatusCd}
+              </span>
+            )}
+            {groupedRequestItems.length > REQUEST_ITEM_PREVIEW_LIMIT && (
+              <Link
+                to={getServiceRequestDetailPath(svcReqSn)}
+                aria-label={`요청 항목 ${groupedRequestItems.length}개 보기`}
+                className="btn btn-primary btn-sm !h-9 !px-3 !text-sm shrink-0"
+              >
+                항목 보기
+              </Link>
+            )}
+          </div>
+          <div className="mt-2">
             <Link
-              to={`/service-requests/${svcReqSn}`}
-              className="text-lg font-bold text-[#1d1d1f] hover:text-primary hover:underline"
+              to={getServiceRequestDetailPath(svcReqSn)}
+              className="line-clamp-2 text-lg font-bold leading-7 text-[#1d1d1f] hover:text-primary hover:underline"
             >
               {request?.svcReqTtl ?? '요청서 상세로'}
             </Link>
           </div>
           {request && (
             <>
-              <span className={`mt-2 inline-block rounded-lg px-2.5 py-1 text-xs font-medium ${REQUEST_STATUS_BADGE_CLASS[request.svcReqStatusCd] ?? 'bg-[#f0f0ee] text-[#5f5e5a]'}`}>
-                {REQUEST_STATUS_LABEL[request.svcReqStatusCd] ?? request.svcReqStatusCd}
-              </span>
-              <dl className="mt-3 space-y-2 border-t border-[#e2e1dc] pt-3 text-sm">
+              <dl className="mt-2 space-y-1.5 border-t border-[#e2e1dc] pt-2 text-sm">
                 <div className="flex justify-between gap-2">
                   <dt className="text-[#9a9ba5]">카테고리</dt>
                   <dd className="font-semibold text-[#1d1d1f]">{request.catNm}</dd>
@@ -374,24 +395,21 @@ export default function QuoteDetailPage() {
                 </div>
               </dl>
               {request.items?.length > 0 && (
-                <div className="mt-3 border-t border-[#e2e1dc] pt-3">
-                  <span className="text-xs font-semibold text-[#9a9ba5]">요청 항목</span>
-                  <ul className="mt-1.5 space-y-2.5">
-                    {groupRequestItems(request.items).slice(0, 10).map((entry, i) => (
-                      <li key={i} className="text-sm">
-                        <p className="text-xs text-[#9a9ba5]">{entry.title}</p>
-                        {entry.value && <p className="mt-0.5 font-medium text-[#1d1d1f]">{entry.value}</p>}
+                <div className="mt-2 border-t border-[#e2e1dc] pt-2">
+                  <ul className="space-y-1.5">
+                    {groupedRequestItems.slice(0, REQUEST_ITEM_PREVIEW_LIMIT).map((entry, i) => (
+                      <li key={i} className="min-w-0 text-sm">
+                        <p className="truncate text-xs leading-4 text-[#9a9ba5]" title={entry.title}>
+                          {entry.title}
+                        </p>
+                        {entry.value && (
+                          <p className="truncate font-medium leading-5 text-[#1d1d1f]" title={entry.value}>
+                            {entry.value}
+                          </p>
+                        )}
                       </li>
                     ))}
                   </ul>
-                  {groupRequestItems(request.items).length > 10 && (
-                    <Link
-                      to={`/service-requests/${svcReqSn}`}
-                      className="mt-2 inline-block text-sm font-medium text-primary hover:underline"
-                    >
-                      항목 {groupRequestItems(request.items).length}개 전체 보기 →
-                    </Link>
-                  )}
                 </div>
               )}
             </>

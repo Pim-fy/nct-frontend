@@ -7,6 +7,7 @@ import BrandLogo from '@components/common/BrandLogo';
 import AuthPageContainer from '@components/auth/AuthPageContainer';
 import AuthCard from '@components/auth/AuthCard';
 import { createSuspendedInquiry } from '@api/customerInquiryApi';
+import { notify } from '@utils/common';
 
 // ── 소셜 로그인 버튼 데이터 ──────────────────────────────
 const SOCIAL_PROVIDERS = [
@@ -83,7 +84,7 @@ export default function LoginPage() {
   // ── 일반 로그인 ───────────────────────────────────────
   const handleLogin = async () => {
     if (!userId.trim() || !password.trim()) {
-      alert('아이디와 비밀번호를 입력해주세요.');
+      await notify({ icon: 'warning', title: '아이디와 비밀번호를 입력해주세요.', size: 'sm' });
       return;
     }
 
@@ -98,16 +99,16 @@ export default function LoginPage() {
       navigate(safePath, { replace: true });
     } catch (error) {
       // @ai_generated: F-AUTH-011/017 - ACCOUNT_SUSPENDED만 따로 분기해 고객센터 안내 + 비로그인
-      // 문의 접수 폼이 있는 모달로 안내한다. WITHDRAWN_USER 등 나머지는 기존 message alert() 유지.
+      // 문의 접수 폼이 있는 모달로 안내한다. WITHDRAWN_USER 등 나머지는 공통 알림으로 안내한다.
       if (error.response?.data?.code === 'ACCOUNT_SUSPENDED') {
         setSuspendedLoginId(userId);
         setSuspendedInquiryToken(error.response?.data?.data?.inquiryToken ?? null);
       } else if (error.response?.status === 401) {
-        alert('아이디 또는 비밀번호가 일치하지 않습니다.');
+        await notify({ icon: 'error', title: '아이디 또는 비밀번호가 일치하지 않습니다.' });
       } else if (error.response?.data?.message) {
-        alert(error.response.data.message);
+        await notify({ icon: 'error', title: error.response.data.message });
       } else {
-        alert('로그인 처리 중 오류가 발생했습니다.');
+        await notify({ icon: 'error', title: '로그인 처리 중 오류가 발생했습니다.' });
       }
     } finally {
       setLoading(false);

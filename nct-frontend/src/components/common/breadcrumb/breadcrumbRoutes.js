@@ -20,6 +20,14 @@ import {
   getServiceTradeChatPath,
   getServiceTradeDetailPath,
 } from '@/routes/myPageRoutes';
+import {
+  getServiceRequestDetailPath,
+  getServiceRequestQuoteCreatePath,
+  getServiceRequestQuoteDetailPath,
+  getServiceRequestQuoteEditPath,
+  SERVICE_REQUEST_CREATE_PATH,
+  SERVICE_REQUEST_DETAIL_ROUTE,
+} from '@/routes/serviceRequestRoutes';
 
 // 항목 형태: { label: '표시명', to: '이동 경로' } — to가 없으면 링크 없이 텍스트만 표시
 export const HOME_ITEM = { label: '홈', to: '/' };
@@ -63,8 +71,8 @@ export const buildMyPageTrail = (sectionKey, isProvider = false) => {
 //                    경로 파라미터가 필요하면 함수로 정의한다.
 //  - hidden: true  : 파라미터 패턴과 URL이 겹치는 목록 페이지를 명시적으로 제외하기 위한 표시
 //
-// ※ matchPath는 배열 순서대로 첫 매치를 쓰므로, 구체 경로(/service-requests/new)를
-//    파라미터 경로(/service-requests/:svcReqSn)보다 반드시 앞에 둔다.
+// ※ matchPath는 배열 순서대로 첫 매치를 쓰므로, 구체 경로(/services/requests/new)를
+//    파라미터 경로(/services/requests/:svcReqSn)보다 반드시 앞에 둔다.
 // ─────────────────────────────────────────────────────────────────────────────
 export const BREADCRUMB_ROUTES = [
   // 경매
@@ -100,34 +108,34 @@ export const BREADCRUMB_ROUTES = [
   // 서비스 요청 — /new, /me가 :svcReqSn 패턴과 겹치므로 구체 경로 먼저
   {
     // 일반회원이 헤더에서 바로 진입하는 독립 작성 화면이라 상위는 홈만 둔다.
-    pattern: '/service-requests/new',
+    pattern: SERVICE_REQUEST_CREATE_PATH,
     pageLabel: '서비스 요청 작성',
     defaultTrail: [],
   },
   {
-    pattern: '/service-requests/:svcReqSn/quotes/new',
+    pattern: getServiceRequestQuoteCreatePath(':svcReqSn'),
     pageLabel: '견적 작성',
     defaultTrail: ({ svcReqSn }) => [
-      { label: '서비스 요청 상세', to: `/service-requests/${svcReqSn}` },
+      { label: '서비스 요청 상세', to: getServiceRequestDetailPath(svcReqSn) },
     ],
   },
   {
-    pattern: '/service-requests/:svcReqSn/quotes/:quoteId/edit',
+    pattern: getServiceRequestQuoteEditPath(':svcReqSn', ':quoteId'),
     pageLabel: '견적 수정',
     defaultTrail: ({ svcReqSn }) => [
-      { label: '서비스 요청 상세', to: `/service-requests/${svcReqSn}` },
+      { label: '서비스 요청 상세', to: getServiceRequestDetailPath(svcReqSn) },
     ],
   },
   {
-    pattern: '/service-requests/:svcReqSn/quotes/:quoteId',
+    pattern: getServiceRequestQuoteDetailPath(':svcReqSn', ':quoteId'),
     pageLabel: '견적 상세',
     defaultTrail: ({ svcReqSn }) => [
-      { label: '서비스 요청 상세', to: `/service-requests/${svcReqSn}` },
+      { label: '서비스 요청 상세', to: getServiceRequestDetailPath(svcReqSn) },
     ],
   },
   {
     // 일반회원과 제공자가 같은 상세 화면을 사용하므로 역할별 목록을 상위로 단정하지 않는다.
-    pattern: '/service-requests/:svcReqSn',
+    pattern: SERVICE_REQUEST_DETAIL_ROUTE,
     pageLabel: '서비스 요청 상세',
     defaultTrail: [],
   },

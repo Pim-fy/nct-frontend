@@ -1,6 +1,6 @@
 {
-  "name": "Ksteam",
-  "short_name": "Ksteam",
+  "name": "에누리컷",
+  "short_name": "에누리컷",
   "icons": [
     { "src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" }

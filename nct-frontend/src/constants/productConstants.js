@@ -13,7 +13,7 @@ export const TRADE_STATUS_LABEL = {
 export const TRADE_LABEL = {
   TRDC0009: '배송',
   TRDC0010: '직거래',
-  TRDC0020: '둘 다 가능',
+  TRDC0015: '둘 다 가능',
 };
 
 export const STATUS_LABEL = {

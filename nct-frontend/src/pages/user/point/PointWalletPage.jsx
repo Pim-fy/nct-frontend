@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import Swal from 'sweetalert2';
 
 import PointSummaryCards from './components/PointSummaryCards';
 import PointLedgerTable from './components/PointLedgerTable';
@@ -13,7 +12,9 @@ import PointAmountModal from './components/PointAmountModal';
 import PointChargeWidgetModal from './components/PointChargeWidgetModal';
 import PointHistoryDetailModal from './components/PointHistoryDetailModal';
 import { errorMessage, submitPointAmount } from './components/pointSubmitActions';
+import CommonTabs from '@components/common/CommonTabs';
 import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
+import { notify } from '@utils/common';
 import { usePointBalance, usePointLedger, usePointChargeOrders, usePointExchangeOrders } from '../../../hooks/usePoint';
 import { confirmPointCharge } from '../../../api/pointApi';
 import { useAuth } from '@hooks/useAuth';
@@ -126,21 +127,19 @@ const PointWalletPage = ({ embedded = false } = {}) => {
           // 이미 나가기 버튼으로 빠져나갔으면 이제 와서 팝업을 띄우지 않는다 — 다음에 지갑을
           // 열었을 때 반영된 내역으로 충분히 알 수 있다
           if (leftManually.current) return null;
-          return Swal.fire({
+          return notify({
             icon: 'success',
             title: '충전 완료',
             text: '포인트 충전이 완료되었습니다.',
-            confirmButtonColor: '#0064ff',
           });
         })
         .catch((err) => {
           queryClient.invalidateQueries({ queryKey: ['point'] });
           if (leftManually.current) return null;
-          return Swal.fire({
+          return notify({
             icon: 'error',
             title: '충전 승인 실패',
             text: errorMessage(err),
-            confirmButtonColor: '#0064ff',
           });
         })
         .finally(() => {
@@ -153,11 +152,10 @@ const PointWalletPage = ({ embedded = false } = {}) => {
         });
     } else {
       // 실패 리다이렉트 — 토스가 붙여 준 실패 메시지를 그대로 안내 (주문은 대기 상태로 남는다)
-      Swal.fire({
+      notify({
         icon: 'error',
         title: '결제 실패',
         text: searchParams.get('message') ?? '결제가 완료되지 않았습니다.',
-        confirmButtonColor: '#0064ff',
       }).then(() => {
         if (leftManually.current) return;
         clearParams();
@@ -248,25 +246,16 @@ const PointWalletPage = ({ embedded = false } = {}) => {
       {isProvider ? (
         <>
           {/* 제공자모드: 정산 관리 화면 흡수로 포인트/정산 두 탭으로 분리 (2026-08-04) */}
-          <div className="flex gap-6 border-b border-gray-200 mt-6 mb-1">
-            {[
-              { key: 'point', label: '포인트 내역' },
-              { key: 'settlement', label: '정산 내역' },
-            ].map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setActiveTab(tab.key)}
-                className={`pb-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                  activeTab === tab.key
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          <CommonTabs
+            activeValue={activeTab}
+            ariaLabel="포인트 지갑 내역"
+            className="mt-6 mb-1"
+            items={[
+              { value: 'point', label: '포인트 내역' },
+              { value: 'settlement', label: '정산 내역' },
+            ]}
+            onChange={setActiveTab}
+          />
 
           {activeTab === 'point' && (
             <>

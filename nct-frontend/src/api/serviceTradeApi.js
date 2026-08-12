@@ -29,14 +29,6 @@ export const getAdminServiceTradeDetail = (tradeId) => (
   api.get(`/admin/service-trades/${tradeId}`).then((response) => response.data.data)
 );
 
-/**
- * F-SVC-012: 서비스 거래 당사자가 거래 문제를 접수한다.
- * payload는 disputeTypeCode, content, fileSns를 포함하며 권한·상태·파일 소유권은 서버가 검증한다.
- */
-export const submitServiceTradeDispute = (tradeId, payload) => (
-  api.post(`/trades/${tradeId}/service-disputes`, payload).then((res) => res.data)
-);
-
 /** F-SVC-014: 서비스 제공자가 완료 요청을 등록하고 의뢰자 확인 기한을 시작한다. */
 export const requestServiceCompletion = (tradeId, payload) => (
   api.post(`/trades/${tradeId}/service-completion-requests`, payload).then((res) => res.data)

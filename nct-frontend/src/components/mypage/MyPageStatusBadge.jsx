@@ -23,13 +23,7 @@ export default function MyPageStatusBadge({ children, className = 'badge-outline
         background: 'transparent',
         color,
         border: `1.5px solid ${color}`,
-        boxSizing: 'border-box',
-        height: 24,
-        padding: '0 10px',
-        borderRadius: 30,
-        fontSize: 12,
-        fontWeight: 600,
-        lineHeight: '20px',
+        borderRadius: '999px',
       }}
     >
       {children}

@@ -11,15 +11,23 @@ import api from './axios';
 export const getAuditLogs = (params = {}) =>
   api.get('/admin/audit/logs', { params }).then(res => res.data);
 
+/** 담당자 7 · F-OPS-016: 관리자 상세 화면의 주 대상·연관 대상 처리 이력입니다. */
+export const getAuditHistory = ({ refType, refSn, limit = 100 }) =>
+  api.get('/admin/audit/history', {
+    params: { refType, refSn, limit },
+    skipServerErrorRedirect: true,
+  })
+    .then(res => res.data.data);
+
 /**
  * 민감정보(채팅 메시지) 원문 제한 조회 (F-OPS-014)
- * - 사유·분쟁 건 번호 필수 — 서버가 원문 반환 "전에" 감사로그를 남긴다
- * @param {{chMsgSn: number, trdDspSn: number, reason: string}} body
+ * - 사유·거래 신고 번호 필수 — 서버가 원문 반환 "전에" 감사로그를 남긴다
+ * @param {{chMsgSn: number, reportSn: number, reason: string}} body
  */
 export const requestSensitiveView = (body) =>
   api.post('/admin/audit/sensitive-view', body).then(res => res.data);
 
-/** 담당자 7 · F-OPS-005/014: 거래 분쟁에 연결된 채팅 내역을 사유와 함께 제한 조회합니다. */
-export const requestDisputeChatView = (disputeSn, body) =>
-  api.post(`/admin/audit/disputes/${disputeSn}/chat-view`, body)
+/** 담당자 7 · F-OPS-005/014: 거래 신고에 연결된 채팅 내역을 사유와 함께 제한 조회합니다. */
+export const requestReportChatView = (reportSn, body) =>
+  api.post(`/admin/audit/reports/${reportSn}/chat-view`, body)
     .then(res => res.data.data);

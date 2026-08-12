@@ -23,6 +23,7 @@ import { useAdminDashboardSummary } from '@hooks/useAdminDashboard';
 import {
   ADMIN_OPERATIONS_RECORDS_PATH,
   ADMIN_PROVIDER_APPLICATIONS_PATH,
+  ADMIN_SERVICE_REQUESTS_PATH,
   ADMIN_SETTINGS_PATH,
 } from '@/routes/adminRoutes';
 import './Dashboard.css';
@@ -70,7 +71,7 @@ const SHORTCUTS = [
   { label: '회원 관리', to: '/admin/members', icon: Users },
   { label: '제공자 심사', to: ADMIN_PROVIDER_APPLICATIONS_PATH, icon: ClipboardCheck },
   { label: '경매 관리', to: '/admin/auctions', icon: Gavel },
-  { label: '견적 요청 관리', to: '/admin/services', icon: BriefcaseBusiness },
+  { label: '견적 요청 관리', to: ADMIN_SERVICE_REQUESTS_PATH, icon: BriefcaseBusiness },
   { label: '카테고리 관리', to: '/admin/categories', icon: Grid2X2 },
   { label: '정산 관리', to: '/admin/settlements', icon: WalletCards },
   { label: '환전 관리', to: '/admin/exchanges', icon: WalletCards },

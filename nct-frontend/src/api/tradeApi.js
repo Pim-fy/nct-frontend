@@ -192,10 +192,10 @@ export const respondOfflineTradeCompletionRequest = async (tradeId, requesterRol
   return response.data;
 };
 
-/** 담당자 7 · REQ-AUC-027/F-SVC-012: 상품·서비스 공통 거래 문제 접수 계약입니다. */
-export const submitTradeDispute = async (tradeId, payload) => {
+/** 담당자 7 · REQ-AUC-027/F-SVC-012: 상품·서비스 공통 거래 신고 접수 계약입니다. */
+export const submitTradeReport = async (tradeId, payload) => {
   const response = await api.post(
-    `${TRADE_ENDPOINT}/${tradeId}/disputes`,
+    `${TRADE_ENDPOINT}/${tradeId}/reports`,
     payload,
   );
 

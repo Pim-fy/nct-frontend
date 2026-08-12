@@ -2,6 +2,7 @@
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import '@assets/css/landing.css';
+import { getServiceRequestDetailPath } from '@/routes/serviceRequestRoutes';
 
 /**
  * 수평 스크롤 경매 카드 레일 (재사용 가능)
@@ -103,7 +104,7 @@ const AuctionCard = ({ item }) => (
 const ServiceRequestCard = ({ item }) => (
   <Link
     className="card auction-card request-card"
-    to={`/service/${item.id}`}
+    to={getServiceRequestDetailPath(item.id)}
     style={{ textDecoration: 'none', color: 'inherit' }}
   >
     <div className="auction-card-body">

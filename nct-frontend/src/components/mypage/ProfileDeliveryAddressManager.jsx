@@ -212,7 +212,7 @@ const ProfileDeliveryAddressManager = () => {
                   <span className="flex flex-wrap items-center gap-1.5">
                     <strong className="text-[14px] text-[#333]">{address.name}</strong>
                     {address.defaultAddress && (
-                      <span className="rounded-full bg-[#e8f1ff] px-1.5 py-0.5 text-[11px] font-bold text-primary-dark">
+                      <span className="badge badge-soft-info">
                         기본
                       </span>
                     )}
