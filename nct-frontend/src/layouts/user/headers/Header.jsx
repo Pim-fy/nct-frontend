@@ -40,7 +40,7 @@ const NOTICE_ROTATE_MS = 3500;
 const NOTICE_SCROLL_THRESHOLD = 48; // NoticeStrip 높이 정도 스크롤하면 전환
 
 const AUCTION_CATEGORIES = [
-  '전자기기', '생활·가구', '패션·의류', '도서·음반', '취미',
+  '전자기기', '생활·가구', '패션·의류', '도서·음반', '악기·굿즈',
   '스포츠·레저', '유아·아동', '뷰티·미용', '식품', '기타',
 ];
 
@@ -151,7 +151,11 @@ const Header = () => {
   );
   const hasHeaderSearch = isAuctionSearchRoute || isServiceSearchRoute;
   // 현재 보고 있는 화면이 헤더의 어느 메뉴에 속하는지 — 호버와 무관하게 항상 활성 색상을 보여준다.
-  const isAuctionMenuActive = pathname.startsWith('/auction');
+  // @ai_generated (담당자1, 2026-08-07): startsWith('/auction')이던 걸 좁혔다 - 거래·리뷰 경로가
+  // /auction/:auctionId/trade(/review/...) 형태로 재설계되면서, 경매 탐색이 아니라 거래 상세·
+  // 리뷰 작성 화면을 보고 있을 때도 "경매" 메뉴가 계속 활성 색상으로 켜지는 문제가 있었다.
+  // isAuctionSearchRoute와 동일 기준(정확히 /auction 또는 /auction/:id까지만)으로 맞춘다.
+  const isAuctionMenuActive = pathname === '/auction' || /^\/auction\/[^/]+$/.test(pathname);
   const isServiceMenuActive = pathname.startsWith('/service');
   const isCustomerMenuActive = pathname.startsWith('/customersupport');
   let headerCreateActionType = null;
@@ -323,7 +327,7 @@ const Header = () => {
             검색이 있는 페이지는 768~1280px 구간에서 검색창이 이 사이에 끼어들도록
             order를 매겨둔다(순서만 바꾸고 실제 DOM 위치는 그대로, 2026-08-10) */}
         <div className={`flex items-center gap-10 ${hasHeaderSearch ? 'md:order-1 xl:order-none' : ''}`}>
-          <Link to="/" className="flex shrink-0 items-center">
+          <Link to="/" className="flex shrink-0 items-center" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             <img src={logoImg} alt="에누리컷" className="h-[58px] w-auto" />
           </Link>
 
@@ -456,13 +460,6 @@ const Header = () => {
                       onClick={() => setCustomerHovered(false)}
                     >
                       FAQ
-                    </Link>
-                    <Link
-                      to="/customersupport/inquiry"
-                      className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
-                      onClick={() => setCustomerHovered(false)}
-                    >
-                      1:1 문의
                     </Link>
                   </div>
                 </div>
@@ -992,7 +989,6 @@ const Header = () => {
                   <Link to="/customersupport/notice" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>공지사항</Link>
                   <Link to="/customersupport/guide" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>이용가이드</Link>
                   <Link to="/customersupport/faq" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>FAQ</Link>
-                  <Link to="/customersupport/inquiry" className="py-2 text-[15px] text-[#4e4e4e]" onClick={closeMobileMenu}>1:1 문의</Link>
                 </div>
               )}
             </div>

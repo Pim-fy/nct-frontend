@@ -24,9 +24,14 @@ export const getServiceTradeDetail = (tradeId) => (
   api.get(`/trades/${tradeId}/service-detail`).then((response) => response.data.data)
 );
 
+/** 담당자 7 · F-OPS-005: 개인정보 원문과 당사자 행동이 제거된 관리자용 거래 상세입니다. */
+export const getAdminServiceTradeDetail = (tradeId) => (
+  api.get(`/admin/service-trades/${tradeId}`).then((response) => response.data.data)
+);
+
 /**
  * F-SVC-012: 서비스 거래 당사자가 거래 문제를 접수한다.
- * payload는 disputeTypeCode와 content를 포함하며, 권한·거래 상태·중복 접수는 서버가 검증한다.
+ * payload는 disputeTypeCode, content, fileSns를 포함하며 권한·상태·파일 소유권은 서버가 검증한다.
  */
 export const submitServiceTradeDispute = (tradeId, payload) => (
   api.post(`/trades/${tradeId}/service-disputes`, payload).then((res) => res.data)
@@ -50,4 +55,9 @@ export const requestServiceScheduleChange = (tradeId, payload) => (
 /** F-SVC-016: 일정 취소 요청은 거래 상태를 바꾸지 않고 이력으로만 기록한다. */
 export const requestServiceScheduleCancellation = (tradeId, payload) => (
   api.post(`/trades/${tradeId}/service-schedule-cancellations`, payload).then((res) => res.data)
+);
+
+/** 상대방의 일정 취소 요청을 동의하거나 거절한다. 동의 시 거래 취소·보관금 환불을 함께 처리한다. */
+export const decideServiceScheduleCancellation = (tradeId, approved) => (
+  api.post(`/trades/${tradeId}/service-schedule-cancellations/decision`, { approved }).then((res) => res.data)
 );

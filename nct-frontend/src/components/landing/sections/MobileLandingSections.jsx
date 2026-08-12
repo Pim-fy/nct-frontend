@@ -38,7 +38,7 @@ export default function MobileLandingSections({
   const isAuctionLoading = activeTab === "new" ? newAuctionLoading : closingAuctionLoading;
 
   return (
-    <div className="flex flex-col gap-8 lg:hidden">
+    <div className="flex flex-col gap-8 pb-10 lg:hidden">
       {/* ── 히어로: 배경 이미지 + 타이틀 + 태그 + 검색 + 슬라이드 배너 ── */}
       <section className="relative overflow-hidden">
         {/* 배경 이미지 + 오버레이 */}

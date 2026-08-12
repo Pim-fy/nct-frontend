@@ -228,7 +228,7 @@ export const ServiceEmptyState = () => (
 );
 
 export const ServicePagination = ({ onChange, page, totalPages }) => {
-  if (totalPages <= 1) return null;
+  if (totalPages <= 0) return null;
   const pages = getPageNumbers(page, totalPages);
   const iconButton = 'grid h-11 w-11 place-items-center border border-[#d7d7d5] text-[#4f4f4c] disabled:cursor-not-allowed disabled:opacity-35 hover:not-disabled:border-primary hover:not-disabled:text-primary';
 

@@ -1,12 +1,15 @@
 // src/pages/user/report/MyReportListPage.jsx
 // F-COM-018: 내 신고 내역 (담당자3 황성경 소유)
 import React, { useState } from "react";
+import { Paperclip } from 'lucide-react';
 import Pagination from "@components/common/Pagination";
 import MyPageListSectionLayout from "@components/mypage/MyPageListSectionLayout";
 import MyPageListSkeleton from "@components/skeleton/MyPageListSkeleton";
 import MyPageListEmpty from "@components/mypage/MyPageListEmpty";
 import MyPageListError from "@components/mypage/MyPageListError";
-import { useMyReports } from "@hooks/useAbuseReport";
+import { useMyReportDetail, useMyReports } from "@hooks/useAbuseReport";
+import { getMyReportFileBlob } from '@api/abuseReportApi';
+import { REPORT_TYPE_FALLBACK_NAMES } from '@/constants/abuseReportTypes';
 
 // ─── 코드 매핑 ────────────────────────────────────────────────────────────────
 
@@ -17,30 +20,36 @@ const STATUS_LABEL = {
   ABRC0008: "반려",
 };
 
-const STATUS_BADGE_CLS = {
-  ABRC0005: "badge-urgent",    // 접수됨  → #FFC526 채움
-  ABRC0006: "badge-aqua",      // 검토중  → 청록 채움 (badge-orange는 원래 색으로 복원되어 badge-aqua로 이전)
-  ABRC0007: "badge-gray",      // 처리완료 → 회색 채움 (종료 스타일)
-  ABRC0008: "badge-danger",    // 반려    → 빨강 채움
+// 담당자 7: 신고 유형과 처리 상태를 목록에서 바로 구분할 수 있도록 배지 색상을 분리한다.
+const STATUS_BADGE_STYLE = {
+  ABRC0005: { background: "#fff5d6", color: "#9a6700", borderColor: "#f5d77a" },
+  ABRC0006: { background: "#e8f0fe", color: "#1d4ed8", borderColor: "#b7cdf8" },
+  ABRC0007: { background: "#e8f7ed", color: "#16703b", borderColor: "#b9e3c8" },
+  ABRC0008: { background: "#fdecec", color: "#b42318", borderColor: "#f3b5b0" },
 };
 
-const TYPE_LABEL = {
-  ABRC0001: "사기·기만",
-  ABRC0002: "허위 정보",
-  ABRC0003: "욕설·비방",
-  ABRC0004: "기타",
+const TYPE_BADGE_STYLE = {
+  ABRC0009: { background: "#fff7e6", color: "#a15c00", borderColor: "#f3d19c" },
+  ABRC0010: { background: "#fff0f0", color: "#b42318", borderColor: "#f3b5b0" },
+  ABRC0011: { background: "#f4edff", color: "#6b3bbd", borderColor: "#d8c5f5" },
+  ABRC0012: { background: "#fff0f0", color: "#b42318", borderColor: "#f3b5b0" },
+  ABRC0013: { background: "#e8f0fe", color: "#1d4ed8", borderColor: "#b7cdf8" },
+  ABRC0014: { background: "#fff5d6", color: "#9a6700", borderColor: "#f5d77a" },
 };
+
+const DEFAULT_TYPE_BADGE_STYLE = { background: "#f2f4f7", color: "#475467", borderColor: "#d0d5dd" };
 
 const getTypeNames = (report) => {
   if (report.reportTypeNames?.length) return report.reportTypeNames;
   const code = report.reportTypeCode;
-  const name = TYPE_LABEL[code] ?? report.reportTypeName;
+  const name = report.reportTypeName ?? REPORT_TYPE_FALLBACK_NAMES[code];
   return name ? [name] : [];
 };
 
 const STATUS_TABS = [
   { label: "전체",    status: null },
   { label: "접수됨",  status: "ABRC0005" },
+  { label: "처리중",  status: "ABRC0006" },
   { label: "반려",    status: "ABRC0008" },
   { label: "처리완료", status: "ABRC0007" },
 ];
@@ -53,77 +62,156 @@ const fmtDate = (str) => str?.slice(0, 10).replace(/-/g, ".") ?? "-";
 
 function StatusBadge({ statusCode, style }) {
   const label = STATUS_LABEL[statusCode] ?? statusCode;
-  const cls   = STATUS_BADGE_CLS[statusCode] ?? "badge-gray";
-  return <span className={`badge ${cls}`} style={style}>{label}</span>;
+  const badgeStyle = STATUS_BADGE_STYLE[statusCode] ?? DEFAULT_TYPE_BADGE_STYLE;
+  return <span className="badge border" style={{ ...badgeStyle, ...style }}>{label}</span>;
 }
 
-function TypeBadge({ typeName, style }) {
-  return <span className="badge badge-success" style={style}>{typeName}</span>;
+function TypeBadge({ typeCode, typeName, style }) {
+  const badgeStyle = TYPE_BADGE_STYLE[typeCode] ?? DEFAULT_TYPE_BADGE_STYLE;
+  return <span className="badge border" style={{ ...badgeStyle, ...style }}>{typeName}</span>;
 }
 
 function ReportCard({ report, isOpen, onToggle, number }) {
-  const [hovered, setHovered] = React.useState(false);
+  const [fileError, setFileError] = React.useState('');
+  const [openingFileSn, setOpeningFileSn] = React.useState(null);
+  const detailQuery = useMyReportDetail(report.reportSn, isOpen);
+  const detail = detailQuery.data ?? report;
+
+  const openFile = async (file) => {
+    setFileError('');
+    setOpeningFileSn(file.fileSn);
+    try {
+      const response = await getMyReportFileBlob(report.reportSn, file.fileSn);
+      const url = URL.createObjectURL(response.data);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.target = '_blank';
+      anchor.rel = 'noreferrer';
+      anchor.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (error) {
+      setFileError(error?.response?.data?.message ?? '첨부파일을 열지 못했습니다.');
+    } finally {
+      setOpeningFileSn(null);
+    }
+  };
   return (
     <div className="transition-all bg-white overflow-hidden rounded-[15px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] border border-[#e4e9f2] hover:border-[#a0aec0] cursor-pointer">
       {/* 헤더 행 */}
       <button
         type="button"
         onClick={onToggle}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
         className="w-full text-left group bg-white cursor-pointer"
       >
-        <div className="flex items-center py-6 px-5 gap-4">
-          <span className="shrink-0 text-[14px] font-medium text-[#969696] w-6 text-center">{number}</span>
-          <div className="flex-1 min-w-0">
+        <div className="py-4 px-5 sm:py-6">
+
+          {/* ── 모바일 전용 (2행) ───────────────────────────────────── */}
+          <div className="sm:hidden">
+            {/* 1행: 번호 + 타이틀 + 화살표 */}
             <div className="flex items-center gap-2 min-w-0">
-              {getTypeNames(report).map((name) => (
-                <TypeBadge key={name} typeName={name} style={{ borderRadius: "5px", fontSize: "14px", fontWeight: 400, flexShrink: 0, height: "28px", paddingLeft: "5px", paddingRight: "5px", display: "inline-flex", alignItems: "center", color: "#333333", borderColor: "#555555" }} />
-              ))}
-              <p className="font-bold text-[18px] text-[#333] truncate mb-0 min-w-0">{report.title}</p>
+              <span className="shrink-0 text-[14px] font-medium text-[#969696] w-6 text-center">{number}</span>
+              <p className="font-bold text-[16px] text-[#333] truncate mb-0 min-w-0 flex-1">
+                {report.targetName?.trim() || report.title || '-'}
+              </p>
+              <svg
+                className={`size-5 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-0 text-[#0064ff]" : "rotate-180 text-[#aaa] group-hover:text-[#0064ff]"}`}
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+            {/* 2행: 날짜 + 접수상태 (번호 너비만큼 indent) */}
+            <div className="flex items-center gap-2 mt-1.5 pl-8">
+              <span className="text-[13px] text-[#969696]">{fmtDate(report.registeredAt)}</span>
+              <StatusBadge statusCode={report.statusCode} style={{ borderRadius: "5px", fontSize: "13px", fontWeight: 400 }} />
             </div>
             {report.processReason && !isOpen && (
-              <div className="flex items-center gap-1 mt-1.5">
+              <div className="flex items-center gap-1 mt-1.5 pl-8">
                 <svg className="size-3.5 shrink-0 text-[#0064ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                     d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                 </svg>
-                <span className="text-[14px] text-[#0064ff]">관리자 답변 있음</span>
+                <span className="text-[13px] text-[#0064ff]">관리자 답변 있음</span>
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2 pl-3 shrink-0">
-            <span className="text-[14px] text-[#969696]">{fmtDate(report.registeredAt)}</span>
-            <StatusBadge statusCode={report.statusCode} style={{ borderRadius: "5px", fontSize: "14px", fontWeight: 400 }} />
-            <svg
-              className={`size-5 transition-transform duration-200 ${isOpen ? "rotate-0 text-[#0064ff]" : "rotate-180 text-[#aaa] group-hover:text-[#0064ff]"}`}
-              fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-            </svg>
+
+          {/* ── 데스크톱 전용 (1행, 기존 유지) ─────────────────────── */}
+          <div className="hidden sm:flex items-center gap-4">
+            <span className="shrink-0 text-[14px] font-medium text-[#969696] w-6 text-center">{number}</span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                {getTypeNames(report).map((name) => (
+                  <TypeBadge key={name} typeCode={report.reportTypeCode} typeName={name} style={{ borderRadius: "5px", fontSize: "14px", fontWeight: 400, flexShrink: 0, height: "28px", paddingLeft: "7px", paddingRight: "7px", display: "inline-flex", alignItems: "center" }} />
+                ))}
+                <p className="font-bold text-[18px] text-[#333] truncate mb-0 min-w-0">{report.targetName?.trim() || report.title || '-'}</p>
+              </div>
+              {report.processReason && !isOpen && (
+                <div className="flex items-center gap-1 mt-1.5">
+                  <svg className="size-3.5 shrink-0 text-[#0064ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                  </svg>
+                  <span className="text-[14px] text-[#0064ff]">관리자 답변 있음</span>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2 pl-3 shrink-0">
+              <span className="text-[14px] text-[#969696]">{fmtDate(report.registeredAt)}</span>
+              <StatusBadge statusCode={report.statusCode} style={{ borderRadius: "5px", fontSize: "14px", fontWeight: 400 }} />
+              <svg
+                className={`size-5 transition-transform duration-200 ${isOpen ? "rotate-0 text-[#0064ff]" : "rotate-180 text-[#aaa] group-hover:text-[#0064ff]"}`}
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
           </div>
         </div>
       </button>
 
       {/* 아코디언 상세 내용 */}
       {isOpen && (
-        <div className="pb-5 space-y-4 border-t border-[#e8e9ec] pr-5 pl-[60px]" style={{ background: "#F8FAFC" }}>
+        <div className="pb-5 space-y-4 border-t border-[#e8e9ec] px-5 sm:pl-[60px]" style={{ background: "#F8FAFC" }}>
           <div className="flex items-center justify-between pt-4 gap-4">
             <div className="flex items-center gap-3 min-w-0">
               <p className="font-bold m-0 shrink-0" style={{ fontSize: "16px", color: "#333333" }}>신고 대상</p>
-              <p className="font-bold text-[16px] text-[#1a1a18] m-0 truncate">{report.targetName || "-"}</p>
+              <p className="font-bold text-[16px] text-[#1a1a18] m-0 truncate">{detail.targetName || "-"}</p>
             </div>
             <p className="text-[13px] text-[#969696] m-0 shrink-0">
-              접수번호 <strong className="text-[#333] font-medium">#{report.reportSn}</strong>
+              접수번호 <strong className="text-[#333] font-medium">{report.reportSn}</strong>
             </p>
           </div>
 
           <div className="pb-1">
             <p className="font-bold m-0 mb-2" style={{ fontSize: "16px", color: "#333333" }}>신고 내용</p>
-            <p className="text-[16px] text-[#444] leading-relaxed m-0">{report.content}</p>
+            <p className="text-[16px] text-[#444] leading-relaxed m-0">{detail.content}</p>
           </div>
 
-          {report.processReason && (
+          {detailQuery.isLoading && <p className="text-[13px] text-[#777]">첨부 정보를 불러오는 중입니다.</p>}
+          {detailQuery.isError && <p className="text-[13px] text-red-500">첨부 정보를 불러오지 못했습니다.</p>}
+          {detail.files?.length > 0 && (
+            <div>
+              <p className="font-bold m-0 mb-2" style={{ fontSize: "16px", color: "#333333" }}>첨부파일</p>
+              <div className="flex flex-wrap gap-2">
+                {detail.files.map((file) => (
+                  <button
+                    className="btn btn-outline btn-sm max-w-full"
+                    disabled={openingFileSn === file.fileSn}
+                    key={file.fileSn}
+                    onClick={() => openFile(file)}
+                    type="button"
+                  >
+                    <Paperclip size={14} aria-hidden="true" />
+                    <span className="truncate">{file.originalName}</span>
+                  </button>
+                ))}
+              </div>
+              {fileError && <p className="mt-2 text-[13px] text-red-500" role="alert">{fileError}</p>}
+            </div>
+          )}
+
+          {detail.processReason && (
             <div className="rounded-[8px] p-4 border border-[#e8e9ec]" style={{ background: "#ffffff" }}>
               <div className="flex items-center gap-1.5 mb-2">
                 <svg className="size-4 text-[#0064ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -132,7 +220,7 @@ function ReportCard({ report, isOpen, onToggle, number }) {
                 </svg>
                 <p className="text-[16px] font-bold text-[#0064ff] m-0">관리자 답변</p>
               </div>
-              <p className="text-[16px] text-[#1a1a18] leading-relaxed m-0">{report.processReason}</p>
+              <p className="text-[16px] text-[#1a1a18] leading-relaxed m-0">{detail.processReason}</p>
             </div>
           )}
         </div>
@@ -160,12 +248,14 @@ export default function MyReportListPage({ embedded = false }) {
 
   const { data: countAll }      = useMyReports({ status: null,       page: 1, size: 1 });
   const { data: countReceived } = useMyReports({ status: "ABRC0005", page: 1, size: 1 });
+  const { data: countProcessing } = useMyReports({ status: "ABRC0006", page: 1, size: 1 });
   const { data: countFinished } = useMyReports({ status: "ABRC0007", page: 1, size: 1 });
   const { data: countRejected } = useMyReports({ status: "ABRC0008", page: 1, size: 1 });
 
   const TAB_COUNTS = [
     countAll?.totalCount,
     countReceived?.totalCount,
+    countProcessing?.totalCount,
     countRejected?.totalCount,
     countFinished?.totalCount,
   ];
@@ -183,6 +273,7 @@ export default function MyReportListPage({ embedded = false }) {
         title="신고"
         summaryItems={[
           { label: '접수됨', value: countReceived?.totalCount ?? 0 },
+          { label: '처리중', value: countProcessing?.totalCount ?? 0 },
           { label: '반려', value: countRejected?.totalCount ?? 0 },
           { label: '처리완료', value: countFinished?.totalCount ?? 0 },
         ]}
@@ -200,7 +291,7 @@ export default function MyReportListPage({ embedded = false }) {
       ) : reports.length === 0 ? (
         <MyPageListEmpty message="신고 내역이 없습니다." />
       ) : (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-3">
           {reports.map((report, idx) => (
             <ReportCard
               key={report.reportSn}

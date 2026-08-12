@@ -1,23 +1,9 @@
 // src/pages/service/serviceRequestWizardSteps.js
-// 서비스 요청서 카테고리별 단계별 선택 데이터 (F-SVC-002)
-// 데이터 출처: 20260713 카테고리 세부 설정.xlsx — 시트8 오른쪽 확정 시트 4개(이사,청소 / 레슨 정리 /
-// 설치_수리_정리 / 인테리어_정리)를 직접 열어 셀 값을 대조해 작성함 (260727).
-// 종남6 목업(팀전달_목업_서비스신청_카테고리선택_260727.html)은 설계 참고용으로만 썼고, 목업이
-// 확정 시트와 다른 부분(청소 "이사청소"·"특수" 분류, 인테리어 4분기 구조 등)은 시트 기준으로 바로잡음.
-// 엔진이 단일 next만 지원해(뒤 단계가 앞선 선택 하나에만 갈리는 구조), 실제로는 여러 단계 뒤에서
-// 갈리는 필드도 최대한 앞으로 당겨와 분기시켰다 — 필드 구성 자체는 시트 그대로.
+// 서비스 요청서 카테고리 표시 메타(부제·색상) — 실제 위저드 단계/필드는 서버 동적 폼(F-SVC-002,
+// SVC_REQ_FIELD_DEF 등)에서 내려오며 serviceRequestFormAdapter.buildServiceRequestWizardCatalog가
+// 조립한다. 이 파일은 카테고리 선택 카드 UI에만 쓰는 부제·색상 표시값을 담는다.
 
-// DB CATEGORY.CAT_NM(이사/청소/설치·수리/인테리어/레슨) → 이어지는 첫 단계 id
-export const CATEGORY_NEXT_STEP = {
-  '이사': 'mv_building',
-  '청소': 'cl_class',
-  '설치·수리': 'ir_class',
-  '인테리어': 'it_class',
-  '레슨': 'ls_class',
-};
-
-// 카테고리 선택 카드에 쓰는 부제·색상 (목업 category 단계 옵션의 sub 그대로,
-// color는 마이페이지 대시보드 통계카드(MyPageDashboard StatCard)와 같은 팔레트로 맞춤)
+// 카테고리 선택 카드에 쓰는 부제·색상 (마이페이지 대시보드 통계카드(MyPageDashboard StatCard)와 같은 팔레트로 맞춤)
 export const CATEGORY_META = {
   '이사': { sub: '포장 · 반포장 · 일반 · 보관', color: '#0064ff' },
   '청소': { sub: '가정 · 사업장 (입주/정기/부분)', color: '#0d9488' },
@@ -86,11 +72,11 @@ export const WIZARD_STEPS = {
     type: 'form', next: 'mv_date',
     fields: [
       { key: '출발지 주소', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'origin_addr' },
-      { key: '출발지 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'origin_addr', wide: true, required: true },
+      { key: '출발지 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'origin_addr', wide: true },
       { key: '출발지 층수', type: 'text', placeholder: '예: 3층', row: 'origin_floor', required: true },
       { key: '출발지 엘리베이터', type: 'choice', options: ['있음', '없음'], row: 'origin_floor', required: true },
       { key: '도착지 주소', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'dest_addr' },
-      { key: '도착지 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'dest_addr', wide: true, required: true },
+      { key: '도착지 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'dest_addr', wide: true },
       { key: '도착지 층수', type: 'text', placeholder: '예: 5층', row: 'dest_floor', required: true },
       { key: '도착지 엘리베이터', type: 'choice', options: ['있음', '없음'], row: 'dest_floor', required: true },
     ],
@@ -156,7 +142,7 @@ export const WIZARD_STEPS = {
     type: 'form', next: 'cl_home_size',
     fields: [
       { key: '지역', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'cl_home_addr' },
-      { key: '지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'cl_home_addr', wide: true, required: true },
+      { key: '지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'cl_home_addr', wide: true },
       { key: '층수', type: 'text', placeholder: '예: 3층', row: 'cl_home_addr', required: true, compact: true },
     ],
   },
@@ -224,7 +210,7 @@ export const WIZARD_STEPS = {
     type: 'form', next: 'cl_biz_size',
     fields: [
       { key: '지역', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'cl_biz_addr' },
-      { key: '지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'cl_biz_addr', wide: true, required: true },
+      { key: '지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'cl_biz_addr', wide: true },
       { key: '층수', type: 'text', placeholder: '예: 3층', row: 'cl_biz_addr', required: true, compact: true },
     ],
   },
@@ -343,7 +329,7 @@ export const WIZARD_STEPS = {
     title: '수량·금액대', type: 'form', next: 'ir_extra',
     fields: [
       { key: '가구 수량', type: 'text', placeholder: '예: 2개', required: true },
-      { key: '가구 금액대', type: 'choice', options: ['25만원 미만', '50만원 미만', '75만원 미만', '100만원 미만'] },
+      { key: '가구 금액대', type: 'choice', options: ['250,000P 미만', '500,000P 미만', '750,000P 미만', '1,000,000P 미만'] },
     ],
   },
   ir_fn_move: {
@@ -435,7 +421,7 @@ export const WIZARD_STEPS = {
     title: '희망일', type: 'form', next: 'ir_location',
     fields: [
       { key: '희망 지역', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'ir_addr' },
-      { key: '희망 지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'ir_addr', wide: true, required: true },
+      { key: '희망 지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'ir_addr', wide: true },
       { key: '층수', type: 'text', placeholder: '예: 3층', row: 'ir_addr', required: true, compact: true },
       { key: '폐기물 처리', type: 'choice', options: ['필요', '불필요'] },
     ],
@@ -443,7 +429,7 @@ export const WIZARD_STEPS = {
 
   /* ── 인테리어 (확정 시트 '인테리어_정리' 재검증 반영, 260727)
      집/상업공간/리모델링/도배장판 4분기가 시트에서 서로 완전히 다른 구조라 분기별로 새로 짰다.
-     예산 단위가 대분류마다 달라(집=7구간 "~만원대", 상업공간=5구간 "~만원 이하") 공용 budget
+     예산 구간이 대분류마다 달라(집=7구간, 상업공간=5구간) 공용 budget
      단계 대신 카테고리 전용 예산 단계를 쓰고, 답변은 일반 항목처럼 SVC_REQ_ITEM에 저장한다
      (범위값이라 svcReqBdgtAmt 숫자 컬럼엔 안 맞음). 리모델링·도배장판은 시트에 예산 항목이 아예
      없어 예산 단계 없이 바로 마무리로 넘어간다. ── */
@@ -475,15 +461,15 @@ export const WIZARD_STEPS = {
   it_home_budget: {
     title: '희망 예산', type: 'form', next: 'it_home_final',
     fields: [
-      { key: '예상 금액대', type: 'choice', options: ['500만 원 미만', '1,000만 원 미만', '1,000만 원대', '2,000만 원대', '3,000만 원대', '4,000만 원대', '5,000만 원대'], required: true, toggleable: true },
-      { key: '예산', type: 'amount-toggle', placeholder: '예: 30,000,000원', disabledWhenFilled: '예상 금액대' },
+      { key: '예상 금액대', type: 'choice', options: ['5,000,000P 미만', '10,000,000P 미만', '10,000,000P대', '20,000,000P대', '30,000,000P대', '40,000,000P대', '50,000,000P대'], required: true, toggleable: true },
+      { key: '예산', type: 'amount-toggle', placeholder: '예: 30,000,000P', disabledWhenFilled: '예상 금액대' },
     ],
   },
   it_home_final: {
     title: '요청사항', type: 'form', next: 'memo',
     fields: [
       { key: '주소', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'it_home_addr' },
-      { key: '상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'it_home_addr', wide: true, required: true },
+      { key: '상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'it_home_addr', wide: true },
       { key: '층수', type: 'text', placeholder: '예: 3층', row: 'it_home_addr', required: true, compact: true },
       { key: '복층 유무', type: 'choice', options: ['있음', '없음'], row: 'it_home_status' },
       { key: '공실 확인', type: 'choice', options: ['공실', '거주 중'], row: 'it_home_status' },
@@ -507,15 +493,15 @@ export const WIZARD_STEPS = {
   it_biz_budget: {
     title: '희망 예산', type: 'form', next: 'it_biz_final',
     fields: [
-      { key: '예상 금액대', type: 'choice', options: ['1,000만 원 이하', '2,000만 원 이하', '3,000만 원 이하', '4,000만 원 이하', '5,000만 원 이하'], required: true, toggleable: true },
-      { key: '예산', type: 'amount-toggle', placeholder: '예: 30,000,000원', disabledWhenFilled: '예상 금액대' },
+      { key: '예상 금액대', type: 'choice', options: ['10,000,000P 이하', '20,000,000P 이하', '30,000,000P 이하', '40,000,000P 이하', '50,000,000P 이하'], required: true, toggleable: true },
+      { key: '예산', type: 'amount-toggle', placeholder: '예: 30,000,000P', disabledWhenFilled: '예상 금액대' },
     ],
   },
   it_biz_final: {
     title: '요청사항', type: 'form', next: 'memo',
     fields: [
       { key: '주소', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'it_biz_addr' },
-      { key: '상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'it_biz_addr', wide: true, required: true },
+      { key: '상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'it_biz_addr', wide: true },
       { key: '층수', type: 'text', placeholder: '예: 3층', row: 'it_biz_addr', required: true, compact: true },
     ],
   },
@@ -547,7 +533,7 @@ export const WIZARD_STEPS = {
     title: '요청사항', type: 'form', next: 'memo',
     fields: [
       { key: '희망 지역', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'it_reno_addr' },
-      { key: '희망 지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'it_reno_addr', wide: true, required: true },
+      { key: '희망 지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'it_reno_addr', wide: true },
     ],
   },
 
@@ -587,7 +573,7 @@ export const WIZARD_STEPS = {
     title: '요청사항', type: 'form', next: 'memo',
     fields: [
       { key: '희망 지역', type: 'address', placeholder: '주소 검색을 눌러주세요.', required: true, row: 'it_wall_addr' },
-      { key: '희망 지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'it_wall_addr', wide: true, required: true },
+      { key: '희망 지역 상세주소', type: 'text', placeholder: '예: 101동 1502호', row: 'it_wall_addr', wide: true },
     ],
   },
 
@@ -704,7 +690,7 @@ export const WIZARD_STEPS = {
       { key: '희망 요일', type: 'select', options: ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일', '협의 가능'], row: 'info_line1', required: true },
       { key: '희망 시간대', type: 'select', options: ['오전', '오후', '협의 가능'], row: 'info_line1', required: true },
       { key: '희망 지역', type: 'region', placeholder: '지역을 선택해 주세요', required: true, row: 'ls_region', maxSelections: 3, desc: '최대 3개까지 선택할 수 있어요.', hideWhen: { step: 'ls_visit', equals: '온라인·화상' } },
-      { key: '희망 지역 상세주소', type: 'text', placeholder: '예: OO동, OO아파트 인근 등', row: 'ls_region', wide: true, required: true, hideWhen: { step: 'ls_visit', equals: '온라인·화상' } },
+      { key: '희망 지역 상세주소', type: 'text', placeholder: '예: OO동, OO아파트 인근 등', row: 'ls_region', wide: true, hideWhen: { step: 'ls_visit', equals: '온라인·화상' } },
     ],
   },
 
@@ -712,7 +698,7 @@ export const WIZARD_STEPS = {
   budget: {
     title: '희망 예산', type: 'form', next: 'memo',
     fields: [
-      { key: '예산', type: 'amount-toggle', placeholder: '예: 300,000원', required: true },
+      { key: '예산', type: 'amount-toggle', placeholder: '예: 300,000P', required: true },
     ],
   },
   memo: {

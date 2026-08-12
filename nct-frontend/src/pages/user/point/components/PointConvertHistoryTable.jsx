@@ -1,8 +1,8 @@
 // src/pages/user/point/components/PointConvertHistoryTable.jsx
 // Claude Code 작성 (BJN, 2026-07-30, 정산포인트 내역으로 확장 2026-08-04)
-import { reasonSummary } from './PointLedgerTable';
 import PointTable from './PointTable';
 import pointBadge from './pointBadge';
+import { formatPointLedgerReason, reasonSummary } from './pointLedgerReason';
 
 // 원장유형 배지 색 — 포인트 내역 표(PointLedgerTable)의 TYPE_BADGE와 같은 색을 쓴다
 const TYPE_BADGE = {
@@ -31,7 +31,7 @@ const COLUMNS = [
   },
   {
     key: 'reason', header: '사유', widthClass: 'w-[40%]', cellClass: 'truncate text-gray-500',
-    render: (r) => <span title={r.reason}>{reasonSummary(r.reason)}</span>,
+    render: (r) => <span title={formatPointLedgerReason(r.reason)}>{reasonSummary(r.reason)}</span>,
   },
 ];
 
@@ -50,7 +50,7 @@ const renderCard = (r) => (
         잔액 {r.balanceAfter.toLocaleString()}P
       </span>
     </div>
-    {r.reason && <div className="mt-1 text-[13px] leading-snug text-gray-500" title={r.reason}>{reasonSummary(r.reason)}</div>}
+    {r.reason && <div className="mt-1 text-[13px] leading-snug text-gray-500" title={formatPointLedgerReason(r.reason)}>{reasonSummary(r.reason)}</div>}
   </>
 );
 

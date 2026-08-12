@@ -259,7 +259,7 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
         );
       },
     },
-    { key: 'name', label: '이름', render: (value) => <strong>{value}</strong> },
+    { key: 'name', label: '이름', className: 'admin-table__compact-text', render: (value) => <strong>{value}</strong> },
     {
       key: 'active',
       label: '상태',

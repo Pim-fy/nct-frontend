@@ -8,6 +8,7 @@
 import { BrowserRouter } from 'react-router-dom';
 import { HelmetProvider, Helmet } from 'react-helmet-async';
 import AppRoutes from '@routes/AppRoutes';
+import ScrollToTopOnNavigation from '@components/common/ScrollToTopOnNavigation';
 import './App.css';
 import '@assets/css/common.css';
 
@@ -18,6 +19,7 @@ function App() {
         <title>에누리컷</title>
       </Helmet>
       <BrowserRouter>
+        <ScrollToTopOnNavigation />
         <AppRoutes />
       </BrowserRouter>
     </HelmetProvider>

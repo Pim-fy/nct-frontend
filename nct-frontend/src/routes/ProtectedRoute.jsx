@@ -1,6 +1,7 @@
 // src/routes/ProtectedRoute.jsx
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
+import { getMyPagePath } from './myPageRoutes';
 
 /**
  * 인증이 필요한 라우트를 보호하는 컴포넌트
@@ -31,6 +32,18 @@ const ProtectedRoute = ({ allowedRoles = [], unauthenticatedTo = '/login' }) => 
     const currentRole = user?.role;
     const hasRole = allowedRoles.includes(currentRole);
     if (!hasRole) {
+      // @ai_generated: (2026-08-12) ROLE_USER/ROLE_SERVICE는 사용자가 언제든 자유롭게 전환하는
+      // "모드"일 뿐 진짜 접근 제한이 아니다 - 모드 전환 직후 이전 모드 화면이 열려 있던 탭에서
+      // 흔히 발생하며, 양쪽 모드가 공통으로 접근 가능한 마이페이지로 조용히 보내는 편이 사용자
+      // 경험상 자연스럽다. ROLE_ADMIN이 관련된 불일치(둘 중 하나라도 ADMIN)는 사용자가 스스로
+      // 전환할 수 없는 진짜 권한 등급 문제라 기존 403 안내 화면(/unauthorized)을 그대로 유지한다.
+      const isModeMismatch =
+        !allowedRoles.includes('ROLE_ADMIN') &&
+        currentRole !== 'ROLE_ADMIN' &&
+        (currentRole === 'ROLE_USER' || currentRole === 'ROLE_SERVICE');
+      if (isModeMismatch) {
+        return <Navigate to={getMyPagePath()} replace />;
+      }
       return <Navigate to="/unauthorized" replace />;
     }
   }

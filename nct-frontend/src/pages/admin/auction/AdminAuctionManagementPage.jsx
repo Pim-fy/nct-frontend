@@ -7,7 +7,7 @@ import {
   fetchAdminAuctionOverview,
   fetchAdminAuctions,
 } from '@api/adminAuctionApi';
-import AdminModal from '@components/admin/AdminModal';
+import AdminDetailDrawer from '@components/admin/AdminDetailDrawer';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
@@ -112,13 +112,24 @@ const AdminAuctionManagementPage = () => {
     },
   });
 
+  const closeDetail = () => {
+    if (decisionMutation.isPending) return;
+    setSelected(null);
+    setReviewReason('');
+  };
+
   const rows = auctionsQuery.data?.items ?? [];
   const columns = useMemo(() => [
     { key: 'auctionId', label: '경매 번호', render: (value) => `#${value}` },
-    { key: 'productName', label: '상품명' },
+    {
+      key: 'productName',
+      label: '상품명',
+      className: 'admin-table__long-text',
+    },
     {
       key: 'sellerUserSn',
       label: '판매자',
+      className: 'admin-table__compact-text',
       render: (value, row) => formatAdminMemberIdentity(row.sellerMember, value),
     },
     { key: 'auctionStatusName', label: '경매 상태', render: (value, row) => <AdminStatusBadge tone={auctionStatusTone(row.auctionStatusCode)}>{value ?? row.auctionStatusCode}</AdminStatusBadge> },
@@ -156,10 +167,12 @@ const AdminAuctionManagementPage = () => {
   const auctionDetail = overview?.auction;
   const productDetail = overview?.product;
   const cancellationDetail = cancellationQuery.data;
+  const detailProductId = productDetail?.prdSn ?? selected?.productId;
   const cancellationPending = selected?.cancelRequestId != null
     && selected?.cancelApprovedYn == null;
   const tradeId = overview?.tradeSn ?? selected?.tradeId;
-  const detailAuctionStatusCode = auctionDetail?.auctionStatusCode ?? selected?.auctionStatusCode;
+  const detailAuctionStatusCode = auctionDetail?.auctionStatusCode
+    ?? selected?.auctionStatusCode;
   const detailAuctionStatusLabel = auctionDetail?.auctionStatusName
     ?? selected?.auctionStatusName
     ?? detailAuctionStatusCode;
@@ -167,6 +180,13 @@ const AdminAuctionManagementPage = () => {
   const detailTradeStatusLabel = TRADE_STATUS_LABELS[detailTradeStatusCode]
     ?? selected?.tradeStatusName
     ?? detailTradeStatusCode;
+  const detailSeller = selected?.sellerUserSn != null
+    ? formatAdminMemberIdentity(
+      selected.sellerMember,
+      selected.sellerUserSn,
+    )
+    : auctionDetail?.sellerName?.trim()
+      || formatAdminMemberIdentity(null, auctionDetail?.sellerId ?? productDetail?.usrSn);
 
   const submitSearch = (event) => {
     event.preventDefault();
@@ -280,16 +300,36 @@ const AdminAuctionManagementPage = () => {
         </AdminSectionCard>
       )}
       {selected && (
-        <AdminModal onClose={() => !decisionMutation.isPending && setSelected(null)} title={selected.cancelRequestId ? '판매자 취소 요청/처리 이력' : '상품·경매 상세'}>
+        <AdminDetailDrawer
+          eyebrow="경매 관리"
+          footer={(
+            <button
+              className="btn btn-outline"
+              disabled={decisionMutation.isPending}
+              onClick={closeDetail}
+              type="button"
+            >
+              닫기
+            </button>
+          )}
+          onClose={closeDetail}
+          title={selected.cancelRequestId ? '판매자 취소 요청/처리 이력' : '상품·경매 상세'}
+        >
           <section
             aria-busy={overviewQuery.isLoading || cancellationQuery.isLoading}
             className="admin-auction-cancellation"
           >
-            <h3>{productDetail?.prdNm ?? auctionDetail?.title ?? selected.productName}</h3>
+            <h3>
+              {productDetail?.prdNm
+                ?? auctionDetail?.title
+                ?? selected.productName
+                ?? `경매 #${selected.auctionId}`}
+            </h3>
             <dl>
               <dt>경매 번호</dt><dd>#{selected.auctionId}</dd>
-              <dt>상품 번호</dt><dd>#{productDetail?.prdSn ?? selected.productId}</dd>
-              <dt>판매자</dt><dd>{formatAdminMemberIdentity(selected.sellerMember, selected.sellerUserSn)}</dd>
+              <dt>상품 번호</dt>
+              <dd>{detailProductId == null ? '-' : `#${detailProductId}`}</dd>
+              <dt>판매자</dt><dd>{detailSeller}</dd>
               <dt>경매 상태</dt>
               <dd>
                 {detailAuctionStatusLabel
@@ -335,7 +375,9 @@ const AdminAuctionManagementPage = () => {
             </dl>
             {overviewQuery.isError && (
               <p className="admin-auction-cancellation__sync-status is-error" role="alert">
-                최신 경매 상세를 불러오지 못해 목록의 요약 정보를 표시합니다.
+                {selected == null
+                  ? '경매 상세를 불러오지 못했습니다.'
+                  : '최신 경매 상세를 불러오지 못해 목록의 요약 정보를 표시합니다.'}
               </p>
             )}
             {cancellationPending && <>
@@ -357,7 +399,7 @@ const AdminAuctionManagementPage = () => {
               </div>
             </>}
           </section>
-        </AdminModal>
+        </AdminDetailDrawer>
       )}
         </div>
       )}

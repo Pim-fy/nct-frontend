@@ -7,7 +7,7 @@ import {
   startAdminCustomerInquiry,
 } from '@api/customerInquiryApi';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
-import AdminModal from '@components/admin/AdminModal';
+import AdminDetailDrawer from '@components/admin/AdminDetailDrawer';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
@@ -154,10 +154,17 @@ const AdminCustomerInquiryManagementPage = () => {
     {
       key: 'userSn',
       label: '작성자',
+      className: 'admin-table__compact-text',
       render: (value, row) => formatAdminMemberIdentity(row.writerMember, value),
     },
-    { key: 'title', label: '제목' },
+    { key: 'title', label: '제목', className: 'admin-table__long-text' },
     { key: 'registeredAt', label: '접수일', render: formatDateTime },
+    {
+      key: 'answeredAt',
+      label: '처리일',
+      className: 'admin-table__processed-date',
+      render: formatDateTime,
+    },
     {
       key: 'statusCode',
       label: '상태',
@@ -226,7 +233,7 @@ const AdminCustomerInquiryManagementPage = () => {
           <input
             maxLength={100}
             onChange={(event) => setFilterForm({ ...filterForm, keyword: event.target.value })}
-            placeholder="문의 번호·회원 번호·제목"
+            placeholder="문의 번호·제목"
             value={filterForm.keyword}
           />
         </label>
@@ -265,7 +272,21 @@ const AdminCustomerInquiryManagementPage = () => {
       )}
 
       {selectedInquirySn && (
-        <AdminModal onClose={closeInquiry} title="문의 상세">
+        <AdminDetailDrawer
+          eyebrow="고객 문의"
+          footer={(
+            <button
+              className="btn btn-outline"
+              disabled={startMutation.isPending || answerMutation.isPending}
+              onClick={closeInquiry}
+              type="button"
+            >
+              닫기
+            </button>
+          )}
+          onClose={closeInquiry}
+          title="문의 상세"
+        >
           <section className="admin-operation-detail">
             {detailQuery.isLoading && <div className="admin-bjn-state">문의 내용을 불러오는 중입니다.</div>}
             {detailQuery.isError && <div className="admin-bjn-state is-error">문의 상세를 불러오지 못했습니다.</div>}
@@ -338,7 +359,7 @@ const AdminCustomerInquiryManagementPage = () => {
               </>
             )}
           </section>
-        </AdminModal>
+        </AdminDetailDrawer>
       )}
     </div>
   );

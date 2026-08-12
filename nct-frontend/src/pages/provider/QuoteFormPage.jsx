@@ -8,7 +8,7 @@ import { getMyActiveQuote, uploadQuotePhoto, getQuoteHistory } from "@api/quoteA
 import { getServiceRequest } from "@api/serviceRequestApi";
 import { fetchMyProviderQuoteAccess } from "@api/providerProfileApi";
 import { toImageUrl } from "@api/fileApi";
-import { toast } from "@utils/common";
+import { formatPoint, toast } from "@utils/common";
 import AlertModal from "@components/common/AlertModal";
 import "./QuoteFormPage.css";
 
@@ -39,6 +39,7 @@ export default function QuoteFormPage() {
     sub:       routeState.sub          || FALLBACK_REQUEST.sub,
     location:  routeState.location     || FALLBACK_REQUEST.location,
     budget:    routeState.budget       || FALLBACK_REQUEST.budget,
+    budgetRaw: null,
     requester: routeState.requester    || FALLBACK_REQUEST.requester,
   });
 
@@ -93,7 +94,8 @@ export default function QuoteFormPage() {
           category: request.catNm || prev.category,
           budget: request.svcReqBdgtAmt == null
             ? prev.budget
-            : `${Number(request.svcReqBdgtAmt).toLocaleString('ko-KR')}원`,
+            : formatPoint(request.svcReqBdgtAmt),
+          budgetRaw: request.svcReqBdgtAmt == null ? prev.budgetRaw : Number(request.svcReqBdgtAmt),
         }));
         setRequestLoadFailed(false);
       })
@@ -143,7 +145,7 @@ export default function QuoteFormPage() {
           setRevisions(arr.map((h, idx) => {
             const prev = arr[idx - 1];
             const lines = [];
-            if (!prev || String(h.amount) !== String(prev.amount)) lines.push(`금액 ${h.amount != null ? Number(h.amount).toLocaleString() : '-'}원으로 수정했습니다.`);
+            if (!prev || String(h.amount) !== String(prev.amount)) lines.push(`금액 ${formatPoint(h.amount)}로 수정했습니다.`);
             if (!prev || h.content !== prev.content) lines.push('내용을 수정했습니다.');
             return {
               round: idx + 1,
@@ -178,7 +180,12 @@ export default function QuoteFormPage() {
   const validate = () => {
     setSubmitted(true);
     if (!form.title.trim())                       { setAlertMsg("제목을 입력해 주세요.");          return false; }
-    if (!form.amount || Number(form.amount) <= 0) { setAlertMsg("견적 금액을 입력해 주세요.");    return false; }
+    if (!form.amount || Number(form.amount) < 10000)      { setAlertMsg("견적 금액은 최소 10,000P 이상이어야 합니다.");      return false; }
+    if (Number(form.amount) > 1000000000)                 { setAlertMsg("견적 금액은 최대 1,000,000,000P 이하이어야 합니다."); return false; }
+    if (svcReqInfo.budgetRaw && Number(form.amount) < svcReqInfo.budgetRaw) {
+      setAlertMsg(`견적 금액은 의뢰 예산(${formatPoint(svcReqInfo.budgetRaw)}) 이상이어야 합니다.`);
+      return false;
+    }
     if (!form.message.trim())                     { setAlertMsg("내용을 입력해 주세요.");         return false; }
     if (existingAttachments.length + attachFiles.length === 0) {
       setAlertMsg("첨부파일을 추가해 주세요.");
@@ -253,17 +260,6 @@ export default function QuoteFormPage() {
 
   const fmtSize = (size) =>
     size < 1024 * 1024 ? Math.round(size / 1024) + "KB" : (size / 1024 / 1024).toFixed(1) + "MB";
-
-  const downloadNewFile = (f) => {
-    const url = URL.createObjectURL(f.file);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = f.name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
 
   const uploadFiles = async () => {
     const results = await Promise.all(attachFiles.map(f => uploadQuotePhoto(f.file)));
@@ -400,14 +396,31 @@ export default function QuoteFormPage() {
                     onChange={handleAmountInput}
                     style={{
                       paddingRight: 36,
-                      borderColor: submitted && (!form.amount || Number(form.amount) <= 0) ? "#EF4444" : undefined,
+                      borderColor: submitted && (
+                        !form.amount ||
+                        Number(form.amount) < 10000 ||
+                        Number(form.amount) > 1000000000 ||
+                        (svcReqInfo.budgetRaw && Number(form.amount) < svcReqInfo.budgetRaw)
+                      ) ? "#EF4444" : undefined,
                     }}
                   />
                   <span style={{
                     position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
                     fontSize: 14, color: "#888", pointerEvents: "none",
-                  }}>원</span>
+                  }}>P</span>
                 </div>
+                <p style={{
+                  margin: "4px 0 0", fontSize: 13,
+                  color: form.amount && (
+                    Number(form.amount) < 10000 ||
+                    Number(form.amount) > 1000000000 ||
+                    (svcReqInfo.budgetRaw && Number(form.amount) < svcReqInfo.budgetRaw)
+                  ) ? "#EF4444" : "#888",
+                }}>
+                  {svcReqInfo.budgetRaw
+                    ? `의뢰 예산(${formatPoint(svcReqInfo.budgetRaw)}) 이상 · 최대 1,000,000,000P`
+                    : "최소 10,000P · 최대 1,000,000,000P"}
+                </p>
               </div>
 
               <div className="qf-field">
@@ -457,21 +470,6 @@ export default function QuoteFormPage() {
                             onClick={() => removeExistingAttachment(attachment.flSn)}
                             aria-label="기존 첨부파일 삭제"
                           >×</button>
-                          <a
-                            href={toImageUrl(attachment.url)}
-                            download={attachment.fileName}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="qf-thumb-name qf-thumb-dl"
-                            title={attachment.fileName}
-                          >
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                              <polyline points="7 10 12 15 17 10"/>
-                              <line x1="12" y1="15" x2="12" y2="3"/>
-                            </svg>
-                            다운로드
-                          </a>
                         </div>
                       );
                     })}
@@ -490,19 +488,6 @@ export default function QuoteFormPage() {
                           onClick={() => removeFile(f.id)}
                           aria-label="삭제"
                         >×</button>
-                        <button
-                          type="button"
-                          className="qf-thumb-name qf-thumb-dl"
-                          title={f.name}
-                          onClick={() => downloadNewFile(f)}
-                        >
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                            <polyline points="7 10 12 15 17 10"/>
-                            <line x1="12" y1="15" x2="12" y2="3"/>
-                          </svg>
-                          다운로드
-                        </button>
                       </div>
                     ))}
                     {Array.from({ length: MAX_ATTACH - existingAttachments.length - attachFiles.length }, (_, i) => (
@@ -656,7 +641,7 @@ export default function QuoteFormPage() {
             <div style={{ marginBottom: 14 }}>
               <p style={{ margin: '0 0 4px', fontSize: 13, color: '#888' }}>견적 금액</p>
               <p style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#111' }}>
-                {form.amount ? Number(form.amount).toLocaleString() + '원' : '—'}
+                {form.amount ? formatPoint(form.amount) : '—'}
               </p>
             </div>
             <div style={{ marginBottom: 14 }}>
@@ -680,22 +665,8 @@ export default function QuoteFormPage() {
                         {isImg && (
                           <img src={toImageUrl(a.url)} alt={displayName} style={{ width: '100%', display: 'block', maxHeight: 320, objectFit: 'contain', background: '#eee' }} />
                         )}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '8px 12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px' }}>
                           <span style={{ fontSize: 14, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{displayName}</span>
-                          <a
-                            href={toImageUrl(a.url)}
-                            download={displayName}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#0064ff', textDecoration: 'none', flexShrink: 0, fontWeight: 500 }}
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                              <polyline points="7 10 12 15 17 10"/>
-                              <line x1="12" y1="15" x2="12" y2="3"/>
-                            </svg>
-                            다운로드
-                          </a>
                         </div>
                       </div>
                     );
@@ -705,20 +676,8 @@ export default function QuoteFormPage() {
                       {f.previewUrl && (
                         <img src={f.previewUrl} alt={f.name} style={{ width: '100%', display: 'block', maxHeight: 320, objectFit: 'contain', background: '#eee' }} />
                       )}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '8px 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px' }}>
                         <span style={{ fontSize: 14, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{f.name}</span>
-                        <button
-                          type="button"
-                          onClick={() => downloadNewFile(f)}
-                          style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#0064ff', background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0, fontWeight: 500 }}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                            <polyline points="7 10 12 15 17 10"/>
-                            <line x1="12" y1="15" x2="12" y2="3"/>
-                          </svg>
-                          다운로드
-                        </button>
                       </div>
                     </div>
                   ))}
@@ -761,7 +720,7 @@ export default function QuoteFormPage() {
           <div className="qf-modal-box">
             <div className="qf-modal-icon">✅</div>
             <p style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 700, color: "#111" }}>견적이 제출되었습니다.</p>
-            <p style={{ margin: 0, fontSize: 15, color: "#555" }}>내 견적 목록에서 확인하실 수 있습니다.</p>
+            <p style={{ margin: 0, fontSize: 15, color: "#555" }}>견적 제출 내역에서 확인하실 수 있습니다.</p>
             <button
               type="button"
               className="btn btn-primary"

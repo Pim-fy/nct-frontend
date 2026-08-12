@@ -3,8 +3,6 @@ export const MYPAGE_SECTION_PATHS = Object.freeze({
   home: '/user/mypage',
   profile: '/user/mypage/profile',
   'provider-profile': '/user/mypage/provider/profile',
-  'active-auctions': '/user/mypage/auctions/active',
-  'bid-history': '/user/mypage/auctions/bids',
   'auction-bids': '/user/mypage/auctions/purchases',
   'auction-sales': '/user/mypage/auctions/sales',
   wishlist: '/user/mypage/auctions/favorites',
@@ -16,15 +14,47 @@ export const MYPAGE_SECTION_PATHS = Object.freeze({
   wallet: '/user/mypage/wallet',
   review: '/user/mypage/reviews',
   'report-list': '/user/mypage/reports',
-  'report-form': '/user/mypage/reports/new',
   'inquiry-list': '/user/mypage/inquiries',
 });
+
+export const MYPAGE_INQUIRY_PATHS = Object.freeze({
+  general: '/user/mypage/inquiries',
+  provider: '/user/mypage/provider/inquiries',
+});
+
+export const getMyPageInquiryPath = (isProvider = false) => (
+  isProvider ? MYPAGE_INQUIRY_PATHS.provider : MYPAGE_INQUIRY_PATHS.general
+);
+
+export const getMyPageInquiryCreatePath = (isProvider = false) => (
+  `${getMyPageInquiryPath(isProvider)}/new`
+);
 
 export const getMyPagePath = (section = 'home') => (
   MYPAGE_SECTION_PATHS[section] ?? MYPAGE_SECTION_PATHS.home
 );
 
-export const getMyPageSection = (pathname) => (
-  Object.entries(MYPAGE_SECTION_PATHS)
-    .find(([, path]) => path === pathname)?.[0] ?? null
+/** 담당자 7 · F-SVC-010: 마이페이지 서비스 거래 상세의 단일 사용자 경로입니다. */
+export const getServiceTradeDetailPath = (tradeId) => (
+  `${MYPAGE_SECTION_PATHS['service-trade']}/${tradeId}`
 );
+
+/** 담당자 7 · F-SVC-010: 서비스 거래 상세에 종속된 채팅 경로입니다. */
+export const getServiceTradeChatPath = (tradeId) => (
+  `${getServiceTradeDetailPath(tradeId)}/chat`
+);
+
+export const getMyPageSection = (pathname) => {
+  if (pathname === MYPAGE_INQUIRY_PATHS.provider
+    || pathname.startsWith(`${MYPAGE_INQUIRY_PATHS.provider}/`)) {
+    return 'inquiry-list';
+  }
+
+  if (pathname === MYPAGE_INQUIRY_PATHS.general
+    || pathname.startsWith(`${MYPAGE_INQUIRY_PATHS.general}/`)) {
+    return 'inquiry-list';
+  }
+
+  return Object.entries(MYPAGE_SECTION_PATHS)
+    .find(([, path]) => path === pathname)?.[0] ?? null;
+};

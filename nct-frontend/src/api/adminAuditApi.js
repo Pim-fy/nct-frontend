@@ -18,3 +18,8 @@ export const getAuditLogs = (params = {}) =>
  */
 export const requestSensitiveView = (body) =>
   api.post('/admin/audit/sensitive-view', body).then(res => res.data);
+
+/** 담당자 7 · F-OPS-005/014: 거래 분쟁에 연결된 채팅 내역을 사유와 함께 제한 조회합니다. */
+export const requestDisputeChatView = (disputeSn, body) =>
+  api.post(`/admin/audit/disputes/${disputeSn}/chat-view`, body)
+    .then(res => res.data.data);

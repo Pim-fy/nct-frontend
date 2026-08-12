@@ -32,7 +32,7 @@ const STATUS_OPTIONS = [
   { value: 'SVCC0002', label: '공개' },
   { value: 'SVCC0001', label: '임시저장' },
   { value: 'SVCC0003', label: '매칭완료' },
-  { value: 'SVCC0004', label: '종료' },
+  { value: 'SVCC0004', label: '취소' },
 ];
 
 const statusTone = (statusCode) => {
@@ -47,6 +47,18 @@ const integratedStatusTone = (statusCode) => {
   return 'warning';
 };
 
+const QUOTE_STATUS_META = {
+  QUTC0001: { label: '제출', tone: 'info' },
+  QUTC0002: { label: '수정', tone: 'info' },
+  QUTC0003: { label: '만료', tone: 'neutral' },
+  QUTC0004: { label: '선택', tone: 'success' },
+  QUTC0005: { label: '철회', tone: 'danger' },
+};
+
+const quoteStatusMeta = (statusCode) => (
+  QUOTE_STATUS_META[statusCode] ?? { label: statusCode ?? '-', tone: 'neutral' }
+);
+
 const tradeStatusTone = (statusCode) => {
   if (statusCode === 'TRDC0006') return 'success';
   if (statusCode === 'TRDC0007' || statusCode === 'TRDC0008') return 'danger';
@@ -54,7 +66,7 @@ const tradeStatusTone = (statusCode) => {
 };
 
 const formatAmount = (value) => (
-  value == null ? '-' : `${Number(value).toLocaleString('ko-KR')}원`
+  value == null ? '-' : `${Number(value).toLocaleString('ko-KR')}P`
 );
 
 /** 담당자 7: 관리자 서비스 요청을 실제 API로 검색하고 상세 조회하는 화면이다. */
@@ -91,13 +103,14 @@ const AdminServiceRequestPage = () => {
     {
       key: 'title',
       label: '요청명',
-      className: 'admin-notice-list__title',
+      className: 'admin-notice-list__title admin-table__long-text',
       render: (value) => <strong>{value}</strong>,
     },
-    { key: 'categoryName', label: '카테고리' },
+    { key: 'categoryName', label: '카테고리', className: 'admin-table__compact-text' },
     {
       key: 'requesterUserId',
       label: '요청자',
+      className: 'admin-table__compact-text',
       render: (value, row) => formatAdminMemberIdentity(row.requesterMember, value),
     },
     { key: 'budgetAmount', label: '예산', render: formatAmount },
@@ -179,6 +192,7 @@ const AdminServiceRequestPage = () => {
   };
 
   const detail = detailQuery.data ?? selected;
+  const quotes = detail?.quotes ?? [];
 
   return (
     <div className="admin-content-page admin-service-page">
@@ -342,6 +356,60 @@ const AdminServiceRequestPage = () => {
                   <strong>{detail.totalQuoteCount ?? 0}건 · 활성 {detail.activeQuoteCount ?? 0}건</strong>
                 </div>
               </div>
+
+              <section className="admin-service-detail__section is-quotes">
+                <div className="admin-service-detail__section-heading">
+                  <h4>제출 견적</h4>
+                  <span>{quotes.length}건</span>
+                </div>
+                {quotes.length === 0 ? (
+                  <p className="admin-service-detail__empty">제출된 견적이 없습니다.</p>
+                ) : (
+                  <div className="admin-service-detail__quote-list">
+                    {quotes.map((quote) => {
+                      const quoteStatus = quoteStatusMeta(quote.statusCode);
+                      return (
+                        <article
+                          className={`admin-service-detail__quote-card${quote.selected ? ' is-selected' : ''}`}
+                          key={quote.quoteId}
+                        >
+                          <div className="admin-service-detail__quote-header">
+                            <strong>견적 #{quote.quoteId}</strong>
+                            <AdminStatusBadge tone={quoteStatus.tone}>
+                              {quoteStatus.label}
+                            </AdminStatusBadge>
+                          </div>
+                          <dl>
+                            <div className="admin-service-detail__quote-provider">
+                              <dt>제공자</dt>
+                              <dd>{formatAdminMemberIdentity(
+                                quote.providerMember,
+                                quote.providerUserId,
+                              )}</dd>
+                            </div>
+                            <div>
+                              <dt>금액</dt>
+                              <dd>{formatAmount(quote.amount)}</dd>
+                            </div>
+                            <div>
+                              <dt>최초 제출일</dt>
+                              <dd>{formatDateTime(quote.submittedAt)}</dd>
+                            </div>
+                            <div>
+                              <dt>수정일</dt>
+                              <dd>{formatDateTime(quote.updatedAt)}</dd>
+                            </div>
+                            <div>
+                              <dt>수정 횟수</dt>
+                              <dd>{quote.reviseCount ?? 0}회</dd>
+                            </div>
+                          </dl>
+                        </article>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
 
               {detail.selectedQuoteId != null && (
                 <section className="admin-service-detail__section is-selected-quote">

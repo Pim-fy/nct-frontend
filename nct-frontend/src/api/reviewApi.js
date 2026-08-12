@@ -9,7 +9,7 @@ const MULTIPART_CONFIG = { headers: { 'Content-Type': 'multipart/form-data' } };
 export const getWritableReviews = () =>
   api.get('/reviews/writable').then(res => res.data);
 
-/** 거래 상세의 상대방 신뢰지표를 조회한다. totalScore가 null이면 작성된 리뷰가 없는 상태다. */
+/** 호환 경로에서 전체·물품·서비스별 리뷰 평균과 건수를 조회하며 화면이 맥락에 맞는 값을 선택한다. */
 export const getUserReviewTrust = (userId) => (
   api.get(`/reviews/trust/${userId}`).then(res => res.data)
 );
@@ -34,3 +34,18 @@ export const deleteReview = (id) =>
 /** 내가 작성한 리뷰 목록 */
 export const getMyReviews = () =>
   api.get('/reviews/me').then(res => res.data);
+
+// @ai_generated
+/** 거래 상세에서 현재 사용자의 작성 가능 여부와 작성한 리뷰를 함께 조회한다. */
+export const getMyTradeReview = (tradeId) =>
+  api.get(`/trades/${tradeId}/reviews/me`).then(res => res.data);
+
+// @ai_generated
+/** 거래 상세에서 상대방이 나에 대해 작성한 리뷰를 조회한다. */
+export const getCounterpartTradeReview = (tradeId) =>
+  api.get(`/trades/${tradeId}/reviews/counterpart`).then(res => res.data);
+
+// @ai_generated
+/** 기존 reviewId 수정 URL을 auctionId 기반 신규 URL로 전환할 최소 컨텍스트를 조회한다. */
+export const getMyReviewRouteContext = (reviewId) =>
+  api.get(`/reviews/${reviewId}/context`).then(res => res.data);

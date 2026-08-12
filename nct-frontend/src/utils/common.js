@@ -31,15 +31,18 @@ export const toast = ({ icon, title, html, position = 'bottom-end', timer = 1500
 export const confirm = async ({
   title,
   text,
+  html,
   icon = 'warning',
   confirmButtonText = '확인',
   cancelButtonText  = '취소',
   showCancelButton = true,
   scrollbarPadding = true,
+  reverseButtons = true,
 }) => {
   const result = await Swal.fire({
     title,
     text,
+    html,
     icon,
     showCancelButton,
     scrollbarPadding,
@@ -47,7 +50,7 @@ export const confirm = async ({
     cancelButtonColor    : '#0F9B73',
     confirmButtonText,
     cancelButtonText,
-    reverseButtons       : true,
+    reverseButtons,
   });
   return result.isConfirmed;
 };
@@ -155,13 +158,13 @@ export const mapDataToState = (type, updatedData, profileState = {}) => {
 // ──────────────────────────────────────────
 
 /**
- * 숫자를 한국 화폐 형식으로 포맷
+ * 숫자를 플랫폼 포인트 형식으로 포맷
  * @param {number} amount
- * @returns {string} e.g. "1,234,567원". 값이 없으면 "-"
+ * @returns {string} e.g. "1,234,567P". 값이 없으면 "-"
  */
 export const formatPrice = (amount) => {
   if (amount == null) return '-';
-  return `${Number(amount).toLocaleString('ko-KR')}원`;
+  return `${Number(amount).toLocaleString('ko-KR')}P`;
 };
 
 /**
@@ -172,6 +175,27 @@ export const formatPrice = (amount) => {
 export const formatPoint = (amount) => {
   if (amount == null) return '-';
   return `${Number(amount).toLocaleString('ko-KR')}P`;
+};
+
+/**
+ * 담당자 7 · 내부 금액 표기 통일: 저장된 카테고리 문항 값은 유지하고 화면의 원 단위만 P로 바꿉니다.
+ * 숫자가 앞에 있는 금액 표현만 변환하므로 원룸·지원 같은 일반 단어는 건드리지 않습니다.
+ */
+export const formatPointUnitText = (value) => {
+  if (typeof value !== 'string') return value;
+
+  const toPointText = (amountText, multiplier) => {
+    const amount = Number(amountText.replaceAll(',', '')) * multiplier;
+    return Number.isSafeInteger(amount)
+      ? `${amount.toLocaleString('ko-KR')}P`
+      : `${amountText}P`;
+  };
+
+  return value
+    .replace(/(\d[\d,]*)\s*억\s*원/g, (_, amount) => toPointText(amount, 100_000_000))
+    .replace(/(\d[\d,]*)\s*만\s*원/g, (_, amount) => toPointText(amount, 10_000))
+    .replace(/(\d[\d,]*)\s*천\s*원/g, (_, amount) => toPointText(amount, 1_000))
+    .replace(/(\d[\d,]*)\s*원/g, (_, amount) => toPointText(amount, 1));
 };
 
 /**
@@ -187,10 +211,10 @@ export const formatNumber = (value) => {
 /**
  * 예산·견적 금액을 포인트(P) 단위로 포맷 — 서비스 요청/견적 화면 공용
  * @param {number|null} amt
- * @returns {string} 값이 없으면 "예산 미정" (숫자 포맷 자체는 formatPoint와 동일)
+ * @returns {string} 값이 없으면 "예산 협의 후 결정" (숫자 포맷 자체는 formatPoint와 동일)
  */
 export const formatBudget = (amt) => {
-  if (amt == null) return '예산 미정';
+  if (amt == null) return '예산 협의 후 결정';
   return formatPoint(amt);
 };
 
@@ -205,6 +229,39 @@ export const formatDate = (date) => {
   if (Number.isNaN(d.getTime())) return '-';
   return d.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })
     .replace(/\s/g, '').replace(/\.$/, '');
+};
+
+/**
+ * 가입일을 "가입 N일차/N개월차/N년차" 형태로 변환한다 - 거래 상대방 신뢰 보조 지표용.
+ * @param {string} joinedAt - ISO 날짜/일시 문자열
+ * @returns {string} 값이 없으면 "-"
+ */
+export const formatMembershipDuration = (joinedAt) => {
+  if (!joinedAt) return '-';
+  const joined = new Date(joinedAt);
+  if (Number.isNaN(joined.getTime())) return '-';
+
+  const diffDays = Math.max(0, Math.floor((Date.now() - joined.getTime()) / (1000 * 60 * 60 * 24)));
+  if (diffDays < 30) return `가입 ${diffDays + 1}일차`;
+
+  const diffMonths = Math.floor(diffDays / 30);
+  if (diffMonths < 12) return `가입 ${diffMonths}개월차`;
+
+  return `가입 ${Math.floor(diffMonths / 12)}년차`;
+};
+
+/**
+ * 마침표+공백 뒤에서 문장을 나눠 배열로 반환한다 - 여러 문장이 한 문단에 이어붙어
+ * 좁은 카드 폭에서 줄바꿈 없이 한 줄로 표시되는 걸 막고, 문장 단위로 별도 줄에 보여줄 때 쓴다.
+ * @param {string} text
+ * @returns {string[]}
+ */
+export const splitSentences = (text) => {
+  if (!text) return [];
+  const parts = String(text).split('. ');
+  return parts.map((part, index) => (
+    index < parts.length - 1 ? `${part}.` : part
+  ));
 };
 
 /**

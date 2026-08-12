@@ -7,7 +7,7 @@ import {
   releaseAdminSettlement,
 } from '@api/adminSettlementApi';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
-import AdminModal from '@components/admin/AdminModal';
+import AdminDetailDrawer from '@components/admin/AdminDetailDrawer';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
@@ -15,6 +15,7 @@ import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
 import PageMeta from '@components/admin/PageMeta';
 import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
+import { formatAdminMemberIdentity } from '@utils/adminMemberIdentity';
 import { toast } from '@utils/common';
 import '../audit/adminAuditPage.css';
 import './adminOperationPages.css';
@@ -28,6 +29,24 @@ const STATUS = {
 };
 const formatAmount = (value) => `${Number(value ?? 0).toLocaleString('ko-KR')}P`;
 const formatDate = (value) => (value ? String(value).replace('T', ' ').slice(0, 16) : '-');
+const laterDate = (first, second) => {
+  if (!first) return second ?? null;
+  if (!second) return first;
+  return new Date(first).getTime() >= new Date(second).getTime() ? first : second;
+};
+const settlementProcessedAt = (row) => {
+  if (['STLC0003', 'STLC0004'].includes(row.statusCode)) return row.updatedAt;
+
+  const latestActionAt = laterDate(row.processedAt, row.updatedAt);
+  if (row.statusCode === 'STLC0002') return latestActionAt;
+  if (row.statusCode !== 'STLC0001') return row.processedAt;
+  if (row.processedAt) return latestActionAt;
+
+  // 최초 대기는 등록과 갱신 시각이 같고, 분쟁 재개 등 실제 상태 전이 때만 갱신 시각이 늦어집니다.
+  return new Date(row.updatedAt).getTime() > new Date(row.registeredAt).getTime()
+    ? row.updatedAt
+    : null;
+};
 const settlementStatus = (code, name) => STATUS[code] ?? {
   label: name || code || '-',
   tone: 'neutral',
@@ -107,7 +126,11 @@ const AdminSettlementManagementPage = () => {
     {
       key: 'userName',
       label: '정산 대상',
-      render: (value, row) => `${value || '-'} (#${row.userId})`,
+      className: 'admin-table__compact-text',
+      render: (value, row) => formatAdminMemberIdentity(
+        { nickname: value },
+        row.userId,
+      ),
     },
     { key: 'amount', label: '정산 포인트', render: formatAmount },
     {
@@ -119,6 +142,12 @@ const AdminSettlementManagementPage = () => {
       },
     },
     { key: 'registeredAt', label: '등록일', render: formatDate },
+    {
+      key: 'processedAt',
+      label: '처리일',
+      className: 'admin-table__processed-date',
+      render: (_, row) => formatDate(settlementProcessedAt(row)),
+    },
     {
       key: 'manage',
       label: '관리',
@@ -181,7 +210,7 @@ const AdminSettlementManagementPage = () => {
               ...filterForm,
               keyword: event.target.value,
             })}
-            placeholder="정산 번호·거래 번호·회원 번호·이름"
+            placeholder="정산 번호·거래 번호·이름"
             value={filterForm.keyword}
           />
         </label>
@@ -223,7 +252,21 @@ const AdminSettlementManagementPage = () => {
       )}
 
       {selectedId != null && (
-        <AdminModal onClose={closeDetail} title={`정산 #${selectedId}`}>
+        <AdminDetailDrawer
+          eyebrow="정산 관리"
+          footer={(
+            <button
+              className="btn btn-outline"
+              disabled={actionMutation.isPending}
+              onClick={closeDetail}
+              type="button"
+            >
+              닫기
+            </button>
+          )}
+          onClose={closeDetail}
+          title={`정산 #${selectedId}`}
+        >
           <section className="admin-operation-detail">
             {detailQuery.isLoading && <div className="admin-bjn-state">상세 정보를 불러오는 중입니다.</div>}
             {detailQuery.isError && (
@@ -233,7 +276,11 @@ const AdminSettlementManagementPage = () => {
               <>
                 <dl>
                   <dt>거래 번호</dt><dd>#{detail.tradeId}</dd>
-                  <dt>정산 대상</dt><dd>{detail.userName || '-'} (#{detail.userId})</dd>
+                  <dt>정산 대상</dt>
+                  <dd>{formatAdminMemberIdentity(
+                    { nickname: detail.userName },
+                    detail.userId,
+                  )}</dd>
                   <dt>정산 포인트</dt><dd>{formatAmount(detail.amount)}</dd>
                   <dt>현재 상태</dt>
                   <dd><AdminStatusBadge tone={currentStatus.tone}>{currentStatus.label}</AdminStatusBadge></dd>
@@ -241,7 +288,10 @@ const AdminSettlementManagementPage = () => {
                   <dt>최종 갱신일</dt><dd>{formatDate(detail.updatedAt)}</dd>
                   <dt>최근 처리자</dt>
                   <dd>{detail.processorUserId
-                    ? `${detail.processorName || '관리자'} (#${detail.processorUserId})`
+                    ? formatAdminMemberIdentity(
+                      { nickname: detail.processorName },
+                      detail.processorUserId,
+                    )
                     : '-'}</dd>
                   <dt>최근 처리일</dt><dd>{formatDate(detail.processedAt)}</dd>
                   <dt>최근 처리 사유</dt>
@@ -271,7 +321,6 @@ const AdminSettlementManagementPage = () => {
                       </p>
                     )}
                     <div className="admin-operation-actions">
-                      <button className="btn btn-outline" onClick={closeDetail} type="button">닫기</button>
                       <button
                         className="btn btn-primary"
                         disabled={!reason.trim() || actionMutation.isPending}
@@ -285,7 +334,7 @@ const AdminSettlementManagementPage = () => {
               </>
             )}
           </section>
-        </AdminModal>
+        </AdminDetailDrawer>
       )}
     </div>
   );

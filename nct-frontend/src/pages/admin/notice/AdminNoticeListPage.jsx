@@ -29,7 +29,7 @@ const statusTone = (statusCode) => {
 
 const getErrorMessage = (error) => error?.response?.status === 409
   ? '다른 관리자가 먼저 공지를 변경했습니다. 목록을 새로 불러온 뒤 다시 시도해 주세요.'
-  : error?.response?.data?.message || '공지 노출 상태 변경 중 오류가 발생했습니다.';
+  : error?.response?.data?.message || '공지 공개 상태 변경 중 오류가 발생했습니다.';
 
 /** F-OPS-023: 임시저장·게시·숨김을 모두 확인하는 관리자 공지 목록입니다. */
 const AdminNoticeListPage = () => {
@@ -89,8 +89,8 @@ const AdminNoticeListPage = () => {
       toast({
         icon: published.visibleNow ? 'success' : 'warning',
         title: published.visibleNow
-          ? '공지가 노출되었습니다.'
-          : '게시 상태는 변경됐지만 노출 기간 때문에 현재 미노출입니다.',
+          ? '공지가 공개되었습니다.'
+          : '게시 상태는 변경됐지만 게시 기간 때문에 현재 비공개입니다.',
         timer: published.visibleNow ? 1800 : 3000,
       });
     } catch (error) {
@@ -100,12 +100,12 @@ const AdminNoticeListPage = () => {
 
   /** 담당자 7 | F-OPS-023: 목록에서도 게시 내용과 기간을 유지한 채 공개 상태만 숨김으로 전환합니다. */
   const hideNotice = async (notice) => {
-    if (!window.confirm('이 공지를 사용자 화면에서 미노출 처리할까요?')) return;
+    if (!window.confirm('이 공지를 사용자 화면에서 비공개 처리할까요?')) return;
 
     setVisibilityError('');
     try {
       await hideMutation.mutateAsync({ noticeId: notice.noticeId });
-      toast({ icon: 'success', title: '공지가 미노출 처리되었습니다.', timer: 1800 });
+      toast({ icon: 'success', title: '공지가 비공개 처리되었습니다.', timer: 1800 });
     } catch (error) {
       setVisibilityError(getErrorMessage(error));
     }
@@ -115,7 +115,7 @@ const AdminNoticeListPage = () => {
     { key: 'noticeId', label: '번호' },
     { key: 'typeName', label: '유형' },
     {
-      key: 'title', label: '제목', className: 'admin-notice-list__title',
+      key: 'title', label: '제목', className: 'admin-notice-list__title admin-table__long-text',
       render: (value, row) => (
         <Link to={`/admin/notices/${row.noticeId}`}>
           {row.pinned && <span aria-label="중요 공지">[중요] </span>}{value}
@@ -127,41 +127,41 @@ const AdminNoticeListPage = () => {
       render: (value, row) => <AdminStatusBadge tone={statusTone(row.statusCode)}>{value}</AdminStatusBadge>,
     },
     {
-      key: 'visibleNow', label: '현재 노출',
+      key: 'visibleNow', label: '공개',
       render: (value, row) => {
         const canPublishNow = !value && row.statusCode !== PUBLISHED_STATUS;
         return (
           <div className="admin-notice-list__visibility">
             <AdminStatusBadge tone={value ? 'success' : 'neutral'}>
-              {value ? '노출 중' : '미노출'}
+              {value ? '공개' : '비공개'}
             </AdminStatusBadge>
             {value && (
               <button
-                aria-label={`${row.title} 공지 미노출 처리`}
+                aria-label={`${row.title} 공지 비공개 처리`}
                 className="admin-notice-list__hide-button"
                 disabled={isVisibilityPending}
                 onClick={() => hideNotice(row)}
                 type="button"
               >
                 <EyeOff aria-hidden="true" />
-                미노출
+                비공개
               </button>
             )}
             {canPublishNow && (
               <button
-                aria-label={`${row.title} 공지 노출하기`}
+                aria-label={`${row.title} 공지 공개하기`}
                 className="admin-notice-list__publish-button"
                 disabled={isVisibilityPending}
                 onClick={() => publishNotice(row)}
                 type="button"
               >
                 <Eye aria-hidden="true" />
-                노출하기
+                공개하기
               </button>
             )}
             {!value && !canPublishNow && (
               <Link
-                aria-label={`${row.title} 공지 노출 기간 수정`}
+                aria-label={`${row.title} 공지 게시 기간 수정`}
                 className="admin-notice-list__period-link"
                 to={`/admin/notices/${row.noticeId}`}
               >
@@ -173,11 +173,12 @@ const AdminNoticeListPage = () => {
         );
       },
     },
-    { key: 'postingStartAt', label: '노출 시작', render: formatDateTime },
-    { key: 'postingEndAt', label: '노출 종료', render: formatDateTime },
+    { key: 'postingStartAt', label: '게시 시작', render: formatDateTime },
+    { key: 'postingEndAt', label: '게시 종료', render: formatDateTime },
     {
       key: 'writerUserId',
       label: '작성자',
+      className: 'admin-table__compact-text',
       render: (value, row) => formatAdminMemberIdentity(row.writerMember, value),
     },
     {

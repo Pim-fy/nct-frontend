@@ -10,27 +10,30 @@ import {
   getServiceRequest,
   addServiceRequestComment,
   getServiceRequestComments,
+  reregisterServiceRequest,
 } from '@api/serviceRequestApi';
 import { getReceivedQuotes } from '@api/quoteApi';
 import { fetchMyProviderQuoteAccess } from '@api/providerProfileApi';
 import { useMyActiveQuote } from '@hooks/useQuote';
 import { toImageUrl } from '@api/fileApi';
-import { formatBudget } from '@utils/common';
+import { formatBudget, formatPoint, formatPointUnitText } from '@utils/common';
 import ImageLightbox from '@components/common/ImageLightbox';
 import ErrorMessage from '@components/common/ErrorMessage';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
 import Toast from '@components/common/Toast';
+import ConfirmModal from '@components/common/ConfirmModal';
 import Pagination from '@components/common/Pagination';
 import HeaderSearchPortal, {
   SimpleHeaderSearch,
 } from '@components/common/HeaderSearchPortal';
+import { getMyPagePath } from '@/routes/myPageRoutes';
 import { CATEGORY_META } from './serviceRequestWizardSteps';
 
 const STATUS_LABEL = {
   SVCC0001: '임시저장',
   SVCC0002: '공개',
   SVCC0003: '매칭완료',
-  SVCC0004: '종료',
+  SVCC0004: '취소',
 };
 
 const STATUS_BADGE_CLASS = {
@@ -48,6 +51,16 @@ const QUOTE_STATUS_LABEL = {
 };
 
 const QUOTES_PAGE_SIZE = 5;
+const SERVICE_REQUEST_LIST_PATH = getMyPagePath('service-requests');
+const MONEY_ANSWER_LABEL = /예산|금액|가격|비용|단가/;
+
+const formatServiceAnswerValue = (title, label, value) => {
+  const contextLabel = label || title || '';
+  if (!MONEY_ANSWER_LABEL.test(contextLabel)) return value;
+  const text = String(value ?? '').trim();
+  if (/^[\d,]+$/.test(text)) return formatPoint(Number(text.replaceAll(',', '')));
+  return formatPointUnitText(value);
+};
 
 function parseItem(raw) {
   const idx = raw.indexOf(': ');
@@ -126,12 +139,12 @@ function renderThLabel(entry) {
 
 // 옮길 가전/추가 옵션처럼 라벨 없이 선택값만 여러 개 나열되는 다중선택 항목 — 선택 개수만큼
 // 열을 나누면 개수가 늘어날수록 칸이 좁아져 텍스트가 줄바꿈되므로, 칩으로 만들어 줄바꿈되게 둔다
-function renderMultiSelectValue(fields) {
+function renderMultiSelectValue(fields, title) {
   return (
     <div className="flex flex-wrap gap-2">
       {fields.map((f, i) => (
         <span key={i} className="rounded-lg bg-[#f5f5f3] px-3 py-1.5 font-semibold text-[#1d1d1f]">
-          {f.value}
+          {formatServiceAnswerValue(title, f.label, f.value)}
         </span>
       ))}
     </div>
@@ -142,7 +155,7 @@ function renderMultiSelectValue(fields) {
 // (양쪽 다 같은 간격을 갖도록 첫 칸엔 오른쪽 여백, 이후 칸엔 왼쪽 여백+구분선을 준다 — 폭이 한쪽으로 치우쳐 보이는 것 방지)
 function renderEntryValue(entry) {
   if (entry.fields.length > 1 && entry.fields.every(f => !f.label)) {
-    return renderMultiSelectValue(entry.fields);
+    return renderMultiSelectValue(entry.fields, entry.title);
   }
   const subGroups = groupByLabelPrefix(entry.fields);
   return (
@@ -160,7 +173,7 @@ function renderEntryValue(entry) {
               {item.label && (
                 <span className="mb-0.5 block text-sm text-[#888780]">{item.label}</span>
               )}
-              <strong className="block whitespace-pre-line font-semibold text-[#1d1d1f]">{item.value}</strong>
+              <strong className="block whitespace-pre-line font-semibold text-[#1d1d1f]">{formatServiceAnswerValue(entry.title, item.label, item.value)}</strong>
             </div>
           ))}
         </div>
@@ -169,9 +182,9 @@ function renderEntryValue(entry) {
   );
 }
 
-// 특이사항 메모 단계 제목 — SVC_REQ_ITEM이 아니라 SERVICE_REQUEST.SVC_REQ_CN에 별도 저장되므로
-// 표에는 상세 조회 시점에 마지막 항목으로 합쳐서 보여준다
-const MEMO_TITLE = '특이사항 메모';
+// 특이사항 메모 단계의 필드 라벨 — 동적 폼 답변으로 SVC_REQ_ITEM에 자동 저장되어
+// request.items에 자연스럽게 포함되므로 별도로 추가 조립하지 않는다
+const MEMO_TITLE = '메모';
 
 // 짝을 지어도 되는데도 항상 한 행 전체를 써야 하는 항목 — 선택 항목이 많아질 수 있어 공간이 필요함
 const ALWAYS_FULL_WIDTH_TITLES = ['추가 옵션 (복수 선택)', MEMO_TITLE];
@@ -215,6 +228,10 @@ export default function ServiceRequestDetailPage() {
   const { svcReqSn } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const serviceRequestEntryPath = typeof location.state?.from === 'string'
+    ? location.state.from.split(/[?#]/)[0]
+    : null;
+  const hasServiceRequestListBreadcrumb = serviceRequestEntryPath === SERVICE_REQUEST_LIST_PATH;
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, isAuthenticated, isProvider } = useAuth();
   const authenticatedUserId = user?.id ?? user?.userId ?? user?.userSn ?? user?.usrSn;
@@ -226,6 +243,8 @@ export default function ServiceRequestDetailPage() {
   const [loadedRequestSn, setLoadedRequestSn] = useState(null);
   const [error, setError] = useState('');
   const [closing, setClosing] = useState(false);
+  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
+  const [reregistering, setReregistering] = useState(false);
   const [toast, setToast] = useState('');
   const [quotes, setQuotes] = useState([]);
   const [quotesLoadedRequestSn, setQuotesLoadedRequestSn] = useState(null);
@@ -356,6 +375,7 @@ export default function ServiceRequestDetailPage() {
   };
 
   const handleClose = async () => {
+    setCloseConfirmOpen(false);
     setClosing(true);
     try {
       await closeServiceRequest(svcReqSn);
@@ -365,6 +385,17 @@ export default function ServiceRequestDetailPage() {
       setToast(err.response?.data?.message || '마감에 실패했습니다.');
     } finally {
       setClosing(false);
+    }
+  };
+
+  const handleReregister = async () => {
+    setReregistering(true);
+    try {
+      const newRequest = await reregisterServiceRequest(svcReqSn);
+      navigate(`/service-requests/${newRequest.svcReqSn}`);
+    } catch (err) {
+      setToast(err.response?.data?.message || '재등록에 실패했습니다.');
+      setReregistering(false);
     }
   };
 
@@ -423,10 +454,14 @@ export default function ServiceRequestDetailPage() {
   const isOwner = !isProvider
     && authenticatedUserId != null
     && String(authenticatedUserId) === String(request.usrSn);
-  const isDraft = request.svcReqStatusCd === 'SVCC0001';
-  const isOpen  = request.svcReqStatusCd === 'SVCC0002';
-  const isMatched = request.svcReqStatusCd === 'SVCC0003';
-  const canAddComment = isOwner && (isOpen || isMatched) && comments.length < 3;
+  // 자기거래 차단(F-SVC-005/006) — 일반회원으로 작성한 본인 요청서를 제공자 모드로 봐도
+  // 견적 제출 영역이 안 뜨게 하려면 모드와 무관하게 "진짜 작성자인지"를 따로 알아야 한다
+  const isActualCreator = authenticatedUserId != null
+    && String(authenticatedUserId) === String(request.usrSn);
+  const isDraft  = request.svcReqStatusCd === 'SVCC0001';
+  const isOpen   = request.svcReqStatusCd === 'SVCC0002';
+  const isClosed = request.svcReqStatusCd === 'SVCC0004';
+  const canAddComment = isOwner && isOpen && comments.length < 3;
   const quoteTotalPages = Math.max(1, Math.ceil(quotes.length / QUOTES_PAGE_SIZE));
   const pagedQuotes = quotes.slice((quotePage - 1) * QUOTES_PAGE_SIZE, quotePage * QUOTES_PAGE_SIZE);
   const quoteAccessPending = quoteAccessQuery.isLoading || quoteAccessQuery.isFetching;
@@ -444,7 +479,6 @@ export default function ServiceRequestDetailPage() {
       parsedItems.push(parsed);
     }
   });
-  parsedItems.push({ title: MEMO_TITLE, fields: [{ label: null, value: request.svcReqCn ?? '' }] });
 
   const statusBadgeClass = STATUS_BADGE_CLASS[request.svcReqStatusCd] ?? 'bg-[#f0f0ee] text-[#5f5e5a]';
   const statusLabel      = STATUS_LABEL[request.svcReqStatusCd] ?? request.svcReqStatusCd;
@@ -456,19 +490,22 @@ export default function ServiceRequestDetailPage() {
       <div className="bg-white pb-14 text-sm leading-[1.6] text-[#1d1d1f]">
         <div className="container">
 
-        {/* 뒤로가기 */}
-        <div className="flex justify-end pt-9 pb-4">
-          <button
-            type="button"
-            className="inline-flex items-center gap-1 rounded-lg border border-[#e2e1dc] bg-white px-4 py-2.5 text-lg font-medium text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary"
-            onClick={() => navigate(isProvider ? '/service' : '/user/mypage/services/requests')}
-          >
-            ← 목록으로
-          </button>
-        </div>
+        {/* 담당자 7: 마이페이지 목록이 브레드크럼에 있을 때만 중복 복귀 버튼을 숨깁니다.
+            제공자 공개 목록·직접 URL 진입에서는 유일한 복귀 수단이므로 유지합니다. */}
+        {!hasServiceRequestListBreadcrumb && (
+          <div className="flex justify-end pt-9 pb-4">
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 rounded-lg border border-[#e2e1dc] bg-white px-4 py-2.5 text-lg font-medium text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary"
+              onClick={() => navigate(isProvider ? '/service' : SERVICE_REQUEST_LIST_PATH)}
+            >
+              ← 목록으로
+            </button>
+          </div>
+        )}
 
         {/* 2열 레이아웃 */}
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_minmax(340px,420px)]">
+        <div className={`grid grid-cols-1 items-start gap-6${hasServiceRequestListBreadcrumb ? ' pt-9' : ''} lg:grid-cols-[1fr_minmax(340px,420px)]`}>
 
           {/* ── 왼쪽: 요청 정보 카드 ── */}
           <article className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm">
@@ -500,11 +537,21 @@ export default function ServiceRequestDetailPage() {
                     작성재개
                   </button>
                 )}
+                {isOwner && isClosed && (
+                  <button
+                    type="button"
+                    className="shrink-0 rounded-lg border border-primary bg-primary px-4 py-2.5 text-lg font-medium text-white transition-colors hover:bg-[#0048bf] disabled:opacity-50"
+                    onClick={handleReregister}
+                    disabled={reregistering}
+                  >
+                    {reregistering ? '재등록 중...' : '재등록'}
+                  </button>
+                )}
                 {isOwner && isOpen && (
                   <button
                     type="button"
                     className="shrink-0 rounded-lg border border-[#a32d2d] bg-white px-4 py-2.5 text-lg font-semibold text-[#a32d2d] transition-colors hover:bg-[#fcebeb] disabled:opacity-50"
-                    onClick={handleClose}
+                    onClick={() => setCloseConfirmOpen(true)}
                     disabled={closing}
                   >
                     {closing ? '마감 중...' : '요청 마감'}
@@ -613,7 +660,7 @@ export default function ServiceRequestDetailPage() {
             </div>
 
             {/* 변경사항 작성 — 본문 수정 불가 대신 견적 요청 정책상 최대 3개까지 별도 등록. 본인에게만 노출 */}
-            {isOwner && (isOpen || isMatched) && (
+            {isOwner && isOpen && (
               <div className="border-t border-[#e8e8e8] px-6 py-5">
                 <h2 className="mb-4 text-lg font-semibold text-[#5f5e5a]">변경사항 추가</h2>
                 {canAddComment ? (
@@ -636,7 +683,7 @@ export default function ServiceRequestDetailPage() {
                       className="mt-2 w-full resize-none rounded-lg border border-[#e2e1dc] px-3 py-2 text-sm outline-none focus:border-primary"
                     />
                     <p className={`mt-1 text-right text-xs ${cmtCn.length >= 100 ? 'text-[#c0392b]' : 'text-[#9a9ba5]'}`}>{cmtCn.length}/100</p>
-                    <p className="mt-1 text-xs text-[#9a9ba5]">변경사항은 최대 3개까지 등록할 수 있습니다.</p>
+                    <p className="mt-1 text-sm text-[#9a9ba5]">변경사항은 최대 3개까지 등록할 수 있습니다.</p>
                     <div className="mt-2 flex justify-end">
                       <button
                         type="button"
@@ -694,7 +741,7 @@ export default function ServiceRequestDetailPage() {
             </div>
 
             {/* 액션 영역 */}
-            {!isOwner && isProvider && (
+            {!isOwner && isProvider && !isActualCreator && (
               <div className="border-b border-[#e8e8e8] px-5 py-4">
                 {isAuthenticated ? (
                   isOpen ? (
@@ -804,6 +851,15 @@ export default function ServiceRequestDetailPage() {
       </div>
 
       {toast && <Toast message={toast} onClose={() => setToast('')} />}
+
+      <ConfirmModal
+        open={closeConfirmOpen}
+        message="이 요청서를 마감하시겠습니까?"
+        subMessage="마감하면 더 이상 견적을 받을 수 없습니다."
+        confirmLabel="마감"
+        onConfirm={handleClose}
+        onCancel={() => setCloseConfirmOpen(false)}
+      />
 
       <ImageLightbox
         images={(request.imageList ?? []).map(img => toImageUrl(img.url))}

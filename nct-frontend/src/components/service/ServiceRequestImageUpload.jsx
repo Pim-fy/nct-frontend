@@ -53,16 +53,16 @@ export default function ServiceRequestImageUpload({ images, onChange, maxImages 
       onDragOver={e => e.preventDefault()}
       onDrop={e => { e.preventDefault(); handleFilesSelected(e.dataTransfer.files); }}
     >
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-[#888780]">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-[#888780]">
           {pickMode ? '대표로 지정할 사진을 선택하세요' : `드래그앤드롭 또는 파일 선택 · 최대 ${maxImages}장 (${images.length}/${maxImages})`}
         </p>
-        <div className="flex gap-2">
+        <div className="flex w-full gap-2 sm:w-auto">
           <button
             type="button"
             onClick={() => setPickMode(v => !v)}
             disabled={images.length === 0}
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors disabled:opacity-50 ${
+            className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors disabled:opacity-50 sm:flex-none ${
               pickMode ? 'border-primary bg-primary text-white' : 'border-[#e2e1dc] bg-white text-[#5f5e5a] hover:border-primary hover:text-primary'
             }`}
           >
@@ -73,7 +73,7 @@ export default function ServiceRequestImageUpload({ images, onChange, maxImages 
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={images.length >= maxImages}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-[#e2e1dc] bg-white px-3 py-1.5 text-sm text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-[#e2e1dc] bg-white px-3 py-1.5 text-sm text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary disabled:opacity-50 sm:flex-none"
           >
             <img src={iconCamera} alt="" className="size-[13px]" />
             사진 추가

@@ -4,6 +4,39 @@
   background: transparent;
 }
 
+.trade-detail-page__content {
+  width: 100%;
+  min-width: 0;
+}
+
+/* 정식 경매 거래 상세은 전역 container 안에서 본문과 리뷰를 한 화면으로 조립한다.
+   @ai_generated (담당자1, 2026-08-07): 리뷰를 오른쪽 380px 사이드바로 분리해뒀던 걸
+   되돌렸다 - 두 영역이 시각적으로 별개로 보인다는 지적에 따라, 좌우 분할 없이 제목·진행바·
+   카드 그리드·거래 리뷰가 전부 하나의 세로 영역으로 이어지게 한다. */
+.auction-trade-detail-shell {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  padding-top: 24px;
+}
+
+/* 앱 전반의 .container(py-6 lg:py-10 = 24px→40px) 상단 여백 관례에 맞춘다 -
+   이 페이지만 고정 24px을 써서 다른 상세 페이지들보다 위쪽이 좁아 보였다. */
+@media (min-width: 1024px) {
+  .auction-trade-detail-shell { padding-top: 40px; }
+}
+
+.auction-trade-detail-shell > .trade-detail-page {
+  min-width: 0;
+}
+
+.auction-trade-detail-shell__review {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
 .trade-detail-page__header {
   display: flex;
   align-items: flex-end;
@@ -40,35 +73,102 @@
   background: rgba(255, 255, 255, .82);
 }
 
-.trade-progress {
+/* @ai_generated (담당자1, 2026-08-07): 기존 trade-progress(테두리 박스 안 알약형 탭)를
+   대체하는 새 디자인 - 서비스 거래 상세의 번호+체크마크 스테퍼(service-trade-progress)와
+   목적은 같지만(진행 단계를 읽기전용으로 보여줌) 두 기존 스타일 어느 쪽과도 겹치지 않도록,
+   박스 테두리 없이 원형 마커 + 연결선으로 구성했다. 색상은 프로젝트 공통 --color-primary와
+   badge-outline 계열 회색(#8b95a7, App.css의 badge-outline-gray 계열)을 그대로 썼다. */
+.trade-stepper {
   display: flex;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 0;
   margin: 0 0 16px;
-  padding: 4px;
+  padding: 4px 8px;
   list-style: none;
-  border: 1px solid #dce2ed;
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: none;
 }
 
-.trade-progress__item {
+.trade-stepper__item {
+  position: relative;
+  display: flex;
   flex: 1;
-  padding: 10px 12px;
-  border-radius: 8px;
-  color: #8b95a7;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
   text-align: center;
-  font-size: 14px;
-  font-weight: 600;
 }
 
-.trade-progress__item--active {
-  background: #e9f0ff;
-  color: #155eef;
+/* 마커 사이 연결선. 지나간 구간은 primary색, 아직 안 온 구간은 회색. */
+.trade-stepper__item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 13px;
+  left: calc(50% + 13px);
+  width: calc(100% - 26px);
+  height: 2px;
+  background: #dce2ed;
+  z-index: 0;
+}
+
+.trade-stepper__item--done:not(:last-child)::after {
+  background: var(--color-primary, #0064ff);
+}
+
+.trade-stepper__marker {
+  position: relative;
+  z-index: 1;
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  border-radius: 50%;
+  border: 1.5px solid #cdd5e0;
+  background: #fff;
+  color: #8b95a7;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.trade-stepper__label {
+  color: #8b95a7;
+  font-size: 13px;
+  font-weight: 600;
+  /* @ai_generated (담당자1, 2026-08-07): line-height를 폰트 기본값에 맡기지 않고 고정한다 -
+     .trade-stepper 전체 높이(74px = padding 4+4 + marker 26 + gap 6 + 이 줄 18 + margin-bottom 16)
+     를 정확히 계산해 .auction-trade-detail-shell__review의 여백과 맞추기 위함이다. */
+  line-height: 18px;
+}
+
+.trade-stepper__item--done .trade-stepper__marker {
+  border-color: var(--color-primary, #0064ff);
+  background: var(--color-primary, #0064ff);
+  color: #fff;
+}
+
+.trade-stepper__item--done .trade-stepper__label {
+  color: #4b5565;
+}
+
+.trade-stepper__item--current .trade-stepper__marker {
+  border-color: var(--color-primary, #0064ff);
+  background: #fff;
+  color: var(--color-primary, #0064ff);
+  box-shadow: 0 0 0 4px rgba(0, 100, 255, .15);
+}
+
+.trade-stepper__item--current .trade-stepper__label {
+  color: var(--color-primary, #0064ff);
   font-weight: 800;
 }
 
-.trade-detail-grid,
+/* @ai_generated (담당자1, 2026-08-07): 카드 개수 조건부(:has())로 뒀던 걸 걷어내고
+   trade-detail-grid는 항상 3열 균등폭으로 고정한다. */
+.trade-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
 .trade-address-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -91,7 +191,7 @@
 .trade-detail-card h2 {
   margin: 0 0 16px;
   color: #252b3a;
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 800;
   letter-spacing: -.3px;
 }
@@ -107,10 +207,58 @@
   font-size: 13px;
 }
 
+/* 3열 그리드의 카드 3개(상품 정보/정보 섹션/상대방 정보 → 하나, 배송·진행·완료 → 하나)를
+   각각 한 trade-detail-card 안에 이어붙일 때 구획을 나누는 서브섹션. */
+.trade-detail-card__block + .trade-detail-card__block {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #ebebeb;
+}
+
+.trade-detail-card__block h3 {
+  margin: 0 0 12px;
+  color: #252b3a;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -.3px;
+}
+
+.trade-schedule-proposal-panel h4 {
+  margin: 0 0 12px;
+  color: #252b3a;
+  font-size: 16px;
+  font-weight: 800;
+}
+
 .trade-product {
   display: flex;
   align-items: center;
   gap: 18px;
+}
+
+.trade-product__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.trade-product__price {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  text-align: right;
+}
+
+.trade-product__price span {
+  color: #8893a5;
+  font-size: 13px;
+}
+
+.trade-product .trade-product__price strong {
+  color: var(--color-primary, #0064ff);
+  font-size: 20px;
+  font-weight: 800;
 }
 
 .trade-product__image {
@@ -129,6 +277,91 @@
   font-weight: 700;
 }
 
+.trade-counterpart {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 4px;
+}
+
+.trade-counterpart__profile {
+  display: flex;
+  flex: 1 1 220px;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.trade-trust-score {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  color: #718098;
+  font-size: 14px;
+}
+
+.trade-trust-score svg {
+  fill: #ff9f1c;
+  color: #ff9f1c;
+}
+
+.trade-trust-score strong {
+  color: #ff9f1c;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.trade-trust-score__max {
+  color: #a2acbd;
+  font-size: 13px;
+}
+
+.trade-trust-score__reviews {
+  margin-left: 2px;
+  color: #718098;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.trade-trust-score--muted {
+  color: #a2acbd;
+}
+
+.trade-trust-score--muted svg {
+  fill: none;
+  color: #c9d1de;
+}
+
+.trade-counterpart__avatar {
+  display: flex;
+  width: 76px;
+  min-width: 76px;
+  height: 76px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid #dce6ff;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #dce8ff, #f7f9ff);
+  color: #4b6cae;
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.trade-counterpart__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.trade-counterpart p {
+  margin: 0;
+}
+
 .trade-product__image img {
   width: 100%;
   height: 100%;
@@ -137,9 +370,12 @@
 
 .trade-product strong {
   display: block;
+  overflow: hidden;
   color: #252b3a;
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .trade-trust,
@@ -211,8 +447,7 @@
   color: #6d5a32;
 }
 
-.trade-complete-card,
-.trade-seller-section {
+.trade-complete-card {
   margin-top: 18px;
 }
 
@@ -223,33 +458,38 @@
 }
 
 .trade-detail-page--seller .trade-detail-grid,
-.trade-detail-page--seller .trade-seller-section,
 .trade-detail-page--seller .trade-complete-card,
 .trade-detail-page--seller .trade-detail-page__header,
-.trade-detail-page--seller .trade-progress,
+.trade-detail-page--seller .trade-stepper,
 .trade-detail-page--buyer .trade-detail-grid,
 .trade-detail-page--buyer .trade-complete-card,
 .trade-detail-page--buyer .trade-detail-page__header,
-.trade-detail-page--buyer .trade-progress {
+.trade-detail-page--buyer .trade-stepper {
   width: 100%;
   max-width: 1040px;
   margin-right: auto;
   margin-left: auto;
 }
 
-.trade-detail-page--seller .trade-progress,
-.trade-detail-page--buyer .trade-progress {
+.trade-detail-page--seller .trade-stepper,
+.trade-detail-page--buyer .trade-stepper {
   margin-bottom: 16px;
+}
+
+/* 정식 통합 경로에서는 왼쪽 그리드 열 전체를 사용한다. 기존 1040px 중앙 정렬보다 뒤에서 적용한다. */
+.auction-trade-detail-shell .trade-detail-page__header,
+.auction-trade-detail-shell .trade-stepper,
+.auction-trade-detail-shell .trade-detail-grid,
+.auction-trade-detail-shell .trade-complete-card {
+  max-width: none;
+  margin-right: 0;
+  margin-left: 0;
 }
 
 .trade-success {
   margin: 14px 0;
   color: #0048bf !important;
   font-weight: 700;
-}
-
-.trade-seller-section > .btn {
-  margin-top: 20px;
 }
 
 .trade-auto-complete p {
@@ -289,6 +529,101 @@
   line-height: 1.5;
 }
 
+.trade-schedule-picker-field {
+  position: relative;
+}
+
+.trade-schedule-picker-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.trade-schedule-picker-trigger svg { color: #667085; }
+
+.trade-schedule-date-picker {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 7px);
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 12px 24px rgb(16 24 40 / 16%);
+}
+
+.trade-schedule-date-picker .date-picker-second-month-group,
+.trade-schedule-date-picker .date-picker-second-month-label { display: none; }
+
+.trade-schedule-time-picker > p {
+  margin: 0;
+  color: #778197;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.trade-schedule-time-picker {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 7px);
+  right: 0;
+  left: 0;
+  max-height: 254px;
+  overflow-y: auto;
+  padding: 12px;
+  border: 1px solid #cfd8e8;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 12px 24px rgb(16 24 40 / 16%);
+}
+
+.trade-schedule-time-slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.trade-schedule-time-slot {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  min-height: 38px;
+  padding: 4px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  background: #fff;
+  color: #475467;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.trade-schedule-time-slot span {
+  color: inherit;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.trade-schedule-time-slot strong {
+  color: inherit;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.trade-schedule-time-slot:hover,
+.trade-schedule-time-slot--selected {
+  border-color: #0064ff;
+  background: #eaf2ff;
+  color: #0048bf;
+}
+
 .trade-complete-card__check {
   display: flex;
   align-items: center;
@@ -315,11 +650,30 @@
   margin-top: 18px;
 }
 
+.trade-detail-actions--end {
+  justify-content: flex-end;
+}
+
 .trade-detail-actions .btn,
 .trade-modal__actions .btn {
   min-height: 44px;
   padding: 0 18px;
   font-weight: 700;
+}
+
+.trade-counterpart__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.trade-counterpart__heading h3 { margin: 0; }
+
+.trade-counterpart__heading .btn {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
 }
 
 .trade-modal__actions {
@@ -405,6 +759,267 @@
   cursor: pointer;
   font-size: 28px;
   line-height: 1;
+}
+
+/* 담당자 7 · REQ-AUC-027/F-SVC-012: 상품 거래 문제 접수 버튼과 증빙 모달을 표시합니다. */
+.trade-dispute-action {
+  display: grid;
+  justify-items: end;
+  gap: 7px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #ebebeb;
+}
+
+.trade-dispute-action__button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 15px;
+  border: 1px solid #f2b8b5;
+  background: #fff;
+  color: #b42318;
+  font-weight: 800;
+}
+
+.trade-dispute-action__button:hover {
+  border-color: #e97a73;
+  background: #fff5f4;
+}
+
+.trade-detail-card .trade-dispute-action > p {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  color: #b42318;
+  font-size: 11px;
+}
+
+.trade-dispute-dialog {
+  width: min(620px, 100%);
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+}
+
+.trade-dispute-dialog__header {
+  align-items: flex-start;
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e9edf4;
+}
+
+.trade-dispute-dialog__header p {
+  margin: 0 0 4px;
+  color: #155eef;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.trade-dispute-form {
+  display: grid;
+  gap: 9px;
+}
+
+.trade-dispute-form > label {
+  margin-top: 8px;
+  color: #344054;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.trade-dispute-form select,
+.trade-dispute-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  color: #252b3a;
+  font: inherit;
+}
+
+.trade-dispute-form select {
+  height: 44px;
+  padding: 0 12px;
+  background: #fff;
+}
+
+.trade-dispute-form textarea {
+  min-height: 138px;
+  padding: 12px;
+  resize: vertical;
+}
+
+.trade-dispute-form select:focus,
+.trade-dispute-form textarea:focus {
+  border-color: #155eef;
+  outline: 3px solid #e5efff;
+}
+
+.trade-dispute-form__notice {
+  margin: 0 0 4px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #fff6df;
+  color: #8a5900;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.trade-dispute-form__help,
+.trade-dispute-form__count {
+  margin: 0;
+  color: #667085;
+  font-size: 12px;
+  text-align: right;
+}
+
+.trade-dispute-form__help {
+  text-align: left;
+}
+
+.trade-dispute-form__reference-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.trade-dispute-form__reference-error p {
+  margin: 0;
+  color: #b42318;
+  font-size: 12px;
+}
+
+.trade-dispute-form__reference-error button {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: #155eef;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.trade-dispute-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.trade-dispute-form .trade-dispute-file-picker {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px dashed #9bbcff;
+  border-radius: 10px;
+  background: #f7faff;
+  color: #155eef;
+  cursor: pointer;
+}
+
+.trade-dispute-file-picker small {
+  margin-left: auto;
+  color: #667085;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.trade-dispute-file-picker:has(+ .trade-dispute-file-input:focus-visible) {
+  outline: 3px solid #e5efff;
+  outline-offset: 2px;
+}
+
+.trade-dispute-file-list {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trade-dispute-file-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 28px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 9px 8px 11px;
+  border: 1px solid #e4e7ec;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.trade-dispute-file-list li > span {
+  overflow: hidden;
+  color: #344054;
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-dispute-file-list li > small {
+  color: #667085;
+  font-size: 11px;
+}
+
+.trade-dispute-file-list button {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #667085;
+  cursor: pointer;
+}
+
+.trade-dispute-file-list button:hover {
+  background: #f2f4f7;
+  color: #b42318;
+}
+
+.trade-dispute-form__error {
+  margin: 2px 0 0;
+  color: #ba2525;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.trade-dispute-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.trade-dispute-dialog__result {
+  display: grid;
+  gap: 12px;
+}
+
+.trade-dispute-dialog__result strong {
+  color: #0048bf;
+  font-size: 18px;
+}
+
+.trade-dispute-dialog__result p {
+  margin: 0;
+  color: #667085;
+  line-height: 1.6;
+}
+
+.trade-dispute-dialog__result .btn {
+  justify-self: end;
 }
 
 .trade-form-field {
@@ -866,6 +1481,81 @@
   min-height: 164px;
 }
 
+.trade-review-form__label {
+  margin: 0 0 8px;
+  color: #4b5565;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.trade-review-form__content {
+  margin-top: 20px;
+}
+
+/* 담당자 7: 공백 없는 긴 리뷰도 카드 폭을 넘지 않게 자르고 최대 3줄까지만 표시한다. */
+.trade-review-content {
+  display: -webkit-box;
+  max-width: 100%;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  word-break: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+/* .input(App.css)의 min-height:40px보다 확실히 이기도록 부모 클래스와 묶어 특이도를 올린다
+   (같은 특이도의 두 규칙은 번들 순서에 좌우되는데, 카드 폭에 대한 확신 없이 순서에 기대지
+   않기 위함). */
+.trade-review-form .trade-review-form__textarea {
+  min-height: 180px;
+}
+
+.trade-review-form__representative-badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  font-size: 11px;
+}
+
+/* 발송 인증 사진(.trade-delivery-proof-gallery__item)과 같은 확대 힌트를 준다. */
+.trade-review-photo-trigger {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.trade-review-form-wrap {
+  position: relative;
+}
+
+.trade-review-form--disabled {
+  opacity: .5;
+  pointer-events: none;
+  user-select: none;
+}
+
+.trade-review-form__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  background: rgba(255, 255, 255, .55);
+  backdrop-filter: blur(1px);
+}
+
+.trade-review-form__overlay-notice {
+  margin: 0;
+  color: #344054;
+  font-size: 15px;
+  font-weight: 700;
+}
+
 .trade-proof-submit-actions {
   display: flex;
   justify-content: flex-end;
@@ -915,10 +1605,12 @@
 
 @media (max-width: 768px) {
   .trade-detail-page { padding: 28px 0 56px; }
+  .auction-trade-detail-shell { padding-top: 28px; }
   .trade-detail-page__header { align-items: flex-start; flex-direction: column; }
   .trade-detail-page__header h1 { font-size: 27px; }
-  .trade-progress { gap: 4px; padding: 4px; }
-  .trade-progress__item { padding: 10px 4px; font-size: 12px; }
+  .trade-stepper { padding: 4px 0; }
+  .trade-stepper__marker { width: 22px; height: 22px; font-size: 12px; }
+  .trade-stepper__label { font-size: 11px; }
   .trade-detail-grid,
   .trade-address-grid,
   .trade-meeting-summary { grid-template-columns: 1fr; }
@@ -926,13 +1618,33 @@
   .trade-detail-actions { flex-direction: column; }
   .trade-modal { align-items: flex-end; padding: 12px; }
   .trade-modal__content { padding: 20px; }
+  .trade-dispute-action { justify-items: stretch; }
+  .trade-dispute-action__button { justify-content: center; width: 100%; }
+  .trade-detail-card .trade-dispute-action > p { align-items: flex-start; }
+  .trade-dispute-file-picker { align-items: flex-start; flex-wrap: wrap; }
+  .trade-dispute-file-picker small { width: 100%; margin-left: 26px; }
   .trade-detail-page--seller .trade-detail-grid,
-  .trade-detail-page--seller .trade-seller-section,
   .trade-detail-page--seller .trade-complete-card,
   .trade-detail-page--seller .trade-detail-page__header,
-  .trade-detail-page--seller .trade-progress,
+  .trade-detail-page--seller .trade-stepper,
   .trade-detail-page--buyer .trade-detail-grid,
   .trade-detail-page--buyer .trade-complete-card,
   .trade-detail-page--buyer .trade-detail-page__header,
-  .trade-detail-page--buyer .trade-progress { max-width: none; }
+  .trade-detail-page--buyer .trade-stepper { max-width: none; }
+}
+
+@media (max-width: 1024px) {
+  .auction-trade-detail-shell {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .auction-trade-detail-shell > .trade-detail-page {
+    padding-bottom: 24px;
+  }
+
+  .auction-trade-detail-shell__review {
+    position: static;
+    padding: 0 0 48px;
+  }
 }

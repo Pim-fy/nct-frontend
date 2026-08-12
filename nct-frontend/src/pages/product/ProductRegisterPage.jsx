@@ -35,18 +35,12 @@ const PinIcon = () => (
     <path d="M12 21s6-5.1 6-11a6 6 0 0 0-12 0c0 5.9 6 11 6 11z" /><circle cx="12" cy="10" r="2" />
   </svg>
 );
-const BothIcon = () => (
-  <svg className="trade-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M7 7h11l-3-3" /><path d="M18 7l-3 3" /><path d="M17 17H6l3 3" /><path d="M6 17l3-3" />
-  </svg>
-);
 
 // ─── 상수 정의 ───────────────────────────────────────────────────────────────
 // 거래방식 옵션 · 경매 기간 선택지 · 입찰 단위 · 카테고리 도메인 코드 · 스텝 라벨
 const TRADE_METHODS = [
   { value: 'TRDC0009', label: '배송',      Icon: TruckIcon },
   { value: 'TRDC0010', label: '직거래',    Icon: PinIcon },
-  { value: 'TRDC0020', label: '둘 다 가능', Icon: BothIcon },
 ];
 
 // 입찰 단위 선택지 — 관리자가 CMM_CODE(AUCG02)에서 추가/삭제하는 옵션 목록을 그대로 쓴다 (하드코딩 금지)
@@ -54,6 +48,7 @@ const BID_UNIT_GROUP_CD = 'AUCG02';
 const PRODUCT_DOMAIN_CD = 'CATC0001';
 const STEP_LABELS = ['상품 입력', '등록 확인'];
 const MAX_IMAGES = 5; // F-AUC-002 — 대표이미지 포함 최대 5장
+const MAX_PRICE_AMT = 100000000; // 시작가·즉시구매가 상한 — 100,000,000P (사용자 확정, 260810)
 
 export default function ProductRegisterPage() {
   const navigate = useNavigate();
@@ -113,7 +108,7 @@ export default function ProductRegisterPage() {
     prdIbyAmt: '',
     startNow: true,
     bidUnit: 1000,
-    tradeRegions: [], // 직거래(TRDC0010)·둘 다 가능(TRDC0020) 희망 거래지역, 최대 5곳 — [{code, name}]
+    tradeRegions: [], // 직거래(TRDC0010) 희망 거래지역, 최대 5곳 — [{code, name}]
   });
 
   // 폼·이미지·설명이 바뀔 때마다 모듈 캐시에 동기화 — 뒤로가기로 돌아왔을 때 복원할 원본
@@ -369,7 +364,7 @@ export default function ProductRegisterPage() {
         bidUnit:        form.bidUnit,
         // 임시저장일 때만 의미 있음 — 재개 시 등록확인 탭으로 바로 이동할지 판단하는 값
         policyAgreed:   policyAgreed,
-        // 직거래·둘 다 가능일 때만 의미 있음 — 그 외 거래방식이면 빈 배열
+        // 직거래일 때만 의미 있음 — 그 외 거래방식이면 빈 배열
         tradeRegions:   form.tradeRegions,
       };
       const result = editPrdSn
@@ -450,9 +445,17 @@ export default function ProductRegisterPage() {
       startAmtRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail(`시작가는 입찰 단위(${formatPoint(form.bidUnit)})의 배수로 입력해 주세요.`);
     }
+    if (Number(form.prdStartAmt) > MAX_PRICE_AMT) {
+      startAmtRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return fail(`시작가는 ${formatPoint(MAX_PRICE_AMT)} 이하로 입력해 주세요.`);
+    }
     if (form.prdIbyAmt && Number(form.prdIbyAmt) % form.bidUnit !== 0) {
       ibyAmtRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return fail(`즉시구매가는 입찰 단위(${formatPoint(form.bidUnit)})의 배수로 입력해 주세요.`);
+    }
+    if (form.prdIbyAmt && Number(form.prdIbyAmt) > MAX_PRICE_AMT) {
+      ibyAmtRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return fail(`즉시구매가는 ${formatPoint(MAX_PRICE_AMT)} 이하로 입력해 주세요.`);
     }
     if (form.prdIbyAmt && Number(form.prdIbyAmt) <= Number(form.prdStartAmt)) {
       ibyAmtRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });

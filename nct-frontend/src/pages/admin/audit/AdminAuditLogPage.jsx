@@ -88,7 +88,7 @@ const AdminAuditLogPage = () => {
   const columns = useMemo(() => [
     { key: 'date', label: '일시' },
     {
-      key: 'userName', label: '행위자',
+      key: 'userName', label: '행위자', className: 'admin-table__compact-text',
       render: (_, row) => (row.userSn == null
         ? '시스템'
         : formatAdminMemberIdentity(row.actorMember, row.userSn)),
@@ -100,7 +100,7 @@ const AdminAuditLogPage = () => {
     },
     { key: 'ipAddr', label: 'IP', render: (value) => value ?? '-' },
     {
-      key: 'reason', label: '사유·내용', className: 'is-wrap',
+      key: 'reason', label: '사유·내용', className: 'is-wrap admin-table__long-text',
       render: (_, row) => (
         <button
           className="admin-bjn-reason-preview"
