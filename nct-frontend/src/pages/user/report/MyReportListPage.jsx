@@ -110,7 +110,7 @@ function ReportCard({ report, isOpen, onToggle, number }) {
               {getTypeNames(report).map((name) => (
                   <TypeBadge key={name} typeCode={report.reportTypeCode} typeName={name} style={{ borderRadius: "5px", fontSize: "14px", fontWeight: 400, flexShrink: 0, height: "28px", paddingLeft: "7px", paddingRight: "7px", display: "inline-flex", alignItems: "center" }} />
               ))}
-              <p className="font-bold text-[18px] text-[#333] truncate mb-0 min-w-0">{report.title}</p>
+              <p className="font-bold text-[18px] text-[#333] truncate mb-0 min-w-0">{report.targetName?.trim() || report.title || '-'}</p>
             </div>
             {report.processReason && !isOpen && (
               <div className="flex items-center gap-1 mt-1.5">
