@@ -7,7 +7,7 @@
 // - 절대좌표(ScaledStage) 방식 → 반응형 Flex 레이아웃으로 전환.
 //   사이드바: 데스크톱(lg+) 좌측 고정 컬럼 / 모바일 상단 가로 스크롤 탭.
 //   콘텐츠: 우측 flex-1 영역.
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMyPageInquiryPath, getMyPagePath } from "@/routes/myPageRoutes";
 import MyPageSidebar from "@components/mypage/MyPageSidebar";
@@ -64,8 +64,6 @@ export default function MyPage({
   previewTrades = false,
 }) {
   // isProvider: 현재 로그인 역할이 제공자(ROLE_SERVICE)인지 — 서버가 내려준 실제 역할 기준.
-  // 예전에는 localStorage 가짜 플래그(providerMode.js)로 화면만 바꿨는데,
-  // 백엔드 모드전환 API(F-PROV-008)와 실연동하면서 역할값 하나로 판단하도록 교체(2026-07-24).
   const { user, isProvider, switchMode, logout } = useAuth();
   const { data: myProviderApps = [] } = useMyProviderApplications({
     enabled: !!user && !isProvider,
@@ -148,7 +146,6 @@ export default function MyPage({
     navigate(getMyPagePath("home"));
   };
 
-  // @ai_generated: 공통 container를 사용해 헤더와 마이페이지의 좌우 시작선을 일치시킨다.
   return (
     <div className="container py-6 lg:py-10">
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 lg:items-start ">
