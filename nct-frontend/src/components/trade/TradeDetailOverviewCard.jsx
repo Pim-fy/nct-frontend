@@ -15,6 +15,7 @@ export default function TradeDetailOverviewCard({
   statusMessages,
   counterpartTitle,
   auctionId,
+  onReport,
 }) {
   const location = useLocation();
   const returnTo = `${location.pathname}${location.search}${location.hash}`;
@@ -45,7 +46,14 @@ export default function TradeDetailOverviewCard({
       />
 
       <div className="trade-detail-card__block">
-        <h3>{counterpartTitle}</h3>
+        <div className="trade-counterpart__heading">
+          <h3>{counterpartTitle}</h3>
+          {onReport && (
+            <button className="btn btn-danger btn-sm" type="button" onClick={onReport}>
+              신고하기
+            </button>
+          )}
+        </div>
         <div className="trade-counterpart">
           <div className="trade-counterpart__profile">
             <div className="trade-counterpart__avatar">

@@ -48,6 +48,6 @@ export const getServiceTradeStatus = (statusCode) => (
 export const SERVICE_TRADE_STEPS = [
   '보관금',
   '서비스 진행',
-  '완료 확인',
+  '의뢰자·제공자 완료 확인',
   '거래 완료',
 ];
