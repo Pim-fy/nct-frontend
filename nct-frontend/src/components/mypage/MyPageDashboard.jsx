@@ -6,7 +6,7 @@
 import React, { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { getMyPagePath } from "@/routes/myPageRoutes";
+import { getMyPagePath, getServiceTradeDetailPath } from "@/routes/myPageRoutes";
 import { useQuery } from "@tanstack/react-query";
 import { fetchMyFavoriteAuctions } from "@api/auctionApi";
 import { getMyBidHistory } from "@api/bidApi";
@@ -544,7 +544,7 @@ export default function MyPageDashboard({
           onView={(item) => {
             const from = location.pathname + location.search;
             if (item.dealType === 'service') {
-              navigate(`/service-trades/${item.tradeId ?? item.id}`, { state: { from } });
+              navigate(getServiceTradeDetailPath(item.tradeId ?? item.id), { state: { from } });
               return;
             }
             // @ai_generated (담당자1, 2026-08-07): auctionId가 없으면 "/auction/undefined/trade"로

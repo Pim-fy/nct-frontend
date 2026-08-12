@@ -18,3 +18,10 @@ export const getAdminReport = (reportSn) =>
 export const decideAdminReport = ({ reportSn, decision, reason }) =>
   api.post(`/admin/reports/${reportSn}/decision`, { decision, reason })
     .then((response) => response.data);
+
+/** 담당자 7 · F-OPS-007/015: 열람 사유와 함께 신고 첨부 원문을 요청합니다. */
+export const getAdminReportFileBlob = ({ reportSn, fileSn, reason }) => api.post(
+  `/admin/reports/${reportSn}/files/${fileSn}/download`,
+  { reason },
+  { responseType: 'blob' },
+);

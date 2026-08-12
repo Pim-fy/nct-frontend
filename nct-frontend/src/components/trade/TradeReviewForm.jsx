@@ -26,7 +26,13 @@ const MAX_CONTENT_LENGTH = 500;
  * 반투명 오버레이로 안내 문구를 가운데 보여준다(빈 텍스트 한 줄보다, 실제로 채워질 폼의
  * 모양을 흐릿하게라도 보여주는 쪽이 낫다는 판단, 사용자 확인).
  */
-export default function TradeReviewForm({ tradeId, review, disabledText, onDone }) {
+export default function TradeReviewForm({
+  tradeId,
+  review,
+  disabledText,
+  dealType = 'goods',
+  onDone,
+}) {
   const queryClient = useQueryClient();
   const isDisabled = Boolean(disabledText);
   const isEdit = Boolean(review?.reviewId);
@@ -248,7 +254,11 @@ export default function TradeReviewForm({ tradeId, review, disabledText, onDone 
 
           <div className="mt-6 rounded border border-[#ebebeb] bg-[#f8f9fd] p-4 text-[15px] text-[#4e4e4e]">
             <p className="mb-1 font-bold text-black">이런 내용을 적으면 다른 사용자에게 도움이 돼요</p>
-            <p>상품 상태와 설명이 일치했는지, 응대와 소통은 어땠는지, 배송·직거래 과정에서 좋았거나 아쉬웠던 점을 구체적으로 남겨주세요.</p>
+            <p>
+              {dealType === 'service'
+                ? '요청한 작업과 실제 서비스가 일치했는지, 일정과 소통은 어땠는지, 서비스 과정에서 좋았거나 아쉬웠던 점을 구체적으로 남겨주세요.'
+                : '상품 상태와 설명이 일치했는지, 응대와 소통은 어땠는지, 배송·직거래 과정에서 좋았거나 아쉬웠던 점을 구체적으로 남겨주세요.'}
+            </p>
           </div>
 
           <PhotoLightbox

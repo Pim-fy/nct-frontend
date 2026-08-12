@@ -155,13 +155,13 @@ export const mapDataToState = (type, updatedData, profileState = {}) => {
 // ──────────────────────────────────────────
 
 /**
- * 숫자를 한국 화폐 형식으로 포맷
+ * 숫자를 플랫폼 포인트 형식으로 포맷
  * @param {number} amount
- * @returns {string} e.g. "1,234,567원". 값이 없으면 "-"
+ * @returns {string} e.g. "1,234,567P". 값이 없으면 "-"
  */
 export const formatPrice = (amount) => {
   if (amount == null) return '-';
-  return `${Number(amount).toLocaleString('ko-KR')}원`;
+  return `${Number(amount).toLocaleString('ko-KR')}P`;
 };
 
 /**
@@ -172,6 +172,27 @@ export const formatPrice = (amount) => {
 export const formatPoint = (amount) => {
   if (amount == null) return '-';
   return `${Number(amount).toLocaleString('ko-KR')}P`;
+};
+
+/**
+ * 담당자 7 · 내부 금액 표기 통일: 저장된 카테고리 문항 값은 유지하고 화면의 원 단위만 P로 바꿉니다.
+ * 숫자가 앞에 있는 금액 표현만 변환하므로 원룸·지원 같은 일반 단어는 건드리지 않습니다.
+ */
+export const formatPointUnitText = (value) => {
+  if (typeof value !== 'string') return value;
+
+  const toPointText = (amountText, multiplier) => {
+    const amount = Number(amountText.replaceAll(',', '')) * multiplier;
+    return Number.isSafeInteger(amount)
+      ? `${amount.toLocaleString('ko-KR')}P`
+      : `${amountText}P`;
+  };
+
+  return value
+    .replace(/(\d[\d,]*)\s*억\s*원/g, (_, amount) => toPointText(amount, 100_000_000))
+    .replace(/(\d[\d,]*)\s*만\s*원/g, (_, amount) => toPointText(amount, 10_000))
+    .replace(/(\d[\d,]*)\s*천\s*원/g, (_, amount) => toPointText(amount, 1_000))
+    .replace(/(\d[\d,]*)\s*원/g, (_, amount) => toPointText(amount, 1));
 };
 
 /**

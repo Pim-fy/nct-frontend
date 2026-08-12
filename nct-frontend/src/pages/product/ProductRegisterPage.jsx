@@ -48,7 +48,7 @@ const BID_UNIT_GROUP_CD = 'AUCG02';
 const PRODUCT_DOMAIN_CD = 'CATC0001';
 const STEP_LABELS = ['상품 입력', '등록 확인'];
 const MAX_IMAGES = 5; // F-AUC-002 — 대표이미지 포함 최대 5장
-const MAX_PRICE_AMT = 100000000; // 시작가·즉시구매가 상한 — 1억 원 (사용자 확정, 260810)
+const MAX_PRICE_AMT = 100000000; // 시작가·즉시구매가 상한 — 100,000,000P (사용자 확정, 260810)
 
 export default function ProductRegisterPage() {
   const navigate = useNavigate();

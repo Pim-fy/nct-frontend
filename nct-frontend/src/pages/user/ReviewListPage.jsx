@@ -16,6 +16,7 @@ import MyPageListError from "@components/mypage/MyPageListError";
 import { useWritableReviews, useMyReviews } from "@hooks/useReview";
 import { toImageUrl } from "@api/fileApi";
 import { toast } from "@utils/common";
+import { getServiceTradeDetailPath } from "@/routes/myPageRoutes";
 
 const PAGE_SIZE = 10;
 
@@ -127,7 +128,7 @@ export default function ReviewListPage() {
   const handleViewTarget = (item) => {
     const from = location.pathname + location.search;
     if (item.dealType === "service") {
-      navigate(`/service-trades/${item.tradeId ?? item.id}`, { state: { from } });
+      navigate(getServiceTradeDetailPath(item.tradeId ?? item.id), { state: { from } });
       return;
     }
     // @ai_generated (담당자1, 2026-08-07): auctionId가 없으면 "/auction/undefined/trade"로

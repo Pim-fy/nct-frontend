@@ -15,7 +15,7 @@ import { getReceivedQuotes } from '@api/quoteApi';
 import { fetchMyProviderQuoteAccess } from '@api/providerProfileApi';
 import { useMyActiveQuote } from '@hooks/useQuote';
 import { toImageUrl } from '@api/fileApi';
-import { formatBudget } from '@utils/common';
+import { formatBudget, formatPoint, formatPointUnitText } from '@utils/common';
 import ImageLightbox from '@components/common/ImageLightbox';
 import ErrorMessage from '@components/common/ErrorMessage';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
@@ -25,6 +25,7 @@ import Pagination from '@components/common/Pagination';
 import HeaderSearchPortal, {
   SimpleHeaderSearch,
 } from '@components/common/HeaderSearchPortal';
+import { getMyPagePath } from '@/routes/myPageRoutes';
 import { CATEGORY_META } from './serviceRequestWizardSteps';
 
 const STATUS_LABEL = {
@@ -49,6 +50,16 @@ const QUOTE_STATUS_LABEL = {
 };
 
 const QUOTES_PAGE_SIZE = 5;
+const SERVICE_REQUEST_LIST_PATH = getMyPagePath('service-requests');
+const MONEY_ANSWER_LABEL = /예산|금액|가격|비용|단가/;
+
+const formatServiceAnswerValue = (title, label, value) => {
+  const contextLabel = label || title || '';
+  if (!MONEY_ANSWER_LABEL.test(contextLabel)) return value;
+  const text = String(value ?? '').trim();
+  if (/^[\d,]+$/.test(text)) return formatPoint(Number(text.replaceAll(',', '')));
+  return formatPointUnitText(value);
+};
 
 function parseItem(raw) {
   const idx = raw.indexOf(': ');
@@ -127,12 +138,12 @@ function renderThLabel(entry) {
 
 // 옮길 가전/추가 옵션처럼 라벨 없이 선택값만 여러 개 나열되는 다중선택 항목 — 선택 개수만큼
 // 열을 나누면 개수가 늘어날수록 칸이 좁아져 텍스트가 줄바꿈되므로, 칩으로 만들어 줄바꿈되게 둔다
-function renderMultiSelectValue(fields) {
+function renderMultiSelectValue(fields, title) {
   return (
     <div className="flex flex-wrap gap-2">
       {fields.map((f, i) => (
         <span key={i} className="rounded-lg bg-[#f5f5f3] px-3 py-1.5 font-semibold text-[#1d1d1f]">
-          {f.value}
+          {formatServiceAnswerValue(title, f.label, f.value)}
         </span>
       ))}
     </div>
@@ -143,7 +154,7 @@ function renderMultiSelectValue(fields) {
 // (양쪽 다 같은 간격을 갖도록 첫 칸엔 오른쪽 여백, 이후 칸엔 왼쪽 여백+구분선을 준다 — 폭이 한쪽으로 치우쳐 보이는 것 방지)
 function renderEntryValue(entry) {
   if (entry.fields.length > 1 && entry.fields.every(f => !f.label)) {
-    return renderMultiSelectValue(entry.fields);
+    return renderMultiSelectValue(entry.fields, entry.title);
   }
   const subGroups = groupByLabelPrefix(entry.fields);
   return (
@@ -161,7 +172,7 @@ function renderEntryValue(entry) {
               {item.label && (
                 <span className="mb-0.5 block text-sm text-[#888780]">{item.label}</span>
               )}
-              <strong className="block whitespace-pre-line font-semibold text-[#1d1d1f]">{item.value}</strong>
+              <strong className="block whitespace-pre-line font-semibold text-[#1d1d1f]">{formatServiceAnswerValue(entry.title, item.label, item.value)}</strong>
             </div>
           ))}
         </div>
@@ -216,6 +227,10 @@ export default function ServiceRequestDetailPage() {
   const { svcReqSn } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const serviceRequestEntryPath = typeof location.state?.from === 'string'
+    ? location.state.from.split(/[?#]/)[0]
+    : null;
+  const hasServiceRequestListBreadcrumb = serviceRequestEntryPath === SERVICE_REQUEST_LIST_PATH;
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, isAuthenticated, isProvider } = useAuth();
   const authenticatedUserId = user?.id ?? user?.userId ?? user?.userSn ?? user?.usrSn;
@@ -462,19 +477,22 @@ export default function ServiceRequestDetailPage() {
       <div className="bg-white pb-14 text-sm leading-[1.6] text-[#1d1d1f]">
         <div className="container">
 
-        {/* 뒤로가기 */}
-        <div className="flex justify-end pt-9 pb-4">
-          <button
-            type="button"
-            className="inline-flex items-center gap-1 rounded-lg border border-[#e2e1dc] bg-white px-4 py-2.5 text-lg font-medium text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary"
-            onClick={() => navigate(isProvider ? '/service' : '/user/mypage/services/requests')}
-          >
-            ← 목록으로
-          </button>
-        </div>
+        {/* 담당자 7: 마이페이지 목록이 브레드크럼에 있을 때만 중복 복귀 버튼을 숨깁니다.
+            제공자 공개 목록·직접 URL 진입에서는 유일한 복귀 수단이므로 유지합니다. */}
+        {!hasServiceRequestListBreadcrumb && (
+          <div className="flex justify-end pt-9 pb-4">
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 rounded-lg border border-[#e2e1dc] bg-white px-4 py-2.5 text-lg font-medium text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary"
+              onClick={() => navigate(isProvider ? '/service' : SERVICE_REQUEST_LIST_PATH)}
+            >
+              ← 목록으로
+            </button>
+          </div>
+        )}
 
         {/* 2열 레이아웃 */}
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_minmax(340px,420px)]">
+        <div className={`grid grid-cols-1 items-start gap-6${hasServiceRequestListBreadcrumb ? ' pt-9' : ''} lg:grid-cols-[1fr_minmax(340px,420px)]`}>
 
           {/* ── 왼쪽: 요청 정보 카드 ── */}
           <article className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm">

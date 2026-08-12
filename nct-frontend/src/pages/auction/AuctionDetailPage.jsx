@@ -6,7 +6,6 @@ import {
   useParams,
 } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft } from 'lucide-react';
 import {
   addAuctionFavorite,
   buyNowAuction,
@@ -1038,10 +1037,6 @@ const AuctionDetailPageContent = ({ auctionId }) => {
     targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const handleBack = () => {
-    navigate(returnPath);
-  };
-
   return (
     <>
       {headerSearch}
@@ -1049,16 +1044,6 @@ const AuctionDetailPageContent = ({ auctionId }) => {
         <div className={DETAIL_CONTAINER_CLASS}>
           <section className="mt-[34px] grid items-stretch gap-2 lg:grid-cols-[minmax(360px,0.78fr)_minmax(560px,1.22fr)] max-lg:mt-4">
             <div className="relative grid min-h-0 min-w-0 grid-rows-[minmax(0,1fr)_auto] gap-2 max-lg:grid-rows-[auto_auto]">
-              <button
-                type="button"
-                className="absolute top-4 left-4 z-20 inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-md border border-[#858585] bg-white px-3 text-body-sm font-bold text-[#202020] shadow-[0_2px_10px_rgba(0,0,0,0.16)] transition-colors hover:border-primary hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                aria-label="목록으로 돌아가기"
-                title="목록으로"
-                onClick={handleBack}
-              >
-                <ArrowLeft aria-hidden="true" size={18} strokeWidth={2} />
-                <span>목록으로</span>
-              </button>
               <AuctionImageGallery
                 key={`auction-gallery-${auction.auctionId}`}
                 auction={auction}

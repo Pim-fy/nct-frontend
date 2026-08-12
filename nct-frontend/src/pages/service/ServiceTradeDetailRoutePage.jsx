@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { fetchReferenceCodes } from '@api/referenceApi';
 import {
   getServiceTradeDetail,
@@ -9,6 +9,7 @@ import {
 } from '@api/serviceTradeApi';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
 import { SERVICE_TRADE_DISPUTE_TYPE_GROUP_CODE } from '@/constants/serviceTrade';
+import { getMyPagePath, getMyPageSection } from '@/routes/myPageRoutes';
 import ServiceTradeDetailPage from './ServiceTradeDetailPage';
 
 const serviceTradeDetailQueryKey = (tradeId) => ['service-trade-detail', tradeId];
@@ -22,9 +23,17 @@ const SERVICE_TRADE_DISPUTE_TYPE_LABELS = {
 
 export default function ServiceTradeDetailRoutePage() {
   const { tradeId: tradeIdParam } = useParams();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const tradeId = Number(tradeIdParam);
   const isValidTradeId = Number.isSafeInteger(tradeId) && tradeId > 0;
+  const myPageEntryPath = typeof location.state?.from === 'string'
+    ? location.state.from.split(/[?#]/)[0]
+    : null;
+  const myPageEntrySection = myPageEntryPath ? getMyPageSection(myPageEntryPath) : null;
+  const serviceTradeListPath = getMyPagePath('service-trade');
+  const shouldShowServiceTradeListLink = myPageEntrySection
+    && myPageEntrySection !== 'service-trade';
   const detailQuery = useQuery({
     queryKey: serviceTradeDetailQueryKey(tradeId),
     queryFn: () => getServiceTradeDetail(tradeId),
@@ -99,6 +108,7 @@ export default function ServiceTradeDetailRoutePage() {
 
   return (
     <ServiceTradeDetailPage
+      backPath={shouldShowServiceTradeListLink ? serviceTradeListPath : null}
       disputeTypes={disputeTypesQuery.data ?? []}
       disputeTypesError={disputeTypesQuery.isError}
       disputeTypesLoading={disputeTypesQuery.isLoading}
@@ -107,6 +117,7 @@ export default function ServiceTradeDetailRoutePage() {
       onRequestScheduleChange={requestServiceScheduleChange}
       onRequestScheduleCancellation={requestServiceScheduleCancellation}
       onDecideScheduleCancellation={decideServiceScheduleCancellation}
+      showReviews
       trade={detailQuery.data}
     />
   );

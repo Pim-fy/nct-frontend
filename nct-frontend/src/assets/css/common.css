@@ -254,8 +254,6 @@ table tr:last-child td { border-bottom: none; }
    .seller-auction-layout: 왼쪽(상품정보·메트릭·이력) 2fr / 오른쪽(관리 패널) 1fr
    .seller-metrics: 입찰현황·관심인원·종료정보 3칸 카드
    .notice/.danger-note: 하단 안내 박스 (진행중=파랑, 귀책 확정 시 빨강으로 교체 예정) */
-.seller-auction-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 24px; }
-.seller-auction-head h1 { font-size: 28px; line-height: 1.35; margin: 0 0 6px; }
 .seller-auction-layout { display: grid; grid-template-columns: minmax(0,2fr) minmax(300px,1fr); gap: 20px; align-items: start; }
 .seller-product { display: grid; grid-template-columns: 180px minmax(0,1fr); gap: 20px; align-items: center; }
 .seller-product-img { width: 180px; height: 180px; border: 1px solid #f0efec; border-radius: 8px; background: #e5e4df; flex-shrink: 0; }

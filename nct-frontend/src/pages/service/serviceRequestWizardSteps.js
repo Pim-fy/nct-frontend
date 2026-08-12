@@ -343,7 +343,7 @@ export const WIZARD_STEPS = {
     title: '수량·금액대', type: 'form', next: 'ir_extra',
     fields: [
       { key: '가구 수량', type: 'text', placeholder: '예: 2개', required: true },
-      { key: '가구 금액대', type: 'choice', options: ['25만원 미만', '50만원 미만', '75만원 미만', '100만원 미만'] },
+      { key: '가구 금액대', type: 'choice', options: ['250,000P 미만', '500,000P 미만', '750,000P 미만', '1,000,000P 미만'] },
     ],
   },
   ir_fn_move: {
@@ -443,7 +443,7 @@ export const WIZARD_STEPS = {
 
   /* ── 인테리어 (확정 시트 '인테리어_정리' 재검증 반영, 260727)
      집/상업공간/리모델링/도배장판 4분기가 시트에서 서로 완전히 다른 구조라 분기별로 새로 짰다.
-     예산 단위가 대분류마다 달라(집=7구간 "~만원대", 상업공간=5구간 "~만원 이하") 공용 budget
+     예산 구간이 대분류마다 달라(집=7구간, 상업공간=5구간) 공용 budget
      단계 대신 카테고리 전용 예산 단계를 쓰고, 답변은 일반 항목처럼 SVC_REQ_ITEM에 저장한다
      (범위값이라 svcReqBdgtAmt 숫자 컬럼엔 안 맞음). 리모델링·도배장판은 시트에 예산 항목이 아예
      없어 예산 단계 없이 바로 마무리로 넘어간다. ── */
@@ -475,8 +475,8 @@ export const WIZARD_STEPS = {
   it_home_budget: {
     title: '희망 예산', type: 'form', next: 'it_home_final',
     fields: [
-      { key: '예상 금액대', type: 'choice', options: ['500만 원 미만', '1,000만 원 미만', '1,000만 원대', '2,000만 원대', '3,000만 원대', '4,000만 원대', '5,000만 원대'], required: true, toggleable: true },
-      { key: '예산', type: 'amount-toggle', placeholder: '예: 30,000,000원', disabledWhenFilled: '예상 금액대' },
+      { key: '예상 금액대', type: 'choice', options: ['5,000,000P 미만', '10,000,000P 미만', '10,000,000P대', '20,000,000P대', '30,000,000P대', '40,000,000P대', '50,000,000P대'], required: true, toggleable: true },
+      { key: '예산', type: 'amount-toggle', placeholder: '예: 30,000,000P', disabledWhenFilled: '예상 금액대' },
     ],
   },
   it_home_final: {
@@ -507,8 +507,8 @@ export const WIZARD_STEPS = {
   it_biz_budget: {
     title: '희망 예산', type: 'form', next: 'it_biz_final',
     fields: [
-      { key: '예상 금액대', type: 'choice', options: ['1,000만 원 이하', '2,000만 원 이하', '3,000만 원 이하', '4,000만 원 이하', '5,000만 원 이하'], required: true, toggleable: true },
-      { key: '예산', type: 'amount-toggle', placeholder: '예: 30,000,000원', disabledWhenFilled: '예상 금액대' },
+      { key: '예상 금액대', type: 'choice', options: ['10,000,000P 이하', '20,000,000P 이하', '30,000,000P 이하', '40,000,000P 이하', '50,000,000P 이하'], required: true, toggleable: true },
+      { key: '예산', type: 'amount-toggle', placeholder: '예: 30,000,000P', disabledWhenFilled: '예상 금액대' },
     ],
   },
   it_biz_final: {
@@ -712,7 +712,7 @@ export const WIZARD_STEPS = {
   budget: {
     title: '희망 예산', type: 'form', next: 'memo',
     fields: [
-      { key: '예산', type: 'amount-toggle', placeholder: '예: 300,000원', required: true },
+      { key: '예산', type: 'amount-toggle', placeholder: '예: 300,000P', required: true },
     ],
   },
   memo: {

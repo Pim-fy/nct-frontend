@@ -17,11 +17,15 @@ import {
   requestServiceCompletion,
   submitServiceTradeDispute,
 } from '@api/serviceTradeApi';
+import DateRangePicker from '@components/product/DateRangePicker';
+import TradeReviewSection from '@components/trade/TradeReviewSection';
+import { getServiceTradeChatPath } from '@/routes/myPageRoutes';
 import {
   getServiceTradeStatus,
   SERVICE_TRADE_STEPS,
 } from './serviceTradeStatus';
 import '@assets/css/service-trade-detail.css';
+import '@assets/css/trade-detail.css';
 
 const getTodayDate = () => {
   const today = new Date();
@@ -105,9 +109,10 @@ export default function ServiceTradeDetailPage({
   onDecideScheduleCancellation = null,
   chatPath = null,
   onActionCompleted = null,
-  backPath = '/user/mypage/services/trades',
+  backPath = null,
   backLabel = '목록으로',
   viewerRoleLabelOverride = null,
+  showReviews = false,
 }) {
   const [isDisputeDialogOpen, setIsDisputeDialogOpen] = useState(false);
   const [disputeTypeCode, setDisputeTypeCode] = useState('');
@@ -274,7 +279,7 @@ export default function ServiceTradeDetailPage({
     setIsSubmittingDispute(true);
     setDisputeError('');
     const uploadedFileSns = [];
-    let disputeRegistered = false;
+    let disputeSubmissionStarted = false;
     try {
       for (const file of disputeFiles) {
         const uploadResponse = await uploadTradeDisputeEvidence(file);
@@ -285,12 +290,12 @@ export default function ServiceTradeDetailPage({
         uploadedFileSns.push(uploadedFile.flSn);
       }
 
+      disputeSubmissionStarted = true;
       await onSubmitDispute(trade.tradeId, {
         disputeTypeCode,
         content,
         fileSns: uploadedFileSns,
       });
-      disputeRegistered = true;
       setDisputeSubmitted(true);
       setDisputeFiles([]);
       try {
@@ -299,7 +304,10 @@ export default function ServiceTradeDetailPage({
         // 접수는 이미 성공했으므로 후속 화면 새로고침 실패를 접수 실패로 되돌리지 않습니다.
       }
     } catch (error) {
-      if (!disputeRegistered && uploadedFileSns.length > 0) {
+      const responseStatus = error.response?.status;
+      const isConfirmedClientRejection = responseStatus >= 400 && responseStatus < 500;
+      if ((!disputeSubmissionStarted || isConfirmedClientRejection)
+        && uploadedFileSns.length > 0) {
         await Promise.allSettled(uploadedFileSns.map((fileSn) => deleteImage(fileSn)));
       }
       setDisputeError(error.response?.data?.message ?? '거래 문제를 접수하지 못했습니다. 다시 시도해 주세요.');
@@ -426,7 +434,13 @@ export default function ServiceTradeDetailPage({
             <h1>서비스 거래 상세</h1>
             <p>{trade.serviceRequestTitle}</p>
           </div>
-          <Link className="btn btn-ghost service-trade-detail-page__list-link" to={backPath}>{backLabel}</Link>
+          {/* 담당자 7: 브레드크럼이 서비스 거래 목록을 이미 제공하면 중복 링크를 숨깁니다.
+              다른 마이페이지에서 진입했거나 관리자 화면이면 backPath를 받아 복귀 링크를 유지합니다. */}
+          {backPath && (
+            <Link className="btn btn-ghost service-trade-detail-page__list-link" to={backPath}>
+              {backLabel}
+            </Link>
+          )}
         </header>
 
         <ol className="service-trade-progress" aria-label="서비스 거래 진행 상태">
@@ -497,7 +511,7 @@ export default function ServiceTradeDetailPage({
               <div className="service-trade-inline-actions service-trade-inline-actions--summary" aria-label="서비스 일정 및 채팅 처리">
                 <div className="service-trade-inline-actions__group">
                   {canAccessChat && (
-                    <Link className="btn service-trade-inline-actions__chat" to={chatPath ?? `/service-trades/${trade.tradeId}/chat`}>
+                    <Link className="btn service-trade-inline-actions__chat" to={chatPath ?? getServiceTradeChatPath(trade.tradeId)}>
                       <MessageSquareText aria-hidden="true" size={18} /> {canViewChatHistory ? '채팅 기록 보기' : '서비스 채팅'}
                     </Link>
                   )}
@@ -584,6 +598,16 @@ export default function ServiceTradeDetailPage({
               </nav>
             )}
           </section>
+        )}
+
+        {/* 담당자 7 · F-COM-007: 서비스 거래도 의뢰자와 제공자 양측이 거래 완료 후
+            같은 공용 리뷰 계약으로 작성·수정하고 상대방 리뷰를 확인합니다. */}
+        {showReviews && (
+          <TradeReviewSection
+            tradeId={trade.tradeId}
+            isTradeCompleted={trade.tradeStatusCode === 'TRDC0006'}
+            dealType="service"
+          />
         )}
 
       </div>
@@ -787,23 +811,35 @@ export default function ServiceTradeDetailPage({
                 <p className="service-trade-dispute-form__notice">일정 변경·취소에는 수수료가 부과되지 않으며 요청 사유가 거래 이력에 기록됩니다.</p>
                 {isScheduleChange && (
                   <div className="service-trade-schedule-picker-grid">
-                    <label htmlFor="service-trade-requested-schedule-date">변경 희망 날짜
-                    <input
-                      id="service-trade-requested-schedule-date"
-                      type="date"
-                      value={requestedScheduleDate}
-                      min={todayDate}
-                      onChange={(event) => {
-                        const nextDate = event.target.value;
-                        setRequestedScheduleDate(nextDate);
-                        setIsScheduleTimePickerOpen(false);
-                        if (nextDate === todayDate && requestedScheduleTime < getNextAvailableTime()) {
-                          setRequestedScheduleTime('');
-                        }
-                      }}
-                      disabled={isSubmittingSchedule}
-                    />
-                    </label>
+                    {/* 담당자 7: 일정 변경 날짜도 서비스 요청서와 같은 공용 단일 날짜 캘린더를 사용한다. */}
+                    <div
+                      aria-disabled={isSubmittingSchedule}
+                      aria-label="변경 희망 날짜"
+                      className={`service-trade-schedule-date-field${isSubmittingSchedule ? ' is-disabled' : ''}`}
+                      role="group"
+                    >
+                      <span className="service-trade-schedule-date-field__label">변경 희망 날짜</span>
+                      <DateRangePicker
+                        fixedStart
+                        endDate={requestedScheduleDate || null}
+                        hideStatus
+                        gridPadding="16px 12px 20px"
+                        cellAspectRatio="1.35"
+                        onChange={({ end: nextDate }) => {
+                          if (isSubmittingSchedule) return;
+                          setRequestedScheduleDate(nextDate);
+                          setIsScheduleTimePickerOpen(false);
+                          if (nextDate === todayDate && requestedScheduleTime < getNextAvailableTime()) {
+                            setRequestedScheduleTime('');
+                          }
+                        }}
+                      />
+                      <p className="service-trade-schedule-date-field__selection">
+                        {requestedScheduleDate
+                          ? `선택한 날짜: ${requestedScheduleDate}`
+                          : '변경 희망 날짜를 선택해 주세요.'}
+                      </p>
+                    </div>
                     <div className="service-trade-time-slots-field" role="group" aria-label="변경 희망 시간">
                       <span className="service-trade-time-slots-field__label">변경 희망 시간</span>
                       <button
