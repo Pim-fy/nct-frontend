@@ -26,7 +26,7 @@ const toReviewCount = (value) => {
 };
 
 /**
- * 거래 상대방이 받은 리뷰의 평균 별점과 리뷰 수를 짧게 표시한다.
+ * 거래 상대방이 받은 거래 유형별 리뷰의 평균 별점과 리뷰 수를 짧게 표시한다.
  * @ai_generated: 개별 리뷰 본문까지는 안 보여준다 - 경매는 최고가 입찰로 상대가 정해지는
  * 구조라 "상대를 고를지" 결정하는 지점이 없고(입찰 전엔 경매 페이지에 별도 리뷰 열람 기능이
  * 이미 있음), 낙찰·거래 확정 이후에는 리뷰 본문을 봐도 취할 수 있는 행동이 없다. 집계 평점
@@ -34,7 +34,7 @@ const toReviewCount = (value) => {
  * 배지처럼 붙일 수 있도록 인라인 요소 하나로 렌더링한다(박스 없음).
  * 리뷰가 없거나 API가 아직 배포되지 않은 경우에도 거래 상세 자체는 계속 볼 수 있어야 한다.
  */
-const TradeTrustSummary = ({ counterpartUserId }) => {
+const TradeTrustSummary = ({ counterpartUserId, reviewType = 'goods' }) => {
   const trustQuery = useQuery({
     queryKey: ['reviews', 'trust', String(counterpartUserId)],
     queryFn: () => getUserReviewTrust(counterpartUserId),
@@ -42,10 +42,13 @@ const TradeTrustSummary = ({ counterpartUserId }) => {
     select: unwrapData,
   });
   const trust = trustQuery.data;
-  const goodsReviewCount = toReviewCount(trust?.goodsCount);
-  const goodsScore = trust?.goodsScore == null || trust.goodsScore === ''
+  const isServiceReview = reviewType === 'service';
+  const reviewTypeLabel = isServiceReview ? '서비스' : '물건';
+  const reviewCount = toReviewCount(isServiceReview ? trust?.serviceCount : trust?.goodsCount);
+  const reviewScore = (isServiceReview ? trust?.serviceScore : trust?.goodsScore) == null
+    || (isServiceReview ? trust?.serviceScore : trust?.goodsScore) === ''
     ? Number.NaN
-    : Number(trust.goodsScore);
+    : Number(isServiceReview ? trust.serviceScore : trust.goodsScore);
 
   if (!counterpartUserId || trustQuery.isLoading) {
     return null;
@@ -55,11 +58,11 @@ const TradeTrustSummary = ({ counterpartUserId }) => {
     return <span className="trade-trust-score trade-trust-score--muted">평점 조회 실패</span>;
   }
 
-  if (goodsReviewCount == null) {
+  if (reviewCount == null) {
     return <span className="trade-trust-score trade-trust-score--muted">평점 정보 없음</span>;
   }
 
-  if (goodsReviewCount === 0) {
+  if (reviewCount === 0) {
     return (
       <span className="trade-trust-score trade-trust-score--muted">
         <Star size={16} aria-hidden="true" />
@@ -68,19 +71,19 @@ const TradeTrustSummary = ({ counterpartUserId }) => {
     );
   }
 
-  if (!Number.isFinite(goodsScore)) {
+  if (!Number.isFinite(reviewScore)) {
     return <span className="trade-trust-score trade-trust-score--muted">평점 정보 없음</span>;
   }
 
   return (
     <span
       className="trade-trust-score"
-      aria-label={`물건 리뷰 평균 별점 ${formatScore(goodsScore)}점, 5점 만점, 리뷰 ${goodsReviewCount}개`}
+      aria-label={`${reviewTypeLabel} 리뷰 평균 별점 ${formatScore(reviewScore)}점, 5점 만점, 리뷰 ${reviewCount}개`}
     >
       <Star size={16} aria-hidden="true" />
-      <strong>{formatScore(goodsScore)}</strong>
+      <strong>{formatScore(reviewScore)}</strong>
       <span className="trade-trust-score__max">/{MAX_SCORE.toFixed(1)}</span>
-      <span className="trade-trust-score__reviews">· 리뷰 {goodsReviewCount}개</span>
+      <span className="trade-trust-score__reviews">· 리뷰 {reviewCount}개</span>
     </span>
   );
 };

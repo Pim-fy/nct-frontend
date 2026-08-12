@@ -301,42 +301,69 @@
 .trade-chat-conversation__actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex-shrink: 0;
 }
 
+.trade-chat-conversation__action-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 12px;
+  border-left: 1px solid #e4e9f1;
+}
+
+.trade-chat-conversation__action-group .btn {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .trade-chat-conversation__close {
-  min-width: auto;
-  padding: 6px 10px;
-  font-size: 12px;
+  min-width: 38px;
+  padding: 0 10px;
+  border-color: transparent;
+  color: #667085;
 }
 
 .trade-chat-conversation__report {
-  min-width: auto;
-  padding: 6px 10px;
+  min-width: 92px;
+  padding: 0 12px;
   border-color: #fecaca;
   color: #dc2626;
-  font-size: 12px;
+  background: #fffafa;
 }
 
 .trade-chat-conversation__trade-detail {
-  min-width: auto;
-  padding: 6px 10px;
-  border-color: #bfdbfe;
-  color: #155eef;
-  font-size: 12px;
+  min-width: 104px;
+  padding: 0 12px;
+  border-color: #1565ff;
+  color: #ffffff;
+  background: #1565ff;
 }
 
 .trade-chat-conversation__trade-detail:hover {
-  border-color: #93c5fd;
-  background: #eff6ff;
-  color: #0048bf;
+  border-color: #0048bf;
+  background: #0048bf;
+  color: #ffffff;
 }
 
 .trade-chat-conversation__report:hover {
   border-color: #fca5a5;
   background: #fef2f2;
   color: #b91c1c;
+}
+
+.trade-chat-conversation__close:hover {
+  border-color: #d0d5dd;
+  background: #f8fafc;
+  color: #344054;
 }
 
 .trade-chat-conversation__close.trade-chat-conversation__close--mobile {
@@ -539,14 +566,20 @@
   }
 
   .trade-chat-conversation__close {
-    padding: 6px 8px;
+    padding: 0 8px;
   }
 
   .trade-chat-conversation__report {
-    padding: 6px 8px;
+    min-width: 38px;
+    padding: 0 8px;
   }
 
   .trade-chat-conversation__trade-detail {
-    padding: 6px 8px;
+    min-width: 38px;
+    padding: 0 8px;
+  }
+
+  .trade-chat-conversation__action-group .btn span {
+    display: none;
   }
 }

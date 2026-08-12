@@ -2,7 +2,7 @@ export const OFFLINE_TRADE_STEPS = [
   '채팅·일정 협의',
   '일정 확정',
   '직거래 예정·진행',
-  '양측 완료 확인',
+  '판매자·구매자 완료 확인',
   '거래 완료',
 ];
 
@@ -24,7 +24,7 @@ const isMeetingTimeElapsed = (trade, now = Date.now()) => {
 /**
  * 직거래 상단 프로그레스 바의 상태를 구매자·판매자 공통으로 계산한다.
  * 일정 제안에 대한 상대방 응답은 일정 확정 단계로, 약속 시간이 지난 뒤에는
- * 양측 완료 확인 단계로 표시한다.
+ * 판매자·구매자 완료 확인 단계로 표시한다.
  */
 export const getOfflineTradeProgressConfig = (trade, now = Date.now()) => {
   if (['ON_HOLD', 'CANCELED'].includes(trade?.status)) {

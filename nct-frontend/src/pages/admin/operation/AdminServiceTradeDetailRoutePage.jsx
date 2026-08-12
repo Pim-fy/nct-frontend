@@ -48,7 +48,6 @@ export default function AdminServiceTradeDetailRoutePage() {
         backLabel="분쟁 목록으로"
         backPath="/admin/disputes"
         trade={detailQuery.data}
-        viewerRoleLabelOverride="관리자 조회"
       />
     </>
   );

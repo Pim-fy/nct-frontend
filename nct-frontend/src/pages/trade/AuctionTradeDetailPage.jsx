@@ -8,6 +8,8 @@ import TradeProgressSteps from '@components/trade/TradeProgressSteps';
 import { useAuctionTrade } from '@hooks/useAuctionTrade';
 import AsyncRouteError from '@components/common/AsyncRouteError';
 import TradeDetailSkeleton from '@components/trade/TradeDetailSkeleton';
+import ReportModal from '@components/common/ReportModal';
+import { getMyPagePath } from '@routes/myPageRoutes';
 import { useBreadcrumbOverride } from '@components/common/breadcrumb/BreadcrumbContext';
 import {
   buildMyPageTrail,
@@ -36,6 +38,7 @@ export default function AuctionTradeDetailPage() {
   // @ai_generated (담당자1, 2026-08-07): 진행바를 좌우 컬럼을 가로지르는 공용 행으로 올리기
   // 위해, 실제 단계 계산은 TradeDetailBuyer/Seller에 그대로 두고 결과값만 이 상태로 받는다.
   const [stepperConfig, setStepperConfig] = useState(null);
+  const [isReportOpen, setIsReportOpen] = useState(false);
 
   if (tradeQuery.isLoading) {
     return <TradeDetailSkeleton />;
@@ -93,12 +96,23 @@ export default function AuctionTradeDetailPage() {
         initialTrade={trade}
         auctionId={auctionId}
         onStepperChange={setStepperConfig}
+        onReport={() => setIsReportOpen(true)}
         reviewSlot={(
           <TradeReviewSection
             tradeId={trade.tradeId}
             isTradeCompleted={trade.tradeStatus === 'TRDC0006'}
           />
         )}
+      />
+      <ReportModal
+        open={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        targetName={trade.counterpartNickname ?? trade.counterpart ?? '거래 상대'}
+        targetType="trade"
+        referenceSn={trade.tradeId}
+        reportedUserSn={trade.counterpartUserId ?? trade.counterpartUsrSn}
+        contextLabel={`거래 상대: ${trade.counterpartNickname ?? trade.counterpart ?? '거래 상대'}`}
+        redirectAfterSubmit={false}
       />
     </div>
   );

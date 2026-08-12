@@ -32,6 +32,7 @@ function ReportModalContent({
   reportedUserSn,
   reportTypeLabel = '',
   contextLabel = '',
+  redirectAfterSubmit = true,
 }) {
   const formId = useId();
   const navigate = useNavigate();
@@ -103,7 +104,9 @@ function ReportModalContent({
       });
       toast({ icon: 'success', title: '신고가 접수되었습니다.' });
       onClose();
-      navigate(getMyPagePath('report-list'));
+      if (redirectAfterSubmit) {
+        navigate(getMyPagePath('report-list'));
+      }
     } catch (error) {
       const message = error?.response?.status === 409
         ? '같은 대상과 유형의 신고가 이미 접수되어 있습니다.'
