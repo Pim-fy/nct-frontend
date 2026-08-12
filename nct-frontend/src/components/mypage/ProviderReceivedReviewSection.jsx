@@ -9,6 +9,7 @@ import MyPageListError from '@components/mypage/MyPageListError';
 import MyPageListItem from '@components/mypage/MyPageListItem';
 import MyPageListPriceActions from '@components/mypage/MyPageListPriceActions';
 import MyPageListSectionLayout from '@components/mypage/MyPageListSectionLayout';
+import MyPageMobileCard from '@components/mypage/MyPageMobileCard';
 import MyPageReviewListItem from '@components/mypage/MyPageReviewListItem';
 import MyPageStatusBadge from '@components/mypage/MyPageStatusBadge';
 import MyPageListSkeleton from '@components/skeleton/MyPageListSkeleton';
@@ -251,30 +252,53 @@ export default function ProviderReceivedReviewSection() {
             ) : (
               <div className="flex flex-col gap-3">
                 {receivedItems.map((review) => (
-                  <MyPageListItem
-                    key={review.reviewId}
-                    imageAlt={review.productTitle || '서비스 리뷰'}
-                    imageFallback="서비스 리뷰"
-                    badge={<MyPageStatusBadge className="badge-teal">받은 리뷰</MyPageStatusBadge>}
-                    title={review.productTitle || '서비스 거래'}
-                    actions={(
-                      <MyPageListPriceActions topLine={`작성일 ${formatDate(review.createdDate)}`}>
-                        <button
-                          type="button"
-                          className="btn btn-primary"
-                          onClick={() => openServiceTrade(review)}
-                        >
-                          거래 상세
-                        </button>
-                      </MyPageListPriceActions>
-                    )}
-                  >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <StarRatingDisplay rating={review.rating} size={17} />
-                      <p className="truncate">{review.content || '작성된 리뷰 내용이 없습니다.'}</p>
+                  <div key={review.reviewId}>
+                    {/* ── 모바일: 풀사이즈 카드 ─────────────────────── */}
+                    <div className="sm:hidden">
+                      <MyPageMobileCard
+                        imageAlt={review.productTitle || '서비스 리뷰'}
+                        imageFallbackLabel="서비스 리뷰"
+                        badge={<MyPageStatusBadge className="badge-teal">받은 리뷰</MyPageStatusBadge>}
+                        title={review.productTitle || '서비스 거래'}
+                        footerLeft={`작성일 ${formatDate(review.createdDate)}`}
+                        actionButton={(
+                          <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={() => openServiceTrade(review)}
+                          >
+                            거래 상세
+                          </button>
+                        )}
+                      />
                     </div>
-                    <p><strong>서비스 이용자</strong> {review.reviewerName || '회원'}</p>
-                  </MyPageListItem>
+                    {/* ── 데스크톱: 기존 가로 행 레이아웃 ─────────── */}
+                    <div className="hidden sm:block">
+                      <MyPageListItem
+                        imageAlt={review.productTitle || '서비스 리뷰'}
+                        imageFallback="서비스 리뷰"
+                        badge={<MyPageStatusBadge className="badge-teal">받은 리뷰</MyPageStatusBadge>}
+                        title={review.productTitle || '서비스 거래'}
+                        actions={(
+                          <MyPageListPriceActions topLine={`작성일 ${formatDate(review.createdDate)}`}>
+                            <button
+                              type="button"
+                              className="btn btn-primary"
+                              onClick={() => openServiceTrade(review)}
+                            >
+                              거래 상세
+                            </button>
+                          </MyPageListPriceActions>
+                        )}
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          <StarRatingDisplay rating={review.rating} size={17} />
+                          <p className="truncate">{review.content || '작성된 리뷰 내용이 없습니다.'}</p>
+                        </div>
+                        <p><strong>서비스 이용자</strong> {review.reviewerName || '회원'}</p>
+                      </MyPageListItem>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}

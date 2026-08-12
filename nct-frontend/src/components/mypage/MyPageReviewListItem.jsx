@@ -1,5 +1,6 @@
 import MyPageListItem from '@components/mypage/MyPageListItem';
 import MyPageListPriceActions from '@components/mypage/MyPageListPriceActions';
+import MyPageMobileCard from '@components/mypage/MyPageMobileCard';
 import MyPageStatusBadge from '@components/mypage/MyPageStatusBadge';
 import StarRatingDisplay from '@components/review/StarRatingDisplay';
 import { formatDate } from '@utils/common';
@@ -43,44 +44,66 @@ export default function MyPageReviewListItem({
 
   const deadlineText = `거래 완료일 ${formatDate(completedDate)}`;
 
+  const badgeEl = (
+    <>
+      <MyPageStatusBadge className={typeMeta.badgeClass}>{typeMeta.label}</MyPageStatusBadge>
+      {dday && (
+        <span className={`badge ${dday === 'D-Day' ? 'badge-danger' : 'badge-warning'}`} style={{ fontSize: 12 }}>
+          리뷰작성기간 {dday}
+        </span>
+      )}
+    </>
+  );
+
+  const actionButtonEl = expired ? (
+    <span className="badge badge-danger" style={{ height: 38, fontSize: 14, display: 'inline-flex', alignItems: 'center', padding: '0 16px', borderRadius: 8 }}>
+      기간 만료
+    </span>
+  ) : (
+    <button type="button" onClick={onViewTarget} className="btn btn-primary">상세보기</button>
+  );
+
   return (
-    <MyPageListItem
-      imageSrc={thumbnail}
-      imageAlt={title}
-      imageFallback="NO IMAGE"
-      badge={(
-        <>
-          <MyPageStatusBadge className={typeMeta.badgeClass}>{typeMeta.label}</MyPageStatusBadge>
-          {dday && (
-            <span className={`badge ${dday === 'D-Day' ? 'badge-danger' : 'badge-warning'}`} style={{ fontSize: 12 }}>
-              리뷰작성기간 {dday}
-            </span>
+    <>
+      {/* ── 모바일: 상품구매목록과 동일한 카드 형태 ────────────── */}
+      <div className="sm:hidden">
+        <MyPageMobileCard
+          imageSrc={thumbnail}
+          imageAlt={title}
+          imageFallbackLabel="NO IMAGE"
+          badge={badgeEl}
+          title={title}
+          footerLeft={deadlineText}
+          actionButton={actionButtonEl}
+        />
+      </div>
+
+      {/* ── 데스크톱: 기존 가로 행 레이아웃 ────────────────────── */}
+      <div className="hidden sm:block">
+        <MyPageListItem
+          imageSrc={thumbnail}
+          imageAlt={title}
+          imageFallback="NO IMAGE"
+          badge={badgeEl}
+          title={title}
+          actions={(
+            <MyPageListPriceActions topLine={deadlineText} topLineClassName="text-sm font-medium whitespace-nowrap text-[#667085]">
+              {actionButtonEl}
+            </MyPageListPriceActions>
           )}
-        </>
-      )}
-      title={title}
-      actions={(
-        <MyPageListPriceActions topLine={deadlineText}>
-          {expired ? (
-            <span className="badge badge-danger" style={{ height: 38, fontSize: 14, display: 'inline-flex', alignItems: 'center', padding: '0 16px', borderRadius: 8 }}>
-              기간 만료
-            </span>
+        >
+          {isWritten ? (
+            <div className="flex min-w-0 items-center gap-3">
+              <StarRatingDisplay rating={rating} size={17} />
+              <p className="truncate">{content}</p>
+            </div>
           ) : (
-            <button type="button" onClick={onViewTarget} className="btn btn-primary">상세보기</button>
+            <p className="flex items-center gap-2">
+              <span><strong>{partyLabel}</strong> {partyName || '-'}</span>
+            </p>
           )}
-        </MyPageListPriceActions>
-      )}
-    >
-      {isWritten ? (
-        <div className="flex min-w-0 items-center gap-3">
-          <StarRatingDisplay rating={rating} size={17} />
-          <p className="truncate">{content}</p>
-        </div>
-      ) : (
-        <p className="flex items-center gap-2">
-          <span><strong>{partyLabel}</strong> {partyName || '-'}</span>
-        </p>
-      )}
-    </MyPageListItem>
+        </MyPageListItem>
+      </div>
+    </>
   );
 }
