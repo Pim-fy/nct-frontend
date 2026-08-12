@@ -96,6 +96,11 @@ export const toTradeHistoryItem = (trade) => {
     pendingMeetingAddress: trade.pendingMeetingAddress ?? null,
     canRespondToScheduleProposal: Boolean(trade.canRespondToScheduleProposal),
     canWithdrawScheduleProposal: Boolean(trade.canWithdrawScheduleProposal),
+    myScheduleProposalCount: Number(trade.myScheduleProposalCount ?? 0),
+    remainingScheduleProposalCount: Number(trade.remainingScheduleProposalCount ?? 3),
+    myOfflineCompletionRequestCount: Number(trade.myOfflineCompletionRequestCount ?? 0),
+    remainingOfflineCompletionRequestCount: Number(trade.remainingOfflineCompletionRequestCount ?? 2),
+    canRespondToOfflineCompletionRequest: Boolean(trade.canRespondToOfflineCompletionRequest),
   };
 };
 
@@ -188,5 +193,10 @@ export const toTradeDetail = (response) => {
     pendingMeetingAddress: trade.pendingMeetingAddress ?? null,
     canRespondToScheduleProposal: Boolean(trade.canRespondToScheduleProposal),
     canWithdrawScheduleProposal: Boolean(trade.canWithdrawScheduleProposal),
+    myScheduleProposalCount: Number(trade.myScheduleProposalCount ?? 0),
+    remainingScheduleProposalCount: Number(trade.remainingScheduleProposalCount ?? 3),
+    myOfflineCompletionRequestCount: Number(trade.myOfflineCompletionRequestCount ?? 0),
+    remainingOfflineCompletionRequestCount: Number(trade.remainingOfflineCompletionRequestCount ?? 2),
+    canRespondToOfflineCompletionRequest: Boolean(trade.canRespondToOfflineCompletionRequest),
   };
 };

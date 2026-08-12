@@ -68,6 +68,7 @@ function ReportModalContent({
   reportedUserSn,
   reportTypeLabel = "",
   contextLabel = "",
+  redirectAfterSubmit = true,
 }) {
   const { mutateAsync, isPending } = useSubmitCustomerReport();
   const navigate = useNavigate();
@@ -139,7 +140,9 @@ function ReportModalContent({
       });
       toast({ icon: "success", title: "신고가 접수되었습니다." });
       onClose();
-      navigate(getMyPagePath("report-list"));
+      if (redirectAfterSubmit) {
+        navigate(getMyPagePath("report-list"));
+      }
     } catch (err) {
       const msg = err?.response?.status === 409
         ? "이미 신고가 접수된 상대입니다. 내 신고 목록에서 접수 현황을 확인해 주세요."

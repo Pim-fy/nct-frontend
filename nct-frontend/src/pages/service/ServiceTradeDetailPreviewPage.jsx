@@ -6,7 +6,9 @@ import ServiceTradeDetailPage from './ServiceTradeDetailPage';
 const PREVIEW_TRADE = {
   tradeId: 1,
   serviceRequestId: 1,
+  selectedQuoteId: 1,
   serviceRequestTitle: '이사 전 입주 청소 서비스를 요청합니다',
+  serviceRequestContent: '주방과 욕실, 베란다를 포함한 입주 청소를 요청합니다.\n오후 시간대 작업이 가능하면 좋겠습니다.',
   quoteSummary: '정민 제공자 · 입주 청소 · 3시간',
   serviceAddressLabel: '(04158) 서울특별시 마포구 마포대로 122, 101호',
   tradeAmountLabel: '120,000P',
@@ -14,6 +16,11 @@ const PREVIEW_TRADE = {
   escrowStatusLabel: '보관금이 안전하게 예치되어 있습니다.',
   tradeStatusCode: 'TRDC0003',
   viewerRole: 'PROVIDER',
+  counterpartUserId: 2,
+  counterpartNickname: 'qwe123',
+  counterpartProfileImageUrl: '',
+  counterpartJoinedAt: '2026-07-01T00:00:00',
+  counterpartCompletedTradeCount: 7,
   chatRoomStatus: 'ACTIVE',
   chatAvailable: true,
   availableActions: [
@@ -67,11 +74,6 @@ const PREVIEW_SCHEDULE_HISTORY = [
   },
 ];
 
-const PREVIEW_DISPUTE_TYPES = [
-  { code: 'TRDG0401', label: '서비스 내용 불일치' },
-  { code: 'TRDG0402', label: '일정 문제' },
-];
-
 const resolvePreviewAction = () => Promise.resolve();
 
 export default function ServiceTradeDetailPreviewPage() {
@@ -81,9 +83,7 @@ export default function ServiceTradeDetailPreviewPage() {
   return (
     <ServiceTradeDetailPage
       trade={{ ...PREVIEW_TRADE, tradeId: resolvedTradeId }}
-      disputeTypes={PREVIEW_DISPUTE_TYPES}
       scheduleHistory={PREVIEW_SCHEDULE_HISTORY}
-      onSubmitDispute={resolvePreviewAction}
       onRequestCompletion={resolvePreviewAction}
       onRequestScheduleChange={resolvePreviewAction}
       onRequestScheduleCancellation={resolvePreviewAction}
