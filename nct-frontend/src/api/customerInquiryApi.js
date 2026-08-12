@@ -85,3 +85,12 @@ export const startAdminCustomerInquiry = ({ inquirySn, requestId }) =>
 export const answerAdminCustomerInquiry = ({ inquirySn, answer, detectionKey }) =>
   api.post(`/admin/customer-inquiries/${inquirySn}/answer`, { answer, detectionKey })
     .then(unwrapData);
+
+// @ai_generated: F-AUTH-017/POL-AUTH-016 - 정지 계정 로그인 실패 응답에 실린 단발성 토큰으로
+// 로그인 없이 문의를 접수한다. skipAuthRefresh: 이 요청은 애초에 세션이 없으므로 401이 나와도
+// 리프레시를 시도할 이유가 없다(axios.js 인터셉터가 해당 플래그를 그대로 참조한다).
+export const createSuspendedInquiry = ({ inquiryToken, title, content }) =>
+  api.post('/customer-inquiries/suspended', { inquiryToken, title, content }, {
+    skipServerErrorRedirect: true,
+    skipAuthRefresh: true,
+  }).then(unwrapData);
