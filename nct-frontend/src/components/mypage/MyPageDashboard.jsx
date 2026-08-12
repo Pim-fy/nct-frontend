@@ -1,9 +1,7 @@
 // src/components/mypage/MyPageDashboard.jsx
 // Figma: mypage_01일반(node 18:2) CONTENTS 구간("MY 홈" 탭).
 // - 절대좌표 → 반응형 전환. 통계카드 2x2→4열, 목록패널 1열→2열 그리드.
-// TODO: 포인트(F-PNT)/경매(F-AUC)/서비스거래(F-SVC)/관심상품(F-WISH) API가 준비되면
-//       STAT_CARDS/TODAY_ITEMS/WISH_ITEMS를 각 도메인 조회 결과로 교체한다.
-import React, { useState } from "react";
+import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getMyPagePath, getServiceTradeDetailPath } from "@/routes/myPageRoutes";
