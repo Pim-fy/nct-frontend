@@ -19,6 +19,10 @@ import Pagination from '@components/common/Pagination';
 import Toast from '@components/common/Toast';
 import ConfirmModal from '@components/common/ConfirmModal';
 import MyPageMobileCard from '@components/mypage/MyPageMobileCard';
+import {
+  getServiceRequestDetailPath,
+  SERVICE_REQUEST_CREATE_PATH,
+} from '@/routes/serviceRequestRoutes';
 
 const FILTERS = [
   { label: '전체',     value: null },
@@ -132,7 +136,7 @@ export default function MyServiceRequestListPage({ embedded = false }) {
         <MyPageListEmpty
           message="해당 조건의 서비스 요청이 없습니다."
           action={filter === null ? (
-            <button type="button" onClick={() => navigate('/service-requests/new', { state: { from: location.pathname + location.search } })} className="btn btn-primary">
+            <button type="button" onClick={() => navigate(SERVICE_REQUEST_CREATE_PATH, { state: { from: location.pathname + location.search } })} className="btn btn-primary">
               견적 요청서 작성하기
             </button>
           ) : null}
@@ -170,7 +174,7 @@ export default function MyServiceRequestListPage({ embedded = false }) {
                     <div className="grid justify-items-stretch gap-2">
                       <button
                         type="button"
-                        onClick={() => navigate('/service-requests/new', { state: { svcReqSn: item.svcReqSn, from: location.pathname + location.search } })}
+                        onClick={() => navigate(SERVICE_REQUEST_CREATE_PATH, { state: { svcReqSn: item.svcReqSn, from: location.pathname + location.search } })}
                         className="btn btn-sm btn-primary"
                       >
                         작성재개
@@ -186,7 +190,7 @@ export default function MyServiceRequestListPage({ embedded = false }) {
                   ) : (
                     <button
                       type="button"
-                      onClick={() => navigate(`/service-requests/${item.svcReqSn}`, { state: { from: location.pathname + location.search } })}
+                      onClick={() => navigate(getServiceRequestDetailPath(item.svcReqSn), { state: { from: location.pathname + location.search } })}
                       className="btn btn-sm btn-primary"
                     >
                       상세보기
@@ -203,11 +207,11 @@ export default function MyServiceRequestListPage({ embedded = false }) {
               const isDraft = item.svcReqStatusCd === 'SVCC0001';
               const actionButton = isDraft ? (
                 <>
-                  <button type="button" onClick={() => navigate('/service-requests/new', { state: { svcReqSn: item.svcReqSn, from: location.pathname + location.search } })} className="btn btn-sm btn-primary">작성재개</button>
+                  <button type="button" onClick={() => navigate(SERVICE_REQUEST_CREATE_PATH, { state: { svcReqSn: item.svcReqSn, from: location.pathname + location.search } })} className="btn btn-sm btn-primary">작성재개</button>
                   <button type="button" onClick={() => setDeleteTarget({ svcReqSn: item.svcReqSn })} className="btn btn-sm btn-danger">삭제</button>
                 </>
               ) : (
-                <button type="button" onClick={() => navigate(`/service-requests/${item.svcReqSn}`, { state: { from: location.pathname + location.search } })} className="btn btn-sm btn-primary">상세보기</button>
+                <button type="button" onClick={() => navigate(getServiceRequestDetailPath(item.svcReqSn), { state: { from: location.pathname + location.search } })} className="btn btn-sm btn-primary">상세보기</button>
               );
 
               return (

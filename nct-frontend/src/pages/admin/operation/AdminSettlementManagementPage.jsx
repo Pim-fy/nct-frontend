@@ -8,6 +8,7 @@ import {
 } from '@api/adminSettlementApi';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminDetailDrawer from '@components/admin/AdminDetailDrawer';
+import AdminHistoryTimeline from '@components/admin/AdminHistoryTimeline';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
@@ -91,7 +92,10 @@ const AdminSettlementManagementPage = () => {
         timer: 1800,
       });
       setReason('');
-      await queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['admin', 'settlements'] }),
+        queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] }),
+      ]);
     },
   });
 
@@ -297,6 +301,11 @@ const AdminSettlementManagementPage = () => {
                   <dt>최근 처리 사유</dt>
                   <dd className="admin-operation-detail__content">{detail.processReason || '-'}</dd>
                 </dl>
+
+                <AdminHistoryTimeline
+                  referenceSn={selectedId}
+                  referenceType="SETTLEMENT"
+                />
 
                 {action && (
                   <form className="admin-operation-decision" onSubmit={submitAction}>

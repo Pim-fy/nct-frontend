@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { findEmail } from '@api/authApi';
 import AuthPageContainer from '@components/auth/AuthPageContainer';
 import AuthCard from '@components/auth/AuthCard';
+import { notify } from '@utils/common';
 
 export default function FindEmailPage() {
   const [email,        setEmail]        = useState('');
@@ -15,7 +16,7 @@ export default function FindEmailPage() {
 
   const handleSubmit = async () => {
     if (!email.trim() || !name.trim()) {
-      alert('이메일과 이름을 입력해주세요.');
+      await notify({ icon: 'warning', title: '이메일과 이름을 입력해주세요.', size: 'sm' });
       return;
     }
 
@@ -25,7 +26,7 @@ export default function FindEmailPage() {
       setMaskedLoginId(result?.data?.maskedLoginId ?? null);
     } catch {
       // @ai_generated: 불일치·탈퇴·정지·미가입 전부 USER_NOT_FOUND(404)로 동일하게 응답된다.
-      alert('입력하신 정보와 일치하는 계정을 찾을 수 없습니다.');
+      await notify({ icon: 'error', title: '입력하신 정보와 일치하는 계정을 찾을 수 없습니다.' });
     } finally {
       setLoading(false);
     }

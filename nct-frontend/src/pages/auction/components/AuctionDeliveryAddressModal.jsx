@@ -187,7 +187,7 @@ const AuctionDeliveryAddressModal = ({
                       <span className="flex flex-wrap items-center gap-2 text-body-md font-bold text-[#1d1d1f]">
                         {item.name}
                         {item.defaultAddress && (
-                          <span className="rounded-full bg-[#e7efff] px-2 py-0.5 text-caption text-primary-dark">기본</span>
+                          <span className="badge badge-soft-info">기본</span>
                         )}
                       </span>
                       <span className="mt-1 block break-words text-body-sm leading-5 text-[#555]">

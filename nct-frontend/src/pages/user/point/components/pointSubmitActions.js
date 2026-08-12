@@ -5,9 +5,8 @@
 // SUBMIT_ACTIONS에, 공통 흐름은 submitPointAmount 하나에 모아 양쪽이 공유한다.
 // 컴포넌트 파일에서 export하면 개발 중 화면 자동 새로고침(fast refresh) 경고가 생겨서
 // quickAmounts.js와 같은 방식으로 별도 파일로 분리했다.
-import Swal from 'sweetalert2';
-
 import { convertPoint, requestPointExchange } from '@api/pointApi';
+import { notify } from '@utils/common';
 
 /** axios 오류에서 백엔드 ApiResponse의 message를 꺼낸다 (없으면 일반 안내) */
 export const errorMessage = (err) =>
@@ -47,11 +46,10 @@ export const SUBMIT_ACTIONS = {
 export const submitPointAmount = (kind, amount, { queryClient, closeModal }) => {
   const action = SUBMIT_ACTIONS[kind];
   if (!Number.isInteger(amount) || amount <= 0) {
-    Swal.fire({
+    notify({
       icon: 'warning',
       title: '금액을 확인해 주세요',
       text: action.invalidText,
-      confirmButtonColor: '#0064ff',
     });
     return;
   }
@@ -60,20 +58,18 @@ export const submitPointAmount = (kind, amount, { queryClient, closeModal }) => 
     .then(() => {
       // 잔액·원장·내역이 전부 바뀌므로 포인트 캐시 전체 갱신
       queryClient.invalidateQueries({ queryKey: ['point'] });
-      Swal.fire({
+      notify({
         icon: 'success',
         title: action.successTitle,
         text: action.successText,
-        confirmButtonColor: '#0064ff',
       });
     })
     .catch((err) => {
       // 계좌 미등록·잔액 부족·분쟁 진행 중 등 서버가 알려준 사유를 그대로 안내
-      Swal.fire({
+      notify({
         icon: 'error',
         title: action.failTitle,
         text: errorMessage(err),
-        confirmButtonColor: '#0064ff',
       });
     });
 };

@@ -114,7 +114,7 @@ export default function ProductImageUpload({ images, onChange, maxImages = 5 }) 
               style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8, border: i === 0 ? '2px solid #0064ff' : pickMode ? '2px dashed #0064ff' : '1px solid #eee', WebkitUserDrag: 'none', userSelect: 'none' }}
             />
             {i === 0 && (
-              <span className="badge badge-blue" style={{ position: 'absolute', top: 4, left: 4, fontSize: 13 }}>대표</span>
+              <span className="badge badge-blue" style={{ position: 'absolute', top: 4, left: 4 }}>대표</span>
             )}
             <button
               type="button"

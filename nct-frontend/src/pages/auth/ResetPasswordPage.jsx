@@ -7,6 +7,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { requestPasswordReset, confirmPasswordReset } from '@api/authApi';
 import AuthPageContainer from '@components/auth/AuthPageContainer';
 import AuthCard from '@components/auth/AuthCard';
+import { notify } from '@utils/common';
 
 // @ai_generated: 목업(38_password_reset.html)의 이메일 마스킹 규칙을 그대로 재사용한다.
 const maskEmail = (email) =>
@@ -28,7 +29,7 @@ function RequestForm() {
 
   const handleSubmit = async () => {
     if (!loginId.trim() || !email.trim()) {
-      alert('아이디와 이메일을 입력해주세요.');
+      await notify({ icon: 'warning', title: '아이디와 이메일을 입력해주세요.', size: 'sm' });
       return;
     }
 
@@ -39,9 +40,12 @@ function RequestForm() {
       setSent(true);
     } catch (error) {
       if (error.response?.status === 429) {
-        alert(error.response.data?.message ?? '잠시 후 다시 시도해주세요.');
+        await notify({
+          icon: 'warning',
+          title: error.response.data?.message ?? '잠시 후 다시 시도해주세요.',
+        });
       } else {
-        alert('요청 처리 중 오류가 발생했습니다.');
+        await notify({ icon: 'error', title: '요청 처리 중 오류가 발생했습니다.' });
       }
     } finally {
       setLoading(false);
@@ -151,15 +155,15 @@ function ConfirmForm({ token }) {
 
   const handleSubmit = async () => {
     if (!newPassword.trim() || !newPasswordConfirm.trim()) {
-      alert('새 비밀번호를 입력해주세요.');
+      await notify({ icon: 'warning', title: '새 비밀번호를 입력해주세요.', size: 'sm' });
       return;
     }
     if (newPassword.length < 8 || newPassword.length > 20) {
-      alert('비밀번호는 8~20자여야 합니다.');
+      await notify({ icon: 'warning', title: '비밀번호는 8~20자여야 합니다.', size: 'sm' });
       return;
     }
     if (newPassword !== newPasswordConfirm) {
-      alert('비밀번호가 일치하지 않습니다.');
+      await notify({ icon: 'warning', title: '비밀번호가 일치하지 않습니다.', size: 'sm' });
       return;
     }
 
@@ -173,9 +177,9 @@ function ConfirmForm({ token }) {
       if (status === 404 || status === 409) {
         setInvalid(true);
       } else if (error.response?.data?.message) {
-        alert(error.response.data.message);
+        await notify({ icon: 'error', title: error.response.data.message });
       } else {
-        alert('비밀번호 재설정 중 오류가 발생했습니다.');
+        await notify({ icon: 'error', title: '비밀번호 재설정 중 오류가 발생했습니다.' });
       }
     } finally {
       setLoading(false);

@@ -14,6 +14,10 @@ import MyPageStatusBadge from '@components/mypage/MyPageStatusBadge';
 import MyPageListSkeleton from '@components/skeleton/MyPageListSkeleton';
 import { useMyQuotes, useWithdrawQuote } from '@hooks/useQuote';
 import { confirm, toast } from '@utils/common';
+import {
+  getServiceRequestQuoteDetailPath,
+  getServiceRequestQuoteEditPath,
+} from '@/routes/serviceRequestRoutes';
 
 const PAGE_SIZE = 10;
 
@@ -146,7 +150,7 @@ export default function MyQuoteListPage({ embedded = false } = {}) {
   };
 
   const handleDetail = (quote) => {
-    navigate(`/service-requests/${quote.svcReqSn}/quotes/${quote.qutSn}`, {
+    navigate(getServiceRequestQuoteDetailPath(quote.svcReqSn, quote.qutSn), {
       state: { quote, from: returnPath },
     });
   };
@@ -156,7 +160,7 @@ export default function MyQuoteListPage({ embedded = false } = {}) {
       toast({ icon: 'warning', title: '수정 가능 횟수(3회)를 초과했습니다.' });
       return;
     }
-    navigate(`/service-requests/${quote.svcReqSn}/quotes/${quote.qutSn}/edit`, {
+    navigate(getServiceRequestQuoteEditPath(quote.svcReqSn, quote.qutSn), {
       state: { from: returnPath, quoteTitle: quote.quoteTitle },
     });
   };

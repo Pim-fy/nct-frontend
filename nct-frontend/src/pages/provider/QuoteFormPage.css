@@ -330,8 +330,8 @@
   flex-shrink: 0;
 }
 
-/* 팝업 모달 */
-.qf-modal-overlay {
+/* 견적 미리보기 전용 모달: 결과·확인 알림은 공통 FeedbackDialog를 사용합니다. */
+.qf-preview-modal-overlay {
   position: fixed;
   inset: 0;
   z-index: 1000;
@@ -341,19 +341,12 @@
   justify-content: center;
 }
 
-.qf-modal-box {
+.qf-preview-modal-box {
   background: #fff;
   border-radius: 16px;
   padding: 36px 40px;
-  max-width: 380px;
   width: 90%;
-  text-align: center;
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.18);
-}
-
-.qf-modal-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
 }
 
 @media (max-width: 768px) {
@@ -365,7 +358,7 @@
     grid-template-columns: repeat(3, 1fr);
   }
 
-  .qf-modal-box {
+  .qf-preview-modal-box {
     padding: 28px 24px;
   }
 

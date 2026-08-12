@@ -4,11 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { SlidersHorizontal } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { getCategories } from '@api/categoryApi';
-import {
-  ContentPageHeader,
-  ContentPageShell,
-  ContentState,
-} from '@components/content/ContentUi';
+import { ContentState } from '@components/content/ContentUi';
 import {
   ServiceEmptyState,
   ServiceFilterPanel,
@@ -23,7 +19,6 @@ import {
   SERVICE_DISCOVERY_PAGE_SIZE,
 } from '@/constants/serviceDiscovery';
 import { useServiceDiscovery } from '@hooks/useServiceDiscovery';
-import './serviceListPage.css';
 import useBodyScrollLock from '@hooks/useBodyScrollLock';
 
 const toBudget = (value) => {
@@ -157,7 +152,7 @@ const ServiceListPage = () => {
       : '서비스 요청 검색 결과를 불러오지 못했습니다.';
 
   return (
-    <ContentPageShell className="service-discovery-page service-list-page">
+    <div className="min-h-full bg-white text-body-sm text-[#1a1a18] md:text-body-md">
       <Helmet><title>견적 요청 목록 | 에누리컷</title></Helmet>
 
       <HeaderSearchPortal>
@@ -173,20 +168,8 @@ const ServiceListPage = () => {
         />
       </HeaderSearchPortal>
 
-      <section className="service-list-page__hero">
-        <ContentPageHeader
-          action={(
-            <div className="service-list-page__summary" aria-live="polite">
-              <span>현재 공개 요청</span>
-              <strong>{discoveryQuery.isLoading ? '조회 중' : `${Number(result?.total || 0).toLocaleString('ko-KR')}건`}</strong>
-            </div>
-          )}
-          title="견적 요청 목록"
-        />
-        <p>필요한 분야와 예산을 비교하고, 내 경험에 맞는 서비스 요청을 찾아보세요.</p>
-      </section>
-
-      <div className="service-list-page__layout flex items-start gap-6 max-md:block">
+      <main className="mx-auto my-0 w-full max-w-[1600px] py-10 max-md:px-4 max-md:py-6">
+      <div className="flex items-start gap-6 max-md:block">
         <ServiceFilterPanel
           categories={categories}
           categoriesError={categoriesQuery.isError}
@@ -205,7 +188,7 @@ const ServiceListPage = () => {
             <SlidersHorizontal aria-hidden="true" size={18} />필터
           </button>
 
-          {discoveryQuery.isLoading && <CardGridSkeleton cardHeight={300} columns={3} count={6} />}
+          {discoveryQuery.isLoading && <CardGridSkeleton cardHeight={410} columns={3} count={6} />}
 
           {(budgetInvalid || legacyCategoryMissing || discoveryQuery.isError) && (
             <ContentState
@@ -232,7 +215,8 @@ const ServiceListPage = () => {
           />
         </section>
       </div>
-    </ContentPageShell>
+      </main>
+    </div>
   );
 };
 

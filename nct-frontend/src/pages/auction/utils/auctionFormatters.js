@@ -10,7 +10,7 @@ const AUCTION_STATUS = {
 };
 
 const DETAIL_SECOND_THRESHOLD = 10 * 60;
-const BOTH_TRADE_METHOD_CODE = 'TRDC0020';
+const BOTH_TRADE_METHOD_CODE = 'TRDC0015';
 
 export const parseAmount = (value) => Number(String(value || '').replace(/[^0-9]/g, '')) || 0;
 

@@ -27,9 +27,6 @@ export const deleteImage = (flSn) => api.delete(`/attachment/${flSn}`);
 /** 배송 인증사진을 업로드한다. 응답의 flSn은 발송 제출 요청에서만 사용한다. */
 export const uploadDeliveryProof = (file) => uploadImage(file, 'delivery');
 
-/** F-SVC-012: 거래 분쟁 증빙은 공개 서빙되지 않는 trade-dispute 구분으로 업로드합니다. */
-export const uploadTradeDisputeEvidence = (file) => uploadImage(file, 'trade-dispute');
-
 /** 담당자 7 · F-COM-018: 신고 첨부는 공개 서빙되지 않는 abuse-report 구분으로 업로드합니다. */
 export const uploadAbuseReportFile = (file) => uploadImage(file, 'abuse-report');
 

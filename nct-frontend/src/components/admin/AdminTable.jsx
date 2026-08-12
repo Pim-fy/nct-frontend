@@ -39,11 +39,16 @@ const AdminTable = ({
                   const content = col.render
                     ? col.render(row[col.key], row, idx)
                     : row[col.key];
+                  const ellipsisTitle = typeof content === 'string' || typeof content === 'number'
+                    ? String(content)
+                    : undefined;
 
                   return (
                     <td className={col.className} key={col.key}>
                       {usesEllipsis(col.className) ? (
-                        <div className="admin-table__ellipsis-content">{content}</div>
+                        <div className="admin-table__ellipsis-content" title={ellipsisTitle}>
+                          {content}
+                        </div>
                       ) : content}
                     </td>
                   );

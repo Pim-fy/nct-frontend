@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   completeAdminPointExchange,
   getAdminPointExchangeAccount,
@@ -8,6 +8,7 @@ import {
 } from '@api/adminPointExchangeApi';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminDetailDrawer from '@components/admin/AdminDetailDrawer';
+import AdminHistoryTimeline from '@components/admin/AdminHistoryTimeline';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
@@ -37,6 +38,7 @@ const isRequested = (code) => code === 'PEOC0001';
 
 /** 담당자 7 · F-PAY-012: 처리 전후 환전 주문을 한 목록에서 조회하고 관리합니다. */
 const AdminPointExchangePage = () => {
+  const queryClient = useQueryClient();
   const [filterForm, setFilterForm] = useState(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
@@ -59,6 +61,7 @@ const AdminPointExchangePage = () => {
     onSuccess: (account) => {
       setRevealedAccount(account);
       setTransferConfirmed(false);
+      queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] });
     },
   });
   const processMutation = useMutation({
@@ -68,6 +71,7 @@ const AdminPointExchangePage = () => {
         : rejectAdminPointExchange({ orderSn, reason: rejectReason })
     ),
     onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] });
       toast({
         icon: 'success',
         title: `환전 신청 #${variables.orderSn}을 ${
@@ -326,6 +330,11 @@ const AdminPointExchangePage = () => {
                 </>
               )}
             </dl>
+
+            <AdminHistoryTimeline
+              referenceSn={selected.id}
+              referenceType="POINT_EXCHANGE_ORDER"
+            />
 
             {accountMutation.isError && (
               <p className="admin-operation-error" role="alert">

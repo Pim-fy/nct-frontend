@@ -5,33 +5,14 @@
 //        endDt, bidUnits, submitted, startAmtRef, ibyAmtRef, auctionRangeRef, policyRef
 import { useEffect, useState } from 'react';
 import DateRangePicker from '@components/product/DateRangePicker';
+import {
+  addMinutesToTime,
+  getNextTenMinuteTime,
+} from '@components/common/timeSelectUtils';
 import { formatPoint } from '@/utils/common';
 
-// 등록 시각(현재) 기준 최소 1시간 이후를 10분 단위로 올림한 "HH:mm" 문자열
-// — 당일 즉시시작 종료 시간의 최소 기준(최소 1시간 진행 보장).
-// Date 객체로 시:분을 더하면 자정을 넘길 때 날짜가 넘어가버려 "0시"가 되므로,
-// 분 단위 숫자로만 계산해 자정을 넘기면 24 이상으로 남겨둔다 — 그러면 TimeRow가
-// 오늘 시간 옵션을 전부 비활성화해서 "오늘은 더 이상 즉시시작 종료 시간을 고를 수 없음"을 표현한다.
-function minEndTimeToday() {
-  const now = new Date();
-  const totalMin = now.getHours() * 60 + now.getMinutes() + 60;
-  let h = Math.floor(totalMin / 60);
-  let m = Math.ceil((totalMin % 60) / 10) * 10;
-  if (m === 60) { m = 0; h += 1; }
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-}
-
-// 현재 시각을 10분 단위로 올림한 "HH:mm" — 예약 시작일을 오늘로 고를 때 이미 지난 시간을
-// 시작 시각으로 선택하지 못하게 막는 최소 기준. 즉시시작 종료 시간과 달리 최소 1시간 여유는
-// 필요 없어(그냥 시작 시각일 뿐) minEndTimeToday()의 +60분 없이 "지금 이후"만 보장한다.
-function minStartTimeToday() {
-  const now = new Date();
-  const totalMin = now.getHours() * 60 + now.getMinutes();
-  let h = Math.floor(totalMin / 60);
-  let m = Math.ceil((totalMin % 60) / 10) * 10;
-  if (m === 60) { m = 0; h += 1; }
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-}
+const minEndTimeToday = () => getNextTenMinuteTime(new Date(), 60);
+const minStartTimeToday = () => getNextTenMinuteTime();
 
 function todayStr() {
   const now = new Date();
@@ -39,11 +20,7 @@ function todayStr() {
 }
 
 // 예약 당일 종료 모드에서 시작 시간 기준 최소 1시간 이후 종료 시간 계산
-function minEndTimeFromStart(startTimeStr) {
-  const [h, m] = (startTimeStr || '09:00').split(':').map(Number);
-  const totalMin = h * 60 + m + 60;
-  return `${String(Math.floor(totalMin / 60)).padStart(2, '0')}:${String(totalMin % 60).padStart(2, '0')}`;
-}
+const minEndTimeFromStart = (startTime) => addMinutesToTime(startTime, 60);
 
 export default function AuctionSettingStep({
   form, set, policyAgreed, setPolicyAgreed,
@@ -57,13 +34,27 @@ export default function AuctionSettingStep({
   const isSameDayInstant = form.startNow && !!auctionRange.end && auctionRange.end === auctionRange.start;
   // 예약 + 시작일이 오늘이면 이미 지난 시각을 시작 시각으로 고르지 못하게 막아야 함
   const isSameDayReserve = !form.startNow && auctionRange.start === todayStr();
-  // 예약 + 시작일 = 종료일 = 오늘 → 종료 시간도 별도 선택 (시작 시간 + 최소 1시간)
-  const isSameDayReserveAndEnd = !form.startNow && !!auctionRange.end && auctionRange.start === auctionRange.end && auctionRange.start === todayStr();
+  // 예약 + 시작일 = 종료일이면 날짜와 관계없이 종료 시간을 별도로 선택한다.
+  const isSameDayReserveAndEnd = !form.startNow
+    && !!auctionRange.end
+    && auctionRange.start === auctionRange.end;
+  const minimumStartTime = isSameDayInstant
+    ? minEndTimeToday()
+    : isSameDayReserve
+      ? minStartTimeToday()
+      : undefined;
+  const minimumEndTime = isSameDayReserveAndEnd
+    ? minEndTimeFromStart(auctionRange.startTime)
+    : undefined;
 
   // 당일 즉시시작으로 전환되는 순간, 이미 지난 시각이 기본값으로 남아있으면 현재 이후 시각으로 보정
   useEffect(() => {
     if (!isSameDayInstant) return;
     const min = minEndTimeToday();
+    if (!min) {
+      setAuctionRange(prev => ({ ...prev, startTime: '', endTime: '' }));
+      return;
+    }
     const current = auctionRange.startTime || '09:00';
     if (current < min) {
       setAuctionRange(prev => ({
@@ -80,6 +71,10 @@ export default function AuctionSettingStep({
   useEffect(() => {
     if (!isSameDayReserve) return;
     const min = minStartTimeToday();
+    if (!min) {
+      setAuctionRange(prev => ({ ...prev, startTime: '', endTime: '' }));
+      return;
+    }
     const current = auctionRange.startTime || '09:00';
     if (current < min) {
       setAuctionRange(prev => ({ ...prev, startTime: min, endTime: min }));
@@ -91,6 +86,10 @@ export default function AuctionSettingStep({
   useEffect(() => {
     if (!isSameDayReserveAndEnd) return;
     const minEnd = minEndTimeFromStart(auctionRange.startTime);
+    if (!minEnd) {
+      setAuctionRange(prev => ({ ...prev, endTime: '' }));
+      return;
+    }
     if (!auctionRange.endTime || auctionRange.endTime < minEnd) {
       setAuctionRange(prev => ({ ...prev, endTime: minEnd }));
     }
@@ -203,18 +202,24 @@ export default function AuctionSettingStep({
               setAuctionRange(prev => ({
                 ...prev,
                 startTime: val,
-                endTime: prev.endTime && prev.endTime >= minEnd ? prev.endTime : minEnd,
+                endTime: minEnd && prev.endTime && prev.endTime >= minEnd
+                  ? prev.endTime
+                  : (minEnd ?? ''),
               }));
             } else {
               setAuctionRange(prev => ({ ...prev, startTime: val, endTime: val }));
             }
           }}
-          endTimeValue={isSameDayReserveAndEnd ? (auctionRange.endTime || minEndTimeFromStart(auctionRange.startTime)) : undefined}
+          endTimeValue={isSameDayReserveAndEnd
+            ? (auctionRange.endTime || minimumEndTime || '')
+            : undefined}
           onEndTimeChange={isSameDayReserveAndEnd ? val => setAuctionRange(prev => ({ ...prev, endTime: val })) : undefined}
-          minEndTime={isSameDayReserveAndEnd ? minEndTimeFromStart(auctionRange.startTime) : undefined}
+          minEndTime={minimumEndTime}
+          endTimeUnavailable={isSameDayReserveAndEnd && !minimumEndTime}
           timeLabel={isSameDayInstant ? '종료 시간' : '시작 시간'}
           timeHint={isSameDayInstant ? '오늘 등록과 동시에 시작해서 이 시간에 종료됩니다' : '종료 시간은 시작 시간과 동일하게 적용됩니다'}
-          minTime={isSameDayInstant ? minEndTimeToday() : isSameDayReserve ? minStartTimeToday() : undefined}
+          minTime={minimumStartTime}
+          timeUnavailable={(isSameDayInstant || isSameDayReserve) && !minimumStartTime}
         />
         {submitted && !auctionRange.end && (
           <span style={{ position: 'absolute', top: '100%', left: 0, fontSize: 15, fontWeight: 700, color: '#c0392b', whiteSpace: 'nowrap' }}>경매 기간을 지정해 주세요</span>

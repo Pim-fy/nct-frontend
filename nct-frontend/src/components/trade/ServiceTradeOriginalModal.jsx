@@ -34,8 +34,7 @@ function SourceModalFrame({ children, onClose, title, subtitle }) {
       <section className="flex h-[86dvh] w-full max-w-[1000px] flex-col overflow-hidden rounded-xl bg-white shadow-[0_22px_70px_rgba(0,0,0,0.28)] max-sm:h-[100dvh] max-sm:rounded-none">
         <header className="flex shrink-0 items-center justify-between border-b border-[#e7eaf0] px-6 py-4">
           <div>
-            <p className="m-0 text-caption font-bold text-primary">서비스 거래</p>
-            <h2 className="m-0 mt-0.5 text-body-lg font-extrabold text-[#202635]" id="service-trade-original-modal-title">{title}</h2>
+            <h2 className="m-0 text-body-lg font-extrabold text-[#202635]" id="service-trade-original-modal-title">{title}</h2>
             <p className="m-0 mt-1 text-sm text-[#667085]">{subtitle}</p>
           </div>
           <button aria-label={`${title} 닫기`} className="grid size-10 place-items-center rounded-full border-0 bg-transparent text-[#626b7a] transition-colors hover:bg-[#f1f4f8] hover:text-[#202635]" onClick={onClose} type="button">

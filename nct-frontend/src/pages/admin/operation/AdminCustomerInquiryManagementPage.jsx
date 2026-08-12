@@ -8,6 +8,7 @@ import {
 } from '@api/customerInquiryApi';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminDetailDrawer from '@components/admin/AdminDetailDrawer';
+import AdminHistoryTimeline from '@components/admin/AdminHistoryTimeline';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
@@ -77,7 +78,10 @@ const AdminCustomerInquiryManagementPage = () => {
   });
 
   const refreshInquiryQueries = async () => {
-    await queryClient.invalidateQueries({ queryKey: ['admin', 'customer-inquiries'] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['admin', 'customer-inquiries'] }),
+      queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] }),
+    ]);
   };
 
   const startMutation = useMutation({
@@ -308,6 +312,11 @@ const AdminCustomerInquiryManagementPage = () => {
                     </>
                   )}
                 </dl>
+
+                <AdminHistoryTimeline
+                  referenceSn={detail.inquirySn}
+                  referenceType="CUSTOMER_INQUIRY"
+                />
 
                 {canStart && (
                   <div className="admin-operation-decision">
