@@ -6,6 +6,7 @@ import { useAuth } from '@hooks/useAuth';
 import BrandLogo from '@components/common/BrandLogo';
 import AuthPageContainer from '@components/auth/AuthPageContainer';
 import AuthCard from '@components/auth/AuthCard';
+import { createSuspendedInquiry } from '@api/customerInquiryApi';
 
 // ── 소셜 로그인 버튼 데이터 ──────────────────────────────
 const SOCIAL_PROVIDERS = [
@@ -71,6 +72,13 @@ export default function LoginPage() {
   const [loading,      setLoading]      = useState(false);
   // @ai_generated: F-AUTH-011 - 정지 계정은 로그인이 막혀 있어, alert 대신 탈퇴 요청 경로로 안내한다.
   const [suspendedLoginId, setSuspendedLoginId] = useState(null);
+  // @ai_generated: F-AUTH-017/POL-AUTH-016 - 정지 계정 로그인 실패 응답에 실리는 비로그인 문의
+  // 접수용 단발성 토큰과, 그 토큰으로 접수하는 문의 폼 상태.
+  const [suspendedInquiryToken, setSuspendedInquiryToken] = useState(null);
+  const [inquiryForm, setInquiryForm] = useState({ title: '', content: '' });
+  const [inquirySubmitting, setInquirySubmitting] = useState(false);
+  const [inquirySubmitted, setInquirySubmitted] = useState(false);
+  const [inquiryError, setInquiryError] = useState('');
 
   // ── 일반 로그인 ───────────────────────────────────────
   const handleLogin = async () => {
@@ -89,10 +97,11 @@ export default function LoginPage() {
       const safePath = from.startsWith('/admin') ? '/' : from;
       navigate(safePath, { replace: true });
     } catch (error) {
-      // @ai_generated: F-AUTH-011 - ACCOUNT_SUSPENDED만 따로 분기해 탈퇴 요청 버튼이 있는 모달로 안내한다.
-      // WITHDRAWN_USER 등 나머지는 기존 message alert() 그대로 유지.
+      // @ai_generated: F-AUTH-011/017 - ACCOUNT_SUSPENDED만 따로 분기해 고객센터 안내 + 비로그인
+      // 문의 접수 폼이 있는 모달로 안내한다. WITHDRAWN_USER 등 나머지는 기존 message alert() 유지.
       if (error.response?.data?.code === 'ACCOUNT_SUSPENDED') {
         setSuspendedLoginId(userId);
+        setSuspendedInquiryToken(error.response?.data?.data?.inquiryToken ?? null);
       } else if (error.response?.status === 401) {
         alert('아이디 또는 비밀번호가 일치하지 않습니다.');
       } else if (error.response?.data?.message) {
@@ -102,6 +111,31 @@ export default function LoginPage() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // @ai_generated: F-AUTH-017/POL-AUTH-016 - 정지 계정 비로그인 문의 접수. 토큰은 1회용이라
+  // 성공하면 서버에서 즉시 소진되고, 또 접수하려면 로그인을 다시 시도해 새 토큰을 받아야 한다.
+  const handleSuspendedInquirySubmit = async (e) => {
+    e.preventDefault();
+    if (!inquiryForm.title.trim() || !inquiryForm.content.trim()) {
+      setInquiryError('제목과 내용을 모두 입력해주세요.');
+      return;
+    }
+    setInquirySubmitting(true);
+    setInquiryError('');
+    try {
+      await createSuspendedInquiry({
+        inquiryToken: suspendedInquiryToken,
+        title: inquiryForm.title.trim(),
+        content: inquiryForm.content.trim(),
+      });
+      setInquirySubmitted(true);
+    } catch (error) {
+      const msg = error?.response?.data?.message || '문의 접수에 실패했습니다.';
+      setInquiryError(msg);
+    } finally {
+      setInquirySubmitting(false);
     }
   };
 
@@ -261,31 +295,72 @@ export default function LoginPage() {
         </AuthCard>
       </AuthPageContainer>
 
-      {/* 정지 계정 안내 모달 (F-AUTH-011) */}
+      {/* 정지 계정 안내 모달 (F-AUTH-011/017, POL-AUTH-013/016) */}
+      {/* @ai_generated: ISS-026 - 탈퇴 유도 버튼 대신 고객센터 안내로 대체(Option B).
+          /withdrawal(정지 계정 전용 이메일 링크 탈퇴)은 코드·기존 발급 링크 모두 그대로 유지하되,
+          이 화면에서의 새 진입 버튼만 제거한다.
+          @ai_generated: ISS-030 - 고객센터 전화 안내만으로는 문의를 "제출"할 방법이 없었다.
+          이 모달에서 받은 inquiryToken(로그인 실패 응답에 포함, 세션 없이도 유효)으로 로그인 없이
+          문의를 접수한다. */}
       {suspendedLoginId && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center px-4 z-50">
           <div className="w-full max-w-100 bg-white rounded-2xl shadow-lg px-8 py-8 text-center">
             <div className="w-14 h-14 mx-auto rounded-full bg-red-50 flex items-center justify-center text-2xl mb-4">⚠️</div>
             <h2 className="text-base font-bold mb-2">정지된 계정입니다</h2>
-            <p className="text-sm text-gray-500 mb-8">
-              관리자에게 문의하시거나, 계속 이용이 어려우시면<br />아래에서 탈퇴를 요청하실 수 있습니다.
+            <p className="text-sm text-gray-500 mb-6">
+              계정 이용에 대한 문의는 아래 고객센터로 연락하시거나, 문의를 남겨주시면
+              답변을 등록된 이메일로 보내드립니다.<br />
+              <a href="tel:070-1234-5678" className="font-semibold text-gray-700">070-1234-5678</a>
+              <br />평일 10:00 - 18:00 (점심시간 12:00 - 13:00 제외 · 주말/공휴일 제외)
             </p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setSuspendedLoginId(null)}
-                className="h-11 rounded-lg border border-gray-300 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition"
-              >
-                닫기
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/withdrawal', { state: { loginId: suspendedLoginId } })}
-                className="h-11 rounded-lg border border-red-600 text-red-600 text-sm font-semibold hover:bg-red-50 transition"
-              >
-                탈퇴 요청하기
-              </button>
-            </div>
+
+            {suspendedInquiryToken && !inquirySubmitted && (
+              <form onSubmit={handleSuspendedInquirySubmit} className="text-left mb-4">
+                <input
+                  type="text"
+                  placeholder="제목"
+                  value={inquiryForm.title}
+                  onChange={(e) => setInquiryForm((prev) => ({ ...prev, title: e.target.value }))}
+                  disabled={inquirySubmitting}
+                  className="w-full h-10 mb-2 rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500"
+                />
+                <textarea
+                  placeholder="문의 내용을 입력해주세요."
+                  value={inquiryForm.content}
+                  onChange={(e) => setInquiryForm((prev) => ({ ...prev, content: e.target.value }))}
+                  disabled={inquirySubmitting}
+                  rows={3}
+                  className="w-full mb-2 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 resize-none"
+                />
+                {inquiryError && <p className="text-xs text-red-600 mb-2">{inquiryError}</p>}
+                <button
+                  type="submit"
+                  disabled={inquirySubmitting}
+                  className="w-full h-10 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition"
+                >
+                  {inquirySubmitting ? '접수 중...' : '문의 접수하기'}
+                </button>
+              </form>
+            )}
+            {inquirySubmitted && (
+              <p className="text-sm text-blue-600 font-semibold mb-4">
+                문의가 접수되었습니다. 답변은 이메일로 안내드립니다.
+              </p>
+            )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setSuspendedLoginId(null);
+                setSuspendedInquiryToken(null);
+                setInquiryForm({ title: '', content: '' });
+                setInquirySubmitted(false);
+                setInquiryError('');
+              }}
+              className="w-full h-11 rounded-lg border border-gray-300 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition"
+            >
+              닫기
+            </button>
           </div>
         </div>
       )}
