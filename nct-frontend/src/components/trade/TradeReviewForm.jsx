@@ -253,10 +253,10 @@ export default function TradeReviewForm({
             )}
           </div>
 
-          <div className="mt-6 rounded border border-[#ebebeb] bg-[#f8f9fd] p-4 text-[15px] text-[#4e4e4e]">
-            <p className="mb-1 font-bold text-black">이런 내용을 적으면 다른 사용자에게 도움이 돼요</p>
-            <p>{guidanceText}</p>
-          </div>
+            <div className="mt-6 rounded border border-[#ebebeb] bg-[#f8f9fd] p-4 text-[15px] text-[#4e4e4e]">
+              <p className="mb-1 font-bold text-black">이런 내용을 적으면 다른 사용자에게 도움이 돼요</p>
+              <p>{guidanceText}</p>
+            </div>
 
           <PhotoLightbox
             title="리뷰 사진"

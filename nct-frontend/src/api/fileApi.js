@@ -30,6 +30,9 @@ export const uploadDeliveryProof = (file) => uploadImage(file, 'delivery');
 /** F-SVC-012: 거래 분쟁 증빙은 공개 서빙되지 않는 trade-dispute 구분으로 업로드합니다. */
 export const uploadTradeDisputeEvidence = (file) => uploadImage(file, 'trade-dispute');
 
+/** 담당자 7 · F-COM-018: 신고 첨부는 공개 서빙되지 않는 abuse-report 구분으로 업로드합니다. */
+export const uploadAbuseReportFile = (file) => uploadImage(file, 'abuse-report');
+
 /**
  * 배송 인증사진은 공개 URL로 열 수 없다. 로그인 쿠키를 포함한 요청으로 Blob을 받아
  * 화면에서만 Object URL로 표시해 거래 당사자 권한 검사를 유지한다.

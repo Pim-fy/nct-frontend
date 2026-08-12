@@ -22,6 +22,7 @@ import ReportModal from '@components/common/ReportModal';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
 import { useAuth } from '@hooks/useAuth';
+import { getServiceTradeDetailPath } from '@/routes/myPageRoutes';
 import '@assets/css/trade-chat.css';
 
 const MAX_MESSAGE_LENGTH = 500;
@@ -54,9 +55,7 @@ const getTradeDetailPath = (room, preview) => {
   if (!room?.tradeId) return null;
 
   if (room.tradeTypeCode === 'TRDC0002') {
-    return preview
-      ? `/service-trades/preview/${room.tradeId}`
-      : `/service-trades/${room.tradeId}`;
+    return preview ? null : getServiceTradeDetailPath(room.tradeId);
   }
 
   return preview

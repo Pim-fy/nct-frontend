@@ -14,7 +14,6 @@ export const MYPAGE_SECTION_PATHS = Object.freeze({
   wallet: '/user/mypage/wallet',
   review: '/user/mypage/reviews',
   'report-list': '/user/mypage/reports',
-  'report-form': '/user/mypage/reports/new',
   'inquiry-list': '/user/mypage/inquiries',
 });
 
@@ -33,6 +32,16 @@ export const getMyPageInquiryCreatePath = (isProvider = false) => (
 
 export const getMyPagePath = (section = 'home') => (
   MYPAGE_SECTION_PATHS[section] ?? MYPAGE_SECTION_PATHS.home
+);
+
+/** 담당자 7 · F-SVC-010: 마이페이지 서비스 거래 상세의 단일 사용자 경로입니다. */
+export const getServiceTradeDetailPath = (tradeId) => (
+  `${MYPAGE_SECTION_PATHS['service-trade']}/${tradeId}`
+);
+
+/** 담당자 7 · F-SVC-010: 서비스 거래 상세에 종속된 채팅 경로입니다. */
+export const getServiceTradeChatPath = (tradeId) => (
+  `${getServiceTradeDetailPath(tradeId)}/chat`
 );
 
 export const getMyPageSection = (pathname) => {

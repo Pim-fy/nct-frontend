@@ -1,317 +1,243 @@
-// src/components/common/ReportModal.jsx
-// 신고 모달 — 어느 페이지에서든 import하여 사용 가능
-//
-// 사용법 (다른 담당자 페이지에 버튼 삽입 시):
-//   import ReportModal from '@components/common/ReportModal';
-//   const [reportOpen, setReportOpen] = useState(false);
-//
-//   <button onClick={() => setReportOpen(true)}>신고하기</button>
-//   <ReportModal
-//     open={reportOpen}
-//     onClose={() => setReportOpen(false)}
-//     targetName="홍길동"              // (선택) 신고 대상 이름 pre-fill
-//     targetLabel="경매 상품"          // (선택) 신고 대상 필드 라벨
-//     targetLocked                     // (선택) 신고 대상 이름 수정 방지
-//     hideTitle                        // (선택) 제목 입력을 숨기고 자동 생성
-//     targetType="provider"           // (선택) 'provider'|'auction'|'trade'|'service'|'review'|'direct'
-//     referenceSn={123}               // (선택) 거래번호 등 참조 ID
-//     reportedUserSn={123}            // (선택) 피신고자 회원번호
-//     reportTypeLabel="제공자 프로필"   // (선택) 신고 유형 pre-fill
-//     contextLabel="제공자: 홍길동"     // (선택) 모달 상단에 컨텍스트 표시
-//   />
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useSubmitCustomerReport } from "@hooks/useAbuseReport";
-import { getMyPagePath } from "@routes/myPageRoutes";
-import { toast } from "@utils/common";
-
-const REPORT_TYPES = [
-  "허위 정보",
-  "사기·기만",
-  "욕설·비방",
-  "불법 거래",
-  "기타",
-];
-
-const TYPE_CODE_MAP = {
-  "허위 정보": "ABRC0002",
-  "사기·기만": "ABRC0001",
-  "욕설·비방": "ABRC0003",
-  "불법 거래": "ABRC0001",
-  "기타":      "ABRC0004",
-};
+import { X } from 'lucide-react';
+import { useEffect, useId, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import ReportAttachmentPicker from '@components/common/ReportAttachmentPicker';
+import { isCustomerReportTypeCode } from '@/constants/abuseReportTypes';
+import { useAbuseReportTypes, useSubmitCustomerReport } from '@hooks/useAbuseReport';
+import { getMyPagePath } from '@routes/myPageRoutes';
+import { toast } from '@utils/common';
 
 const REF_TYPE_CODE_MAP = {
-  provider: "REFC0001",
-  auction:  "REFC0003",
-  trade:    "REFC0005",
-  service:  "REFC0007",
-  review:   null,
-  direct:   null,
+  direct: 'REFC0001',
+  provider: 'REFC0001',
+  auction: 'REFC0003',
+  trade: 'REFC0005',
+  service: 'REFC0007',
 };
-
-const EMPTY_FORM = { types: [], targetName: "", title: "", content: "" };
 
 export default function ReportModal(props) {
   if (!props.open) return null;
   return <ReportModalContent {...props} />;
 }
 
+/** 담당자 7 · F-COM-015/018: 실제 화면 대상 ID를 고정해 접수하는 공통 신고 모달입니다. */
 function ReportModalContent({
   onClose,
-  targetName: initialTargetName = "",
-  targetLabel = "신고 대상",
+  targetName: initialTargetName = '',
+  targetLabel = '신고 대상',
   targetLocked = false,
   hideTitle = false,
-  targetType = "direct",
+  targetType = 'direct',
   referenceSn,
   reportedUserSn,
-  reportTypeLabel = "",
-  contextLabel = "",
+  reportTypeLabel = '',
+  contextLabel = '',
 }) {
-  const { mutateAsync, isPending } = useSubmitCustomerReport();
+  const formId = useId();
   const navigate = useNavigate();
-  // 담당자 7 · F-COM-015: 실제 대상 ID가 정해진 신고는 표시명도 고정해 대상 불일치를 막습니다.
+  const reportTypesQuery = useAbuseReportTypes();
+  const submitMutation = useSubmitCustomerReport();
   const hasFixedTarget = reportedUserSn != null || referenceSn != null;
   const isTargetLocked = targetLocked || hasFixedTarget;
-
-  const [form, setForm] = useState(() => ({
-    ...EMPTY_FORM,
-    types: reportTypeLabel ? [reportTypeLabel] : [],
-    targetName: initialTargetName || "",
-  }));
+  const [form, setForm] = useState({
+    reportTypeCode: '',
+    targetName: initialTargetName,
+    title: '',
+    content: '',
+  });
+  const [files, setFiles] = useState([]);
   const [errors, setErrors] = useState({});
+  const reportTypes = (reportTypesQuery.data ?? []).filter((item) => (
+    item.code && item.name && isCustomerReportTypeCode(item.code)
+  ));
+  const hasAvailableReportTypes = reportTypes.length > 0;
+  const prefilledTypeCode = reportTypeLabel
+    ? reportTypes.find((item) => item.name === reportTypeLabel)?.code ?? ''
+    : '';
+  const selectedReportTypeCode = form.reportTypeCode || prefilledTypeCode;
+  const selectedType = reportTypes.find((item) => item.code === selectedReportTypeCode);
 
-  // ESC 키로 닫기
   useEffect(() => {
-    const handler = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
+    const handler = (event) => {
+      if (event.key === 'Escape' && !submitMutation.isPending) onClose();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose, submitMutation.isPending]);
 
-  // 모달 열릴 때 스크롤 잠금
   useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
   }, []);
 
-  const toggleType = (t) => {
-    setForm((prev) => ({
-      ...prev,
-      types: prev.types.includes(t) ? [] : [t],
-    }));
-    if (errors.types) setErrors((prev) => ({ ...prev, types: "" }));
+  const setValue = (key, value) => {
+    setForm((current) => ({ ...current, [key]: value }));
+    setErrors((current) => ({ ...current, [key]: '', _server: '' }));
   };
 
-  const set = (key, val) => {
-    setForm((prev) => ({ ...prev, [key]: val }));
-    if (errors[key]) setErrors((prev) => ({ ...prev, [key]: "" }));
-  };
+  const submit = async (event) => {
+    event.preventDefault();
+    const nextErrors = {};
+    if (!selectedReportTypeCode) nextErrors.reportTypeCode = '신고 유형을 선택해 주세요.';
+    if (!hasFixedTarget && !form.targetName.trim()) nextErrors.targetName = '신고 대상을 입력해 주세요.';
+    if (!hideTitle && !form.title.trim()) nextErrors.title = '제목을 입력해 주세요.';
+    if (!form.content.trim()) nextErrors.content = '신고 내용을 입력해 주세요.';
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      return;
+    }
 
-  const validate = () => {
-    const e = {};
-    if (form.types.length === 0)  e.types      = "신고 유형을 하나 이상 선택해 주세요.";
-    if (!hasFixedTarget && !form.targetName.trim()) e.targetName = "신고 대상을 입력해 주세요.";
-    if (!hideTitle && !form.title.trim()) e.title = "제목을 입력해 주세요.";
-    if (!form.content.trim())     e.content    = "신고 내용을 입력해 주세요.";
-    if (form.content.length > 2000) e.content  = "2,000자 이내로 입력해 주세요.";
-    return e;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const errs = validate();
-    if (Object.keys(errs).length) { setErrors(errs); return; }
-
+    const referenceTypeCode = REF_TYPE_CODE_MAP[targetType] ?? null;
+    const resolvedReferenceSn = targetType === 'direct' ? reportedUserSn : referenceSn;
+    const automaticTitle = `[${selectedType?.name ?? '신고'}] ${form.targetName.trim() || contextLabel || '지정 대상'}`;
     try {
-      const reportTitle = hideTitle
-        ? `[${form.types[0]}] ${form.targetName.trim()}`.slice(0, 100)
-        : form.title.trim();
-      // 담당자 7 · F-COM-015: 제공자 신고 대상 회원번호를 공통 신고 계약에 전달합니다.
-      await mutateAsync({
-        reportTypeCode:    TYPE_CODE_MAP[form.types[0]] ?? "ABRC0004",
-        reportedUserSn:    reportedUserSn ?? null,
-        referenceTypeCode: REF_TYPE_CODE_MAP[targetType] ?? null,
-        referenceSn:       referenceSn ?? null,
-        targetName:        form.targetName.trim() || null,
-        title:             reportTitle,
-        content:           form.content.trim(),
+      await submitMutation.mutateAsync({
+        reportTypeCode: selectedReportTypeCode,
+        reportedUserSn: reportedUserSn ?? null,
+        referenceTypeCode,
+        referenceSn: referenceTypeCode ? resolvedReferenceSn ?? null : null,
+        targetName: form.targetName.trim() || contextLabel || null,
+        title: hideTitle ? automaticTitle.slice(0, 100) : form.title.trim(),
+        content: form.content.trim(),
+        files,
       });
-      toast({ icon: "success", title: "신고가 접수되었습니다." });
+      toast({ icon: 'success', title: '신고가 접수되었습니다.' });
       onClose();
-      navigate(getMyPagePath("report-list"));
-    } catch (err) {
-      const msg = err?.response?.status === 409
-        ? "이미 신고가 접수된 상대입니다. 내 신고 목록에서 접수 현황을 확인해 주세요."
-        : "신고 접수 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
-      setErrors((prev) => ({ ...prev, _server: msg }));
+      navigate(getMyPagePath('report-list'));
+    } catch (error) {
+      const message = error?.response?.status === 409
+        ? '같은 대상과 유형의 신고가 이미 접수되어 있습니다.'
+        : error?.response?.data?.message
+          ?? '신고 접수 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
+      setErrors((current) => ({ ...current, _server: message }));
     }
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="fixed inset-0 z-[500] flex items-center justify-center bg-black/40 p-4"
-    >
-      <div
-        className="bg-white rounded-[16px] w-full max-w-[520px] max-h-[90vh] flex flex-col overflow-hidden shadow-[0_8px_40px_rgba(0,0,0,0.18)]"
-      >
-        {/* 헤더 */}
-        <div className="px-6 pt-5 pb-4 flex items-center justify-between shrink-0" style={{ backgroundColor: "#0064ff" }}>
-          <h2 className="text-[20px] font-bold text-white m-0">신고하기</h2>
+    <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
+      <div className="flex max-h-[90vh] w-full max-w-[560px] flex-col overflow-hidden rounded-[8px] bg-white shadow-[0_8px_40px_rgba(0,0,0,0.18)]">
+        <header className="flex shrink-0 items-center justify-between bg-[#0064ff] px-6 py-4">
+          <h2 className="m-0 text-[20px] font-bold text-white">신고하기</h2>
           <button
-            type="button"
-            onClick={onClose}
-            className="size-8 flex items-center justify-center rounded-full transition-colors text-[18px] leading-none text-white hover:bg-white/20"
             aria-label="닫기"
+            className="inline-flex size-8 items-center justify-center text-white hover:bg-white/15"
+            disabled={submitMutation.isPending}
+            onClick={onClose}
+            type="button"
           >
-            ✕
+            <X size={20} aria-hidden="true" />
           </button>
-        </div>
+        </header>
 
-        {/* 본문 — 스크롤 영역 */}
-        <form onSubmit={handleSubmit} noValidate className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
-
-          {/* 컨텍스트 표시 (진입 경로 정보) */}
+        <form className="flex-1 space-y-5 overflow-y-auto px-6 py-5" id={formId} noValidate onSubmit={submit}>
           {contextLabel && (
-            <div className="bg-[#f5f6f8] rounded-[8px] px-4 py-3">
-              <p className="text-[14px] text-[#888] m-0">신고 대상</p>
-              <p className="text-[16px] font-bold text-[#1a1a18] m-0 mt-0.5">{contextLabel}</p>
+            <div className="rounded-[6px] bg-[#f5f6f8] px-4 py-3">
+              <p className="m-0 text-[13px] text-[#777]">신고 대상</p>
+              <p className="mt-1 mb-0 text-[16px] font-bold text-[#1a1a18]">{contextLabel}</p>
             </div>
           )}
 
-          {/* 신고 유형 — 복수 선택 가능 */}
           <div>
-            <p className="text-[15px] font-bold text-[#1a1a18] mb-1">
-              신고 유형 <span className="text-red-500">*</span>
-            </p>
-            <p className="text-[13px] text-[#969696] mb-2">1개 선택</p>
+            <p className="mb-2 text-[15px] font-bold text-[#1a1a18]">신고 유형 <span className="text-red-500">*</span></p>
+            {reportTypesQuery.isLoading && <p className="text-[13px] text-[#777]">신고 유형을 불러오는 중입니다.</p>}
+            {reportTypesQuery.isError && (
+              <button className="btn btn-outline btn-sm" onClick={() => reportTypesQuery.refetch()} type="button">유형 다시 불러오기</button>
+            )}
+            {!reportTypesQuery.isLoading && !reportTypesQuery.isError && !hasAvailableReportTypes && (
+              <div className="flex items-center gap-2">
+                <p className="m-0 text-[13px] text-red-500" role="alert">
+                  사용 가능한 신고 유형이 없습니다.
+                </p>
+                <button
+                  className="btn btn-outline btn-sm"
+                  onClick={() => reportTypesQuery.refetch()}
+                  type="button"
+                >
+                  다시 불러오기
+                </button>
+              </div>
+            )}
             <div className="flex flex-wrap gap-2">
-              {REPORT_TYPES.map((t) => {
-                const active = form.types.includes(t);
-                return (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => toggleType(t)}
-                    className={`h-[36px] px-4 rounded-[8px] text-[14px] font-medium border transition-colors flex items-center gap-1.5 ${
-                      active
-                        ? "bg-[#0064ff] text-white border-[#0064ff]"
-                        : "bg-white text-[#333] border-[#e8e9ec] hover:border-[#0064ff] hover:text-[#0064ff]"
-                    }`}
-                  >
-                    {active && <span className="text-[12px]">✓</span>}
-                    {t}
-                  </button>
-                );
-              })}
+              {reportTypes.map((type) => (
+                <button
+                  className={`h-9 rounded-[6px] border px-4 text-[14px] font-medium ${selectedReportTypeCode === type.code ? 'border-[#0064ff] bg-[#0064ff] text-white' : 'border-[#dfe3e8] bg-white text-[#333]'}`}
+                  key={type.code}
+                  onClick={() => setValue('reportTypeCode', type.code)}
+                  type="button"
+                >
+                  {type.name}
+                </button>
+              ))}
             </div>
-            {errors.types && <p className="text-[13px] text-red-500 mt-1.5">{errors.types}</p>}
+            {errors.reportTypeCode && <p className="mt-1 text-[13px] text-red-500">{errors.reportTypeCode}</p>}
           </div>
 
-          {/* 신고 대상 이름 */}
           <div>
-            <label className="block text-[15px] font-bold text-[#1a1a18] mb-2">
+            <label className="mb-2 block text-[15px] font-bold text-[#1a1a18]" htmlFor={`${formId}-target`}>
               {targetLabel} <span className="text-red-500">*</span>
             </label>
             <input
-              type="text"
-              value={form.targetName}
-              onChange={isTargetLocked ? undefined : (e) => set("targetName", e.target.value)}
+              className={`h-11 w-full rounded-[6px] border px-4 text-[15px] outline-none ${isTargetLocked ? 'cursor-not-allowed border-[#dfe3e8] bg-[#f5f6f8] text-[#555]' : 'border-[#dfe3e8] focus:border-[#0064ff]'}`}
               disabled={isTargetLocked}
-              placeholder={hasFixedTarget
-                ? "신고 대상이 지정되었습니다."
-                : "신고 대상의 이름 또는 상품명을 입력해 주세요."}
-              className={`w-full h-[44px] rounded-[8px] border px-4 text-[15px] outline-none transition-colors ${
-                errors.targetName
-                  ? "border-red-400 bg-red-50 text-[#1a1a18]"
-                  : isTargetLocked
-                    ? "cursor-not-allowed border-[#e8e9ec] bg-[#f5f6f8] text-[#555] opacity-100"
-                    : "border-[#e8e9ec] text-[#1a1a18] placeholder:text-[#bbb] focus:border-[#0064ff]"
-              }`}
+              id={`${formId}-target`}
+              onChange={isTargetLocked ? undefined : (event) => setValue('targetName', event.target.value)}
+              placeholder={hasFixedTarget ? '신고 대상이 지정되었습니다.' : '신고 대상을 입력해 주세요.'}
+              value={form.targetName}
             />
-            {errors.targetName && <p className="text-[13px] text-red-500 mt-1">{errors.targetName}</p>}
+            {errors.targetName && <p className="mt-1 text-[13px] text-red-500">{errors.targetName}</p>}
           </div>
 
-          {/* 제목 */}
           {!hideTitle && (
             <div>
-              <label className="block text-[15px] font-bold text-[#1a1a18] mb-2">
-                제목 <span className="text-red-500">*</span>
-              </label>
+              <label className="mb-2 block text-[15px] font-bold text-[#1a1a18]" htmlFor={`${formId}-title`}>제목 <span className="text-red-500">*</span></label>
               <input
-                type="text"
-                value={form.title}
-                onChange={(e) => set("title", e.target.value)}
-                placeholder="신고 제목을 간략히 입력해 주세요."
+                className="h-11 w-full rounded-[6px] border border-[#dfe3e8] px-4 text-[15px] outline-none focus:border-[#0064ff]"
+                id={`${formId}-title`}
                 maxLength={100}
-                className={`w-full h-[44px] rounded-[8px] border px-4 text-[15px] text-[#1a1a18] placeholder:text-[#bbb] outline-none focus:border-[#0064ff] transition-colors ${
-                  errors.title ? "border-red-400 bg-red-50" : "border-[#e8e9ec]"
-                }`}
+                onChange={(event) => setValue('title', event.target.value)}
+                value={form.title}
               />
-              {errors.title && <p className="text-[13px] text-red-500 mt-1">{errors.title}</p>}
+              {errors.title && <p className="mt-1 text-[13px] text-red-500">{errors.title}</p>}
             </div>
           )}
 
-          {/* 신고 내용 */}
           <div>
-            <label className="block text-[15px] font-bold text-[#1a1a18] mb-2">
-              신고 내용 <span className="text-red-500">*</span>
-            </label>
+            <label className="mb-2 block text-[15px] font-bold text-[#1a1a18]" htmlFor={`${formId}-content`}>신고 내용 <span className="text-red-500">*</span></label>
             <textarea
+              className="w-full resize-none rounded-[6px] border border-[#dfe3e8] px-4 py-3 text-[15px] leading-relaxed outline-none focus:border-[#0064ff]"
+              id={`${formId}-content`}
+              maxLength={4000}
+              onChange={(event) => setValue('content', event.target.value)}
+              rows={6}
               value={form.content}
-              onChange={(e) => set("content", e.target.value)}
-              placeholder="신고 사유를 최대한 자세히 입력해 주세요. (최대 2,000자)"
-              maxLength={2000}
-              rows={5}
-              className={`w-full rounded-[8px] border px-4 py-3 text-[15px] text-[#1a1a18] placeholder:text-[#bbb] outline-none focus:border-[#0064ff] transition-colors resize-none leading-relaxed ${
-                errors.content ? "border-red-400 bg-red-50" : "border-[#e8e9ec]"
-              }`}
             />
-            <div className="flex items-start justify-between mt-1 gap-2">
-              {errors.content
-                ? <p className="text-[13px] text-red-500">{errors.content}</p>
-                : <span />}
-              <p className="text-[13px] text-[#bbb] shrink-0">{form.content.length.toLocaleString()} / 2,000</p>
+            <div className="mt-1 flex justify-between gap-3">
+              {errors.content ? <p className="text-[13px] text-red-500">{errors.content}</p> : <span />}
+              <span className="text-[12px] text-[#999]">{form.content.length.toLocaleString()} / 4,000</span>
             </div>
           </div>
 
-          {/* 안내 문구 */}
-          <div className="bg-[#f5f6f8] rounded-[8px] px-4 py-3 text-[13px] text-[#888] leading-relaxed">
-            <p className="font-semibold text-[#444] mb-1 m-0">신고 안내</p>
-            <ul className="list-disc list-inside space-y-0.5 m-0 p-0">
-              <li>허위 신고는 서비스 이용에 제한이 있을 수 있습니다.</li>
-              <li>처리까지 영업일 기준 3~5일이 소요될 수 있습니다.</li>
-              <li>처리 결과는 마이페이지 &gt; 내 신고 목록에서 확인하실 수 있습니다.</li>
-            </ul>
-          </div>
-
-          {errors._server && (
-            <p className="text-[13px] text-red-500">{errors._server}</p>
-          )}
-
+          <ReportAttachmentPicker
+            compact
+            error={errors.files}
+            files={files}
+            onChange={setFiles}
+            onError={(message) => setErrors((current) => ({ ...current, files: message }))}
+          />
+          {errors._server && <p className="text-[13px] text-red-500" role="alert">{errors._server}</p>}
         </form>
 
-        {/* 하단 버튼 — 스크롤 밖에 고정 */}
-        <div className="px-6 pb-5 pt-3 border-t border-[#e8e9ec] flex gap-3 shrink-0">
+        <footer className="flex shrink-0 gap-3 border-t border-[#e8e9ec] px-6 py-4">
+          <button className="btn btn-outline flex-1" disabled={submitMutation.isPending} onClick={onClose} type="button">취소</button>
           <button
-            type="button"
-            onClick={onClose}
-            className="btn btn-outline flex-1"
-          >
-            취소
-          </button>
-          <button
-            type="submit"
-            form=""
-            disabled={isPending}
-            onClick={handleSubmit}
             className="btn btn-danger flex-1"
+            disabled={submitMutation.isPending || reportTypesQuery.isLoading || reportTypesQuery.isError || !hasAvailableReportTypes}
+            form={formId}
+            type="submit"
           >
-            {isPending ? "신고 중…" : "신고하기"}
+            {submitMutation.isPending ? '신고 중…' : '신고하기'}
           </button>
-        </div>
+        </footer>
       </div>
     </div>
   );

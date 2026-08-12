@@ -210,10 +210,10 @@ const ProductRegisterPreview = () => (
       <section className="guide-preview-panel">
         <header>경매 설정</header>
         <div className="guide-preview-form-grid">
-          <GuidePreviewField label="시작가" value="30,000원" />
-          <GuidePreviewField label="즉시구매가" value="90,000원" />
+          <GuidePreviewField label="시작가" value="30,000P" />
+          <GuidePreviewField label="즉시구매가" value="90,000P" />
           <GuidePreviewField label="경매 기간" value="3일" />
-          <GuidePreviewField label="입찰 단위" value="1,000원" />
+          <GuidePreviewField label="입찰 단위" value="1,000P" />
         </div>
       </section>
     </div>
@@ -247,22 +247,22 @@ const AuctionDetailPreview = () => (
         <div className="guide-preview-badges"><span>진행중</span><span>배송 · 직거래</span></div>
         <h4>빈티지 오디오 앰프</h4>
         <small>현재 최고가</small>
-        <strong className="guide-preview-price">62,000원</strong>
+        <strong className="guide-preview-price">62,000P</strong>
         <p>종료까지 <b>02:18:34</b></p>
-        <GuidePreviewField label="입찰 금액" value="63,000원" />
+        <GuidePreviewField label="입찰 금액" value="63,000P" />
         <div className="guide-preview-actions guide-preview-actions--wide"><strong>입찰하기</strong><span>즉시구매</span></div>
       </section>
     </div>
     <div className="guide-preview-auction-checks">
       <GuidePreviewField label="사용 가능 포인트" value="82,000 P" />
-      <GuidePreviewField label="다음 입찰 가능 금액" value="63,000원 이상" />
+      <GuidePreviewField label="다음 입찰 가능 금액" value="63,000P 이상" />
       <GuidePreviewField label="거래 방식" value="배송 · 직거래" />
     </div>
     <div className="guide-preview-ledger">
       <strong>최근 입찰 현황</strong>
       <div><span>시간</span><span>입찰자</span><span>입찰가</span><span>상태</span></div>
-      <div><span>14:32</span><b>참여자 3</b><em>62,000원</em><strong>최고가</strong></div>
-      <div><span>14:28</span><b>참여자 2</b><em>61,000원</em><strong>갱신됨</strong></div>
+      <div><span>14:32</span><b>참여자 3</b><em>62,000P</em><strong>최고가</strong></div>
+      <div><span>14:28</span><b>참여자 2</b><em>61,000P</em><strong>갱신됨</strong></div>
     </div>
   </GuidePreviewWindow>
 );
@@ -283,7 +283,7 @@ const TradeDetailPreview = () => (
         <h4>빈티지 오디오 앰프</h4>
         <p>판매자 예시 · 배송 거래</p>
       </div>
-      <strong>62,000원</strong>
+      <strong>62,000P</strong>
     </section>
     <ol className="guide-preview-trade-progress">
       <li className="is-complete">결제</li>
@@ -293,7 +293,7 @@ const TradeDetailPreview = () => (
     </ol>
     <section className="guide-preview-trade-details">
       <div><span>거래 방식</span><strong>택배 배송</strong></div>
-      <div><span>결제 금액</span><strong>62,000원</strong></div>
+      <div><span>결제 금액</span><strong>62,000P</strong></div>
       <div><span>배송 완료</span><strong>2026.07.29</strong></div>
       <div><span>완료 상태</span><strong>구매 확정 완료</strong></div>
       <div><span>배송지</span><strong>서울 성동구 ****</strong></div>
@@ -384,7 +384,7 @@ const QuoteSelectionPreview = () => (
         <span className="guide-preview-status">제출됨</span>
         <h4>정성 이사 견적</h4>
         <p>포장이사 · 오전 방문 가능</p>
-        <small>견적 금액 180,000원</small>
+        <small>견적 금액 180,000P</small>
       </div>
       <strong>선택하기</strong>
     </article>
@@ -394,7 +394,7 @@ const QuoteSelectionPreview = () => (
         <span className="guide-preview-status">제출됨</span>
         <h4>안심 이사팀</h4>
         <p>포장이사 · 추가 작업 포함</p>
-        <small>견적 금액 195,000원</small>
+        <small>견적 금액 195,000P</small>
       </div>
       <strong>선택하기</strong>
     </article>
@@ -404,7 +404,7 @@ const QuoteSelectionPreview = () => (
         <span className="guide-preview-status">제출됨</span>
         <h4>빠른 운반 파트너</h4>
         <p>일반이사 · 포장재 별도 제공</p>
-        <small>견적 금액 165,000원</small>
+        <small>견적 금액 165,000P</small>
       </div>
       <strong>선택하기</strong>
     </article>

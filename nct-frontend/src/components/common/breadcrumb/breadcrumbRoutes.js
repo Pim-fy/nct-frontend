@@ -14,7 +14,12 @@
 //  - 사이드 메뉴가 위치를 이미 보여 주는 마이페이지·고객센터, 관리자, 프로필은 등록하지 않는다.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { getMyPageInquiryPath, getMyPagePath } from '@/routes/myPageRoutes';
+import {
+  getMyPageInquiryPath,
+  getMyPagePath,
+  getServiceTradeChatPath,
+  getServiceTradeDetailPath,
+} from '@/routes/myPageRoutes';
 
 // 항목 형태: { label: '표시명', to: '이동 경로' } — to가 없으면 링크 없이 텍스트만 표시
 export const HOME_ITEM = { label: '홈', to: '/' };
@@ -33,7 +38,6 @@ export const MYPAGE_SECTION_LABELS = {
   'service-trade': '서비스 거래',
   'received-review': '받은 리뷰',
   'report-list': '내 신고 목록',
-  'report-form': '신고 접수',
   'inquiry-list': '1:1 문의',
 };
 
@@ -145,13 +149,16 @@ export const BREADCRUMB_ROUTES = [
     defaultTrail: buildMyPageTrail('auction-bids'),
   },
   {
-    pattern: '/service-trades/:tradeId/chat',
+    pattern: getServiceTradeChatPath(':tradeId'),
     pageLabel: '서비스 채팅',
-    defaultTrail: buildMyPageTrail('chat'),
+    defaultTrail: ({ tradeId }) => [
+      ...buildMyPageTrail('service-trade'),
+      { label: '서비스 거래 상세', to: getServiceTradeDetailPath(tradeId) },
+    ],
   },
   {
     // 담당자 7: 서비스 거래 상세는 마이페이지의 서비스 거래 목록을 고정 상위로 사용한다.
-    pattern: '/service-trades/:tradeId',
+    pattern: getServiceTradeDetailPath(':tradeId'),
     pageLabel: '서비스 거래 상세',
     defaultTrail: buildMyPageTrail('service-trade'),
   },

@@ -31,6 +31,7 @@ import { getOfflineTradeProgressConfig } from '@components/trade/tradeProgressCo
 import TradeDetailOverviewCard from '@components/trade/TradeDetailOverviewCard';
 import OfflineScheduleProposalPanel from '@components/trade/OfflineScheduleProposalPanel';
 import TradeDetailErrorState from '@components/trade/TradeDetailErrorState';
+import TradeDisputeDialog from '@components/trade/TradeDisputeDialog';
 import PhotoLightbox from '@components/common/PhotoLightbox';
 import '@assets/css/trade-detail.css';
 
@@ -198,6 +199,24 @@ const TradeDetailBuyer = ({
       setIsLoading(false);
     }
   }, [tradeId]);
+
+  /** 담당자 7 · REQ-AUC-027/F-SVC-012: 접수 후 상품 거래와 마이페이지 집계를 맞춥니다. */
+  const handleTradeDisputeSubmitted = async () => {
+    const refreshes = [
+      getTradeDetail(tradeId),
+      queryClient.invalidateQueries({ queryKey: ['trades'] }),
+    ];
+    if (auctionId) {
+      refreshes.push(queryClient.invalidateQueries({
+        queryKey: ['auction-trade', String(auctionId)],
+      }));
+    }
+
+    const [detailResult] = await Promise.allSettled(refreshes);
+    if (detailResult.status === 'fulfilled') {
+      setTrade(toTradeDetail(detailResult.value));
+    }
+  };
 
   // 거래 번호가 바뀌면 렌더링 완료 뒤에 해당 거래의 상세를 다시 조회한다.
   // initialTrade가 주입된 경우(embedded)는 이미 데이터가 있으므로 다시 조회하지 않는다.
@@ -591,6 +610,14 @@ const TradeDetailBuyer = ({
                 </div>
               </div>
             )}
+
+            <TradeDisputeDialog
+              disabled={isPreview}
+              tradeId={tradeId}
+              tradeMethod={trade.method}
+              tradeStatus={trade.status}
+              onSubmitted={handleTradeDisputeSubmitted}
+            />
           </section>
 
           {/* 오른쪽: 거래 리뷰 */}

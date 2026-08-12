@@ -8,7 +8,7 @@ import { getMyActiveQuote, uploadQuotePhoto, getQuoteHistory } from "@api/quoteA
 import { getServiceRequest } from "@api/serviceRequestApi";
 import { fetchMyProviderQuoteAccess } from "@api/providerProfileApi";
 import { toImageUrl } from "@api/fileApi";
-import { toast } from "@utils/common";
+import { formatPoint, toast } from "@utils/common";
 import AlertModal from "@components/common/AlertModal";
 import "./QuoteFormPage.css";
 
@@ -94,7 +94,7 @@ export default function QuoteFormPage() {
           category: request.catNm || prev.category,
           budget: request.svcReqBdgtAmt == null
             ? prev.budget
-            : `${Number(request.svcReqBdgtAmt).toLocaleString('ko-KR')}원`,
+            : formatPoint(request.svcReqBdgtAmt),
           budgetRaw: request.svcReqBdgtAmt == null ? prev.budgetRaw : Number(request.svcReqBdgtAmt),
         }));
         setRequestLoadFailed(false);
@@ -145,7 +145,7 @@ export default function QuoteFormPage() {
           setRevisions(arr.map((h, idx) => {
             const prev = arr[idx - 1];
             const lines = [];
-            if (!prev || String(h.amount) !== String(prev.amount)) lines.push(`금액 ${h.amount != null ? Number(h.amount).toLocaleString() : '-'}원으로 수정했습니다.`);
+            if (!prev || String(h.amount) !== String(prev.amount)) lines.push(`금액 ${formatPoint(h.amount)}로 수정했습니다.`);
             if (!prev || h.content !== prev.content) lines.push('내용을 수정했습니다.');
             return {
               round: idx + 1,
@@ -180,10 +180,10 @@ export default function QuoteFormPage() {
   const validate = () => {
     setSubmitted(true);
     if (!form.title.trim())                       { setAlertMsg("제목을 입력해 주세요.");          return false; }
-    if (!form.amount || Number(form.amount) < 10000)      { setAlertMsg("견적 금액은 최소 10,000원 이상이어야 합니다.");      return false; }
-    if (Number(form.amount) > 1000000000)                 { setAlertMsg("견적 금액은 최대 1,000,000,000원 이하이어야 합니다."); return false; }
+    if (!form.amount || Number(form.amount) < 10000)      { setAlertMsg("견적 금액은 최소 10,000P 이상이어야 합니다.");      return false; }
+    if (Number(form.amount) > 1000000000)                 { setAlertMsg("견적 금액은 최대 1,000,000,000P 이하이어야 합니다."); return false; }
     if (svcReqInfo.budgetRaw && Number(form.amount) < svcReqInfo.budgetRaw) {
-      setAlertMsg(`견적 금액은 의뢰 예산(${svcReqInfo.budgetRaw.toLocaleString()}원) 이상이어야 합니다.`);
+      setAlertMsg(`견적 금액은 의뢰 예산(${formatPoint(svcReqInfo.budgetRaw)}) 이상이어야 합니다.`);
       return false;
     }
     if (!form.message.trim())                     { setAlertMsg("내용을 입력해 주세요.");         return false; }
@@ -418,7 +418,7 @@ export default function QuoteFormPage() {
                   <span style={{
                     position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
                     fontSize: 14, color: "#888", pointerEvents: "none",
-                  }}>원</span>
+                  }}>P</span>
                 </div>
                 <p style={{
                   margin: "4px 0 0", fontSize: 13,
@@ -429,8 +429,8 @@ export default function QuoteFormPage() {
                   ) ? "#EF4444" : "#888",
                 }}>
                   {svcReqInfo.budgetRaw
-                    ? `의뢰 예산(${svcReqInfo.budgetRaw.toLocaleString()}원) 이상 · 최대 1,000,000,000원`
-                    : "최소 10,000원 · 최대 1,000,000,000원"}
+                    ? `의뢰 예산(${formatPoint(svcReqInfo.budgetRaw)}) 이상 · 최대 1,000,000,000P`
+                    : "최소 10,000P · 최대 1,000,000,000P"}
                 </p>
               </div>
 
@@ -680,7 +680,7 @@ export default function QuoteFormPage() {
             <div style={{ marginBottom: 14 }}>
               <p style={{ margin: '0 0 4px', fontSize: 13, color: '#888' }}>견적 금액</p>
               <p style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#111' }}>
-                {form.amount ? Number(form.amount).toLocaleString() + '원' : '—'}
+                {form.amount ? formatPoint(form.amount) : '—'}
               </p>
             </div>
             <div style={{ marginBottom: 14 }}>
