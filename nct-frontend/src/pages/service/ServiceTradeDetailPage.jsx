@@ -21,6 +21,7 @@ import {
   getServiceTradeStatus,
   SERVICE_TRADE_STEPS,
 } from './serviceTradeStatus';
+import '@assets/css/trade-detail.css';
 import '@assets/css/service-trade-detail.css';
 
 const getTodayDate = () => {
@@ -108,6 +109,7 @@ export default function ServiceTradeDetailPage({
   backPath = '/user/mypage/services/trades',
   backLabel = '목록으로',
   viewerRoleLabelOverride = null,
+  reviewSlot = null,
 }) {
   const [isDisputeDialogOpen, setIsDisputeDialogOpen] = useState(false);
   const [disputeTypeCode, setDisputeTypeCode] = useState('');
@@ -583,6 +585,12 @@ export default function ServiceTradeDetailPage({
                 >다음</button>
               </nav>
             )}
+          </section>
+        )}
+
+        {reviewSlot && (
+          <section className="service-trade-review-section" aria-label="서비스 거래 리뷰">
+            {reviewSlot}
           </section>
         )}
 
