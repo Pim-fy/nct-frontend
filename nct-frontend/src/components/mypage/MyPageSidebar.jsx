@@ -33,7 +33,6 @@ const GENERAL_MENU_ITEMS = [
   { key: "chat",         label: "채팅",         type: "section" },
   { key: "wallet",       label: "포인트 지갑",  type: "section" },
   { key: "review",       label: "리뷰",      type: "section" },
-  { key: "report-list",   label: "신고",      type: "section" },
   { key: "inquiry-list",  label: "1:1 문의",   type: "section" },
 ];
 
@@ -61,8 +60,7 @@ const PROVIDER_MENU_ITEMS = [
   },
   { key: "chat",              label: "채팅",          type: "section" },
   { key: "wallet",            label: "포인트 지갑",   type: "section" },
-  { key: "received-review",   label: "받은 리뷰",     type: "section" },
-  { key: "report-list",       label: "신고",      type: "section" },
+  { key: "received-review",   label: "리뷰",          type: "section" },
   { key: "inquiry-list",      label: "1:1 문의",   type: "section" },
 ];
 

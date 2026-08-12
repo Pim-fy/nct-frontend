@@ -169,6 +169,16 @@ export const requestTradeCompletion = async (tradeId, requesterRole) => {
   return response.data;
 };
 
+/** 담당자 7 · REQ-AUC-027/F-SVC-012: 상품·서비스 공통 거래 문제 접수 계약입니다. */
+export const submitTradeDispute = async (tradeId, payload) => {
+  const response = await api.post(
+    `${TRADE_ENDPOINT}/${tradeId}/disputes`,
+    payload,
+  );
+
+  return response.data;
+};
+
 /** 판매자가 업로드 완료한 배송 인증사진과 메모를 한 번에 거래에 연결한다. */
 export const submitTradeDeliveryProof = async (tradeId, payload) => {
   if (shouldUseTradePreview()) {

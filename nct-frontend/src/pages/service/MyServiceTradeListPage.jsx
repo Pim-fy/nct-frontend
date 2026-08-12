@@ -3,6 +3,7 @@ import { useQueries } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { BriefcaseBusiness } from 'lucide-react';
 import { getMyServiceTrades } from '@api/serviceTradeApi';
+import { getServiceTradeDetailPath } from '@/routes/myPageRoutes';
 import MyPageListSectionLayout from '@components/mypage/MyPageListSectionLayout';
 import MyPageListItem from '@components/mypage/MyPageListItem';
 import MyPageListEmpty from '@components/mypage/MyPageListEmpty';
@@ -168,7 +169,7 @@ export default function MyServiceTradeListPage({ fixedRole = null }) {
                     <button
                       type="button"
                       className="btn btn-sm btn-primary"
-                      onClick={() => navigate(`/service-trades/${trade.tradeId}`)}
+                      onClick={() => navigate(getServiceTradeDetailPath(trade.tradeId))}
                     >
                       거래 상세
                     </button>

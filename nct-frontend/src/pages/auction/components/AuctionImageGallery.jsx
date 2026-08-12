@@ -12,6 +12,7 @@ const AuctionImageGallery = ({
   failedImageUrls,
   navigationCommand,
   onMoveImage,
+  onImageClick,
   onImageError,
 }) => {
   const slideCount = imageItems.length;
@@ -93,12 +94,20 @@ const AuctionImageGallery = ({
                 aria-hidden={index !== virtualTrackIndex}
               >
                 {item.url && !failedImageUrls.has(item.url) ? (
-                  <img
-                    className="block size-full bg-[#e9e9e9] object-cover"
-                    src={item.url}
-                    alt={item.alt || `${auction.title} 상품 이미지`}
-                    onError={() => onImageError(item.url)}
-                  />
+                  <button
+                    aria-label={`${item.alt || auction.title || '상품 이미지'} 확대 보기`}
+                    className="block size-full cursor-zoom-in border-0 bg-[#e9e9e9] p-0"
+                    onClick={() => onImageClick?.(getLogicalIndex(index, slideCount))}
+                    tabIndex={index === virtualTrackIndex ? 0 : -1}
+                    type="button"
+                  >
+                    <img
+                      className="block size-full bg-[#e9e9e9] object-cover"
+                      src={item.url}
+                      alt={item.alt || `${auction.title} 상품 이미지`}
+                      onError={() => onImageError(item.url)}
+                    />
+                  </button>
                 ) : (
                   <span className="text-body-lg font-extrabold text-[#666]">
                     {auction.categoryName || '상품 이미지'}
