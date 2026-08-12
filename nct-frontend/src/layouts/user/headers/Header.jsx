@@ -67,6 +67,13 @@ const NOTI_DOMAIN_ICONS = {
   NTFC0014: MessageCircle, // 채팅
 };
 
+// 일반/제공자 구분 배지 — NotificationPage.jsx의 AUDIENCE_TO_CODE와 같은 코드값(NTFG04) 기준.
+// 헤더 미리보기에는 전체 알림함 같은 일반/제공자 필터가 없어서, 항목 자체에 배지로 구분해둔다 (2026-08-10).
+const NOTI_AUDIENCE_BADGE = {
+  NTFC0015: { label: '일반', className: 'bg-gray-100 text-gray-500' },
+  NTFC0016: { label: '제공자', className: 'bg-amber-50 text-amber-700' },
+};
+
 const Header = () => {
   // isProvider·switchMode: 제공자 모드전환 실연동 (F-PROV-008, 담당자6 BJN, 2026-07-24)
   // — 종전 localStorage 가짜 플래그(@utils/providerMode) 대신 서버가 내려준 실제 역할 기준.
@@ -527,6 +534,12 @@ const Header = () => {
                           </span>
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-[13px] text-[#333]">
+                              {/* 일반/제공자 구분 배지 — NotificationItem.jsx(알림함 전체 목록)와 같은 기준 (2026-08-10) */}
+                              {NOTI_AUDIENCE_BADGE[item.audienceCd] && (
+                                <span className={`mr-1 inline-block shrink-0 rounded-lg px-1.5 py-0.5 text-[10px] align-middle ${NOTI_AUDIENCE_BADGE[item.audienceCd].className}`}>
+                                  {NOTI_AUDIENCE_BADGE[item.audienceCd].label}
+                                </span>
+                              )}
                               {item.title}
                               {item.content && <span className="text-[#969696]"> · {item.content}</span>}
                             </p>
