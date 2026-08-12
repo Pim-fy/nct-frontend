@@ -18,14 +18,13 @@ import {
   submitServiceTradeDispute,
 } from '@api/serviceTradeApi';
 import DateRangePicker from '@components/product/DateRangePicker';
-import TradeReviewSection from '@components/trade/TradeReviewSection';
 import { getServiceTradeChatPath } from '@/routes/myPageRoutes';
 import {
   getServiceTradeStatus,
   SERVICE_TRADE_STEPS,
 } from './serviceTradeStatus';
-import '@assets/css/service-trade-detail.css';
 import '@assets/css/trade-detail.css';
+import '@assets/css/service-trade-detail.css';
 
 const getTodayDate = () => {
   const today = new Date();
@@ -112,7 +111,7 @@ export default function ServiceTradeDetailPage({
   backPath = null,
   backLabel = '목록으로',
   viewerRoleLabelOverride = null,
-  showReviews = false,
+  reviewSlot = null,
 }) {
   const [isDisputeDialogOpen, setIsDisputeDialogOpen] = useState(false);
   const [disputeTypeCode, setDisputeTypeCode] = useState('');
@@ -600,14 +599,10 @@ export default function ServiceTradeDetailPage({
           </section>
         )}
 
-        {/* 담당자 7 · F-COM-007: 서비스 거래도 의뢰자와 제공자 양측이 거래 완료 후
-            같은 공용 리뷰 계약으로 작성·수정하고 상대방 리뷰를 확인합니다. */}
-        {showReviews && (
-          <TradeReviewSection
-            tradeId={trade.tradeId}
-            isTradeCompleted={trade.tradeStatusCode === 'TRDC0006'}
-            dealType="service"
-          />
+        {reviewSlot && (
+          <section className="service-trade-review-section" aria-label="서비스 거래 리뷰">
+            {reviewSlot}
+          </section>
         )}
 
       </div>

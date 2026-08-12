@@ -45,6 +45,10 @@ export const closeServiceRequest = (svcReqSn) =>
 export const addServiceRequestComment = (svcReqSn, data) =>
   api.post(`/service-requests/${svcReqSn}/comments`, data).then(res => res.data);
 
+/** 마감된 요청서 재등록 — 내용을 복사한 새 임시저장 요청서 생성 */
+export const reregisterServiceRequest = (svcReqSn) =>
+  api.post(`/service-requests/${svcReqSn}/reregister`).then(res => res.data);
+
 /** 요청서 변경사항 목록 조회 */
 export const getServiceRequestComments = (svcReqSn) =>
   api.get(`/service-requests/${svcReqSn}/comments`).then(res => res.data);

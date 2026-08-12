@@ -1,23 +1,9 @@
 // src/pages/service/serviceRequestWizardSteps.js
-// 서비스 요청서 카테고리별 단계별 선택 데이터 (F-SVC-002)
-// 데이터 출처: 20260713 카테고리 세부 설정.xlsx — 시트8 오른쪽 확정 시트 4개(이사,청소 / 레슨 정리 /
-// 설치_수리_정리 / 인테리어_정리)를 직접 열어 셀 값을 대조해 작성함 (260727).
-// 종남6 목업(팀전달_목업_서비스신청_카테고리선택_260727.html)은 설계 참고용으로만 썼고, 목업이
-// 확정 시트와 다른 부분(청소 "이사청소"·"특수" 분류, 인테리어 4분기 구조 등)은 시트 기준으로 바로잡음.
-// 엔진이 단일 next만 지원해(뒤 단계가 앞선 선택 하나에만 갈리는 구조), 실제로는 여러 단계 뒤에서
-// 갈리는 필드도 최대한 앞으로 당겨와 분기시켰다 — 필드 구성 자체는 시트 그대로.
+// 서비스 요청서 카테고리 표시 메타(부제·색상) — 실제 위저드 단계/필드는 서버 동적 폼(F-SVC-002,
+// SVC_REQ_FIELD_DEF 등)에서 내려오며 serviceRequestFormAdapter.buildServiceRequestWizardCatalog가
+// 조립한다. 이 파일은 카테고리 선택 카드 UI에만 쓰는 부제·색상 표시값을 담는다.
 
-// DB CATEGORY.CAT_NM(이사/청소/설치·수리/인테리어/레슨) → 이어지는 첫 단계 id
-export const CATEGORY_NEXT_STEP = {
-  '이사': 'mv_building',
-  '청소': 'cl_class',
-  '설치·수리': 'ir_class',
-  '인테리어': 'it_class',
-  '레슨': 'ls_class',
-};
-
-// 카테고리 선택 카드에 쓰는 부제·색상 (목업 category 단계 옵션의 sub 그대로,
-// color는 마이페이지 대시보드 통계카드(MyPageDashboard StatCard)와 같은 팔레트로 맞춤)
+// 카테고리 선택 카드에 쓰는 부제·색상 (마이페이지 대시보드 통계카드(MyPageDashboard StatCard)와 같은 팔레트로 맞춤)
 export const CATEGORY_META = {
   '이사': { sub: '포장 · 반포장 · 일반 · 보관', color: '#0064ff' },
   '청소': { sub: '가정 · 사업장 (입주/정기/부분)', color: '#0d9488' },

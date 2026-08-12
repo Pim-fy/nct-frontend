@@ -10,6 +10,7 @@ import {
   getServiceRequest,
   addServiceRequestComment,
   getServiceRequestComments,
+  reregisterServiceRequest,
 } from '@api/serviceRequestApi';
 import { getReceivedQuotes } from '@api/quoteApi';
 import { fetchMyProviderQuoteAccess } from '@api/providerProfileApi';
@@ -243,6 +244,7 @@ export default function ServiceRequestDetailPage() {
   const [error, setError] = useState('');
   const [closing, setClosing] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
+  const [reregistering, setReregistering] = useState(false);
   const [toast, setToast] = useState('');
   const [quotes, setQuotes] = useState([]);
   const [quotesLoadedRequestSn, setQuotesLoadedRequestSn] = useState(null);
@@ -386,6 +388,17 @@ export default function ServiceRequestDetailPage() {
     }
   };
 
+  const handleReregister = async () => {
+    setReregistering(true);
+    try {
+      const newRequest = await reregisterServiceRequest(svcReqSn);
+      navigate(`/service-requests/${newRequest.svcReqSn}`);
+    } catch (err) {
+      setToast(err.response?.data?.message || '재등록에 실패했습니다.');
+      setReregistering(false);
+    }
+  };
+
   const handleQuoteClick = () => {
     if (!isAuthenticated) {
       navigate('/login', { state: { from: location } });
@@ -445,8 +458,9 @@ export default function ServiceRequestDetailPage() {
   // 견적 제출 영역이 안 뜨게 하려면 모드와 무관하게 "진짜 작성자인지"를 따로 알아야 한다
   const isActualCreator = authenticatedUserId != null
     && String(authenticatedUserId) === String(request.usrSn);
-  const isDraft = request.svcReqStatusCd === 'SVCC0001';
-  const isOpen  = request.svcReqStatusCd === 'SVCC0002';
+  const isDraft  = request.svcReqStatusCd === 'SVCC0001';
+  const isOpen   = request.svcReqStatusCd === 'SVCC0002';
+  const isClosed = request.svcReqStatusCd === 'SVCC0004';
   const canAddComment = isOwner && isOpen && comments.length < 3;
   const quoteTotalPages = Math.max(1, Math.ceil(quotes.length / QUOTES_PAGE_SIZE));
   const pagedQuotes = quotes.slice((quotePage - 1) * QUOTES_PAGE_SIZE, quotePage * QUOTES_PAGE_SIZE);
@@ -522,6 +536,16 @@ export default function ServiceRequestDetailPage() {
                     onClick={() => navigate('/service-requests/new', { state: { svcReqSn: Number(svcReqSn) } })}
                   >
                     작성재개
+                  </button>
+                )}
+                {isOwner && isClosed && (
+                  <button
+                    type="button"
+                    className="shrink-0 rounded-lg border border-primary bg-primary px-4 py-2.5 text-lg font-medium text-white transition-colors hover:bg-[#0048bf] disabled:opacity-50"
+                    onClick={handleReregister}
+                    disabled={reregistering}
+                  >
+                    {reregistering ? '재등록 중...' : '재등록'}
                   </button>
                 )}
                 {isOwner && isOpen && (
@@ -660,7 +684,7 @@ export default function ServiceRequestDetailPage() {
                       className="mt-2 w-full resize-none rounded-lg border border-[#e2e1dc] px-3 py-2 text-sm outline-none focus:border-primary"
                     />
                     <p className={`mt-1 text-right text-xs ${cmtCn.length >= 100 ? 'text-[#c0392b]' : 'text-[#9a9ba5]'}`}>{cmtCn.length}/100</p>
-                    <p className="mt-1 text-xs text-[#9a9ba5]">변경사항은 최대 3개까지 등록할 수 있습니다.</p>
+                    <p className="mt-1 text-sm text-[#9a9ba5]">변경사항은 최대 3개까지 등록할 수 있습니다.</p>
                     <div className="mt-2 flex justify-end">
                       <button
                         type="button"

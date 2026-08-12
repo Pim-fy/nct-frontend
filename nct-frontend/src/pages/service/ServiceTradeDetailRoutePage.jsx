@@ -8,6 +8,7 @@ import {
   requestServiceScheduleChange,
 } from '@api/serviceTradeApi';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
+import TradeReviewSection from '@components/trade/TradeReviewSection';
 import { SERVICE_TRADE_DISPUTE_TYPE_GROUP_CODE } from '@/constants/serviceTrade';
 import { getMyPagePath, getMyPageSection } from '@/routes/myPageRoutes';
 import ServiceTradeDetailPage from './ServiceTradeDetailPage';
@@ -117,8 +118,14 @@ export default function ServiceTradeDetailRoutePage() {
       onRequestScheduleChange={requestServiceScheduleChange}
       onRequestScheduleCancellation={requestServiceScheduleCancellation}
       onDecideScheduleCancellation={decideServiceScheduleCancellation}
-      showReviews
       trade={detailQuery.data}
+      reviewSlot={(
+        <TradeReviewSection
+          tradeId={tradeId}
+          isTradeCompleted={detailQuery.data?.tradeStatusCode === 'TRDC0006'}
+          guidanceText="요청한 작업 내용과 결과가 일치했는지, 일정 준수와 소통은 어땠는지, 좋았거나 아쉬웠던 점을 구체적으로 남겨주세요."
+        />
+      )}
     />
   );
 }

@@ -43,7 +43,7 @@ const STATUS_BADGE = {
 };
 
 function fmtBudget(amt) {
-  if (amt == null) return '미정';
+  if (amt == null) return '협의 후 결정';
   return Number(amt).toLocaleString('ko-KR') + 'P';
 }
 
@@ -102,7 +102,7 @@ export default function MyServiceRequestListPage({ embedded = false }) {
   return (
     <div className={embedded ? '' : 'container seller-page'}>
       <MyPageListSectionLayout
-        title="견적 요청"
+        title="견적 요청 내역"
         summaryItems={[
           { label: '공개 중',   value: openSummary?.total ?? 0 },
           { label: '매칭완료', value: matchedSummary?.total ?? 0 },

@@ -36,6 +36,7 @@ import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import HeaderSearchPortal, {
   SimpleHeaderSearch,
 } from '@components/common/HeaderSearchPortal';
+import ImageLightbox from '@components/common/ImageLightbox';
 import ReportModal from '@components/common/ReportModal';
 import PointChargeWidgetModal from '@pages/user/point/components/PointChargeWidgetModal';
 import AuctionBidPanel from './components/AuctionBidPanel';
@@ -105,6 +106,7 @@ const AuctionDetailPageContent = ({ auctionId }) => {
   // (헤더 POINT 드롭다운과 같은 방식, 사용자 요청으로 변경 2026-07-28 — 이동하면 입력 중인 입찰 금액이 날아감)
   const [isChargeModalOpen, setIsChargeModalOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
+  const [lightboxImageIndex, setLightboxImageIndex] = useState(null);
   const [imageNavigationCommand, setImageNavigationCommand] = useState(null);
   const requestedImageIndexRef = useRef(null);
   const imageNavigationIdRef = useRef(0);
@@ -1043,7 +1045,7 @@ const AuctionDetailPageContent = ({ auctionId }) => {
       <main className={DETAIL_PAGE_CLASS}>
         <div className={DETAIL_CONTAINER_CLASS}>
           <section className="mt-[34px] grid items-stretch gap-2 lg:grid-cols-[minmax(360px,0.78fr)_minmax(560px,1.22fr)] max-lg:mt-4">
-            <div className="relative grid min-h-0 min-w-0 grid-rows-[minmax(0,1fr)_auto] gap-2 max-lg:grid-rows-[auto_auto]">
+            <div className="grid min-h-0 min-w-0 grid-rows-[minmax(0,1fr)_auto] gap-2 max-lg:grid-rows-[auto_auto]">
               <AuctionImageGallery
                 key={`auction-gallery-${auction.auctionId}`}
                 auction={auction}
@@ -1052,6 +1054,7 @@ const AuctionDetailPageContent = ({ auctionId }) => {
                 failedImageUrls={failedImageUrls}
                 navigationCommand={imageNavigationCommand}
                 onMoveImage={moveImage}
+                onImageClick={setLightboxImageIndex}
                 onImageError={handleImageError}
               />
               <AuctionPreviewRail
@@ -1242,6 +1245,12 @@ const AuctionDetailPageContent = ({ auctionId }) => {
         targetType="auction"
         referenceSn={Number(auction.auctionId ?? auctionId)}
         reportedUserSn={Number(auction.sellerId)}
+      />
+      <ImageLightbox
+        images={imageItems.map((image) => image.url)}
+        initialIndex={lightboxImageIndex ?? activeImageIndex}
+        open={lightboxImageIndex !== null}
+        onClose={() => setLightboxImageIndex(null)}
       />
       <AuctionToast message={toastMessage} />
       {isChargeModalOpen && (

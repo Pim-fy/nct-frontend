@@ -39,7 +39,7 @@ export default function ReviewListPage() {
   ), [writableQuery.data]);
 
   const writtenItems = useMemo(() => (
-    (myReviewsQuery.data ?? []).map((item) => ({ ...item, thumbnail: toImageUrl(item.photos?.[0]) }))
+    (myReviewsQuery.data ?? []).map((item) => ({ ...item, thumbnail: toImageUrl(item.thumbnail) }))
   ), [myReviewsQuery.data]);
 
   const filteredWritableItems = useMemo(

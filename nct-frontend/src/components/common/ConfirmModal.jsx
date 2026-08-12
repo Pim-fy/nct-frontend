@@ -1,10 +1,7 @@
 // src/components/common/ConfirmModal.jsx
 // 임시 공통 컴포넌트 — window.confirm() 대체 모달 (추후 디자인 시스템 기준으로 교체)
 const ConfirmModal = ({ open, message, subMessage, onConfirm, onCancel, confirmLabel = '확인' }) => (
-  <div
-    className={`modal ${open ? 'open' : ''}`}
-    onClick={e => { if (e.target === e.currentTarget) onCancel(); }}
-  >
+  <div className={`modal ${open ? 'open' : ''}`}>
     <div className="modal-box">
       <p style={{ marginBottom: subMessage ? 10 : 20, fontSize: 17 }}>{message}</p>
       {subMessage && (

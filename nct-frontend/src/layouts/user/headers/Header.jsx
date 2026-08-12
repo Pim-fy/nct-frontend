@@ -40,7 +40,7 @@ const NOTICE_ROTATE_MS = 3500;
 const NOTICE_SCROLL_THRESHOLD = 48; // NoticeStrip 높이 정도 스크롤하면 전환
 
 const AUCTION_CATEGORIES = [
-  '전자기기', '생활·가구', '패션·의류', '도서·음반', '취미',
+  '전자기기', '생활·가구', '패션·의류', '도서·음반', '악기·굿즈',
   '스포츠·레저', '유아·아동', '뷰티·미용', '식품', '기타',
 ];
 

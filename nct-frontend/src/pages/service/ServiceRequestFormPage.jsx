@@ -391,12 +391,12 @@ export default function ServiceRequestFormPage() {
 
     // budget/memo는 저장 시 items 배열에서 빠지고 svcReqBdgtAmt/svcReqCn으로 따로 저장되므로,
     // 위 루프가 자연스럽게 소비를 못 하고 budget 직전에서 멈춘다. 여기서 체인에 직접 이어붙인다.
-    // svcReqBdgtAmt가 null이면 "아직 예산 단계에 도달 못 함"과 "미정을 선택함"을 구분할 수 없는데,
-    // 여기까지 온 이상 이미 예산 단계를 지났다고 보고 미정으로 간주한다.
+    // svcReqBdgtAmt가 null이면 "아직 예산 단계에 도달 못 함"과 "협의 후 결정을 선택함"을 구분할 수 없는데,
+    // 여기까지 온 이상 이미 예산 단계를 지났다고 보고 협의 후 결정으로 간주한다.
     if (steps[stepId]?.stepKey === 'budget') {
       const hasAmount = s.svcReqBdgtAmt != null;
-      newAnswers[stepId] = hasAmount ? `예산: ${formatBudget(s.svcReqBdgtAmt)}` : '예산: 미정';
-      newDraft[stepId] = { 예산: hasAmount ? String(s.svcReqBdgtAmt) : '미정' };
+      newAnswers[stepId] = hasAmount ? `예산: ${formatBudget(s.svcReqBdgtAmt)}` : '예산: 협의 후 결정';
+      newDraft[stepId] = { 예산: hasAmount ? String(s.svcReqBdgtAmt) : '' };
       newChain.push(stepId);
       stepId = steps[stepId].next;
     }
@@ -768,7 +768,7 @@ export default function ServiceRequestFormPage() {
     // 필수 입력 검증보다 먼저 걸리도록 한다 (필수/숫자를 전체 필드 두 번 훑지 않음)
     for (const f of visibleFields) {
       const raw = (values[f.key] || '').toString().trim();
-      if (f.required && !raw) {
+      if (f.required && !raw && f.type !== 'amount-toggle') {
         const errKey = `${stepId}:${f.key}`;
         const verb = f.type === 'choice' || f.type === 'select' || f.type === 'calendar' ? '선택' : '입력';
         const msg = `${withEulReul(f.key)} ${verb}해 주세요.`;
@@ -785,7 +785,7 @@ export default function ServiceRequestFormPage() {
         scrollToStep(stepId);
         return false;
       }
-      if (f.type === 'amount-toggle' && raw && raw !== '미정' && Number(raw.replace(/,/g, '')) > MAX_BUDGET_AMT) {
+      if (f.type === 'amount-toggle' && raw && Number(raw.replace(/,/g, '')) > MAX_BUDGET_AMT) {
         const errKey = `${stepId}:${f.key}`;
         const msg = `${f.key}은(는) ${MAX_BUDGET_AMT.toLocaleString('ko-KR')}P 이하로 입력해 주세요.`;
         setFieldErrors(prev => ({ ...prev, [errKey]: msg }));
@@ -972,8 +972,8 @@ export default function ServiceRequestFormPage() {
     const memoStepId = chain.find(stepId => wizardSteps[stepId]?.stepKey === 'memo');
     const budgetDraft = (budgetStepId && stepDraft[budgetStepId]) || {};
     const budgetRaw = budgetDraft['예산'];
-    const hasBudget = budgetRaw && budgetRaw !== '미정';
-    const budgetAmount = hasBudget ? Number(String(budgetRaw).replace(/[^0-9]/g, '')) : null;
+    const budgetAmount = budgetRaw ? Number(String(budgetRaw).replace(/[^0-9]/g, '')) : null;
+    const hasBudget = budgetAmount != null && budgetAmount > 0;
     const memoText = ((memoStepId && stepDraft[memoStepId]?.['메모']) || '').trim() || null;
     const { structuredAnswers, addressList } = buildStructuredSubmission();
     return {
@@ -981,7 +981,7 @@ export default function ServiceRequestFormPage() {
       formTemplateSn: Number(selectedFormTemplateSn),
       svcReqTtl: title.trim(),
       svcReqCn: memoText,
-      svcReqBdgtAmt: budgetAmount != null && !Number.isNaN(budgetAmount) ? budgetAmount : null,
+      svcReqBdgtAmt: hasBudget ? budgetAmount : null,
       svcReqStatusCd: statusCd,
       structuredAnswers,
       addressList,
@@ -1339,7 +1339,7 @@ export default function ServiceRequestFormPage() {
                   <h3 className="text-base font-semibold text-[#5f5e5a]">사진 첨부</h3>
                   <span className="text-xs text-[#888780]">(선택)</span>
                 </div>
-                <p className="mb-3 text-xs text-[#888780]">사진을 첨부하면 더 정확한 견적을 받을 수 있어요.</p>
+                <p className="mb-3 text-sm text-[#888780]">사진을 첨부하면 더 정확한 견적을 받을 수 있어요.</p>
                 <ServiceRequestImageUpload images={images} onChange={setImages} maxImages={MAX_IMAGES} />
               </div>
 
@@ -1397,11 +1397,13 @@ export default function ServiceRequestFormPage() {
                           <span className="font-semibold text-[#5f5e5a]">상세 항목 진행률</span>
                           <span className="font-bold text-primary">{answeredStepCount}/{categoryMaxSteps}</span>
                         </div>
-                        <div className="flex w-full items-center">
+                        {/* 모바일 카드 폭에 11개 원을 다 욱여넣으면 연결선이 실처럼 얇아져서, 원·연결선 크기는
+                            고정해 두고 넘치는 만큼은 가로 스크롤로 보게 한다(데스크탑은 폭이 넉넉해 스크롤 없이 그대로 보임) */}
+                        <div className="scrollbar-hide -mx-1 flex w-full items-center overflow-x-auto px-1 py-1">
                           {Array.from({ length: categoryMaxSteps }, (_, i) => {
                             const state = i < answeredStepCount ? 'done' : i === answeredStepCount ? 'current' : 'upcoming';
                             return (
-                              <div key={i} className="flex flex-1 items-center last:flex-none">
+                              <div key={i} className="flex shrink-0 items-center last:flex-none">
                                 {state === 'done' ? (
                                   <button
                                     type="button"
@@ -1421,7 +1423,7 @@ export default function ServiceRequestFormPage() {
                                   </span>
                                 )}
                                 {i < categoryMaxSteps - 1 && (
-                                  <span className={`h-[2px] flex-1 ${i < answeredStepCount ? 'bg-primary' : 'bg-[#e2e1dc]'}`} />
+                                  <span className={`h-[2px] w-8 shrink-0 ${i < answeredStepCount ? 'bg-primary' : 'bg-[#e2e1dc]'}`} />
                                 )}
                               </div>
                             );
@@ -1548,7 +1550,7 @@ export default function ServiceRequestFormPage() {
                             <p className="mt-2 text-xs font-semibold text-red-600">{fieldErrors[`${stepId}:multi`]}</p>
                           )}
                           <div className="mt-4 flex items-center justify-between">
-                            <p className="text-xs text-[#888780]">해당하는 항목을 모두 선택한 뒤 다음을 눌러 주세요.</p>
+                            <p className="text-sm text-[#888780]">해당하는 항목을 모두 선택한 뒤 다음을 눌러 주세요.</p>
                             <button
                               type="button"
                               className="shrink-0 whitespace-nowrap rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-[#0048bf]"
@@ -1686,26 +1688,22 @@ export default function ServiceRequestFormPage() {
                               const disabledByOther = f.disabledWhenFilled && !!(stepDraft[stepId]?.[f.disabledWhenFilled] || '').toString().trim();
                               return (
                                 <>
-                                  <div className="flex gap-2">
-                                    <div className="relative min-w-0 flex-1">
-                                      <input
-                                        className={`w-full rounded-lg border bg-white px-3 py-2.5 pr-8 text-sm outline-none transition-colors focus:border-primary disabled:bg-[#f8f8f6] disabled:text-[#9f9e9a] ${fieldErrors[`${stepId}:${f.key}`] ? 'border-red-500' : 'border-[#e2e1dc]'}`}
-                                        placeholder={formatPointUnitText(f.placeholder)}
-                                        disabled={disabledByOther || stepDraft[stepId]?.[f.key] === '미정'}
-                                        value={stepDraft[stepId]?.[f.key] === '미정' ? '' : (stepDraft[stepId]?.[f.key] || '')}
-                                        onChange={e => {
-                                          const digits = e.target.value.replace(/[^0-9]/g, '');
-                                          handleFormFieldChange(stepId, f.key, digits ? Number(digits).toLocaleString('ko-KR') : '');
-                                        }}
-                                      />
-                                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[#888780]">P</span>
-                                    </div>
-                                    <button type="button"
+                                  <div className="relative">
+                                    <input
+                                      className={`w-full rounded-lg border bg-white px-3 py-2.5 pr-8 text-sm outline-none transition-colors focus:border-primary disabled:bg-[#f8f8f6] disabled:text-[#9f9e9a] ${fieldErrors[`${stepId}:${f.key}`] ? 'border-red-500' : 'border-[#e2e1dc]'}`}
+                                      placeholder={formatPointUnitText(f.placeholder)}
                                       disabled={disabledByOther}
-                                      className={`shrink-0 rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${stepDraft[stepId]?.[f.key] === '미정' ? 'border-primary bg-[#e5efff] text-[#0048bf]' : 'border-[#e2e1dc] bg-white text-[#5f5e5a] hover:border-primary'}`}
-                                      onClick={() => handleFormFieldChange(stepId, f.key, stepDraft[stepId]?.[f.key] === '미정' ? '' : '미정')}
-                                    >미정</button>
+                                      value={stepDraft[stepId]?.[f.key] || ''}
+                                      onChange={e => {
+                                        const digits = e.target.value.replace(/[^0-9]/g, '');
+                                        handleFormFieldChange(stepId, f.key, digits ? Number(digits).toLocaleString('ko-KR') : '');
+                                      }}
+                                    />
+                                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[#888780]">P</span>
                                   </div>
+                                  <p className="mt-1 text-sm text-[#9f9e9a]">
+                                    미입력 또는 0원 입력 시 예산 협의 후 결정으로 처리됩니다.
+                                  </p>
                                   {fieldErrors[`${stepId}:${f.key}`] && (
                                     <p className="mt-1 text-xs text-red-600">{fieldErrors[`${stepId}:${f.key}`]}</p>
                                   )}
@@ -1824,7 +1822,7 @@ export default function ServiceRequestFormPage() {
                                           value={stepDraft[stepId]?.[f.key] ? stepDraft[stepId][f.key].split(', ') : []}
                                           onChange={sel => handleFormFieldChange(stepId, f.key, sel.map(s => s.label).join(', '))}
                                         />
-                                        {f.desc && <p className="mt-1 text-xs text-[#888780]">{f.desc}</p>}
+                                        {f.desc && <p className="mt-1 text-sm text-[#888780]">{f.desc}</p>}
                                         {fieldErrors[`${stepId}:${f.key}`] && (
                                           <p className="mt-1 text-xs text-red-600">{fieldErrors[`${stepId}:${f.key}`]}</p>
                                         )}

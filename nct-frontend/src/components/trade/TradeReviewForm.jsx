@@ -10,6 +10,7 @@ import { confirm, toast } from '@utils/common';
 
 const MAX_PHOTOS = 5;
 const MAX_CONTENT_LENGTH = 500;
+const DEFAULT_GUIDANCE_TEXT = '상품 상태와 설명이 일치했는지, 응대와 소통은 어땠는지, 배송·직거래 과정에서 좋았거나 아쉬웠던 점을 구체적으로 남겨주세요.';
 
 /**
  * 거래 리뷰 등록/수정 폼. ReviewWritePage/ReviewEditPage(별도 페이지)에 있던 기능을
@@ -30,7 +31,7 @@ export default function TradeReviewForm({
   tradeId,
   review,
   disabledText,
-  dealType = 'goods',
+  guidanceText = DEFAULT_GUIDANCE_TEXT,
   onDone,
 }) {
   const queryClient = useQueryClient();
@@ -252,14 +253,10 @@ export default function TradeReviewForm({
             )}
           </div>
 
-          <div className="mt-6 rounded border border-[#ebebeb] bg-[#f8f9fd] p-4 text-[15px] text-[#4e4e4e]">
-            <p className="mb-1 font-bold text-black">이런 내용을 적으면 다른 사용자에게 도움이 돼요</p>
-            <p>
-              {dealType === 'service'
-                ? '요청한 작업과 실제 서비스가 일치했는지, 일정과 소통은 어땠는지, 서비스 과정에서 좋았거나 아쉬웠던 점을 구체적으로 남겨주세요.'
-                : '상품 상태와 설명이 일치했는지, 응대와 소통은 어땠는지, 배송·직거래 과정에서 좋았거나 아쉬웠던 점을 구체적으로 남겨주세요.'}
-            </p>
-          </div>
+            <div className="mt-6 rounded border border-[#ebebeb] bg-[#f8f9fd] p-4 text-[15px] text-[#4e4e4e]">
+              <p className="mb-1 font-bold text-black">이런 내용을 적으면 다른 사용자에게 도움이 돼요</p>
+              <p>{guidanceText}</p>
+            </div>
 
           <PhotoLightbox
             title="리뷰 사진"
