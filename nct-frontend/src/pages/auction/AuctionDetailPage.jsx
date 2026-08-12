@@ -75,7 +75,7 @@ const DETAIL_SECTION_ITEMS = [
   { id: 'auction-seller-information', label: '판매자 정보' },
 ];
 
-const AuctionDetailPageContent = ({ auctionId }) => {
+export const AuctionDetailPageContent = ({ auctionId, embedded = false }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -159,8 +159,9 @@ const AuctionDetailPageContent = ({ auctionId }) => {
   }, []);
 
   useLayoutEffect(() => {
+    if (embedded) return;
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-  }, [auctionId]);
+  }, [auctionId, embedded]);
 
   const detailQueryKey = useMemo(
     () => ['auctionDetail', auctionId, authenticatedUserId ?? 'anonymous'],
@@ -484,7 +485,7 @@ const AuctionDetailPageContent = ({ auctionId }) => {
   }, [toastMessage]);
 
   useEffect(() => {
-    if (!auction?.productId) return undefined;
+    if (embedded || !auction?.productId) return undefined;
 
     let animationFrameId = null;
     const updateActiveSection = () => {
@@ -564,9 +565,10 @@ const AuctionDetailPageContent = ({ auctionId }) => {
         detailSectionUnlockTimerRef.current = null;
       }
     };
-  }, [auction?.productId]);
+  }, [auction?.productId, embedded]);
 
   useEffect(() => {
+    if (embedded) return undefined;
     const syncSiteHeaderLayout = () => {
       const isDesktop = window.innerWidth >= 768;
       window.dispatchEvent(new CustomEvent(SITE_HEADER_VISIBILITY_EVENT, {
@@ -588,12 +590,12 @@ const AuctionDetailPageContent = ({ auctionId }) => {
         detail: { docked: false },
       }));
     };
-  }, [isDetailNavigationStuck]);
+  }, [embedded, isDetailNavigationStuck]);
 
   if (isAuthLoading || isLoading) {
     return (
       <>
-        {headerSearch}
+        {!embedded && headerSearch}
         <main className={DETAIL_PAGE_CLASS}>
           <div className={DETAIL_CONTAINER_CLASS} style={{ paddingTop: '32px' }}>
             <section className="grid items-stretch gap-2 lg:grid-cols-[minmax(360px,0.78fr)_minmax(560px,1.22fr)]">
@@ -614,7 +616,7 @@ const AuctionDetailPageContent = ({ auctionId }) => {
   if (isError || !auction) {
     return (
       <>
-        {headerSearch}
+        {!embedded && headerSearch}
         <main className={DETAIL_PAGE_CLASS}>
           <div className={DETAIL_CONTAINER_CLASS}>
             <div className={DETAIL_EMPTY_CLASS}>
@@ -1041,7 +1043,7 @@ const AuctionDetailPageContent = ({ auctionId }) => {
 
   return (
     <>
-      {headerSearch}
+      {!embedded && headerSearch}
       <main className={DETAIL_PAGE_CLASS}>
         <div className={DETAIL_CONTAINER_CLASS}>
           <section className="mt-[34px] grid items-stretch gap-2 lg:grid-cols-[minmax(360px,0.78fr)_minmax(560px,1.22fr)] max-lg:mt-4">
@@ -1123,7 +1125,7 @@ const AuctionDetailPageContent = ({ auctionId }) => {
 
         <nav
           ref={detailNavigationRef}
-          className={`sticky top-[154px] mt-7 h-[54px] bg-white transition-shadow md:top-0 md:h-[82px] ${
+          className={`sticky ${embedded ? 'top-0' : 'top-[154px] md:top-0'} mt-7 h-[54px] bg-white transition-shadow md:h-[82px] ${
             isDetailNavigationStuck
               ? 'z-40 shadow-[0_5px_14px_rgba(0,0,0,0.14)]'
               : 'z-0 shadow-none'

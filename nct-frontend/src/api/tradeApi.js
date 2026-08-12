@@ -169,6 +169,29 @@ export const requestTradeCompletion = async (tradeId, requesterRole) => {
   return response.data;
 };
 
+/** 직거래 완료 요청을 받은 상대방이 동의해 완료하거나 거절해 거래 진행으로 되돌린다. */
+export const respondOfflineTradeCompletionRequest = async (tradeId, requesterRole, approve) => {
+  if (shouldUseTradePreview()) {
+    return updateTradePreviewDetail(tradeId, approve
+      ? {
+        tradeStatus: 'COMPLETED',
+        completionRequestedBy: null,
+      }
+      : {
+        tradeStatus: 'DELIVERING',
+        completionRequestedBy: null,
+      });
+  }
+
+  const response = await api.post(
+    `${TRADE_ENDPOINT}/${tradeId}/offline-completion-requests/respond`,
+    null,
+    { params: { approve, requesterRole } },
+  );
+
+  return response.data;
+};
+
 /** 담당자 7 · REQ-AUC-027/F-SVC-012: 상품·서비스 공통 거래 문제 접수 계약입니다. */
 export const submitTradeDispute = async (tradeId, payload) => {
   const response = await api.post(
