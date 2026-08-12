@@ -261,31 +261,27 @@ export default function LoginPage() {
         </AuthCard>
       </AuthPageContainer>
 
-      {/* 정지 계정 안내 모달 (F-AUTH-011) */}
+      {/* 정지 계정 안내 모달 (F-AUTH-011/POL-AUTH-013) */}
+      {/* @ai_generated: ISS-026 - 탈퇴 유도 버튼 대신 고객센터 안내로 대체(Option B).
+          /withdrawal(정지 계정 전용 이메일 링크 탈퇴)은 코드·기존 발급 링크 모두 그대로 유지하되,
+          이 화면에서의 새 진입 버튼만 제거한다. */}
       {suspendedLoginId && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center px-4 z-50">
           <div className="w-full max-w-100 bg-white rounded-2xl shadow-lg px-8 py-8 text-center">
             <div className="w-14 h-14 mx-auto rounded-full bg-red-50 flex items-center justify-center text-2xl mb-4">⚠️</div>
             <h2 className="text-base font-bold mb-2">정지된 계정입니다</h2>
             <p className="text-sm text-gray-500 mb-8">
-              관리자에게 문의하시거나, 계속 이용이 어려우시면<br />아래에서 탈퇴를 요청하실 수 있습니다.
+              계정 이용에 대한 문의는 아래 고객센터로 연락해 주세요.<br />
+              <a href="tel:070-1234-5678" className="font-semibold text-gray-700">070-1234-5678</a>
+              <br />평일 10:00 - 18:00 (점심시간 12:00 - 13:00 제외 · 주말/공휴일 제외)
             </p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setSuspendedLoginId(null)}
-                className="h-11 rounded-lg border border-gray-300 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition"
-              >
-                닫기
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/withdrawal', { state: { loginId: suspendedLoginId } })}
-                className="h-11 rounded-lg border border-red-600 text-red-600 text-sm font-semibold hover:bg-red-50 transition"
-              >
-                탈퇴 요청하기
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setSuspendedLoginId(null)}
+              className="w-full h-11 rounded-lg border border-gray-300 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition"
+            >
+              닫기
+            </button>
           </div>
         </div>
       )}
