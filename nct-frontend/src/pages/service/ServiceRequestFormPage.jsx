@@ -92,6 +92,18 @@ function parseFieldPart(raw) {
   return { label: raw.slice(0, idx), value: raw.slice(idx + 2) };
 }
 
+// 확인 탭 "상세 내용" 표에서 필드가 1개뿐인 단계는 왼쪽 칸에 이미 단계 제목(예: "특이사항
+// 메모 (선택)", "희망일")이 있는데, 오른쪽 칸에도 같은 필드 라벨("메모: ...", "희망일: ...")이
+// 그대로 찍혀 같은 단어가 반복돼 보인다. 필드 라벨이 단계 제목과 겹칠 때만 라벨을 떼고 값만
+// 보여준다 — 단계 제목만으로는 안 드러나는 다른 정보를 담은 라벨은 그대로 유지한다.
+function stripRedundantFieldLabel(stepTitle, raw) {
+  const { label, value } = parseFieldPart(raw);
+  if (!label) return raw;
+  const normalizedTitle = stepTitle.replace(/\s*\([^)]*\)\s*$/, '').trim();
+  const overlaps = normalizedTitle.includes(label) || label.includes(normalizedTitle);
+  return overlaps ? value : raw;
+}
+
 // "과목 (복수 선택)", "특이사항 메모 (선택)"처럼 뒤에 괄호 안내문이 붙는 제목은 어중간하게
 // 줄바꿈되지 않도록 "제목" / "(안내문)" 두 줄로 자연스럽게 나눠 보여준다
 function renderStepTitle(title) {
@@ -1584,8 +1596,18 @@ export default function ServiceRequestFormPage() {
                         }
                       });
 
+                      // 그룹(row) 필드와 나란히 있을 땐 짧은 입력칸(예: 평수·방 개수)이 좁게 표시되는데,
+                      // 같은 유형 필드가 혼자 한 줄을 차지할 때도(예: 화장실 개수) 동일한 폭으로 맞춰
+                      // 입력칸이 늘어나지 않고 오른쪽에 여백이 남도록 한다. select/choice/calendar 등
+                      // 자체 UI가 있는 필드는 이미 적절한 폭으로 그려지므로 대상에서 뺀다.
+                      const getSoloFieldWidthClass = (f) => {
+                        const isPlainInputField = !['choice', 'select', 'calendar', 'amount-toggle', 'address', 'textarea'].includes(f.type || '');
+                        if (step.layout === 'row' || !isPlainInputField) return '';
+                        return f.compact ? ' sm:w-20' : f.narrow ? ' sm:w-48' : ' sm:w-32';
+                      };
+
                       const renderNormalField = (f) => (
-                        <div key={f.key} className={step.layout === 'row' ? '' : 'mb-4 last:mb-0'}>
+                        <div key={f.key} className={`${step.layout === 'row' ? '' : 'mb-4 last:mb-0'}${getSoloFieldWidthClass(f)}`}>
                           <label className="mb-1.5 block text-base font-semibold text-[#5f5e5a]">
                             <span className="flex items-center gap-1">
                               {f.key}{f.required && <span className="text-red-600"> *</span>}
@@ -2000,7 +2022,7 @@ export default function ServiceRequestFormPage() {
                                       </div>
                                     ))}
                                   </div>
-                                ) : formatStepAnswerDisplay(wizardSteps[stepId], answerText)}
+                                ) : stripRedundantFieldLabel(wizardSteps[stepId].title, formatStepAnswerDisplay(wizardSteps[stepId], answerText))}
                               </td>
                             </tr>
                           );
