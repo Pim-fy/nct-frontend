@@ -488,6 +488,7 @@ export default function MyPageDashboard({
           profileImageUrl={profileQuery.data?.profileImageUrl || user?.profileImageUrl}
           nickname={nickname}
           email={email}
+          profilePath={getMyPagePath('profile')}
           actions={[
             {
               key: 'logout',
