@@ -76,7 +76,7 @@ const createDraftFromSearchParams = (searchParams) => ({
   categories: getSelectedValues(searchParams, 'category'),
   statuses: getSelectedValues(searchParams, 'status'),
   tradeMethod: normalizeTradeMethod(searchParams.get('tradeMethod')),
-  sort: searchParams.get('sort') || 'deadline',
+  sort: searchParams.get('sort') || 'latest',
   minPrice: searchParams.get('minPrice') || '',
   maxPrice: searchParams.get('maxPrice') || '',
   instantBuyOnly: searchParams.get('instantBuyOnly') === 'true',
@@ -96,7 +96,7 @@ const AuctionListPage = () => {
   const [tradeMethodDraft, setTradeMethodDraft] = useState(
     normalizeTradeMethod(searchParams.get('tradeMethod')),
   );
-  const [sortDraft, setSortDraft] = useState(searchParams.get('sort') || 'deadline');
+  const [sortDraft, setSortDraft] = useState(searchParams.get('sort') || 'latest');
   const [minPriceDraft, setMinPriceDraft] = useState(searchParams.get('minPrice') || '');
   const [maxPriceDraft, setMaxPriceDraft] = useState(searchParams.get('maxPrice') || '');
   const [instantBuyOnlyDraft, setInstantBuyOnlyDraft] = useState(
@@ -183,7 +183,7 @@ const AuctionListPage = () => {
   const selectedCategories = getSelectedValues(searchParams, 'category');
   const selectedStatuses = getSelectedValues(searchParams, 'status');
   const tradeMethod = normalizeTradeMethod(searchParams.get('tradeMethod'));
-  const sort = searchParams.get('sort') || 'deadline';
+  const sort = searchParams.get('sort') || 'latest';
   const minPrice = searchParams.get('minPrice') || '';
   const maxPrice = searchParams.get('maxPrice') || '';
   const instantBuyOnly = searchParams.get('instantBuyOnly') === 'true';
@@ -311,7 +311,7 @@ const AuctionListPage = () => {
     if (instantBuyOnlyDraft) next.set('instantBuyOnly', 'true');
     if (endingSoonOnlyDraft) next.set('endingSoonOnly', 'true');
     if (tradeMethodDraft && tradeMethodDraft !== 'all') next.set('tradeMethod', tradeMethodDraft);
-    if (sortDraft && sortDraft !== 'deadline') next.set('sort', sortDraft);
+    if (sortDraft && sortDraft !== 'latest') next.set('sort', sortDraft);
 
     return next;
   };
@@ -344,7 +344,7 @@ const AuctionListPage = () => {
     setCategoryDraft([]);
     setStatusDraft([]);
     setTradeMethodDraft('all');
-    setSortDraft('deadline');
+    setSortDraft('latest');
     setMinPriceDraft('');
     setMaxPriceDraft('');
     setInstantBuyOnlyDraft(false);
