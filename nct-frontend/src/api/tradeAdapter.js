@@ -74,6 +74,7 @@ export const toTradeHistoryItem = (trade) => {
 
   return {
     id: trade.tradeId ?? trade.id,
+    auctionId: trade.auctionId ?? trade.aucSn ?? null,
     type: trade.userRole ?? trade.role ?? trade.type,
     productName: trade.productName ?? trade.itemName ?? '-',
     productImageUrl: trade.productImageUrl ?? trade.imageUrl ?? trade.thumbnailUrl ?? '',

@@ -15,6 +15,7 @@ import { ActionButton } from '@components/common/ui';
 import { SIGNUP_TERMS } from './signupTerms';
 import { formatPhoneNumber, isValidPhoneNumber, toPhoneDigits } from '@utils/phoneNumber';
 import FormSkeleton from '@components/skeleton/FormSkeleton';
+import DaumPostcode from 'react-daum-postcode';
 
 const AGREEMENT_ITEMS = [
   { key: 'terms', code: 'AGRC0001', label: '서비스이용약관', required: true },
@@ -95,7 +96,8 @@ const OAuthOnboardingPage = () => {
     message: '',
   });
   const nicknameRequestRef = useRef(0);
-  const [optionalInfo, setOptionalInfo] = useState({ telno: '', address: '', detailAddress: '', bankName: '', accountNo: '' });
+  const [optionalInfo, setOptionalInfo] = useState({ telno: '', address: '', zip: '', detailAddress: '', bankName: '', accountNo: '' });
+  const [addressSearchOpen, setAddressSearchOpen] = useState(false);
   const [optionalInfoError, setOptionalInfoError] = useState('');
   const [agreements, setAgreements] = useState({ terms: false, privacy: false, marketing: false });
   const [openAgreement, setOpenAgreement] = useState(null);
@@ -231,6 +233,14 @@ const OAuthOnboardingPage = () => {
       setOptionalInfoError('전화번호는 0으로 시작하는 11자리 숫자를 입력해주세요.');
       return;
     }
+    if (Boolean(optionalInfo.address.trim()) !== Boolean(optionalInfo.zip.trim())) {
+      setOptionalInfoError('주소 검색으로 주소와 우편번호를 함께 입력해주세요.');
+      return;
+    }
+    if (optionalInfo.detailAddress.trim() && !optionalInfo.address.trim()) {
+      setOptionalInfoError('주소 검색 후 상세주소를 입력해주세요.');
+      return;
+    }
     if (Boolean(optionalInfo.bankName.trim()) !== Boolean(optionalInfo.accountNo.trim())) {
       setOptionalInfoError('은행명과 계좌번호는 함께 입력해주세요.');
       return;
@@ -247,6 +257,7 @@ const OAuthOnboardingPage = () => {
         nickname: trimmedNickname,
         telno: toPhoneDigits(optionalInfo.telno),
         address: optionalInfo.address.trim(),
+        zip: optionalInfo.zip.trim(),
         detailAddress: optionalInfo.detailAddress.trim(),
         bankName: optionalInfo.bankName.trim(),
         accountNo: optionalInfo.accountNo.trim(),
@@ -392,17 +403,22 @@ const OAuthOnboardingPage = () => {
                   <label className="text-sm text-gray-700" htmlFor="oauth-telno">전화번호<span className="ml-1 text-[#a32d2d]">*</span>
                     <input id="oauth-telno" type="tel" required value={optionalInfo.telno} onChange={handleOptionalInfoChange('telno')} placeholder="-를 제외한 숫자만 입력해주세요" className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />
                   </label>
-                  <label className="text-sm text-gray-700" htmlFor="oauth-address">주소
-                    <input id="oauth-address" value={optionalInfo.address} onChange={handleOptionalInfoChange('address')} maxLength={200} className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />
-                  </label>
+                  <div>
+                    <span className="text-sm text-gray-700">주소</span>
+                    <div className="mt-1.5 grid gap-2 min-[769px]:grid-cols-[minmax(0,1fr)_auto]">
+                      <input id="oauth-address" value={optionalInfo.address} readOnly onClick={() => setAddressSearchOpen(true)} className="h-11 w-full cursor-pointer rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />
+                      <button type="button" onClick={() => setAddressSearchOpen(true)} className="h-11 rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 hover:bg-gray-50">주소 검색</button>
+                    </div>
+                    <input aria-label="우편번호" value={optionalInfo.zip} readOnly onClick={() => setAddressSearchOpen(true)} className="mt-2 h-11 w-full cursor-pointer rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />
+                  </div>
                   <label className="text-sm text-gray-700" htmlFor="oauth-detail-address">상세주소
-                    <input id="oauth-detail-address" value={optionalInfo.detailAddress} onChange={handleOptionalInfoChange('detailAddress')} maxLength={200} className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />
+                    <input id="oauth-detail-address" value={optionalInfo.detailAddress} onChange={handleOptionalInfoChange('detailAddress')} disabled={!optionalInfo.address} placeholder={optionalInfo.address ? '동·호수 등 상세주소' : '주소 검색 후 입력할 수 있습니다.'} maxLength={200} className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:bg-gray-50" />
                   </label>
                   <label className="text-sm text-gray-700" htmlFor="oauth-bank-name">은행명
-                    <input id="oauth-bank-name" value={optionalInfo.bankName} onChange={handleOptionalInfoChange('bankName')} maxLength={100} className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />
+                    <input id="oauth-bank-name" value={optionalInfo.bankName} onChange={handleOptionalInfoChange('bankName')} placeholder="은행명을 입력해주세요." maxLength={100} className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />
                   </label>
                   <label className="text-sm text-gray-700" htmlFor="oauth-account-no">계좌번호
-                    <input id="oauth-account-no" value={optionalInfo.accountNo} onChange={handleOptionalInfoChange('accountNo')} maxLength={50} className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />
+                    <input id="oauth-account-no" value={optionalInfo.accountNo} onChange={handleOptionalInfoChange('accountNo')} placeholder="계좌번호를 입력해주세요." maxLength={50} className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />
                   </label>
                 </div>
                 {optionalInfoError ? <p aria-live="polite" className="mt-2 text-xs text-red-600">{optionalInfoError}</p> : null}
@@ -425,6 +441,27 @@ const OAuthOnboardingPage = () => {
       </section>
 
       {selectedAgreement ? <AgreementModal agreement={selectedAgreement} onClose={() => setOpenAgreement(null)} /> : null}
+      {addressSearchOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setAddressSearchOpen(false)}>
+          <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-xl" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+              <h2 className="text-base font-bold">주소 검색</h2>
+              <button type="button" aria-label="주소 검색 닫기" onClick={() => setAddressSearchOpen(false)} className="rounded-lg px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100">닫기</button>
+            </div>
+            <DaumPostcode
+              autoClose={false}
+              onComplete={(data) => {
+                const address = data.roadAddress || data.jibunAddress || '';
+                const zip = data.zonecode || '';
+                if (!address || !zip) return;
+                setOptionalInfo((previous) => ({ ...previous, address, zip, detailAddress: '' }));
+                setOptionalInfoError('');
+                setAddressSearchOpen(false);
+              }}
+            />
+          </div>
+        </div>
+      ) : null}
     </AuthPageContainer>
   );
 };

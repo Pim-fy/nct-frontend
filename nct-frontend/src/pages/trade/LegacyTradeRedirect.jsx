@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Navigate, useLocation, useParams } from 'react-router-dom';
 import { getTradeDetail } from '@api/tradeApi';
 import AsyncRouteError from '@components/common/AsyncRouteError';
+import TradeDetailSkeleton from '@components/trade/TradeDetailSkeleton';
 
 export default function LegacyTradeRedirect() {
   const { tradeId } = useParams();
@@ -14,7 +15,7 @@ export default function LegacyTradeRedirect() {
   });
 
   if (tradeQuery.isLoading) {
-    return <div className="container py-16">거래 경로를 확인하는 중입니다.</div>;
+    return <TradeDetailSkeleton layout="auction" />;
   }
 
   if (tradeQuery.isError) {

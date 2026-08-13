@@ -107,14 +107,14 @@ function ListPanel({ title, items, tabs, onTabClick, onMore, onItemMore }) {
 
 const REVIEW_PANEL_TABS = [
   { key: "all",     label: "전체" },
-  { key: "goods",   label: "상품구매" },
-  { key: "service", label: "견적거래" },
+  { key: "goods",   label: "경매" },
+  { key: "service", label: "견적" },
 ];
 
 const CHAT_PANEL_TABS = [
   { key: "all",     label: "전체" },
-  { key: "goods",   label: "상품구매" },
-  { key: "service", label: "견적거래" },
+  { key: "goods",   label: "경매" },
+  { key: "service", label: "견적" },
 ];
 
 function TabBadge({ count, active }) {
@@ -191,8 +191,8 @@ function ReviewablePanel({ items, onView, onMore }) {
 
   const emptyMsg = {
     all: "작성할 리뷰가 없습니다.",
-    goods: "작성할 상품구매 리뷰가 없습니다.",
-    service: "작성할 견적거래 리뷰가 없습니다.",
+    goods: "작성할 경매 리뷰가 없습니다.",
+    service: "작성할 견적 리뷰가 없습니다.",
   };
 
   return (
@@ -256,8 +256,8 @@ function ActiveChatPanel({ rooms, onOpenChat, onMore }) {
 
   const emptyMsg = {
     all: "진행중인 채팅이 없습니다.",
-    goods: "진행중인 상품구매 채팅이 없습니다.",
-    service: "진행중인 견적거래 채팅이 없습니다.",
+    goods: "진행중인 경매 채팅이 없습니다.",
+    service: "진행중인 견적 채팅이 없습니다.",
   };
 
   return (
