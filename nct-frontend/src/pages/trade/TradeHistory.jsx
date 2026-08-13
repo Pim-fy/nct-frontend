@@ -689,10 +689,17 @@ const TradeHistory = ({
             const canOpenTradeDetail = Boolean(
               onOpenTradeDetail && (!isBidItem || trade.tradeId),
             );
-            const detailPath = isBidItem
-              ? (trade.tradeId
-                ? `${tradeBasePath}/${trade.tradeId}`
-                : `/auction/${trade.aucSn}`)
+            const auctionId = isBidItem ? trade.aucSn : trade.auctionId;
+            const detailPath = isPreview
+              ? isBidItem
+                ? (trade.tradeId ? `${tradeBasePath}/${trade.tradeId}` : `/auction/${trade.aucSn}`)
+                : trade.type === 'SELLER'
+                  ? `${tradeBasePath}/${trade.id}/seller`
+                  : `${tradeBasePath}/${trade.id}`
+              : auctionId
+                ? `/auction/${auctionId}/trade`
+                : isBidItem
+                  ? (trade.tradeId ? `${tradeBasePath}/${trade.tradeId}` : `/auction/${trade.aucSn}`)
               : trade.type === 'SELLER'
                 ? `${tradeBasePath}/${trade.id}/seller`
                 : `${tradeBasePath}/${trade.id}`;
@@ -701,7 +708,7 @@ const TradeHistory = ({
               : undefined;
             const openDetail = () => {
               if (canOpenTradeDetail) {
-                onOpenTradeDetail(isBidItem ? trade.tradeId : trade.id);
+                onOpenTradeDetail(isBidItem ? trade.tradeId : trade.id, auctionId);
                 return;
               }
 
@@ -754,10 +761,17 @@ const TradeHistory = ({
               const canOpenTradeDetail = Boolean(
                 onOpenTradeDetail && (!isBidItem || trade.tradeId),
               );
-              const detailPath = isBidItem
-                ? (trade.tradeId
-                  ? `${tradeBasePath}/${trade.tradeId}`
-                  : `/auction/${trade.aucSn}`)
+              const auctionId = isBidItem ? trade.aucSn : trade.auctionId;
+              const detailPath = isPreview
+                ? isBidItem
+                  ? (trade.tradeId ? `${tradeBasePath}/${trade.tradeId}` : `/auction/${trade.aucSn}`)
+                  : trade.type === 'SELLER'
+                    ? `${tradeBasePath}/${trade.id}/seller`
+                    : `${tradeBasePath}/${trade.id}`
+                : auctionId
+                  ? `/auction/${auctionId}/trade`
+                  : isBidItem
+                    ? (trade.tradeId ? `${tradeBasePath}/${trade.tradeId}` : `/auction/${trade.aucSn}`)
                 : trade.type === 'SELLER'
                   ? `${tradeBasePath}/${trade.id}/seller`
                   : `${tradeBasePath}/${trade.id}`;
@@ -766,7 +780,7 @@ const TradeHistory = ({
                 : undefined;
               const actionButton = canOpenTradeDetail ? (
                 <ActionButton
-                  onClick={() => onOpenTradeDetail(isBidItem ? trade.tradeId : trade.id)}
+                  onClick={() => onOpenTradeDetail(isBidItem ? trade.tradeId : trade.id, auctionId)}
                   size="sm"
                 >
                   {isBidItem && !trade.tradeId ? '경매 상세' : '거래 상세'}

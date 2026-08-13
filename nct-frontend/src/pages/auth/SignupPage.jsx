@@ -2,6 +2,8 @@
 // src/pages/auth/SignupPage.jsx
 // 단일 가입 화면에서 약관·이메일 인증·최종 가입의 서버 상태를 순서대로 연결한다.
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import DaumPostcode from 'react-daum-postcode';
 import {
   checkLoginId,
@@ -13,6 +15,7 @@ import {
 import { SIGNUP_TERMS } from './signupTerms';
 import { ActionButton } from '@components/common/ui';
 import { formatPhoneNumber, isValidPhoneNumber, toPhoneDigits } from '@utils/phoneNumber';
+import { isValidNewPassword, PASSWORD_POLICY_GUIDE } from '@utils/passwordPolicy';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-[#e2e1dc] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-primary disabled:cursor-not-allowed disabled:bg-[#f8f8f6]';
 
@@ -140,7 +143,7 @@ const validateNickname = (value) => {
 
 const validatePassword = (value) => {
   if (!value) return '비밀번호를 입력해주세요.';
-  if (value.length < 8 || value.length > 20) return '비밀번호는 8~20자로 입력해주세요.';
+  if (!isValidNewPassword(value)) return PASSWORD_POLICY_GUIDE;
   return '';
 };
 
@@ -187,6 +190,7 @@ const formatRemaining = (targetTime, now) => {
 
 const SignupPage = () => {
   const [form, setForm] = useState(INITIAL_FORM);
+  const [passwordVisibility, setPasswordVisibility] = useState({ password: false, passwordConfirm: false });
   const [touched, setTouched] = useState({});
   const [serverErrors, setServerErrors] = useState({});
   const [availability, setAvailability] = useState({
@@ -667,7 +671,7 @@ const SignupPage = () => {
                         className={INPUT_CLASS}
                         onBlur={handleFieldBlur('loginId')}
                         onChange={handleFieldChange('loginId')}
-                        placeholder="영문·숫자·. _ - 4~50자"
+                        placeholder="영문, 숫자, 특수문자(._-) 4~50자"
                         value={form.loginId}
                       />
                       <ActionButton
@@ -690,7 +694,7 @@ const SignupPage = () => {
                         className={INPUT_CLASS}
                         onBlur={handleFieldBlur('nickname')}
                         onChange={handleFieldChange('nickname')}
-                        placeholder="초록구매자"
+                        placeholder="사용할 닉네임을 입력해주세요"
                         value={form.nickname}
                       />
                       <ActionButton
@@ -708,23 +712,35 @@ const SignupPage = () => {
                   </Field>
 
                   <Field error={fieldError('password')} label="비밀번호" required>
-                    <input
-                      className={INPUT_CLASS}
-                      onBlur={handleFieldBlur('password')}
-                      onChange={handleFieldChange('password')}
-                      type="password"
-                      value={form.password}
-                    />
+                    <div className="relative">
+                      <input
+                        className={`${INPUT_CLASS} pr-11`}
+                        onBlur={handleFieldBlur('password')}
+                        onChange={handleFieldChange('password')}
+                        type={passwordVisibility.password ? 'text' : 'password'}
+                        placeholder="8~64자, 영문·숫자·특수문자 중 2종 이상"
+                        value={form.password}
+                      />
+                      <button type="button" onClick={() => setPasswordVisibility((previous) => ({ ...previous, password: !previous.password }))} aria-label={passwordVisibility.password ? '비밀번호 숨기기' : '비밀번호 보기'} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600">
+                        {passwordVisibility.password ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                   </Field>
 
                   <Field error={form.passwordConfirm ? passwordConfirmError : fieldError('passwordConfirm')} label="비밀번호 확인" required>
-                    <input
-                      className={INPUT_CLASS}
-                      onBlur={handleFieldBlur('passwordConfirm')}
-                      onChange={handleFieldChange('passwordConfirm')}
-                      type="password"
-                      value={form.passwordConfirm}
-                    />
+                    <div className="relative">
+                      <input
+                        className={`${INPUT_CLASS} pr-11`}
+                        onBlur={handleFieldBlur('passwordConfirm')}
+                        onChange={handleFieldChange('passwordConfirm')}
+                        type={passwordVisibility.passwordConfirm ? 'text' : 'password'}
+                        placeholder="비밀번호를 다시 입력해주세요"
+                        value={form.passwordConfirm}
+                      />
+                      <button type="button" onClick={() => setPasswordVisibility((previous) => ({ ...previous, passwordConfirm: !previous.passwordConfirm }))} aria-label={passwordVisibility.passwordConfirm ? '비밀번호 확인 숨기기' : '비밀번호 확인 보기'} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600">
+                        {passwordVisibility.passwordConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                     {form.passwordConfirm && !passwordConfirmError ? (
                       <span className="text-xs text-primary-dark">비밀번호가 일치합니다.</span>
                     ) : null}
@@ -747,7 +763,7 @@ const SignupPage = () => {
                         className={INPUT_CLASS}
                         onBlur={handleFieldBlur('email')}
                         onChange={handleEmailChange}
-                        placeholder="name@example.com"
+                        placeholder="example@email.com"
                         type="email"
                         value={form.email}
                       />
@@ -822,7 +838,6 @@ const SignupPage = () => {
                         className={`${INPUT_CLASS} cursor-pointer`}
                         onClick={() => setAddressSearchOpen(true)}
                         onFocus={(e) => e.target.blur()}
-                        placeholder="주소 검색을 눌러주세요."
                         readOnly
                         value={form.address}
                       />
@@ -834,7 +849,6 @@ const SignupPage = () => {
                       className={`${INPUT_CLASS} cursor-pointer`}
                       onClick={() => setAddressSearchOpen(true)}
                       onFocus={(e) => e.target.blur()}
-                      placeholder="우편번호"
                       readOnly
                       value={form.zip}
                     />
@@ -856,7 +870,7 @@ const SignupPage = () => {
                       className={INPUT_CLASS}
                       onBlur={handleFieldBlur('bankName')}
                       onChange={handleFieldChange('bankName')}
-                      placeholder="은행명을 자유롭게 입력해주세요."
+                      placeholder="은행명을 입력해주세요."
                       value={form.bankName}
                     />
                   </Field>
