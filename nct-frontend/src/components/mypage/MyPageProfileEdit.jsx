@@ -355,11 +355,12 @@ export default function MyPageProfileEdit({ user }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block font-bold text-[14px] text-[#404040] mb-0.5">이메일</label>
-              <div className={FIELD_CLASS + " flex items-center text-[#404040]"}>
-                {user?.email
-                  ? user.email.replace(/(?<=.{2}).(?=.*@)/g, "*")
-                  : "ks***@***.com"}
-              </div>
+              <input
+                className={FIELD_CLASS + " bg-[#f5f5f5] text-[#707070] cursor-default"}
+                type="email"
+                value={profileQuery.data?.email || user?.email || ""}
+                readOnly
+              />
             </div>
             <div>
               <label className="block font-bold text-[14px] text-[#404040] mb-0.5">
