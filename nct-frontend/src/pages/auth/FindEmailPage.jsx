@@ -1,5 +1,5 @@
 // src/pages/auth/FindEmailPage.jsx
-// F-AUTH-014: 이메일+이름으로 아이디를 찾는다. 실패 사유(불일치·탈퇴·정지·미가입)는
+// F-AUTH-014: 이메일+가입 닉네임으로 아이디를 찾는다. 실패 사유(불일치·탈퇴·정지·미가입)는
 // 서버가 전부 동일한 오류로 응답하므로 화면도 하나의 안내 문구만 보여준다.
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -20,19 +20,19 @@ const getSocialLoginUrl = (provider) => (
 
 export default function FindEmailPage() {
   const [email,        setEmail]        = useState('');
-  const [name,         setName]         = useState('');
+  const [nickname,     setNickname]     = useState('');
   const [loading,      setLoading]      = useState(false);
   const [recoveryResult, setRecoveryResult] = useState(null);
 
   const handleSubmit = async () => {
-    if (!email.trim() || !name.trim()) {
-      await notify({ icon: 'warning', title: '이메일과 이름을 입력해주세요.', size: 'sm' });
+    if (!email.trim() || !nickname.trim()) {
+      await notify({ icon: 'warning', title: '이메일과 닉네임을 입력해주세요.', size: 'sm' });
       return;
     }
 
     setLoading(true);
     try {
-      const result = await findEmail({ email, name });
+      const result = await findEmail({ email, nickname });
       setRecoveryResult(result?.data ?? null);
     } catch {
       // @ai_generated: 불일치·탈퇴·정지·미가입 전부 USER_NOT_FOUND(404)로 동일하게 응답된다.
@@ -49,7 +49,7 @@ export default function FindEmailPage() {
   const handleRetry = () => {
     setRecoveryResult(null);
     setEmail('');
-    setName('');
+    setNickname('');
   };
 
   return (
@@ -63,7 +63,7 @@ export default function FindEmailPage() {
               <label className="text-sm font-medium text-gray-700">이메일 주소</label>
               <input
                 type="email"
-                placeholder="example@email.com"
+                placeholder="가입한 이메일을 입력해주세요"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -72,12 +72,12 @@ export default function FindEmailPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-gray-700">이름</label>
+              <label className="text-sm font-medium text-gray-700">닉네임</label>
               <input
                 type="text"
-                placeholder="홍길동"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                placeholder="가입 시 입력한 닉네임을 입력해주세요"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
                 onKeyDown={handleKeyDown}
                 className="w-full h-12 px-4 rounded-lg border border-gray-300 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />

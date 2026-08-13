@@ -14,6 +14,7 @@ import { assets } from "@components/mypage/assets";
 import { updateProfile, changePassword, getOauthLinks, unlinkOauth } from "@api/memberApi";
 import { uploadImage, toImageUrl } from "@api/fileApi";
 import { useAuth } from "@hooks/useAuth";
+import { isValidNewPassword, PASSWORD_POLICY_GUIDE } from "@utils/passwordPolicy";
 import { MEMBER_PROFILE_QUERY_KEY, useMemberProfile } from "@hooks/useMemberProfile";
 import { useNotificationSettings, useSaveNotificationSettings } from "@hooks/useNotification";
 import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
@@ -195,6 +196,10 @@ export default function MyPageProfileEdit({ user }) {
     }
     if (form.newPassword !== form.newPasswordConfirm) {
       toast({ icon: "error", title: "새 비밀번호가 일치하지 않습니다." });
+      return;
+    }
+    if (!isValidNewPassword(form.newPassword)) {
+      toast({ icon: "error", title: PASSWORD_POLICY_GUIDE });
       return;
     }
     setIsChangingPassword(true);
@@ -381,7 +386,7 @@ export default function MyPageProfileEdit({ user }) {
                   className={FIELD_CLASS}
                   value={form.currentPassword}
                   onChange={handleChange("currentPassword")}
-                  placeholder="********"
+                  placeholder="현재 비밀번호"
                 />
               </div>
               <div>
@@ -391,7 +396,7 @@ export default function MyPageProfileEdit({ user }) {
                   className={FIELD_CLASS}
                   value={form.newPassword}
                   onChange={handleChange("newPassword")}
-                  placeholder="********"
+                  placeholder="8~64자, 2종 이상 조합"
                 />
               </div>
               <div>

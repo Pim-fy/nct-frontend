@@ -7,6 +7,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { requestPasswordReset, confirmPasswordReset } from '@api/authApi';
 import AuthPageContainer from '@components/auth/AuthPageContainer';
 import AuthCard from '@components/auth/AuthCard';
+import { isValidNewPassword, PASSWORD_POLICY_GUIDE } from '@utils/passwordPolicy';
 import { notify } from '@utils/common';
 
 // @ai_generated: 목업(38_password_reset.html)의 이메일 마스킹 규칙을 그대로 재사용한다.
@@ -81,7 +82,7 @@ function RequestForm() {
               <label className="text-sm font-medium text-gray-700">이메일 주소</label>
               <input
                 type="email"
-                placeholder="example@email.com"
+                placeholder="가입한 이메일을 입력해주세요"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -161,8 +162,8 @@ function ConfirmForm({ token }) {
       await notify({ icon: 'warning', title: '새 비밀번호를 입력해주세요.', size: 'sm' });
       return;
     }
-    if (newPassword.length < 8 || newPassword.length > 20) {
-      await notify({ icon: 'warning', title: '비밀번호는 8~20자여야 합니다.', size: 'sm' });
+    if (!isValidNewPassword(newPassword)) {
+      await notify({ icon: 'warning', title: PASSWORD_POLICY_GUIDE, size: 'sm' });
       return;
     }
     if (newPassword !== newPasswordConfirm) {
@@ -241,7 +242,7 @@ function ConfirmForm({ token }) {
             <label className="text-sm font-medium text-gray-700">새 비밀번호</label>
             <input
               type="password"
-              placeholder="8~20자"
+              placeholder="8~64자, 영문·숫자·특수문자 중 2종 이상"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               className="w-full h-12 px-4 rounded-lg border border-gray-300 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
@@ -252,7 +253,7 @@ function ConfirmForm({ token }) {
             <label className="text-sm font-medium text-gray-700">새 비밀번호 확인</label>
             <input
               type="password"
-              placeholder="새 비밀번호 확인"
+              placeholder="새 비밀번호를 다시 입력해주세요"
               value={newPasswordConfirm}
               onChange={(e) => setNewPasswordConfirm(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}

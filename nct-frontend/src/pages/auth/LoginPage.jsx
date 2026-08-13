@@ -176,7 +176,7 @@ export default function LoginPage() {
             <label className="text-sm font-medium text-gray-700">아이디</label>
             <input
               type="text"
-              placeholder="ksmart01"
+              placeholder="아이디를 입력해주세요"
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -195,7 +195,7 @@ export default function LoginPage() {
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
-                placeholder="비밀번호"
+                placeholder="비밀번호를 입력해주세요"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={handleKeyDown}
