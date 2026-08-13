@@ -266,6 +266,7 @@ export default function ServiceRequestDetailPage() {
   const [cmtTtl, setCmtTtl] = useState('');
   const [cmtCn, setCmtCn] = useState('');
   const [cmtSubmitting, setCmtSubmitting] = useState(false);
+  const [commentConfirmOpen, setCommentConfirmOpen] = useState(false);
   const quoteAccessQuery = useQuery({
     queryKey: ['provider', 'quote-access', request?.catSn],
     queryFn: () => fetchMyProviderQuoteAccess(request.catSn),
@@ -356,11 +357,17 @@ export default function ServiceRequestDetailPage() {
     };
   }, [request, svcReqSn]);
 
-  const handleCommentSubmit = async () => {
+  // 상품 변경사항 추가(ProductDetailSellerPage)와 동일하게, 등록 전 "등록 후 수정 불가" 확인을 한 번 거친다
+  const requestCommentSubmit = () => {
     if (!cmtTtl.trim()) {
       setToast('제목을 입력해 주세요.');
       return;
     }
+    setCommentConfirmOpen(true);
+  };
+
+  const handleCommentSubmit = async () => {
+    setCommentConfirmOpen(false);
     setCmtSubmitting(true);
     try {
       await addServiceRequestComment(svcReqSn, { ttl: cmtTtl.trim(), cn: cmtCn.trim() || null });
@@ -676,7 +683,7 @@ export default function ServiceRequestDetailPage() {
                       <button
                         type="button"
                         className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0048bf] disabled:opacity-50"
-                        onClick={handleCommentSubmit}
+                        onClick={requestCommentSubmit}
                         disabled={cmtSubmitting}
                       >
                         {cmtSubmitting ? '등록 중...' : '등록'}
@@ -847,6 +854,16 @@ export default function ServiceRequestDetailPage() {
         confirmLabel="마감"
         onConfirm={handleClose}
         onCancel={() => setCloseConfirmOpen(false)}
+      />
+
+      <ConfirmModal
+        open={commentConfirmOpen}
+        message="등록 후에는 수정할 수 없습니다."
+        subMessage="이대로 등록하시겠습니까?"
+        confirmLabel="등록"
+        confirmTone="primary"
+        onConfirm={handleCommentSubmit}
+        onCancel={() => setCommentConfirmOpen(false)}
       />
 
       <ImageLightbox

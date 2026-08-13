@@ -1,6 +1,6 @@
 // src/pages/product/steps/RegisterConfirmStep.jsx
 // 1단계(등록 확인): 등록 전 상품정보·경매조건 요약 확인 + 최종 동의 (예전 3단계 구조의 "Step 2")
-// Props: form, agreed, setAgreed, images, selectedCat, selectedTrade, endDt, auctionRange
+// Props: form, agreed, setAgreed, images, selectedCat, selectedTrade, endDt, auctionRange, agreedRef(동의 미체크 시 스크롤 포커스용)
 import { useState } from 'react';
 import DOMPurify from 'dompurify';
 import { SANITIZE_OPTS, resolveDescriptionImagesForDisplay } from '@components/product/richTextEditorImages';
@@ -12,7 +12,7 @@ const toNaiveIso = (date) => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:00`;
 };
 
-export default function RegisterConfirmStep({ form, agreed, setAgreed, images, selectedCat, selectedTrade, endDt, auctionRange }) {
+export default function RegisterConfirmStep({ form, agreed, setAgreed, images, selectedCat, selectedTrade, endDt, auctionRange, agreedRef }) {
   const [descOpen, setDescOpen] = useState(false);
   return (
     <div>
@@ -78,7 +78,7 @@ export default function RegisterConfirmStep({ form, agreed, setAgreed, images, s
         </div>
       )}
 
-      <div className="policy-agree">
+      <div className="policy-agree" ref={agreedRef}>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <input
             type="checkbox"
