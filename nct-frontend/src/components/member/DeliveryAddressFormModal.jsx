@@ -63,6 +63,7 @@ const DeliveryAddressFormModal = ({
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    event.stopPropagation();
     if (!form.name.trim()) {
       setValidationMessage('배송지명을 입력해 주세요.');
       return;

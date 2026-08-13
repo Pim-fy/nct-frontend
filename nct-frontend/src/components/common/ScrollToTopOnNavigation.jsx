@@ -10,15 +10,16 @@ const ScrollToTopOnNavigation = () => {
   const navigationType = useNavigationType();
   const currentUrl = `${location.pathname}${location.search}${location.hash}`;
   const previousUrlRef = useRef(currentUrl);
+  const preserveScrollPosition = location.state?.preserveScrollPosition === true;
 
   useLayoutEffect(() => {
     const urlChanged = previousUrlRef.current !== currentUrl;
     previousUrlRef.current = currentUrl;
 
-    if (urlChanged && navigationType !== 'POP') {
+    if (urlChanged && navigationType !== 'POP' && !preserveScrollPosition) {
       window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     }
-  }, [currentUrl, navigationType]);
+  }, [currentUrl, navigationType, preserveScrollPosition]);
 
   return null;
 };
