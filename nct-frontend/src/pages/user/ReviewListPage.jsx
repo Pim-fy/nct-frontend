@@ -6,7 +6,7 @@
 // - MyPage 사이드바 레이아웃(flex-1) 안에서 렌더링되므로 ScaledStage 대신 반응형 flex 레이아웃 사용.
 // - GET /api/reviews/writable, /me 연동 완료 (useReview.js). 생성/수정은 거래 상세에서 처리한다.
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import MyPageReviewListItem from "@components/mypage/MyPageReviewListItem";
 import Pagination from "@components/common/Pagination";
 import MyPageListSectionLayout from "@components/mypage/MyPageListSectionLayout";
@@ -23,9 +23,7 @@ const PAGE_SIZE = 10;
 export default function ReviewListPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState(() => (
-    location.state?.justWrote || location.state?.justUpdated ? "written" : "all"
-  ));
+  const [searchParams, setSearchParams] = useSearchParams();
   const [writablePage, setWritablePage] = useState(1);
   const [writtenPage, setWrittenPage] = useState(1);
   const [allPage, setAllPage] = useState(1);
@@ -63,6 +61,17 @@ export default function ReviewListPage() {
     ...filteredWrittenItems.map((item) => ({ ...item, kind: "written" })),
   ].sort((a, b) => new Date(b.completedDate || 0) - new Date(a.completedDate || 0)), [filteredWritableItems, filteredWrittenItems]);
 
+  const tabs = [
+    { key: "all",      label: "전체",        count: writableItems.length + writtenItems.length },
+    { key: "writable", label: "작성가능 리뷰",  count: writableItems.length },
+    { key: "written",  label: "작성완료 리뷰",  count: writtenItems.length },
+  ];
+  // @ai_generated 리뷰 탭은 URL을 기준으로 복원하고 작성·수정 직후에는 작성완료 탭을 우선한다.
+  const requestedTab = searchParams.get("tab");
+  const activeTab = location.state?.justWrote || location.state?.justUpdated
+    ? "written"
+    : tabs.some(({ key }) => key === requestedTab) ? requestedTab : "all";
+
   const isLoading = activeTab === "all"
     ? (writableQuery.isLoading || myReviewsQuery.isLoading)
     : activeTab === "writable" ? writableQuery.isLoading : myReviewsQuery.isLoading;
@@ -81,16 +90,12 @@ export default function ReviewListPage() {
       toast({ icon: "success", title: "리뷰가 수정되었습니다." });
     }
     if (justWrote || justUpdated) {
-      navigate(location.pathname + location.search, { replace: true, state: null });
+      const nextSearchParams = new URLSearchParams(location.search);
+      nextSearchParams.set("tab", "written");
+      navigate(`${location.pathname}?${nextSearchParams.toString()}`, { replace: true, state: null });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const tabs = [
-    { key: "all",      label: "전체",        count: writableItems.length + writtenItems.length },
-    { key: "writable", label: "작성가능 리뷰",  count: writableItems.length },
-    { key: "written",  label: "작성완료 리뷰",  count: writtenItems.length },
-  ];
 
   const writableTotalPages = Math.max(1, Math.ceil(filteredWritableItems.length / PAGE_SIZE));
   const pagedWritableItems = useMemo(
@@ -111,7 +116,10 @@ export default function ReviewListPage() {
   );
 
   const handleTabChange = (key) => {
-    setActiveTab(key);
+    const nextSearchParams = new URLSearchParams(searchParams);
+    if (key === "all") nextSearchParams.delete("tab");
+    else nextSearchParams.set("tab", key);
+    setSearchParams(nextSearchParams, { replace: true });
     setWritablePage(1);
     setWrittenPage(1);
     setAllPage(1);

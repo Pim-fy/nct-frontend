@@ -97,14 +97,20 @@ export default function MyPage({
 
   // @ai_generated (담당자1, 2026-08-13): 목록 응답에 auctionId가 있으면 호환 리다이렉트와
   // 중복 상세 조회를 거치지 않고 정식 거래 상세 경로로 바로 이동한다.
-  const handleOpenPurchaseTradeDetail = (tradeId, auctionId) => {
-    const detailPath = previewTrades
-      ? `/trades/preview/${tradeId}`
-      : auctionId
-        ? `/auction/${auctionId}/trade`
-        : `/trades/${tradeId}`;
+  const handleOpenPurchaseTradeDetail = (tradeId, auctionId, returnPath) => {
+    const hasTradeId = Number.isSafeInteger(Number(tradeId)) && Number(tradeId) > 0;
+    const hasAuctionId = Number.isSafeInteger(Number(auctionId)) && Number(auctionId) > 0;
+    const detailPath = !hasTradeId && hasAuctionId
+      ? `/auction/${auctionId}`
+      : previewTrades && hasTradeId
+        ? `/trades/preview/${tradeId}`
+        : hasTradeId && hasAuctionId
+          ? `/auction/${auctionId}/trade`
+          : hasTradeId
+            ? `/trades/${tradeId}`
+            : getMyPagePath('auction-bids');
     navigate(detailPath, {
-      state: { from: getMyPagePath("auction-bids") },
+      state: { from: returnPath ?? getMyPagePath("auction-bids") },
     });
   };
 
@@ -184,7 +190,6 @@ export default function MyPage({
               embedded
               fixedRole="BUYER"
               preview={previewTrades}
-              returnSection="auction-bids"
               onOpenTradeDetail={handleOpenPurchaseTradeDetail}
             />
           )}
