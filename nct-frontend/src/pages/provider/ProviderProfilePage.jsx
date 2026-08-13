@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { deleteImage, toImageUrl, uploadImage } from '@api/fileApi';
 import { confirm, toast } from '@utils/common';
+import { assets } from '@components/mypage/assets';
 import {
   useCreatePortfolio,
   useDeletePortfolio,
@@ -361,7 +362,30 @@ function ProviderProfileForm({ profile }) {
   const [form, setForm] = useState({
     introduction: profile.introduction ?? '',
     availableArea: profile.availableArea ?? '',
+    profileFileSn: profile.profileFileSn ?? null,
   });
+  const [previewImageUrl, setPreviewImageUrl] = useState(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const photoInputRef = useRef(null);
+
+  const handlePhotoButtonClick = () => photoInputRef.current?.click();
+
+  const handlePhotoChange = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = ''; // 같은 파일을 다시 선택해도 change가 발생하도록 초기화
+    if (!file) return;
+    setIsUploadingPhoto(true);
+    try {
+      const res = await uploadImage(file, 'profile');
+      setForm((current) => ({ ...current, profileFileSn: res.data.flSn }));
+      setPreviewImageUrl(toImageUrl(res.data.url));
+    } catch (error) {
+      toast({ icon: 'error', title: error?.response?.data?.message ?? '사진 업로드에 실패했습니다.' });
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
   const submit = async (event) => {
     event.preventDefault();
     try {
@@ -376,8 +400,35 @@ function ProviderProfileForm({ profile }) {
       <form className="provider-profile-editor__card provider-profile-editor__form rounded-xl border border-[#e5e5e5] bg-white p-6" onSubmit={submit}>
         <div className="provider-profile-editor__section-heading">
           <h2>기본 프로필</h2>
-          <p>고객에게 공개되는 활동 지역과 서비스 소개를 관리합니다.</p>
+          <p>고객에게 공개되는 프로필 사진·활동 지역·소개를 관리합니다.</p>
         </div>
+
+        {/* 제공자 전용 프로필 사진 — 개인정보 수정의 계정 사진과 별개 값이다. 비워두면(profileFileSn
+            null) 공개 프로필에서 개인 프로필 사진이 그대로 대체 표시된다 (PRV_PRF_FL_SN 정본요청 참고). */}
+        <label className="mb-2 block text-sm font-bold text-[#404040]">프로필 사진</label>
+        <div className="mb-6 flex items-center gap-4">
+          <div className="size-[80px] shrink-0 overflow-hidden rounded-full bg-[#e6f0ff]">
+            <img
+              src={previewImageUrl || toImageUrl(profile.profileImageUrl) || assets.profile}
+              alt=""
+              className="size-full object-cover"
+            />
+          </div>
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={handlePhotoChange}
+          />
+          <div>
+            <button type="button" onClick={handlePhotoButtonClick} disabled={isUploadingPhoto} className="btn btn-outline btn-sm">
+              {isUploadingPhoto ? '업로드 중...' : '사진 변경'}
+            </button>
+            <p className="mt-1 text-xs text-[#888]">비워두면 개인 프로필 사진이 대신 표시됩니다.</p>
+          </div>
+        </div>
+
         <label className="mb-2 block text-sm font-bold text-[#404040]" htmlFor="provider-area">가능 지역</label>
         <input id="provider-area" className={fieldClass} maxLength={200} value={form.availableArea}
           onChange={(event) => setForm((current) => ({ ...current, availableArea: event.target.value }))}

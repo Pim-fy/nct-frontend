@@ -28,6 +28,7 @@ import {
   isTenMinuteTime,
 } from '@components/common/timeSelectUtils';
 import ReportModal from '@components/common/ReportModal';
+import { getServiceTradeChatPath } from '@/routes/myPageRoutes';
 import { formatMembershipDuration } from '@utils/common';
 import '@assets/css/trade-detail.css';
 import '@assets/css/service-trade-detail.css';
@@ -395,7 +396,7 @@ export default function ServiceTradeDetailPage({
                       <ActionButton
                         className="service-trade-inline-actions__chat"
                         fullWidth
-                        to={chatPath ?? `/service-trades/${trade.tradeId}/chat`}
+                        to={chatPath ?? getServiceTradeChatPath(trade.tradeId)}
                         tone="outline"
                       >
                         <MessageSquareText aria-hidden="true" size={18} /> {canViewChatHistory ? '채팅 기록 보기' : '서비스 채팅'}

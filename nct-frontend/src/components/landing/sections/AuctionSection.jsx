@@ -59,7 +59,7 @@ export default function AuctionSection({
 
   return (
     <section className="py-12 border-t border-[#e0e0e0]">
-      <div className="mx-auto max-w-[1600px] px-8">
+      <div className="container">
 
         {/* 탭 */}
         <div className="flex justify-center gap-4 mb-8">

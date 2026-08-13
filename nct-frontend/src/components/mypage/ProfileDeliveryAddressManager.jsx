@@ -129,11 +129,11 @@ const ProfileDeliveryAddressManager = () => {
   };
 
   const handleDelete = async (address) => {
+    if (address.defaultAddress) return;
+
     const confirmed = await confirm({
       title: '배송지를 삭제하시겠습니까?',
-      text: address.defaultAddress
-        ? '삭제하면 남은 배송지 중 하나가 기본 배송지로 자동 지정됩니다.'
-        : `${address.name} 배송지는 삭제 후 복구할 수 없습니다.`,
+      text: `${address.name} 배송지는 삭제 후 복구할 수 없습니다.`,
       confirmButtonText: '삭제',
       cancelButtonText: '취소',
     });
@@ -238,9 +238,11 @@ const ProfileDeliveryAddressManager = () => {
                 <button
                   aria-label={`${address.name} 배송지 삭제`}
                   className="grid size-8 place-items-center rounded-[5px] text-[#777] hover:bg-[#fff1f0] hover:text-[#b3261e] disabled:cursor-not-allowed disabled:opacity-45"
-                  disabled={isChanging}
+                  disabled={isChanging || address.defaultAddress}
                   onClick={() => handleDelete(address)}
-                  title="삭제"
+                  title={address.defaultAddress
+                    ? '기본 배송지는 삭제할 수 없습니다.'
+                    : '삭제'}
                   type="button"
                 >
                   <Trash2 aria-hidden="true" size={15} />

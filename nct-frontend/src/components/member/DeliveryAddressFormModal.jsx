@@ -33,6 +33,9 @@ const DeliveryAddressFormModal = ({
   const detailInputRef = useRef(null);
   const isEditing = Boolean(address);
   const isSearchView = view === 'search';
+  const isFormValid = Boolean(
+    form.name.trim() && form.zip.trim() && form.address.trim(),
+  );
   useBodyScrollLock(true);
 
   useEffect(() => {
@@ -226,7 +229,7 @@ const DeliveryAddressFormModal = ({
 
             <button
               className="h-12 w-full rounded-[5px] border border-primary bg-primary text-body-md font-bold text-white hover:bg-[#0058df] disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={isSaving}
+              disabled={isSaving || !isFormValid}
               type="submit"
             >
               {isSaving ? '저장 중...' : (isEditing ? '배송지 수정' : '배송지 추가')}

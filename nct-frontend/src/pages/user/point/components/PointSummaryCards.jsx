@@ -14,16 +14,60 @@ import iconPoint from '@assets/img/icon_point.png';
  * 총 보유는 서버가 내려준 total을 그대로 쓴다 — 헤더와 같은 출처(서버 원장 SUM 단일 진실)라
  * "총 보유"의 정의가 바뀌어도 화면끼리 숫자가 어긋날 수 없다 (프론트 재계산 제거, 2026-07-20)
  * 카드 스타일은 마이페이지 대시보드(MyPageDashboard StatCard)와 톤을 맞췄다 (2026-07-24)
+ * 홀딩/정산가능은 부제 문구 없이는 뜻이 안 와닿는다는 지적(2026-08-13)으로, 라벨 옆에 "?" 아이콘
+ * + 호버 툴팁을 붙였다 — 카드 여백은 그대로 유지하면서 필요할 때만 설명이 뜨게 한다. 아이콘
+ * 스타일은 ServiceRequestFormPage.jsx의 필드 툴팁 패턴을 재사용했다(카드 배경이 항상 색이 있는
+ * 진한 톤이라 배지 테두리/글자만 흰색 계열로 바꿈, 팝업 박스 자체는 원본처럼 흰 배경 유지).
  */
 const PointSummaryCards = ({ balance }) => {
   const cards = [
-    { label: '총 보유 포인트', value: balance.total, color: '#0064ff' },
-    { label: '사용 가능 포인트', value: balance.available, color: '#005eb5' },
-    { label: '홀딩 포인트', value: balance.hold, color: '#776bf8' },
-    { label: '정산가능 포인트', value: balance.settleable, color: '#d97706' },
+    {
+      label: '총 보유 포인트',
+      value: balance.total,
+      color: '#0064ff',
+      tooltip: '사용 가능·홀딩·정산가능 포인트를 모두 합한 전체 보유량입니다.',
+    },
+    {
+      label: '사용 가능 포인트',
+      value: balance.available,
+      color: '#005eb5',
+      tooltip: '충전·전환 등을 통해 지금 바로 사용할 수 있는 포인트입니다.',
+    },
+    {
+      label: '홀딩 포인트',
+      value: balance.hold,
+      color: '#776bf8',
+      tooltip: '입찰 등으로 묶여 있어 아직 사용할 수 없는 포인트입니다.',
+    },
+    {
+      label: '정산가능 포인트',
+      value: balance.settleable,
+      color: '#d97706',
+      tooltip: '판매대금으로 받았지만, 아직 사용 가능 포인트로 전환하지 않은 금액입니다.',
+    },
   ];
 
   const [hero, ...rest] = cards;
+
+  // 라벨 옆 "?" 아이콘 + 호버 툴팁 — ServiceRequestFormPage.jsx 필드 툴팁과 같은 구조,
+  // 카드 배경이 항상 진한 색이라 배지 테두리/글자만 흰색 계열로 바꿨다. compact는 모바일
+  // 히어로·타일처럼 라벨 글자가 작은 자리에서 아이콘도 같이 줄이기 위한 옵션.
+  const InfoTooltip = ({ text, compact = false }) => (
+    <span className="group/tip relative inline-flex shrink-0 cursor-default">
+      <span
+        className={
+          compact
+            ? 'flex h-3 w-3 items-center justify-center rounded-full border border-white/70 text-[8px] font-bold leading-none text-white/90'
+            : 'flex h-4 w-4 items-center justify-center rounded-full border border-white/70 text-[10px] font-bold leading-none text-white/90'
+        }
+      >
+        ?
+      </span>
+      <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 w-max max-w-[220px] -translate-x-1/2 whitespace-normal rounded-lg border border-[#e2e1dc] bg-white px-3 py-1.5 text-xs font-normal text-[#3b3a36] shadow-md opacity-0 transition-opacity group-hover/tip:opacity-100">
+        {text}
+      </span>
+    </span>
+  );
 
   return (
     <section>
@@ -34,7 +78,10 @@ const PointSummaryCards = ({ balance }) => {
           <div className="flex items-start gap-3">
             <img src={iconPoint} alt="" className="size-[36px] object-contain shrink-0 mt-0.5" />
             <div className="min-w-0">
-              <p className="font-bold text-[14px] opacity-90 leading-tight m-0">{hero.label}</p>
+              <p className="font-bold text-[14px] opacity-90 leading-tight m-0 flex items-center gap-1">
+                {hero.label}
+                {hero.tooltip && <InfoTooltip text={hero.tooltip} compact />}
+              </p>
               <p className="font-bold text-[26px] leading-tight mt-0.5 mb-0">{hero.value.toLocaleString()} P</p>
             </div>
           </div>
@@ -42,8 +89,9 @@ const PointSummaryCards = ({ balance }) => {
         <div className="grid grid-cols-3 gap-2">
           {rest.map((card) => (
             <div key={card.label} className="rounded-xl text-white p-3" style={{ backgroundColor: card.color }}>
-              <p className="font-bold text-[11px] opacity-85 leading-tight whitespace-nowrap m-0">
+              <p className="font-bold text-[11px] opacity-85 leading-tight whitespace-nowrap m-0 flex items-center gap-1">
                 {card.label.replace(' 포인트', '').replace(' 가능', '가능')}
+                {card.tooltip && <InfoTooltip text={card.tooltip} compact />}
               </p>
               <p className="font-bold text-[16px] leading-tight mt-1 mb-0">{card.value.toLocaleString()}P</p>
             </div>
@@ -62,7 +110,10 @@ const PointSummaryCards = ({ balance }) => {
             <div className="flex items-start gap-3">
               <img src={iconPoint} alt="" className="size-[40px] object-contain shrink-0 mt-0.5" />
               <div className="min-w-0">
-                <p className="font-bold text-[16px] opacity-90 leading-tight m-0">{card.label}</p>
+                <p className="font-bold text-[16px] opacity-90 leading-tight m-0 flex items-center gap-1.5">
+                  {card.label}
+                  {card.tooltip && <InfoTooltip text={card.tooltip} />}
+                </p>
                 <p className="font-bold text-[30px] leading-tight mt-0.5 mb-0">{card.value.toLocaleString()} P</p>
               </div>
             </div>

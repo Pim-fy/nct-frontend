@@ -94,7 +94,7 @@ export default function MyPageProviderDashboard({ user, onLogout, onSwitchToGene
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-4 lg:items-stretch">
         <MyPageDashboardTop
           className="lg:col-span-1"
-          profileImageUrl={user?.profileImageUrl || user?.profileImage}
+          profileImageUrl={profile?.profileImageUrl || user?.profileImageUrl}
           nickname={nickname}
           email={user?.email || ''}
           actions={[

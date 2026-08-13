@@ -134,6 +134,7 @@ export default function ProductRegisterPage() {
   const ibyAmtRef = useRef(null);
   const auctionRangeRef = useRef(null);
   const policyRef = useRef(null);
+  const agreedRef = useRef(null);
 
   // ─── 폼 입력값 ───────────────────────────────────────────────────────────
   const [form, setForm] = useState(() => hasCachedDraft ? draftCache.form : {
@@ -584,6 +585,7 @@ export default function ProductRegisterPage() {
                 selectedTrade={selectedTrade}
                 endDt={endDt}
                 auctionRange={auctionRange}
+                agreedRef={agreedRef}
               />
             </div>
           </>
@@ -675,6 +677,7 @@ export default function ProductRegisterPage() {
               onClick={() => {
                 if (!agreed) {
                   setAlertMsg('등록 정보 확인 및 본문수정이 불가능함에 동의가 필요합니다.');
+                  agreedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                   return;
                 }
                 // 종료 시각이 지났는지 검사는 이미지 업로드가 끝난 뒤(handleSubmit 내부)에서 한다 —

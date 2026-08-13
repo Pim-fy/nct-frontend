@@ -105,6 +105,9 @@ const AuctionDeliveryAddressModal = ({
 
   const isSearchView = view === 'search';
   const isListView = view === 'list';
+  const isFormValid = Boolean(
+    form.name.trim() && form.zip.trim() && form.address.trim(),
+  );
 
   return (
     <div
@@ -317,6 +320,7 @@ const AuctionDeliveryAddressModal = ({
             </p>
 
             <ActionButton
+              disabled={isSaving || !isFormValid}
               fullWidth
               loading={isSaving}
               size="lg"

@@ -28,10 +28,10 @@ export default function AuctionCard({ fluid = false, item, onClick }) {
       style={{ width: fluid ? "100%" : CARD_WIDTH, height: CARD_BODY_HEIGHT + OVERHANG + OVERHANG_BOTTOM}}
     >
       <div
-        className="absolute bg-white border border-[#ebebeb] border-solid rounded-[20px] shadow-[0px_0px_20px_0px_rgba(0,0,0,0.15)]"
+        className="absolute bg-white border border-[#e0e0e0] border-solid rounded-[20px] shadow-[0px_2px_8px_0px_rgba(0,0,0,0.06)]"
         style={{ top: OVERHANG, left: 0, width: "100%", height: CARD_BODY_HEIGHT }}
       />
-      <div className="absolute right-px left-px grid place-items-center overflow-hidden rounded-t-[20px] bg-[#f3f4f6] text-base font-semibold text-[#777]" style={{ top: OVERHANG, height: 195 }}>
+      <div className="absolute right-px left-px grid place-items-center overflow-hidden rounded-t-[20px] bg-[#f3f4f6] text-base font-semibold text-[#777]" style={{ top: OVERHANG + 1, height: 194 }}>
         {item.image && !imageFailed
           ? (
             <img

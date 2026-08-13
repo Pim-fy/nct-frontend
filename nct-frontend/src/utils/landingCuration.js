@@ -11,7 +11,7 @@ const getDeadlinePresentation = (endDateTime) => {
   if (!Number.isFinite(remainingMs) || remainingMs <= 0) {
     return { dday: null, urgent: false };
   }
-  if (remainingMs <= 60 * 60 * 1000) {
+  if (remainingMs <= 24 * 60 * 60 * 1000) {
     return { dday: null, urgent: true };
   }
   return {

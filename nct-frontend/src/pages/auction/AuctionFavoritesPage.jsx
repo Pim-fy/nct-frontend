@@ -151,8 +151,6 @@ const AuctionFavoritesPage = ({ embedded = false }) => {
       return { previousPage, queryKey, wasLastItemOnPage };
     },
     onSuccess: (_status, _auctionId, context) => {
-      setToastMessage('관심 경매에서 삭제했습니다.');
-
       if (page > 1 && context?.wasLastItemOnPage) {
         goToPage(page - 1);
       }
