@@ -378,7 +378,7 @@ export default function ServiceTradeDetailPage({
                     {counterpartJoinedLabel !== '-' && <p className="trade-detail-card__muted">{counterpartJoinedLabel}</p>}
                     <p className="trade-detail-card__muted">완료한 거래 {trade.counterpartCompletedTradeCount ?? 0}건</p>
                   </div>
-                  <TradeTrustSummary counterpartUserId={trade.counterpartUserId} reviewType="service" />
+                  <TradeTrustSummary counterpartUserId={trade.counterpartUserId} />
                 </div>
               </div>
               <p className="service-trade-next-step">다음 단계: <strong>{nextStepLabel}</strong></p>

@@ -47,6 +47,7 @@ const STATUS_LABEL = {
   SVCC0002: '공개',
   SVCC0003: '매칭완료',
   SVCC0004: '취소',
+  SVCC0005: '운영 보류',
 };
 
 const STATUS_TONE = {
@@ -54,6 +55,7 @@ const STATUS_TONE = {
   SVCC0002: 'info',
   SVCC0003: 'success',
   SVCC0004: 'danger',
+  SVCC0005: 'warning',
 };
 
 const QUOTE_STATUS_LABEL = {
