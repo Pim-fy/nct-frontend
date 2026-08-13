@@ -783,6 +783,10 @@ const TradeHistory = ({
                 ? getPurchaseStatusInfo(trade)
                 : getStatusInfo(trade);
               const isBidItem = isBuyerPurchaseList && trade.kind === 'BID';
+              // @ai_generated 모바일도 데스크톱과 같은 구매 상태별 가격 항목을 사용한다.
+              const purchasePriceItems = isBuyerPurchaseList
+                ? getPurchasePriceItems(trade)
+                : [];
               const canOpenTradeDetail = Boolean(
                 onOpenTradeDetail && (!isBidItem || trade.tradeId),
               );
@@ -817,9 +821,8 @@ const TradeHistory = ({
                   imageFallbackLabel="상품 이미지"
                   badge={<MyPageStatusBadge className={status.badgeClass}>{status.label}</MyPageStatusBadge>}
                   title={trade.productName}
-                  price={isBuyerPurchaseList
-                    ? (isBidItem ? formatPoint(trade.bidAmount) : trade.amount)
-                    : trade.amount}
+                  price={isBuyerPurchaseList ? undefined : trade.amount}
+                  priceItems={purchasePriceItems}
                   infoItems={[
                     {
                       icon: CalendarDays,

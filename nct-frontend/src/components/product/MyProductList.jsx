@@ -130,6 +130,39 @@ const getProductStatusDisplay = (p) => ({
   isEnded: p.prdStatusCd === 'PRDC0003',
 });
 
+// @ai_generated 거래 전에는 경매 가격, 거래 생성 후에는 확정 금액을 표시해 가격 의미를 섞지 않는다.
+const getSalePriceItems = (product) => {
+  if (product.tradeSn) {
+    return [{ label: '확정 금액', value: formatPoint(product.tradeAmount) }];
+  }
+
+  if (product.aucStatusCd === 'AUCC0003') {
+    return [{ label: '거래 정보 확인 필요', value: '-' }];
+  }
+
+  if (product.aucStatusCd === 'AUCC0004') {
+    return [{ label: '시작가', value: formatPoint(product.prdStartAmt) }];
+  }
+
+  if (product.aucStatusCd === 'AUCC0005') {
+    return Number(product.bidCount) > 0
+      ? [{ label: '취소 시점 최고가', value: formatPoint(product.currentPrice) }]
+      : [{ label: '시작가', value: formatPoint(product.prdStartAmt) }];
+  }
+
+  const hasBid = Number(product.bidCount) > 0;
+  const primaryPrice = hasBid
+    ? { label: '현재 최고가', value: formatPoint(product.currentPrice) }
+    : { label: '시작가', value: formatPoint(product.prdStartAmt) };
+  const priceItems = [primaryPrice];
+
+  if (product.prdIbyAmt != null) {
+    priceItems.push({ label: '즉시구매가', value: formatPoint(product.prdIbyAmt) });
+  }
+
+  return priceItems;
+};
+
 // ─── 컴포넌트 ─────────────────────────────────────────────────────────────────
 
 export default function MyProductList() {
@@ -251,6 +284,7 @@ export default function MyProductList() {
           <div className="history-list">
             {visibleList.map((p) => {
               const { badgeLabel, badgeClass, isActive, isDraft, isEnded } = getProductStatusDisplay(p);
+              const priceItems = getSalePriceItems(p);
 
               return (
                 <MyPageAuctionListItem
@@ -261,9 +295,7 @@ export default function MyProductList() {
                   badge={<MyPageStatusBadge className={badgeClass}>{badgeLabel}</MyPageStatusBadge>}
                   title={p.prdNm}
                   topLine={`확정날짜 ${formatDate(p.tradeCreatedAt ?? p.prdRegDt)} / 완료날짜 ${formatDate(p.tradeCompletedAt)}`}
-                  priceItems={[
-                    { label: '확정 가격', value: formatPoint(p.tradeAmount ?? p.prdStartAmt) },
-                  ]}
+                  priceItems={priceItems}
                   tradeMethodLabel={TRADE_LABEL[p.prdTrdMethodCd] ?? p.prdTrdMethodCd}
                   actionButton={(
                     <>
@@ -313,6 +345,7 @@ export default function MyProductList() {
           <div className="grid gap-4 lg:hidden">
             {visibleList.map((p) => {
               const { badgeLabel, badgeClass, isActive, isDraft, isEnded } = getProductStatusDisplay(p);
+              const priceItems = getSalePriceItems(p);
 
               return (
                 <MyPageMobileCard
@@ -322,7 +355,7 @@ export default function MyProductList() {
                   imageFallbackLabel="상품 이미지"
                   badge={<MyPageStatusBadge className={badgeClass}>{badgeLabel}</MyPageStatusBadge>}
                   title={p.prdNm}
-                  price={formatPoint(p.tradeAmount ?? p.prdStartAmt)}
+                  priceItems={priceItems}
                   infoItems={[
                     { icon: CalendarDays, label: '확정날짜', value: formatDate(p.tradeCreatedAt ?? p.prdRegDt) },
                     { icon: CalendarCheck, label: '완료날짜', value: formatDate(p.tradeCompletedAt) },
