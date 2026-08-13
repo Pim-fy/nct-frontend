@@ -205,6 +205,38 @@ const toPurchaseItems = (tradeItems = [], bidHistory = []) => {
   return [...normalizedTrades, ...normalizedBids];
 };
 
+const getTradeHistoryDetailPath = ({ trade, isBidItem, isPreview, tradeBasePath }) => {
+  if (isPreview) {
+    if (isBidItem) {
+      return trade.tradeId
+        ? `${tradeBasePath}/${trade.tradeId}`
+        : `/auction/${trade.aucSn}`;
+    }
+
+    return trade.type === 'SELLER'
+      ? `${tradeBasePath}/${trade.id}/seller`
+      : `${tradeBasePath}/${trade.id}`;
+  }
+
+  if (isBidItem) {
+    if (trade.aucSn) {
+      return trade.tradeId
+        ? `/auction/${trade.aucSn}/trade`
+        : `/auction/${trade.aucSn}`;
+    }
+
+    return trade.tradeId ? `${tradeBasePath}/${trade.tradeId}` : tradeBasePath;
+  }
+
+  if (trade.auctionId) {
+    return `/auction/${trade.auctionId}/trade`;
+  }
+
+  return trade.type === 'SELLER'
+    ? `${tradeBasePath}/${trade.id}/seller`
+    : `${tradeBasePath}/${trade.id}`;
+};
+
 // 사용자가 입력한 공백 차이로 동일한 상품을 놓치지 않도록 검색용 문자열을 통일한다.
 const normalizeSearchText = (value) => String(value ?? '')
   .toLowerCase()
@@ -690,19 +722,12 @@ const TradeHistory = ({
               onOpenTradeDetail && (!isBidItem || trade.tradeId),
             );
             const auctionId = isBidItem ? trade.aucSn : trade.auctionId;
-            const detailPath = isPreview
-              ? isBidItem
-                ? (trade.tradeId ? `${tradeBasePath}/${trade.tradeId}` : `/auction/${trade.aucSn}`)
-                : trade.type === 'SELLER'
-                  ? `${tradeBasePath}/${trade.id}/seller`
-                  : `${tradeBasePath}/${trade.id}`
-              : auctionId
-                ? `/auction/${auctionId}/trade`
-                : isBidItem
-                  ? (trade.tradeId ? `${tradeBasePath}/${trade.tradeId}` : `/auction/${trade.aucSn}`)
-              : trade.type === 'SELLER'
-                ? `${tradeBasePath}/${trade.id}/seller`
-                : `${tradeBasePath}/${trade.id}`;
+            const detailPath = getTradeHistoryDetailPath({
+              trade,
+              isBidItem,
+              isPreview,
+              tradeBasePath,
+            });
             const detailState = embedded
               ? { from: isPreview ? '/user/mypage/preview/trades' : getMyPagePath(returnSection) }
               : undefined;
@@ -762,19 +787,12 @@ const TradeHistory = ({
                 onOpenTradeDetail && (!isBidItem || trade.tradeId),
               );
               const auctionId = isBidItem ? trade.aucSn : trade.auctionId;
-              const detailPath = isPreview
-                ? isBidItem
-                  ? (trade.tradeId ? `${tradeBasePath}/${trade.tradeId}` : `/auction/${trade.aucSn}`)
-                  : trade.type === 'SELLER'
-                    ? `${tradeBasePath}/${trade.id}/seller`
-                    : `${tradeBasePath}/${trade.id}`
-                : auctionId
-                  ? `/auction/${auctionId}/trade`
-                  : isBidItem
-                    ? (trade.tradeId ? `${tradeBasePath}/${trade.tradeId}` : `/auction/${trade.aucSn}`)
-                : trade.type === 'SELLER'
-                  ? `${tradeBasePath}/${trade.id}/seller`
-                  : `${tradeBasePath}/${trade.id}`;
+              const detailPath = getTradeHistoryDetailPath({
+                trade,
+                isBidItem,
+                isPreview,
+                tradeBasePath,
+              });
               const detailState = embedded
                 ? { from: isPreview ? '/user/mypage/preview/trades' : getMyPagePath(returnSection) }
                 : undefined;
