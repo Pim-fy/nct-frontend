@@ -269,6 +269,13 @@ const PointWalletPage = ({ embedded = false } = {}) => {
               <div className="mt-6">
                 <SettlementSummaryCards rows={settlementRows} />
               </div>
+              {/* 세금 신고 의무 고지 (팀 합의 2026-08-13) — 국세청이 중고·리셀 플랫폼에 자료제출
+                  의무를 부과(2026.7~)하는 흐름에 맞춰, 정산 누적 화면에서 판매자·제공자에게
+                  사업소득 신고 가능성을 미리 알린다. 옥동민 소유 카드 컴포넌트는 수정하지 않고
+                  이 페이지(담당자6 소유)에만 문구를 얹는다 */}
+              <p className="text-xs text-gray-400 mt-2">
+                일정 금액·횟수 이상 누적 시 사업자 등록·종합소득세 신고 의무가 발생할 수 있습니다.
+              </p>
               <section className="mt-6">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-lg font-bold text-gray-900 m-0">판매·서비스 정산 내역</h3>

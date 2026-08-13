@@ -423,6 +423,10 @@ export default function QuoteFormPage() {
                     ? `의뢰 예산(${formatPoint(svcReqInfo.budgetRaw)}) 이상 · 최대 1,000,000,000P`
                     : "최소 10,000P · 최대 1,000,000,000P"}
                 </p>
+                {/* 거래 수수료 사전 고지 — 팀 합의 요율(서비스 10% 단일 고정) (담당자6 BJN, 2026-08-13 추가) */}
+                <p style={{ margin: "2px 0 0", fontSize: 13, color: "#888" }}>
+                  거래 완료 후 정산 시 거래금액의 10%가 수수료로 차감됩니다.
+                </p>
               </div>
 
               <div className="qf-field">
