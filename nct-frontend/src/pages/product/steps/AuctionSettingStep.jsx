@@ -109,7 +109,7 @@ export default function AuctionSettingStep({
               value={form.prdStartAmt ? Number(form.prdStartAmt).toLocaleString('ko-KR') : ''}
               onChange={e => set('prdStartAmt', e.target.value.replace(/[^0-9]/g, ''))}
               onBlur={() => setStartAmtTouched(true)}
-              placeholder={(form.bidUnit * 10).toLocaleString('ko-KR')}
+              placeholder="0"
             />
             {submitted && !form.prdStartAmt && (
               <span style={{ position: 'absolute', top: '100%', left: 0, fontSize: 17, fontWeight: 700, color: '#c0392b', whiteSpace: 'nowrap' }}>시작가 입력은 필수입니다</span>
