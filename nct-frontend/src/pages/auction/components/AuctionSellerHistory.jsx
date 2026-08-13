@@ -41,7 +41,13 @@ const AuctionSellerHistory = ({
     } else {
       nextSearchParams.set('sellerPage', String(nextPage));
     }
-    setSearchParams(nextSearchParams, { replace: true });
+    setSearchParams(nextSearchParams, {
+      replace: true,
+      state: {
+        ...(location.state && typeof location.state === 'object' ? location.state : {}),
+        preserveScrollPosition: true,
+      },
+    });
   };
 
   const firstHistoryQuery = useQuery({
