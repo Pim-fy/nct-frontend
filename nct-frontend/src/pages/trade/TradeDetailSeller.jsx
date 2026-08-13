@@ -751,7 +751,7 @@ const TradeDetailSeller = ({
         <main className={`${contentClassName} trade-detail-page__state`}>
           <section className="trade-detail-card">
             <h1>거래 방식 확인</h1>
-            <p>거래 방식과 상세 API 계약이 확정된 뒤 화면을 연결합니다.</p>
+            <p>현재 이 거래의 상세 정보를 표시할 수 없습니다. 거래 목록에서 다시 확인해 주세요.</p>
             <button
               className="btn btn-ghost"
               type="button"

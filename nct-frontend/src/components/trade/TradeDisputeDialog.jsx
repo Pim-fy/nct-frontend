@@ -11,10 +11,10 @@ import {
   X,
 } from 'lucide-react';
 import { fetchReferenceCodes } from '@api/referenceApi';
-import { deleteImage, uploadTradeDisputeEvidence } from '@api/fileApi';
-import { submitTradeDispute } from '@api/tradeApi';
+import { deleteImage, uploadAbuseReportFile } from '@api/fileApi';
+import { submitTradeReport } from '@api/tradeApi';
 
-const TRADE_DISPUTE_TYPE_GROUP_CODE = 'TRDG04';
+const TRADE_REPORT_TYPE_GROUP_CODE = 'ABRG01';
 const MAX_EVIDENCE_FILES = 5;
 const MAX_EVIDENCE_FILE_SIZE = 10 * 1024 * 1024;
 const EVIDENCE_EXTENSIONS = new Set(['pdf', 'jpg', 'jpeg', 'png', 'webp']);
@@ -23,33 +23,41 @@ const ELIGIBLE_TRADE_STATUSES = new Set([
   'DELIVERING',
   'CONFIRM_PENDING',
   'WAITING_CONFIRMATION',
+  'TRDC0003',
+  'TRDC0004',
+  'TRDC0005',
 ]);
-const MATERIAL_DISPUTE_TYPE_LABELS = {
-  TRDC0011: '직거래 미도착·연락 두절',
-  TRDC0012: '배송 분실·파손·오배송',
-  TRDC0014: '포인트·환불·정산 문제',
-  TRDC0015: '기타 상품 거래 문제',
+const TRADE_REPORT_TYPE_LABELS = {
+  ABRC0008: '거래 미이행·연락두절',
+  ABRC0009: '배송·파손·오배송',
+  ABRC0010: '서비스 품질·일정',
+  ABRC0011: '환불·보관금·정산',
 };
-const MATERIAL_DISPUTE_TYPES_BY_METHOD = {
-  DELIVERY: new Set(['TRDC0012', 'TRDC0014', 'TRDC0015']),
-  OFFLINE: new Set(['TRDC0011', 'TRDC0014', 'TRDC0015']),
+const MATERIAL_REPORT_TYPES_BY_METHOD = {
+  DELIVERY: new Set(['ABRC0009', 'ABRC0011']),
+  OFFLINE: new Set(['ABRC0008', 'ABRC0011']),
+  TRDC0009: new Set(['ABRC0009', 'ABRC0011']),
+  TRDC0010: new Set(['ABRC0008', 'ABRC0011']),
 };
-const ALL_MATERIAL_DISPUTE_TYPES = new Set(Object.keys(MATERIAL_DISPUTE_TYPE_LABELS));
+const SERVICE_REPORT_TYPES = new Set(['ABRC0008', 'ABRC0010', 'ABRC0011']);
+const ALL_MATERIAL_REPORT_TYPES = new Set(['ABRC0008', 'ABRC0009', 'ABRC0011']);
 
-const getAllowedDisputeTypes = (tradeMethod) => (
-  MATERIAL_DISPUTE_TYPES_BY_METHOD[tradeMethod] ?? ALL_MATERIAL_DISPUTE_TYPES
-);
+const getAllowedReportTypes = (tradeKind, tradeMethod) => {
+  if (tradeKind === 'SERVICE') return SERVICE_REPORT_TYPES;
+  return MATERIAL_REPORT_TYPES_BY_METHOD[tradeMethod] ?? ALL_MATERIAL_REPORT_TYPES;
+};
 
 const fileKey = (file) => `${file.name}:${file.size}:${file.lastModified}`;
 
 /**
- * 담당자 7 · REQ-AUC-027/F-SVC-012: 상품 거래 당사자가 서비스 거래와 같은 수준으로
- * 거래 문제 유형·내용·증빙을 접수하고, 성공 시 완료·정산 보류 상태를 안내합니다.
+ * 담당자 7 · REQ-AUC-027/F-SVC-012: 상품·서비스 거래 문제를 신고 단일 사건으로
+ * 접수하고, 성공 시 완료·정산 보류 상태를 안내합니다.
  */
 export default function TradeDisputeDialog({
   disabled = false,
   onSubmitted = null,
   tradeId,
+  tradeKind = 'MATERIAL',
   tradeMethod,
   tradeStatus,
 }) {
@@ -58,34 +66,34 @@ export default function TradeDisputeDialog({
   const closeButtonRef = useRef(null);
   const openerRef = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [disputeTypeCode, setDisputeTypeCode] = useState('');
+  const [reportTypeCode, setReportTypeCode] = useState('');
   const [content, setContent] = useState('');
   const [files, setFiles] = useState([]);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const canSubmitDispute = !disabled && ELIGIBLE_TRADE_STATUSES.has(tradeStatus);
-  const allowedTypeCodes = getAllowedDisputeTypes(tradeMethod);
-  const disputeTypesQuery = useQuery({
-    queryKey: ['reference-codes', TRADE_DISPUTE_TYPE_GROUP_CODE],
-    queryFn: () => fetchReferenceCodes(TRADE_DISPUTE_TYPE_GROUP_CODE),
-    enabled: isOpen && canSubmitDispute,
+  const canSubmitReport = !disabled && ELIGIBLE_TRADE_STATUSES.has(tradeStatus);
+  const allowedTypeCodes = getAllowedReportTypes(tradeKind, tradeMethod);
+  const reportTypesQuery = useQuery({
+    queryKey: ['reference-codes', TRADE_REPORT_TYPE_GROUP_CODE],
+    queryFn: () => fetchReferenceCodes(TRADE_REPORT_TYPE_GROUP_CODE),
+    enabled: isOpen && canSubmitReport,
     select: (codes) => codes
       .filter((code) => code.code && allowedTypeCodes.has(code.code))
       .map((code) => ({
         code: code.code,
-        label: MATERIAL_DISPUTE_TYPE_LABELS[code.code],
+        label: TRADE_REPORT_TYPE_LABELS[code.code],
       })),
     staleTime: 30 * 60 * 1000,
     retry: 1,
   });
-  const disputeTypes = disputeTypesQuery.data ?? [];
-  const hasDisputeTypes = disputeTypes.length > 0;
-  const typePlaceholder = disputeTypesQuery.isLoading
+  const reportTypes = reportTypesQuery.data ?? [];
+  const hasReportTypes = reportTypes.length > 0;
+  const typePlaceholder = reportTypesQuery.isLoading
     ? '거래 문제 유형을 불러오는 중입니다.'
-    : disputeTypesQuery.isError
+    : reportTypesQuery.isError
       ? '거래 문제 유형을 불러오지 못했습니다.'
-      : hasDisputeTypes
+      : hasReportTypes
         ? '유형을 선택해 주세요.'
         : '등록된 거래 문제 유형이 없습니다.';
   const typeInputId = `${fieldId}-type`;
@@ -107,7 +115,7 @@ export default function TradeDisputeDialog({
 
   const openDialog = (event) => {
     openerRef.current = event.currentTarget;
-    setDisputeTypeCode('');
+    setReportTypeCode('');
     setContent('');
     setFiles([]);
     setError('');
@@ -193,15 +201,15 @@ export default function TradeDisputeDialog({
     event.preventDefault();
     const normalizedContent = content.trim();
 
-    if (!canSubmitDispute) {
+    if (!canSubmitReport) {
       setError('현재 거래 상태에서는 거래 문제를 접수할 수 없습니다.');
       return;
     }
-    if (!hasDisputeTypes) {
+    if (!hasReportTypes) {
       setError('거래 문제 유형 목록을 확인한 뒤 접수할 수 있습니다.');
       return;
     }
-    if (!disputeTypeCode) {
+    if (!reportTypeCode) {
       setError('거래 문제 유형을 선택해 주세요.');
       return;
     }
@@ -213,11 +221,11 @@ export default function TradeDisputeDialog({
     setIsSubmitting(true);
     setError('');
     const uploadedFileSns = [];
-    let disputeSubmissionStarted = false;
+    let reportSubmissionStarted = false;
 
     try {
       for (const file of files) {
-        const uploadResponse = await uploadTradeDisputeEvidence(file);
+        const uploadResponse = await uploadAbuseReportFile(file);
         const uploadedFile = uploadResponse.data ?? uploadResponse;
         if (!uploadedFile.flSn) {
           throw new Error('업로드한 증빙 파일 번호를 확인하지 못했습니다.');
@@ -225,9 +233,9 @@ export default function TradeDisputeDialog({
         uploadedFileSns.push(uploadedFile.flSn);
       }
 
-      disputeSubmissionStarted = true;
-      await submitTradeDispute(tradeId, {
-        disputeTypeCode,
+      reportSubmissionStarted = true;
+      await submitTradeReport(tradeId, {
+        reportTypeCode,
         content: normalizedContent,
         fileSns: uploadedFileSns,
       });
@@ -241,7 +249,7 @@ export default function TradeDisputeDialog({
     } catch (submitError) {
       const responseStatus = submitError.response?.status;
       const isConfirmedClientRejection = responseStatus >= 400 && responseStatus < 500;
-      if ((!disputeSubmissionStarted || isConfirmedClientRejection)
+      if ((!reportSubmissionStarted || isConfirmedClientRejection)
         && uploadedFileSns.length > 0) {
         await Promise.allSettled(uploadedFileSns.map((fileSn) => deleteImage(fileSn)));
       }
@@ -256,7 +264,7 @@ export default function TradeDisputeDialog({
 
   return (
     <>
-      {canSubmitDispute && (
+      {canSubmitReport && (
         <div className="trade-dispute-action">
           <button
             className="btn trade-dispute-action__button"
@@ -286,7 +294,7 @@ export default function TradeDisputeDialog({
           >
             <header className="trade-modal__header trade-dispute-dialog__header">
               <div>
-                <p>상품 거래</p>
+                <p>{tradeKind === 'SERVICE' ? '서비스 거래' : '상품 거래'}</p>
                 <h2 id={`${fieldId}-title`}>거래 문제 접수</h2>
               </div>
               <button
@@ -317,29 +325,29 @@ export default function TradeDisputeDialog({
                 <label htmlFor={typeInputId}>거래 문제 유형</label>
                 <select
                   id={typeInputId}
-                  value={disputeTypeCode}
-                  onChange={(event) => setDisputeTypeCode(event.target.value)}
-                  disabled={disputeTypesQuery.isLoading
-                    || disputeTypesQuery.isError
-                    || !hasDisputeTypes
+                  value={reportTypeCode}
+                  onChange={(event) => setReportTypeCode(event.target.value)}
+                  disabled={reportTypesQuery.isLoading
+                    || reportTypesQuery.isError
+                    || !hasReportTypes
                     || isSubmitting}
                 >
                   <option value="">{typePlaceholder}</option>
-                  {disputeTypes.map((type) => (
+                  {reportTypes.map((type) => (
                     <option key={type.code} value={type.code}>{type.label}</option>
                   ))}
                 </select>
-                {disputeTypesQuery.isError && (
+                {reportTypesQuery.isError && (
                   <div className="trade-dispute-form__reference-error">
                     <p>거래 문제 유형을 불러오지 못했습니다.</p>
-                    <button type="button" onClick={() => disputeTypesQuery.refetch()}>
+                    <button type="button" onClick={() => reportTypesQuery.refetch()}>
                       다시 불러오기
                     </button>
                   </div>
                 )}
-                {!disputeTypesQuery.isLoading
-                  && !disputeTypesQuery.isError
-                  && !hasDisputeTypes && (
+                {!reportTypesQuery.isLoading
+                  && !reportTypesQuery.isError
+                  && !hasReportTypes && (
                     <p className="trade-dispute-form__help">
                       현재 선택할 수 있는 거래 문제 유형이 없습니다.
                     </p>
@@ -405,11 +413,11 @@ export default function TradeDisputeDialog({
                   <button
                     className="btn btn-danger"
                     type="submit"
-                    disabled={!canSubmitDispute
+                    disabled={!canSubmitReport
                       || isSubmitting
-                      || disputeTypesQuery.isLoading
-                      || disputeTypesQuery.isError
-                      || !hasDisputeTypes}
+                      || reportTypesQuery.isLoading
+                      || reportTypesQuery.isError
+                      || !hasReportTypes}
                   >
                     {isSubmitting ? '접수 중...' : '거래 문제 접수'}
                   </button>

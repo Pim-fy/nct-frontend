@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { deleteImage, toImageUrl, uploadImage } from '@api/fileApi';
-import { toast } from '@utils/common';
+import { confirm, toast } from '@utils/common';
 import {
   useCreatePortfolio,
   useDeletePortfolio,
@@ -203,7 +203,12 @@ function PortfolioRegistrationSection() {
   };
 
   const removePortfolio = async (portfolio) => {
-    if (!window.confirm(`'${portfolio.title}' 포트폴리오를 삭제할까요?`)) return;
+    const confirmed = await confirm({
+      title: '포트폴리오를 삭제할까요?',
+      text: `'${portfolio.title}' 항목은 삭제 후 복구할 수 없습니다.`,
+      confirmButtonText: '삭제',
+    });
+    if (!confirmed) return;
     try {
       await deleteMutation.mutateAsync(portfolio.portfolioSn);
       await Promise.allSettled((portfolio.files ?? []).map((file) => deleteImage(file.fileSn)));

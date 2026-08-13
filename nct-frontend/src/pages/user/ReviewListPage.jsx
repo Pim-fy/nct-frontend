@@ -5,7 +5,7 @@
 //   - 작성한 리뷰 탭:     node-id 56:138
 // - MyPage 사이드바 레이아웃(flex-1) 안에서 렌더링되므로 ScaledStage 대신 반응형 flex 레이아웃 사용.
 // - GET /api/reviews/writable, /me 연동 완료 (useReview.js). 생성/수정은 거래 상세에서 처리한다.
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import MyPageReviewListItem from "@components/mypage/MyPageReviewListItem";
 import Pagination from "@components/common/Pagination";

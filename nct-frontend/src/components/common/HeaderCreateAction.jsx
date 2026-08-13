@@ -1,5 +1,6 @@
 import { FilePenLine, Gavel } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { SERVICE_REQUEST_CREATE_PATH } from '@/routes/serviceRequestRoutes';
 
 // 담당자 7 · F-AUC-001/F-SVC-001
 // 퀵메뉴 제거 후 목록·상세 화면에서 기존 등록 화면으로 진입할 수 있도록
@@ -12,7 +13,7 @@ const HEADER_CREATE_ACTIONS = {
   },
   service: {
     label: '견적 요청',
-    to: '/service-requests/new',
+    to: SERVICE_REQUEST_CREATE_PATH,
     Icon: FilePenLine,
   },
 };

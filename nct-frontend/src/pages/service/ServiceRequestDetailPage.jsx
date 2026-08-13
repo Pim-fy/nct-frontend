@@ -1,6 +1,6 @@
 // src/pages/service/ServiceRequestDetailPage.jsx
 // 서비스 요청서 상세 — 일반회원 본인 관리 / 제공자 공개 요청 조회·견적 제출
-// 라우트: /service-requests/:svcReqSn
+// 라우트: /services/requests/:svcReqSn
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
@@ -26,7 +26,14 @@ import Pagination from '@components/common/Pagination';
 import HeaderSearchPortal, {
   SimpleHeaderSearch,
 } from '@components/common/HeaderSearchPortal';
-import { getMyPagePath } from '@/routes/myPageRoutes';
+import {
+  getServiceRequestDetailPath,
+  getServiceRequestQuoteCreatePath,
+  getServiceRequestQuoteDetailPath,
+  getServiceRequestQuoteEditPath,
+  SERVICE_REQUEST_CREATE_PATH,
+  SERVICE_REQUESTS_PATH,
+} from '@/routes/serviceRequestRoutes';
 import { CATEGORY_META } from './serviceRequestWizardSteps';
 
 const STATUS_LABEL = {
@@ -51,7 +58,6 @@ const QUOTE_STATUS_LABEL = {
 };
 
 const QUOTES_PAGE_SIZE = 5;
-const SERVICE_REQUEST_LIST_PATH = getMyPagePath('service-requests');
 const MONEY_ANSWER_LABEL = /예산|금액|가격|비용|단가/;
 
 const formatServiceAnswerValue = (title, label, value) => {
@@ -228,10 +234,6 @@ export default function ServiceRequestDetailPage() {
   const { svcReqSn } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const serviceRequestEntryPath = typeof location.state?.from === 'string'
-    ? location.state.from.split(/[?#]/)[0]
-    : null;
-  const hasServiceRequestListBreadcrumb = serviceRequestEntryPath === SERVICE_REQUEST_LIST_PATH;
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, isAuthenticated, isProvider } = useAuth();
   const authenticatedUserId = user?.id ?? user?.userId ?? user?.userSn ?? user?.usrSn;
@@ -264,6 +266,7 @@ export default function ServiceRequestDetailPage() {
   const [cmtTtl, setCmtTtl] = useState('');
   const [cmtCn, setCmtCn] = useState('');
   const [cmtSubmitting, setCmtSubmitting] = useState(false);
+  const [commentConfirmOpen, setCommentConfirmOpen] = useState(false);
   const quoteAccessQuery = useQuery({
     queryKey: ['provider', 'quote-access', request?.catSn],
     queryFn: () => fetchMyProviderQuoteAccess(request.catSn),
@@ -286,7 +289,7 @@ export default function ServiceRequestDetailPage() {
   const headerSearch = isProvider ? (
     <HeaderSearchPortal>
       <SimpleHeaderSearch
-        onSearch={(keyword) => navigate(`/service?keyword=${encodeURIComponent(keyword)}`)}
+        onSearch={(keyword) => navigate(`${SERVICE_REQUESTS_PATH}?keyword=${encodeURIComponent(keyword)}`)}
         placeholder="필요한 서비스 요청을 검색하세요"
       />
     </HeaderSearchPortal>
@@ -354,11 +357,17 @@ export default function ServiceRequestDetailPage() {
     };
   }, [request, svcReqSn]);
 
-  const handleCommentSubmit = async () => {
+  // 상품 변경사항 추가(ProductDetailSellerPage)와 동일하게, 등록 전 "등록 후 수정 불가" 확인을 한 번 거친다
+  const requestCommentSubmit = () => {
     if (!cmtTtl.trim()) {
       setToast('제목을 입력해 주세요.');
       return;
     }
+    setCommentConfirmOpen(true);
+  };
+
+  const handleCommentSubmit = async () => {
+    setCommentConfirmOpen(false);
     setCmtSubmitting(true);
     try {
       await addServiceRequestComment(svcReqSn, { ttl: cmtTtl.trim(), cn: cmtCn.trim() || null });
@@ -392,7 +401,7 @@ export default function ServiceRequestDetailPage() {
     setReregistering(true);
     try {
       const newRequest = await reregisterServiceRequest(svcReqSn);
-      navigate(`/service-requests/${newRequest.svcReqSn}`);
+      navigate(getServiceRequestDetailPath(newRequest.svcReqSn));
     } catch (err) {
       setToast(err.response?.data?.message || '재등록에 실패했습니다.');
       setReregistering(false);
@@ -405,7 +414,7 @@ export default function ServiceRequestDetailPage() {
       return;
     }
     if (quoteAccessQuery.data !== true) return;
-    navigate(`/service-requests/${svcReqSn}/quotes/new`, {
+    navigate(getServiceRequestQuoteCreatePath(svcReqSn), {
       state: {
         svcReqSn,
         svcReqTitle: request.svcReqTtl,
@@ -417,7 +426,7 @@ export default function ServiceRequestDetailPage() {
 
   const handleQuoteEdit = () => {
     if (!myActiveQuote?.qutSn) return;
-    navigate(`/service-requests/${svcReqSn}/quotes/${myActiveQuote.qutSn}/edit`, {
+    navigate(getServiceRequestQuoteEditPath(svcReqSn, myActiveQuote.qutSn), {
       state: {
         quoteId: myActiveQuote.qutSn,
         svcReqSn,
@@ -490,22 +499,8 @@ export default function ServiceRequestDetailPage() {
       <div className="bg-white pb-14 text-sm leading-[1.6] text-[#1d1d1f]">
         <div className="container">
 
-        {/* 담당자 7: 마이페이지 목록이 브레드크럼에 있을 때만 중복 복귀 버튼을 숨깁니다.
-            제공자 공개 목록·직접 URL 진입에서는 유일한 복귀 수단이므로 유지합니다. */}
-        {!hasServiceRequestListBreadcrumb && (
-          <div className="flex justify-end pt-9 pb-4">
-            <button
-              type="button"
-              className="inline-flex items-center gap-1 rounded-lg border border-[#e2e1dc] bg-white px-4 py-2.5 text-lg font-medium text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary"
-              onClick={() => navigate(isProvider ? '/service' : SERVICE_REQUEST_LIST_PATH)}
-            >
-              ← 목록으로
-            </button>
-          </div>
-        )}
-
         {/* 2열 레이아웃 */}
-        <div className={`grid grid-cols-1 items-start gap-6${hasServiceRequestListBreadcrumb ? ' pt-9' : ''} lg:grid-cols-[1fr_minmax(340px,420px)]`}>
+        <div className="grid grid-cols-1 items-start gap-6 pt-9 lg:grid-cols-[1fr_minmax(340px,420px)]">
 
           {/* ── 왼쪽: 요청 정보 카드 ── */}
           <article className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm">
@@ -532,7 +527,7 @@ export default function ServiceRequestDetailPage() {
                   <button
                     type="button"
                     className="shrink-0 rounded-lg border border-[#e2e1dc] bg-white px-4 py-2.5 text-lg font-medium text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary"
-                    onClick={() => navigate('/service-requests/new', { state: { svcReqSn: Number(svcReqSn) } })}
+                    onClick={() => navigate(SERVICE_REQUEST_CREATE_PATH, { state: { svcReqSn: Number(svcReqSn) } })}
                   >
                     작성재개
                   </button>
@@ -688,7 +683,7 @@ export default function ServiceRequestDetailPage() {
                       <button
                         type="button"
                         className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0048bf] disabled:opacity-50"
-                        onClick={handleCommentSubmit}
+                        onClick={requestCommentSubmit}
                         disabled={cmtSubmitting}
                       >
                         {cmtSubmitting ? '등록 중...' : '등록'}
@@ -811,7 +806,7 @@ export default function ServiceRequestDetailPage() {
                       <li
                         key={q.qutSn}
                         className="cursor-pointer px-5 py-4 transition-colors hover:bg-[#f9fafb]"
-                        onClick={() => navigate(`/service-requests/${svcReqSn}/quotes/${q.qutSn}`, {
+                        onClick={() => navigate(getServiceRequestQuoteDetailPath(svcReqSn, q.qutSn), {
                           state: {
                             quote: q,
                             requestSummary: {
@@ -859,6 +854,16 @@ export default function ServiceRequestDetailPage() {
         confirmLabel="마감"
         onConfirm={handleClose}
         onCancel={() => setCloseConfirmOpen(false)}
+      />
+
+      <ConfirmModal
+        open={commentConfirmOpen}
+        message="등록 후에는 수정할 수 없습니다."
+        subMessage="이대로 등록하시겠습니까?"
+        confirmLabel="등록"
+        confirmTone="primary"
+        onConfirm={handleCommentSubmit}
+        onCancel={() => setCommentConfirmOpen(false)}
       />
 
       <ImageLightbox

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import CommonTabs from "@components/common/CommonTabs";
 import AuctionCard from "./AuctionCard";
 
 const CARD_GAP = 20;
@@ -61,26 +62,16 @@ export default function AuctionSection({
       <div className="mx-auto max-w-[1600px] px-8">
 
         {/* 탭 */}
-        <div className="flex justify-center gap-4 mb-8">
-          <button
-            type="button"
-            onClick={() => handleTabChange("new")}
-            className={`h-[60px] w-[242px] rounded-[40px] font-bold text-[25px] tracking-[-2px] transition-colors cursor-pointer border-none ${
-              activeTab === "new" ? "bg-[#0064ff] text-white" : "bg-[#ebebeb] text-[#969696]"
-            }`}
-          >
-            신규 경매
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTabChange("closing")}
-            className={`h-[60px] w-[242px] rounded-[40px] font-bold text-[25px] tracking-[-2px] transition-colors cursor-pointer border-none ${
-              activeTab === "closing" ? "bg-[#0064ff] text-white" : "bg-[#ebebeb] text-[#969696]"
-            }`}
-          >
-            마감 임박 경매
-          </button>
-        </div>
+        <CommonTabs
+          activeValue={activeTab}
+          ariaLabel="메인 경매 목록"
+          className="common-tabs--centered mb-8"
+          items={[
+            { value: "new", label: "신규 경매" },
+            { value: "closing", label: "마감 임박 경매" },
+          ]}
+          onChange={handleTabChange}
+        />
 
         {/* 캐러셀: 화살표는 카드 영역 밖 */}
         <div className="relative">

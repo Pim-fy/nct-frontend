@@ -40,6 +40,7 @@
 .admin-table__ellipsis-content {
   display: block;
   min-width: 0;
+  margin-inline: auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

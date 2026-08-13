@@ -17,6 +17,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
+import AdminHistoryTimeline from '@components/admin/AdminHistoryTimeline';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
 import { useSaveAdminCategory } from '@hooks/useAdminCategories';
@@ -26,7 +27,7 @@ import {
   usePublishAdminServiceRequestForm,
   useSaveAdminServiceRequestFormDraft,
 } from '@hooks/useAdminServiceRequestForm';
-import { formatPointUnitText, toast } from '@utils/common';
+import { confirm, formatPointUnitText, toast } from '@utils/common';
 import {
   changeFieldType,
   changeStepType,
@@ -616,7 +617,14 @@ const AdminServiceRequestFormEditor = ({ categorySn, initialResponse }) => {
       setFeedback('발행할 초안이 없습니다. 내용을 수정하고 초안을 먼저 저장해 주세요.');
       return;
     }
-    if (!window.confirm('이 초안을 사용자 견적 요청서로 발행하시겠습니까?')) return;
+    const confirmed = await confirm({
+      title: '이 초안을 발행할까요?',
+      text: '발행하면 사용자 견적 요청서에 적용됩니다.',
+      icon: 'question',
+      confirmButtonText: '발행',
+      confirmTone: 'primary',
+    });
+    if (!confirmed) return;
     setFeedback('');
     try {
       const published = await publishMutation.mutateAsync({
@@ -640,7 +648,12 @@ const AdminServiceRequestFormEditor = ({ categorySn, initialResponse }) => {
     const message = dirty
       ? '저장하지 않은 변경 내용과 현재 초안을 함께 폐기하시겠습니까?'
       : `초안 v${model.formVersion}을 폐기하시겠습니까? 발행 중인 버전은 유지됩니다.`;
-    if (!window.confirm(message)) return;
+    const confirmed = await confirm({
+      title: '초안을 폐기할까요?',
+      text: message,
+      confirmButtonText: '폐기',
+    });
+    if (!confirmed) return;
     setFeedback('');
     try {
       const discarded = await discardMutation.mutateAsync({
@@ -798,6 +811,7 @@ const AdminServiceRequestFormEditor = ({ categorySn, initialResponse }) => {
         </main>
         <FormPreview model={{ ...model, categoryName: categoryForm.name }} />
       </div>
+      <AdminHistoryTimeline referenceSn={categorySn} referenceType="CATEGORY" />
     </div>
   );
 };

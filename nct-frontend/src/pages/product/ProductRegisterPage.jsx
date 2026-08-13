@@ -13,6 +13,7 @@ import { uploadImage } from '@api/fileApi';
 import { formatPoint } from '@/utils/common';
 import ErrorMessage from '@components/common/ErrorMessage';
 import AlertModal from '@components/common/AlertModal';
+import { isTenMinuteTime } from '@components/common/timeSelectUtils';
 import ProductInfoStep from './steps/ProductInfoStep';
 import AuctionSettingStep from './steps/AuctionSettingStep';
 import RegisterConfirmStep from './steps/RegisterConfirmStep';
@@ -49,6 +50,28 @@ const PRODUCT_DOMAIN_CD = 'CATC0001';
 const STEP_LABELS = ['상품 입력', '등록 확인'];
 const MAX_IMAGES = 5; // F-AUC-002 — 대표이미지 포함 최대 5장
 const MAX_PRICE_AMT = 100000000; // 시작가·즉시구매가 상한 — 100,000,000P (사용자 확정, 260810)
+const MIN_SAME_DAY_AUCTION_DURATION_MS = 60 * 60 * 1000;
+
+const parseSelectedDateTime = (date, time) => {
+  if (!date || !isTenMinuteTime(time)) return null;
+  const parsed = new Date(`${date}T${time}:00`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const hasMinimumSameDayDuration = ({
+  startNow,
+  auctionRange,
+  startDateTime,
+  endDateTime,
+  now = Date.now(),
+}) => {
+  if (auctionRange.start !== auctionRange.end) return true;
+  if (!endDateTime) return false;
+
+  const startTime = startNow ? now : startDateTime?.getTime();
+  return Number.isFinite(startTime)
+    && endDateTime.getTime() - startTime >= MIN_SAME_DAY_AUCTION_DURATION_MS;
+};
 
 export default function ProductRegisterPage() {
   const navigate = useNavigate();
@@ -97,6 +120,7 @@ export default function ProductRegisterPage() {
   const ibyAmtRef = useRef(null);
   const auctionRangeRef = useRef(null);
   const policyRef = useRef(null);
+  const agreedRef = useRef(null);
 
   // ─── 폼 입력값 ───────────────────────────────────────────────────────────
   const [form, setForm] = useState(() => hasCachedDraft ? draftCache.form : {
@@ -285,7 +309,7 @@ export default function ProductRegisterPage() {
     if (form.startNow) {
       if (auctionRange.end === auctionRange.start) {
         // 즉시시작 + 당일 종료: 등록 시각과 같은 시:분으로는 계산할 수 없어(이미 지난 시각) 직접 고른 종료 시간을 사용
-        return new Date(`${auctionRange.end}T${auctionRange.endTime || '09:00'}:00`);
+        return parseSelectedDateTime(auctionRange.end, auctionRange.endTime);
       }
       // 즉시시작 + 이후 날짜 종료: 종료 시각을 등록 시각의 HH:mm으로 고정
       const now = new Date();
@@ -294,10 +318,10 @@ export default function ProductRegisterPage() {
       return new Date(`${auctionRange.end}T${hh}:${mm}:00`);
     }
     // 예약 + 시작일 = 종료일 (당일 종료): 별도 선택한 종료 시간 사용
-    if (auctionRange.start === auctionRange.end && auctionRange.endTime) {
-      return new Date(`${auctionRange.end}T${auctionRange.endTime}:00`);
+    if (auctionRange.start === auctionRange.end) {
+      return parseSelectedDateTime(auctionRange.end, auctionRange.endTime);
     }
-    return new Date(`${auctionRange.end}T${auctionRange.startTime || '09:00'}:00`);
+    return parseSelectedDateTime(auctionRange.end, auctionRange.startTime);
   };
 
   // ─── 등록 / 임시저장 제출 ────────────────────────────────────────────────
@@ -320,15 +344,38 @@ export default function ProductRegisterPage() {
       const endDt = calcEndDt();
       // 업로드에 걸린 시간만큼 시각이 흘렀을 수 있어, 실제 전송 직전(업로드 완료 후)에 다시 한번 검증한다.
       // 클릭 시점에만 검사하면 업로드하는 몇 초 사이에 종료 시각이 지나버려 서버에서 거부될 수 있었다.
+      if (statusCd === 'PRDC0002' && !endDt) {
+        setAlertMsg('경매 종료 시간을 10분 단위로 다시 선택해 주세요.');
+        return;
+      }
       if (statusCd === 'PRDC0002' && endDt && endDt.getTime() <= Date.now()) {
         setAlertMsg('경매 종료 시각이 이미 지났습니다. 이전 단계에서 경매 기간을 다시 확인해 주세요.');
         return;
       }
-      const startDt = form.startNow ? new Date() : (auctionRange.start ? new Date(`${auctionRange.start}T${auctionRange.startTime || '00:00'}:00`) : new Date());
+      const startDt = form.startNow
+        ? new Date()
+        : parseSelectedDateTime(auctionRange.start, auctionRange.startTime);
       // 업로드하는 사이 시간이 흘러 작성 시작 시점엔 유효했던 예약 시작 시각이 이미 지나버렸을 수 있어
       // endDt와 동일하게 실제 전송 직전(업로드 완료 후) 다시 한번 검증한다.
+      if (statusCd === 'PRDC0002' && !form.startNow && !startDt) {
+        setAlertMsg('경매 시작 시간을 10분 단위로 다시 선택해 주세요.');
+        return;
+      }
       if (statusCd === 'PRDC0002' && !form.startNow && startDt.getTime() <= Date.now()) {
         setAlertMsg('경매 시작 시각이 이미 지났습니다. 이전 단계에서 시작 시각을 다시 확인해 주세요.');
+        return;
+      }
+      if (statusCd === 'PRDC0002' && endDt.getTime() <= startDt.getTime()) {
+        setAlertMsg('경매 종료 시각은 시작 시각보다 늦게 선택해 주세요.');
+        return;
+      }
+      if (statusCd === 'PRDC0002' && !hasMinimumSameDayDuration({
+        startNow: form.startNow,
+        auctionRange,
+        startDateTime: startDt,
+        endDateTime: endDt,
+      })) {
+        setAlertMsg('같은 날 종료하는 경매는 시작 시각보다 최소 1시간 뒤에 종료해야 합니다.');
         return;
       }
       // 등록 진행 중 관리자가 입찰 단위 옵션을 바꿨을 수 있어, 실제 전송 직전에 최신 목록으로 다시 확인한다
@@ -358,7 +405,7 @@ export default function ProductRegisterPage() {
         // 수정 모드에서 새 이미지를 업로드하지 않으면 null → 백엔드에서 기존 이미지 유지
         flSnList:       uploadedImages.length > 0 ? uploadedImages.map(img => img.flSn) : null,
         // 임시저장이어도 값은 그대로 보낸다 — 백엔드가 prdStatusCd로 판단해 draft 보존 컬럼/AUCTION 중 알맞은 곳에 저장
-        aucStartDt:     toLocalIsoString(startDt),
+        aucStartDt:     startDt ? toLocalIsoString(startDt) : null,
         startNow:       form.startNow,
         aucEndDt:       endDt ? toLocalIsoString(endDt) : null,
         bidUnit:        form.bidUnit,
@@ -429,16 +476,41 @@ export default function ProductRegisterPage() {
     // 이미 지난 날짜/시각인지 확인한다 — 임시저장은 지난 값이어도 그대로 보존하는 게 기존 정책이라 검사하지 않는다.
     if (requirePolicyAgreed) {
       const currentEndDt = calcEndDt();
+      if (!currentEndDt) {
+        auctionRangeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return fail('경매 종료 시간을 10분 단위로 선택해 주세요.');
+      }
       if (currentEndDt && currentEndDt.getTime() <= Date.now()) {
         auctionRangeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return fail('경매 종료 시각이 이미 지났습니다. 경매 기간을 다시 확인해 주세요.');
       }
+      let currentStartDt = null;
       if (!form.startNow && auctionRange.start) {
-        const currentStartDt = new Date(`${auctionRange.start}T${auctionRange.startTime || '00:00'}:00`);
+        currentStartDt = parseSelectedDateTime(
+          auctionRange.start,
+          auctionRange.startTime,
+        );
+        if (!currentStartDt) {
+          auctionRangeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return fail('경매 시작 시간을 10분 단위로 선택해 주세요.');
+        }
         if (currentStartDt.getTime() <= Date.now()) {
           auctionRangeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
           return fail('경매 시작 시각이 이미 지났습니다. 시작 시각을 다시 확인해 주세요.');
         }
+        if (currentEndDt.getTime() <= currentStartDt.getTime()) {
+          auctionRangeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return fail('경매 종료 시각은 시작 시각보다 늦게 선택해 주세요.');
+        }
+      }
+      if (!hasMinimumSameDayDuration({
+        startNow: form.startNow,
+        auctionRange,
+        startDateTime: currentStartDt,
+        endDateTime: currentEndDt,
+      })) {
+        auctionRangeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return fail('같은 날 종료하는 경매는 시작 시각보다 최소 1시간 뒤에 종료해야 합니다.');
       }
     }
     if (Number(form.prdStartAmt) % form.bidUnit !== 0) {
@@ -517,6 +589,7 @@ export default function ProductRegisterPage() {
                 selectedTrade={selectedTrade}
                 endDt={endDt}
                 auctionRange={auctionRange}
+                agreedRef={agreedRef}
               />
             </div>
           </>
@@ -609,6 +682,7 @@ export default function ProductRegisterPage() {
               onClick={() => {
                 if (!agreed) {
                   setAlertMsg('등록 정보 확인 및 본문수정이 불가능함에 동의가 필요합니다.');
+                  agreedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                   return;
                 }
                 // 종료 시각이 지났는지 검사는 이미지 업로드가 끝난 뒤(handleSubmit 내부)에서 한다 —

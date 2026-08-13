@@ -1,40 +1,6 @@
 /* 담당자 7 · F-OPS-003: 상품명은 긴 경우가 많아 관리자 표에서 별도 폭을 확보합니다. */
 .admin-auction-tabs {
-  display: inline-flex;
-  min-height: 44px;
   margin-bottom: 18px;
-  padding: 4px;
-  border: 1px solid #d9dfeb;
-  border-radius: 8px;
-  background: #f4f6fa;
-}
-
-.admin-auction-tabs button {
-  min-width: 148px;
-  min-height: 36px;
-  padding: 0 16px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: #59647b;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.admin-auction-tabs button:hover {
-  color: #1f4f9c;
-}
-
-.admin-auction-tabs button:focus-visible {
-  outline: 3px solid rgb(0 100 255 / 18%);
-  outline-offset: 1px;
-}
-
-.admin-auction-tabs button.is-active {
-  background: #fff;
-  color: var(--color-primary, #0064ff);
-  box-shadow: 0 1px 3px rgb(31 39 76 / 14%);
 }
 
 .admin-auction-page .admin-table th:nth-child(2),
@@ -56,16 +22,18 @@
 .admin-auction-cancellation__sync-status.is-error { background: #fff1f0; color: #b42318; }
 .admin-auction-cancellation__actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
 .admin-auction-cancellation__result { margin: 20px 0 0; padding: 12px; border-radius: 8px; background: #f3f5fa; color: #3d4665; line-height: 1.6; }
+.admin-auction-force-cancel { margin-top: 22px; padding: 18px; border: 1px solid #fecaca; border-radius: 10px; background: #fff8f7; }
+.admin-auction-force-cancel h4 { margin: 0 0 8px; color: #8f1d18; }
+.admin-auction-force-cancel > p { margin: 0; color: #6b4b49; font-size: 13px; line-height: 1.55; }
+.admin-auction-force-cancel label { display: grid; gap: 8px; margin-top: 16px; color: #522d2a; font-weight: 700; }
+.admin-auction-force-cancel textarea { min-height: 88px; padding: 10px; border: 1px solid #e7bbb7; border-radius: 8px; font: inherit; resize: vertical; }
 
-@media (max-width: 560px) {
-  .admin-auction-tabs {
-    display: grid;
-    width: 100%;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.admin-table td.admin-auction-table__product-name {
+  width: 320px;
+  min-width: 320px;
+  max-width: 320px;
+}
 
-  .admin-auction-tabs button {
-    min-width: 0;
-    padding: 0 10px;
-  }
+.admin-table td.admin-auction-table__product-name > .admin-table__ellipsis-content {
+  max-width: 320px;
 }

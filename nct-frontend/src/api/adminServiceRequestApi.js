@@ -12,3 +12,38 @@ export const fetchAdminServiceRequestDetail = async (serviceRequestId) => {
   });
   return response.data.data;
 };
+
+export const cancelAdminServiceRequest = async ({ serviceRequestId, reason, requestId }) => {
+  const response = await api.post(`/admin/service-requests/${serviceRequestId}/cancel`, {
+    reason,
+    requestId,
+  });
+  return response.data.data;
+};
+
+export const changeAdminServiceRequestVisibility = async ({
+  serviceRequestId,
+  visible,
+  reason,
+  requestId,
+}) => {
+  const response = await api.post(`/admin/service-requests/${serviceRequestId}/visibility`, {
+    visible,
+    reason,
+    requestId,
+  });
+  return response.data.data;
+};
+
+export const invalidateAdminQuote = async ({
+  serviceRequestId,
+  quoteId,
+  reason,
+  requestId,
+}) => {
+  const response = await api.post(
+    `/admin/service-requests/${serviceRequestId}/quotes/${quoteId}/invalidate`,
+    { reason, requestId },
+  );
+  return response.data.data;
+};

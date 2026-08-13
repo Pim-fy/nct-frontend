@@ -28,6 +28,14 @@ export const decideAdminAuctionCancellation = async ({ auctionId, decision, reas
   });
 };
 
+export const forceCancelAdminAuction = async ({ auctionId, reason, requestId }) => {
+  const response = await api.post(`/admin/auctions/${auctionId}/force-cancel`, {
+    reason,
+    requestId,
+  });
+  return response.data.data;
+};
+
 // 담당자 7 · F-AUC-013/F-OPS-003: 경매 관리의 AUCG02 입찰 단위 읽기·쓰기 계약입니다.
 export const fetchAdminBidUnits = async () => {
   const response = await api.get('/admin/auctions/bid-units');

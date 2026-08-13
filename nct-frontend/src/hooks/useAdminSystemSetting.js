@@ -21,7 +21,7 @@ export function useUpdateSystemSetting() {
     mutationFn: updateSystemSetting,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'system-setting'] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'audit', 'logs'] }); // 수정 감사로그가 새로 남는다
+      queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] }); // 목록과 대상별 이력을 함께 갱신한다
     },
   });
 }

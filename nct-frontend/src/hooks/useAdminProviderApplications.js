@@ -3,6 +3,8 @@ import {
   approveProviderApplication,
   fetchAdminProviderApplications,
   rejectProviderApplication,
+  restoreProviderPermission,
+  stopProviderPermission,
 } from '@api/providerApplicationApi';
 
 export const adminProviderApplicationKeys = {
@@ -19,9 +21,16 @@ const useProviderDecision = (mutationFn) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminProviderApplicationKeys.all }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: adminProviderApplicationKeys.all }),
+        queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] }),
+      ]);
+    },
   });
 };
 
 export const useApproveProviderApplication = () => useProviderDecision(approveProviderApplication);
 export const useRejectProviderApplication = () => useProviderDecision(rejectProviderApplication);
+export const useStopProviderPermission = () => useProviderDecision(stopProviderPermission);
+export const useRestoreProviderPermission = () => useProviderDecision(restoreProviderPermission);

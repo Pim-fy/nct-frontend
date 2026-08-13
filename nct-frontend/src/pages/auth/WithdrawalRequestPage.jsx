@@ -8,6 +8,7 @@ import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { requestWithdrawal, confirmWithdrawal } from '@api/memberApi';
 import AuthPageContainer from '@components/auth/AuthPageContainer';
 import AuthCard from '@components/auth/AuthCard';
+import { notify } from '@utils/common';
 
 export default function WithdrawalRequestPage() {
   const [searchParams] = useSearchParams();
@@ -29,7 +30,7 @@ function RequestForm() {
 
   const handleSubmit = async () => {
     if (!loginId.trim() || !email.trim()) {
-      alert('아이디와 이메일을 입력해주세요.');
+      await notify({ icon: 'warning', title: '아이디와 이메일을 입력해주세요.', size: 'sm' });
       return;
     }
 
@@ -40,9 +41,12 @@ function RequestForm() {
       setSent(true);
     } catch (error) {
       if (error.response?.status === 429) {
-        alert(error.response.data?.message ?? '잠시 후 다시 시도해주세요.');
+        await notify({
+          icon: 'warning',
+          title: error.response.data?.message ?? '잠시 후 다시 시도해주세요.',
+        });
       } else {
-        alert('요청 처리 중 오류가 발생했습니다.');
+        await notify({ icon: 'error', title: '요청 처리 중 오류가 발생했습니다.' });
       }
     } finally {
       setLoading(false);
@@ -162,9 +166,9 @@ function ConfirmStep({ token }) {
       if (status === 404 || status === 409) {
         setInvalid(true);
       } else if (error.response?.data?.message) {
-        alert(error.response.data.message);
+        await notify({ icon: 'error', title: error.response.data.message });
       } else {
-        alert('탈퇴 확정 중 오류가 발생했습니다.');
+        await notify({ icon: 'error', title: '탈퇴 확정 중 오류가 발생했습니다.' });
       }
     } finally {
       setLoading(false);

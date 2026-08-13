@@ -48,7 +48,7 @@ export default function MyPageReviewListItem({
     <>
       <MyPageStatusBadge className={typeMeta.badgeClass}>{typeMeta.label}</MyPageStatusBadge>
       {dday && (
-        <span className={`badge ${dday === 'D-Day' ? 'badge-danger' : 'badge-warning'}`} style={{ fontSize: 12 }}>
+        <span className={`badge ${dday === 'D-Day' ? 'badge-danger' : 'badge-warning'}`}>
           리뷰작성기간 {dday}
         </span>
       )}
@@ -56,7 +56,7 @@ export default function MyPageReviewListItem({
   );
 
   const actionButtonEl = expired ? (
-    <span className="badge badge-danger" style={{ height: 38, fontSize: 14, display: 'inline-flex', alignItems: 'center', padding: '0 16px', borderRadius: 8 }}>
+    <span className="badge badge-danger">
       기간 만료
     </span>
   ) : (

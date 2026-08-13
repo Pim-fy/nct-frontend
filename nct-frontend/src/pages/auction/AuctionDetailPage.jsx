@@ -51,7 +51,7 @@ import AuctionInquirySection from './components/AuctionInquirySection';
 import AuctionProductUpdateSection from './components/AuctionProductUpdateSection';
 import AuctionSellerHistory from './components/AuctionSellerHistory';
 import AuctionSellerReviewDialog from './components/AuctionSellerReviewDialog';
-import AuctionToast from './components/AuctionToast';
+import Toast from '@components/common/Toast';
 import {
   createImageItems,
   formatRemainingTime,
@@ -66,7 +66,7 @@ const DETAIL_CONTAINER_CLASS = 'mx-auto w-[calc(100%_-_52px)] max-w-[1600px] max
 const DETAIL_EMPTY_CLASS = 'grid min-h-[340px] place-content-center justify-items-center gap-2.5 rounded-lg border border-[#e8e8e8] bg-[#f8f8f6] p-7 text-center';
 const DELIVERY_TRADE_METHOD_CODE = 'TRDC0009';
 const OFFLINE_TRADE_METHOD_CODE = 'TRDC0010';
-const BOTH_TRADE_METHOD_CODE = 'TRDC0020';
+const BOTH_TRADE_METHOD_CODE = 'TRDC0015';
 const FAVORITE_SYNC_DELAY_MS = 300;
 const DETAIL_SECTION_ITEMS = [
   { id: 'auction-product-description', label: '상품설명' },
@@ -386,9 +386,6 @@ export const AuctionDetailPageContent = ({ auctionId, embedded = false }) => {
 
       if (desiredFavoriteRef.current === confirmedFavorite) {
         applyFavoriteStatus(status);
-        showToast(confirmedFavorite
-          ? '관심 상품에 추가되었습니다'
-          : '관심 상품에서 해제되었습니다');
         return;
       }
 
@@ -1254,7 +1251,7 @@ export const AuctionDetailPageContent = ({ auctionId, embedded = false }) => {
         open={lightboxImageIndex !== null}
         onClose={() => setLightboxImageIndex(null)}
       />
-      <AuctionToast message={toastMessage} />
+      <Toast message={toastMessage} variant="info" />
       {isChargeModalOpen && (
         <PointChargeWidgetModal
           infoRow={{ label: '사용 가능 포인트', value: `${(hasAvailablePoint ? availablePoint : 0).toLocaleString()} P` }}

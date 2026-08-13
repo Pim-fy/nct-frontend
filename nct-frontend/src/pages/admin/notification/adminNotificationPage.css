@@ -1,17 +1,11 @@
 /* Claude Code 작성 (BJN, 2026-07-19)
    관리자 알림 화면 전용 스타일 (담당자6 BJN) — adminAuditPage.css와 같은 톤(색상·radius) */
 
-.admin-noti-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.admin-noti-tabs { margin-bottom: 16px; }
 .admin-noti-tabs,
 .admin-noti-grid {
   font-family: var(--font-sans, 'Pretendard', 'Noto Sans KR', 'Malgun Gothic', sans-serif);
 }
-.admin-noti-tab {
-  height: 34px; padding: 0 16px; border: 1px solid #d4d9e8; border-radius: 999px;
-  background: #fff; color: #5b6486; font: inherit; font-size: 14px; cursor: pointer;
-}
-.admin-noti-tab.is-active { background: #2f5bff; border-color: #2f5bff; color: #fff; font-weight: 700; }
-
 .admin-noti-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .admin-noti-grid > :only-child { grid-column: 1 / -1; }
 .admin-noti-group { padding: 16px; background: #fff; border: 1px solid #e4e7f2; border-radius: 12px; }

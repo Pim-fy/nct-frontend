@@ -59,6 +59,7 @@ const useNoticeMutation = (mutationFn) => {
     onSuccess: (notice) => {
       queryClient.invalidateQueries({ queryKey: adminNoticeQueryKeys.all });
       queryClient.invalidateQueries({ queryKey: noticeQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] });
       if (notice?.noticeId) {
         queryClient.setQueryData(adminNoticeQueryKeys.detail(notice.noticeId), notice);
       }

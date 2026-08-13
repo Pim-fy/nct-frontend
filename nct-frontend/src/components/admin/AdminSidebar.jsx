@@ -4,6 +4,7 @@ import { useAuth } from '@hooks/useAuth';
 import {
   ADMIN_OPERATIONS_RECORDS_PATH,
   ADMIN_PROVIDER_APPLICATIONS_PATH,
+  ADMIN_SERVICE_REQUESTS_PATH,
   ADMIN_SETTINGS_PATH,
 } from '@/routes/adminRoutes';
 import {
@@ -18,7 +19,6 @@ import {
   Megaphone,
   ScrollText,
   Settings,
-  ShieldAlert,
   Siren,
   Users,
   WalletCards,
@@ -38,7 +38,7 @@ const MENU_SECTIONS = [
   ],
   [{ label: '경매 관리', icon: Gavel, to: '/admin/auctions' }],
   [
-    { label: '견적 요청 관리', icon: BriefcaseBusiness, to: '/admin/services' },
+    { label: '견적 요청 관리', icon: BriefcaseBusiness, to: ADMIN_SERVICE_REQUESTS_PATH },
     { label: '카테고리 관리', icon: Grid2X2, to: '/admin/categories' },
   ],
   [
@@ -51,7 +51,6 @@ const MENU_SECTIONS = [
   [
     { label: '신고 관리', icon: Siren, to: '/admin/reports' },
     { label: '문의 관리', icon: MessageSquareText, to: '/admin/inquiries' },
-    { label: '거래 분쟁', icon: ShieldAlert, to: '/admin/disputes' },
   ],
   [
     { label: '운영 기록', icon: ScrollText, to: ADMIN_OPERATIONS_RECORDS_PATH },

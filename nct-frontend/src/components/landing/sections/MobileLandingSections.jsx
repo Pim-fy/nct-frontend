@@ -9,6 +9,7 @@
 import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import arrowDark from "@assets/img/arrowDark.png";
+import CommonTabs from "@components/common/CommonTabs";
 import { assets } from "./assets";
 import AuctionCard from "./AuctionCard";
 
@@ -38,7 +39,7 @@ export default function MobileLandingSections({
   const isAuctionLoading = activeTab === "new" ? newAuctionLoading : closingAuctionLoading;
 
   return (
-    <div className="flex flex-col gap-8 lg:hidden">
+    <div className="flex flex-col gap-8 pb-10 lg:hidden">
       {/* ── 히어로: 배경 이미지 + 타이틀 + 태그 + 검색 + 슬라이드 배너 ── */}
       <section className="relative overflow-hidden">
         {/* 배경 이미지 + 오버레이 */}
@@ -126,23 +127,17 @@ export default function MobileLandingSections({
 
       {/* 경매 (탭 + 가로 스와이프 카드) */}
       <section>
-        <div className="mb-3 flex items-center justify-between px-4">
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setActiveTab("new")}
-              className={`rounded-full px-4 py-2 text-[15px] font-bold transition-colors ${activeTab === "new" ? "bg-[#0064ff] text-white" : "bg-[#ebebeb] text-[#969696]"}`}
-            >
-              신규 경매
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("closing")}
-              className={`rounded-full px-4 py-2 text-[15px] font-bold transition-colors ${activeTab === "closing" ? "bg-[#0064ff] text-white" : "bg-[#ebebeb] text-[#969696]"}`}
-            >
-              마감 임박 경매
-            </button>
-          </div>
+        <div className="mb-3 flex items-end justify-between gap-2 px-4">
+          <CommonTabs
+            activeValue={activeTab}
+            ariaLabel="메인 경매 목록"
+            className="min-w-0 flex-1"
+            items={[
+              { value: "new", label: "신규 경매" },
+              { value: "closing", label: "마감 임박 경매" },
+            ]}
+            onChange={setActiveTab}
+          />
           <div className="flex items-center gap-1">
             <button
               type="button"

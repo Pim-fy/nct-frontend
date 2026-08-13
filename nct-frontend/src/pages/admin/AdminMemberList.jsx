@@ -7,6 +7,7 @@ import {
 } from '@api/adminMemberApi';
 import AdminDetailDrawer from '@components/admin/AdminDetailDrawer';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
+import AdminHistoryTimeline from '@components/admin/AdminHistoryTimeline';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
@@ -28,10 +29,10 @@ const STATUS = {
   USRC0003: { label: '탈퇴', tone: 'neutral' },
 };
 const REPORT_STATUS = {
-  ABRC0005: '접수',
-  ABRC0006: '처리 중',
-  ABRC0007: '완료',
-  ABRC0008: '반려',
+  ABSC0001: '접수',
+  ABSC0002: '처리 중',
+  ABSC0003: '완료',
+  ABSC0004: '반려',
 };
 
 const formatDate = (value) => (value ? String(value).replace('T', ' ').slice(0, 16) : '-');
@@ -69,6 +70,7 @@ const AdminMemberList = () => {
       });
       setReason('');
       queryClient.invalidateQueries({ queryKey: ['admin', 'members'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] });
     },
   });
 
@@ -347,6 +349,11 @@ const AdminMemberList = () => {
                     </div>
                   </section>
                 )}
+                <AdminHistoryTimeline
+                  referenceSn={selectedMember.userSn}
+                  referenceType="MEMBER"
+                  title="회원 운영 이력"
+                />
               </>
             )}
           </section>
