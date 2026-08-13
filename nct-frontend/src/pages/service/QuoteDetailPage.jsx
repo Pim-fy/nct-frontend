@@ -391,18 +391,10 @@ export default function QuoteDetailPage() {
             )}
           </div>
           <div className="mt-2">
-            <Link
-              to={getServiceRequestDetailPath(svcReqSn)}
-              className="line-clamp-2 text-lg font-bold leading-7 text-[#1d1d1f] hover:text-primary hover:underline"
-            >
+            <h2 className="line-clamp-2 text-lg font-bold leading-7 text-[#1d1d1f]">
               {request?.svcReqTtl ?? '요청서 상세로'}
-            </Link>
+            </h2>
           </div>
-          {request && request.svcReqStatusCd !== 'SVCC0002' && (
-            <p className="mt-3 rounded-xl bg-[#fff7e6] px-3 py-2 text-xs leading-5 text-[#8a5a00]">
-              마감·취소·보류된 요청의 기존 견적 이력입니다. 재등록된 새 요청에는 이 견적이 자동으로 이어지지 않습니다.
-            </p>
-          )}
           {request && (
             <>
               <dl className="mt-2 space-y-1.5 border-t border-[#e2e1dc] pt-2 text-sm">

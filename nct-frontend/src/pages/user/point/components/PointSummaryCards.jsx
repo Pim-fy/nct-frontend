@@ -1,6 +1,24 @@
 // src/pages/user/point/components/PointSummaryCards.jsx
 import iconPoint from '@assets/img/icon_point.png';
 
+// 담당자 7: 렌더링마다 컴포넌트가 다시 생성되지 않도록 파일 수준에 둔다.
+const InfoTooltip = ({ text, compact = false }) => (
+  <span className="group/tip relative inline-flex shrink-0 cursor-default">
+    <span
+      className={
+        compact
+          ? 'flex h-3 w-3 items-center justify-center rounded-full border border-white/70 text-[8px] font-bold leading-none text-white/90'
+          : 'flex h-4 w-4 items-center justify-center rounded-full border border-white/70 text-[10px] font-bold leading-none text-white/90'
+      }
+    >
+      ?
+    </span>
+    <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 w-max max-w-[220px] -translate-x-1/2 whitespace-normal rounded-lg border border-[#e2e1dc] bg-white px-3 py-1.5 text-xs font-normal text-[#3b3a36] shadow-md opacity-0 transition-opacity group-hover/tip:opacity-100">
+      {text}
+    </span>
+  </span>
+);
+
 /**
  * 포인트 잔액 요약 카드 4종 — 총 보유 + 실제 버킷 3개(사용가능/홀딩/정산가능) (2026-08-04 재정리)
  * 예전엔 총보유/사용가능/전환가능(정산가능)/환전가능(사용가능+정산가능 합) 조합이었는데,
@@ -48,26 +66,6 @@ const PointSummaryCards = ({ balance }) => {
   ];
 
   const [hero, ...rest] = cards;
-
-  // 라벨 옆 "?" 아이콘 + 호버 툴팁 — ServiceRequestFormPage.jsx 필드 툴팁과 같은 구조,
-  // 카드 배경이 항상 진한 색이라 배지 테두리/글자만 흰색 계열로 바꿨다. compact는 모바일
-  // 히어로·타일처럼 라벨 글자가 작은 자리에서 아이콘도 같이 줄이기 위한 옵션.
-  const InfoTooltip = ({ text, compact = false }) => (
-    <span className="group/tip relative inline-flex shrink-0 cursor-default">
-      <span
-        className={
-          compact
-            ? 'flex h-3 w-3 items-center justify-center rounded-full border border-white/70 text-[8px] font-bold leading-none text-white/90'
-            : 'flex h-4 w-4 items-center justify-center rounded-full border border-white/70 text-[10px] font-bold leading-none text-white/90'
-        }
-      >
-        ?
-      </span>
-      <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 w-max max-w-[220px] -translate-x-1/2 whitespace-normal rounded-lg border border-[#e2e1dc] bg-white px-3 py-1.5 text-xs font-normal text-[#3b3a36] shadow-md opacity-0 transition-opacity group-hover/tip:opacity-100">
-        {text}
-      </span>
-    </span>
-  );
 
   return (
     <section>

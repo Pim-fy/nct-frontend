@@ -15,7 +15,7 @@ import MyPageDashboard from "@components/mypage/MyPageDashboard";
 import MyPageProfileEdit from "@components/mypage/MyPageProfileEdit";
 import MyPageProviderDashboard from "@components/mypage/MyPageProviderDashboard";
 import ProviderReceivedReviewSection from "@components/mypage/ProviderReceivedReviewSection";
-import ProviderProfilePage from "@pages/provider/ProviderProfilePage";
+import MyPageProfileManagement from "@components/mypage/MyPageProfileManagement";
 import TradeChat from "@pages/trade/TradeChat";
 import AuctionFavoritesPage from "@pages/auction/AuctionFavoritesPage";
 import TradeHistory from "@pages/trade/TradeHistory";
@@ -39,7 +39,6 @@ const MYPAGE_SECTIONS = new Set([
   "chat",
   "wallet",
   "profile",
-  "provider-profile",
   "quote",
   "review",
   "service-trade",
@@ -49,7 +48,6 @@ const MYPAGE_SECTIONS = new Set([
 ]);
 
 const PROVIDER_ONLY_SECTIONS = new Set([
-  "provider-profile",
   "quote",
   "received-review",
 ]);
@@ -61,6 +59,7 @@ const isAllowedSection = (section, isProvider) => (
 
 export default function MyPage({
   initialSection = "home",
+  initialProfileTab = "account",
   previewTrades = false,
 }) {
   // isProvider: 현재 로그인 역할이 제공자(ROLE_SERVICE)인지 — 서버가 내려준 실제 역할 기준.
@@ -175,8 +174,11 @@ export default function MyPage({
               onOpenSection={handleSelectSection}
             />
           )}
-          {activeSection === "profile" && <MyPageProfileEdit user={user} />}
-          {isProvider && activeSection === "provider-profile" && <ProviderProfilePage embedded />}
+          {activeSection === "profile" && (
+            isProvider
+              ? <MyPageProfileManagement user={user} initialTab={initialProfileTab} />
+              : <MyPageProfileEdit user={user} />
+          )}
           {activeSection === "auction-bids" && (
             <TradeHistory
               embedded

@@ -523,11 +523,19 @@ export default function ServiceRequestDetailPage() {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex flex-wrap items-center gap-3">
                   {request.catNm && (
-                    <CategoryTag tone="info" variant="soft">
+                    <CategoryTag
+                      className="!h-7 !gap-1.5 !px-3 !text-[14px]"
+                      tone="info"
+                      variant="soft"
+                    >
                       {request.catNm}
                     </CategoryTag>
                   )}
-                  <DomainStatus tone={STATUS_TONE[request.svcReqStatusCd] ?? 'neutral'} variant="soft">
+                  <DomainStatus
+                    className="!h-7 !gap-1.5 !px-3 !text-[14px]"
+                    tone={STATUS_TONE[request.svcReqStatusCd] ?? 'neutral'}
+                    variant="soft"
+                  >
                     {statusLabel}
                   </DomainStatus>
                 </div>

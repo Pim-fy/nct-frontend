@@ -3,8 +3,8 @@
   margin-bottom: 18px;
 }
 
-.admin-auction-page .admin-table th:nth-child(2),
-.admin-auction-page .admin-table td:nth-child(2) { min-width: 280px; }
+.admin-auction-page .admin-table th:first-child,
+.admin-auction-page .admin-table td:first-child { min-width: 280px; }
 .admin-auction-page__filter-error { margin: -8px 0 12px; color: #d92d20; font-size: 13px; font-weight: 600; }
 .admin-auction-filters__search input { min-width: 220px; }
 .admin-bjn-filters .admin-auction-filters__reset { background: #f1f3f8; color: #3d4665; }

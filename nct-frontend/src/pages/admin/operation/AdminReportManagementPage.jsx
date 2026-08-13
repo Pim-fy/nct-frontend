@@ -2,13 +2,11 @@ import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Paperclip, ShieldAlert, UnlockKeyhole } from 'lucide-react';
 import {
-  Link,
   useLocation,
   useNavigate,
   useParams,
   useSearchParams,
 } from 'react-router-dom';
-import { fetchAdminAuctionOverview } from '@api/adminAuctionApi';
 import { requestReportChatView } from '@api/adminAuditApi';
 import {
   decideAdminReport,
@@ -21,6 +19,7 @@ import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminHistoryTimeline from '@components/admin/AdminHistoryTimeline';
 import AdminModal from '@components/admin/AdminModal';
 import AdminPagination from '@components/admin/AdminPagination';
+import AdminReferenceLink from '@components/admin/AdminReferenceLink';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
@@ -30,11 +29,14 @@ import CommonTabs from '@components/common/CommonTabs';
 import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
 import {
   ADMIN_REPORTS_PATH,
+  ADMIN_SETTINGS_PATH,
+  getAdminAuctionDetailPath,
   getAdminReportDetailPath,
+  getAdminServiceRequestDetailPath,
   getAdminServiceTradeDetailPath,
 } from '@/routes/adminRoutes';
 import { formatAdminMemberIdentity } from '@utils/adminMemberIdentity';
-import { formatDateTime, toast } from '@utils/common';
+import { toast } from '@utils/common';
 import { REPORT_TYPE_FALLBACK_NAMES } from '@/constants/abuseReportTypes';
 import '../audit/adminAuditPage.css';
 import './adminOperationPages.css';
@@ -60,15 +62,6 @@ const REPORT_REFERENCE_NAMES = {
   REFC0011: '공지',
   REFC0012: '상품 댓글·문의',
   REFC0013: '1:1 문의',
-};
-
-const TRADE_STATUS_NAMES = {
-  TRDC0003: '진행 중',
-  TRDC0004: '배송·직거래 중',
-  TRDC0005: '상대 확인 대기',
-  TRDC0006: '완료',
-  TRDC0007: '보류',
-  TRDC0008: '취소',
 };
 
 const formatDate = (value) => (value ? String(value).replace('T', ' ').slice(0, 16) : '-');
@@ -102,11 +95,6 @@ const IMPACT_ACTION_NAMES = {
   BID_CANCELED: '최고입찰 취소',
   HELD_FOR_REVIEW: '관리자 검토 보류',
 };
-const TRADE_RESULT_NAMES = {
-  TRDC0011: '처리 완료',
-  TRDC0012: '전액 환불',
-  TRDC0013: '정산 보류',
-};
 const TRADE_DECISION_OPTIONS = [
   {
     value: 'COMPLETE',
@@ -131,46 +119,90 @@ const reportTypeName = (code, serverName) => (
 );
 const reportStatus = (code) => REPORT_STATUS[code] ?? { label: code ?? '-', tone: 'neutral' };
 const isActionableStatus = (code) => code === 'ABSC0001' || code === 'ABSC0002';
-const formatAmount = (value) => (
-  value == null ? '-' : `${Number(value).toLocaleString('ko-KR')}P`
-);
-const auctionStatusTone = (statusCode) => {
-  if (statusCode === 'AUCC0005' || statusCode === 'AUCC0006') return 'danger';
-  if (statusCode === 'AUCC0002') return 'info';
-  return 'neutral';
+const getReferenceDetailPath = (detailType, detailSn) => {
+  if (detailType === 'AUCTION' && detailSn != null) {
+    return getAdminAuctionDetailPath(detailSn);
+  }
+  if (detailType === 'SERVICE_REQUEST' && detailSn != null) {
+    return getAdminServiceRequestDetailPath(detailSn);
+  }
+  if (detailType === 'SERVICE_TRADE' && detailSn != null) {
+    return getAdminServiceTradeDetailPath(detailSn);
+  }
+  if (detailType === 'SYSTEM_SETTING') return ADMIN_SETTINGS_PATH;
+  if (detailType === 'NOTICE' && detailSn != null) return `/admin/notices/${detailSn}`;
+  if (detailType === 'CUSTOMER_INQUIRY' && detailSn != null) {
+    return `/admin/inquiries?inquirySn=${detailSn}`;
+  }
+  return null;
 };
-const isAuctionReference = (referenceTypeCode) => (
-  String(referenceTypeCode ?? '').trim().toUpperCase() === 'REFC0003'
-);
-const renderReportReference = ({
-  isList = false,
-  referenceTypeCode,
+
+const getReportReferencePresentation = ({
+  fallbackTitle,
+  referenceDetailSn,
+  referenceDetailType,
   referenceSn,
+  referenceTitle,
+  referenceTypeCode,
   targetName,
 }) => {
-  const normalizedTargetName = targetName?.trim();
-  if (!referenceTypeCode && referenceSn == null && !normalizedTargetName) {
-    return <span className="admin-operation-reference__empty">관련 항목 없음</span>;
-  }
-
   const referenceName = REPORT_REFERENCE_NAMES[referenceTypeCode]
     ?? referenceTypeCode
     ?? '직접 입력';
-  const displayName = normalizedTargetName || referenceName;
-  const hasDistinctTitle = Boolean(normalizedTargetName && normalizedTargetName !== referenceName);
-  const metaText = referenceSn == null
-    ? referenceName
-    : hasDistinctTitle
-      ? `${referenceName} · #${referenceSn}`
-      : `#${referenceSn}`;
+  const genericNames = new Set([
+    referenceName,
+    referenceSn == null ? null : `${referenceName} #${referenceSn}`,
+    referenceSn == null ? null : `#${referenceSn}`,
+  ]);
+  const descriptiveTitle = [referenceTitle, targetName, fallbackTitle]
+    .map((value) => value?.trim())
+    .find((value) => value && !genericNames.has(value));
+  const displayName = descriptiveTitle
+    || referenceTitle?.trim()
+    || targetName?.trim()
+    || fallbackTitle?.trim()
+    || (referenceSn == null ? referenceName : `${referenceName} #${referenceSn}`);
 
+  return {
+    detailPath: getReferenceDetailPath(referenceDetailType, referenceDetailSn),
+    displayName,
+    metaText: referenceSn == null ? referenceName : `${referenceName} · #${referenceSn}`,
+  };
+};
+
+/** 담당자 7 · F-OPS-007: 모든 신고 참조를 같은 제목·번호·상세 이동 형식으로 표시합니다. */
+const renderReportReference = ({
+  detailState,
+  fallbackTitle,
+  isList = false,
+  referenceDetailSn,
+  referenceDetailType,
+  referenceTypeCode,
+  referenceSn,
+  referenceTitle,
+  targetName,
+}) => {
+  if (!referenceTypeCode && referenceSn == null && !referenceTitle?.trim() && !targetName?.trim()) {
+    return <span className="admin-operation-reference__empty">관련 항목 없음</span>;
+  }
+
+  const { detailPath, displayName, metaText } = getReportReferencePresentation({
+    fallbackTitle,
+    referenceDetailSn,
+    referenceDetailType,
+    referenceSn,
+    referenceTitle,
+    referenceTypeCode,
+    targetName,
+  });
   return (
-    <div className={`admin-operation-reference${isList ? ' admin-operation-reference--list' : ''}`}>
-      <div className="admin-operation-reference__summary">
-        <strong title={displayName}>{displayName}</strong>
-        <span>{metaText}</span>
-      </div>
-    </div>
+    <AdminReferenceLink
+      centered={isList}
+      meta={metaText}
+      state={detailState}
+      title={displayName}
+      to={detailPath}
+    />
   );
 };
 const formatProcessor = (value, member) => {
@@ -185,15 +217,6 @@ const formatChatSender = (message) => {
   if (loginId && nickname && loginId !== nickname) return `${loginId} (${nickname})`;
   return loginId || nickname || '회원 정보 없음';
 };
-const formatRemainingTime = (seconds) => {
-  const value = Number(seconds);
-  if (!Number.isFinite(value) || value < 0) return '-';
-  const hours = Math.floor(value / 3600);
-  const minutes = Math.ceil((value % 3600) / 60);
-  if (hours === 0) return `${minutes}분`;
-  return minutes === 0 ? `${hours}시간` : `${hours}시간 ${minutes}분`;
-};
-
 const filtersFromSearch = (searchParams) => ({
   statusCode: searchParams.get('statusCode') ?? '',
   keyword: searchParams.get('keyword') ?? '',
@@ -233,7 +256,6 @@ const AdminReportManagementPage = () => {
   const [fileViewReason, setFileViewReason] = useState('');
   const [fileError, setFileError] = useState('');
   const [openingFileSn, setOpeningFileSn] = useState(null);
-  const [referenceAuctionSn, setReferenceAuctionSn] = useState(null);
   const [chatReason, setChatReason] = useState('');
   const [chatResult, setChatResult] = useState(null);
   const [chatModalOpen, setChatModalOpen] = useState(false);
@@ -253,11 +275,6 @@ const AdminReportManagementPage = () => {
     queryKey: ['admin', 'reports', selectedReportSn],
     queryFn: () => getAdminReport(selectedReportSn),
     enabled: selectedReportSn != null,
-  });
-  const referenceAuctionQuery = useQuery({
-    queryKey: ['admin-auction-overview', referenceAuctionSn],
-    queryFn: () => fetchAdminAuctionOverview(referenceAuctionSn),
-    enabled: referenceAuctionSn != null,
   });
   const decisionMutation = useMutation({
     mutationFn: decideAdminReport,
@@ -362,7 +379,6 @@ const AdminReportManagementPage = () => {
 
   const openReport = (reportSn) => {
     chatRequestVersionRef.current += 1;
-    setReferenceAuctionSn(null);
     setReason('');
     setTradeDecision('COMPLETE');
     setRefundConfirmed(false);
@@ -385,7 +401,6 @@ const AdminReportManagementPage = () => {
   const closeReport = () => {
     if (chatModalOpen || decisionMutation.isPending || releaseMutation.isPending) return;
     chatRequestVersionRef.current += 1;
-    setReferenceAuctionSn(null);
     setReason('');
     setTradeDecision('COMPLETE');
     setRefundConfirmed(false);
@@ -427,12 +442,19 @@ const AdminReportManagementPage = () => {
     {
       key: 'referenceTypeCode',
       label: '관련 항목',
-      className: 'admin-table__compact-text admin-operation-reference-cell',
+      className: 'admin-table__compact-text admin-reference-cell',
       render: (value, row) => renderReportReference({
         isList: true,
         referenceTypeCode: value,
         referenceSn: row.referenceSn,
+        referenceTitle: row.referenceTitle,
+        referenceDetailType: row.referenceDetailType,
+        referenceDetailSn: row.referenceDetailSn,
+        detailState: { from: `${location.pathname}${location.search}` },
         targetName: row.targetName,
+        fallbackTitle: value === 'REFC0001'
+          ? formatAdminMemberIdentity(row.reportedMember, row.reportedUserSn)
+          : null,
       }),
     },
     { key: 'registeredAt', label: '접수일', render: formatDate },
@@ -574,24 +596,35 @@ const AdminReportManagementPage = () => {
   );
   const hasTemporarySanction = detail?.enforcementAction === 'TEMPORARY_SUSPENSION_7_DAYS';
   const canReleaseSanction = hasTemporarySanction && !detail?.sanctionReleased;
-  const referenceOverview = referenceAuctionQuery.data;
-  const referenceAuction = referenceOverview?.auction;
-  const referenceProduct = referenceOverview?.product;
-  const referenceAuctionStatusCode = referenceAuction?.auctionStatusCode;
-  const referenceAuctionStatusName = referenceAuction?.auctionStatusName
-    ?? referenceAuctionStatusCode
-    ?? '-';
-  const referenceTradeStatusCode = referenceOverview?.tradeStatusCode;
-  const referenceTradeStatusName = TRADE_STATUS_NAMES[referenceTradeStatusCode]
-    ?? referenceTradeStatusCode
-    ?? '-';
-  const referenceSeller = referenceAuction?.sellerName?.trim()
-    || formatAdminMemberIdentity(null, referenceAuction?.sellerId ?? referenceProduct?.usrSn);
+  const detailReference = detail ? getReportReferencePresentation({
+    fallbackTitle: detail.referenceTypeCode === 'REFC0001'
+      ? formatAdminMemberIdentity(detail.reportedMember, detail.reportedUserSn)
+      : null,
+    referenceDetailSn: detail.referenceDetailSn,
+    referenceDetailType: detail.referenceDetailType,
+    referenceSn: detail.referenceSn,
+    referenceTitle: detail.referenceTitle,
+    referenceTypeCode: detail.referenceTypeCode,
+    targetName: detail.targetName,
+  }) : null;
 
   return (
     <div className="admin-bjn-page admin-operation-page">
       <PageMeta title={selectedReportSn ? `신고 #${selectedReportSn}` : '신고 관리'} />
-      <AdminPageHeader title={selectedReportSn ? '신고 상세' : '신고 관리'} />
+      <AdminPageHeader
+        action={selectedReportSn ? (
+          <button
+            className="btn btn-outline"
+            disabled={decisionMutation.isPending || releaseMutation.isPending}
+            onClick={closeReport}
+            type="button"
+          >
+            <ArrowLeft aria-hidden="true" size={17} />
+            신고 관리
+          </button>
+        ) : null}
+        title={selectedReportSn ? '신고 상세' : '신고 관리'}
+      />
 
       {isDetailRoute && selectedReportSn == null && (
         <div className="admin-bjn-state is-error">
@@ -681,18 +714,6 @@ const AdminReportManagementPage = () => {
 
       {selectedReportSn && (
         <section className="admin-report-detail-page">
-          <div className="admin-report-detail-page__toolbar">
-            <button
-              className="btn btn-outline"
-              disabled={decisionMutation.isPending || releaseMutation.isPending}
-              onClick={closeReport}
-              type="button"
-            >
-              <ArrowLeft aria-hidden="true" size={16} />
-              신고 목록
-            </button>
-            <span>신고 #{selectedReportSn}</span>
-          </div>
           <div className="admin-report-detail-page__body">
           <section className="admin-operation-detail">
             {reportDetailQuery.isLoading && <div className="admin-bjn-state">상세 내용을 불러오는 중입니다.</div>}
@@ -701,6 +722,14 @@ const AdminReportManagementPage = () => {
             )}
             {detail && (
               <>
+                <div className="admin-report-detail-page__summary">
+                  <div className="admin-report-detail-page__status-line">
+                    <span>신고 #{detail.reportSn}</span>
+                    <AdminStatusBadge tone={detailStatus.tone}>{detailStatus.label}</AdminStatusBadge>
+                  </div>
+                  <h3>{reportTypeName(detail.reportTypeCode, detail.reportTypeName)}</h3>
+                  <p>{detailReference?.displayName || '신고 대상과 관련 정보를 확인한 뒤 처리해 주세요.'}</p>
+                </div>
                 <dl>
                   <dt>신고 번호</dt><dd>#{detail.reportSn}</dd>
                   <dt>유형</dt><dd>{reportTypeName(detail.reportTypeCode, detail.reportTypeName)}</dd>
@@ -710,22 +739,15 @@ const AdminReportManagementPage = () => {
                   <dd>{renderReportReference({
                     referenceTypeCode: detail.referenceTypeCode,
                     referenceSn: detail.referenceSn,
+                    referenceTitle: detail.referenceTitle,
+                    referenceDetailType: detail.referenceDetailType,
+                    referenceDetailSn: detail.referenceDetailSn,
+                    detailState: { from: `${location.pathname}${location.search}` },
                     targetName: detail.targetName,
+                    fallbackTitle: detail.referenceTypeCode === 'REFC0001'
+                      ? formatAdminMemberIdentity(detail.reportedMember, detail.reportedUserSn)
+                      : null,
                   })}</dd>
-                  {isAuctionReference(detail.referenceTypeCode) && detail.referenceSn != null && (
-                    <>
-                      <dt>원본 확인</dt>
-                      <dd>
-                        <button
-                          className="btn btn-primary admin-operation-reference__action"
-                          onClick={() => setReferenceAuctionSn(detail.referenceSn)}
-                          type="button"
-                        >
-                          경매 상세 보기
-                        </button>
-                      </dd>
-                    </>
-                  )}
                   <dt>위험 이벤트</dt><dd>{detail.riskEventSn == null ? '-' : `#${detail.riskEventSn}`}</dd>
                   <dt>상태</dt>
                   <dd><AdminStatusBadge tone={detailStatus.tone}>{detailStatus.label}</AdminStatusBadge></dd>
@@ -743,51 +765,8 @@ const AdminReportManagementPage = () => {
                     </>
                   )}
                 </dl>
-                {isTradeReport && (
-                  <section className="admin-report-sanction" aria-label="거래 신고 처리정보">
-                    <div className="admin-report-sanction__heading">
-                      <div>
-                        <span>거래 사건</span>
-                        <h3>거래 #{detail.tradeSn}</h3>
-                      </div>
-                      <AdminStatusBadge tone={detail.tradeResultCode === 'TRDC0012' ? 'danger' : detail.tradeResultCode === 'TRDC0011' ? 'success' : 'warning'}>
-                        {detail.tradeResultName
-                          ?? TRADE_RESULT_NAMES[detail.tradeResultCode]
-                          ?? detail.tradeResultCode
-                          ?? '판정 전'}
-                      </AdminStatusBadge>
-                    </div>
-                    <dl className="admin-report-sanction__meta">
-                      <dt>거래 유형</dt><dd>{detail.tradeTypeName ?? detail.tradeTypeCode ?? '-'}</dd>
-                      <dt>거래 방식</dt><dd>{detail.tradeMethodName ?? detail.tradeMethodCode ?? '-'}</dd>
-                      <dt>현재 거래 상태</dt>
-                      <dd>{detail.tradeStatusName
-                        ?? TRADE_STATUS_NAMES[detail.tradeStatusCode]
-                        ?? detail.tradeStatusCode
-                        ?? '-'}</dd>
-                      <dt>접수 전 거래 상태</dt>
-                      <dd>{TRADE_STATUS_NAMES[detail.previousTradeStatusCode]
-                        ?? detail.previousTradeStatusCode
-                        ?? '-'}</dd>
-                      <dt>거래 금액</dt><dd>{formatAmount(detail.tradeAmount)}</dd>
-                      <dt>상품</dt><dd>{detail.productSn == null ? '-' : `#${detail.productSn}`}</dd>
-                      <dt>서비스 요청</dt><dd>{detail.serviceRequestSn == null ? '-' : `#${detail.serviceRequestSn}`}</dd>
-                      <dt>견적</dt><dd>{detail.quoteSn == null ? '-' : `#${detail.quoteSn}`}</dd>
-                      <dt>자동 완료 잔여</dt><dd>{formatRemainingTime(detail.remainingAutoCompleteSeconds)}</dd>
-                      <dt>정산 보류</dt><dd>{detail.settlementHoldApplied ? '이 신고로 적용' : '기존 상태 유지'}</dd>
-                      <dt>채팅 종료</dt><dd>{detail.chatClosed ? '이 신고로 종료' : '변경 없음'}</dd>
-                    </dl>
-                    {detail.tradeTypeCode === 'TRDC0002' && (
-                      <Link
-                        className="btn btn-outline"
-                        state={{ from: `${location.pathname}${location.search}` }}
-                        to={getAdminServiceTradeDetailPath(detail.tradeSn)}
-                      >
-                        서비스 거래 상세 보기
-                      </Link>
-                    )}
-                  </section>
-                )}
+                <div className={`admin-report-detail-page__columns${isActionable ? '' : ' is-single'}`}>
+                  <main className="admin-report-detail-page__main">
                 {detail.sanctionSn && (
                   <section className="admin-report-sanction" aria-label="계정 제재 결과">
                     <div className="admin-report-sanction__heading">
@@ -927,8 +906,14 @@ const AdminReportManagementPage = () => {
                     </div>
                   </section>
                 )}
+                <AdminHistoryTimeline
+                  referenceSn={detail.reportSn}
+                  referenceType="ABUSE_REPORT"
+                  title="신고 처리 이력"
+                />
+                  </main>
                 {isActionable && (
-                  <>
+                  <aside className="admin-report-detail-page__aside" aria-label="신고 운영 처리">
                     {canFinalize && isTradeReport && (
                       <section className="admin-operation-decision">
                         <div className="admin-operation-decision__heading">
@@ -1077,13 +1062,9 @@ const AdminReportManagementPage = () => {
                         </>
                       )}
                     </div>
-                  </>
+                  </aside>
                 )}
-                <AdminHistoryTimeline
-                  referenceSn={detail.reportSn}
-                  referenceType="ABUSE_REPORT"
-                  title="신고 처리 이력"
-                />
+                </div>
               </>
             )}
           </section>
@@ -1172,79 +1153,6 @@ const AdminReportManagementPage = () => {
         </div>
       )}
 
-      {referenceAuctionSn != null && (
-        <div className="admin-operation-reference-modal-layer">
-          <AdminModal
-            onClose={() => setReferenceAuctionSn(null)}
-            panelClassName="admin-operation-reference-modal"
-            title="경매 상세"
-          >
-            <section
-              aria-busy={referenceAuctionQuery.isLoading}
-              className="admin-operation-reference-modal__content"
-            >
-              {referenceAuctionQuery.isLoading && (
-                <div className="admin-bjn-state">경매 상세를 불러오는 중입니다.</div>
-              )}
-              {referenceAuctionQuery.isError && (
-                <div className="admin-bjn-state is-error">
-                  경매 상세를 불러오지 못했습니다.
-                  <button
-                    className="btn btn-outline"
-                    onClick={() => referenceAuctionQuery.refetch()}
-                    type="button"
-                  >
-                    다시 시도
-                  </button>
-                </div>
-              )}
-              {referenceOverview && (
-                <>
-                  <div className="admin-operation-reference-modal__heading">
-                    <span>경매 #{referenceAuctionSn}</span>
-                    <h3>
-                      {referenceProduct?.prdNm
-                        ?? referenceAuction?.title
-                        ?? `경매 #${referenceAuctionSn}`}
-                    </h3>
-                  </div>
-                  <dl>
-                    <dt>경매 번호</dt><dd>#{referenceAuctionSn}</dd>
-                    <dt>상품 번호</dt>
-                    <dd>{referenceProduct?.prdSn == null ? '-' : `#${referenceProduct.prdSn}`}</dd>
-                    <dt>판매자</dt><dd>{referenceSeller}</dd>
-                    <dt>경매 상태</dt>
-                    <dd>
-                      <AdminStatusBadge tone={auctionStatusTone(referenceAuctionStatusCode)}>
-                        {referenceAuctionStatusName}
-                      </AdminStatusBadge>
-                    </dd>
-                    <dt>입찰 수</dt><dd>{referenceAuction?.bidCount ?? 0}건</dd>
-                    <dt>현재가</dt><dd>{formatAmount(referenceAuction?.currentPrice)}</dd>
-                    <dt>시작가</dt>
-                    <dd>{formatAmount(referenceAuction?.startPrice ?? referenceProduct?.prdStartAmt)}</dd>
-                    <dt>경매 시작</dt><dd>{formatDateTime(referenceAuction?.startDateTime)}</dd>
-                    <dt>경매 종료</dt><dd>{formatDateTime(referenceAuction?.endDateTime)}</dd>
-                    <dt>거래 번호</dt>
-                    <dd>{referenceOverview.tradeSn == null ? '-' : `#${referenceOverview.tradeSn}`}</dd>
-                    <dt>거래 상태</dt><dd>{referenceTradeStatusName}</dd>
-                    <dt>등록일</dt><dd>{formatDateTime(referenceProduct?.prdRegDt)}</dd>
-                  </dl>
-                  <div className="admin-operation-reference-modal__actions">
-                    <button
-                      className="btn btn-outline"
-                      onClick={() => setReferenceAuctionSn(null)}
-                      type="button"
-                    >
-                      닫기
-                    </button>
-                  </div>
-                </>
-              )}
-            </section>
-          </AdminModal>
-        </div>
-      )}
     </div>
   );
 };

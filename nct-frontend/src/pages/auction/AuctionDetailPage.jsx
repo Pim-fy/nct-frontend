@@ -1052,7 +1052,9 @@ export const AuctionDetailPageContent = ({ auctionId, embedded = false }) => {
               <AuctionPreviewRail
                 imageItems={imageItems}
                 activeImageIndex={activeImageIndex}
+                failedImageUrls={failedImageUrls}
                 onPreviewClick={handlePreviewClick}
+                onImageError={handleImageError}
               />
             </div>
             <AuctionBidPanel
