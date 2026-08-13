@@ -37,6 +37,14 @@ export default function FeedbackDialog({
   const titleId = useId();
   const descriptionId = useId();
   const confirmButtonRef = useRef(null);
+  // onConfirm/onCancel은 호출부에서 매 렌더링마다 새로 만들어지는 인라인 함수인 경우가 많다.
+  // 아래 포커스 관리 effect가 이 값들을 의존성으로 들고 있으면, 모달이 열려 있는 동안 부모가
+  // 리렌더링될 때마다 effect가 정리→재실행되면서 포커스가 뒤 화면↔확인 버튼 사이를 왔다갔다
+  // 한다 — ref에 최신 값만 담아두고 effect는 open 변화에만 반응하게 분리한다.
+  const handlersRef = useRef({ onConfirm, onCancel });
+  useEffect(() => {
+    handlersRef.current = { onConfirm, onCancel };
+  });
   const normalizedTitle = normalizeFeedbackText(title);
   const normalizedDescription = normalizeFeedbackText(description);
   const resolvedSize = resolveFeedbackDialogSize({
@@ -53,20 +61,23 @@ export default function FeedbackDialog({
     if (!open) return undefined;
 
     const previouslyFocused = document.activeElement;
-    const focusFrame = window.requestAnimationFrame(() => confirmButtonRef.current?.focus());
+    const focusFrame = window.requestAnimationFrame(() => confirmButtonRef.current?.focus({ preventScroll: true }));
     const handleKeyDown = (event) => {
       if (event.key !== 'Escape') return;
       event.preventDefault();
-      (onCancel ?? onConfirm)?.();
+      (handlersRef.current.onCancel ?? handlersRef.current.onConfirm)?.();
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       window.cancelAnimationFrame(focusFrame);
       document.removeEventListener('keydown', handleKeyDown);
-      previouslyFocused?.focus?.();
+      // preventScroll 없이 포커스를 되돌리면, 검증 실패 시 특정 입력 필드로 스크롤시켜둔 페이지가
+      // "열기 전 포커스였던 하단 제출 버튼"으로 다시 스크롤되며 방금 한 스크롤을 덮어써버린다
+      // (ProductRegisterPage 등 검증+scrollIntoView 패턴 다수 존재) — 포커스만 복원하고 스크롤은 건드리지 않는다.
+      previouslyFocused?.focus?.({ preventScroll: true });
     };
-  }, [open, onCancel, onConfirm]);
+  }, [open]);
 
   if (!open || typeof document === 'undefined') return null;
 
