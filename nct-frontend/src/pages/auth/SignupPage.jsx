@@ -3,6 +3,7 @@
 // 단일 가입 화면에서 약관·이메일 인증·최종 가입의 서버 상태를 순서대로 연결한다.
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import DaumPostcode from 'react-daum-postcode';
 import {
   checkLoginId,
@@ -192,6 +193,7 @@ const formatRemaining = (targetTime, now) => {
 const SignupPage = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState(INITIAL_FORM);
+  const [passwordVisibility, setPasswordVisibility] = useState({ password: false, passwordConfirm: false });
   const [touched, setTouched] = useState({});
   const [serverErrors, setServerErrors] = useState({});
   const [availability, setAvailability] = useState({
@@ -709,25 +711,35 @@ const SignupPage = () => {
                   </Field>
 
                   <Field error={fieldError('password')} label="비밀번호" required>
-                    <input
-                      className={INPUT_CLASS}
-                      onBlur={handleFieldBlur('password')}
-                      onChange={handleFieldChange('password')}
-                      type="password"
-                      placeholder="8~64자, 영문·숫자·특수문자 중 2종 이상"
-                      value={form.password}
-                    />
+                    <div className="relative">
+                      <input
+                        className={`${INPUT_CLASS} pr-11`}
+                        onBlur={handleFieldBlur('password')}
+                        onChange={handleFieldChange('password')}
+                        type={passwordVisibility.password ? 'text' : 'password'}
+                        placeholder="8~64자, 영문·숫자·특수문자 중 2종 이상"
+                        value={form.password}
+                      />
+                      <button type="button" onClick={() => setPasswordVisibility((previous) => ({ ...previous, password: !previous.password }))} aria-label={passwordVisibility.password ? '비밀번호 숨기기' : '비밀번호 보기'} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600">
+                        {passwordVisibility.password ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                   </Field>
 
                   <Field error={form.passwordConfirm ? passwordConfirmError : fieldError('passwordConfirm')} label="비밀번호 확인" required>
-                    <input
-                      className={INPUT_CLASS}
-                      onBlur={handleFieldBlur('passwordConfirm')}
-                      onChange={handleFieldChange('passwordConfirm')}
-                      type="password"
-                      placeholder="비밀번호를 다시 입력해주세요"
-                      value={form.passwordConfirm}
-                    />
+                    <div className="relative">
+                      <input
+                        className={`${INPUT_CLASS} pr-11`}
+                        onBlur={handleFieldBlur('passwordConfirm')}
+                        onChange={handleFieldChange('passwordConfirm')}
+                        type={passwordVisibility.passwordConfirm ? 'text' : 'password'}
+                        placeholder="비밀번호를 다시 입력해주세요"
+                        value={form.passwordConfirm}
+                      />
+                      <button type="button" onClick={() => setPasswordVisibility((previous) => ({ ...previous, passwordConfirm: !previous.passwordConfirm }))} aria-label={passwordVisibility.passwordConfirm ? '비밀번호 확인 숨기기' : '비밀번호 확인 보기'} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600">
+                        {passwordVisibility.passwordConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                     {form.passwordConfirm && !passwordConfirmError ? (
                       <span className="text-xs text-primary-dark">비밀번호가 일치합니다.</span>
                     ) : null}
@@ -855,7 +867,7 @@ const SignupPage = () => {
                       className={INPUT_CLASS}
                       onBlur={handleFieldBlur('bankName')}
                       onChange={handleFieldChange('bankName')}
-                      placeholder="은행명을 자유롭게 입력해주세요."
+                      placeholder="은행명을 입력해주세요."
                       value={form.bankName}
                     />
                   </Field>

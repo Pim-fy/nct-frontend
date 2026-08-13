@@ -413,7 +413,7 @@ const OAuthOnboardingPage = () => {
                     <input id="oauth-detail-address" value={optionalInfo.detailAddress} onChange={handleOptionalInfoChange('detailAddress')} disabled={!optionalInfo.address} placeholder={optionalInfo.address ? '동·호수 등 상세주소' : '주소 검색 후 입력할 수 있습니다.'} maxLength={200} className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:bg-gray-50" />
                   </label>
                   <label className="text-sm text-gray-700" htmlFor="oauth-bank-name">은행명
-                    <input id="oauth-bank-name" value={optionalInfo.bankName} onChange={handleOptionalInfoChange('bankName')} maxLength={100} className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />
+                    <input id="oauth-bank-name" value={optionalInfo.bankName} onChange={handleOptionalInfoChange('bankName')} placeholder="은행명을 입력해주세요." maxLength={100} className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />
                   </label>
                   <label className="text-sm text-gray-700" htmlFor="oauth-account-no">계좌번호
                     <input id="oauth-account-no" value={optionalInfo.accountNo} onChange={handleOptionalInfoChange('accountNo')} placeholder="계좌번호를 입력해주세요." maxLength={50} className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500" />

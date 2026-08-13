@@ -4,6 +4,7 @@
 //   - token 있음: 이메일 링크 클릭 후 도착 -> 새 비밀번호 입력 -> 확정
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import { requestPasswordReset, confirmPasswordReset } from '@api/authApi';
 import AuthPageContainer from '@components/auth/AuthPageContainer';
 import AuthCard from '@components/auth/AuthCard';
@@ -153,6 +154,7 @@ function RequestForm() {
 function ConfirmForm({ token }) {
   const [newPassword,        setNewPassword]        = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm]  = useState('');
+  const [passwordVisibility, setPasswordVisibility] = useState({ newPassword: false, newPasswordConfirm: false });
   const [loading,            setLoading]             = useState(false);
   const [done,                setDone]                = useState(false);
   const [invalid,             setInvalid]             = useState(false);
@@ -240,25 +242,22 @@ function ConfirmForm({ token }) {
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-gray-700">새 비밀번호</label>
-            <input
-              type="password"
-              placeholder="8~64자, 영문·숫자·특수문자 중 2종 이상"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full h-12 px-4 rounded-lg border border-gray-300 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
+            <div className="relative">
+              <input type={passwordVisibility.newPassword ? 'text' : 'password'} placeholder="8~64자, 영문·숫자·특수문자 중 2종 이상" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full h-12 px-4 pr-11 rounded-lg border border-gray-300 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+              <button type="button" onClick={() => setPasswordVisibility((previous) => ({ ...previous, newPassword: !previous.newPassword }))} aria-label={passwordVisibility.newPassword ? '새 비밀번호 숨기기' : '새 비밀번호 보기'} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600">
+                {passwordVisibility.newPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-gray-700">새 비밀번호 확인</label>
-            <input
-              type="password"
-              placeholder="새 비밀번호를 다시 입력해주세요"
-              value={newPasswordConfirm}
-              onChange={(e) => setNewPasswordConfirm(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
-              className="w-full h-12 px-4 rounded-lg border border-gray-300 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
+            <div className="relative">
+              <input type={passwordVisibility.newPasswordConfirm ? 'text' : 'password'} placeholder="새 비밀번호를 다시 입력해주세요" value={newPasswordConfirm} onChange={(e) => setNewPasswordConfirm(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }} className="w-full h-12 px-4 pr-11 rounded-lg border border-gray-300 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+              <button type="button" onClick={() => setPasswordVisibility((previous) => ({ ...previous, newPasswordConfirm: !previous.newPasswordConfirm }))} aria-label={passwordVisibility.newPasswordConfirm ? '새 비밀번호 확인 숨기기' : '새 비밀번호 확인 보기'} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600">
+                {passwordVisibility.newPasswordConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           <button

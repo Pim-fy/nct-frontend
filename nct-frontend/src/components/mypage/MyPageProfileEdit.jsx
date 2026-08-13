@@ -4,7 +4,7 @@
 //   메인 폼(좌)/소셜+알림(우) → xl 이상 가로 배치, 그 이하 세로 스택.
 //   폼 내부 필드: sm 이상 2열 그리드, 그 이하 단일 열.
 import { useEffect, useRef, useState } from "react";
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronUp, ChevronDown, Eye, EyeOff } from "lucide-react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import DaumPostcode from "react-daum-postcode";
 import { toast, confirm } from "@utils/common";
@@ -59,6 +59,7 @@ export default function MyPageProfileEdit({ user }) {
     bankName: "",
     accountNo: "",
   });
+  const [passwordVisibility, setPasswordVisibility] = useState({ currentPassword: false, newPassword: false, newPasswordConfirm: false });
   const [addressSearchOpen, setAddressSearchOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
@@ -381,33 +382,30 @@ export default function MyPageProfileEdit({ user }) {
             <>
               <div>
                 <label className="block font-bold text-[14px] text-[#404040] mb-0.5">현재 비밀번호</label>
-                <input
-                  type="password"
-                  className={FIELD_CLASS}
-                  value={form.currentPassword}
-                  onChange={handleChange("currentPassword")}
-                  placeholder="현재 비밀번호"
-                />
+                <div className="relative">
+                  <input type={passwordVisibility.currentPassword ? "text" : "password"} className={`${FIELD_CLASS} pr-11`} value={form.currentPassword} onChange={handleChange("currentPassword")} placeholder="현재 비밀번호" />
+                  <button type="button" onClick={() => setPasswordVisibility((previous) => ({ ...previous, currentPassword: !previous.currentPassword }))} aria-label={passwordVisibility.currentPassword ? "현재 비밀번호 숨기기" : "현재 비밀번호 보기"} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600">
+                    {passwordVisibility.currentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block font-bold text-[14px] text-[#404040] mb-0.5">새 비밀번호</label>
-                <input
-                  type="password"
-                  className={FIELD_CLASS}
-                  value={form.newPassword}
-                  onChange={handleChange("newPassword")}
-                  placeholder="8~64자, 2종 이상 조합"
-                />
+                <div className="relative">
+                  <input type={passwordVisibility.newPassword ? "text" : "password"} className={`${FIELD_CLASS} pr-11`} value={form.newPassword} onChange={handleChange("newPassword")} placeholder="8~64자, 2종 이상 조합" />
+                  <button type="button" onClick={() => setPasswordVisibility((previous) => ({ ...previous, newPassword: !previous.newPassword }))} aria-label={passwordVisibility.newPassword ? "새 비밀번호 숨기기" : "새 비밀번호 보기"} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600">
+                    {passwordVisibility.newPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block font-bold text-[14px] text-[#404040] mb-0.5">새 비밀번호 확인</label>
-                <input
-                  type="password"
-                  className={FIELD_CLASS}
-                  value={form.newPasswordConfirm}
-                  onChange={handleChange("newPasswordConfirm")}
-                  placeholder="********"
-                />
+                <div className="relative">
+                  <input type={passwordVisibility.newPasswordConfirm ? "text" : "password"} className={`${FIELD_CLASS} pr-11`} value={form.newPasswordConfirm} onChange={handleChange("newPasswordConfirm")} placeholder="새 비밀번호를 다시 입력해주세요" />
+                  <button type="button" onClick={() => setPasswordVisibility((previous) => ({ ...previous, newPasswordConfirm: !previous.newPasswordConfirm }))} aria-label={passwordVisibility.newPasswordConfirm ? "새 비밀번호 확인 숨기기" : "새 비밀번호 확인 보기"} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600">
+                    {passwordVisibility.newPasswordConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
               <div className="flex justify-end">
                 <button
