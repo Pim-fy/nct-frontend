@@ -104,6 +104,9 @@ const AuctionDeliveryAddressModal = ({
 
   const isSearchView = view === 'search';
   const isListView = view === 'list';
+  const isFormValid = Boolean(
+    form.name.trim() && form.zip.trim() && form.address.trim(),
+  );
 
   return (
     <div
@@ -318,7 +321,7 @@ const AuctionDeliveryAddressModal = ({
 
             <button
               className="h-12 w-full rounded-[5px] border border-primary bg-primary text-body-md font-bold text-white hover:bg-[#0058df] disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={isSaving}
+              disabled={isSaving || !isFormValid}
               type="submit"
             >
               {isSaving ? '저장 중...' : '배송지 저장'}
