@@ -17,7 +17,6 @@ import {
   SERVICE_TRADE_STEPS,
 } from './serviceTradeStatus';
 import TradeProgressSteps from '@components/trade/TradeProgressSteps';
-import TradeDisputeDialog from '@components/trade/TradeDisputeDialog';
 import TradeReviewSection from '@components/trade/TradeReviewSection';
 import TradeTrustSummary from '@components/trade/TradeTrustSummary';
 import ServiceTradeOriginalModal from '@components/trade/ServiceTradeOriginalModal';
@@ -420,14 +419,6 @@ export default function ServiceTradeDetailPage({
                     )}
                   </div>
                 </div>
-              )}
-              {canShowTradeReview && (
-                <TradeDisputeDialog
-                  onSubmitted={onActionCompleted}
-                  tradeId={trade.tradeId}
-                  tradeKind="SERVICE"
-                  tradeStatus={trade.tradeStatusCode}
-                />
               )}
             </div>
           </section>
