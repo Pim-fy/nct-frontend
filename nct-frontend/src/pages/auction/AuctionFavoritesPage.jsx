@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { HeartOff, RotateCcw } from 'lucide-react';
@@ -170,13 +170,6 @@ const AuctionFavoritesPage = ({ embedded = false }) => {
       queryClient.invalidateQueries({ queryKey: ['landing-curation', 'auctions', 'popular'] });
     },
   });
-
-  useEffect(() => {
-    if (!toastMessage) return undefined;
-
-    const timer = window.setTimeout(() => setToastMessage(''), 2500);
-    return () => window.clearTimeout(timer);
-  }, [toastMessage]);
 
   const content = (
     <section className="my-active-auctions">
@@ -403,7 +396,11 @@ const AuctionFavoritesPage = ({ embedded = false }) => {
           {content}
         </main>
       )}
-      <Toast message={toastMessage} variant="info" />
+      <Toast
+        message={toastMessage}
+        onClose={() => setToastMessage('')}
+        variant="info"
+      />
     </div>
   );
 };
