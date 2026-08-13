@@ -246,6 +246,8 @@ export default function AuctionSettingStep({
           <li>상품 등록 후에는 본문을 수정할 수 없으며 변경사항은 별도로 최대 3회까지 추가할 수 있습니다</li>
           <li>즉시구매가는 최고 입찰가보다 반드시 높아야 합니다</li>
           <li>낙찰 후 거래를 정당한 사유 없이 취소하면 포인트 패널티가 부과됩니다</li>
+          {/* 거래 수수료 사전 고지 — 팀 합의 요율(경매 5% 단일 고정) (담당자6 BJN, 2026-08-13 추가) */}
+          <li>낙찰 시 낙찰가의 5%가 수수료로 차감되어 정산됩니다</li>
         </ul>
         <div className="policy-agree">
           <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
