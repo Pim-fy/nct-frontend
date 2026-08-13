@@ -15,6 +15,15 @@ export const getAdminReportDetailPath = (reportSn) => `${ADMIN_REPORTS_PATH}/${r
 
 export const ADMIN_SERVICE_REQUESTS_ROUTE = 'services/requests';
 export const ADMIN_SERVICE_REQUESTS_PATH = `/admin/${ADMIN_SERVICE_REQUESTS_ROUTE}`;
+export const ADMIN_SERVICE_REQUEST_DETAIL_ROUTE = `${ADMIN_SERVICE_REQUESTS_ROUTE}/:serviceRequestId`;
+export const getAdminServiceRequestDetailPath = (serviceRequestId) => (
+  `${ADMIN_SERVICE_REQUESTS_PATH}/${serviceRequestId}`
+);
+
+export const ADMIN_AUCTIONS_ROUTE = 'auctions';
+export const ADMIN_AUCTIONS_PATH = `/admin/${ADMIN_AUCTIONS_ROUTE}`;
+export const ADMIN_AUCTION_DETAIL_ROUTE = `${ADMIN_AUCTIONS_ROUTE}/:auctionId`;
+export const getAdminAuctionDetailPath = (auctionId) => `${ADMIN_AUCTIONS_PATH}/${auctionId}`;
 
 export const ADMIN_SERVICE_TRADE_DETAIL_ROUTE = 'services/trades/:tradeId';
 

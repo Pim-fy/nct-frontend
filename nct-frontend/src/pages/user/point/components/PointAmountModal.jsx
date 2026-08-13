@@ -1,5 +1,6 @@
 // src/pages/user/point/components/PointAmountModal.jsx
 import { useEffect, useState } from 'react';
+import { ActionButton } from '@components/common/ui';
 
 import { QUICK_AMOUNTS } from './quickAmounts';
 
@@ -32,13 +33,13 @@ const PointAmountModal = ({ title, submitLabel, infoRow, maxAmount, onSubmit, on
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-gray-900 m-0" id="point-amount-modal-title">{title}</h3>
-          <button
-            type="button"
-            className="text-sm text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg px-3 py-1.5"
+          <ActionButton
             onClick={onClose}
+            size="sm"
+            tone="neutral"
           >
             닫기
-          </button>
+          </ActionButton>
         </div>
 
         {infoRow && (
@@ -87,13 +88,11 @@ const PointAmountModal = ({ title, submitLabel, infoRow, maxAmount, onSubmit, on
         />
 
         <div className="flex justify-end mt-4">
-          <button
-            type="button"
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg px-5 py-2.5 transition-colors"
+          <ActionButton
             onClick={() => onSubmit(Number(amount))}
           >
             {submitLabel}
-          </button>
+          </ActionButton>
         </div>
       </div>
     </div>

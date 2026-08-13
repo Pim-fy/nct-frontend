@@ -1,7 +1,16 @@
 import { toImageUrl } from '@api/fileApi';
+import { ActionButton, DomainStatus } from '@components/common/ui';
 import TradeProductCard from '@components/trade/TradeProductCard';
 import TradeTrustSummary from '@components/trade/TradeTrustSummary';
 import { Link, useLocation } from 'react-router-dom';
+
+const TRADE_STATUS_TONES = {
+  'trade-status--progress': 'info',
+  'trade-status--pending': 'warning',
+  'trade-status--complete': 'success',
+  'trade-status--problem': 'danger',
+  'trade-status--canceled': 'neutral',
+};
 
 /**
  * 배송·직거래 상세에서 공통으로 사용하는 1영역이다.
@@ -25,9 +34,9 @@ export default function TradeDetailOverviewCard({
       <div className="trade-detail-card__block">
         <div className="mb-3 flex items-center justify-between gap-3">
           <h3 style={{ margin: 0 }}>거래 진행 안내</h3>
-          <span className={`trade-status ${statusClassName}`}>
+          <DomainStatus tone={TRADE_STATUS_TONES[statusClassName] ?? 'neutral'}>
             {statusLabel}
-          </span>
+          </DomainStatus>
         </div>
         {statusMessages.map((message, index) => (
           <p key={`${message}-${index}`}>{message}</p>
@@ -49,9 +58,9 @@ export default function TradeDetailOverviewCard({
         <div className="trade-counterpart__heading">
           <h3>{counterpartTitle}</h3>
           {onReport && (
-            <button className="btn btn-danger btn-sm" type="button" onClick={onReport}>
+            <ActionButton onClick={onReport} size="sm" tone="danger-outline">
               신고하기
-            </button>
+            </ActionButton>
           )}
         </div>
         <div className="trade-counterpart">

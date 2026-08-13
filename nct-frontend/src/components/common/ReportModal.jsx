@@ -2,6 +2,7 @@ import { X } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ReportAttachmentPicker from '@components/common/ReportAttachmentPicker';
+import { ActionButton } from '@components/common/ui';
 import { isCustomerReportTypeCode } from '@/constants/abuseReportTypes';
 import { useAbuseReportTypes, useSubmitCustomerReport } from '@hooks/useAbuseReport';
 import { getMyPagePath } from '@routes/myPageRoutes';
@@ -144,20 +145,20 @@ function ReportModalContent({
             <p className="mb-2 text-[15px] font-bold text-[#1a1a18]">신고 유형 <span className="text-red-500">*</span></p>
             {reportTypesQuery.isLoading && <p className="text-[13px] text-[#777]">신고 유형을 불러오는 중입니다.</p>}
             {reportTypesQuery.isError && (
-              <button className="btn btn-outline btn-sm" onClick={() => reportTypesQuery.refetch()} type="button">유형 다시 불러오기</button>
+              <ActionButton onClick={() => reportTypesQuery.refetch()} size="sm" tone="outline">유형 다시 불러오기</ActionButton>
             )}
             {!reportTypesQuery.isLoading && !reportTypesQuery.isError && !hasAvailableReportTypes && (
               <div className="flex items-center gap-2">
                 <p className="m-0 text-[13px] text-red-500" role="alert">
                   사용 가능한 신고 유형이 없습니다.
                 </p>
-                <button
-                  className="btn btn-outline btn-sm"
+                <ActionButton
                   onClick={() => reportTypesQuery.refetch()}
-                  type="button"
+                  size="sm"
+                  tone="outline"
                 >
                   다시 불러오기
-                </button>
+                </ActionButton>
               </div>
             )}
             <div className="flex flex-wrap gap-2">
@@ -231,15 +232,16 @@ function ReportModalContent({
         </form>
 
         <footer className="flex shrink-0 gap-3 border-t border-[#e8e9ec] px-6 py-4">
-          <button className="btn btn-outline flex-1" disabled={submitMutation.isPending} onClick={onClose} type="button">취소</button>
-          <button
-            className="btn btn-danger flex-1"
+          <ActionButton className="flex-1" disabled={submitMutation.isPending} onClick={onClose} tone="outline">취소</ActionButton>
+          <ActionButton
+            className="flex-1"
             disabled={submitMutation.isPending || reportTypesQuery.isLoading || reportTypesQuery.isError || !hasAvailableReportTypes}
             form={formId}
+            tone="danger"
             type="submit"
           >
             {submitMutation.isPending ? '신고 중…' : '신고하기'}
-          </button>
+          </ActionButton>
         </footer>
       </div>
     </div>

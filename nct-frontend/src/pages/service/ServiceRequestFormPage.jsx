@@ -17,6 +17,7 @@ import DaumPostcode from 'react-daum-postcode';
 import ErrorMessage from '@components/common/ErrorMessage';
 import AlertModal from '@components/common/AlertModal';
 import ConfirmModal from '@components/common/ConfirmModal';
+import { ActionButton } from '@components/common/ui';
 import ServiceRequestImageUpload from '@components/service/ServiceRequestImageUpload';
 import { toImageUrl, uploadImage } from '@api/fileApi';
 import DateRangePicker from '@components/product/DateRangePicker';
@@ -1226,13 +1227,13 @@ export default function ServiceRequestFormPage() {
                     )}
                     {editingCategory && selectedCategory && (
                       <div className="mt-4 flex justify-end">
-                        <button
-                          type="button"
-                          className="rounded-lg border border-[#e2e1dc] px-4 py-1.5 text-sm text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary"
+                        <ActionButton
                           onClick={() => setEditingCategory(false)}
+                          size="sm"
+                          tone="neutral"
                         >
                           취소
-                        </button>
+                        </ActionButton>
                       </div>
                     )}
                   </div>
@@ -1466,11 +1467,10 @@ export default function ServiceRequestFormPage() {
                               value={freeTextDraft[`${stepId}:${ETC}`] || ''}
                               onChange={e => setFreeTextDraft(prev => ({ ...prev, [`${stepId}:${ETC}`]: e.target.value }))}
                             />
-                            <button
-                              type="button"
-                              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-[#0048bf]"
+                            <ActionButton
                               onClick={() => handleEtcSingleConfirm(stepId)}
-                            >다음</button>
+                              size="sm"
+                            >다음</ActionButton>
                           </div>
                         )}
 
@@ -1482,13 +1482,13 @@ export default function ServiceRequestFormPage() {
                           )}
                           <div className="mt-4 flex items-center justify-between">
                             <p className="text-sm text-[#888780]">해당하는 항목을 모두 선택한 뒤 다음을 눌러 주세요.</p>
-                            <button
-                              type="button"
-                              className="shrink-0 whitespace-nowrap rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-[#0048bf]"
+                            <ActionButton
+                              className="shrink-0"
                               onClick={() => handleMultiConfirm(stepId)}
+                              size="sm"
                             >
                               다음
-                            </button>
+                            </ActionButton>
                           </div>
                           </>
                         )}
@@ -1662,10 +1662,12 @@ export default function ServiceRequestFormPage() {
                                   placeholder={formatPointUnitText(f.placeholder)}
                                   value={stepDraft[stepId]?.[f.key] || ''}
                                 />
-                                <button type="button"
-                                  className="shrink-0 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-primary hover:bg-[#e5efff]"
+                                <ActionButton
+                                  className="shrink-0"
                                   onClick={() => setAddressSearchKey(`${stepId}:${f.key}`)}
-                                >주소 검색</button>
+                                  size="sm"
+                                  tone="outline"
+                                >주소 검색</ActionButton>
                               </div>
                               {fieldErrors[`${stepId}:${f.key}`] && (
                                 <p className="mt-1 text-xs text-red-600">{fieldErrors[`${stepId}:${f.key}`]}</p>
@@ -1743,10 +1745,12 @@ export default function ServiceRequestFormPage() {
                                             placeholder={formatPointUnitText(f.placeholder)}
                                             value={stepDraft[stepId]?.[f.key] || ''}
                                           />
-                                          <button type="button"
-                                            className="shrink-0 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-primary hover:bg-[#e5efff]"
+                                          <ActionButton
+                                            className="shrink-0"
                                             onClick={() => setAddressSearchKey(`${stepId}:${f.key}`)}
-                                          >주소 검색</button>
+                                            size="sm"
+                                            tone="outline"
+                                          >주소 검색</ActionButton>
                                         </div>
                                         {fieldErrors[`${stepId}:${f.key}`] && (
                                           <p className="mt-1 text-xs text-red-600">{fieldErrors[`${stepId}:${f.key}`]}</p>
@@ -1787,8 +1791,7 @@ export default function ServiceRequestFormPage() {
                             ) : renderNormalField(group.fields[0]))}
                           </div>
                           <div className="mt-4 flex justify-end">
-                            <button type="button"
-                              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-[#0048bf]"
+                            <ActionButton
                               onClick={() => {
                                 if (!validateFormStep(stepId)) return;
                                 handleFormConfirm(stepId);
@@ -1796,9 +1799,10 @@ export default function ServiceRequestFormPage() {
                                 // 화면 하단 "다음" 버튼과 동일하게 요청 확인 탭까지 바로 넘어간다.
                                 if (!step.next) setStep(1);
                               }}
+                              size="sm"
                             >
                               {step.next ? '다음' : '입력 완료'}
-                            </button>
+                            </ActionButton>
                           </div>
                         </>
                       );
@@ -1971,36 +1975,30 @@ export default function ServiceRequestFormPage() {
              (스크롤 애니메이션 중 버튼 위치가 흔들려서 클릭이 빗나가는 문제 방지) ── */}
         <div className="sticky bottom-0 z-10 flex items-center justify-between border-t border-[#e8e8e8] bg-white pb-4 pt-4">
           {step > 0 ? (
-            <button
-              type="button"
+            <ActionButton
               onClick={() => setStep(0)}
               disabled={loading}
-              className="rounded-lg border border-[#e2e1dc] bg-white px-5 py-2.5 text-sm font-semibold text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
-            >이전</button>
+              tone="neutral"
+            >이전</ActionButton>
           ) : <div />}
 
           <div className="flex gap-3">
-            <button
-              type="button"
+            <ActionButton
               onClick={handleDraft}
               disabled={loading}
-              className="rounded-lg border border-[#e2e1dc] bg-white px-5 py-2.5 text-sm font-semibold text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
-            >임시저장</button>
+              tone="neutral"
+            >임시저장</ActionButton>
             {step === 0 ? (
-              <button
-                type="button"
+              <ActionButton
                 onClick={goNext}
-                className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#0048bf]"
-              >다음</button>
+              >다음</ActionButton>
             ) : (
-              <button
-                type="button"
+              <ActionButton
                 onClick={handlePublish}
                 disabled={loading}
-                className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#0048bf] disabled:opacity-50"
               >
                 {loading ? '등록 중...' : '요청서 공개'}
-              </button>
+              </ActionButton>
             )}
           </div>
         </div>
@@ -2020,13 +2018,13 @@ export default function ServiceRequestFormPage() {
           >
             <div className="flex items-center justify-between border-b border-[#e8e8e8] px-5 py-3">
               <p className="text-base font-bold">주소 검색</p>
-              <button
-                type="button"
-                className="rounded-lg border border-[#e2e1dc] px-3 py-1.5 text-sm text-[#5f5e5a] hover:border-primary hover:text-primary"
+              <ActionButton
                 onClick={() => setAddressSearchKey(null)}
+                size="sm"
+                tone="neutral"
               >
                 닫기
-              </button>
+              </ActionButton>
             </div>
             <DaumPostcode autoClose={false} onComplete={handleAddressComplete} />
           </div>

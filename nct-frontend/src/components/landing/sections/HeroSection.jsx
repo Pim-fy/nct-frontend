@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
+import { ActionButton } from "@components/common/ui";
 import { assets } from "./assets";
 
 const SLIDE = {
@@ -104,12 +105,13 @@ export default function HeroSection({ hotItems = [], hotItemsError, hotItemsLoad
                 </p>
                 <p className="text-[18px] text-black tracking-[-0.8px] mt-2">{SLIDE.sub}</p>
                 <div className="flex justify-start mt-4">
-                  <button
-                    type="button"
-                    className="bg-[#0064ff] h-[43px] px-6 rounded-[10px] cursor-pointer"
+                  <ActionButton
+                    onClick={(event) => event.stopPropagation()}
+                    to={SLIDE.btnRoute}
+                    className="rounded-[10px] px-6"
                   >
-                    <span className="text-[18px] font-bold text-white tracking-[-0.9px]">{SLIDE.btnLabel}</span>
-                  </button>
+                    <span className="font-bold tracking-[-0.9px]">{SLIDE.btnLabel}</span>
+                  </ActionButton>
                 </div>
               </div>
             </div>

@@ -5,6 +5,7 @@ import { FileText, Image as ImageIcon, X } from 'lucide-react';
 import { getMyQuote } from '@api/quoteApi';
 import { getServiceRequest } from '@api/serviceRequestApi';
 import { toImageUrl } from '@api/fileApi';
+import { CategoryTag, DomainStatus } from '@components/common/ui';
 import useBodyScrollLock from '@hooks/useBodyScrollLock';
 
 const unwrapData = (response) => response?.data ?? response;
@@ -63,7 +64,7 @@ function RequestSourceContent({ serviceRequestId }) {
   return (
     <article className="overflow-hidden rounded-2xl border border-[#e2e6ee] bg-white shadow-sm">
       <header className="border-b border-[#edf0f4] p-6">
-        <span className="inline-flex rounded-lg bg-[#fff2e8] px-3 py-1.5 text-sm font-bold text-[#d65f00]">{request.catNm || '서비스 요청'}</span>
+        <CategoryTag tone="warning" variant="soft">{request.catNm || '서비스 요청'}</CategoryTag>
         <h3 className="mt-4 text-2xl font-extrabold text-[#202635]">{request.svcReqTtl}</h3>
         <p className="mt-2 text-lg font-bold text-primary">예산 {formatPoint(request.svcReqBdgtAmt)}</p>
       </header>
@@ -101,7 +102,7 @@ function QuoteSourceContent({ quoteId }) {
   return (
     <article className="overflow-hidden rounded-2xl border border-[#e2e6ee] bg-white shadow-sm">
       <header className="border-b border-[#edf0f4] p-6">
-        <span className="inline-flex rounded-lg bg-[#e8f0ff] px-3 py-1.5 text-sm font-bold text-primary">선택된 견적</span>
+        <DomainStatus tone="success" variant="soft">선택된 견적</DomainStatus>
         <h3 className="mt-4 text-2xl font-extrabold text-[#202635]">{quote.svcReqTitle || '서비스 견적'}</h3>
         <p className="mt-2 text-lg font-bold text-primary">견적 금액 {formatPoint(quote.amount)}</p>
       </header>

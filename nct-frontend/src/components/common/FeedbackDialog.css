@@ -12,6 +12,11 @@
   animation: feedback-overlay-in 140ms ease-out;
 }
 
+.feedback-dialog__overlay--leaving {
+  pointer-events: none;
+  animation: feedback-overlay-out 180ms ease-in forwards;
+}
+
 .feedback-dialog {
   --feedback-tone: var(--ui-color-primary, #0064ff);
   --feedback-tone-soft: var(--ui-color-primary-soft, #e5efff);
@@ -29,6 +34,8 @@
   box-shadow: 0 24px 70px rgb(15 23 42 / 24%);
   animation: feedback-dialog-in 170ms ease-out;
 }
+
+.feedback-dialog--leaving { animation: feedback-dialog-out 180ms ease-in forwards; }
 
 .feedback-dialog--sm { width: min(100%, 320px); padding: 24px; }
 .feedback-dialog--md { width: min(100%, 400px); padding: 30px; }
@@ -123,6 +130,10 @@
 .feedback-toast--success { --feedback-tone: #32a85f; --feedback-tone-soft: #ecf9f1; }
 .feedback-toast--warning { --feedback-tone: #d18a00; --feedback-tone-soft: #fff7df; }
 .feedback-toast--error { --feedback-tone: var(--ui-color-danger, #e63946); --feedback-tone-soft: #fff0f1; }
+.feedback-toast--leaving {
+  pointer-events: none;
+  animation: feedback-toast-out 180ms ease-in forwards;
+}
 
 .feedback-toast__icon {
   display: flex;
@@ -159,11 +170,22 @@
 .feedback-swal__actions { gap: 10px; margin: 24px 0 0 !important; }
 .feedback-swal__button { min-width: 96px; margin: 0 !important; }
 
+.feedback-swal-in { animation: feedback-dialog-in 180ms ease-out both; }
+.feedback-swal-out { animation: feedback-dialog-out 180ms ease-in forwards !important; }
+.feedback-swal-backdrop-in { animation: feedback-overlay-in 180ms ease-out both; }
+.feedback-swal-backdrop-out { animation: feedback-overlay-out 180ms ease-in forwards !important; }
+
 @keyframes feedback-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes feedback-overlay-out { from { opacity: 1; } to { opacity: 0; } }
 @keyframes feedback-dialog-in { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes feedback-dialog-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(8px) scale(.98); } }
 @keyframes feedback-toast-in {
   from { opacity: 0; transform: translate(-50%, calc(-50% + 10px)) scale(.98); }
   to { opacity: 1; transform: translate(-50%, -50%); }
+}
+@keyframes feedback-toast-out {
+  from { opacity: 1; transform: translate(-50%, -50%); }
+  to { opacity: 0; transform: translate(-50%, calc(-50% + 10px)) scale(.98); }
 }
 
 @media (max-width: 640px) {
@@ -178,5 +200,9 @@
 @media (prefers-reduced-motion: reduce) {
   .feedback-dialog__overlay,
   .feedback-dialog,
-  .feedback-toast { animation: none; }
+  .feedback-toast,
+  .feedback-swal-in,
+  .feedback-swal-out,
+  .feedback-swal-backdrop-in,
+  .feedback-swal-backdrop-out { animation: none !important; }
 }

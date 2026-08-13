@@ -11,6 +11,7 @@ import { useConfig } from '@hooks/useConfig';
 import { checkNickname, completeOauthOnboarding, getOauthOnboardingPending } from '@api/authApi';
 import AuthPageContainer from '@components/auth/AuthPageContainer';
 import AuthCard from '@components/auth/AuthCard';
+import { ActionButton } from '@components/common/ui';
 import { SIGNUP_TERMS } from './signupTerms';
 import { formatPhoneNumber, isValidPhoneNumber, toPhoneDigits } from '@utils/phoneNumber';
 import FormSkeleton from '@components/skeleton/FormSkeleton';
@@ -32,13 +33,14 @@ const AgreementRow = ({ agreement, checked, onChange, onOpen }) => (
         {agreement.required ? '(필수)' : '(선택)'}
       </span>
     </label>
-    <button
-      type="button"
+    <ActionButton
       onClick={onOpen}
-      className="shrink-0 rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-600 transition hover:bg-gray-50"
+      className="shrink-0"
+      size="sm"
+      tone="neutral"
     >
       보기
-    </button>
+    </ActionButton>
   </div>
 );
 
@@ -64,13 +66,12 @@ const AgreementModal = ({ agreement, onClose }) => {
           </>
         ) : null}
         <div className="mt-6 flex justify-end">
-          <button
-            type="button"
+          <ActionButton
             onClick={onClose}
-            className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700"
+            size="sm"
           >
             닫기
-          </button>
+          </ActionButton>
         </div>
       </div>
     </div>
@@ -297,13 +298,13 @@ const OAuthOnboardingPage = () => {
           <div className="w-14 h-14 mx-auto rounded-full bg-red-50 flex items-center justify-center text-2xl mb-4">⚠️</div>
           <h2 className="text-base font-bold mb-2">온보딩 정보 없음</h2>
           <p className="text-sm text-gray-500 mb-8">{loadError}</p>
-          <button
-            type="button"
-            onClick={() => navigate('/login', { replace: true })}
-            className="w-full h-11 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition"
+          <ActionButton
+            fullWidth
+            replace
+            to="/login"
           >
             로그인으로 돌아가기
-          </button>
+          </ActionButton>
         </AuthCard>
       </AuthPageContainer>
     );
@@ -359,14 +360,15 @@ const OAuthOnboardingPage = () => {
                       disabled={submitting}
                       className="h-12 w-full rounded-lg border border-gray-300 px-4 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500"
                     />
-                    <button
-                      type="button"
+                    <ActionButton
                       onClick={handleNicknameCheck}
                       disabled={submitting || nicknameAvailability.state === 'checking'}
-                      className="h-12 rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      loading={nicknameAvailability.state === 'checking'}
+                      size="lg"
+                      tone="neutral"
                     >
                       중복 확인
-                    </button>
+                    </ActionButton>
                   </div>
                   {nicknameAvailability.message ? (
                     <p
@@ -408,14 +410,14 @@ const OAuthOnboardingPage = () => {
             </div>
 
             <div className="mt-6 flex flex-col items-stretch gap-2 sm:items-end">
-              <button
-                type="button"
+              <ActionButton
                 onClick={handleSubmit}
-                disabled={submitting}
-                className="h-12 w-full rounded-lg bg-blue-600 px-8 text-base font-bold text-white transition-all duration-150 hover:bg-blue-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                loading={submitting}
+                size="lg"
+                className="w-full sm:w-auto"
               >
                 {submitting ? '가입 처리 중...' : '가입 완료'}
-              </button>
+              </ActionButton>
               {submitMessage ? <p aria-live="polite" className="text-xs text-red-600">{submitMessage}</p> : null}
             </div>
           </div>

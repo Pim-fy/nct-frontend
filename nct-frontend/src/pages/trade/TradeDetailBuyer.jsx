@@ -32,7 +32,7 @@ import { getOfflineTradeProgressConfig } from '@components/trade/tradeProgressCo
 import TradeDetailOverviewCard from '@components/trade/TradeDetailOverviewCard';
 import OfflineScheduleProposalPanel from '@components/trade/OfflineScheduleProposalPanel';
 import TradeDetailErrorState from '@components/trade/TradeDetailErrorState';
-import TradeDisputeDialog from '@components/trade/TradeDisputeDialog';
+import { ActionButton } from '@components/common/ui';
 import PhotoLightbox from '@components/common/PhotoLightbox';
 import AlertModal from '@components/common/AlertModal';
 import ReportModal from '@components/common/ReportModal';
@@ -213,24 +213,6 @@ const TradeDetailBuyer = ({
       setIsLoading(false);
     }
   }, [tradeId]);
-
-  /** 담당자 7 · REQ-AUC-027/F-SVC-012: 접수 후 상품 거래와 마이페이지 집계를 맞춥니다. */
-  const handleTradeDisputeSubmitted = async () => {
-    const refreshes = [
-      getTradeDetail(tradeId),
-      queryClient.invalidateQueries({ queryKey: ['trades'] }),
-    ];
-    if (auctionId) {
-      refreshes.push(queryClient.invalidateQueries({
-        queryKey: ['auction-trade', String(auctionId)],
-      }));
-    }
-
-    const [detailResult] = await Promise.allSettled(refreshes);
-    if (detailResult.status === 'fulfilled') {
-      setTrade(toTradeDetail(detailResult.value));
-    }
-  };
 
   // 거래 번호가 바뀌면 렌더링 완료 뒤에 해당 거래의 상세를 다시 조회한다.
   // initialTrade가 주입된 경우(embedded)는 이미 데이터가 있으므로 다시 조회하지 않는다.
@@ -610,14 +592,13 @@ const TradeDetailBuyer = ({
                   <h3>거래 채팅</h3>
                   <p>{chatDescription}</p>
                   <div className="trade-detail-actions trade-detail-actions--end">
-                    <button
-                      className="btn btn-outline"
-                      type="button"
+                    <ActionButton
                       onClick={openTradeChat}
                       disabled={!canUseTradeChat(trade)}
+                      tone="outline"
                     >
                       {chatButtonLabel}
-                    </button>
+                    </ActionButton>
                   </div>
                 </div>
                 <OfflineScheduleProposalPanel
@@ -667,45 +648,34 @@ const TradeDetailBuyer = ({
                 <div className="trade-detail-actions trade-detail-actions--end">
                   {!isCompleted && isOfflineCompletionResponsePending && (
                     <>
-                      <button
-                        className="btn btn-danger"
-                        type="button"
+                      <ActionButton
                         disabled={isSubmitting}
                         onClick={() => handleOfflineCompletionDecision(false)}
+                        tone="danger"
                       >
                         거절
-                      </button>
-                      <button
-                        className="btn btn-primary"
-                        type="button"
+                      </ActionButton>
+                      <ActionButton
                         disabled={isSubmitting}
                         onClick={() => handleOfflineCompletionDecision(true)}
                       >
                         동의하고 거래 완료
-                      </button>
+                      </ActionButton>
                     </>
                   )}
                   {!isCompleted && canRequestBuyerCompletion && (
-                    <button
-                      className="btn btn-primary"
-                      type="button"
+                    <ActionButton
                       disabled={!canRequestCompletion() || isSubmitting}
+                      loading={isSubmitting}
                       onClick={handleCompletionRequest}
                     >
                       {isSubmitting ? '요청 중...' : '거래 완료 확인 요청'}
-                    </button>
+                    </ActionButton>
                   )}
                 </div>
               </div>
             )}
 
-            <TradeDisputeDialog
-              disabled={isPreview}
-              tradeId={tradeId}
-              tradeMethod={trade.method}
-              tradeStatus={trade.status}
-              onSubmitted={handleTradeDisputeSubmitted}
-            />
           </section>
 
           {/* 오른쪽: 거래 리뷰 */}
@@ -746,13 +716,11 @@ const TradeDetailBuyer = ({
                 : '판매자의 확인이나 이의제기 없이 일정 기간이 지나면 거래가 자동으로 완료됩니다. 현재 거래 상태는 판매자 확인 대기입니다.'}
             </p>
             <div className="trade-modal__actions">
-              <button
-                className="btn btn-primary"
-                type="button"
+              <ActionButton
                 onClick={() => setIsCompletionResultOpen(false)}
               >
                 거래 상세에서 확인
-              </button>
+              </ActionButton>
             </div>
           </div>
         </div>

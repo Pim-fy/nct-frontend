@@ -9,7 +9,7 @@
 import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import arrowDark from "@assets/img/arrowDark.png";
-import CommonTabs from "@components/common/CommonTabs";
+import { ActionButton } from "@components/common/ui";
 import { assets } from "./assets";
 import AuctionCard from "./AuctionCard";
 
@@ -75,13 +75,14 @@ export default function MobileLandingSections({
                     처음이어도 흐름만 알면 어렵지<br />않아요.
                   </p>
                   <p className="text-[12px] text-black mt-1">경매와 서비스 요청, 시작부터 완료까지 한눈에 확인하세요.</p>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); navigate("/customersupport/guide"); }}
-                    className="mt-3 bg-[#0064ff] text-white font-bold text-[13px] px-4 py-2 rounded-[10px] cursor-pointer border-none"
+                  <ActionButton
+                    className="mt-3"
+                    onClick={(event) => event.stopPropagation()}
+                    size="sm"
+                    to="/customersupport/guide"
                   >
                     이용가이드 보기
-                  </button>
+                  </ActionButton>
                 </div>
               </div>
               {/* 인디케이터 */}
@@ -127,17 +128,23 @@ export default function MobileLandingSections({
 
       {/* 경매 (탭 + 가로 스와이프 카드) */}
       <section>
-        <div className="mb-3 flex items-end justify-between gap-2 px-4">
-          <CommonTabs
-            activeValue={activeTab}
-            ariaLabel="메인 경매 목록"
-            className="min-w-0 flex-1"
-            items={[
-              { value: "new", label: "신규 경매" },
-              { value: "closing", label: "마감 임박 경매" },
-            ]}
-            onChange={setActiveTab}
-          />
+        <div className="mb-3 flex items-center justify-between px-4">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab("new")}
+              className={`rounded-full px-4 py-2 text-[15px] font-bold transition-colors ${activeTab === "new" ? "bg-[#0064ff] text-white" : "bg-[#ebebeb] text-[#969696]"}`}
+            >
+              신규 경매
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("closing")}
+              className={`rounded-full px-4 py-2 text-[15px] font-bold transition-colors ${activeTab === "closing" ? "bg-[#0064ff] text-white" : "bg-[#ebebeb] text-[#969696]"}`}
+            >
+              마감 임박 경매
+            </button>
+          </div>
           <div className="flex items-center gap-1">
             <button
               type="button"
@@ -178,15 +185,16 @@ export default function MobileLandingSections({
           {!isAuctionLoading && !isAuctionError && auctionItems.length === 0 && <p className="w-full px-4 py-14 text-center text-[16px] text-[#666]">표시할 경매가 없습니다.</p>}
         </div>
         <div className="mt-2 flex justify-center">
-          <button
-            type="button"
-            onClick={() => navigate(activeTab === "new"
+          <ActionButton
+            to={activeTab === "new"
               ? "/auction?sort=latest"
-              : "/auction?sort=deadline&endingSoonOnly=true")}
-            className="rounded-full border border-[#ebebeb] bg-[#f3f5fa] px-5 py-2 text-[13px] text-[#4e4e4e]"
+              : "/auction?sort=deadline&endingSoonOnly=true"}
+            tone="neutral"
+            size="sm"
+            className="rounded-full px-5"
           >
             더보기 ›
-          </button>
+          </ActionButton>
         </div>
       </section>
 

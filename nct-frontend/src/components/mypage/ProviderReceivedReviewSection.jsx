@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { toImageUrl } from '@api/fileApi';
 import { getUserReviews } from '@api/reviewApi';
 import Pagination from '@components/common/Pagination';
+import { ActionButton } from '@components/common/ui';
 import MyPageListEmpty from '@components/mypage/MyPageListEmpty';
 import MyPageListError from '@components/mypage/MyPageListError';
 import MyPageListItem from '@components/mypage/MyPageListItem';
@@ -262,13 +263,9 @@ export default function ProviderReceivedReviewSection() {
                         title={review.productTitle || '서비스 거래'}
                         footerLeft={`작성일 ${formatDate(review.createdDate)}`}
                         actionButton={(
-                          <button
-                            type="button"
-                            className="btn btn-primary"
-                            onClick={() => openServiceTrade(review)}
-                          >
+                          <ActionButton onClick={() => openServiceTrade(review)}>
                             거래 상세
-                          </button>
+                          </ActionButton>
                         )}
                       />
                     </div>
@@ -281,13 +278,9 @@ export default function ProviderReceivedReviewSection() {
                         title={review.productTitle || '서비스 거래'}
                         actions={(
                           <MyPageListPriceActions topLine={`작성일 ${formatDate(review.createdDate)}`}>
-                            <button
-                              type="button"
-                              className="btn btn-primary"
-                              onClick={() => openServiceTrade(review)}
-                            >
+                            <ActionButton onClick={() => openServiceTrade(review)}>
                               거래 상세
-                            </button>
+                            </ActionButton>
                           </MyPageListPriceActions>
                         )}
                       >

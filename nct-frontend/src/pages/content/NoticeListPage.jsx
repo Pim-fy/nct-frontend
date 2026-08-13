@@ -9,6 +9,7 @@ import {
   NoticeList,
   NoticeListSummary,
 } from '@components/content/ContentUi';
+import { ActionButton } from '@components/common/ui';
 import { usePublicNoticeList, usePublicNoticeTypes } from '@hooks/usePublicNotices';
 import './noticePage.css';
 
@@ -90,7 +91,6 @@ const NoticeListPage = () => {
       <Helmet><title>공지사항 | 에누리컷</title></Helmet>
       <header className="customer-support-page-header customer-support-page-header--plain">
         <h1>공지사항</h1>
-        <p>서비스 점검, 정책 변경, 이용 안내와 이벤트 소식을 확인하세요.</p>
       </header>
 
       <section className="public-notice-board" aria-label="공지사항 검색 및 목록">
@@ -118,9 +118,9 @@ const NoticeListPage = () => {
                   placeholder="제목 또는 내용 검색"
                   value={keywordInput}
                 />
-                <button className="btn btn-primary" type="submit">
+                <ActionButton type="submit">
                   검색
-                </button>
+                </ActionButton>
               </form>
             </div>
           )}

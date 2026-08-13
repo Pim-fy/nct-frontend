@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQueries } from '@tanstack/react-query';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { BriefcaseBusiness, CalendarDays, MessageSquareText } from 'lucide-react';
 import { getMyServiceTrades } from '@api/serviceTradeApi';
 import { toImageUrl } from '@api/fileApi';
@@ -13,6 +13,7 @@ import MyPageStatusBadge from '@components/mypage/MyPageStatusBadge';
 import MyPageListSkeleton from '@components/skeleton/MyPageListSkeleton';
 import MyPageMobileCard from '@components/mypage/MyPageMobileCard';
 import Pagination from '@components/common/Pagination';
+import { ActionButton } from '@components/common/ui';
 import { getServiceTradeStatus } from './serviceTradeStatus';
 
 const PAGE_SIZE = 10;
@@ -51,7 +52,6 @@ const formatDate = (value) => {
 };
 
 export default function MyServiceTradeListPage({ fixedRole = null }) {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   // 담당자 7 · F-PROV-009: URL 상태는 이 목록에 정의된 필터 코드만 허용해 직접 진입과 새로고침을 유지합니다.
   const requestedFilter = searchParams.get('status') ?? 'ALL';
@@ -171,13 +171,9 @@ export default function MyServiceTradeListPage({ fixedRole = null }) {
                   )}
                   title={trade.serviceRequestTitle || '견적 진행 내역'}
                   actions={(
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-primary"
-                      onClick={() => navigate(getServiceTradeDetailPath(trade.tradeId))}
-                    >
+                    <ActionButton size="sm" to={getServiceTradeDetailPath(trade.tradeId)}>
                       거래 상세
-                    </button>
+                    </ActionButton>
                   )}
                 >
                   <p>{counterpartLabel} {trade.counterpartNickname || '-'} · 거래금액 {formatPoint(trade.tradeAmount)}</p>
@@ -213,13 +209,9 @@ export default function MyServiceTradeListPage({ fixedRole = null }) {
                   footerLeft={`카테고리 · ${trade.categoryName || '서비스'}`}
                   footerRight={trade.quoteSummary ? '선택 견적' : undefined}
                   actionButton={(
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-primary"
-                      onClick={() => navigate(getServiceTradeDetailPath(trade.tradeId))}
-                    >
+                    <ActionButton size="sm" to={getServiceTradeDetailPath(trade.tradeId)}>
                       상세보기
-                    </button>
+                    </ActionButton>
                   )}
                 />
               );

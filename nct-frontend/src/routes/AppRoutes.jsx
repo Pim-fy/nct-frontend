@@ -93,10 +93,13 @@ import ServiceRequestDetailPage from '@pages/service/ServiceRequestDetailPage';
 import QuoteDetailPage from '@pages/service/QuoteDetailPage';
 import ServiceTradeDetailRoutePage from '@pages/service/ServiceTradeDetailRoutePage';
 import {
+  ADMIN_AUCTION_DETAIL_ROUTE,
+  ADMIN_AUCTIONS_ROUTE,
   ADMIN_OPERATIONS_RECORDS_ROUTE,
   ADMIN_PROVIDER_APPLICATIONS_ROUTE,
   ADMIN_REPORT_DETAIL_ROUTE,
   ADMIN_REPORTS_ROUTE,
+  ADMIN_SERVICE_REQUEST_DETAIL_ROUTE,
   ADMIN_SERVICE_REQUESTS_ROUTE,
   ADMIN_SERVICE_TRADE_DETAIL_ROUTE,
   ADMIN_SETTINGS_ROUTE,
@@ -118,10 +121,12 @@ import AdminNoticeFormPage from '@pages/admin/notice/AdminNoticeFormPage';
 import AdminCategoryPage from '@pages/admin/category/AdminCategoryPage';
 import AdminServiceRequestFormPage from '@pages/admin/category/AdminServiceRequestFormPage';
 import AdminServiceRequestPage from '@pages/admin/service/AdminServiceRequestPage';
+import AdminServiceRequestDetailPage from '@pages/admin/service/AdminServiceRequestDetailPage';
 import AdminProviderApprovalPage from '@pages/admin/provider/AdminProviderApprovalPage';
 import AdminOperationsRecordPage from '@pages/admin/operation/AdminOperationsRecordPage';
 import AdminSystemSettingPage from '@pages/admin/setting/AdminSystemSettingPage';
 import AdminAuctionManagementPage from '@pages/admin/auction/AdminAuctionManagementPage';
+import AdminAuctionDetailPage from '@pages/admin/auction/AdminAuctionDetailPage';
 import AdminNotificationPage from '@pages/admin/notification/AdminNotificationPage';
 import AdminReportManagementPage from '@pages/admin/operation/AdminReportManagementPage';
 import AdminCustomerInquiryManagementPage from '@pages/admin/operation/AdminCustomerInquiryManagementPage';
@@ -309,8 +314,10 @@ const AppRoutes = () => {
           <Route path="categories" element={<AdminCategoryPage />} />
           <Route path="categories/:categorySn/form" element={<AdminServiceRequestFormPage />} />
           <Route path={ADMIN_SERVICE_REQUESTS_ROUTE} element={<AdminServiceRequestPage />} />
+          <Route path={ADMIN_SERVICE_REQUEST_DETAIL_ROUTE} element={<AdminServiceRequestDetailPage />} />
           <Route path={ADMIN_PROVIDER_APPLICATIONS_ROUTE} element={<AdminProviderApprovalPage />} />
-          <Route path="auctions" element={<AdminAuctionManagementPage />} />
+          <Route path={ADMIN_AUCTIONS_ROUTE} element={<AdminAuctionManagementPage />} />
+          <Route path={ADMIN_AUCTION_DETAIL_ROUTE} element={<AdminAuctionDetailPage />} />
           <Route path={ADMIN_REPORTS_ROUTE} element={<AdminReportManagementPage />} />
           <Route path={ADMIN_REPORT_DETAIL_ROUTE} element={<AdminReportManagementPage />} />
           <Route path="inquiries" element={<AdminCustomerInquiryManagementPage />} />

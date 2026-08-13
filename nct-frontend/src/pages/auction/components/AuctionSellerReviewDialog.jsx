@@ -5,6 +5,7 @@ import { ChevronRight, LoaderCircle, Star, X } from 'lucide-react';
 import { getAuctionStatus } from '@api/auctionApi';
 import { getUserReviews } from '@api/reviewApi';
 import Pagination from '@components/common/Pagination';
+import { ActionButton } from '@components/common/ui';
 
 const PAGE_SIZE = 5;
 
@@ -137,13 +138,14 @@ const AuctionSellerReviewDialog = ({
             <div className="grid min-h-64 place-items-center text-center">
               <div>
                 <p className="m-0 text-body-sm text-[#b42318]">판매자 리뷰를 불러오지 못했습니다.</p>
-                <button
-                  className="mt-3 cursor-pointer rounded-lg border border-[#d9d9d9] bg-white px-4 py-2 text-caption font-bold text-[#444] hover:border-primary hover:text-primary"
-                  type="button"
+                <ActionButton
+                  className="mt-3"
                   onClick={() => reviewsQuery.refetch()}
+                  size="sm"
+                  tone="neutral"
                 >
                   다시 불러오기
-                </button>
+                </ActionButton>
               </div>
             </div>
           )}

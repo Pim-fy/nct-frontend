@@ -10,10 +10,8 @@
 // (Provider 쪽 effect로 초기화하면 부모 effect가 자식보다 늦게 실행되어
 //  새 페이지가 방금 설정한 값을 지워버리는 순서 버그가 생기므로 이 방식을 쓴다)
 // ─────────────────────────────────────────────────────────────────────────────
-import { createContext, useContext, useLayoutEffect, useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
-
-const BreadcrumbContext = createContext({ entry: null, setEntry: () => {} });
+import { useMemo, useState } from 'react';
+import { BreadcrumbContext } from './breadcrumbContextValue';
 
 export const BreadcrumbProvider = ({ children }) => {
   // entry: { locationKey, items } | null
@@ -24,28 +22,4 @@ export const BreadcrumbProvider = ({ children }) => {
       {children}
     </BreadcrumbContext.Provider>
   );
-};
-
-export const useBreadcrumbContext = () => useContext(BreadcrumbContext);
-
-// 페이지에서 호출: items 배열을 넘기면 그 화면에 있는 동안 브레드크럼 전체를 교체한다.
-// items가 null/빈 배열이면 아무것도 하지 않는다(조건부 오버라이드를 위해 호출 자체는 항상 가능).
-export const useBreadcrumbOverride = (items) => {
-  const { setEntry } = useBreadcrumbContext();
-  const { key: locationKey } = useLocation();
-
-  // 배열 리터럴은 렌더마다 새 참조라 그대로 deps에 넣으면 무한 재실행되므로
-  // JSON 문자열로 직렬화해 "내용이 같으면 같은 값"으로 안정화한다.
-  const itemsJson = items && items.length > 0 ? JSON.stringify(items) : null;
-
-  // useLayoutEffect: 화면이 그려지기 전에 오버라이드를 반영해 깜빡임을 막는다
-  useLayoutEffect(() => {
-    if (!itemsJson) return undefined;
-    setEntry({ locationKey, items: JSON.parse(itemsJson) });
-    // 화면을 떠나거나 items가 사라질 때, 내가 설정한 오버라이드만 정리한다
-    // (다른 화면이 이미 새 값을 설정했다면 건드리지 않음)
-    return () => {
-      setEntry((prev) => (prev?.locationKey === locationKey ? null : prev));
-    };
-  }, [itemsJson, locationKey, setEntry]);
 };

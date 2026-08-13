@@ -10,6 +10,7 @@ import DaumPostcode from "react-daum-postcode";
 import { toast, confirm } from "@utils/common";
 import { formatPhoneNumber, toPhoneDigits } from "@utils/phoneNumber";
 import AlertModal from "@components/common/AlertModal";
+import { ActionButton } from "@components/common/ui";
 import { assets } from "@components/mypage/assets";
 import { updateProfile, changePassword, getOauthLinks, unlinkOauth } from "@api/memberApi";
 import { uploadImage, toImageUrl } from "@api/fileApi";
@@ -405,14 +406,14 @@ export default function MyPageProfileEdit({ user }) {
                 />
               </div>
               <div className="flex justify-end">
-                <button
-                  type="button"
+                <ActionButton
                   onClick={handleChangePassword}
                   disabled={isChangingPassword}
-                  className="btn btn-outline btn-sm"
+                  size="sm"
+                  tone="outline"
                 >
                   {isChangingPassword ? "변경 중..." : "비밀번호 변경"}
-                </button>
+                </ActionButton>
               </div>
             </>
           ) : (
@@ -438,13 +439,13 @@ export default function MyPageProfileEdit({ user }) {
                 readOnly
                 value={form.address}
               />
-              <button
-                type="button"
+              <ActionButton
                 onClick={() => setAddressSearchOpen(true)}
-                className="btn btn-dark btn-sm"
+                size="sm"
+                tone="neutral"
               >
                 주소검색
-              </button>
+              </ActionButton>
             </div>
             {form.zip && <p className="mt-1 text-[12px] text-[#969696]">우편번호 {form.zip}</p>}
           </div>
@@ -478,14 +479,14 @@ export default function MyPageProfileEdit({ user }) {
                   value={form.accountNo}
                   onChange={handleChange("accountNo")}
                 />
-                <button
-                  type="button"
+                <ActionButton
                   onClick={handleDeleteAccount}
                   disabled={!form.bankName && !form.accountNo}
-                  className="btn btn-danger btn-sm"
+                  size="sm"
+                  tone="danger"
                 >
                   삭제
-                </button>
+                </ActionButton>
               </div>
             </div>
           </div>
@@ -498,12 +499,11 @@ export default function MyPageProfileEdit({ user }) {
             >
               회원 탈퇴
             </button>
-            <button
+            <ActionButton
               type="submit"
-              className="btn btn-primary"
             >
               저장
-            </button>
+            </ActionButton>
           </div>
         </form>
       </MyPagePanel>
@@ -523,16 +523,16 @@ export default function MyPageProfileEdit({ user }) {
                 return (
                   <div key={social.key} className="flex flex-col items-center gap-2">
                     <p className="text-[13px] text-black font-medium">{social.label}</p>
-                    <button
-                      type="button"
+                    <ActionButton
                       onClick={() =>
                         linked ? handleUnlink(social.key, social.label) : handleLink(social.key)
                       }
                       disabled={oauthLinksQuery.isLoading || unlinkMutation.isPending}
-                      className={linked ? "btn btn-ghost btn-sm" : "btn btn-outline btn-sm"}
+                      size="sm"
+                      tone={linked ? "neutral" : "outline"}
                     >
                       {linked ? "연동됨" : "연동하기"}
-                    </button>
+                    </ActionButton>
                   </div>
                 );
               })}
@@ -652,13 +652,13 @@ export default function MyPageProfileEdit({ user }) {
           <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-[#f0f0f0] px-5 py-3">
               <p className="font-bold text-[15px] text-[#404040]">주소 검색</p>
-              <button
-                type="button"
+              <ActionButton
                 onClick={() => setAddressSearchOpen(false)}
-                className="btn btn-ghost btn-sm"
+                size="sm"
+                tone="neutral"
               >
                 닫기
-              </button>
+              </ActionButton>
             </div>
             <DaumPostcode autoClose={false} onComplete={handleAddressComplete} />
           </div>

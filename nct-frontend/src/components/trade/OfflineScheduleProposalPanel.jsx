@@ -14,6 +14,7 @@ import {
   isTenMinuteTime,
 } from '@components/common/timeSelectUtils';
 import DateRangePicker from '@components/product/DateRangePicker';
+import { ActionButton } from '@components/common/ui';
 
 const getInitialValue = (value) => (value && value !== '-' ? value : '');
 const getTodayDate = () => new Date().toLocaleDateString('en-CA');
@@ -206,9 +207,7 @@ const OfflineScheduleProposalPanel = ({
           <div className="trade-detail-actions trade-detail-actions--end">
             {trade.canRespondToScheduleProposal && (
               <>
-                <button
-                  className="btn btn-primary"
-                  type="button"
+                <ActionButton
                   disabled={isSubmitting}
                   onClick={() => applyAction(
                     () => acceptOfflineScheduleProposal(tradeId, pending.id),
@@ -216,32 +215,30 @@ const OfflineScheduleProposalPanel = ({
                   )}
                 >
                   수락
-                </button>
-                <button
-                  className="btn btn-outline"
-                  type="button"
+                </ActionButton>
+                <ActionButton
                   disabled={isSubmitting}
                   onClick={() => applyAction(
                     () => rejectOfflineScheduleProposal(tradeId, pending.id),
                     '직거래 일정 제안을 거절했습니다.',
                   )}
+                  tone="outline"
                 >
                   거절
-                </button>
+                </ActionButton>
               </>
             )}
             {trade.canWithdrawScheduleProposal && (
-              <button
-                className="btn btn-outline"
-                type="button"
+              <ActionButton
                 disabled={isSubmitting}
                 onClick={() => applyAction(
                   () => withdrawOfflineScheduleProposal(tradeId, pending.id),
                   '직거래 일정 제안을 철회했습니다.',
                 )}
+                tone="outline"
               >
                 제안 철회
-              </button>
+              </ActionButton>
             )}
           </div>
         </div>
@@ -312,25 +309,24 @@ const OfflineScheduleProposalPanel = ({
             />
           </label>
           <div className="trade-detail-actions trade-detail-actions--end">
-            <button className="btn btn-primary" type="submit" disabled={isSubmitting || isScheduleProposalLimitReached}>
+            <ActionButton loading={isSubmitting} type="submit" disabled={isScheduleProposalLimitReached}>
               {isSubmitting
                 ? '처리 중...'
                 : isScheduleProposalLimitReached
                   ? '일정 제안 횟수 소진'
                   : hasConfirmedSchedule ? '변경 제안하기' : '일정 제안하기'}
-            </button>
+            </ActionButton>
             {hasConfirmedSchedule && (
-              <button
-                className="btn btn-outline"
-                type="button"
+              <ActionButton
                 disabled={isSubmitting}
                 onClick={() => applyAction(
                   () => requestOfflineScheduleCancellation(tradeId),
                   '직거래 일정 취소를 제안했습니다.',
                 )}
+                tone="outline"
               >
                 일정 취소 제안
-              </button>
+              </ActionButton>
             )}
           </div>
         </form>

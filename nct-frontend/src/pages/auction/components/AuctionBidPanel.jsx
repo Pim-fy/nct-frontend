@@ -1,6 +1,12 @@
 import { Flag, Heart, MapPin } from 'lucide-react';
 import { formatNumber, formatPoint } from '@utils/common';
 import { resolveTradeMethodLabel } from '../utils/auctionFormatters';
+import {
+  ActionButton,
+  CategoryTag,
+  DomainStatus,
+  StatusBadge,
+} from '@components/common/ui';
 
 const BID_UNIT_MULTIPLIERS = [1, 5, 10];
 const AUCTION_STATUS = {
@@ -8,6 +14,14 @@ const AUCTION_STATUS = {
   FAILED: 'AUCC0004',
   CANCELLED: 'AUCC0005',
   CANCELLATION_REQUESTED: 'AUCC0006',
+};
+const AUCTION_STATUS_TONE = {
+  AUCC0001: 'warning',
+  AUCC0002: 'info',
+  AUCC0003: 'success',
+  AUCC0004: 'neutral',
+  AUCC0005: 'danger',
+  AUCC0006: 'warning',
 };
 
 const resolveClosedAuctionContent = (statusCode, isCurrentHighestBidder) => {
@@ -157,25 +171,28 @@ const AuctionBidPanel = ({
     <aside className="grid min-h-[452px] content-start gap-[16px] rounded-lg border border-[#e8e8e8] bg-white px-[38px] pt-[28px] pb-[30px] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)] max-lg:min-h-0 max-lg:px-[22px] max-lg:py-7">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="inline-flex min-h-5 items-center gap-1.5 rounded-full bg-primary-light px-[9px] text-[13px] leading-[1.4] font-bold whitespace-nowrap text-primary-dark">
-            <span className="size-[7px] rounded-full bg-current" aria-hidden="true" />
+          <DomainStatus
+            tone={AUCTION_STATUS_TONE[auction.auctionStatusCode] ?? 'neutral'}
+            variant="soft"
+          >
             {auction.auctionStatusName || '진행중'}
-          </span>
+          </DomainStatus>
           {auction.tradeMethodName && (
-            <span className="inline-flex min-h-5 items-center gap-1.5 rounded-full px-[9px] text-[13px] leading-[1.4] font-bold whitespace-nowrap text-[#3f3f46]">
-              <span className="size-[7px] rounded-full bg-primary" aria-hidden="true" />
+            <CategoryTag tone="info" variant="outline">
               {resolveTradeMethodLabel(auction.tradeMethodCode, auction.tradeMethodName)}
-            </span>
+            </CategoryTag>
           )}
-          <span
+          <StatusBadge
             aria-hidden={!isCurrentHighestBidder}
-            className={`inline-flex min-h-6 items-center rounded-lg border border-[#88c9a1] bg-[#edf9f1] px-[9px] py-0.5 text-[13px] leading-[1.4] font-bold text-[#176b3a] transition-opacity ${
+            className={`transition-opacity ${
               isCurrentHighestBidder ? 'visible opacity-100' : 'invisible opacity-0'
             }`}
-            role={isCurrentHighestBidder ? 'status' : undefined}
+            live={isCurrentHighestBidder}
+            tone="success"
+            variant="soft"
           >
             {isEndedAuction ? '낙찰자' : '최고입찰자'}
-          </span>
+          </StatusBadge>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <button
@@ -410,22 +427,25 @@ const AuctionBidPanel = ({
           ) : !isAuctionOpen ? (
             <div className="grid min-h-36 flex-1 place-items-center px-3 text-center text-[#1d1d1f]" role="status">
               <div className="grid max-w-[320px] gap-2">
-                <span className="mx-auto inline-flex min-h-7 items-center rounded-full bg-[#f1f4f8] px-3 text-caption font-bold text-[#586174]">
+                <DomainStatus
+                  className="mx-auto"
+                  tone={AUCTION_STATUS_TONE[auction.auctionStatusCode] ?? 'neutral'}
+                  variant="soft"
+                >
                   {auction.auctionStatusName || '종료'}
-                </span>
+                </DomainStatus>
                 <strong className="text-h3 font-bold text-[#1d1d1f]">{closedAuctionContent.title}</strong>
                 <p className="m-0 text-body-sm leading-6 text-[#666] md:text-body-md">
                   {closedAuctionContent.description}
                 </p>
                 {isEndedAuction && isCurrentHighestBidder && (
                   Number(auction.tradeId) > 0 ? (
-                    <button
-                      className="mt-2 min-h-10 cursor-pointer rounded-lg border border-primary bg-primary px-4 text-body-sm font-bold text-white transition-colors hover:bg-[#0058df]"
-                      type="button"
+                    <ActionButton
+                      className="mt-2"
                       onClick={onTradeDetailOpen}
                     >
                       거래 상세 보기
-                    </button>
+                    </ActionButton>
                   ) : (
                     <span className="mt-1 text-caption font-bold text-[#666]">거래 생성 중</span>
                   )
@@ -505,18 +525,13 @@ const AuctionBidPanel = ({
                       {requiresBidHoldConsent && (
                         <span aria-hidden="true" className="mb-0.5 min-h-[38px]" />
                       )}
-                      <button
-                        className={`min-h-[46px] rounded-lg border text-body-md font-bold ${
-                          isDeliveryAddressChecking
-                            ? 'border-[#dadada] bg-[#f3f3f3] text-[#666]'
-                            : 'cursor-pointer border-primary bg-primary text-white hover:bg-[#0058df]'
-                        }`}
-                        type="button"
-                        disabled={isDeliveryAddressChecking}
+                      <ActionButton
+                        loading={isDeliveryAddressChecking}
                         onClick={isDeliveryAddressChecking ? undefined : onDeliveryAddressOpen}
+                        size="lg"
                       >
                         {isDeliveryAddressChecking ? '배송지 확인 중' : '배송지 등록'}
-                      </button>
+                      </ActionButton>
                       <span aria-hidden="true" className="min-h-[46px]" />
                     </>
                   ) : (
@@ -539,26 +554,27 @@ const AuctionBidPanel = ({
                           입찰 포인트 홀딩에 동의합니다
                         </label>
                       )}
-                      <button
-                        className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-primary text-body-md font-bold text-white disabled:cursor-not-allowed disabled:opacity-55 aria-busy:cursor-progress"
+                      <ActionButton
                         id="bidBtn"
-                        type="button"
                         aria-busy={isPrimaryActionPending}
                         disabled={isPrimaryActionDisabled}
+                        loading={isPrimaryActionPending}
+                        size="lg"
                         onClick={isCurrentHighestTradeMethodControl
                           ? onTradeMethodChangeSubmit
                           : onBidSubmit}
                       >
                         {primaryActionLabel}
-                      </button>
+                      </ActionButton>
                       {!isInstantBuyAmountSelected && (
-                        <button
-                          className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-white text-body-md font-bold text-primary disabled:cursor-not-allowed disabled:opacity-55 aria-busy:cursor-progress"
+                        <ActionButton
                           id="buyNowBtn"
-                          type="button"
                           aria-busy={isBuyNowPending}
                           disabled={!isBuyNowAvailable || isBuyNowPending || isBuyNowPointInsufficient}
+                          loading={isBuyNowPending}
                           onClick={onBuyNowOpen}
+                          size="lg"
+                          tone="outline"
                         >
                           {!isAuctionOpen
                             ? '즉시구매 종료'
@@ -567,7 +583,7 @@ const AuctionBidPanel = ({
                               : (isBuyNowAvailable
                                 ? `즉시구매 ${formatPoint(auction.instantBuyPrice)}`
                                 : '즉시구매 불가'))}
-                        </button>
+                        </ActionButton>
                       )}
                     </>
                   )}

@@ -6,6 +6,7 @@
 // 주의: 결제위젯 전용 클라이언트 키(test_gck_...)가 필요하다 — 결제창용 키(test_ck_...)로는 동작하지 않음
 import { useEffect, useRef, useState } from 'react';
 import { loadTossPayments, ANONYMOUS } from '@tosspayments/tosspayments-sdk';
+import { ActionButton } from '@components/common/ui';
 
 import { requestPointCharge, getChargeLimits } from '../../../../api/pointApi';
 import { CHARGE_QUICK_EXTRA, QUICK_AMOUNTS } from './quickAmounts';
@@ -145,13 +146,13 @@ const PointChargeWidgetModal = ({ infoRow, onClose }) => {
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-gray-900 m-0" id="point-charge-modal-title">포인트 충전</h3>
-            <button
-              type="button"
-              className="text-sm text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg px-3 py-1.5"
+            <ActionButton
               onClick={onClose}
+              size="sm"
+              tone="neutral"
             >
               닫기
-            </button>
+            </ActionButton>
           </div>
 
         {error && (
@@ -205,14 +206,12 @@ const PointChargeWidgetModal = ({ infoRow, onClose }) => {
               <p className="text-xs text-gray-400 mb-4">&nbsp;</p>
             )}
             <div className="flex justify-end">
-              <button
-                type="button"
-                className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg px-5 py-2.5 transition-colors disabled:opacity-50"
+              <ActionButton
                 disabled={loading}
                 onClick={() => proceedToWidget(amount)}
               >
                 {loading ? '결제수단 준비 중...' : '다음'}
-              </button>
+              </ActionButton>
             </div>
           </>
         )}
@@ -225,14 +224,12 @@ const PointChargeWidgetModal = ({ infoRow, onClose }) => {
             <div id="toss-payment-methods" className="mb-3" />
             <div id="toss-agreement" className="mb-4" />
             <div className="flex justify-end">
-              <button
-                type="button"
-                className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg px-5 py-2.5 transition-colors disabled:opacity-50"
+              <ActionButton
                 disabled={loading}
                 onClick={submitPayment}
               >
                 {loading ? '처리 중...' : '결제하기'}
-              </button>
+              </ActionButton>
             </div>
           </>
         )}

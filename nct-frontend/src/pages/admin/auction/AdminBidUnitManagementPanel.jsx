@@ -93,7 +93,9 @@ const AdminBidUnitManagementPanel = () => {
       return '입찰 단위는 1P 이상의 정수로 입력해 주세요.';
     }
     if (!form.changeReason.trim()) {
-      return '변경 사유를 입력해 주세요.';
+      return editing?.isNew
+        ? '추가 사유를 입력해 주세요.'
+        : '변경 사유를 입력해 주세요.';
     }
     const duplicate = bidUnits.some((item) => (
       item.bidUnitSn !== editing?.bidUnitSn && Number(item.amount) === amount
@@ -246,8 +248,14 @@ const AdminBidUnitManagementPanel = () => {
               />
             </label>
             <label>
-              <span>변경 사유</span>
-              <textarea maxLength="500" name="changeReason" onChange={change} value={form.changeReason} />
+              <span>{editing.isNew ? '추가 사유' : '변경 사유'}</span>
+              <textarea
+                className="admin-reason-textarea"
+                maxLength="500"
+                name="changeReason"
+                onChange={change}
+                value={form.changeReason}
+              />
             </label>
             {!editing.isNew && (
               <AdminHistoryTimeline
@@ -282,6 +290,7 @@ const AdminBidUnitManagementPanel = () => {
               <span>변경 사유</span>
               <textarea
                 autoFocus
+                className="admin-reason-textarea"
                 maxLength="500"
                 onChange={(event) => setStatusReason(event.target.value)}
                 value={statusReason}

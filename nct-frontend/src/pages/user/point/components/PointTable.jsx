@@ -1,6 +1,6 @@
 // src/pages/user/point/components/PointTable.jsx
 // Claude Code 작성 (BJN, 2026-07-20)
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import PrevNextPagination from './PrevNextPagination';
 
@@ -32,11 +32,10 @@ const PointTable = ({
 }) => {
   const [page, setPage] = useState(1);
   const pageCount = pageSize ? Math.max(1, Math.ceil(rows.length / pageSize)) : 1;
-
-  // rows가 바뀌면(모달 다시 열림, 데이터 갱신 등) 1페이지로 되돌린다
-  useEffect(() => { setPage(1); }, [rows]);
-
-  const pagedRows = pageSize ? rows.slice((page - 1) * pageSize, page * pageSize) : rows;
+  const currentPage = Math.min(page, pageCount);
+  const pagedRows = pageSize
+    ? rows.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+    : rows;
 
   return (
     <section className="mt-6">
@@ -128,7 +127,7 @@ const PointTable = ({
 
       {/* 알림함 페이지와 공용하는 "이전/다음" 페이지네이션 (2026-08-05 중복 통합) */}
       {pageSize && (
-        <PrevNextPagination page={page} pageCount={pageCount} onPageChange={setPage} />
+        <PrevNextPagination page={currentPage} pageCount={pageCount} onPageChange={setPage} />
       )}
     </section>
   );

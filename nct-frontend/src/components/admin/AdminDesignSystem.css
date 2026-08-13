@@ -173,6 +173,15 @@
   padding-bottom: 11px;
 }
 
+/* 담당자 7: 관리자 상태 변경·판정 명령의 사유 입력 크기를 화면마다 동일하게 유지합니다. */
+.admin-layout textarea.admin-reason-textarea {
+  box-sizing: border-box;
+  height: 120px;
+  min-height: 120px;
+  overflow-y: auto;
+  resize: none;
+}
+
 .admin-layout .btn,
 .admin-layout :is(.admin-bjn-filters, .operations-filters) > button,
 .admin-layout .admin-dashboard__refresh {

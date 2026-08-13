@@ -56,20 +56,20 @@ export default function ProductInfoStep({ form, set, categories, bannedKeywordEr
       <div className="field deal-options" ref={tradeRef} style={{ marginTop: 20 }}>
         <label>거래 형태 <span style={{ color: '#c0392b' }}>*</span></label>
         <div className="row">
-          {tradeMethods.map(({ value, label, Icon }) => (
+          {tradeMethods.map((method) => (
             <label
-              key={value}
-              className={`line-option ${form.prdTrdMethodCd === value ? 'checked' : ''}`}
+              key={method.value}
+              className={`line-option ${form.prdTrdMethodCd === method.value ? 'checked' : ''}`}
             >
               <input
                 type="radio"
                 name="prdTrdMethodCd"
-                value={value}
-                checked={form.prdTrdMethodCd === value}
-                onChange={() => set('prdTrdMethodCd', value)}
+                value={method.value}
+                checked={form.prdTrdMethodCd === method.value}
+                onChange={() => set('prdTrdMethodCd', method.value)}
               />
-              <Icon />
-              {label}
+              <method.Icon />
+              {method.label}
             </label>
           ))}
         </div>

@@ -4,6 +4,7 @@ import { History, RotateCcw } from 'lucide-react';
 import { fetchProductComments } from '@api/productApi';
 import Pagination from '@components/common/Pagination';
 import { SkeletonBlock } from '@components/skeleton/AuctionSkeletons';
+import { ActionButton } from '@components/common/ui';
 
 const UPDATES_PER_PAGE = 5;
 
@@ -87,14 +88,14 @@ const AuctionProductUpdateSection = ({
       {updateQuery.isError && (
         <div className="grid min-h-28 place-items-center content-center gap-2.5 border-y border-[#e2e5ea] px-4 py-8 text-center text-body-sm text-[#777]">
           <p className="m-0">변경 내역을 불러오지 못했습니다.</p>
-          <button
-            className="inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border border-primary bg-white px-4 text-body-sm font-bold text-primary-dark"
-            type="button"
+          <ActionButton
             onClick={() => updateQuery.refetch()}
+            size="sm"
+            tone="outline"
           >
             <RotateCcw size={15} aria-hidden="true" />
             다시 불러오기
-          </button>
+          </ActionButton>
         </div>
       )}
 

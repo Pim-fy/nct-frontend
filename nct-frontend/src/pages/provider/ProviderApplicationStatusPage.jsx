@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
 import PageMeta from '@components/admin/PageMeta';
+import { ActionButton } from '@components/common/ui';
 import { ContentPageHeader, ContentPageShell, ContentState } from '@components/content/ContentUi';
 import { useMyProviderApplications } from '@hooks/useProviderApplications';
 import { formatDate } from '@utils/common';
@@ -69,7 +69,6 @@ const ProviderApplicationStatusPage = () => {
       <PageMeta title="제공자 신청 상태" />
       <section className="provider-apply-hero">
         <ContentPageHeader title="제공자 신청 상태" />
-        <p>카테고리별 심사 진행 상황과 승인·반려 결과를 한눈에 확인하세요.</p>
       </section>
 
       <section className={`provider-status-preview ${tone(latest.statusCode)}`}>
@@ -90,9 +89,9 @@ const ProviderApplicationStatusPage = () => {
           <dd>{latest.requestedAt ? formatDate(latest.requestedAt) : '-'}</dd>
         </dl>
 
-        <Link className="btn btn-primary" to="/provider/apply">
+        <ActionButton to="/provider/apply">
           {latest.statusCode === 'PRVC0004' ? '보완 후 다시 신청' : '다른 카테고리 신청하기'}
-        </Link>
+        </ActionButton>
       </section>
 
       {data.length > 1 && (

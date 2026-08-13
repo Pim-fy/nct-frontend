@@ -2,7 +2,7 @@
 // 내 판매 목록 순수 목록 컴포넌트 — MyProductListPage · MyPage 아코디언에서 재사용
 // 마이페이지 공통 목록 컴포넌트를 사용하며 가격·날짜 표시 형식을 유지한다.
 import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { CalendarCheck, CalendarDays } from 'lucide-react';
 import { toImageUrl } from '@api/fileApi';
@@ -21,6 +21,7 @@ import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
 import MyPageStatusBadge from '@components/mypage/MyPageStatusBadge';
 import MyPageListSkeleton from '@components/skeleton/MyPageListSkeleton';
 import MyPageMobileCard from '@components/mypage/MyPageMobileCard';
+import { ActionButton } from '@components/common/ui';
 
 // ─── 필터 ────────────────────────────────────────────────────────────────────
 
@@ -132,7 +133,6 @@ const getProductStatusDisplay = (p) => ({
 // ─── 컴포넌트 ─────────────────────────────────────────────────────────────────
 
 export default function MyProductList() {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   // 담당자 7: 상세·등록 화면에서 목록으로 돌아올 수 있도록 현재 경로를 전달한다.
   const location = useLocation();
@@ -235,13 +235,12 @@ export default function MyProductList() {
         <MyPageListEmpty
           message="해당 조건의 판매 내역이 없습니다."
           action={filter === null ? (
-            <button
-              type="button"
-              onClick={() => navigate('/product/register', { state: returnState })}
-              className="btn btn-primary"
+            <ActionButton
+              state={returnState}
+              to="/product/register"
             >
               경매 등록하기
-            </button>
+            </ActionButton>
           ) : null}
         />
       ) : (
@@ -269,38 +268,38 @@ export default function MyProductList() {
                   actionButton={(
                     <>
                     {p.tradeSn && (
-                      <button
-                        type="button"
-                        onClick={() => navigate(`/trades/${p.tradeSn}/seller`, { state: returnState })}
-                        className="btn btn-sm btn-primary"
+                      <ActionButton
+                        size="sm"
+                        state={returnState}
+                        to={`/trades/${p.tradeSn}/seller`}
                       >
                         거래 관리
-                      </button>
+                      </ActionButton>
                     )}
                     {!p.tradeSn && isActive && p.aucStatusCd === 'AUCC0005' && (
-                      <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`, { state: returnState })} className="btn btn-sm btn-ghost">
+                      <ActionButton size="sm" state={returnState} to={`/product/${p.prdSn}/seller`} tone="neutral">
                         취소 상품 보기
-                      </button>
+                      </ActionButton>
                     )}
                     {!p.tradeSn && isActive && p.aucStatusCd !== 'AUCC0005' && (
-                      <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`, { state: returnState })} className="btn btn-sm btn-primary">
+                      <ActionButton size="sm" state={returnState} to={`/product/${p.prdSn}/seller`}>
                         판매 관리
-                      </button>
+                      </ActionButton>
                     )}
                     {isDraft && (
-                      <button type="button" onClick={() => navigate('/product/register', { state: { prdSn: p.prdSn, ...returnState } })} className="btn btn-sm btn-ghost">
+                      <ActionButton size="sm" state={{ prdSn: p.prdSn, ...returnState }} to="/product/register" tone="neutral">
                         등록재개
-                      </button>
+                      </ActionButton>
                     )}
                     {!p.tradeSn && isEnded && (
-                      <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`, { state: returnState })} className="btn btn-sm btn-ghost">
+                      <ActionButton size="sm" state={returnState} to={`/product/${p.prdSn}/seller`} tone="neutral">
                         판매 기록
-                      </button>
+                      </ActionButton>
                     )}
                     {(isDraft || isEnded) && !p.tradeSn && p.aucStatusCd !== 'AUCC0003' && (
-                      <button type="button" onClick={() => setConfirmTarget({ prdSn: p.prdSn, prdNm: p.prdNm })} className="btn btn-sm btn-danger">
+                      <ActionButton onClick={() => setConfirmTarget({ prdSn: p.prdSn, prdNm: p.prdNm })} size="sm" tone="danger">
                         삭제
-                      </button>
+                      </ActionButton>
                     )}
                     </>
                   )}
@@ -330,21 +329,26 @@ export default function MyProductList() {
                   actionButton={(
                     <>
                       {p.tradeSn && (
-                        <button type="button" onClick={() => navigate(`/trades/${p.tradeSn}/seller`, { state: returnState })} className="btn btn-sm btn-primary">거래 관리</button>
+                        <ActionButton size="sm" state={returnState} to={`/trades/${p.tradeSn}/seller`}>거래 관리</ActionButton>
                       )}
                       {!p.tradeSn && isActive && (
-                        <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`, { state: returnState })} className={`btn btn-sm ${p.aucStatusCd === 'AUCC0005' ? 'btn-ghost' : 'btn-primary'}`}>
+                        <ActionButton
+                          size="sm"
+                          state={returnState}
+                          to={`/product/${p.prdSn}/seller`}
+                          tone={p.aucStatusCd === 'AUCC0005' ? 'neutral' : 'primary'}
+                        >
                           {p.aucStatusCd === 'AUCC0005' ? '취소 상품 보기' : '판매 관리'}
-                        </button>
+                        </ActionButton>
                       )}
                       {isDraft && (
-                        <button type="button" onClick={() => navigate('/product/register', { state: { prdSn: p.prdSn, ...returnState } })} className="btn btn-sm btn-ghost">등록재개</button>
+                        <ActionButton size="sm" state={{ prdSn: p.prdSn, ...returnState }} to="/product/register" tone="neutral">등록재개</ActionButton>
                       )}
                       {!p.tradeSn && isEnded && (
-                        <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`, { state: returnState })} className="btn btn-sm btn-ghost">판매 기록</button>
+                        <ActionButton size="sm" state={returnState} to={`/product/${p.prdSn}/seller`} tone="neutral">판매 기록</ActionButton>
                       )}
                       {(isDraft || isEnded) && !p.tradeSn && p.aucStatusCd !== 'AUCC0003' && (
-                        <button type="button" onClick={() => setConfirmTarget({ prdSn: p.prdSn, prdNm: p.prdNm })} className="btn btn-sm btn-danger">삭제</button>
+                        <ActionButton onClick={() => setConfirmTarget({ prdSn: p.prdSn, prdNm: p.prdNm })} size="sm" tone="danger">삭제</ActionButton>
                       )}
                     </>
                   )}

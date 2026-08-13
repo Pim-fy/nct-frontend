@@ -241,7 +241,8 @@ table tr:last-child td { border-bottom: none; }
 /* 판매자 상세 — 입찰 이력·구매자 문의 카드 2단 분할, 모바일에서 1단으로 쌓임(입찰 이력이 위) */
 .seller-history-split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .seller-action-list { display: grid; gap: 10px; }
-.seller-action-list .btn { width: 100%; min-height: 42px; }
+.seller-action-list .btn,
+.seller-action-list .ui-action-button { width: 100%; min-height: 42px; }
 .notice { border: 1px solid #c9ddff; border-radius: 8px; background: #f3f7ff; color: #5f5e5a; padding: 14px; font-size: 13px; line-height: 1.6; box-shadow: none; }
 .danger-note { border-color: #f3c7c7; background: #fcebeb; color: #a32d2d; }
 .seller-history { margin-top: 20px; border-top: 1px solid #f0efec; }
