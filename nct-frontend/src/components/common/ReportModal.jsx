@@ -1,6 +1,7 @@
 import { X } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import AlertModal from '@components/common/AlertModal';
 import ReportAttachmentPicker from '@components/common/ReportAttachmentPicker';
 import { ActionButton } from '@components/common/ui';
 import { isCustomerReportTypeCode } from '@/constants/abuseReportTypes';
@@ -49,6 +50,7 @@ function ReportModalContent({
   });
   const [files, setFiles] = useState([]);
   const [errors, setErrors] = useState({});
+  const [serverAlertMessage, setServerAlertMessage] = useState('');
   const reportTypes = (reportTypesQuery.data ?? []).filter((item) => (
     item.code && item.name && isCustomerReportTypeCode(item.code)
   ));
@@ -74,7 +76,7 @@ function ReportModalContent({
 
   const setValue = (key, value) => {
     setForm((current) => ({ ...current, [key]: value }));
-    setErrors((current) => ({ ...current, [key]: '', _server: '' }));
+    setErrors((current) => ({ ...current, [key]: '' }));
   };
 
   const submit = async (event) => {
@@ -113,13 +115,14 @@ function ReportModalContent({
         ? '같은 대상과 유형의 신고가 이미 접수되어 있습니다.'
         : error?.response?.data?.message
           ?? '신고 접수 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
-      setErrors((current) => ({ ...current, _server: message }));
+      setServerAlertMessage(message);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
-      <div className="flex max-h-[90vh] w-full max-w-[560px] flex-col overflow-hidden rounded-[8px] bg-white shadow-[0_8px_40px_rgba(0,0,0,0.18)]">
+    <>
+      <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
+        <div className="flex max-h-[90vh] w-full max-w-[560px] flex-col overflow-hidden rounded-[8px] bg-white shadow-[0_8px_40px_rgba(0,0,0,0.18)]">
         <header className="flex shrink-0 items-center justify-between bg-[#0064ff] px-6 py-4">
           <h2 className="m-0 text-[20px] font-bold text-white">신고하기</h2>
           <button
@@ -133,14 +136,7 @@ function ReportModalContent({
           </button>
         </header>
 
-        <form className="flex-1 space-y-5 overflow-y-auto px-6 py-5" id={formId} noValidate onSubmit={submit}>
-          {contextLabel && (
-            <div className="rounded-[6px] bg-[#f5f6f8] px-4 py-3">
-              <p className="m-0 text-[13px] text-[#777]">신고 대상</p>
-              <p className="mt-1 mb-0 text-[16px] font-bold text-[#1a1a18]">{contextLabel}</p>
-            </div>
-          )}
-
+          <form className="flex-1 space-y-5 overflow-y-auto px-6 py-5" id={formId} noValidate onSubmit={submit}>
           <div>
             <p className="mb-2 text-[15px] font-bold text-[#1a1a18]">신고 유형 <span className="text-red-500">*</span></p>
             {reportTypesQuery.isLoading && <p className="text-[13px] text-[#777]">신고 유형을 불러오는 중입니다.</p>}
@@ -161,18 +157,21 @@ function ReportModalContent({
                 </ActionButton>
               </div>
             )}
-            <div className="flex flex-wrap gap-2">
+            <select
+              aria-invalid={Boolean(errors.reportTypeCode)}
+              className={`h-11 w-full rounded-[6px] border bg-white px-4 text-[15px] outline-none ${errors.reportTypeCode ? 'border-red-500' : 'border-[#dfe3e8] focus:border-[#0064ff]'} disabled:cursor-not-allowed disabled:bg-[#f5f6f8] disabled:text-[#999]`}
+              disabled={reportTypesQuery.isLoading || reportTypesQuery.isError || !hasAvailableReportTypes}
+              id={`${formId}-report-type`}
+              onChange={(event) => setValue('reportTypeCode', event.target.value)}
+              value={selectedReportTypeCode}
+            >
+              <option value="">신고 유형을 선택해 주세요.</option>
               {reportTypes.map((type) => (
-                <button
-                  className={`h-9 rounded-[6px] border px-4 text-[14px] font-medium ${selectedReportTypeCode === type.code ? 'border-[#0064ff] bg-[#0064ff] text-white' : 'border-[#dfe3e8] bg-white text-[#333]'}`}
-                  key={type.code}
-                  onClick={() => setValue('reportTypeCode', type.code)}
-                  type="button"
-                >
+                <option key={type.code} value={type.code}>
                   {type.name}
-                </button>
+                </option>
               ))}
-            </div>
+            </select>
             {errors.reportTypeCode && <p className="mt-1 text-[13px] text-red-500">{errors.reportTypeCode}</p>}
           </div>
 
@@ -228,22 +227,30 @@ function ReportModalContent({
             onChange={setFiles}
             onError={(message) => setErrors((current) => ({ ...current, files: message }))}
           />
-          {errors._server && <p className="text-[13px] text-red-500" role="alert">{errors._server}</p>}
-        </form>
+          </form>
 
-        <footer className="flex shrink-0 gap-3 border-t border-[#e8e9ec] px-6 py-4">
-          <ActionButton className="flex-1" disabled={submitMutation.isPending} onClick={onClose} tone="outline">취소</ActionButton>
-          <ActionButton
-            className="flex-1"
-            disabled={submitMutation.isPending || reportTypesQuery.isLoading || reportTypesQuery.isError || !hasAvailableReportTypes}
-            form={formId}
-            tone="danger"
-            type="submit"
-          >
-            {submitMutation.isPending ? '신고 중…' : '신고하기'}
-          </ActionButton>
-        </footer>
+          <footer className="flex shrink-0 gap-3 border-t border-[#e8e9ec] px-6 py-4">
+            <ActionButton className="flex-1" disabled={submitMutation.isPending} onClick={onClose} tone="outline">취소</ActionButton>
+            <ActionButton
+              className="flex-1"
+              disabled={submitMutation.isPending || reportTypesQuery.isLoading || reportTypesQuery.isError || !hasAvailableReportTypes}
+              form={formId}
+              tone="danger"
+              type="submit"
+            >
+              {submitMutation.isPending ? '신고 중…' : '신고하기'}
+            </ActionButton>
+          </footer>
+        </div>
       </div>
-    </div>
+
+      <AlertModal
+        description={serverAlertMessage}
+        message="신고를 접수할 수 없습니다."
+        onClose={() => setServerAlertMessage('')}
+        open={Boolean(serverAlertMessage)}
+        variant="error"
+      />
+    </>
   );
 }

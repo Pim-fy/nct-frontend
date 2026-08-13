@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import {
   answerAdminCustomerInquiry,
   getAdminCustomerInquiries,
@@ -40,15 +41,19 @@ const AdminCustomerInquiryManagementPage = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const inquiryTypesQuery = useCustomerInquiryTypes();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [filterForm, setFilterForm] = useState(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
-  const [selectedInquirySn, setSelectedInquirySn] = useState(null);
   const [answer, setAnswer] = useState('');
   const startRequestIdRef = useRef(null);
   const answerDetectionKeyRef = useRef(null);
 
   const currentAdminId = user?.id ?? user?.userId ?? user?.userSn ?? user?.usrSn;
+  const requestedInquirySn = Number(searchParams.get('inquirySn'));
+  const selectedInquirySn = Number.isInteger(requestedInquirySn) && requestedInquirySn > 0
+    ? requestedInquirySn
+    : null;
   const typeNameByCode = Object.fromEntries(
     (inquiryTypesQuery.data ?? []).map((type) => [type.code, type.name]),
   );
@@ -115,7 +120,11 @@ const AdminCustomerInquiryManagementPage = () => {
   };
 
   const openInquiry = (inquirySn) => {
-    setSelectedInquirySn(inquirySn);
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.set('inquirySn', String(inquirySn));
+      return next;
+    });
     setAnswer('');
     startRequestIdRef.current = null;
     answerDetectionKeyRef.current = null;
@@ -125,7 +134,11 @@ const AdminCustomerInquiryManagementPage = () => {
 
   const closeInquiry = () => {
     if (startMutation.isPending || answerMutation.isPending) return;
-    setSelectedInquirySn(null);
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.delete('inquirySn');
+      return next;
+    });
     setAnswer('');
     startRequestIdRef.current = null;
     answerDetectionKeyRef.current = null;

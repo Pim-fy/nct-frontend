@@ -44,7 +44,7 @@ const SOCIAL_PROVIDERS = [
 
 const MYPAGE_LINK_RETURN_KEY = "mypageLinkReturn";
 
-export default function MyPageProfileEdit({ user }) {
+export default function MyPageProfileEdit({ user, showHeader = true }) {
   const queryClient = useQueryClient();
   const { localLogout } = useAuth();
   const [form, setForm] = useState({
@@ -308,7 +308,7 @@ export default function MyPageProfileEdit({ user }) {
 
   return (
     <>
-      <MyPageContentHeader title="프로필" />
+      {showHeader && <MyPageContentHeader title="프로필" />}
       <div className="flex flex-col xl:flex-row gap-4 items-start">
       {/* ── 메인 정보수정 카드 ── */}
       <MyPagePanel

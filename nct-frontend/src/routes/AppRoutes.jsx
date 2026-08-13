@@ -14,7 +14,9 @@ import ProtectedRoute from './ProtectedRoute';
 import {
   getServiceTradeChatPath,
   getServiceTradeDetailPath,
+  LEGACY_PROVIDER_PROFILE_PATH,
   MYPAGE_INQUIRY_PATHS,
+  MYPAGE_PROFILE_TAB_PATHS,
   MYPAGE_SECTION_PATHS,
 } from './myPageRoutes';
 import {
@@ -249,6 +251,20 @@ const AppRoutes = () => {
             .map(([section, path]) => (
               <Route key={section} path={path} element={<MyPage initialSection={section} />} />
             ))}
+          <Route element={<ProtectedRoute allowedRoles={['ROLE_SERVICE']} />}>
+            <Route
+              path={MYPAGE_PROFILE_TAB_PATHS.provider}
+              element={<MyPage initialSection="profile" initialProfileTab="provider" />}
+            />
+            <Route
+              path={MYPAGE_PROFILE_TAB_PATHS.portfolio}
+              element={<MyPage initialSection="profile" initialProfileTab="portfolio" />}
+            />
+            <Route
+              path={LEGACY_PROVIDER_PROFILE_PATH}
+              element={<Navigate replace to={MYPAGE_PROFILE_TAB_PATHS.provider} />}
+            />
+          </Route>
           {/* 담당자 7 · 문의 작성은 진입한 마이페이지 경로의 하위 화면으로 유지합니다. */}
           <Route path={`${MYPAGE_INQUIRY_PATHS.general}/new`} element={<CustomerInquiryFormPage />} />
           <Route element={<ProtectedRoute allowedRoles={['ROLE_SERVICE']} />}>

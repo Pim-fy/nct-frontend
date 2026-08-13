@@ -38,6 +38,7 @@ const STATUS_LABEL = {
   SVCC0002: '공개',
   SVCC0003: '매칭완료',
   SVCC0004: '취소',
+  SVCC0005: '운영 보류',
 };
 
 const STATUS_BADGE = {
@@ -45,6 +46,7 @@ const STATUS_BADGE = {
   SVCC0002: 'badge-outline-orange',
   SVCC0003: 'badge-primary',
   SVCC0004: 'badge-outline-gray',
+  SVCC0005: 'badge-warning',
 };
 
 function fmtBudget(amt) {

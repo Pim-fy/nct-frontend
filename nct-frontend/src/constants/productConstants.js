@@ -40,6 +40,8 @@ export const AUC_STATUS_LABEL = {
   AUCC0004: '유찰',
   AUCC0005: '취소',
   AUCC0006: '취소요청',
+  AUCC0013: '운영 보류',
+  AUCC9001: '관리자 일시중지',
 };
 
 export const AUC_STATUS_BADGE = {
@@ -49,4 +51,6 @@ export const AUC_STATUS_BADGE = {
   AUCC0004: 'badge-gray',
   AUCC0005: 'badge-danger',
   AUCC0006: 'badge-danger',
+  AUCC0013: 'badge-warning',
+  AUCC9001: 'badge-warning',
 };

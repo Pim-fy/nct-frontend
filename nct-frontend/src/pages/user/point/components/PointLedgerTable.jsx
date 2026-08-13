@@ -5,6 +5,7 @@ import { useMyBidHistory } from '@hooks/useBid';
 import PointTable from './PointTable';
 import pointBadge from './pointBadge';
 import { formatPointLedgerReason, reasonSummary } from './pointLedgerReason';
+import { getServiceTradeDetailPath } from '@/routes/myPageRoutes';
 
 // 원장유형(PTLG02)별 배지 색 — 목업 badge-success/warning/blue/gray 매핑
 const TYPE_BADGE = {
@@ -32,7 +33,11 @@ const resolveRefLink = (row, bidByBidSn) => {
   if (!row.refTypeCd || row.refSn == null) return null;
   switch (row.refTypeCd) {
     case 'REFC0005': // 거래
-      return row.typeCd === 'PTLC0008' ? `/trades/${row.refSn}/seller` : `/trades/${row.refSn}`;
+      if (row.tradeTypeCode === 'TRDC0002') return getServiceTradeDetailPath(row.refSn);
+      if (row.tradeTypeCode === 'TRDC0001') {
+        return row.typeCd === 'PTLC0008' ? `/trades/${row.refSn}/seller` : `/trades/${row.refSn}`;
+      }
+      return null;
     case 'REFC0004': { // 입찰
       const aucSn = bidByBidSn.get(row.refSn)?.aucSn;
       return aucSn ? `/auction/${aucSn}` : null;

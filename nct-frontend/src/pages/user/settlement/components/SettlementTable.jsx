@@ -2,6 +2,7 @@
 import { Link } from 'react-router-dom';
 import { StatusBadge } from '@components/common/ui';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
+import { getServiceTradeDetailPath } from '@/routes/myPageRoutes';
 
 const STATUS_BADGE_TONE = {
   대기: 'warning',
@@ -11,6 +12,13 @@ const STATUS_BADGE_TONE = {
 };
 
 const STATUS_FILTERS = ['전체', '대기', '보류', '완료', '환불종결'];
+
+// 담당자 7: 정산의 거래 유형에 따라 물건/서비스 거래 상세 경로를 분리한다.
+const getTradeDetailPath = (row) => {
+  if (row.tradeTypeCode === 'TRDC0002') return getServiceTradeDetailPath(row.tradeId);
+  if (row.tradeTypeCode === 'TRDC0001') return `/trades/${row.tradeId}/seller`;
+  return null;
+};
 
 /**
  * 정산 내역 테이블 — 상태 필터 탭 포함 (목업 18_settlement.html 기준)
@@ -62,31 +70,34 @@ const SettlementTable = ({ rows, filter, onFilterChange, loading = false, loadin
                 </td>
               </tr>
             )}
-            {!loading && filtered.map((row) => (
-              <tr key={row.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 whitespace-nowrap">
-                  {row.tradeId ? (
-                    <Link
-                      className="font-medium text-primary no-underline hover:underline"
-                      to={`/trades/${row.tradeId}/seller`}
-                    >
-                      거래상세
-                    </Link>
-                  ) : (
-                    <span className="text-gray-400">-</span>
-                  )}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-gray-700">{row.regDate}</td>
-                <td className="px-4 py-3 text-right whitespace-nowrap font-medium text-gray-900">
-                  {row.amount.toLocaleString()}P
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap">
-                  <StatusBadge tone={STATUS_BADGE_TONE[row.statusName] ?? 'neutral'} variant="soft">
-                    {row.statusName}
-                  </StatusBadge>
-                </td>
-              </tr>
-            ))}
+            {!loading && filtered.map((row) => {
+              const tradeDetailPath = row.tradeId ? getTradeDetailPath(row) : null;
+              return (
+                <tr key={row.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    {tradeDetailPath ? (
+                      <Link
+                        className="font-medium text-primary no-underline hover:underline"
+                        to={tradeDetailPath}
+                      >
+                        거래상세
+                      </Link>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-gray-700">{row.regDate}</td>
+                  <td className="px-4 py-3 text-right whitespace-nowrap font-medium text-gray-900">
+                    {row.amount.toLocaleString()}P
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <StatusBadge tone={STATUS_BADGE_TONE[row.statusName] ?? 'neutral'} variant="soft">
+                      {row.statusName}
+                    </StatusBadge>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

@@ -53,6 +53,8 @@ const AUC_STATUS_BADGE = {
   AUCC0004: 'badge-outline-gray',
   AUCC0005: 'badge-danger',
   AUCC0006: 'badge-danger', // 취소요청도 취소(AUCC0005)와 같은 색으로 — 둘 다 위험/주의 상태
+  AUCC0013: 'badge-warning',
+  AUCC9001: 'badge-warning',
 };
 
 const TRADE_BADGE = {

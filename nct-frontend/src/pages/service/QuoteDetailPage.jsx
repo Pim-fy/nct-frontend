@@ -45,6 +45,7 @@ const REQUEST_STATUS_LABEL = {
   SVCC0002: '공개',
   SVCC0003: '매칭완료',
   SVCC0004: '취소',
+  SVCC0005: '운영 보류',
 };
 
 const REQUEST_STATUS_TONE = {
@@ -52,6 +53,7 @@ const REQUEST_STATUS_TONE = {
   SVCC0002: 'info',
   SVCC0003: 'success',
   SVCC0004: 'danger',
+  SVCC0005: 'warning',
 };
 
 const REQUEST_ITEM_PREVIEW_LIMIT = 8;
@@ -389,12 +391,9 @@ export default function QuoteDetailPage() {
             )}
           </div>
           <div className="mt-2">
-            <Link
-              to={getServiceRequestDetailPath(svcReqSn)}
-              className="line-clamp-2 text-lg font-bold leading-7 text-[#1d1d1f] hover:text-primary hover:underline"
-            >
+            <h2 className="line-clamp-2 text-lg font-bold leading-7 text-[#1d1d1f]">
               {request?.svcReqTtl ?? '요청서 상세로'}
-            </Link>
+            </h2>
           </div>
           {request && (
             <>

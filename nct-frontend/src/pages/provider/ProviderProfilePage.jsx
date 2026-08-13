@@ -11,28 +11,35 @@ import {
   useUpdatePortfolio,
 } from '@hooks/useProviderProfile';
 import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
+import ImageAttachmentPicker from '@components/common/ImageAttachmentPicker';
 import { ActionButton } from '@components/common/ui';
 import FormSkeleton from '@components/skeleton/FormSkeleton';
 import './providerProfilePage.css';
 
 const fieldClass = 'w-full rounded-md border border-[#d9d9d9] px-3 py-2 text-sm text-[#404040] focus:border-[#0064ff] focus:outline-none';
+const MAX_PORTFOLIO_IMAGES = 5;
 
 /** 담당자 7 · F-PROV-004: 승인된 제공자가 소개와 가능 지역을 직접 관리하는 화면이다. */
-export default function ProviderProfilePage({ embedded = false } = {}) {
+export default function ProviderProfilePage({
+  embedded = false,
+  showHeader = true,
+  view = 'all',
+} = {}) {
   const profileQuery = useMyProviderProfile();
+  const needsProviderProfile = view === 'all' || view === 'provider';
   const statusClass = embedded
     ? 'w-full py-12 text-center'
     : 'mx-auto max-w-3xl px-4 py-12 text-center';
 
-  if (profileQuery.isLoading) return (
+  if (needsProviderProfile && profileQuery.isLoading) return (
     <main className={`provider-profile-editor ${embedded ? 'w-full py-8' : 'mx-auto max-w-3xl px-4 py-8'}`}>
-      {embedded && <MyPageContentHeader title="프로필" />}
+      {embedded && showHeader && <MyPageContentHeader title="프로필" />}
       <FormSkeleton fields={6} />
     </main>
   );
-  if (profileQuery.isError) return (
+  if (needsProviderProfile && profileQuery.isError) return (
     <main className={`provider-profile-editor ${embedded ? 'w-full' : 'mx-auto max-w-3xl px-4 py-8'}`}>
-      {embedded && <MyPageContentHeader title="프로필" />}
+      {embedded && showHeader && <MyPageContentHeader title="프로필" />}
       <div className={statusClass}>
         <p className="text-[#d9363e]">제공자 프로필을 불러올 수 없습니다.</p>
         <ActionButton className="mt-4" onClick={() => profileQuery.refetch()} tone="outline">다시 시도</ActionButton>
@@ -42,9 +49,9 @@ export default function ProviderProfilePage({ embedded = false } = {}) {
 
   return (
     <main className={`provider-profile-editor ${embedded ? 'w-full' : 'mx-auto max-w-3xl px-4 py-8'}`}>
-      {embedded ? (
+      {embedded && showHeader ? (
         <MyPageContentHeader title="프로필" />
-      ) : (
+      ) : !embedded ? (
         <div className="mb-6 flex items-center justify-between gap-3">
           <div>
             <h1 className="text-xl font-bold text-[#252525]">제공자 프로필 관리</h1>
@@ -52,10 +59,12 @@ export default function ProviderProfilePage({ embedded = false } = {}) {
           </div>
           <ActionButton to="/user/mypage" tone="outline">대시보드</ActionButton>
         </div>
-      )}
-      <div className={embedded ? 'provider-profile-editor__split' : 'space-y-6'}>
-        <ProviderProfileForm key={profileQuery.data.userSn} profile={profileQuery.data} />
-        <PortfolioRegistrationSection />
+      ) : null}
+      <div className={embedded && view === 'all' ? 'provider-profile-editor__split' : 'space-y-6'}>
+        {(view === 'all' || view === 'provider') && (
+          <ProviderProfileForm key={profileQuery.data.userSn} profile={profileQuery.data} />
+        )}
+        {(view === 'all' || view === 'portfolio') && <PortfolioRegistrationSection />}
       </div>
     </main>
   );
@@ -66,7 +75,6 @@ export default function ProviderProfilePage({ embedded = false } = {}) {
  * 새 파일 업로드와 포트폴리오 저장 사이에 실패하면 방금 올린 고아 파일을 정리한다.
  */
 function PortfolioRegistrationSection() {
-  const fileInputRef = useRef(null);
   const imagesRef = useRef([]);
   const portfoliosQuery = useMyPortfolios();
   const createMutation = useCreatePortfolio();
@@ -76,6 +84,7 @@ function PortfolioRegistrationSection() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [images, setImages] = useState([]);
+  const [fileError, setFileError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -84,56 +93,24 @@ function PortfolioRegistrationSection() {
 
   useEffect(() => () => {
     imagesRef.current.forEach((image) => {
-      if (image.previewUrl) URL.revokeObjectURL(image.previewUrl);
+      if (image.file && image.url) URL.revokeObjectURL(image.url);
     });
   }, []);
 
-  const selectImages = (event) => {
-    const files = Array.from(event.target.files ?? []);
-    const invalidFile = files.find((file) => !file.type.startsWith('image/'));
-
-    if (invalidFile) {
-      toast({ icon: 'error', title: '이미지 파일만 선택할 수 있습니다.' });
-      event.target.value = '';
-      return;
-    }
-
-    setImages((current) => [
-      ...current,
-      ...files.map((file) => ({
-        id: `${file.name}-${file.lastModified}-${file.size}`,
-        name: file.name,
-        file,
-        flSn: null,
-        url: null,
-        previewUrl: URL.createObjectURL(file),
-      })),
-    ]);
-    event.target.value = '';
-  };
-
-  const removeImage = (targetId) => {
-    setImages((current) => {
-      const target = current.find((image) => image.id === targetId);
-      if (target) URL.revokeObjectURL(target.previewUrl);
-      return current.filter((image) => image.id !== targetId);
-    });
-  };
-
   const clearEditor = () => {
     imagesRef.current.forEach((image) => {
-      if (image.previewUrl) URL.revokeObjectURL(image.previewUrl);
+      if (image.file && image.url) URL.revokeObjectURL(image.url);
     });
     setEditingPortfolio(null);
     setTitle('');
     setDescription('');
     setImages([]);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    setFileError('');
   };
 
   const editPortfolio = (portfolio) => {
     imagesRef.current.forEach((image) => {
-      if (image.previewUrl) URL.revokeObjectURL(image.previewUrl);
+      if (image.file && image.url) URL.revokeObjectURL(image.url);
     });
     setEditingPortfolio(portfolio);
     setTitle(portfolio.title ?? '');
@@ -141,11 +118,12 @@ function PortfolioRegistrationSection() {
     setImages((portfolio.files ?? []).map((file) => ({
       id: `file-${file.fileSn}`,
       name: `포트폴리오 이미지 ${file.sortOrder + 1}`,
+      size: null,
       file: null,
       flSn: file.fileSn,
       url: file.url,
-      previewUrl: null,
     })));
+    setFileError('');
   };
 
   const submitPortfolio = async () => {
@@ -223,19 +201,20 @@ function PortfolioRegistrationSection() {
   };
 
   return (
-    <section className="provider-profile-editor__card space-y-5 rounded-xl border border-[#e5e5e5] bg-white p-6" aria-labelledby="portfolio-registration-title">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 id="portfolio-registration-title" className="text-lg font-bold text-[#252525]">포트폴리오 관리</h2>
-          <p className="mt-1 text-sm text-[#666]">첫 번째 작업 이미지가 공개 프로필의 대표 이미지로 표시됩니다.</p>
+    <div className="provider-portfolio-layout">
+      <section
+        aria-labelledby="portfolio-registration-title"
+        className="provider-profile-editor__card grid gap-5 rounded-xl border border-[#e5e5e5] bg-white p-6"
+      >
+        <div className="grid min-h-9 grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+          <h2 id="portfolio-registration-title" className="text-lg font-bold text-[#252525]">
+            {editingPortfolio ? '포트폴리오 수정' : '새 포트폴리오 등록'}
+          </h2>
+          {editingPortfolio && (
+            <ActionButton onClick={clearEditor} size="sm" tone="outline">새 항목 등록</ActionButton>
+          )}
         </div>
-        {editingPortfolio && (
-          <ActionButton onClick={clearEditor} size="sm" tone="outline">새 항목 등록</ActionButton>
-        )}
-      </div>
 
-      <div className="grid gap-5">
-        <h3 className="font-bold text-[#303030]">{editingPortfolio ? '포트폴리오 수정' : '새 포트폴리오 등록'}</h3>
         <div>
           <label className="mb-2 block text-sm font-bold text-[#404040]" htmlFor="portfolio-title">포트폴리오 제목</label>
           <input
@@ -262,53 +241,36 @@ function PortfolioRegistrationSection() {
           <p className="mt-1 text-right text-xs text-[#888]">{description.length}/4000</p>
         </div>
 
-        <div>
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <label className="text-sm font-bold text-[#404040]" htmlFor="portfolio-images">작업 이미지</label>
-            <button type="button" className="btn btn-outline btn-sm" onClick={() => fileInputRef.current?.click()}>이미지 선택</button>
-          </div>
-          <input
-            ref={fileInputRef}
-            id="portfolio-images"
-            className="sr-only"
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={selectImages}
-          />
+        <ImageAttachmentPicker
+          compact
+          description="JPG·PNG·WEBP, 파일당 10MB, 최대 5개"
+          error={fileError}
+          images={images}
+          inputAriaLabel="포트폴리오 작업 이미지 선택"
+          maxImages={MAX_PORTFOLIO_IMAGES}
+          onChange={setImages}
+          onError={setFileError}
+          title="작업 이미지"
+        />
 
-          {images.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-[#c9d3e3] bg-[#fafcff] px-4 py-10 text-center text-sm text-[#777]">
-              등록할 작업 이미지를 선택해 미리볼 수 있습니다.
-            </div>
-          ) : (
-            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3" aria-label="선택한 작업 이미지">
-              {images.map((image) => (
-                <li key={image.id} className="relative overflow-hidden rounded-lg border border-[#d9d9d9] bg-[#f6f6f6]">
-                  <img src={image.previewUrl ?? toImageUrl(image.url)} alt={image.name} className="aspect-square w-full object-cover" />
-                  <button
-                    type="button"
-                    className="absolute right-2 top-2 rounded bg-white/95 px-2 py-1 text-xs font-medium text-[#444] shadow-sm"
-                    onClick={() => removeImage(image.id)}
-                  >
-                    삭제
-                  </button>
-                  <p className="truncate px-2 py-2 text-xs text-[#555]">{image.name}</p>
-                </li>
-              ))}
-            </ul>
-          )}
+        <div className="flex justify-end">
+          <ActionButton disabled={isSubmitting} onClick={submitPortfolio}>
+            {isSubmitting ? '저장 중' : editingPortfolio ? '수정 저장' : '포트폴리오 등록'}
+          </ActionButton>
         </div>
-      </div>
+      </section>
 
-      <div className="flex justify-end">
-        <ActionButton disabled={isSubmitting} onClick={submitPortfolio}>
-          {isSubmitting ? '저장 중' : editingPortfolio ? '수정 저장' : '포트폴리오 등록'}
-        </ActionButton>
-      </div>
+      <section
+        aria-labelledby="portfolio-list-title"
+        className="provider-profile-editor__card rounded-xl border border-[#e5e5e5] bg-white p-6"
+      >
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <h2 id="portfolio-list-title" className="text-lg font-bold text-[#252525]">등록된 포트폴리오 관리</h2>
+          <span className="shrink-0 text-sm font-semibold text-[#667085]">
+            {(portfoliosQuery.data?.length ?? 0).toLocaleString()}건
+          </span>
+        </div>
 
-      <div className="grid gap-4 border-t border-[#ececec] pt-5">
-        <h3 className="font-bold text-[#303030]">등록한 포트폴리오 관리</h3>
         {portfoliosQuery.isLoading && <p className="text-sm text-[#666]">등록한 포트폴리오를 불러오는 중입니다.</p>}
         {portfoliosQuery.isError && (
           <div className="rounded-lg border border-[#f1c5c8] bg-[#fff8f8] px-4 py-3 text-sm text-[#c62828]">
@@ -316,26 +278,35 @@ function PortfolioRegistrationSection() {
             <button type="button" className="ml-2 underline" onClick={() => portfoliosQuery.refetch()}>다시 시도</button>
           </div>
         )}
+        {!portfoliosQuery.isLoading && !portfoliosQuery.isError && portfoliosQuery.data?.length === 0 && (
+          <div className="flex min-h-40 items-center justify-center border-y border-[#e9edf3] text-sm text-[#667085]">
+            등록된 포트폴리오가 없습니다.
+          </div>
+        )}
         {portfoliosQuery.data?.length > 0 && (
-          <ul className="grid gap-3 sm:grid-cols-2" aria-label="등록한 포트폴리오">
+          <ul className="provider-profile-editor__portfolio-list" aria-label="등록한 포트폴리오">
             {portfoliosQuery.data.map((portfolio) => {
               const representative = portfolio.files?.find((file) => file.representative)
                 ?? portfolio.files?.[0];
               return (
-                <li key={portfolio.portfolioSn} className="overflow-hidden rounded-lg border border-[#dfe3ea]">
-                  {representative?.url && (
+                <li key={portfolio.portfolioSn}>
+                  <div className="provider-profile-editor__portfolio-thumb">
+                    {representative?.url ? (
                     <img
                       src={toImageUrl(representative.url)}
                       alt=""
-                      className="aspect-[16/9] w-full object-cover"
+                      className="h-full w-full object-cover"
                     />
-                  )}
-                  <div className="p-4">
-                    <strong className="block truncate text-sm text-[#252525]">{portfolio.title}</strong>
-                    <p className="mt-2 line-clamp-2 min-h-10 text-sm text-[#666]">
+                    ) : (
+                      <span>이미지 없음</span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <strong className="block truncate text-[15px] text-[#252525]">{portfolio.title}</strong>
+                    <p className="mt-1 line-clamp-2 min-h-10 text-sm leading-5 text-[#666]">
                       {portfolio.content || '등록된 설명이 없습니다.'}
                     </p>
-                    <div className="mt-4 flex justify-end gap-2">
+                    <div className="mt-3 flex justify-end gap-2">
                       <ActionButton size="sm" tone="outline" onClick={() => editPortfolio(portfolio)}>수정</ActionButton>
                       <ActionButton
                         disabled={deleteMutation.isPending}
@@ -352,8 +323,8 @@ function PortfolioRegistrationSection() {
             })}
           </ul>
         )}
-      </div>
-    </section>
+      </section>
+    </div>
   );
 }
 
@@ -400,7 +371,6 @@ function ProviderProfileForm({ profile }) {
       <form className="provider-profile-editor__card provider-profile-editor__form rounded-xl border border-[#e5e5e5] bg-white p-6" onSubmit={submit}>
         <div className="provider-profile-editor__section-heading">
           <h2>기본 프로필</h2>
-          <p>고객에게 공개되는 프로필 사진·활동 지역·소개를 관리합니다.</p>
         </div>
 
         {/* 제공자 전용 프로필 사진 — 개인정보 수정의 계정 사진과 별개 값이다. 비워두면(profileFileSn

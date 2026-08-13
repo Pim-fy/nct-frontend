@@ -1052,7 +1052,9 @@ export const AuctionDetailPageContent = ({ auctionId, embedded = false }) => {
               <AuctionPreviewRail
                 imageItems={imageItems}
                 activeImageIndex={activeImageIndex}
+                failedImageUrls={failedImageUrls}
                 onPreviewClick={handlePreviewClick}
+                onImageError={handleImageError}
               />
             </div>
             <AuctionBidPanel
@@ -1174,8 +1176,8 @@ export const AuctionDetailPageContent = ({ auctionId, embedded = false }) => {
             auction={auction}
             selectedTradeName={selectedTradeName}
             sectionId={DETAIL_SECTION_ITEMS[3].id}
-            sellerRating={sellerRatingQuery.data?.goodsScore ?? auction.sellerRating}
-            sellerReviewCount={sellerRatingQuery.data?.goodsCount ?? auction.sellerReviewCount}
+            sellerRating={sellerRatingQuery.data?.totalScore ?? auction.sellerRating}
+            sellerReviewCount={sellerRatingQuery.data?.totalCount ?? auction.sellerReviewCount}
             isSellerRatingLoading={!supplementalQueriesEnabled || sellerRatingQuery.isLoading}
             onSellerReviewsOpen={handleSellerReviewsOpen}
           >
