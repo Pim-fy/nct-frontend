@@ -22,6 +22,7 @@ import TradeTrustSummary from '@components/trade/TradeTrustSummary';
 import ServiceTradeOriginalModal from '@components/trade/ServiceTradeOriginalModal';
 import DateRangePicker from '@components/product/DateRangePicker';
 import ReportModal from '@components/common/ReportModal';
+import { getServiceTradeChatPath } from '@/routes/myPageRoutes';
 import { formatMembershipDuration } from '@utils/common';
 import '@assets/css/trade-detail.css';
 import '@assets/css/service-trade-detail.css';
@@ -379,7 +380,7 @@ export default function ServiceTradeDetailPage({
                 <div className="service-trade-inline-actions service-trade-inline-actions--summary" aria-label="서비스 일정 및 채팅 처리">
                   <div className="service-trade-inline-actions__group">
                     {canAccessChat && (
-                      <Link className="btn service-trade-inline-actions__chat" to={chatPath ?? `/service-trades/${trade.tradeId}/chat`}>
+                      <Link className="btn service-trade-inline-actions__chat" to={chatPath ?? getServiceTradeChatPath(trade.tradeId)}>
                         <MessageSquareText aria-hidden="true" size={18} /> {canViewChatHistory ? '채팅 기록 보기' : '서비스 채팅'}
                       </Link>
                     )}
