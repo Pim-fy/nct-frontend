@@ -386,9 +386,6 @@ export const AuctionDetailPageContent = ({ auctionId, embedded = false }) => {
 
       if (desiredFavoriteRef.current === confirmedFavorite) {
         applyFavoriteStatus(status);
-        showToast(confirmedFavorite
-          ? '관심 상품에 추가되었습니다'
-          : '관심 상품에서 해제되었습니다');
         return;
       }
 
