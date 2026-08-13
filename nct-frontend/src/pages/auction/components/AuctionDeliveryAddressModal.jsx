@@ -7,6 +7,7 @@ import {
   Search,
   X,
 } from 'lucide-react';
+import { ActionButton } from '@components/common/ui';
 
 const FIELD_CLASS = 'h-11 w-full rounded-[5px] border border-[#d9d9d9] bg-white px-3 text-body-md text-[#333] outline-none transition-colors focus:border-primary disabled:bg-[#f6f6f6] disabled:text-[#888]';
 
@@ -187,7 +188,7 @@ const AuctionDeliveryAddressModal = ({
                       <span className="flex flex-wrap items-center gap-2 text-body-md font-bold text-[#1d1d1f]">
                         {item.name}
                         {item.defaultAddress && (
-                          <span className="badge badge-soft-info">기본</span>
+                          <span className="rounded-full bg-[#e7efff] px-2 py-0.5 text-caption text-primary-dark">기본</span>
                         )}
                       </span>
                       <span className="mt-1 block break-words text-body-sm leading-5 text-[#555]">
@@ -199,14 +200,13 @@ const AuctionDeliveryAddressModal = ({
               })}
             </div>
 
-            <button
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[5px] border border-[#cfcfcf] bg-white px-4 text-body-md font-bold text-[#333] hover:bg-[#f6f6f6]"
+            <ActionButton
               onClick={openCreateForm}
-              type="button"
+              tone="neutral"
             >
               <Plus aria-hidden="true" size={18} />
               새 배송지 등록
-            </button>
+            </ActionButton>
 
             <p
               aria-hidden={!(validationMessage || errorMessage)}
@@ -219,14 +219,15 @@ const AuctionDeliveryAddressModal = ({
               {validationMessage || errorMessage || '\u00a0'}
             </p>
 
-            <button
-              className="h-12 w-full rounded-[5px] border border-primary bg-primary text-body-md font-bold text-white hover:bg-[#0058df] disabled:cursor-not-allowed disabled:opacity-60"
+            <ActionButton
               disabled={addressId == null || isSaving}
+              fullWidth
+              loading={isSaving}
               onClick={handleSelect}
-              type="button"
+              size="lg"
             >
               이 배송지 사용
-            </button>
+            </ActionButton>
           </div>
         ) : (
           <form className="grid gap-4 overflow-y-auto p-5" onSubmit={handleSubmit}>
@@ -257,14 +258,13 @@ const AuctionDeliveryAddressModal = ({
                   readOnly
                   value={form.address}
                 />
-                <button
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-[5px] border border-[#333] bg-white px-3 text-body-md font-bold text-[#333] hover:bg-[#f6f6f6]"
+                <ActionButton
                   onClick={() => setView('search')}
-                  type="button"
+                  tone="neutral"
                 >
                   <Search aria-hidden="true" size={18} />
                   주소 검색
-                </button>
+                </ActionButton>
               </div>
               <p className="m-0 min-h-5 text-body-sm text-[#777]">
                 {form.zip ? `우편번호 ${form.zip}` : '우편번호와 기본주소는 필수입니다.'}
@@ -316,13 +316,14 @@ const AuctionDeliveryAddressModal = ({
               {validationMessage || errorMessage || '\u00a0'}
             </p>
 
-            <button
-              className="h-12 w-full rounded-[5px] border border-primary bg-primary text-body-md font-bold text-white hover:bg-[#0058df] disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={isSaving}
+            <ActionButton
+              fullWidth
+              loading={isSaving}
+              size="lg"
               type="submit"
             >
               {isSaving ? '저장 중...' : '배송지 저장'}
-            </button>
+            </ActionButton>
           </form>
         )}
       </section>

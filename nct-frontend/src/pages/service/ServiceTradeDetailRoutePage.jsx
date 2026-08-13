@@ -8,6 +8,7 @@ import {
 } from '@api/serviceTradeApi';
 import { reviewQueryKeys } from '@hooks/useReview';
 import ServiceTradeDetailSkeleton from '@components/skeleton/ServiceTradeDetailSkeleton';
+import { ActionButton } from '@components/common/ui';
 import ServiceTradeDetailPage from './ServiceTradeDetailPage';
 
 const serviceTradeDetailQueryKey = (tradeId) => ['service-trade-detail', tradeId];
@@ -77,9 +78,9 @@ export default function ServiceTradeDetailRoutePage() {
         <section className="container service-trade-detail-page__empty">
           <h1>서비스 거래 상세</h1>
           <p>{message}</p>
-          <button className="btn btn-primary" type="button" onClick={() => detailQuery.refetch()}>
+          <ActionButton onClick={() => detailQuery.refetch()}>
             다시 시도
-          </button>
+          </ActionButton>
         </section>
       </main>
     );

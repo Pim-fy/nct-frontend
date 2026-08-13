@@ -13,6 +13,7 @@ import {
   updateDeliveryAddress,
 } from '@api/memberApi';
 import DeliveryAddressFormModal from '@components/member/DeliveryAddressFormModal';
+import { ActionButton, StatusBadge } from '@components/common/ui';
 import {
   DELIVERY_ADDRESSES_QUERY_KEY,
   useDeliveryAddresses,
@@ -158,18 +159,19 @@ const ProfileDeliveryAddressManager = () => {
               {addresses.length}/{MAX_ADDRESS_COUNT}
             </span>
           )}
-          <button
-            className="inline-flex min-h-8 shrink-0 items-center gap-1 rounded-[5px] border border-[#cfcfcf] bg-white px-2.5 text-[13px] font-bold text-[#404040] hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+          <ActionButton
+            className="shrink-0"
             disabled={addresses.length >= MAX_ADDRESS_COUNT || isLoading || isError}
             onClick={openCreate}
+            size="sm"
             title={addresses.length >= MAX_ADDRESS_COUNT
               ? '배송지는 최대 10개까지 등록할 수 있습니다.'
               : '배송지 추가'}
-            type="button"
+            tone="neutral"
           >
             <Plus aria-hidden="true" size={14} />
             추가
-          </button>
+          </ActionButton>
         </div>
       </div>
 
@@ -212,9 +214,9 @@ const ProfileDeliveryAddressManager = () => {
                   <span className="flex flex-wrap items-center gap-1.5">
                     <strong className="text-[14px] text-[#333]">{address.name}</strong>
                     {address.defaultAddress && (
-                      <span className="badge badge-soft-info">
+                      <StatusBadge tone="info" variant="soft">
                         기본
-                      </span>
+                      </StatusBadge>
                     )}
                   </span>
                   <span className="mt-0.5 block break-words text-[13px] leading-5 text-[#666]">
@@ -251,14 +253,14 @@ const ProfileDeliveryAddressManager = () => {
 
       {!isLoading && !isError && sortedAddresses.length > 0 && (
         <div className="mt-3 flex justify-end">
-          <button
-            className="min-h-9 rounded-[5px] border border-primary bg-white px-3 text-[13px] font-bold text-primary hover:bg-[#f4f8ff] disabled:cursor-not-allowed disabled:border-[#d7d7d7] disabled:bg-[#f6f6f6] disabled:text-[#999]"
+          <ActionButton
             disabled={!hasDefaultChange || isChanging}
             onClick={() => defaultMutation.mutate(selectedDefaultId)}
-            type="button"
+            size="sm"
+            tone="outline"
           >
             {defaultMutation.isPending ? '저장 중...' : '기본 배송지로 저장'}
-          </button>
+          </ActionButton>
         </div>
       )}
 

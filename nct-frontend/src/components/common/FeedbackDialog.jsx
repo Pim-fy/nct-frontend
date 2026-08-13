@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { CircleAlert, CircleCheck, CircleX, Info } from 'lucide-react';
 import { normalizeFeedbackText } from '@utils/common';
 import { resolveFeedbackDialogSize } from './feedbackDialogConfig';
+import { useFeedbackExit } from './feedbackMotion';
 
 const ICONS = {
   success: CircleCheck,
@@ -37,6 +38,7 @@ export default function FeedbackDialog({
   const titleId = useId();
   const descriptionId = useId();
   const confirmButtonRef = useRef(null);
+  const { beginExit, handleExitAnimationEnd, isExiting } = useFeedbackExit();
   const normalizedTitle = normalizeFeedbackText(title);
   const normalizedDescription = normalizeFeedbackText(description);
   const resolvedSize = resolveFeedbackDialogSize({
@@ -57,7 +59,7 @@ export default function FeedbackDialog({
     const handleKeyDown = (event) => {
       if (event.key !== 'Escape') return;
       event.preventDefault();
-      (onCancel ?? onConfirm)?.();
+      beginExit(onCancel ?? onConfirm);
     };
 
     document.addEventListener('keydown', handleKeyDown);
@@ -66,17 +68,20 @@ export default function FeedbackDialog({
       document.removeEventListener('keydown', handleKeyDown);
       previouslyFocused?.focus?.();
     };
-  }, [open, onCancel, onConfirm]);
+  }, [beginExit, open, onCancel, onConfirm]);
 
   if (!open || typeof document === 'undefined') return null;
 
   return createPortal(
-    <div className="feedback-dialog__overlay">
+    <div
+      className={`feedback-dialog__overlay${isExiting ? ' feedback-dialog__overlay--leaving' : ''}`}
+      onAnimationEnd={handleExitAnimationEnd}
+    >
       <section
         aria-describedby={normalizedDescription ? descriptionId : undefined}
         aria-labelledby={titleId}
         aria-modal="true"
-        className={`feedback-dialog feedback-dialog--${resolvedSize} feedback-dialog--${variant}`}
+        className={`feedback-dialog feedback-dialog--${resolvedSize} feedback-dialog--${variant}${isExiting ? ' feedback-dialog--leaving' : ''}`}
         role="alertdialog"
       >
         <div className="feedback-dialog__icon" aria-hidden="true">
@@ -88,13 +93,19 @@ export default function FeedbackDialog({
         ) : null}
         <div className="feedback-dialog__actions">
           {showCancelButton ? (
-            <button className="btn btn-ghost feedback-dialog__button" onClick={onCancel} type="button">
+            <button
+              className="btn btn-ghost feedback-dialog__button"
+              disabled={isExiting}
+              onClick={() => beginExit(onCancel)}
+              type="button"
+            >
               {cancelLabel}
             </button>
           ) : null}
           <button
             className={`btn ${confirmButtonClass} feedback-dialog__button`}
-            onClick={onConfirm}
+            disabled={isExiting}
+            onClick={() => beginExit(onConfirm)}
             ref={confirmButtonRef}
             type="button"
           >

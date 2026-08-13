@@ -1,6 +1,7 @@
 // src/utils/common.js
 import Swal from 'sweetalert2';
 import { resolveFeedbackDialogSize } from '@components/common/feedbackDialogConfig';
+import { SWEET_ALERT_FEEDBACK_MOTION } from '@components/common/feedbackMotion';
 
 // ──────────────────────────────────────────
 // SweetAlert2 공통 알림 / 확인 헬퍼
@@ -82,6 +83,7 @@ export const toast = ({ icon = 'info', title, html, timer = 1800 }) => {
     showConfirmButton: false,
     buttonsStyling: false,
     customClass: getDialogCustomClass('sm'),
+    ...SWEET_ALERT_FEEDBACK_MOTION,
   });
 };
 
@@ -116,6 +118,7 @@ export const notify = async ({
     scrollbarPadding,
     buttonsStyling: false,
     customClass: getDialogCustomClass(resolvedSize),
+    ...SWEET_ALERT_FEEDBACK_MOTION,
   });
 };
 
@@ -158,6 +161,7 @@ export const confirm = async ({
     reverseButtons,
     buttonsStyling: false,
     customClass: getDialogCustomClass(resolvedSize, confirmTone),
+    ...SWEET_ALERT_FEEDBACK_MOTION,
   });
   return result.isConfirmed;
 };

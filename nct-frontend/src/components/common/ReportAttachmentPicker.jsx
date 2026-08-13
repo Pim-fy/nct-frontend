@@ -1,5 +1,6 @@
 import { FileText, Paperclip, Upload, X } from 'lucide-react';
 import { useRef } from 'react';
+import { ActionButton } from '@components/common/ui';
 
 const MAX_FILES = 5;
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
@@ -64,16 +65,17 @@ export default function ReportAttachmentPicker({ files, onChange, error, onError
             이미지·PDF, 파일당 10MB, 최대 5개 ({files.length}/5)
           </p>
         </div>
-        <button
+        <ActionButton
           aria-label="신고 첨부파일 선택"
-          className="btn btn-outline btn-sm shrink-0"
+          className="shrink-0"
           disabled={files.length >= MAX_FILES}
           onClick={() => inputRef.current?.click()}
-          type="button"
+          size="sm"
+          tone="outline"
         >
           <Upload size={15} aria-hidden="true" />
           파일 선택
-        </button>
+        </ActionButton>
       </div>
       <input
         ref={inputRef}

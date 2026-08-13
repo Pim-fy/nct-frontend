@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Paperclip } from 'lucide-react';
 import Pagination from "@components/common/Pagination";
+import { ActionButton, StatusBadge as CommonStatusBadge } from '@components/common/ui';
 import MyPageListSectionLayout from "@components/mypage/MyPageListSectionLayout";
 import MyPageListSkeleton from "@components/skeleton/MyPageListSkeleton";
 import MyPageListEmpty from "@components/mypage/MyPageListEmpty";
@@ -21,23 +22,26 @@ const STATUS_LABEL = {
 };
 
 // 담당자 7: 신고 유형과 처리 상태를 목록에서 바로 구분할 수 있도록 배지 색상을 분리한다.
-const STATUS_BADGE_CLASS = {
-  ABSC0001: "badge-soft-warning",
-  ABSC0002: "badge-soft-info",
-  ABSC0003: "badge-soft-success",
-  ABSC0004: "badge-soft-danger",
+const STATUS_BADGE_TONE = {
+  ABSC0001: "warning",
+  ABSC0002: "info",
+  ABSC0003: "success",
+  ABSC0004: "danger",
 };
 
-const TYPE_BADGE_CLASS = {
-  ABRC0001: "badge-soft-warning",
-  ABRC0002: "badge-soft-danger",
-  ABRC0003: "badge-soft-purple",
-  ABRC0004: "badge-soft-danger",
-  ABRC0005: "badge-soft-info",
-  ABRC0006: "badge-soft-warning",
+const TYPE_BADGE_TONE = {
+  ABRC0001: "warning",
+  ABRC0002: "danger",
+  ABRC0003: "danger",
+  ABRC0004: "danger",
+  ABRC0005: "info",
+  ABRC0006: "warning",
+  ABRC0007: "neutral",
+  ABRC0008: "danger",
+  ABRC0009: "warning",
+  ABRC0010: "info",
+  ABRC0011: "warning",
 };
-
-const DEFAULT_BADGE_CLASS = "badge-soft-neutral";
 
 const getTypeNames = (report) => {
   if (report.reportTypeNames?.length) return report.reportTypeNames;
@@ -60,15 +64,22 @@ const fmtDate = (str) => str?.slice(0, 10).replace(/-/g, ".") ?? "-";
 
 // ─── 서브 컴포넌트 ────────────────────────────────────────────────────────────
 
+// 담당자 7 · UI 공통화: 신고 업무 코드는 유지하고 공통 배지의 의미색만 선택합니다.
 function StatusBadge({ statusCode }) {
   const label = STATUS_LABEL[statusCode] ?? statusCode;
-  const badgeClass = STATUS_BADGE_CLASS[statusCode] ?? DEFAULT_BADGE_CLASS;
-  return <span className={`badge ${badgeClass}`}>{label}</span>;
+  return (
+    <CommonStatusBadge tone={STATUS_BADGE_TONE[statusCode] ?? "neutral"} variant="soft">
+      {label}
+    </CommonStatusBadge>
+  );
 }
 
 function TypeBadge({ typeCode, typeName }) {
-  const badgeClass = TYPE_BADGE_CLASS[typeCode] ?? DEFAULT_BADGE_CLASS;
-  return <span className={`badge ${badgeClass}`}>{typeName}</span>;
+  return (
+    <CommonStatusBadge tone={TYPE_BADGE_TONE[typeCode] ?? "neutral"} variant="soft">
+      {typeName}
+    </CommonStatusBadge>
+  );
 }
 
 function ReportCard({ report, isOpen, onToggle, number }) {
@@ -195,16 +206,17 @@ function ReportCard({ report, isOpen, onToggle, number }) {
               <p className="font-bold m-0 mb-2" style={{ fontSize: "16px", color: "#333333" }}>첨부파일</p>
               <div className="flex flex-wrap gap-2">
                 {detail.files.map((file) => (
-                  <button
-                    className="btn btn-outline btn-sm max-w-full"
+                  <ActionButton
+                    className="max-w-full"
                     disabled={openingFileSn === file.fileSn}
                     key={file.fileSn}
                     onClick={() => openFile(file)}
-                    type="button"
+                    size="sm"
+                    tone="outline"
                   >
                     <Paperclip size={14} aria-hidden="true" />
                     <span className="truncate">{file.originalName}</span>
-                  </button>
+                  </ActionButton>
                 ))}
               </div>
               {fileError && <p className="mt-2 text-[13px] text-red-500" role="alert">{fileError}</p>}

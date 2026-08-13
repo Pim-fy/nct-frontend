@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { ActionButton } from '@components/common/ui';
 import { useMyProviderApplications } from '@hooks/useProviderApplications';
 import './providerApplicationMulti.css';
 
@@ -37,7 +37,7 @@ const ProviderApplicationStatusCard = () => {
         </dl>
       )}
 
-      <Link className="btn btn-outline" to="/provider/apply">제공자 권한 신청</Link>
+      <ActionButton tone="outline" to="/provider/apply">제공자 권한 신청</ActionButton>
     </section>
   );
 };

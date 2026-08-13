@@ -7,6 +7,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { requestPasswordReset, confirmPasswordReset } from '@api/authApi';
 import AuthPageContainer from '@components/auth/AuthPageContainer';
 import AuthCard from '@components/auth/AuthCard';
+import { ActionButton } from '@components/common/ui';
 import { notify } from '@utils/common';
 
 // @ai_generated: 목업(38_password_reset.html)의 이메일 마스킹 규칙을 그대로 재사용한다.
@@ -89,14 +90,15 @@ function RequestForm() {
               />
             </div>
 
-            <button
-              type="button"
+            <ActionButton
               onClick={handleSubmit}
-              disabled={loading}
-              className="mt-1 w-full h-12 rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-base font-bold transition-all duration-150 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              fullWidth
+              loading={loading}
+              size="lg"
+              className="mt-1"
             >
               {loading ? '발송 중...' : '재설정 링크 발송'}
-            </button>
+            </ActionButton>
           </div>
         ) : (
           <div className="flex flex-col gap-5 text-center">
@@ -116,21 +118,19 @@ function RequestForm() {
               <li>메일이 오지 않으면 스팸함을 확인해주세요.</li>
             </ul>
             <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
+              <ActionButton
                 onClick={() => setSent(false)}
-                className="h-11 rounded-lg border border-gray-300 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition"
+                tone="neutral"
               >
                 다시 입력하기
-              </button>
-              <button
-                type="button"
+              </ActionButton>
+              <ActionButton
                 onClick={handleResend}
-                disabled={loading}
-                className="h-11 rounded-lg border border-blue-600 text-blue-600 text-sm font-semibold hover:bg-blue-50 transition disabled:opacity-60"
+                loading={loading}
+                tone="outline"
               >
                 재발송 요청
-              </button>
+              </ActionButton>
             </div>
           </div>
         )}
@@ -257,14 +257,15 @@ function ConfirmForm({ token }) {
             />
           </div>
 
-          <button
-            type="button"
+          <ActionButton
             onClick={handleSubmit}
-            disabled={loading}
-            className="mt-1 w-full h-12 rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-base font-bold transition-all duration-150 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            fullWidth
+            loading={loading}
+            size="lg"
+            className="mt-1"
           >
             {loading ? '변경 중...' : '비밀번호 변경'}
-          </button>
+          </ActionButton>
         </div>
       </AuthCard>
     </AuthPageContainer>

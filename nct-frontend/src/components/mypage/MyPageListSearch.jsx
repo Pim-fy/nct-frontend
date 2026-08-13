@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ActionButton } from '@components/common/ui';
 
 export default function MyPageListSearch({
   onSearch,
@@ -22,12 +23,13 @@ export default function MyPageListSearch({
         aria-label={ariaLabel}
         className="h-9 min-w-0 flex-1 rounded-lg border border-[#dce2ed] bg-white px-3 text-sm outline-none focus:border-[#1466f5] sm:w-[180px]"
       />
-      <button
+      <ActionButton
+        className="shrink-0"
+        size="sm"
         type="submit"
-        className="h-9 shrink-0 cursor-pointer rounded-lg border-0 bg-[#1466f5] px-4 text-sm font-bold text-white"
       >
         검색
-      </button>
+      </ActionButton>
     </form>
   );
 }

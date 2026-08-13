@@ -198,13 +198,13 @@ const AdminProviderApprovalPage = () => {
       });
       toast({
         icon: 'success',
-        title: `제공자 분야 권한을 ${active ? '복구' : '정지'}했습니다.`,
+        title: `제공자 권한을 ${active ? '복구' : '정지'}했습니다.`,
         timer: 1800,
       });
       setRejectReason('');
       closeDetail();
     } catch (error) {
-      setFeedback(error?.response?.data?.message || '제공자 분야 권한을 변경하지 못했습니다.');
+      setFeedback(error?.response?.data?.message || '제공자 권한을 변경하지 못했습니다.');
     }
   };
 
@@ -373,7 +373,7 @@ const AdminProviderApprovalPage = () => {
 
               {selected.statusCode === 'PRVC0003' && selected.permissionLabel && (
                 <>
-                  <dt>분야 권한</dt>
+                  <dt>제공자 권한</dt>
                   <dd>
                     <AdminStatusBadge tone={selected.permissionTone}>
                       {selected.permissionLabel}
@@ -402,6 +402,7 @@ const AdminProviderApprovalPage = () => {
                 <label className="admin-provider-detail__reason">
                   처리 사유
                   <textarea
+                    className="admin-reason-textarea"
                     maxLength="4000"
                     onChange={(event) => setRejectReason(event.target.value)}
                     placeholder="승인 또는 반려 처리 사유를 입력합니다."
@@ -435,6 +436,7 @@ const AdminProviderApprovalPage = () => {
                 <label className="admin-provider-detail__reason">
                   권한 변경 사유
                   <textarea
+                    className="admin-reason-textarea"
                     maxLength="1000"
                     onChange={(event) => setRejectReason(event.target.value)}
                     placeholder="권한 정지 또는 복구 사유를 입력하세요."
@@ -450,7 +452,7 @@ const AdminProviderApprovalPage = () => {
                         onClick={() => changePermission(false)}
                         type="button"
                       >
-                        분야 권한 정지
+                        제공자 권한 정지
                       </button>
                     ) : (
                       <button
@@ -459,7 +461,7 @@ const AdminProviderApprovalPage = () => {
                         onClick={() => changePermission(true)}
                         type="button"
                       >
-                        분야 권한 복구
+                        제공자 권한 복구
                       </button>
                     )}
                 </div>

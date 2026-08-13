@@ -1,6 +1,7 @@
 // 담당자 7: 일반·제공자 마이페이지 홈의 상단 프로필과 요약 카드 규격을 공유한다.
 // 화면별 데이터와 버튼 동작만 props로 받고 레이아웃과 스타일은 이 파일에서 한 번만 관리한다.
 import { assets } from '@components/mypage/assets';
+import { ActionButton } from '@components/common/ui';
 
 export function MyPageDashboardTop({
   profileImageUrl,
@@ -30,11 +31,11 @@ export function MyPageDashboardTop({
           <p className="mt-0.5 min-h-5 text-[14px] text-[#969696]">{email}</p>
           <div className="mt-2 flex gap-2">
             {actions.map((action) => (
-              <button
+              <ActionButton
                 key={action.key}
-                type="button"
-                className="btn btn-ghost btn-sm"
                 onClick={action.onClick}
+                size="sm"
+                tone="neutral"
               >
                 {action.icon && (
                   <img
@@ -44,7 +45,7 @@ export function MyPageDashboardTop({
                   />
                 )}
                 {action.label}
-              </button>
+              </ActionButton>
             ))}
           </div>
         </div>

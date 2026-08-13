@@ -17,12 +17,12 @@ import {
   SERVICE_TRADE_STEPS,
 } from './serviceTradeStatus';
 import TradeProgressSteps from '@components/trade/TradeProgressSteps';
-import TradeDisputeDialog from '@components/trade/TradeDisputeDialog';
 import TradeReviewSection from '@components/trade/TradeReviewSection';
 import TradeTrustSummary from '@components/trade/TradeTrustSummary';
 import ServiceTradeOriginalModal from '@components/trade/ServiceTradeOriginalModal';
 import DateRangePicker from '@components/product/DateRangePicker';
 import TimeSelect from '@components/common/TimeSelect';
+import { ActionButton, DomainStatus } from '@components/common/ui';
 import {
   getNextTenMinuteTime,
   isTenMinuteTime,
@@ -78,6 +78,14 @@ const SERVICE_TRADE_HISTORY_LABELS = {
 };
 
 const SERVICE_TRADE_HISTORY_PAGE_SIZE = 4;
+
+const SERVICE_TRADE_STATUS_TONES = {
+  progress: 'success',
+  pending: 'warning',
+  complete: 'info',
+  problem: 'danger',
+  canceled: 'neutral',
+};
 
 // 실조회 컨테이너와 개발용 입력 양쪽에서 재사용하는 서비스 거래 표현 컴포넌트다.
 export default function ServiceTradeDetailPage({
@@ -284,9 +292,13 @@ export default function ServiceTradeDetailPage({
         <header className="trade-detail-page__header service-trade-detail-page__header">
           <div><h1>거래 상세</h1></div>
           {backPath && (
-            <Link className="btn btn-ghost service-trade-detail-page__list-link" to={backPath}>
+            <ActionButton
+              className="service-trade-detail-page__list-link"
+              to={backPath}
+              tone="neutral"
+            >
               ← {backLabel}
-            </Link>
+            </ActionButton>
           )}
         </header>
 
@@ -301,16 +313,22 @@ export default function ServiceTradeDetailPage({
             <div className="trade-detail-card__block">
               <div className="service-trade-card__title-row">
                 <h3 id="service-trade-guide-title">거래 진행 안내</h3>
-                <span className={`service-trade-status service-trade-status--${status.tone}`}>{status.label}</span>
+                <DomainStatus tone={SERVICE_TRADE_STATUS_TONES[status.tone] ?? 'neutral'}>
+                  {status.label}
+                </DomainStatus>
               </div>
               <p>{status.description}</p>
             </div>
             <div className="trade-detail-card__block">
               <div className="service-trade-info__heading">
                 <h3>서비스 정보</h3>
-                <button className="btn btn-primary" onClick={() => setIsOriginalDocumentOpen(true)} type="button">
+                <ActionButton
+                  onClick={() => setIsOriginalDocumentOpen(true)}
+                  size="sm"
+                  tone="primary"
+                >
                   {isProvider ? '내 견적 보기' : '내 요청 보기'}
-                </button>
+                </ActionButton>
               </div>
               <dl className="service-trade-detail-list service-trade-detail-list--service-info">
                 {isRequester ? (
@@ -334,9 +352,13 @@ export default function ServiceTradeDetailPage({
               <div className="trade-counterpart__heading">
                 <h3>{counterpartTitle}</h3>
                 {trade.counterpartUserId && (
-                  <button className="btn btn-danger btn-sm" type="button" onClick={() => setIsReportOpen(true)}>
+                  <ActionButton
+                    onClick={() => setIsReportOpen(true)}
+                    size="sm"
+                    tone="danger-outline"
+                  >
                     신고하기
-                  </button>
+                  </ActionButton>
                 )}
               </div>
                 <div className="trade-counterpart service-trade-counterpart">
@@ -370,12 +392,33 @@ export default function ServiceTradeDetailPage({
                 <div className="service-trade-inline-actions service-trade-inline-actions--summary" aria-label="서비스 일정 및 채팅 처리">
                   <div className="service-trade-inline-actions__group">
                     {canAccessChat && (
-                      <Link className="btn service-trade-inline-actions__chat" to={chatPath ?? `/service-trades/${trade.tradeId}/chat`}>
+                      <ActionButton
+                        className="service-trade-inline-actions__chat"
+                        fullWidth
+                        to={chatPath ?? `/service-trades/${trade.tradeId}/chat`}
+                        tone="outline"
+                      >
                         <MessageSquareText aria-hidden="true" size={18} /> {canViewChatHistory ? '채팅 기록 보기' : '서비스 채팅'}
-                      </Link>
+                      </ActionButton>
                     )}
-                    {canRequestScheduleChange && <button className="btn btn-ghost" type="button" onClick={() => openScheduleDialog('CHANGE')}><CalendarDays aria-hidden="true" size={18} /> 일정 변경 요청</button>}
-                    {canRequestScheduleCancellation && <button className="btn btn-ghost" type="button" onClick={() => openScheduleDialog('CANCEL')}>일정 취소 요청</button>}
+                    {canRequestScheduleChange && (
+                      <ActionButton
+                        fullWidth
+                        onClick={() => openScheduleDialog('CHANGE')}
+                        tone="neutral"
+                      >
+                        <CalendarDays aria-hidden="true" size={18} /> 일정 변경 요청
+                      </ActionButton>
+                    )}
+                    {canRequestScheduleCancellation && (
+                      <ActionButton
+                        fullWidth
+                        onClick={() => openScheduleDialog('CANCEL')}
+                        tone="neutral"
+                      >
+                        일정 취소 요청
+                      </ActionButton>
+                    )}
                   </div>
                 </div>
               )}
@@ -386,8 +429,22 @@ export default function ServiceTradeDetailPage({
                     <p>동의하면 거래가 취소되고 보관금은 의뢰자에게 전액 환불됩니다.</p>
                   </div>
                   <div className="service-trade-cancellation-decision__actions">
-                    <button className="btn btn-ghost" type="button" disabled={isDecidingScheduleCancellation} onClick={() => handleScheduleCancellationDecision(false)}>거절</button>
-                    <button className="btn btn-primary" type="button" disabled={isDecidingScheduleCancellation} onClick={() => handleScheduleCancellationDecision(true)}>{isDecidingScheduleCancellation ? '처리 중...' : '동의하고 취소'}</button>
+                    <ActionButton
+                      className="w-36 font-extrabold"
+                      disabled={isDecidingScheduleCancellation}
+                      onClick={() => handleScheduleCancellationDecision(false)}
+                      tone="neutral"
+                    >
+                      거절
+                    </ActionButton>
+                    <ActionButton
+                      className="w-36 font-extrabold"
+                      disabled={isDecidingScheduleCancellation}
+                      onClick={() => handleScheduleCancellationDecision(true)}
+                      tone="danger"
+                    >
+                      {isDecidingScheduleCancellation ? '처리 중...' : '동의하고 취소'}
+                    </ActionButton>
                   </div>
                   {scheduleCancellationDecisionError && <p className="service-trade-dispute-form__error" role="alert">{scheduleCancellationDecisionError}</p>}
                 </div>
@@ -408,25 +465,25 @@ export default function ServiceTradeDetailPage({
                 <div className="service-trade-inline-actions service-trade-inline-actions--status" aria-label="거래 완료 처리">
                   <div className="service-trade-inline-actions__group service-trade-inline-actions__group--primary">
                     {canRequestCompletion && (
-                      <button className="btn btn-primary" type="button" onClick={() => openCompletionDialog('REQUEST')}>
+                      <ActionButton
+                        fullWidth
+                        onClick={() => openCompletionDialog('REQUEST')}
+                        tone="primary"
+                      >
                         <CheckCircle2 aria-hidden="true" size={18} /> 완료 요청 작성
-                      </button>
+                      </ActionButton>
                     )}
                     {canConfirmCompletion && (
-                      <button className="btn btn-primary" type="button" onClick={() => openCompletionDialog('CONFIRM')}>
+                      <ActionButton
+                        fullWidth
+                        onClick={() => openCompletionDialog('CONFIRM')}
+                        tone="primary"
+                      >
                         <CheckCircle2 aria-hidden="true" size={18} /> 거래 완료 확인
-                      </button>
+                      </ActionButton>
                     )}
                   </div>
                 </div>
-              )}
-              {canShowTradeReview && (
-                <TradeDisputeDialog
-                  onSubmitted={onActionCompleted}
-                  tradeId={trade.tradeId}
-                  tradeKind="SERVICE"
-                  tradeStatus={trade.tradeStatusCode}
-                />
               )}
             </div>
           </section>
@@ -494,7 +551,12 @@ export default function ServiceTradeDetailPage({
               <div className="service-trade-dialog__result" role="status">
                 <strong>{isCompletionRequest ? '완료 요청을 전달했습니다.' : '서비스 완료를 확인했습니다.'}</strong>
                 <p>{isCompletionRequest ? '의뢰자의 확인 기한은 5일이며, 이의가 없으면 자동 완료됩니다.' : '거래 완료와 정산 처리 결과를 안내해 드립니다.'}</p>
-                <button className="btn btn-primary" type="button" onClick={closeCompletionDialog}>확인</button>
+                <ActionButton
+                  onClick={closeCompletionDialog}
+                  tone="primary"
+                >
+                  확인
+                </ActionButton>
               </div>
             ) : (
               <form className="service-trade-dispute-form" onSubmit={handleCompletionSubmit}>
@@ -520,10 +582,20 @@ export default function ServiceTradeDetailPage({
                 {!canSubmitCompletion && <p className="service-trade-dispute-form__help">현재 완료 요청을 처리할 수 없습니다. 잠시 후 다시 시도해 주세요.</p>}
                 {completionError && <p className="service-trade-dispute-form__error" role="alert">{completionError}</p>}
                 <div className="service-trade-dispute-form__actions">
-                  <button className="btn btn-ghost" type="button" onClick={closeCompletionDialog} disabled={isSubmittingCompletion}>취소</button>
-                  <button className="btn btn-primary" type="submit" disabled={isSubmittingCompletion || !canSubmitCompletion}>
+                  <ActionButton
+                    disabled={isSubmittingCompletion}
+                    onClick={closeCompletionDialog}
+                    tone="neutral"
+                  >
+                    취소
+                  </ActionButton>
+                  <ActionButton
+                    disabled={isSubmittingCompletion || !canSubmitCompletion}
+                    tone="primary"
+                    type="submit"
+                  >
                     {isSubmittingCompletion ? '처리 중...' : isCompletionRequest ? '완료 요청 보내기' : '완료 확인'}
-                  </button>
+                  </ActionButton>
                 </div>
               </form>
             )}
@@ -549,7 +621,12 @@ export default function ServiceTradeDetailPage({
               <div className="service-trade-dialog__result" role="status">
                 <strong>{isScheduleChange ? '일정 변경 요청을 전달했습니다.' : '일정 취소 요청을 전달했습니다.'}</strong>
                 <p>상대방 확인과 처리 결과는 서비스 거래 이력에서 안내해 드립니다.</p>
-                <button className="btn btn-primary" type="button" onClick={closeScheduleDialog}>확인</button>
+                <ActionButton
+                  onClick={closeScheduleDialog}
+                  tone="primary"
+                >
+                  확인
+                </ActionButton>
               </div>
             ) : (
               <form className="service-trade-dispute-form" onSubmit={handleScheduleSubmit}>
@@ -627,10 +704,20 @@ export default function ServiceTradeDetailPage({
                 {!canSubmitSchedule && <p className="service-trade-dispute-form__help">현재 일정 요청을 처리할 수 없습니다. 잠시 후 다시 시도해 주세요.</p>}
                 {scheduleError && <p className="service-trade-dispute-form__error" role="alert">{scheduleError}</p>}
                 <div className="service-trade-dispute-form__actions">
-                  <button className="btn btn-ghost" type="button" onClick={closeScheduleDialog} disabled={isSubmittingSchedule}>취소</button>
-                  <button className="btn btn-primary" type="submit" disabled={isSubmittingSchedule || !canSubmitSchedule}>
+                  <ActionButton
+                    disabled={isSubmittingSchedule}
+                    onClick={closeScheduleDialog}
+                    tone="neutral"
+                  >
+                    취소
+                  </ActionButton>
+                  <ActionButton
+                    disabled={isSubmittingSchedule || !canSubmitSchedule}
+                    tone="primary"
+                    type="submit"
+                  >
                     {isSubmittingSchedule ? '요청 중...' : '요청 보내기'}
-                  </button>
+                  </ActionButton>
                 </div>
               </form>
             )}

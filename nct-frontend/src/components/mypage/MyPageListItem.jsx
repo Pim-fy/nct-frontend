@@ -28,7 +28,7 @@ export default function MyPageListItem({
 
       <div className="min-w-0 flex-1">
         {badge && (
-          <div className="mb-2 flex min-h-[30px] items-center gap-2 whitespace-nowrap">
+          <div className="mb-2 flex h-6 items-center gap-2 overflow-hidden whitespace-nowrap">
             {badge}
           </div>
         )}

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ActionButton } from "@components/common/ui";
 import { assets } from "./assets";
 import ServiceRequestCard from "./ServiceRequestCard";
 import {
@@ -73,13 +74,13 @@ export default function NewServiceSection({ isError, isLoading, items }) {
 
         {/* 더보기 */}
         <div className="flex justify-center mt-10">
-          <button
-            type="button"
-            onClick={() => navigate(SERVICE_REQUESTS_PATH)}
-            className="h-[45px] w-[100px] rounded-[40px] bg-transparent border border-white/60 text-[14px] text-white hover:bg-white/10 transition-colors"
+          <ActionButton
+            to={SERVICE_REQUESTS_PATH}
+            tone="outline"
+            className="w-[100px] rounded-[40px] !border-white/60 !bg-transparent !text-white hover:!bg-white/10"
           >
             더보기
-          </button>
+          </ActionButton>
         </div>
       </div>
     </section>

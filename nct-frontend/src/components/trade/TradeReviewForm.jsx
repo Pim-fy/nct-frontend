@@ -6,6 +6,7 @@ import { reviewQueryKeys } from '@hooks/useReview';
 import { toImageUrl } from '@api/fileApi';
 import StarRating from '@components/review/StarRating';
 import PhotoLightbox from '@components/common/PhotoLightbox';
+import { ActionButton, StatusBadge } from '@components/common/ui';
 import { confirm, toast } from '@utils/common';
 
 const MAX_PHOTOS = 5;
@@ -149,13 +150,13 @@ export default function TradeReviewForm({
         {!isDisabled && (
           <div className="flex items-center gap-2">
             {isEdit && (
-              <button type="button" className="btn btn-danger btn-sm" onClick={handleDelete} disabled={submitting}>
+              <ActionButton disabled={submitting} onClick={handleDelete} size="sm" tone="danger">
                 삭제
-              </button>
+              </ActionButton>
             )}
-            <button type="button" className="btn btn-primary btn-sm" onClick={handleSubmit} disabled={submitting}>
+            <ActionButton loading={submitting} onClick={handleSubmit} size="sm">
               {submitting ? (isEdit ? '수정 중...' : '등록 중...') : (isEdit ? '수정' : '리뷰 등록')}
-            </button>
+            </ActionButton>
           </div>
         )}
       </div>
@@ -225,7 +226,15 @@ export default function TradeReviewForm({
                           outline: index === 0 ? '2px solid #155eef' : 'none',
                         }}
                       />
-                      {index === 0 && <span className="badge badge-blue trade-review-form__representative-badge">대표</span>}
+                      {index === 0 && (
+                        <StatusBadge
+                          className="trade-review-form__representative-badge"
+                          tone="info"
+                          variant="soft"
+                        >
+                          대표
+                        </StatusBadge>
+                      )}
                       <button
                         type="button"
                         onClick={() => handleRemovePhoto(index)}

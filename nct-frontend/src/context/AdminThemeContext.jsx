@@ -1,7 +1,6 @@
 // src/context/AdminThemeContext.jsx
-import { createContext, useContext, useState, useEffect } from 'react';
-
-const AdminThemeContext = createContext(null);
+import { useState, useEffect } from 'react';
+import { AdminThemeContext } from './adminThemeContextValue';
 
 export const AdminThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
@@ -21,10 +20,4 @@ export const AdminThemeProvider = ({ children }) => {
       {children}
     </AdminThemeContext.Provider>
   );
-};
-
-export const useAdminTheme = () => {
-  const context = useContext(AdminThemeContext);
-  if (!context) throw new Error('useAdminTheme must be used within AdminThemeProvider');
-  return context;
 };

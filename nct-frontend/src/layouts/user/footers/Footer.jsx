@@ -1,6 +1,7 @@
 // src/layouts/user/footers/Footer.jsx
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ActionButton } from '@components/common/ui';
 import { SIGNUP_TERMS } from '@pages/auth/signupTerms';
 import { useConfig } from '@hooks/useConfig';
 
@@ -27,9 +28,9 @@ const TermsModal = ({ code, onClose }) => {
           ))}
         </div>
         <div className="mt-6 flex justify-end">
-          <button type="button" className="btn btn-primary" onClick={onClose}>
+          <ActionButton onClick={onClose}>
             닫기
-          </button>
+          </ActionButton>
         </div>
       </div>
     </div>

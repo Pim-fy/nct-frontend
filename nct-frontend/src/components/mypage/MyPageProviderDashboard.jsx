@@ -199,7 +199,7 @@ export default function MyPageProviderDashboard({ user, onLogout, onSwitchToGene
         />
       </div>
 
-      <section className="grid grid-cols-1 gap-5 lg:grid-cols-3" aria-label="서비스 분야 권한과 리뷰">
+      <section className="grid grid-cols-1 gap-5 lg:grid-cols-3" aria-label="제공자 권한과 리뷰">
         <ProviderApprovedCategorySection />
 
         <article className="min-h-72 rounded-[15px] border border-[#e3e8f0] bg-white p-6 shadow-sm lg:col-span-1">

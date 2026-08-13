@@ -6,6 +6,7 @@
 import { useState } from "react";
 import { withdrawActive } from "@api/memberApi";
 import { useAuth } from "@hooks/useAuth";
+import { ActionButton } from "@components/common/ui";
 
 // @ai_generated: passwordChangeable=false(소셜 전용 계정)면 비밀번호 입력란 없이 확인만 받고
 // 바로 진행한다(A안, 2026-08-12 사용자 결정) - 백엔드가 시스템 생성 로그인ID면 비밀번호
@@ -85,12 +86,12 @@ export default function WithdrawConfirmModal({ open, onClose, passwordChangeable
             </p>
           )}
           <div className="row" style={{ justifyContent: "center", gap: 8, marginTop: 20 }}>
-            <button type="button" className="btn btn-outline" onClick={handleClose} disabled={submitting}>
+            <ActionButton onClick={handleClose} disabled={submitting} tone="neutral">
               취소
-            </button>
-            <button type="submit" className="btn btn-danger" disabled={submitting}>
+            </ActionButton>
+            <ActionButton type="submit" disabled={submitting} tone="danger">
               {submitting ? "처리 중..." : "탈퇴하기"}
-            </button>
+            </ActionButton>
           </div>
         </form>
       </div>

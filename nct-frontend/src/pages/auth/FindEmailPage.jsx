@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { findEmail } from '@api/authApi';
 import AuthPageContainer from '@components/auth/AuthPageContainer';
 import AuthCard from '@components/auth/AuthCard';
+import { ActionButton } from '@components/common/ui';
 import { notify } from '@utils/common';
 
 export default function FindEmailPage() {
@@ -73,14 +74,15 @@ export default function FindEmailPage() {
               />
             </div>
 
-            <button
-              type="button"
+            <ActionButton
               onClick={handleSubmit}
-              disabled={loading}
-              className="mt-1 w-full h-12 rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-base font-bold transition-all duration-150 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              fullWidth
+              loading={loading}
+              size="lg"
+              className="mt-1"
             >
               {loading ? '조회 중...' : '아이디 찾기'}
-            </button>
+            </ActionButton>
           </div>
         ) : (
           <div className="flex flex-col gap-5">
@@ -93,18 +95,18 @@ export default function FindEmailPage() {
               <div className="font-mono text-base font-bold text-gray-900">{maskedLoginId}</div>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <Link
+              <ActionButton
                 to="/login"
-                className="h-11 flex items-center justify-center rounded-lg border border-blue-600 text-blue-600 text-sm font-semibold hover:bg-blue-50 transition"
+                tone="outline"
               >
                 로그인하기
-              </Link>
-              <Link
+              </ActionButton>
+              <ActionButton
                 to="/reset-password"
-                className="h-11 flex items-center justify-center rounded-lg border border-gray-300 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition"
+                tone="neutral"
               >
                 비밀번호 재설정
-              </Link>
+              </ActionButton>
             </div>
             <button
               type="button"

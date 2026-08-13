@@ -833,6 +833,7 @@ const AdminReportManagementPage = () => {
                         <label>
                           조기 해제 사유
                           <textarea
+                            className="admin-reason-textarea"
                             disabled={releaseMutation.isPending}
                             maxLength={1000}
                             onChange={(event) => setReleaseReason(event.target.value)}
@@ -1016,6 +1017,7 @@ const AdminReportManagementPage = () => {
                     <label className="admin-operation-detail__reason">
                       {canStart ? '처리 시작 사유' : '최종 판정 사유'}
                       <textarea
+                        className="admin-reason-textarea"
                         disabled={decisionMutation.isPending}
                         maxLength={4000}
                         onChange={(event) => setReason(event.target.value)}

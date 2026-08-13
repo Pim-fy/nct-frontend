@@ -316,6 +316,7 @@ const AdminSettlementManagementPage = () => {
                     <label className="admin-operation-detail__reason">
                       처리 사유
                       <textarea
+                        className="admin-reason-textarea"
                         disabled={actionMutation.isPending}
                         maxLength={1000}
                         onChange={(event) => setReason(event.target.value)}

@@ -11,6 +11,7 @@ import { toImageUrl } from "@api/fileApi";
 import { formatPoint, toast } from "@utils/common";
 import AlertModal from "@components/common/AlertModal";
 import ConfirmModal from "@components/common/ConfirmModal";
+import { ActionButton, CategoryTag } from "@components/common/ui";
 import {
   getServiceRequestDetailPath,
   SERVICE_REQUESTS_PATH,
@@ -209,7 +210,7 @@ export default function QuoteFormPage() {
       <main className="container seller-page">
         <section className="card mx-auto max-w-[640px] py-12 text-center">
           <p className="m-0 text-[22px] font-bold text-[#1d1d1f]">서비스 요청을 먼저 선택해 주세요.</p>
-          <button type="button" className="btn btn-primary mt-6" onClick={() => navigate(SERVICE_REQUESTS_PATH)}>서비스 요청 목록으로</button>
+          <ActionButton className="mt-6" to={SERVICE_REQUESTS_PATH}>서비스 요청 목록으로</ActionButton>
         </section>
       </main>
     );
@@ -231,7 +232,7 @@ export default function QuoteFormPage() {
         <section className="card mx-auto max-w-[640px] py-12 text-center">
           <p className="m-0 text-[22px] font-bold text-[#1d1d1f]">견적을 작성할 수 없습니다.</p>
           <p className="mb-6 mt-3 text-base text-[#686762]">공개 요청과 제공자 카테고리 승인 상태를 확인해 주세요.</p>
-          <button type="button" className="btn btn-primary" onClick={() => navigate(getServiceRequestDetailPath(svcReqSn))}>요청 상세로 돌아가기</button>
+          <ActionButton to={getServiceRequestDetailPath(svcReqSn)}>요청 상세로 돌아가기</ActionButton>
         </section>
       </main>
     );
@@ -355,9 +356,9 @@ export default function QuoteFormPage() {
         <p style={{ margin: 0, fontSize: 18, fontWeight: 500 }}>
           {svcReqInfo.title}
           {svcReqInfo.category && (
-            <span className="badge badge-blue ml-2 align-middle">
+            <CategoryTag className="ml-2 align-middle" tone="info" variant="soft">
               {svcReqInfo.category}
-            </span>
+            </CategoryTag>
           )}
         </p>
 
@@ -578,39 +579,33 @@ export default function QuoteFormPage() {
 
       {/* 버튼 — 전체 영역 밖, 전체 우측 정렬 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10, marginBottom: 32 }}>
-        <button
-          type="button"
-          className="btn btn-outline"
+        <ActionButton
           onClick={() => setCancelConfirm(true)}
+          tone="neutral"
         >
           취소
-        </button>
+        </ActionButton>
         {isQuoteSubmitted ? (
-          <button
-            type="button"
-            className="btn btn-primary"
+          <ActionButton
             onClick={handleEdit}
             disabled={loading || editCount >= MAX_EDIT_COUNT}
           >
             {loading ? "수정 중..." : "견적 수정"}
-          </button>
+          </ActionButton>
         ) : (
-          <button
-            type="button"
-            className="btn btn-primary"
+          <ActionButton
             onClick={handleSubmit}
             disabled={loading}
           >
             {loading ? "제출 중..." : "견적 제출"}
-          </button>
+          </ActionButton>
         )}
-        <button
-          type="button"
-          className="btn btn-outline"
+        <ActionButton
           onClick={() => setShowPreview(true)}
+          tone="outline"
         >
           미리보기
-        </button>
+        </ActionButton>
       </div>
 
       <AlertModal open={!!alertMsg} message={alertMsg} onClose={() => setAlertMsg("")} />

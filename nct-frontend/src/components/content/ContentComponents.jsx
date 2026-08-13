@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Pin, ShieldCheck } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import CommonTabs from '@components/common/CommonTabs';
+import { ActionButton } from '@components/common/ui';
 import Pagination from '@components/common/Pagination';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import { formatDate as sharedFormatDate } from '@utils/common';
@@ -47,8 +47,16 @@ export const ContentState = ({
   >
     <strong>{title}</strong>
     {description && <span>{description}</span>}
-    {actionLabel && onAction && <button onClick={onAction} type="button">{actionLabel}</button>}
-    {backLabel && backTo && <Link to={backTo}>{backLabel}</Link>}
+    {actionLabel && onAction && (
+      <ActionButton onClick={onAction} size="sm" tone="neutral">
+        {actionLabel}
+      </ActionButton>
+    )}
+    {backLabel && backTo && (
+      <ActionButton size="sm" to={backTo} tone="neutral">
+        {backLabel}
+      </ActionButton>
+    )}
   </div>
 );
 
@@ -452,21 +460,27 @@ export const GuideJourneyOverview = ({
 
   return (
     <section className="guide-experience" aria-label="서비스 이용 흐름">
-      <CommonTabs
-        activeValue={activeJourney.id}
-        ariaLabel="가이드 종류 선택"
-        className="guide-mode-tabs"
-        items={journeys.map((journey) => ({
-          label: journey.id === 'auction' ? '경매 거래' : '서비스 요청',
-          value: journey.id,
-        }))}
-        onChange={(journeyId) => {
-          const nextJourney = journeys.find((journey) => journey.id === journeyId);
-          if (!nextJourney) return;
-          setActiveJourneyId(nextJourney.id);
-          setActiveGuideId(nextJourney.flowIds[0]);
-        }}
-      />
+      <div className="guide-mode-tabs" role="tablist" aria-label="가이드 종류 선택">
+        {journeys.map((journey) => (
+          <button
+            aria-selected={activeJourney.id === journey.id}
+            className={activeJourney.id === journey.id ? 'is-active' : undefined}
+            key={journey.id}
+            onClick={() => {
+              setActiveJourneyId(journey.id);
+              setActiveGuideId(journey.flowIds[0]);
+            }}
+            role="tab"
+            type="button"
+          >
+            <span aria-hidden="true">{journey.id === 'auction' ? '01' : '02'}</span>
+            <div>
+              <strong>{journey.id === 'auction' ? '경매 거래' : '서비스 요청'}</strong>
+              <small>{journey.id === 'auction' ? '등록부터 거래 완료까지' : '작성부터 거래 완료까지'}</small>
+            </div>
+          </button>
+        ))}
+      </div>
 
       <article
         className={`guide-feature guide-feature--${activeJourney.id}`}

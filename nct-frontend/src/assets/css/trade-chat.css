@@ -4,6 +4,8 @@
   background: linear-gradient(180deg, #f4f7ff 0, #f8f9fb 340px, #fff 340px);
 }
 
+/* 담당자 7: 채팅 목록과 메시지의 보조 글자도 최소 13px로 표시해 가독성을 확보한다. */
+
 /* 마이페이지 안에서는 독립 페이지 여백과 배경을 제거하고 콘텐츠만 교체한다. */
 .trade-chat-page--embedded {
   padding: 0;
@@ -41,7 +43,7 @@
 .trade-chat-card > p {
   margin: 8px 0 0;
   color: #6b7280;
-  font-size: 15px;
+  font-size: 16px;
 }
 
 .trade-chat-page__header .btn {
@@ -101,7 +103,7 @@
 .trade-chat-conversation__header h2 {
   margin: 0;
   color: #252b3a;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 800;
 }
 
@@ -119,7 +121,7 @@
   background: #e9f0ff;
   color: #155eef;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 800;
 }
 
@@ -193,7 +195,7 @@
 
 .trade-chat-room__topline strong {
   overflow: hidden;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -204,7 +206,7 @@
 .trade-chat-room__preview {
   overflow: hidden;
   color: #8893a5;
-  font-size: 12px;
+  font-size: 14px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -220,7 +222,7 @@
   border-radius: 999px;
   background: #155eef;
   color: #fff;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 800;
 }
 
@@ -230,7 +232,7 @@
   border-radius: 999px;
   background: #fef2f2;
   color: #dc2626;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 800;
 }
 
@@ -240,7 +242,7 @@
   border-radius: 999px;
   background: #e8f5ef;
   color: #19734a;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 800;
 }
 
@@ -254,7 +256,7 @@
   background: transparent;
   color: #8b95a7;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .trade-chat-room__delete:hover {
@@ -266,7 +268,7 @@
   margin: 0;
   padding: 28px 14px;
   color: #8b95a7;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
   text-align: center;
 }
@@ -295,7 +297,7 @@
 .trade-chat-conversation__header p {
   margin: 5px 0 0;
   color: #8893a5;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .trade-chat-conversation__actions {
@@ -313,14 +315,15 @@
   border-left: 1px solid #e4e9f1;
 }
 
-.trade-chat-conversation__action-group .btn {
+.trade-chat-conversation__action-group .btn,
+.trade-chat-conversation__action-group .ui-action-button {
   display: inline-flex;
   min-height: 38px;
   align-items: center;
   justify-content: center;
   gap: 6px;
   border-radius: 9px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   line-height: 1;
 }
@@ -370,21 +373,6 @@
   display: none;
 }
 
-.trade-chat-status {
-  padding: 6px 9px;
-  border-radius: 999px;
-  background: #e8f5ef;
-  color: #19734a;
-  font-size: 12px;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.trade-chat-status--closed {
-  background: #fef2f2;
-  color: #dc2626;
-}
-
 .trade-chat-notice {
   margin: 14px 22px 0;
   padding: 10px 12px;
@@ -392,7 +380,7 @@
   border-radius: 10px;
   background: #f5f8ff;
   color: #496697;
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.5;
 }
 
@@ -427,7 +415,7 @@
 
 .trade-chat-message p {
   margin: 0;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.5;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
@@ -437,7 +425,7 @@
   display: block;
   margin-top: 5px;
   color: #8490a5;
-  font-size: 11px;
+  font-size: 13px;
   text-align: right;
 }
 
@@ -486,7 +474,7 @@
 
 .trade-chat-composer__footer span {
   color: #8b95a7;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .trade-chat-composer__send {
@@ -499,7 +487,7 @@
   border-color: #1565ff;
   background: #1565ff;
   color: #ffffff;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 800;
 }
 
@@ -516,7 +504,7 @@
   place-items: center;
   padding: 24px;
   color: #7b8799;
-  font-size: 14px;
+  font-size: 15px;
   text-align: center;
 }
 
@@ -595,6 +583,7 @@
   }
 
   .trade-chat-conversation__action-group .btn,
+  .trade-chat-conversation__action-group .ui-action-button,
   .trade-chat-conversation__report,
   .trade-chat-conversation__trade-detail,
   .trade-chat-conversation__close {
@@ -605,7 +594,8 @@
     padding: 0;
   }
 
-  .trade-chat-conversation__action-group .btn span {
+  .trade-chat-conversation__action-group .btn span,
+  .trade-chat-conversation__action-group .ui-action-button span {
     display: none;
   }
 
@@ -619,5 +609,5 @@
 }
 
 @media (max-width: 360px) {
-  .trade-chat-conversation__header h2 { font-size: 16px; }
+  .trade-chat-conversation__header h2 { font-size: 17px; }
 }

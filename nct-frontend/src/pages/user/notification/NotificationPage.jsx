@@ -1,5 +1,5 @@
 // src/pages/user/notification/NotificationPage.jsx
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import NotificationDetailModal from './components/NotificationDetailModal';
@@ -71,7 +71,6 @@ const NotificationPage = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   // 도메인 탭으로 들어간 전체 목록의 현재 페이지 — 필터가 바뀌면 1페이지로 되돌린다 (2026-07-30)
   const [page, setPage] = useState(1);
-  useEffect(() => { setPage(1); }, [filter, audienceFilter]);
 
   const { data: notifications = [], isLoading } = useNotifications();
   const markReadMutation = useMarkRead();
@@ -95,7 +94,21 @@ const NotificationPage = () => {
   const focusedDomain = filter === '전체' ? null : FILTER_TO_DOMAIN[filter];
   const focusedItems = focusedDomain ? items.filter((n) => n.domain === focusedDomain) : [];
   const focusedPageCount = Math.max(1, Math.ceil(focusedItems.length / LIST_PAGE_SIZE));
-  const pagedFocusedItems = focusedItems.slice((page - 1) * LIST_PAGE_SIZE, page * LIST_PAGE_SIZE);
+  const currentPage = Math.min(page, focusedPageCount);
+  const pagedFocusedItems = focusedItems.slice(
+    (currentPage - 1) * LIST_PAGE_SIZE,
+    currentPage * LIST_PAGE_SIZE,
+  );
+
+  const changeAudienceFilter = (nextFilter) => {
+    setAudienceFilter(nextFilter);
+    setPage(1);
+  };
+
+  const changeDomainFilter = (nextFilter) => {
+    setFilter(nextFilter);
+    setPage(1);
+  };
 
   return (
     <div className="container" style={{ paddingTop: '25px', paddingBottom: '25px' }}>
@@ -111,7 +124,7 @@ const NotificationPage = () => {
           <button
             key={f}
             type="button"
-            onClick={() => setAudienceFilter(f)}
+            onClick={() => changeAudienceFilter(f)}
             className={`rounded-full px-4 py-1.5 text-sm border transition-colors
               ${audienceFilter === f
                 ? 'bg-gray-900 border-gray-900 text-white'
@@ -129,7 +142,7 @@ const NotificationPage = () => {
             <button
               key={f}
               type="button"
-              onClick={() => setFilter(f)}
+              onClick={() => changeDomainFilter(f)}
               className={`rounded-lg px-3.5 py-2 text-sm border transition-colors
                 ${filter === f
                   ? 'bg-blue-600 border-blue-600 text-white'
@@ -181,7 +194,7 @@ const NotificationPage = () => {
                 {overflowCount > 0 && (
                   <button
                     type="button"
-                    onClick={() => setFilter(DOMAIN_TO_FILTER[domain])}
+                    onClick={() => changeDomainFilter(DOMAIN_TO_FILTER[domain])}
                     className="mt-3 text-sm font-medium text-blue-600 hover:underline"
                   >
                     + {overflowCount}건 더 보기
@@ -204,7 +217,7 @@ const NotificationPage = () => {
           </div>
           {/* 포인트 테이블과 공용하는 "이전/다음" 페이지네이션 (2026-08-05 중복 통합) */}
           {focusedItems.length > LIST_PAGE_SIZE && (
-            <PrevNextPagination page={page} pageCount={focusedPageCount} onPageChange={setPage} className="mt-4" />
+            <PrevNextPagination page={currentPage} pageCount={focusedPageCount} onPageChange={setPage} className="mt-4" />
           )}
         </section>
       )}

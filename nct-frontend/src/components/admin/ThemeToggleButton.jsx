@@ -1,5 +1,5 @@
 // src/components/admin/ThemeToggleButton.jsx
-import { useAdminTheme } from '@context/AdminThemeContext';
+import { useAdminTheme } from '@hooks/useAdminTheme';
 const ThemeToggleButton = () => {
   const { theme, toggleTheme } = useAdminTheme();
   return (

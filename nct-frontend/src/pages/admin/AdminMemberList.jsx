@@ -308,6 +308,7 @@ const AdminMemberList = () => {
                     <label>
                       처리 사유
                       <textarea
+                        className="admin-reason-textarea"
                         disabled={!canChange || statusMutation.isPending}
                         maxLength={500}
                         onChange={(event) => setReason(event.target.value)}

@@ -8,6 +8,7 @@ import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { requestWithdrawal, confirmWithdrawal } from '@api/memberApi';
 import AuthPageContainer from '@components/auth/AuthPageContainer';
 import AuthCard from '@components/auth/AuthCard';
+import { ActionButton } from '@components/common/ui';
 import { notify } from '@utils/common';
 
 export default function WithdrawalRequestPage() {
@@ -93,14 +94,16 @@ function RequestForm() {
               />
             </div>
 
-            <button
-              type="button"
+            <ActionButton
               onClick={handleSubmit}
-              disabled={loading}
-              className="mt-1 w-full h-12 rounded-lg bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white text-base font-bold transition-all duration-150 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              fullWidth
+              loading={loading}
+              size="lg"
+              tone="danger"
+              className="mt-1"
             >
               {loading ? '발송 중...' : '탈퇴 확인 메일 받기'}
-            </button>
+            </ActionButton>
           </div>
         ) : (
           <div className="flex flex-col gap-5 text-center">
@@ -120,21 +123,19 @@ function RequestForm() {
               <li>메일이 오지 않으면 스팸함을 확인해주세요.</li>
             </ul>
             <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
+              <ActionButton
                 onClick={() => setSent(false)}
-                className="h-11 rounded-lg border border-gray-300 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition"
+                tone="neutral"
               >
                 다시 입력하기
-              </button>
-              <button
-                type="button"
+              </ActionButton>
+              <ActionButton
                 onClick={handleResend}
-                disabled={loading}
-                className="h-11 rounded-lg border border-red-600 text-red-600 text-sm font-semibold hover:bg-red-50 transition disabled:opacity-60"
+                loading={loading}
+                tone="danger-outline"
               >
                 재발송 요청
-              </button>
+              </ActionButton>
             </div>
           </div>
         )}
@@ -220,14 +221,15 @@ function ConfirmStep({ token }) {
         <p className="text-sm text-gray-500 mb-8">
           아래 버튼을 누르면 계정 탈퇴가 즉시 진행되며 되돌릴 수 없습니다.
         </p>
-        <button
-          type="button"
+        <ActionButton
           onClick={handleConfirm}
-          disabled={loading}
-          className="w-full h-12 rounded-lg bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white text-base font-bold transition-all duration-150 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+          fullWidth
+          loading={loading}
+          size="lg"
+          tone="danger"
         >
           {loading ? '처리 중...' : '탈퇴 확정하기'}
-        </button>
+        </ActionButton>
       </AuthCard>
     </AuthPageContainer>
   );

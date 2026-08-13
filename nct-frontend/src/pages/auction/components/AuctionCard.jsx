@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Truck, UserRound } from 'lucide-react';
 import { toImageUrl } from '@api/fileApi';
+import { CategoryTag } from '@components/common/ui';
 import useCountdown from '@hooks/useCountdown';
 import { formatPoint } from '@utils/common';
 import {
@@ -63,9 +64,9 @@ const AuctionCard = ({ item }) => {
         <strong className="min-w-0 overflow-hidden text-body-md font-bold text-[#1a1a18] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] md:text-body-lg">
           {item.title}
         </strong>
-        <span className="shrink-0 rounded-lg bg-[#f0f0ee] px-2.5 py-0.5 text-[13px] leading-[1.5] font-semibold whitespace-nowrap text-[#5f5e5a]">
+        <CategoryTag className="shrink-0" tone="neutral">
           {item.categoryName}
-        </span>
+        </CategoryTag>
       </div>
       <div className="mt-2 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
         <strong className="whitespace-nowrap text-h3 font-extrabold text-primary-dark">

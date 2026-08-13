@@ -12,6 +12,11 @@ import { usePublicProviderProfile } from '@hooks/useProviderProfile';
 import { useAuth } from '@hooks/useAuth';
 import { toImageUrl } from '@api/fileApi';
 import ReportModal from '@components/common/ReportModal';
+import {
+  ActionButton,
+  CategoryTag,
+  DomainStatus,
+} from '@components/common/ui';
 import ErrorMessage from '@components/common/ErrorMessage';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
 import Toast from '@components/common/Toast';
@@ -28,6 +33,12 @@ const QUOTE_STATUS_LABEL = {
   QUTC0004: '선택됨',
   QUTC0005: '철회됨',
 };
+const QUOTE_STATUS_TONE = {
+  QUTC0001: 'info',
+  QUTC0002: 'info',
+  QUTC0004: 'success',
+  QUTC0005: 'neutral',
+};
 
 const REQUEST_STATUS_LABEL = {
   SVCC0001: '임시저장',
@@ -36,11 +47,11 @@ const REQUEST_STATUS_LABEL = {
   SVCC0004: '취소',
 };
 
-const REQUEST_STATUS_BADGE_CLASS = {
-  SVCC0001: 'bg-[#f0f0ee] text-[#5f5e5a]',
-  SVCC0002: 'bg-[#e5efff] text-[#0048bf]',
-  SVCC0003: 'bg-[#e8f0fe] text-[#1a56a4]',
-  SVCC0004: 'bg-[#f0f0ee] text-[#5f5e5a]',
+const REQUEST_STATUS_TONE = {
+  SVCC0001: 'neutral',
+  SVCC0002: 'info',
+  SVCC0003: 'success',
+  SVCC0004: 'danger',
 };
 
 const REQUEST_ITEM_PREVIEW_LIMIT = 8;
@@ -230,9 +241,13 @@ export default function QuoteDetailPage() {
               </div>
             </div>
             {['QUTC0004', 'QUTC0005'].includes(quote.statusCode) && (
-              <span className="shrink-0 rounded-lg bg-[#f0f0ee] px-3 py-1 text-sm font-medium text-[#5f5e5a]">
+              <DomainStatus
+                className="shrink-0"
+                tone={QUOTE_STATUS_TONE[quote.statusCode] ?? 'neutral'}
+                variant="soft"
+              >
                 {QUOTE_STATUS_LABEL[quote.statusCode] ?? quote.statusCode}
-              </span>
+              </DomainStatus>
             )}
           </div>
 
@@ -320,36 +335,34 @@ export default function QuoteDetailPage() {
           {(!isProvider || canEditOwnQuote) && (
             <div className="mt-6 flex items-center justify-end gap-2 border-t border-[#e8e8e8] pt-5">
               {isProvider ? (
-                <button
-                  type="button"
+                <ActionButton
                   onClick={handleEditOwnQuote}
-                  className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0048bf]"
+                  size="sm"
                 >
                   견적 수정하기
-                </button>
+                </ActionButton>
               ) : (
                 <>
-                  <button
-                    type="button"
+                  <ActionButton
                     onClick={() => setReportTarget({
                       qutSn: quote.qutSn,
                       providerUsrSn: quote.providerUsrSn,
                       providerNm: providerName,
                       svcReqSn,
                     })}
-                    className="rounded-lg border border-[#e2e1dc] px-4 py-2 text-sm font-semibold text-[#a32d2d] transition-colors hover:bg-[#fcebeb]"
+                    size="sm"
+                    tone="danger-outline"
                   >
                     신고
-                  </button>
+                  </ActionButton>
                   {quote.statusCode !== 'QUTC0004' && quote.statusCode !== 'QUTC0005' && (
-                    <button
-                      type="button"
+                    <ActionButton
                       onClick={handleSelectQuote}
                       disabled={selecting}
-                      className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0048bf] disabled:opacity-50"
+                      size="sm"
                     >
                       {selecting ? '처리 중...' : '이 견적 선택하기'}
-                    </button>
+                    </ActionButton>
                   )}
                 </>
               )}
@@ -360,18 +373,19 @@ export default function QuoteDetailPage() {
         <aside className="sticky top-6 rounded-2xl border border-[#e8e8e8] bg-[#f9fafb] p-4">
           <div className="flex items-center justify-between gap-2">
             {request && (
-              <span className={`inline-block rounded-lg px-2.5 py-1 text-xs font-medium ${REQUEST_STATUS_BADGE_CLASS[request.svcReqStatusCd] ?? 'bg-[#f0f0ee] text-[#5f5e5a]'}`}>
+              <DomainStatus tone={REQUEST_STATUS_TONE[request.svcReqStatusCd] ?? 'neutral'} variant="soft">
                 {REQUEST_STATUS_LABEL[request.svcReqStatusCd] ?? request.svcReqStatusCd}
-              </span>
+              </DomainStatus>
             )}
             {groupedRequestItems.length > REQUEST_ITEM_PREVIEW_LIMIT && (
-              <Link
+              <ActionButton
                 to={getServiceRequestDetailPath(svcReqSn)}
                 aria-label={`요청 항목 ${groupedRequestItems.length}개 보기`}
-                className="btn btn-primary btn-sm !h-9 !px-3 !text-sm shrink-0"
+                className="shrink-0"
+                size="sm"
               >
                 항목 보기
-              </Link>
+              </ActionButton>
             )}
           </div>
           <div className="mt-2">
@@ -387,7 +401,9 @@ export default function QuoteDetailPage() {
               <dl className="mt-2 space-y-1.5 border-t border-[#e2e1dc] pt-2 text-sm">
                 <div className="flex justify-between gap-2">
                   <dt className="text-[#9a9ba5]">카테고리</dt>
-                  <dd className="font-semibold text-[#1d1d1f]">{request.catNm}</dd>
+                  <dd>
+                    <CategoryTag tone="info" variant="soft">{request.catNm || '-'}</CategoryTag>
+                  </dd>
                 </div>
                 <div className="flex justify-between gap-2">
                   <dt className="text-[#9a9ba5]">요청 예산</dt>

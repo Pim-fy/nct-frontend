@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useApi } from '@hooks/useApi';
 import { useConfig } from '@hooks/useConfig';
+import { ActionButton } from '@components/common/ui';
 import { toast } from '@utils/common';
 
 // 레드팀 Q4 반영: 이 키들은 백엔드 OAuth2ErrorCode(nct-backend/.../handler/OAuth2ErrorCode.java)와
@@ -103,13 +104,13 @@ const OAuthRedirectHandler = () => {
           <div className="w-14 h-14 mx-auto rounded-full bg-red-50 flex items-center justify-center text-2xl mb-4">⚠️</div>
           <h2 className="text-base font-bold mb-2">소셜 로그인 실패</h2>
           <p className="text-sm text-gray-500 mb-8">{errorMessage}</p>
-          <button
-            type="button"
-            onClick={() => navigate('/login', { replace: true })}
-            className="w-full h-11 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition"
+          <ActionButton
+            fullWidth
+            replace
+            to="/login"
           >
             로그인으로 돌아가기
-          </button>
+          </ActionButton>
         </div>
       </div>
     );
