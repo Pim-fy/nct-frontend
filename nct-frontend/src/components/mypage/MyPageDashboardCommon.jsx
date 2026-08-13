@@ -2,11 +2,13 @@
 // 화면별 데이터와 버튼 동작만 props로 받고 레이아웃과 스타일은 이 파일에서 한 번만 관리한다.
 import { assets } from '@components/mypage/assets';
 import { ActionButton } from '@components/common/ui';
+import { Link } from 'react-router-dom';
 
 export function MyPageDashboardTop({
   profileImageUrl,
   nickname,
   email,
+  profilePath,
   actions = [],
   className = '',
 }) {
@@ -16,19 +18,30 @@ export function MyPageDashboardTop({
       aria-label="마이페이지 회원 요약"
     >
       <div className="flex shrink-0 items-center gap-5">
-        <div className="size-[72px] shrink-0 overflow-hidden rounded-full bg-[#e6f0ff]">
+        {/* @ai_generated (담당자1, 2026-08-14): 프로필 요약에서 공통 프로필 설정으로 이동한다. */}
+        <Link
+          to={profilePath}
+          className="size-[72px] shrink-0 overflow-hidden rounded-full bg-[#e6f0ff] transition-opacity hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0064ff]"
+          aria-label="프로필 설정으로 이동"
+        >
           <img
             src={profileImageUrl || assets.profile}
             alt=""
             className="size-full object-cover"
           />
-        </div>
+        </Link>
         <div>
-          <p className="flex items-center gap-1.5 text-[16px] font-bold text-[#4e4e4e]">
-            <span className="inline-block size-2 rounded-full bg-[#2ecc71]" aria-hidden="true" />
-            {nickname}님
-          </p>
-          <p className="mt-0.5 min-h-5 text-[14px] text-[#969696]">{email}</p>
+          <Link
+            to={profilePath}
+            className="block rounded-sm transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0064ff]"
+            aria-label={`${nickname}님의 프로필 설정으로 이동`}
+          >
+            <p className="flex items-center gap-1.5 text-[16px] font-bold text-[#4e4e4e]">
+              <span className="inline-block size-2 rounded-full bg-[#2ecc71]" aria-hidden="true" />
+              {nickname}님
+            </p>
+            <p className="mt-0.5 min-h-5 text-[14px] text-[#969696]">{email}</p>
+          </Link>
           <div className="mt-2 flex gap-2">
             {actions.map((action) => (
               <ActionButton

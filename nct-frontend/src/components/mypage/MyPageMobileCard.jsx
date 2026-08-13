@@ -11,6 +11,7 @@ const MyPageMobileCard = ({
   title,
   price,
   priceSuffix,
+  priceItems = [],
   infoItems = [],
   footerLeft,
   footerRight,
@@ -35,14 +36,24 @@ const MyPageMobileCard = ({
       {badge && <div className="shrink-0">{badge}</div>}
     </div>
 
-    {price && (
+    {/* @ai_generated 복수 가격은 구매·판매 목록이 명시적으로 전달할 때만 사용하며 기존 가격 경로는 보존한다. */}
+    {priceItems.length > 0 ? (
+      <dl className="mt-2 flex min-w-0 flex-wrap gap-x-5 gap-y-2">
+        {priceItems.map(({ label, value }) => (
+          <div className="min-w-0" key={label}>
+            <dt className="mb-0.5 text-xs font-semibold text-[#85847f]">{label}</dt>
+            <dd className="m-0 whitespace-nowrap text-xl font-extrabold text-primary-dark">{value}</dd>
+          </div>
+        ))}
+      </dl>
+    ) : price ? (
       <div className="mt-2 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
         <strong className="whitespace-nowrap text-xl font-extrabold text-primary-dark">{price}</strong>
         {priceSuffix && (
           <span className="whitespace-nowrap text-xs font-semibold text-[#85847f]">{priceSuffix}</span>
         )}
       </div>
-    )}
+    ) : null}
 
     {infoItems.length > 0 && (
       <dl className="mt-2 mb-3.5 grid grid-cols-2 gap-2 text-xs text-[#5f5e5a]">
