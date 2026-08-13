@@ -414,7 +414,7 @@ export default function ServiceRequestDetailPage() {
     setReregistering(true);
     try {
       const newRequest = await reregisterServiceRequest(svcReqSn);
-      navigate(getServiceRequestDetailPath(newRequest.svcReqSn));
+      navigate(getServiceRequestDetailPath(newRequest.data?.svcReqSn));
     } catch (err) {
       setToast(err.response?.data?.message || '재등록에 실패했습니다.');
       setReregistering(false);
