@@ -68,16 +68,14 @@ export default function ProductImageUpload({ images, onChange, maxImages = 5 }) 
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            type="button"
+          <ActionButton
             onClick={() => setPickMode(v => !v)}
             disabled={images.length === 0}
-            className="btn btn-ghost"
-            style={pickMode ? { background: '#0064ff', color: '#fff', borderColor: '#0064ff', gap: 6 } : { gap: 6 }}
+            tone={pickMode ? 'primary' : 'neutral'}
           >
             <img src={iconImage} alt="" style={{ width: 13, height: 13 }} />
             대표이미지로 지정
-          </button>
+          </ActionButton>
           <ActionButton
             onClick={() => fileInputRef.current?.click()}
             disabled={images.length >= maxImages}
