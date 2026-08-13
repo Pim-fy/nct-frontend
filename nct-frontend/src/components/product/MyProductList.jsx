@@ -2,7 +2,7 @@
 // 내 판매 목록 순수 목록 컴포넌트 — MyProductListPage · MyPage 아코디언에서 재사용
 // 마이페이지 공통 목록 컴포넌트를 사용하며 가격·날짜 표시 형식을 유지한다.
 import { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { CalendarCheck, CalendarDays } from 'lucide-react';
 import { toImageUrl } from '@api/fileApi';
@@ -169,9 +169,17 @@ export default function MyProductList() {
   const queryClient = useQueryClient();
   // 담당자 7: 상세·등록 화면에서 목록으로 돌아올 수 있도록 현재 경로를 전달한다.
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const returnState = { from: location.pathname + location.search };
-  const [filter, setFilter]       = useState(null);
-  const [subFilter, setSubFilter] = useState('');
+  // @ai_generated 판매 목록 탭과 종료 하위 필터를 URL에서 복원하되 정의된 값만 허용한다.
+  const requestedFilter = searchParams.get('tab');
+  const filter = FILTERS.some(({ value }) => value === requestedFilter)
+    ? requestedFilter
+    : null;
+  const requestedSubFilter = searchParams.get('sub') ?? '';
+  const subFilter = CLOSED_SUB_FILTERS.some(({ value }) => value === requestedSubFilter)
+    ? requestedSubFilter
+    : '';
   const [searchKeyword, setSearchKeyword] = useState('');
   const [page, setPage]           = useState(1);
   const [toast, setToast]         = useState('');
@@ -190,12 +198,21 @@ export default function MyProductList() {
     ? list.filter((product) => String(product.prdNm ?? '').toLowerCase().includes(normalizedSearchKeyword))
     : list;
   const handleFilterChange = (value) => {
-    setFilter(value);
-    setSubFilter('');
+    const nextSearchParams = new URLSearchParams(searchParams);
+    if (value) nextSearchParams.set('tab', value);
+    else nextSearchParams.delete('tab');
+    nextSearchParams.delete('sub');
+    setSearchParams(nextSearchParams, { replace: true });
     setPage(1);
   };
 
-  const handleSubFilterChange = (value) => { setSubFilter(value); setPage(1); };
+  const handleSubFilterChange = (value) => {
+    const nextSearchParams = new URLSearchParams(searchParams);
+    if (value) nextSearchParams.set('sub', value);
+    else nextSearchParams.delete('sub');
+    setSearchParams(nextSearchParams, { replace: true });
+    setPage(1);
+  };
 
   const handlePageChange = (nextPage) => {
     setPage(nextPage);

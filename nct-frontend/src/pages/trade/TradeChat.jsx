@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import {
   ExternalLink,
   Flag,
@@ -78,13 +78,19 @@ const TradeChat = ({
   showRoomList = !embedded,
 }) => {
   const { isProvider } = useAuth();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { tradeId: routeTradeId } = useParams();
   const tradeId = selectedTradeId ?? routeTradeId;
   const [rooms, setRooms] = useState([]);
   const [activeRoomId, setActiveRoomId] = useState('');
   // 거래 상세에서 진입한 모바일 채팅은 대화부터, 마이페이지 채팅은 목록부터 연다.
   const [isMobileConversationOpen, setIsMobileConversationOpen] = useState(() => Boolean(tradeId));
-  const [roomFilter, setRoomFilter] = useState('ALL');
+  // @ai_generated 마이페이지 채팅 필터는 허용된 URL 값만 복원한다.
+  const requestedRoomFilter = searchParams.get('status');
+  const roomFilter = ['ALL', 'ACTIVE', 'CLOSED'].includes(requestedRoomFilter)
+    ? requestedRoomFilter
+    : 'ALL';
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -208,7 +214,10 @@ const TradeChat = ({
 
   // 필터 변경은 목록만 바꾸며, 사용자가 누르기 전까지 다른 방을 자동 선택하지 않는다.
   const changeRoomFilter = (nextFilter) => {
-    setRoomFilter(nextFilter);
+    const nextSearchParams = new URLSearchParams(searchParams);
+    if (nextFilter === 'ALL') nextSearchParams.delete('status');
+    else nextSearchParams.set('status', nextFilter);
+    setSearchParams(nextSearchParams, { replace: true });
 
     const nextRooms = rooms.filter((room) => {
       if (nextFilter === 'ACTIVE') {
@@ -689,6 +698,7 @@ const TradeChat = ({
                             aria-label="거래 상세로 이동"
                             className="trade-chat-conversation__trade-detail"
                             preserveSize
+                            state={{ from: `${location.pathname}${location.search}` }}
                             to={activeTradeDetailPath}
                           >
                             <ExternalLink size={15} aria-hidden="true" />
