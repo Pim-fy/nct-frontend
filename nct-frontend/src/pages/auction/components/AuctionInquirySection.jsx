@@ -110,6 +110,7 @@ const AuctionInquirySection = ({
       const response = await fetchBannedKeywords();
       return Array.isArray(response?.data) ? response.data : [];
     },
+    enabled: Boolean(enabled && isAuthenticated),
     staleTime: 10 * 60 * 1000,
   });
 
