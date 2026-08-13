@@ -2,25 +2,45 @@
 // 판매자 경매 상세 페이지 — 등록한 상품의 경매 현황 및 상태별 관리 화면
 // 라우트: /product/:prdSn/seller
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import { toImageUrl } from '@api/fileApi';
 import { resolveDescriptionImagesForDisplay } from '@components/product/richTextEditorImages';
 import { getProduct, postProductComment, fetchProductComments, fetchProductInquiries, postInquiryReply, updateInquiryReply } from '@api/productApi';
 import { getAuctionStatus, requestAuctionCancel, fetchAuctionFavoriteStatus, fetchAuctionDetail } from '@api/auctionApi';
 import { submitInquiryReport } from '@api/abuseReportApi';
-import { TRADE_LABEL, STATUS_LABEL, STATUS_BADGE, AUC_STATUS_LABEL, AUC_STATUS_BADGE } from '@/constants/productConstants';
+import { TRADE_LABEL, STATUS_LABEL, AUC_STATUS_LABEL } from '@/constants/productConstants';
 import { formatPoint } from '@/utils/common';
 import useCountdown from '@hooks/useCountdown';
 import ErrorMessage from '@components/common/ErrorMessage';
 import MediaDetailSkeleton from '@components/skeleton/MediaDetailSkeleton';
 import Toast from '@components/common/Toast';
 import AlertModal from '@components/common/AlertModal';
+import ConfirmModal from '@components/common/ConfirmModal';
 import Pagination from '@components/common/Pagination';
 import ImageLightbox from '@components/common/ImageLightbox';
+import {
+  ActionButton,
+  CategoryTag,
+  DomainStatus,
+} from '@components/common/ui';
 
 const CANCEL_REASONS = ['상품 상태 변경', '상품 정보 오류', '판매 진행 불가', '기타'];
 const HISTORY_PAGE_SIZE = 5;
+const PRODUCT_STATUS_TONE = {
+  PRDC0001: 'neutral',
+  PRDC0002: 'success',
+  PRDC0003: 'neutral',
+  PRDC0004: 'danger',
+};
+const AUCTION_STATUS_TONE = {
+  AUCC0001: 'neutral',
+  AUCC0002: 'success',
+  AUCC0003: 'neutral',
+  AUCC0004: 'neutral',
+  AUCC0005: 'danger',
+  AUCC0006: 'danger',
+};
 // 답변 등록 후 수정 가능한 시간 — 백엔드 ProductService.REPLY_EDIT_WINDOW_MINUTES와 동일해야 함
 const REPLY_EDIT_WINDOW_MS = 10 * 60 * 1000;
 
@@ -43,11 +63,10 @@ function groupInquiries(rawList) {
 
 export default function ProductDetailSellerPage() {
   const { prdSn } = useParams();
-  const navigate = useNavigate();
 
   const [product, setProduct]           = useState(null);
   const [auctionStatus, setAuctionStatus] = useState(null);
-  const [loading, setLoading]           = useState(true);
+  const [loadedPrdSn, setLoadedPrdSn]   = useState(null);
   const [error, setError]               = useState('');
   const [imgIdx, setImgIdx]             = useState(0); // 상품 이미지 슬라이드 현재 인덱스
   const [lightboxOpen, setLightboxOpen] = useState(false); // 상품 이미지 확대뷰
@@ -96,35 +115,66 @@ export default function ProductDetailSellerPage() {
   const [cancelSubmitting, setCancelSubmitting] = useState(false);
   const [toast, setToast]               = useState('');
   const [alertMsg, setAlertMsg]         = useState(''); // 화면 중앙 알림 모달 — 취소 요청 완료 안내용
+  const [commentConfirmOpen, setCommentConfirmOpen] = useState(false); // 변경사항 추가 — 등록 전 "수정 불가" 안내
+  const [pendingReplySn, setPendingReplySn] = useState(null); // 답변 등록 — 등록 전 "10분 이내 수정 가능" 안내 대상 inquirySn
 
   const rightColRef  = useRef(null);
+  const loading = loadedPrdSn !== prdSn;
 
   useEffect(() => {
-    setLoading(true);
+    let cancelled = false;
+    const applyIfCurrent = (callback) => {
+      if (!cancelled) callback();
+    };
+
     getProduct(prdSn)
       .then(res => {
+        if (cancelled) return [];
+
         const p = res.data;
         setProduct(p);
+        setError('');
+        setAuctionStatus(null);
+        setFavoriteCount(null);
+        setBids([]);
+        setComments([]);
+        setInquiries([]);
         const sideLoads = [
-          fetchProductComments(prdSn).then(r => setComments(r.data)).catch(() => {}),
-          fetchProductInquiries(prdSn).then(r => setInquiries(groupInquiries(r.data))).catch(() => {}),
+          fetchProductComments(prdSn)
+            .then(r => applyIfCurrent(() => setComments(r.data)))
+            .catch(() => {}),
+          fetchProductInquiries(prdSn)
+            .then(r => applyIfCurrent(() => setInquiries(groupInquiries(r.data))))
+            .catch(() => {}),
         ];
         if (p.prdStatusCd !== 'PRDC0001') {
           sideLoads.push(
             getAuctionStatus(prdSn)
               .then(auc => {
+                if (cancelled) return null;
                 setAuctionStatus(auc);
-                fetchAuctionDetail(auc.aucSn).then(res => setBids(res.bids ?? [])).catch(() => {});
+                fetchAuctionDetail(auc.aucSn)
+                  .then(res => applyIfCurrent(() => setBids(res.bids ?? [])))
+                  .catch(() => {});
                 return fetchAuctionFavoriteStatus(auc.aucSn);
               })
-              .then(fav => setFavoriteCount(fav.favoriteCount))
+              .then(fav => {
+                if (fav) applyIfCurrent(() => setFavoriteCount(fav.favoriteCount));
+              })
               .catch(() => {})
           );
         }
         return Promise.all(sideLoads);
       })
-      .catch(() => setError('상품 정보를 불러오지 못했습니다.'))
-      .finally(() => setLoading(false));
+      .catch(() => applyIfCurrent(() => {
+        setProduct(null);
+        setError('상품 정보를 불러오지 못했습니다.');
+      }))
+      .finally(() => applyIfCurrent(() => setLoadedPrdSn(prdSn)));
+
+    return () => {
+      cancelled = true;
+    };
   }, [prdSn]);
 
   const handleCancelSubmit = async () => {
@@ -164,8 +214,13 @@ export default function ProductDetailSellerPage() {
     }
   };
 
+  const requestCommentSubmit = () => {
+    if (!cmtTtl.trim()) { setAlertMsg('제목을 입력해 주세요.'); return; }
+    setCommentConfirmOpen(true);
+  };
+
   const handleCommentSubmit = async () => {
-    if (!cmtTtl.trim()) { alert('제목을 입력해 주세요.'); return; }
+    setCommentConfirmOpen(false);
     setCmtSubmitting(true);
     try {
       await postProductComment(prdSn, { ttl: cmtTtl.trim(), cn: cmtCn.trim() || null });
@@ -174,16 +229,22 @@ export default function ProductDetailSellerPage() {
       setCmtTtl('');
       setCmtCn('');
       setToast('수정 이력이 등록되었습니다.');
-    } catch {
-      setToast('추가 공지 등록에 실패했습니다.');
+    } catch (err) {
+      setAlertMsg(err.response?.data?.message || '추가 공지 등록에 실패했습니다.');
     } finally {
       setCmtSubmitting(false);
     }
   };
 
-  const handleReplySubmit = async (inquirySn) => {
+  const requestReplySubmit = (inquirySn) => {
     const text = (replyDrafts[inquirySn] || '').trim();
     if (!text) { setAlertMsg('답변 내용을 입력해 주세요.'); return; }
+    setPendingReplySn(inquirySn);
+  };
+
+  const handleReplySubmit = async (inquirySn) => {
+    const text = (replyDrafts[inquirySn] || '').trim();
+    setPendingReplySn(null);
     setReplySubmitting(true);
     try {
       await postInquiryReply(prdSn, inquirySn, { cn: text });
@@ -191,8 +252,8 @@ export default function ProductDetailSellerPage() {
       setInquiries(groupInquiries(updated.data));
       setReplyDrafts(prev => { const next = { ...prev }; delete next[inquirySn]; return next; });
       setToast('답변이 등록되었습니다.');
-    } catch {
-      setToast('답변 등록에 실패했습니다.');
+    } catch (err) {
+      setAlertMsg(err.response?.data?.message || '답변 등록에 실패했습니다.');
     } finally {
       setReplySubmitting(false);
     }
@@ -208,8 +269,8 @@ export default function ProductDetailSellerPage() {
       setInquiries(groupInquiries(updated.data));
       setEditingSn(null);
       setToast('답변이 수정되었습니다.');
-    } catch {
-      setToast('답변 수정에 실패했습니다. 등록 후 10분이 지났을 수 있습니다.');
+    } catch (err) {
+      setAlertMsg(err.response?.data?.message || '답변 수정에 실패했습니다. 등록 후 10분이 지났을 수 있습니다.');
     } finally {
       setReplySubmitting(false);
     }
@@ -258,12 +319,8 @@ export default function ProductDetailSellerPage() {
 
   return (
     <main className="container">
-      <div className="seller-auction-head" style={{ marginBottom: 16, marginTop: 24 }}>
-        <button className="btn btn-ghost" style={{ marginLeft: 'auto' }} onClick={() => navigate('/user/mypage/auctions/sales')}>← 내 판매 내역</button>
-      </div>
-
       {/* 취소 확정된 상품(AUCC0005)은 아래 내용 전체를 블러 처리하고 안내만 보여준다 */}
-      <div style={{ position: 'relative' }}>
+      <div style={{ position: 'relative', marginTop: 24 }}>
       {isCancelled && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', paddingTop: 230, gap: 10 }}>
           <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#c0392b" strokeWidth="1.7" aria-hidden="true">
@@ -328,10 +385,15 @@ export default function ProductDetailSellerPage() {
             <div className="seller-info-split">
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <div className="seller-status-row">
-                  <span className={`badge ${auctionStatus?.aucStatusCd ? (AUC_STATUS_BADGE[auctionStatus.aucStatusCd] ?? 'badge-gray') : (STATUS_BADGE[product.prdStatusCd] ?? 'badge-gray')}`}>
+                  <DomainStatus
+                    tone={auctionStatus?.aucStatusCd
+                      ? (AUCTION_STATUS_TONE[auctionStatus.aucStatusCd] ?? 'neutral')
+                      : (PRODUCT_STATUS_TONE[product.prdStatusCd] ?? 'neutral')}
+                    variant="soft"
+                  >
                     {auctionStatus?.aucStatusCd ? (AUC_STATUS_LABEL[auctionStatus.aucStatusCd] ?? auctionStatus.aucStatusCd) : (STATUS_LABEL[product.prdStatusCd] ?? product.prdStatusCd)}
-                  </span>
-                  <span className="badge badge-goods">판매</span>
+                  </DomainStatus>
+                  <CategoryTag tone="neutral" variant="soft">판매</CategoryTag>
                 </div>
                 <h2 style={{ fontSize: 22, lineHeight: 1.4, margin: '8px 0 0' }}>{product.prdNm}</h2>
                 {resultText && <p className="muted small" style={{ margin: '2px 0 0' }}>{resultText}</p>}
@@ -409,7 +471,7 @@ export default function ProductDetailSellerPage() {
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
                         <p style={{ margin: '0 0 2px', fontWeight: 700, fontSize: 15, color: '#0048bf' }}>{formatPoint(b.bidPrice)}</p>
-                        <span className="badge badge-outline-gray" style={{ fontSize: 11 }}>{b.bidStatusName}</span>
+                        <DomainStatus tone="neutral" variant="outline">{b.bidStatusName}</DomainStatus>
                       </div>
                     </div>
                   </li>
@@ -474,10 +536,10 @@ export default function ProductDetailSellerPage() {
                               style={{ width: '100%', fontSize: 14, resize: 'none', borderRadius: 6, border: '1px solid #d1d0cc', padding: '8px 10px' }}
                             />
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginTop: 6 }}>
-                              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditingSn(null)}>취소</button>
-                              <button type="button" className="btn btn-primary btn-sm" onClick={() => handleReplyEditSubmit(inq.inquirySn)} disabled={replySubmitting}>
+                              <ActionButton onClick={() => setEditingSn(null)} size="sm" tone="neutral">취소</ActionButton>
+                              <ActionButton loading={replySubmitting} onClick={() => handleReplyEditSubmit(inq.inquirySn)} size="sm">
                                 {replySubmitting ? '저장 중...' : '저장'}
-                              </button>
+                              </ActionButton>
                             </div>
                           </div>
                         ) : (
@@ -488,17 +550,17 @@ export default function ProductDetailSellerPage() {
                                 <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6 }}>{inq.reply}</p>
                               </div>
                               {withinEditWindow && (
-                                <button
-                                  type="button"
-                                  className="btn btn-ghost btn-sm"
-                                  style={{ flexShrink: 0, fontSize: 12 }}
+                                <ActionButton
+                                  className="shrink-0"
+                                  size="sm"
+                                  tone="neutral"
                                   onClick={() => {
                                     setEditingSn(inq.inquirySn);
                                     setEditDrafts(prev => ({ ...prev, [inq.inquirySn]: inq.reply }));
                                   }}
                                 >
                                   수정
-                                </button>
+                                </ActionButton>
                               )}
                             </div>
                           </div>
@@ -513,22 +575,21 @@ export default function ProductDetailSellerPage() {
                             style={{ flex: 1, fontSize: 14, resize: 'none', borderRadius: 6, border: '1px solid #d1d0cc', padding: '8px 10px' }}
                           />
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
-                            <button
-                              type="button"
-                              className="btn btn-outline btn-sm"
+                            <ActionButton
                               onClick={() => { setReportTargetSn(inq.inquirySn); setReportOpen(true); }}
-                              style={{ color: '#a32d2d', borderColor: '#e8a0a0', background: '#fcebeb', fontSize: 12 }}
+                              size="sm"
+                              tone="danger-outline"
+                              className="!border-[#e8a0a0] !bg-[#fcebeb] !text-[#a32d2d]"
                             >
                               신고
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-primary btn-sm"
-                              onClick={() => handleReplySubmit(inq.inquirySn)}
-                              disabled={replySubmitting}
+                            </ActionButton>
+                            <ActionButton
+                              onClick={() => requestReplySubmit(inq.inquirySn)}
+                              loading={replySubmitting}
+                              size="sm"
                             >
                               {replySubmitting ? '등록 중...' : '답변 등록'}
-                            </button>
+                            </ActionButton>
                           </div>
                         </div>
                       ))}
@@ -561,12 +622,12 @@ export default function ProductDetailSellerPage() {
               <div className="seller-action-list">
                 {isActive && (
                   isCancelPending
-                    ? <button className="btn btn-danger" disabled>취소 요청 검토 중</button>
-                    : <button className="btn btn-danger" onClick={() => setCancelOpen(true)}>경매 취소 요청</button>
+                    ? <ActionButton disabled fullWidth tone="danger">취소 요청 검토 중</ActionButton>
+                    : <ActionButton fullWidth onClick={() => setCancelOpen(true)} tone="danger">경매 취소 요청</ActionButton>
                 )}
-                {isEnded && <button className="btn btn-outline" onClick={() => auctionStatus?.aucSn && navigate(`/auction/${auctionStatus.aucSn}`)}>종료 화면 보기</button>}
-                {isEnded && <button className="btn btn-primary" onClick={() => navigate('/product/register', { state: { relistFromPrdSn: Number(prdSn) } })}>재등록</button>}
-                {isDraft && <button className="btn btn-primary" onClick={() => navigate('/product/register', { state: { prdSn: Number(prdSn) } })}>상품 등록 재개</button>}
+                {isEnded && <ActionButton disabled={!auctionStatus?.aucSn} fullWidth to={`/auction/${auctionStatus?.aucSn}`} tone="outline">종료 화면 보기</ActionButton>}
+                {isEnded && <ActionButton fullWidth state={{ relistFromPrdSn: Number(prdSn) }} to="/product/register">재등록</ActionButton>}
+                {isDraft && <ActionButton fullWidth state={{ prdSn: Number(prdSn) }} to="/product/register">상품 등록 재개</ActionButton>}
               </div>
               <div className={noticeClass} style={{ marginTop: 16 }}>{noticeText}</div>
             </div>
@@ -575,7 +636,7 @@ export default function ProductDetailSellerPage() {
           {/* 상품 변경사항 추가 (F-AUC-007) — 사이즈 고정, 왼쪽 컬럼 높이에 맞춰 늘어나지 않음 */}
           <aside className="card" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ background: '#eef2fb', padding: '14px 20px' }}>
-              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>상품 변경 사항 추가</h3>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>상품 설명 변경사항 추가</h3>
             </div>
             <div style={{ padding: '16px 20px' }}>
               {isActive && comments.length >= 3 && (
@@ -602,11 +663,11 @@ export default function ProductDetailSellerPage() {
                     style={{ width: '100%', fontSize: 16, resize: 'none', overflowY: 'auto' }}
                   />
                   <p style={{ margin: '2px 0 4px', fontSize: 12, color: cmtCn.length >= 100 ? '#c0392b' : '#969696', textAlign: 'right' }}>{cmtCn.length}/100</p>
-                  <p className="muted" style={{ fontSize: 12, margin: '0 0 4px' }}>변경사항은 최대 3개까지 등록할 수 있습니다.</p>
+                  <p className="muted" style={{ fontSize: 14, margin: '0 0 4px' }}>변경사항은 최대 3개까지 등록할 수 있습니다.</p>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 2 }}>
-                    <button className="btn btn-primary btn-sm" onClick={handleCommentSubmit} disabled={cmtSubmitting}>
+                    <ActionButton loading={cmtSubmitting} onClick={requestCommentSubmit} size="sm">
                       {cmtSubmitting ? '등록 중...' : '등록'}
-                    </button>
+                    </ActionButton>
                   </div>
                 </div>
               )}
@@ -663,10 +724,10 @@ export default function ProductDetailSellerPage() {
             />
           </div>
           <div className="row" style={{ justifyContent: 'flex-end', gap: 8 }}>
-            <button className="btn btn-ghost" onClick={() => { setReportOpen(false); setReportTargetSn(null); setReportContent(''); }}>취소</button>
-            <button className="btn btn-danger" onClick={handleReportSubmit} disabled={reportSubmitting}>
+            <ActionButton onClick={() => { setReportOpen(false); setReportTargetSn(null); setReportContent(''); }} tone="neutral">취소</ActionButton>
+            <ActionButton loading={reportSubmitting} onClick={handleReportSubmit} tone="danger">
               {reportSubmitting ? '접수 중...' : '신고하기'}
-            </button>
+            </ActionButton>
           </div>
         </div>
       </div>
@@ -689,16 +750,34 @@ export default function ProductDetailSellerPage() {
             취소 요청은 관리자 승인 후 처리됩니다. 승인 전까지 경매와 입찰자의 포인트 홀딩은 유지됩니다.
           </p>
           <div className="row" style={{ justifyContent: 'flex-end', gap: 8 }}>
-            <button className="btn btn-ghost" onClick={closeCancel}>닫기</button>
-            <button className="btn btn-danger" onClick={handleCancelSubmit} disabled={cancelSubmitting}>
+            <ActionButton onClick={closeCancel} tone="neutral">닫기</ActionButton>
+            <ActionButton loading={cancelSubmitting} onClick={handleCancelSubmit} tone="danger">
               {cancelSubmitting ? '요청 중...' : '취소 요청 제출'}
-            </button>
+            </ActionButton>
           </div>
         </div>
       </div>
 
       {toast && <Toast message={toast} onClose={() => setToast('')} />}
       <AlertModal open={!!alertMsg} message={alertMsg} onClose={() => setAlertMsg('')} />
+      <ConfirmModal
+        open={commentConfirmOpen}
+        message="등록 후에는 수정할 수 없습니다."
+        subMessage="이대로 등록하시겠습니까?"
+        confirmLabel="등록"
+        confirmTone="primary"
+        onCancel={() => setCommentConfirmOpen(false)}
+        onConfirm={handleCommentSubmit}
+      />
+      <ConfirmModal
+        open={!!pendingReplySn}
+        message="답변은 등록 후 10분까지만 수정할 수 있습니다."
+        subMessage="이대로 등록하시겠습니까?"
+        confirmLabel="등록"
+        confirmTone="primary"
+        onCancel={() => setPendingReplySn(null)}
+        onConfirm={() => handleReplySubmit(pendingReplySn)}
+      />
       <ImageLightbox
         images={productImages.map(img => toImageUrl(img.url))}
         initialIndex={imgIdx}

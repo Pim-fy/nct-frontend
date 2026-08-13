@@ -5,7 +5,7 @@
 //   - 작성한 리뷰 탭:     node-id 56:138
 // - MyPage 사이드바 레이아웃(flex-1) 안에서 렌더링되므로 ScaledStage 대신 반응형 flex 레이아웃 사용.
 // - GET /api/reviews/writable, /me 연동 완료 (useReview.js). 생성/수정은 거래 상세에서 처리한다.
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import MyPageReviewListItem from "@components/mypage/MyPageReviewListItem";
 import Pagination from "@components/common/Pagination";
@@ -16,6 +16,7 @@ import MyPageListError from "@components/mypage/MyPageListError";
 import { useWritableReviews, useMyReviews } from "@hooks/useReview";
 import { toImageUrl } from "@api/fileApi";
 import { toast } from "@utils/common";
+import { getServiceTradeDetailPath } from "@/routes/myPageRoutes";
 
 const PAGE_SIZE = 10;
 
@@ -38,7 +39,7 @@ export default function ReviewListPage() {
   ), [writableQuery.data]);
 
   const writtenItems = useMemo(() => (
-    (myReviewsQuery.data ?? []).map((item) => ({ ...item, thumbnail: toImageUrl(item.photos?.[0]) }))
+    (myReviewsQuery.data ?? []).map((item) => ({ ...item, thumbnail: toImageUrl(item.thumbnail) }))
   ), [myReviewsQuery.data]);
 
   const filteredWritableItems = useMemo(
@@ -127,7 +128,7 @@ export default function ReviewListPage() {
   const handleViewTarget = (item) => {
     const from = location.pathname + location.search;
     if (item.dealType === "service") {
-      navigate(`/service-trades/${item.tradeId ?? item.id}`, { state: { from } });
+      navigate(getServiceTradeDetailPath(item.tradeId ?? item.id), { state: { from } });
       return;
     }
     // @ai_generated (담당자1, 2026-08-07): auctionId가 없으면 "/auction/undefined/trade"로
@@ -187,6 +188,7 @@ export default function ReviewListPage() {
                     partyLabel={item.partyLabel}
                     partyName={item.partyName}
                     completedDate={item.completedDate}
+                    reviewDeadline={item.reviewDeadline}
                     onViewTarget={() => handleViewTarget(item)}
                   />
                 ) : (
@@ -226,6 +228,7 @@ export default function ReviewListPage() {
                   partyLabel={item.partyLabel}
                   partyName={item.partyName}
                   completedDate={item.completedDate}
+                  reviewDeadline={item.reviewDeadline}
                   onViewTarget={() => handleViewTarget(item)}
                 />
               ))}

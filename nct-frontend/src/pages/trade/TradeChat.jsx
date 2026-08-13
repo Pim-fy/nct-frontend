@@ -7,6 +7,12 @@ import {
 } from 'react';
 import { useParams } from 'react-router-dom';
 import {
+  ExternalLink,
+  Flag,
+  List,
+  X,
+} from 'lucide-react';
+import {
   getTradeChatMessages,
   getTradeChatRooms,
   sendTradeChatMessage,
@@ -19,9 +25,12 @@ import {
 } from '@api/tradeChatAdapter';
 import { getTradeChatWebSocketUrl } from '@api/tradeChatSocket';
 import ReportModal from '@components/common/ReportModal';
+import { ActionButton, DomainStatus } from '@components/common/ui';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
 import { useAuth } from '@hooks/useAuth';
+import { getServiceTradeDetailPath } from '@/routes/myPageRoutes';
+import { confirm } from '@utils/common';
 import '@assets/css/trade-chat.css';
 
 const MAX_MESSAGE_LENGTH = 500;
@@ -47,6 +56,19 @@ const saveHiddenRoomIds = (roomIds) => {
     HIDDEN_ROOM_STORAGE_KEY,
     JSON.stringify([...roomIds]),
   );
+};
+
+// 채팅방이 참조하는 거래 유형에 따라 상세 route를 분기한다.
+const getTradeDetailPath = (room, preview) => {
+  if (!room?.tradeId) return null;
+
+  if (room.tradeTypeCode === 'TRDC0002') {
+    return preview ? null : getServiceTradeDetailPath(room.tradeId);
+  }
+
+  return preview
+    ? `/trades/preview/${room.tradeId}`
+    : `/trades/${room.tradeId}`;
 };
 
 const TradeChat = ({
@@ -83,6 +105,7 @@ const TradeChat = ({
   ).length;
   const completedRoomCount = rooms.length - activeRoomCount;
   const isActiveRoomClosed = activeRoom?.roomStatus === 'CLOSED';
+  const activeTradeDetailPath = getTradeDetailPath(activeRoom, preview);
   const subscribedRoomIds = useMemo(
     () => rooms
       .filter((room) => room.roomStatus === 'ACTIVE')
@@ -216,9 +239,11 @@ const TradeChat = ({
       return;
     }
 
-    const isConfirmed = window.confirm(
-      '이 완료된 채팅을 내 목록에서 삭제할까요?\n상대방 목록과 서버의 대화 기록은 유지됩니다.',
-    );
+    const isConfirmed = await confirm({
+      title: '완료된 채팅을 목록에서 숨길까요?',
+      text: '내 목록에서만 숨겨지며 상대방 목록과 서버의 대화 기록은 유지됩니다.',
+      confirmButtonText: '숨기기',
+    });
 
     if (!isConfirmed) {
       return;
@@ -462,15 +487,20 @@ const TradeChat = ({
     }
   };
 
-  // Enter는 즉시 전송하고, Shift + Enter에서만 여러 줄 메시지를 작성할 수 있게 한다.
-  // 한글 조합 중 Enter는 확정 입력에 쓰이므로 전송으로 처리하지 않는다.
-  const handleMessageKeyDown = (event) => {
-    if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) {
+  // 모바일은 소프트 키보드 Enter를 줄바꿈으로 유지하고, 데스크톱만 Enter 즉시 전송을 제공한다.
+  const handleMessageInputKeyDown = (event) => {
+    const isMobileViewport = window.matchMedia('(max-width: 768px)').matches;
+    if (
+      event.key !== 'Enter'
+      || event.shiftKey
+      || event.nativeEvent.isComposing
+      || isMobileViewport
+    ) {
       return;
     }
 
     event.preventDefault();
-    event.currentTarget.form?.requestSubmit();
+    void sendMessage(event);
   };
 
   // 마이페이지의 목록 복귀는 같은 2열 화면에서 우측 선택만 해제한다.
@@ -515,9 +545,9 @@ const TradeChat = ({
         {!isLoading && error && (
           <section className="trade-chat-card trade-chat-page__state" role="alert">
             <p>{error}</p>
-            <button className="btn btn-outline" type="button" onClick={loadChatRooms}>
+            <ActionButton onClick={loadChatRooms} tone="outline">
               다시 시도
-            </button>
+            </ActionButton>
           </section>
         )}
 
@@ -646,39 +676,59 @@ const TradeChat = ({
                       <p>{activeRoom.productName}</p>
                     </div>
                     <div className="trade-chat-conversation__actions">
-                      <span
-                        className={activeRoom.roomStatus === 'ACTIVE'
-                          ? 'trade-chat-status'
-                          : 'trade-chat-status trade-chat-status--closed'}
+                      <DomainStatus
+                        className="trade-chat-status"
+                        tone={activeRoom.roomStatus === 'ACTIVE' ? 'success' : 'danger'}
+                        variant="soft"
                       >
                         {activeRoom.roomStatus === 'ACTIVE' ? '대화 가능' : '채팅 불가'}
-                      </span>
-                      <button
-                        className="btn btn-ghost trade-chat-conversation__report"
-                        type="button"
-                        onClick={() => setIsReportOpen(true)}
-                      >
-                        신고하기
-                      </button>
-                      {showRoomList && (
-                        <button
-                          className="btn btn-ghost trade-chat-conversation__close trade-chat-conversation__close--desktop"
-                          type="button"
-                          onClick={clearSelectedChatRoom}
+                      </DomainStatus>
+                      <div className="trade-chat-conversation__action-group">
+                        {activeTradeDetailPath && (
+                          <ActionButton
+                            aria-label="거래 상세로 이동"
+                            className="trade-chat-conversation__trade-detail"
+                            preserveSize
+                            to={activeTradeDetailPath}
+                          >
+                            <ExternalLink size={15} aria-hidden="true" />
+                            <span>거래 상세</span>
+                          </ActionButton>
+                        )}
+                        <ActionButton
+                          aria-label="채팅 신고하기"
+                          className="trade-chat-conversation__report"
+                          onClick={() => setIsReportOpen(true)}
+                          preserveSize
+                          tone="danger-outline"
                         >
-                          닫기
-                        </button>
-                      )}
-                      {showRoomList && (
-                        <button
-                          className="btn btn-ghost trade-chat-conversation__close trade-chat-conversation__close--mobile"
-                          type="button"
-                          aria-label="채팅 목록으로"
-                          onClick={clearSelectedChatRoom}
-                        >
-                          목록
-                        </button>
-                      )}
+                          <Flag size={15} aria-hidden="true" />
+                          <span>신고하기</span>
+                        </ActionButton>
+                        {showRoomList && (
+                          <ActionButton
+                            className="trade-chat-conversation__close trade-chat-conversation__close--desktop"
+                            onClick={clearSelectedChatRoom}
+                            preserveSize
+                            tone="neutral"
+                          >
+                            <X size={16} aria-hidden="true" />
+                            <span>닫기</span>
+                          </ActionButton>
+                        )}
+                        {showRoomList && (
+                          <ActionButton
+                            className="trade-chat-conversation__close trade-chat-conversation__close--mobile"
+                            aria-label="채팅 목록으로"
+                            onClick={clearSelectedChatRoom}
+                            preserveSize
+                            tone="neutral"
+                          >
+                            <List size={17} aria-hidden="true" />
+                            <span>목록</span>
+                          </ActionButton>
+                        )}
+                      </div>
                     </div>
                   </header>
 
@@ -711,28 +761,32 @@ const TradeChat = ({
                     <label className="sr-only" htmlFor="trade-chat-message">
                       메시지 입력
                     </label>
-                    <textarea
-                      id="trade-chat-message"
-                      maxLength={MAX_MESSAGE_LENGTH}
-                      value={messageInput}
-                      onChange={(event) => setMessageInput(event.target.value)}
-                      onKeyDown={handleMessageKeyDown}
-                      placeholder={isActiveRoomClosed
-                        ? '완료된 거래의 채팅 기록입니다.'
-                        : '메시지를 입력하세요.'}
-                      disabled={isSubmitting || isActiveRoomClosed}
-                    />
-                    <div className="trade-chat-composer__footer">
-                      <span>{messageInput.length}/{MAX_MESSAGE_LENGTH}</span>
+                    <div className="trade-chat-composer__input-row">
+                      <textarea
+                        id="trade-chat-message"
+                        maxLength={MAX_MESSAGE_LENGTH}
+                        value={messageInput}
+                        onChange={(event) => setMessageInput(event.target.value)}
+                        onKeyDown={handleMessageInputKeyDown}
+                        placeholder={isActiveRoomClosed
+                          ? '완료된 거래의 채팅 기록입니다.'
+                          : '메시지를 입력하세요.'}
+                        disabled={isSubmitting || isActiveRoomClosed}
+                      />
                       {!isActiveRoomClosed && (
-                        <button
-                          className="btn btn-primary"
+                        <ActionButton
+                          className="trade-chat-composer__send"
                           type="submit"
-                          disabled={isSubmitting}
+                          disabled={isSubmitting || !messageInput.trim()}
+                          loading={isSubmitting}
+                          preserveSize
                         >
                           {isSubmitting ? '전송 중...' : '전송'}
-                        </button>
+                        </ActionButton>
                       )}
+                    </div>
+                    <div className="trade-chat-composer__footer">
+                      <span>{messageInput.length}/{MAX_MESSAGE_LENGTH}</span>
                     </div>
                   </form>
                 </>

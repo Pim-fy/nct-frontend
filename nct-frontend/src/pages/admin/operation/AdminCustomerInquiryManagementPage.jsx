@@ -8,6 +8,7 @@ import {
 } from '@api/customerInquiryApi';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminDetailDrawer from '@components/admin/AdminDetailDrawer';
+import AdminHistoryTimeline from '@components/admin/AdminHistoryTimeline';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
@@ -77,7 +78,10 @@ const AdminCustomerInquiryManagementPage = () => {
   });
 
   const refreshInquiryQueries = async () => {
-    await queryClient.invalidateQueries({ queryKey: ['admin', 'customer-inquiries'] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['admin', 'customer-inquiries'] }),
+      queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] }),
+    ]);
   };
 
   const startMutation = useMutation({
@@ -154,10 +158,17 @@ const AdminCustomerInquiryManagementPage = () => {
     {
       key: 'userSn',
       label: '작성자',
+      className: 'admin-table__compact-text',
       render: (value, row) => formatAdminMemberIdentity(row.writerMember, value),
     },
     { key: 'title', label: '제목', className: 'admin-table__long-text' },
     { key: 'registeredAt', label: '접수일', render: formatDateTime },
+    {
+      key: 'answeredAt',
+      label: '처리일',
+      className: 'admin-table__processed-date',
+      render: formatDateTime,
+    },
     {
       key: 'statusCode',
       label: '상태',
@@ -301,6 +312,11 @@ const AdminCustomerInquiryManagementPage = () => {
                     </>
                   )}
                 </dl>
+
+                <AdminHistoryTimeline
+                  referenceSn={detail.inquirySn}
+                  referenceType="CUSTOMER_INQUIRY"
+                />
 
                 {canStart && (
                   <div className="admin-operation-decision">

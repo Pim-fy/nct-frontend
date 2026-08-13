@@ -5,11 +5,12 @@ import {
   ChevronsRight,
   Clock3,
   RotateCcw,
-  Search,
   X,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { SERVICE_REQUEST_SORT_OPTIONS } from '@/constants/serviceDiscovery';
+import { getServiceRequestDetailPath } from '@/routes/serviceRequestRoutes';
+import { ActionButton, CategoryTag } from '@components/common/ui';
 
 const FILTER_GROUP_CLASS = 'm-0 grid gap-2 border-0 p-0 disabled:opacity-60';
 const FILTER_INPUT_CLASS = 'min-h-10 w-full rounded-lg border border-[#e2e1dc] bg-white px-3 text-body-sm text-[#1a1a18] outline-none transition-colors focus:border-primary md:text-body-md';
@@ -140,10 +141,10 @@ export const ServiceFilterPanel = ({
         type="button"
       />
       <aside
-        className={`fixed inset-x-0 bottom-0 z-[220] grid max-h-[88dvh] w-full transform-gpu gap-[18px] overflow-y-auto overscroll-contain rounded-t-2xl border border-[#f0efec] bg-white p-5 shadow-[0_-8px_28px_rgba(0,0,0,0.18)] transition-transform duration-[420ms] ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform [backface-visibility:hidden] [scrollbar-color:#c8ced8_transparent] [scrollbar-width:thin] motion-reduce:transition-none [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#c8ced8] [&::-webkit-scrollbar-track]:bg-transparent ${isOpen ? 'pointer-events-auto translate-y-0' : 'pointer-events-none translate-y-[101%]'} md:sticky md:top-[82px] md:inset-x-auto md:bottom-auto md:z-auto md:h-fit md:max-h-[calc(100dvh-122px)] md:w-[280px] md:flex-[0_0_280px] md:self-start md:translate-y-0 md:overflow-y-auto md:rounded-lg md:pointer-events-auto md:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)]`}
+        className={`fixed inset-x-0 bottom-0 z-[220] flex h-[88dvh] max-h-[88dvh] w-full transform-gpu flex-col overflow-hidden rounded-t-2xl border border-[#f0efec] bg-white shadow-[0_-8px_28px_rgba(0,0,0,0.18)] transition-transform duration-[420ms] ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform [backface-visibility:hidden] motion-reduce:transition-none ${isOpen ? 'pointer-events-auto translate-y-0' : 'pointer-events-none translate-y-[101%]'} md:sticky md:top-[82px] md:inset-x-auto md:bottom-auto md:z-auto md:mb-0 md:h-fit md:max-h-[calc(100dvh-122px)] md:w-[280px] md:flex-[0_0_280px] md:self-start md:translate-y-0 md:rounded-lg md:pointer-events-auto md:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)]`}
         aria-label="서비스 검색 필터"
       >
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#f0efec] bg-white p-5 pb-3">
           <h2 className="m-0 text-h3 font-bold">필터</h2>
           <div className="flex items-center gap-2">
             <button className="inline-flex size-[34px] cursor-pointer items-center justify-center rounded-lg border border-[#e2e1dc] bg-white text-[#5f5e5a] transition-colors hover:border-primary hover:bg-primary-light hover:text-primary" onClick={onReset} title="필터 초기화" type="button">
@@ -156,11 +157,19 @@ export const ServiceFilterPanel = ({
             </button>
           </div>
         </div>
-        {fields}
-        <div className="sticky -bottom-5 z-10 -mx-5 -mb-5 border-t border-[#f0efec] bg-white p-5 pt-3">
-          <button className="inline-flex min-h-[46px] w-full cursor-pointer items-center justify-center rounded-lg border border-primary bg-primary px-3 text-body-md font-bold text-white transition-colors hover:border-primary-dark hover:bg-primary-dark" onClick={onClose} type="button">
+        <div className="flex min-h-0 flex-1 flex-col gap-[18px] overflow-y-auto overscroll-contain p-5 [scrollbar-color:#c8ced8_transparent] [scrollbar-width:thin] [&>*]:shrink-0 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#c8ced8] [&::-webkit-scrollbar-track]:bg-transparent">
+          {fields}
+        </div>
+        <div className="shrink-0 border-t border-[#f0efec] bg-white p-5 pt-3">
+          <ActionButton
+            className="min-h-[46px] rounded-lg px-3 text-body-md font-bold"
+            fullWidth
+            onClick={onClose}
+            preserveSize
+            tone="primary"
+          >
             {resultLoading ? '서비스 조회 중...' : `서비스 ${(resultCount ?? 0).toLocaleString('ko-KR')}개 보기`}
-          </button>
+          </ActionButton>
         </div>
       </aside>
     </>
@@ -173,18 +182,18 @@ const ServiceRequestCard = ({ request }) => {
   const location = useLocation();
   return (
   <Link
-    className="group flex h-full min-w-0 flex-col overflow-hidden rounded-lg border border-[#dededc] bg-white transition-[border-color,box-shadow] hover:border-primary hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]"
+    className="group flex min-h-[410px] w-full min-w-0 flex-col overflow-hidden rounded-lg border border-[#f0efec] bg-white p-5 text-body-sm text-inherit no-underline shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)] transition duration-150 hover:-translate-y-0.5 hover:shadow-[0_6px_18px_rgba(0,0,0,0.1)] max-md:min-h-0 md:text-body-md"
     state={{ from: `${location.pathname}${location.search}${location.hash}` }}
-    to={`/service-requests/${request.id}`}
+    to={getServiceRequestDetailPath(request.id)}
   >
-    <div className="relative aspect-[3/2] w-full overflow-hidden bg-[#f1f3f6]">
-      <span className="absolute inset-0 grid place-items-center text-body-sm font-semibold text-[#858783]">
-        등록된 이미지가 없습니다.
+    <div className="relative flex h-[210px] items-center justify-center overflow-hidden rounded-lg bg-[linear-gradient(135deg,#e8f0fe,#f8f8f6)] text-[#5f5e5a]">
+      <span className="inline-flex size-24 items-center justify-center rounded-full bg-white/60 text-center text-body-sm font-extrabold">
+        {request.categoryName || '서비스'}
       </span>
       {request.imageUrl && (
         <img
-          alt=""
-          className="absolute inset-0 size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+          alt={request.title}
+          className="absolute inset-0 block size-full object-cover"
           src={request.imageUrl}
           onError={(event) => {
             event.currentTarget.style.display = 'none';
@@ -192,22 +201,20 @@ const ServiceRequestCard = ({ request }) => {
         />
       )}
     </div>
-    <div className="flex min-h-[230px] flex-1 flex-col p-5">
-      <div className="flex items-start justify-between gap-3">
-        <span className="text-body-sm font-semibold text-primary">{request.categoryName || '서비스'}</span>
-        {request.statusName && <span className="text-body-sm font-semibold text-[#555552]">{request.statusName}</span>}
-      </div>
-      <h3 className="mt-3 line-clamp-2 text-h3 font-bold leading-[1.45] text-[#1a1a18] group-hover:text-primary">{request.title}</h3>
-      {request.description && <p className="mt-2 line-clamp-2 text-body-md leading-[1.65] text-[#62625f]">{request.description}</p>}
-      <div className="mt-auto flex items-end justify-between gap-3 border-t border-[#ececea] pt-4">
-        <strong className="text-body-lg text-[#1a1a18]">{formatAmount(request.budgetAmount)}</strong>
-        {request.registeredAt && (
-          <span className="inline-flex shrink-0 items-center gap-1.5 text-caption text-[#666663]">
-            <Clock3 aria-hidden="true" size={15} />
-            {formatDate(request.registeredAt)}
-          </span>
-        )}
-      </div>
+    <div className="mt-3 flex items-start justify-between gap-3 max-sm:flex-col max-sm:gap-1.5">
+      <h3 className="m-0 min-w-0 overflow-hidden text-body-md font-bold text-[#1a1a18] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] group-hover:text-primary md:text-body-lg">{request.title}</h3>
+      <CategoryTag className="shrink-0" tone="neutral">{request.categoryName || '서비스'}</CategoryTag>
+    </div>
+    <strong className="mt-2 whitespace-nowrap text-h3 font-extrabold text-primary-dark">{formatAmount(request.budgetAmount)}</strong>
+    {request.description && <p className="mt-2 mb-3.5 line-clamp-2 text-body-md leading-[1.65] text-[#62625f]">{request.description}</p>}
+    <div className="mt-auto flex items-center justify-between gap-3 border-t border-[#f0efec] pt-3.5 max-sm:flex-col max-sm:items-stretch">
+      <span className="text-caption font-semibold text-[#5f5e5a]">{request.statusName || '공개 요청'}</span>
+      {request.registeredAt && (
+        <strong className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-[#c9ddff] bg-primary-light px-3 text-center text-caption font-bold whitespace-nowrap text-primary-dark tabular-nums max-sm:w-full">
+          <Clock3 aria-hidden="true" size={15} />
+          {formatDate(request.registeredAt)}
+        </strong>
+      )}
     </div>
   </Link>
   );
@@ -220,26 +227,27 @@ export const ServiceRequestGrid = ({ requests }) => (
 );
 
 export const ServiceEmptyState = () => (
-  <div className="flex min-h-[360px] flex-col items-center justify-center border-y border-[#e2e2df] text-center" role="status">
-    <Search aria-hidden="true" className="text-[#9b9b98]" size={42} />
-    <strong className="mt-5 text-xl text-[#282826]">조건에 맞는 서비스 요청이 없습니다.</strong>
-    <span className="mt-2 text-base text-[#666663]">검색어나 필터 조건을 변경해 주세요.</span>
+  <div className="grid min-h-[340px] place-content-center justify-items-center gap-2.5 rounded-lg border border-[#f0efec] bg-[#f8f8f6] p-7 text-center" role="status">
+    <strong className="text-h3">조건에 맞는 서비스 요청이 없습니다.</strong>
+    <span className="m-0 text-[#5f5e5a]">검색어나 필터 조건을 변경해 주세요.</span>
   </div>
 );
 
 export const ServicePagination = ({ onChange, page, totalPages }) => {
-  if (totalPages <= 1) return null;
+  if (totalPages <= 0) return null;
   const pages = getPageNumbers(page, totalPages);
-  const iconButton = 'grid h-11 w-11 place-items-center border border-[#d7d7d5] text-[#4f4f4c] disabled:cursor-not-allowed disabled:opacity-35 hover:not-disabled:border-primary hover:not-disabled:text-primary';
+  const paginationButton = 'min-h-10 rounded-lg border border-[#e2e1dc] bg-white px-3.5 text-body-md font-semibold text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-45 max-sm:min-h-9 max-sm:min-w-9 max-sm:px-1.5 max-sm:text-caption';
 
   return (
-    <nav className="mt-10 flex items-center justify-center gap-1" aria-label="서비스 검색 결과 페이지">
-      <button className={iconButton} disabled={page === 1} onClick={() => onChange(1)} title="첫 페이지" type="button"><ChevronsLeft aria-hidden="true" size={20} /><span className="sr-only">첫 페이지</span></button>
-      <button className={iconButton} disabled={page === 1} onClick={() => onChange(page - 1)} title="이전 페이지" type="button"><ChevronLeft aria-hidden="true" size={20} /><span className="sr-only">이전 페이지</span></button>
+    <nav className="mt-6 flex flex-nowrap justify-center gap-2 max-sm:gap-0.5" aria-label="서비스 검색 결과 페이지">
+      <button className={paginationButton} disabled={page === 1} onClick={() => onChange(1)} title="첫 페이지" type="button"><ChevronsLeft aria-hidden="true" size={17} /><span className="sr-only">첫 페이지</span></button>
+      <button className={paginationButton} disabled={page === 1} onClick={() => onChange(page - 1)} title="이전 페이지" type="button"><ChevronLeft aria-hidden="true" size={17} /><span className="sr-only">이전 페이지</span></button>
       {pages.map((number) => (
         <button
           aria-current={number === page ? 'page' : undefined}
-          className={`h-11 min-w-11 border px-3 text-base font-bold ${number === page ? 'border-primary bg-primary text-white' : 'border-[#d7d7d5] text-[#4f4f4c] hover:border-primary hover:text-primary'}`}
+          className={number === page
+            ? 'min-h-10 rounded-lg border border-primary bg-primary px-3.5 text-body-md font-semibold text-white max-sm:min-h-9 max-sm:min-w-9 max-sm:px-1.5 max-sm:text-caption'
+            : paginationButton}
           key={number}
           onClick={() => onChange(number)}
           type="button"
@@ -247,8 +255,8 @@ export const ServicePagination = ({ onChange, page, totalPages }) => {
           {number}
         </button>
       ))}
-      <button className={iconButton} disabled={page === totalPages} onClick={() => onChange(page + 1)} title="다음 페이지" type="button"><ChevronRight aria-hidden="true" size={20} /><span className="sr-only">다음 페이지</span></button>
-      <button className={iconButton} disabled={page === totalPages} onClick={() => onChange(totalPages)} title="마지막 페이지" type="button"><ChevronsRight aria-hidden="true" size={20} /><span className="sr-only">마지막 페이지</span></button>
+      <button className={paginationButton} disabled={page === totalPages} onClick={() => onChange(page + 1)} title="다음 페이지" type="button"><ChevronRight aria-hidden="true" size={17} /><span className="sr-only">다음 페이지</span></button>
+      <button className={paginationButton} disabled={page === totalPages} onClick={() => onChange(totalPages)} title="마지막 페이지" type="button"><ChevronsRight aria-hidden="true" size={17} /><span className="sr-only">마지막 페이지</span></button>
     </nav>
   );
 };

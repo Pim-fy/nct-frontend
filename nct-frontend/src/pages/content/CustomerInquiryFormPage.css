@@ -93,10 +93,12 @@
 .customer-inquiry-form__notice strong { color: #173c78; }
 .customer-inquiry-form__error { margin: 0; border-radius: 10px; padding: 12px 14px; background: #fff1f2; color: #b42318; font-size: 14px; }
 .customer-inquiry-form__actions { display: flex; justify-content: flex-end; gap: 10px; }
-.customer-inquiry-form__actions .btn { min-width: 128px; }
+.customer-inquiry-form__actions .btn,
+.customer-inquiry-form__actions .ui-action-button { min-width: 128px; }
 
 @media (max-width: 640px) {
   .customer-inquiry-form { padding: 20px 16px; }
   .customer-inquiry-form__actions { display: grid; grid-template-columns: 1fr 1fr; }
-  .customer-inquiry-form__actions .btn { min-width: 0; }
+  .customer-inquiry-form__actions .btn,
+  .customer-inquiry-form__actions .ui-action-button { min-width: 0; }
 }

@@ -13,9 +13,11 @@ import { uploadImage } from '@api/fileApi';
 import { formatPoint } from '@/utils/common';
 import ErrorMessage from '@components/common/ErrorMessage';
 import AlertModal from '@components/common/AlertModal';
+import { isTenMinuteTime } from '@components/common/timeSelectUtils';
 import ProductInfoStep from './steps/ProductInfoStep';
 import AuctionSettingStep from './steps/AuctionSettingStep';
 import RegisterConfirmStep from './steps/RegisterConfirmStep';
+import { ActionButton } from '@components/common/ui';
 
 // 브라우저 뒤로가기로 이 페이지에 돌아왔을 때 입력하던 내용이 사라지지 않도록,
 // 컴포넌트가 언마운트돼도 살아있는 모듈 스코프 캐시에 폼 상태를 보관해둔다.
@@ -43,12 +45,51 @@ const TRADE_METHODS = [
   { value: 'TRDC0010', label: '직거래',    Icon: PinIcon },
 ];
 
-// 입찰 단위 선택지 — 관리자가 CMM_CODE(AUCG02)에서 추가/삭제하는 옵션 목록을 그대로 쓴다 (하드코딩 금지)
+// 입찰 단위 선택지 — 관리자가 CMM_CODE(AUCG02)에서 추가/사용 중지한 활성 옵션만 쓴다 (하드코딩 금지)
 const BID_UNIT_GROUP_CD = 'AUCG02';
 const PRODUCT_DOMAIN_CD = 'CATC0001';
 const STEP_LABELS = ['상품 입력', '등록 확인'];
 const MAX_IMAGES = 5; // F-AUC-002 — 대표이미지 포함 최대 5장
-const MAX_PRICE_AMT = 100000000; // 시작가·즉시구매가 상한 — 1억 원 (사용자 확정, 260810)
+const MAX_PRICE_AMT = 100000000; // 시작가·즉시구매가 상한 — 100,000,000P (사용자 확정, 260810)
+const MIN_SAME_DAY_AUCTION_DURATION_MS = 60 * 60 * 1000;
+
+const parseSelectedDateTime = (date, time) => {
+  if (!date || !isTenMinuteTime(time)) return null;
+  const parsed = new Date(`${date}T${time}:00`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const getTodayDate = () => {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${month}-${day}`;
+};
+
+const getBannedKeywordMessage = (value, bannedKeywords) => {
+  if (!value || bannedKeywords.length === 0) return '';
+
+  const lowerValue = value.toLowerCase();
+  const found = bannedKeywords.find((keyword) => (
+    lowerValue.includes(keyword.toLowerCase())
+  ));
+  return found ? `'${found}'은(는) 등록할 수 없는 키워드입니다.` : '';
+};
+
+const hasMinimumSameDayDuration = ({
+  startNow,
+  auctionRange,
+  startDateTime,
+  endDateTime,
+  now = Date.now(),
+}) => {
+  if (auctionRange.start !== auctionRange.end) return true;
+  if (!endDateTime) return false;
+
+  const startTime = startNow ? now : startDateTime?.getTime();
+  return Number.isFinite(startTime)
+    && endDateTime.getTime() - startTime >= MIN_SAME_DAY_AUCTION_DURATION_MS;
+};
 
 export default function ProductRegisterPage() {
   const navigate = useNavigate();
@@ -75,17 +116,13 @@ export default function ProductRegisterPage() {
   const [agreed, setAgreed] = useState(() => hasCachedDraft ? draftCache.agreed : false);                   // 스텝2 최종 등록 동의
   const [auctionRange, setAuctionRange] = useState(() => hasCachedDraft
     ? draftCache.auctionRange
-    : { start: '', end: '', startTime: '09:00', endTime: '09:00' }); // 경매 기간 범위
+    : { start: getTodayDate(), end: '', startTime: '09:00', endTime: '09:00' }); // 경매 기간 범위
   const [images, setImages] = useState(() => hasCachedDraft ? draftCache.images : []); // [{ id, flSn, url, file }] — file이 있으면 아직 미업로드, 첫 번째가 대표
   const [bannedKeywords, setBannedKeywords] = useState([]);
   const [bidUnits, setBidUnits] = useState([]);
-  const [bannedKeywordError, setBannedKeywordError] = useState('');
-  const [bannedKeywordCnError, setBannedKeywordCnError] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [alertMsg, setAlertMsg] = useState(''); // 화면 중앙 알림 모달(AlertModal) — 유효성 검사 안내용
   const errorRef = useRef(null);
-  // 임시저장 draft 복원 시 startNow 변경으로 경매기간 초기화 효과가 복원값을 덮어쓰지 않도록 막는 플래그
-  const suppressRangeResetRef = useRef(hasCachedDraft);
   // 제출 성공 후에는 캐시 동기화 effect가 다시 draftCache를 채우지 않도록 막는 플래그
   const submittedRef = useRef(false);
   const imgSectionRef = useRef(null);
@@ -97,6 +134,7 @@ export default function ProductRegisterPage() {
   const ibyAmtRef = useRef(null);
   const auctionRangeRef = useRef(null);
   const policyRef = useRef(null);
+  const agreedRef = useRef(null);
 
   // ─── 폼 입력값 ───────────────────────────────────────────────────────────
   const [form, setForm] = useState(() => hasCachedDraft ? draftCache.form : {
@@ -139,6 +177,10 @@ export default function ProductRegisterPage() {
       getProduct(editPrdSn)
           .then(res => {
             const p = res.data;
+            const resolvedStartNow = p.prdDraftStartNowYn === 'Y' ? true
+              : p.prdDraftStartNowYn === 'N' ? false
+              : (p.prdDraftStartDt || p.prdDraftEndDt) ? false
+              : null;
             setForm(prev => ({
               ...prev,
               catSn:          p.catSn ?? '',
@@ -149,13 +191,9 @@ export default function ProductRegisterPage() {
               prdIbyAmt:      p.prdIbyAmt  != null ? String(p.prdIbyAmt)  : '',
               bidUnit:        p.prdDraftBidUnit != null ? Number(p.prdDraftBidUnit) : prev.bidUnit,
               tradeRegions:   p.tradeRegions ?? prev.tradeRegions,
-              startNow:       p.prdDraftStartNowYn === 'Y' ? true
-                            : p.prdDraftStartNowYn === 'N' ? false
-                            : (p.prdDraftStartDt || p.prdDraftEndDt) ? false  // prdDraftStartNowYn 없는 이전 데이터 호환
-                            : prev.startNow,
+              startNow:       resolvedStartNow ?? prev.startNow,
             }));
             if (p.prdDraftStartDt || p.prdDraftEndDt) {
-              suppressRangeResetRef.current = true;
               // 백엔드는 오프셋 없는 로컬(KST) 시각 그대로 저장하므로 그대로 파싱한다 (toLocalIsoString과 짝)
               const splitDt = (iso) => {
                 if (!iso) return { date: '', time: '' };
@@ -166,7 +204,7 @@ export default function ProductRegisterPage() {
                   time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
                 };
               };
-              const isStartNow = p.prdDraftStartNowYn === 'Y';
+              const isStartNow = resolvedStartNow === true;
               const start = splitDt(p.prdDraftStartDt);
               const end = splitDt(p.prdDraftEndDt);
               setAuctionRange(prev => ({
@@ -176,6 +214,12 @@ export default function ProductRegisterPage() {
                 // 즉시시작이면 UI의 "종료 시간"이 startTime에 저장되므로 prdDraftEndDt 시각을 startTime으로 복원
                 startTime: isStartNow ? (end.time || prev.startTime) : (start.time || prev.startTime),
                 endTime: end.time || prev.endTime,
+              }));
+            } else if (resolvedStartNow != null) {
+              setAuctionRange(prev => ({
+                ...prev,
+                start: resolvedStartNow ? getTodayDate() : '',
+                end: '',
               }));
             }
             if (p.imageList?.length > 0) {
@@ -220,43 +264,19 @@ export default function ProductRegisterPage() {
     }
   }, [error]);
 
-  // 즉시시작/예약 전환 시 날짜 범위 초기화
-  useEffect(() => {
-    if (suppressRangeResetRef.current) {
-      suppressRangeResetRef.current = false;
-      return;
-    }
-    if (form.startNow) {
-      const now = new Date();
-      const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-      setAuctionRange(prev => ({ ...prev, start: todayStr, end: '' }));
-    } else {
-      setAuctionRange(prev => ({ ...prev, start: '', end: '' }));
-    }
-  }, [form.startNow]);
+  const bannedKeywordError = getBannedKeywordMessage(form.prdNm, bannedKeywords);
+  const bannedKeywordCnError = getBannedKeywordMessage(form.prdCn, bannedKeywords);
 
-  useEffect(() => {
-    if (!form.prdNm || bannedKeywords.length === 0) {
-      setBannedKeywordError('');
-      return;
+  const set = (key, value) => {
+    if (key === 'startNow') {
+      setAuctionRange(prev => ({
+        ...prev,
+        start: value ? getTodayDate() : '',
+        end: '',
+      }));
     }
-    const lower = form.prdNm.toLowerCase();
-    const found = bannedKeywords.find(kwd => lower.includes(kwd.toLowerCase()));
-    setBannedKeywordError(found ? `'${found}'은(는) 등록할 수 없는 키워드입니다.` : '');
-  }, [form.prdNm, bannedKeywords]);
-
-  // 상품명만 막으면 본문에 금지 키워드를 넣어 우회할 수 있어 설명도 같은 방식으로 검사한다
-  useEffect(() => {
-    if (!form.prdCn || bannedKeywords.length === 0) {
-      setBannedKeywordCnError('');
-      return;
-    }
-    const lower = form.prdCn.toLowerCase();
-    const found = bannedKeywords.find(kwd => lower.includes(kwd.toLowerCase()));
-    setBannedKeywordCnError(found ? `'${found}'은(는) 등록할 수 없는 키워드입니다.` : '');
-  }, [form.prdCn, bannedKeywords]);
-
-  const set = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
+    setForm(prev => ({ ...prev, [key]: value }));
+  };
 
   // 서버(백엔드 LocalDateTime, 서버도 KST)로 보낼 때는 UTC로 변환하는 toISOString() 대신
   // 화면에 보이는 시각 그대로(오프셋 없이) 보낸다 — toISOString()을 쓰면 백엔드가 오프셋을 무시하고
@@ -285,7 +305,7 @@ export default function ProductRegisterPage() {
     if (form.startNow) {
       if (auctionRange.end === auctionRange.start) {
         // 즉시시작 + 당일 종료: 등록 시각과 같은 시:분으로는 계산할 수 없어(이미 지난 시각) 직접 고른 종료 시간을 사용
-        return new Date(`${auctionRange.end}T${auctionRange.endTime || '09:00'}:00`);
+        return parseSelectedDateTime(auctionRange.end, auctionRange.endTime);
       }
       // 즉시시작 + 이후 날짜 종료: 종료 시각을 등록 시각의 HH:mm으로 고정
       const now = new Date();
@@ -294,10 +314,10 @@ export default function ProductRegisterPage() {
       return new Date(`${auctionRange.end}T${hh}:${mm}:00`);
     }
     // 예약 + 시작일 = 종료일 (당일 종료): 별도 선택한 종료 시간 사용
-    if (auctionRange.start === auctionRange.end && auctionRange.endTime) {
-      return new Date(`${auctionRange.end}T${auctionRange.endTime}:00`);
+    if (auctionRange.start === auctionRange.end) {
+      return parseSelectedDateTime(auctionRange.end, auctionRange.endTime);
     }
-    return new Date(`${auctionRange.end}T${auctionRange.startTime || '09:00'}:00`);
+    return parseSelectedDateTime(auctionRange.end, auctionRange.startTime);
   };
 
   // ─── 등록 / 임시저장 제출 ────────────────────────────────────────────────
@@ -320,15 +340,38 @@ export default function ProductRegisterPage() {
       const endDt = calcEndDt();
       // 업로드에 걸린 시간만큼 시각이 흘렀을 수 있어, 실제 전송 직전(업로드 완료 후)에 다시 한번 검증한다.
       // 클릭 시점에만 검사하면 업로드하는 몇 초 사이에 종료 시각이 지나버려 서버에서 거부될 수 있었다.
+      if (statusCd === 'PRDC0002' && !endDt) {
+        setAlertMsg('경매 종료 시간을 10분 단위로 다시 선택해 주세요.');
+        return;
+      }
       if (statusCd === 'PRDC0002' && endDt && endDt.getTime() <= Date.now()) {
         setAlertMsg('경매 종료 시각이 이미 지났습니다. 이전 단계에서 경매 기간을 다시 확인해 주세요.');
         return;
       }
-      const startDt = form.startNow ? new Date() : (auctionRange.start ? new Date(`${auctionRange.start}T${auctionRange.startTime || '00:00'}:00`) : new Date());
+      const startDt = form.startNow
+        ? new Date()
+        : parseSelectedDateTime(auctionRange.start, auctionRange.startTime);
       // 업로드하는 사이 시간이 흘러 작성 시작 시점엔 유효했던 예약 시작 시각이 이미 지나버렸을 수 있어
       // endDt와 동일하게 실제 전송 직전(업로드 완료 후) 다시 한번 검증한다.
+      if (statusCd === 'PRDC0002' && !form.startNow && !startDt) {
+        setAlertMsg('경매 시작 시간을 10분 단위로 다시 선택해 주세요.');
+        return;
+      }
       if (statusCd === 'PRDC0002' && !form.startNow && startDt.getTime() <= Date.now()) {
         setAlertMsg('경매 시작 시각이 이미 지났습니다. 이전 단계에서 시작 시각을 다시 확인해 주세요.');
+        return;
+      }
+      if (statusCd === 'PRDC0002' && endDt.getTime() <= startDt.getTime()) {
+        setAlertMsg('경매 종료 시각은 시작 시각보다 늦게 선택해 주세요.');
+        return;
+      }
+      if (statusCd === 'PRDC0002' && !hasMinimumSameDayDuration({
+        startNow: form.startNow,
+        auctionRange,
+        startDateTime: startDt,
+        endDateTime: endDt,
+      })) {
+        setAlertMsg('같은 날 종료하는 경매는 시작 시각보다 최소 1시간 뒤에 종료해야 합니다.');
         return;
       }
       // 등록 진행 중 관리자가 입찰 단위 옵션을 바꿨을 수 있어, 실제 전송 직전에 최신 목록으로 다시 확인한다
@@ -358,7 +401,7 @@ export default function ProductRegisterPage() {
         // 수정 모드에서 새 이미지를 업로드하지 않으면 null → 백엔드에서 기존 이미지 유지
         flSnList:       uploadedImages.length > 0 ? uploadedImages.map(img => img.flSn) : null,
         // 임시저장이어도 값은 그대로 보낸다 — 백엔드가 prdStatusCd로 판단해 draft 보존 컬럼/AUCTION 중 알맞은 곳에 저장
-        aucStartDt:     toLocalIsoString(startDt),
+        aucStartDt:     startDt ? toLocalIsoString(startDt) : null,
         startNow:       form.startNow,
         aucEndDt:       endDt ? toLocalIsoString(endDt) : null,
         bidUnit:        form.bidUnit,
@@ -429,16 +472,41 @@ export default function ProductRegisterPage() {
     // 이미 지난 날짜/시각인지 확인한다 — 임시저장은 지난 값이어도 그대로 보존하는 게 기존 정책이라 검사하지 않는다.
     if (requirePolicyAgreed) {
       const currentEndDt = calcEndDt();
+      if (!currentEndDt) {
+        auctionRangeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return fail('경매 종료 시간을 10분 단위로 선택해 주세요.');
+      }
       if (currentEndDt && currentEndDt.getTime() <= Date.now()) {
         auctionRangeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return fail('경매 종료 시각이 이미 지났습니다. 경매 기간을 다시 확인해 주세요.');
       }
+      let currentStartDt = null;
       if (!form.startNow && auctionRange.start) {
-        const currentStartDt = new Date(`${auctionRange.start}T${auctionRange.startTime || '00:00'}:00`);
+        currentStartDt = parseSelectedDateTime(
+          auctionRange.start,
+          auctionRange.startTime,
+        );
+        if (!currentStartDt) {
+          auctionRangeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return fail('경매 시작 시간을 10분 단위로 선택해 주세요.');
+        }
         if (currentStartDt.getTime() <= Date.now()) {
           auctionRangeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
           return fail('경매 시작 시각이 이미 지났습니다. 시작 시각을 다시 확인해 주세요.');
         }
+        if (currentEndDt.getTime() <= currentStartDt.getTime()) {
+          auctionRangeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return fail('경매 종료 시각은 시작 시각보다 늦게 선택해 주세요.');
+        }
+      }
+      if (!hasMinimumSameDayDuration({
+        startNow: form.startNow,
+        auctionRange,
+        startDateTime: currentStartDt,
+        endDateTime: currentEndDt,
+      })) {
+        auctionRangeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return fail('같은 날 종료하는 경매는 시작 시각보다 최소 1시간 뒤에 종료해야 합니다.');
       }
     }
     if (Number(form.prdStartAmt) % form.bidUnit !== 0) {
@@ -517,6 +585,7 @@ export default function ProductRegisterPage() {
                 selectedTrade={selectedTrade}
                 endDt={endDt}
                 auctionRange={auctionRange}
+                agreedRef={agreedRef}
               />
             </div>
           </>
@@ -587,39 +656,38 @@ export default function ProductRegisterPage() {
       {/* 하단 버튼 */}
       <div className="row" style={{ justifyContent: 'space-between', padding: '16px 0', marginTop: 16 }}>
         {step > 0 ? (
-          <button type="button" onClick={() => { setStep(0); setSubmitted(false); }} disabled={loading} className="btn btn-ghost">
+          <ActionButton onClick={() => { setStep(0); setSubmitted(false); }} disabled={loading} tone="neutral">
             이전
-          </button>
+          </ActionButton>
         ) : (
           <div />
         )}
 
         <div style={{ display: 'flex', gap: 8 }}>
-          <button type="button" onClick={() => { if (validateStep0(false)) handleSubmit('PRDC0001'); }} disabled={loading} className="btn btn-ghost">
+          <ActionButton onClick={() => { if (validateStep0(false)) handleSubmit('PRDC0001'); }} disabled={loading} tone="neutral">
             임시저장
-          </button>
+          </ActionButton>
 
           {step < 1 ? (
-            <button type="button" onClick={goNext} className="btn btn-primary">
+            <ActionButton onClick={goNext}>
               다음
-            </button>
+            </ActionButton>
           ) : (
-            <button
-              type="button"
+            <ActionButton
               onClick={() => {
                 if (!agreed) {
                   setAlertMsg('등록 정보 확인 및 본문수정이 불가능함에 동의가 필요합니다.');
+                  agreedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                   return;
                 }
                 // 종료 시각이 지났는지 검사는 이미지 업로드가 끝난 뒤(handleSubmit 내부)에서 한다 —
                 // 여기서 미리 검사해봤자 업로드하는 동안 시간이 흘러 의미가 없다.
                 handleSubmit('PRDC0002');
               }}
-              disabled={loading}
-              className="btn btn-primary"
+              loading={loading}
             >
               {loading ? '등록 중...' : '경매 등록'}
-            </button>
+            </ActionButton>
           )}
         </div>
       </div>

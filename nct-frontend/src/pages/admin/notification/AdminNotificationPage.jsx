@@ -7,6 +7,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
+import CommonTabs from '@components/common/CommonTabs';
 import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import { useAdminNotificationSummary } from '@hooks/useAdminNotification';
@@ -110,21 +111,16 @@ const AdminNotificationPage = () => {
         title="알림"
       />
 
-      <div className="admin-noti-tabs">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            className={`admin-noti-tab${tab === t.key ? ' is-active' : ''}`}
-            onClick={() => {
-              setTab(t.key);
-              resetPage();
-            }}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <CommonTabs
+        activeValue={tab}
+        ariaLabel="관리자 알림 유형"
+        className="admin-noti-tabs"
+        items={TABS.map((item) => ({ value: item.key, label: item.label }))}
+        onChange={(value) => {
+          setTab(value);
+          resetPage();
+        }}
+      />
 
       {isLoading && <AdminNotificationSkeleton />}
       {isError && <div className="admin-bjn-state is-error">알림 조회에 실패했습니다. 잠시 후 다시 시도해 주세요.</div>}

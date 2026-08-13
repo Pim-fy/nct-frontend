@@ -11,7 +11,17 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { Navigate, Outlet, Routes, Route, useLocation, useParams } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
-import { MYPAGE_INQUIRY_PATHS, MYPAGE_SECTION_PATHS } from './myPageRoutes';
+import {
+  getServiceTradeChatPath,
+  getServiceTradeDetailPath,
+  MYPAGE_INQUIRY_PATHS,
+  MYPAGE_SECTION_PATHS,
+} from './myPageRoutes';
+import {
+  SERVICE_REQUEST_CREATE_PATH,
+  SERVICE_REQUEST_DETAIL_ROUTE,
+  SERVICE_REQUESTS_PATH,
+} from './serviceRequestRoutes';
 
 // Layouts
 import LandingLayout from '@layouts/LandingLayout';
@@ -67,6 +77,7 @@ import ProviderApplicationStatusPage from '@pages/provider/ProviderApplicationSt
 import NotificationPage from '@pages/user/notification/NotificationPage';
 import QuoteFormPage from '@pages/provider/QuoteFormPage';
 import ReviewListPage from '@pages/user/ReviewListPage';
+import PublicTradeProfilePage from '@pages/user/PublicTradeProfilePage';
 import MyPageReviewLayout from '@layouts/MyPageReviewLayout';
 import LegacyReviewRedirect from '@pages/user/LegacyReviewRedirect';
 
@@ -81,7 +92,18 @@ import ServiceRequestFormPage from '@pages/service/ServiceRequestFormPage';
 import ServiceRequestDetailPage from '@pages/service/ServiceRequestDetailPage';
 import QuoteDetailPage from '@pages/service/QuoteDetailPage';
 import ServiceTradeDetailRoutePage from '@pages/service/ServiceTradeDetailRoutePage';
-import ServiceTradeDetailPreviewPage from '@pages/service/ServiceTradeDetailPreviewPage';
+import {
+  ADMIN_AUCTION_DETAIL_ROUTE,
+  ADMIN_AUCTIONS_ROUTE,
+  ADMIN_OPERATIONS_RECORDS_ROUTE,
+  ADMIN_PROVIDER_APPLICATIONS_ROUTE,
+  ADMIN_REPORT_DETAIL_ROUTE,
+  ADMIN_REPORTS_ROUTE,
+  ADMIN_SERVICE_REQUEST_DETAIL_ROUTE,
+  ADMIN_SERVICE_REQUESTS_ROUTE,
+  ADMIN_SERVICE_TRADE_DETAIL_ROUTE,
+  ADMIN_SETTINGS_ROUTE,
+} from './adminRoutes';
 
 /** 담당자 7 경로 정리: 죽은 목록 주소가 동적 상세 ID로 오인되지 않게 숫자 요청 번호만 허용합니다. */
 const ServiceRequestNumberRoute = () => {
@@ -99,14 +121,16 @@ import AdminNoticeFormPage from '@pages/admin/notice/AdminNoticeFormPage';
 import AdminCategoryPage from '@pages/admin/category/AdminCategoryPage';
 import AdminServiceRequestFormPage from '@pages/admin/category/AdminServiceRequestFormPage';
 import AdminServiceRequestPage from '@pages/admin/service/AdminServiceRequestPage';
+import AdminServiceRequestDetailPage from '@pages/admin/service/AdminServiceRequestDetailPage';
 import AdminProviderApprovalPage from '@pages/admin/provider/AdminProviderApprovalPage';
 import AdminOperationsRecordPage from '@pages/admin/operation/AdminOperationsRecordPage';
 import AdminSystemSettingPage from '@pages/admin/setting/AdminSystemSettingPage';
 import AdminAuctionManagementPage from '@pages/admin/auction/AdminAuctionManagementPage';
+import AdminAuctionDetailPage from '@pages/admin/auction/AdminAuctionDetailPage';
 import AdminNotificationPage from '@pages/admin/notification/AdminNotificationPage';
 import AdminReportManagementPage from '@pages/admin/operation/AdminReportManagementPage';
 import AdminCustomerInquiryManagementPage from '@pages/admin/operation/AdminCustomerInquiryManagementPage';
-import AdminDisputeManagementPage from '@pages/admin/operation/AdminDisputeManagementPage';
+import AdminServiceTradeDetailRoutePage from '@pages/admin/operation/AdminServiceTradeDetailRoutePage';
 import AdminPointExchangePage from '@pages/admin/operation/AdminPointExchangePage';
 import AdminSettlementManagementPage from '@pages/admin/operation/AdminSettlementManagementPage';
 
@@ -165,7 +189,7 @@ const AppRoutes = () => {
       </Route>
 
       {/* 담당자 7 경로 정리: 서비스 요청 상세는 숫자 요청 번호 아래에서만 인증·권한 검사를 시작합니다. */}
-      <Route path="/service-requests/:svcReqSn" element={<ServiceRequestNumberRoute />}>
+      <Route path={SERVICE_REQUEST_DETAIL_ROUTE} element={<ServiceRequestNumberRoute />}>
         <Route element={<ProtectedRoute allowedRoles={['ROLE_USER', 'ROLE_SERVICE']} />}>
           <Route element={<UserLayout />}>
             <Route index element={<ServiceRequestDetailPage />} />
@@ -183,11 +207,7 @@ const AppRoutes = () => {
       {/* 실제 거래 경로의 인증 정책과 분리된 개발용 화면 확인 경로 */}
       {isTradePreviewEnabled && (
         <>
-          <Route
-            path="/service-trades/preview/:tradeId"
-            element={<ServiceTradeDetailPreviewPage />}
-          />
-          <Route path="/trades/preview/:tradeId/chat" element={<TradeChat />} />
+          <Route path="/trades/preview/:tradeId/chat" element={<TradeChat preview />} />
           <Route
             path="/trades/preview/:tradeId"
             element={<TradeDetailBuyer />}
@@ -213,6 +233,8 @@ const AppRoutes = () => {
         )}
       >
         <Route element={<UserLayout />}>
+          {/* 담당자 7 · 공개 거래 프로필: 일반·서비스 모드에서 같은 회원 프로필을 조회합니다. */}
+          <Route path="/users/:userSn" element={<PublicTradeProfilePage />} />
           <Route path="/user/mypage" element={<MyPage />} />
           <Route
             path="/user/mypage/auctions/active"
@@ -237,8 +259,9 @@ const AppRoutes = () => {
           {/* 담당자 7 · F-PROV-006/012~014: 제공자 모드에서도 추가 분야 심사 신청·상태 조회를 허용합니다. */}
           <Route path="/provider/apply" element={<ProviderApplyPage />} />
           <Route path="/provider/applications/status" element={<ProviderApplicationStatusPage />} />
-          <Route path="/service-trades/:tradeId" element={<ServiceTradeDetailRoutePage />} />
-          <Route path="/service-trades/:tradeId/chat" element={<TradeChat />} />
+          {/* 담당자 7 · F-SVC-010: 사용자 서비스 거래는 마이페이지 목록 아래의 단일 계층 경로를 사용합니다. */}
+          <Route path={getServiceTradeDetailPath(':tradeId')} element={<ServiceTradeDetailRoutePage />} />
+          <Route path={getServiceTradeChatPath(':tradeId')} element={<TradeChat />} />
         </Route>
       </Route>
 
@@ -266,10 +289,9 @@ const AppRoutes = () => {
           <Route path="/product/register"        element={<ProductRegisterPage key={location.key} />} />
           <Route path="/product/:prdSn/seller"   element={<ProductDetailSellerPage />} />
 
-          {/* 신고 접수 (담당자3 황성경 · F-COM-018) */}
           {/* 서비스 - 로그인 필요 */}
           {/* 담당자 2 · F-SVC-001~004: 서비스 요청서 작성/임시저장 폼. 라우트 소유자에게 전달 필요. */}
-          <Route path="/service-requests/new" element={<ServiceRequestFormPage />} />
+          <Route path={SERVICE_REQUEST_CREATE_PATH} element={<ServiceRequestFormPage />} />
         </Route>
       </Route>
 
@@ -291,17 +313,20 @@ const AppRoutes = () => {
           <Route path="notices/:noticeId" element={<AdminNoticeFormPage />} />
           <Route path="categories" element={<AdminCategoryPage />} />
           <Route path="categories/:categorySn/form" element={<AdminServiceRequestFormPage />} />
-          <Route path="services" element={<AdminServiceRequestPage />} />
-          <Route path="provider-applications" element={<AdminProviderApprovalPage />} />
-          <Route path="auctions" element={<AdminAuctionManagementPage />} />
-          <Route path="reports" element={<AdminReportManagementPage />} />
+          <Route path={ADMIN_SERVICE_REQUESTS_ROUTE} element={<AdminServiceRequestPage />} />
+          <Route path={ADMIN_SERVICE_REQUEST_DETAIL_ROUTE} element={<AdminServiceRequestDetailPage />} />
+          <Route path={ADMIN_PROVIDER_APPLICATIONS_ROUTE} element={<AdminProviderApprovalPage />} />
+          <Route path={ADMIN_AUCTIONS_ROUTE} element={<AdminAuctionManagementPage />} />
+          <Route path={ADMIN_AUCTION_DETAIL_ROUTE} element={<AdminAuctionDetailPage />} />
+          <Route path={ADMIN_REPORTS_ROUTE} element={<AdminReportManagementPage />} />
+          <Route path={ADMIN_REPORT_DETAIL_ROUTE} element={<AdminReportManagementPage />} />
           <Route path="inquiries" element={<AdminCustomerInquiryManagementPage />} />
-          <Route path="disputes" element={<AdminDisputeManagementPage />} />
+          <Route path={ADMIN_SERVICE_TRADE_DETAIL_ROUTE} element={<AdminServiceTradeDetailRoutePage />} />
           <Route path="exchanges" element={<AdminPointExchangePage />} />
           <Route path="settlements" element={<AdminSettlementManagementPage />} />
           {/* 담당자 7 · F-OPS-011: 담당자 6의 F-OPS-016 화면을 소비해 운영 기록 탐색만 통합합니다. */}
-          <Route path="operations-records" element={<AdminOperationsRecordPage />} />
-          <Route path="system-settings" element={<AdminSystemSettingPage />} />
+          <Route path={ADMIN_OPERATIONS_RECORDS_ROUTE} element={<AdminOperationsRecordPage />} />
+          <Route path={ADMIN_SETTINGS_ROUTE} element={<AdminSystemSettingPage />} />
           {/* 관리자 알림 (담당자6, F-COM-004/005) */}
           <Route path="notifications" element={<AdminNotificationPage />} />
         </Route>
@@ -310,7 +335,7 @@ const AppRoutes = () => {
       <Route element={<ProtectedRoute allowedRoles={['ROLE_SERVICE']} />}>
         <Route element={<UserLayout />}>
           {/* 담당자 5 · F-COM-002: 공개 요청 검색·목록은 제공자 모드 전용입니다. */}
-          <Route path="/service" element={<ServiceListPage />} />
+          <Route path={SERVICE_REQUESTS_PATH} element={<ServiceListPage />} />
         </Route>
       </Route>
       

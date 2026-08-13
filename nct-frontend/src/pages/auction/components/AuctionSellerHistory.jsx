@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { fetchSellerAuctionHistory } from '@api/auctionApi';
 import { toImageUrl } from '@api/fileApi';
+import { ActionButton } from '@components/common/ui';
 
 const HISTORY_PAGE_SIZE = 5;
 const HISTORY_FETCH_SIZE = 60;
@@ -103,16 +104,17 @@ const AuctionSellerHistory = ({
         <div className="grid min-h-28 place-items-center rounded-lg border border-[#e8e8e8] bg-[#f8f8f6] p-5 text-center">
           <div>
             <p className="m-0 text-body-sm text-[#666]">판매자 경매 상품을 불러오지 못했습니다.</p>
-            <button
-              className="mt-3 cursor-pointer rounded-lg border border-[#d9d9d9] bg-white px-3 py-2 text-caption font-bold text-[#444] hover:border-primary hover:text-primary-dark"
-              type="button"
+            <ActionButton
+              className="mt-3"
               onClick={() => {
                 firstHistoryQuery.refetch();
                 if (remainingHistoryQuery.isError) remainingHistoryQuery.refetch();
               }}
+              size="sm"
+              tone="neutral"
             >
               다시 시도
-            </button>
+            </ActionButton>
           </div>
         </div>
       )}

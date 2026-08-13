@@ -17,6 +17,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
+import AdminHistoryTimeline from '@components/admin/AdminHistoryTimeline';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
 import { useSaveAdminCategory } from '@hooks/useAdminCategories';
@@ -26,7 +27,7 @@ import {
   usePublishAdminServiceRequestForm,
   useSaveAdminServiceRequestFormDraft,
 } from '@hooks/useAdminServiceRequestForm';
-import { toast } from '@utils/common';
+import { confirm, formatPointUnitText, toast } from '@utils/common';
 import {
   changeFieldType,
   changeStepType,
@@ -426,16 +427,19 @@ const StepEditor = ({
 };
 
 const PreviewField = ({ field }) => {
-  if (field.type === 'TEXTAREA') return <textarea disabled placeholder={field.placeholder} />;
+  if (field.type === 'TEXTAREA') return <textarea disabled placeholder={formatPointUnitText(field.placeholder)} />;
   if (field.type === 'CHOICE') {
     return <div className="admin-form-preview__mini-options">
-      {field.options.map((option) => <span key={option.optionKey}>{option.label}</span>)}
+      {field.options.map((option) => <span key={option.optionKey}>{formatPointUnitText(option.label)}</span>)}
     </div>;
   }
   if (field.type === 'SELECT') {
-    return <select disabled><option>{field.placeholder || '선택해 주세요'}</option></select>;
+    return <select disabled><option>{formatPointUnitText(field.placeholder) || '선택해 주세요'}</option></select>;
   }
-  return <input disabled placeholder={field.placeholder || '입력해 주세요'} />;
+  if (field.type === 'AMOUNT_TOGGLE') {
+    return <input disabled placeholder={formatPointUnitText(field.placeholder) || 'P 단위 금액을 입력해 주세요'} />;
+  }
+  return <input disabled placeholder={formatPointUnitText(field.placeholder) || '입력해 주세요'} />;
 };
 
 const FormPreview = ({ model }) => (
@@ -461,7 +465,7 @@ const FormPreview = ({ model }) => (
             <div className="admin-form-preview__options">
               {step.options.map((option) => (
                 <div key={option.optionKey}>
-                  <strong>{option.label || '선택지'}</strong>
+                  <strong>{formatPointUnitText(option.label) || '선택지'}</strong>
                   {option.subtitle && <small>{option.subtitle}</small>}
                 </div>
               ))}
@@ -613,7 +617,14 @@ const AdminServiceRequestFormEditor = ({ categorySn, initialResponse }) => {
       setFeedback('발행할 초안이 없습니다. 내용을 수정하고 초안을 먼저 저장해 주세요.');
       return;
     }
-    if (!window.confirm('이 초안을 사용자 견적 요청서로 발행하시겠습니까?')) return;
+    const confirmed = await confirm({
+      title: '이 초안을 발행할까요?',
+      text: '발행하면 사용자 견적 요청서에 적용됩니다.',
+      icon: 'question',
+      confirmButtonText: '발행',
+      confirmTone: 'primary',
+    });
+    if (!confirmed) return;
     setFeedback('');
     try {
       const published = await publishMutation.mutateAsync({
@@ -637,7 +648,12 @@ const AdminServiceRequestFormEditor = ({ categorySn, initialResponse }) => {
     const message = dirty
       ? '저장하지 않은 변경 내용과 현재 초안을 함께 폐기하시겠습니까?'
       : `초안 v${model.formVersion}을 폐기하시겠습니까? 발행 중인 버전은 유지됩니다.`;
-    if (!window.confirm(message)) return;
+    const confirmed = await confirm({
+      title: '초안을 폐기할까요?',
+      text: message,
+      confirmButtonText: '폐기',
+    });
+    if (!confirmed) return;
     setFeedback('');
     try {
       const discarded = await discardMutation.mutateAsync({
@@ -795,6 +811,7 @@ const AdminServiceRequestFormEditor = ({ categorySn, initialResponse }) => {
         </main>
         <FormPreview model={{ ...model, categoryName: categoryForm.name }} />
       </div>
+      <AdminHistoryTimeline referenceSn={categorySn} referenceType="CATEGORY" />
     </div>
   );
 };

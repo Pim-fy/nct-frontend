@@ -1,8 +1,9 @@
 import React from "react";
+import { ActionButton, CategoryTag } from '@components/common/ui';
 
 const DEAL_TYPE_STYLE = {
-  goods:   { label: "물건거래", color: "#0064ff" },
-  service: { label: "서비스",   color: "#00ccd0" },
+  goods:   { label: "물건거래", tone: "info" },
+  service: { label: "서비스", tone: "success" },
 };
 
 export default function ReviewableItemCard({
@@ -35,12 +36,9 @@ export default function ReviewableItemCard({
       {/* 내용 */}
       <div className="flex-1 min-w-0 flex flex-col gap-2">
         <div className="flex items-center gap-2 flex-wrap">
-          <span
-            className="shrink-0 inline-flex items-center h-[26px] px-2 rounded-[5px] text-[13px] font-medium border"
-            style={{ color: typeStyle.color, borderColor: typeStyle.color }}
-          >
+          <CategoryTag className="shrink-0" tone={typeStyle.tone} variant="outline">
             {typeStyle.label}
-          </span>
+          </CategoryTag>
           <button
             type="button"
             onClick={onViewTarget}
@@ -51,6 +49,7 @@ export default function ReviewableItemCard({
         </div>
         <p className="text-[13px] md:text-[14px] text-[#4e4e4e] m-0">
           <span className="font-bold">{partyLabel}</span>
+          {partyName ? <span className="ml-1">{partyName}</span> : null}
           <span className="mx-2 text-[#d9d9d9]">|</span>
           <span className="font-bold">완료일</span>
           <span className="ml-1">{completedDate}</span>
@@ -58,14 +57,14 @@ export default function ReviewableItemCard({
       </div>
 
       {/* 액션 버튼 */}
-      <button
-        type="button"
+      <ActionButton
+        className="shrink-0"
         onClick={onAction}
-        className="btn btn-primary shrink-0"
-        style={{ height: 38, minWidth: 84, fontSize: 14 }}
+        size="sm"
+        style={{ minWidth: 84 }}
       >
         {actionLabel}
-      </button>
+      </ActionButton>
     </div>
   );
 }

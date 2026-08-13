@@ -13,7 +13,7 @@ export const TRADE_STATUS_LABEL = {
 export const TRADE_LABEL = {
   TRDC0009: '배송',
   TRDC0010: '직거래',
-  TRDC0020: '둘 다 가능',
+  TRDC0015: '둘 다 가능',
 };
 
 export const STATUS_LABEL = {
@@ -34,8 +34,8 @@ export const STATUS_BADGE = {
 // 계속 PRDC0002로 남아있어서 유찰·낙찰·취소 여부를 못 담는다. 상태 표시가 필요한 화면은
 // auctionStatus가 있으면 이쪽을, 없으면(임시저장 등 경매 자체가 없는 경우) 위 STATUS_LABEL을 쓴다.
 export const AUC_STATUS_LABEL = {
-  AUCC0001: '준비',
-  AUCC0002: '진행 중',
+  AUCC0001: '예약',
+  AUCC0002: '경매중',
   AUCC0003: '낙찰',
   AUCC0004: '유찰',
   AUCC0005: '취소',

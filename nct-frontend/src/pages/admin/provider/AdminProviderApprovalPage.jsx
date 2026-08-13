@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import AdminDetailDrawer from '@components/admin/AdminDetailDrawer';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
+import AdminHistoryTimeline from '@components/admin/AdminHistoryTimeline';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminTable from '@components/admin/AdminTable';
@@ -12,6 +13,8 @@ import {
   useAdminProviderApplications,
   useApproveProviderApplication,
   useRejectProviderApplication,
+  useRestoreProviderPermission,
+  useStopProviderPermission,
 } from '@hooks/useAdminProviderApplications';
 import useClientPagination from '@hooks/useClientPagination';
 import { getAdminProviderApplicationFileDownloadUrl } from '@api/providerApplicationApi';
@@ -46,6 +49,8 @@ const TYPE_NAMES = {
   PRVC0011: '갱신',
 };
 const PAGE_SIZE = ADMIN_PAGE_SIZE;
+const createRequestId = () => globalThis.crypto?.randomUUID?.()
+  ?? `provider-permission-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 const toDisplayItem = (item) => ({
   ...item,
@@ -67,6 +72,14 @@ const toDisplayItem = (item) => ({
     }).format(new Date(item.requestedAt))
     : '-',
   reason: item.processedReason ?? item.rejectReason,
+  permissionLabel: item.permissionStatusCode === 'PRVC0006' && item.permissionUseYn === 'Y'
+    ? '권한 사용 중'
+    : item.permissionStatusCode === 'PRVC0007' || item.permissionUseYn === 'N'
+      ? '권한 정지'
+      : item.permissionStatusName ?? null,
+  permissionTone: item.permissionStatusCode === 'PRVC0006' && item.permissionUseYn === 'Y'
+    ? 'success'
+    : 'danger',
   tone: item.statusCode === 'PRVC0003'
     ? 'success'
     : item.statusCode === 'PRVC0004'
@@ -86,7 +99,12 @@ const AdminProviderApprovalPage = () => {
   const applicationsQuery = useAdminProviderApplications(statusCode);
   const approveMutation = useApproveProviderApplication();
   const rejectMutation = useRejectProviderApplication();
-  const isPending = approveMutation.isPending || rejectMutation.isPending;
+  const stopPermissionMutation = useStopProviderPermission();
+  const restorePermissionMutation = useRestoreProviderPermission();
+  const isPending = approveMutation.isPending
+    || rejectMutation.isPending
+    || stopPermissionMutation.isPending
+    || restorePermissionMutation.isPending;
   const applies = useMemo(
     () => (applicationsQuery.data ?? []).map(toDisplayItem),
     [applicationsQuery.data],
@@ -168,12 +186,40 @@ const AdminProviderApprovalPage = () => {
     }
   };
 
+  const changePermission = async (active) => {
+    if (!selected || !rejectReason.trim()) return;
+    setFeedback('');
+    try {
+      const mutation = active ? restorePermissionMutation : stopPermissionMutation;
+      await mutation.mutateAsync({
+        applicationSn: selected.id,
+        reason: rejectReason.trim(),
+        requestId: createRequestId(),
+      });
+      toast({
+        icon: 'success',
+        title: `제공자 권한을 ${active ? '복구' : '정지'}했습니다.`,
+        timer: 1800,
+      });
+      setRejectReason('');
+      closeDetail();
+    } catch (error) {
+      setFeedback(error?.response?.data?.message || '제공자 권한을 변경하지 못했습니다.');
+    }
+  };
+
   const columns = useMemo(() => [
     { key: 'id', label: '신청번호' },
-    { key: 'name', label: '신청자', className: 'admin-provider-list__applicant', render: (value) => <strong>{value}</strong> },
-    { key: 'category', label: '카테고리' },
+    { key: 'name', label: '신청자', className: 'admin-provider-list__applicant admin-table__compact-text', render: (value) => <strong>{value}</strong> },
+    { key: 'category', label: '카테고리', className: 'admin-table__compact-text' },
     { key: 'type', label: '신청유형' },
     { key: 'date', label: '신청일' },
+    {
+      key: 'processedAt',
+      label: '처리일',
+      className: 'admin-table__processed-date',
+      render: formatDateTime,
+    },
     {
       key: 'status', label: '심사 상태',
       render: (value, row) => <AdminStatusBadge tone={row.tone}>{value}</AdminStatusBadge>,
@@ -325,6 +371,17 @@ const AdminProviderApprovalPage = () => {
                 </AdminStatusBadge>
               </dd>
 
+              {selected.statusCode === 'PRVC0003' && selected.permissionLabel && (
+                <>
+                  <dt>제공자 권한</dt>
+                  <dd>
+                    <AdminStatusBadge tone={selected.permissionTone}>
+                      {selected.permissionLabel}
+                    </AdminStatusBadge>
+                  </dd>
+                </>
+              )}
+
               {selected.processedAt && (
                 <>
                   <dt>처리자</dt>
@@ -345,6 +402,7 @@ const AdminProviderApprovalPage = () => {
                 <label className="admin-provider-detail__reason">
                   처리 사유
                   <textarea
+                    className="admin-reason-textarea"
                     maxLength="4000"
                     onChange={(event) => setRejectReason(event.target.value)}
                     placeholder="승인 또는 반려 처리 사유를 입력합니다."
@@ -373,6 +431,47 @@ const AdminProviderApprovalPage = () => {
               </>
             )}
 
+            {selected.statusCode === 'PRVC0003' && selected.permissionSn != null && (
+              <>
+                <label className="admin-provider-detail__reason">
+                  권한 변경 사유
+                  <textarea
+                    className="admin-reason-textarea"
+                    maxLength="1000"
+                    onChange={(event) => setRejectReason(event.target.value)}
+                    placeholder="권한 정지 또는 복구 사유를 입력하세요."
+                    value={rejectReason}
+                  />
+                </label>
+                <div className="admin-provider-detail__actions">
+                  {selected.permissionStatusCode === 'PRVC0006'
+                    && selected.permissionUseYn === 'Y' ? (
+                      <button
+                        className="btn btn-danger"
+                        disabled={isPending || !rejectReason.trim()}
+                        onClick={() => changePermission(false)}
+                        type="button"
+                      >
+                        제공자 권한 정지
+                      </button>
+                    ) : (
+                      <button
+                        className="btn btn-primary"
+                        disabled={isPending || !rejectReason.trim()}
+                        onClick={() => changePermission(true)}
+                        type="button"
+                      >
+                        제공자 권한 복구
+                      </button>
+                    )}
+                </div>
+              </>
+            )}
+            <AdminHistoryTimeline
+              referenceSn={selected.id}
+              referenceType="PROVIDER_APPLICATION"
+              title="제공자 신청 처리 이력"
+            />
           </section>
         </AdminDetailDrawer>
       )}

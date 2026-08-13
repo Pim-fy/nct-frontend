@@ -4,8 +4,8 @@ import api from './axios';
 export const fetchMyProviderProfile = () =>
   api.get('/providers/me/profile').then((response) => response.data.data);
 
-export const updateMyProviderProfile = ({ introduction, availableArea }) =>
-  api.put('/providers/me/profile', { introduction, availableArea })
+export const updateMyProviderProfile = ({ introduction, availableArea, profileFileSn }) =>
+  api.put('/providers/me/profile', { introduction, availableArea, profileFileSn })
     .then((response) => response.data.data);
 
 /** 제공자 본인의 카테고리별 견적 작성 승인 여부를 서버 기준으로 확인한다. */

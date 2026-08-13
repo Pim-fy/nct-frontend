@@ -1,4 +1,5 @@
 export const SORT_OPTIONS = [
+  { value: 'popular', label: '인기순' },
   { value: 'deadline', label: '마감 임박순' },
   { value: 'latest', label: '최신 등록순' },
   { value: 'priceAsc', label: '가격 낮은순' },

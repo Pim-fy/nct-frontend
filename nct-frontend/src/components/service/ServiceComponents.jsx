@@ -12,6 +12,12 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toImageUrl } from '@api/fileApi';
+import {
+  ActionButton,
+  CategoryTag,
+  DomainStatus,
+  StatusBadge,
+} from '@components/common/ui';
 import './ServicePages.css';
 
 export const ServiceSearchBar = ({ keyword, onKeywordChange, onSubmit }) => (
@@ -133,8 +139,10 @@ export const ServiceFilterPanel = ({
 const ServiceRequestCard = ({ request }) => (
   <article className="service-request-card">
     <div className="service-request-card__top">
-      <span>{request.category}</span>
-      <strong className={request.status === '마감임박' ? 'is-urgent' : ''}>{request.status}</strong>
+      <CategoryTag tone="info" variant="soft">{request.category}</CategoryTag>
+      <DomainStatus tone={request.status === '마감임박' ? 'danger' : 'success'} variant="soft">
+        {request.status}
+      </DomainStatus>
     </div>
     <h3>{request.title}</h3>
     <p>{request.summary}</p>
@@ -167,7 +175,9 @@ const ProviderCard = ({ provider }) => (
       <div className="service-provider-card__rating"><Star aria-hidden="true" />{provider.rating} · 리뷰 {provider.reviewCount}개</div>
       <p>{provider.intro}</p>
       <div className="service-provider-card__tags">
-        {provider.categories.map((category) => <span key={category}>{category}</span>)}
+        {provider.categories.map((category) => (
+          <CategoryTag key={category} tone="info" variant="soft">{category}</CategoryTag>
+        ))}
       </div>
       <small>
         {[
@@ -204,15 +214,17 @@ export const ProviderProfile = ({
   <div className="provider-public-layout">
     <aside className="provider-public-card">
       {/* 담당자 7 · F-COM-015: 공개 제공자 프로필에서 공통 신고 접수 모달을 엽니다. */}
-      <button
+      <ActionButton
         aria-label={`${provider.name} 제공자 신고하기`}
         className="provider-public-report-button"
         onClick={onReport}
-        type="button"
+        preserveSize
+        size="sm"
+        tone="danger-outline"
       >
         <Flag aria-hidden="true" />
         신고
-      </button>
+      </ActionButton>
       <div className="provider-public-avatar" aria-hidden="true">
         {provider.profileImageUrl
           ? <img src={toImageUrl(provider.profileImageUrl)} alt="" />
@@ -220,11 +232,17 @@ export const ProviderProfile = ({
       </div>
       <div className="provider-public-name">
         <h1>{provider.name}</h1>
-        {provider.verified && <span><BadgeCheck aria-hidden="true" />승인</span>}
+        {provider.verified && (
+          <StatusBadge tone="success" variant="soft">
+            <BadgeCheck aria-hidden="true" />승인
+          </StatusBadge>
+        )}
       </div>
       <p className="provider-public-rating"><Star aria-hidden="true" />{provider.rating} <span>리뷰 {provider.reviewCount}개</span></p>
       <div className="provider-public-tags">
-        {provider.categories.map((category) => <span key={category}>{category}</span>)}
+        {provider.categories.map((category) => (
+          <CategoryTag key={category} tone="info" variant="soft">{category}</CategoryTag>
+        ))}
       </div>
       <p className="provider-public-stats">
         {provider.regions.join(', ')}
@@ -263,7 +281,9 @@ export const ProviderProfile = ({
                 ? <img src={toImageUrl(portfolio.imageUrl)} alt="" className="provider-portfolio-thumbnail" />
                 : <span><BriefcaseBusiness aria-hidden="true" /></span>}
               <strong>{portfolio.title}</strong>
-              {portfolio.category && <small>{portfolio.category}</small>}
+              {portfolio.category && (
+                <CategoryTag tone="info" variant="soft">{portfolio.category}</CategoryTag>
+              )}
               <p>{portfolio.description}</p>
             </button>
           )) : <p className="provider-panel-empty">등록된 포트폴리오가 없습니다.</p>}
@@ -279,7 +299,12 @@ export const PortfolioModal = ({ closeButtonRef, onClose, portfolio }) => (
   }}>
     <section aria-labelledby="portfolio-title" aria-modal="true" className="service-modal__panel service-modal__panel--portfolio" role="dialog">
       <div className="service-modal__heading">
-        <div>{portfolio.category && <span>{portfolio.category}</span>}<h2 id="portfolio-title">{portfolio.title}</h2></div>
+        <div>
+          {portfolio.category && (
+            <CategoryTag tone="info" variant="soft">{portfolio.category}</CategoryTag>
+          )}
+          <h2 id="portfolio-title">{portfolio.title}</h2>
+        </div>
         <button aria-label="포트폴리오 창 닫기" onClick={onClose} ref={closeButtonRef} type="button"><X aria-hidden="true" /></button>
       </div>
       {portfolio.imageUrl

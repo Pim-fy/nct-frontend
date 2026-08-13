@@ -3,22 +3,25 @@
 // - 절대좌표 → 반응형 전환.
 //   메인 폼(좌)/소셜+알림(우) → xl 이상 가로 배치, 그 이하 세로 스택.
 //   폼 내부 필드: sm 이상 2열 그리드, 그 이하 단일 열.
-import React, { useEffect, useRef, useState } from "react";
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronUp, ChevronDown, Eye, EyeOff } from "lucide-react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import DaumPostcode from "react-daum-postcode";
 import { toast, confirm } from "@utils/common";
 import { formatPhoneNumber, toPhoneDigits } from "@utils/phoneNumber";
 import AlertModal from "@components/common/AlertModal";
+import { ActionButton } from "@components/common/ui";
 import { assets } from "@components/mypage/assets";
 import { updateProfile, changePassword, getOauthLinks, unlinkOauth } from "@api/memberApi";
 import { uploadImage, toImageUrl } from "@api/fileApi";
 import { useAuth } from "@hooks/useAuth";
+import { isValidNewPassword, PASSWORD_POLICY_GUIDE } from "@utils/passwordPolicy";
 import { MEMBER_PROFILE_QUERY_KEY, useMemberProfile } from "@hooks/useMemberProfile";
 import { useNotificationSettings, useSaveNotificationSettings } from "@hooks/useNotification";
 import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
 import MyPagePanel from "@components/mypage/MyPagePanel";
 import ProfileDeliveryAddressManager from "@components/mypage/ProfileDeliveryAddressManager";
+import WithdrawConfirmModal from "@components/mypage/WithdrawConfirmModal";
 
 const DOMAIN_LABELS = [
   { key: 'AUCTION', label: '경매' },
@@ -57,6 +60,7 @@ export default function MyPageProfileEdit({ user }) {
     bankName: "",
     accountNo: "",
   });
+  const [passwordVisibility, setPasswordVisibility] = useState({ currentPassword: false, newPassword: false, newPasswordConfirm: false });
   const [addressSearchOpen, setAddressSearchOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
@@ -69,6 +73,8 @@ export default function MyPageProfileEdit({ user }) {
   const [saveAlertOpen, setSaveAlertOpen] = useState(false);
   const [profileSaveAlertOpen, setProfileSaveAlertOpen] = useState(false);
   const [photoUploadAlertOpen, setPhotoUploadAlertOpen] = useState(false);
+  // @ai_generated: F-AUTH-011/POL-AUTH-013 - 회원 탈퇴 버튼 신설(ISS-026)
+  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
   const serverEvents = notifyQuery.data?.events ?? [];
   const notifyEvents = notifyEdits ?? serverEvents;
 
@@ -192,6 +198,10 @@ export default function MyPageProfileEdit({ user }) {
     }
     if (form.newPassword !== form.newPasswordConfirm) {
       toast({ icon: "error", title: "새 비밀번호가 일치하지 않습니다." });
+      return;
+    }
+    if (!isValidNewPassword(form.newPassword)) {
+      toast({ icon: "error", title: PASSWORD_POLICY_GUIDE });
       return;
     }
     setIsChangingPassword(true);
@@ -346,11 +356,12 @@ export default function MyPageProfileEdit({ user }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block font-bold text-[14px] text-[#404040] mb-0.5">이메일</label>
-              <div className={FIELD_CLASS + " flex items-center text-[#404040]"}>
-                {user?.email
-                  ? user.email.replace(/(?<=.{2}).(?=.*@)/g, "*")
-                  : "ks***@***.com"}
-              </div>
+              <input
+                className={FIELD_CLASS + " bg-[#f5f5f5] text-[#707070] cursor-default"}
+                type="email"
+                value={profileQuery.data?.email || user?.email || ""}
+                readOnly
+              />
             </div>
             <div>
               <label className="block font-bold text-[14px] text-[#404040] mb-0.5">
@@ -373,43 +384,40 @@ export default function MyPageProfileEdit({ user }) {
             <>
               <div>
                 <label className="block font-bold text-[14px] text-[#404040] mb-0.5">현재 비밀번호</label>
-                <input
-                  type="password"
-                  className={FIELD_CLASS}
-                  value={form.currentPassword}
-                  onChange={handleChange("currentPassword")}
-                  placeholder="********"
-                />
+                <div className="relative">
+                  <input type={passwordVisibility.currentPassword ? "text" : "password"} className={`${FIELD_CLASS} pr-11`} value={form.currentPassword} onChange={handleChange("currentPassword")} placeholder="현재 비밀번호" />
+                  <button type="button" onClick={() => setPasswordVisibility((previous) => ({ ...previous, currentPassword: !previous.currentPassword }))} aria-label={passwordVisibility.currentPassword ? "현재 비밀번호 숨기기" : "현재 비밀번호 보기"} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600">
+                    {passwordVisibility.currentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block font-bold text-[14px] text-[#404040] mb-0.5">새 비밀번호</label>
-                <input
-                  type="password"
-                  className={FIELD_CLASS}
-                  value={form.newPassword}
-                  onChange={handleChange("newPassword")}
-                  placeholder="********"
-                />
+                <div className="relative">
+                  <input type={passwordVisibility.newPassword ? "text" : "password"} className={`${FIELD_CLASS} pr-11`} value={form.newPassword} onChange={handleChange("newPassword")} placeholder="8~64자, 2종 이상 조합" />
+                  <button type="button" onClick={() => setPasswordVisibility((previous) => ({ ...previous, newPassword: !previous.newPassword }))} aria-label={passwordVisibility.newPassword ? "새 비밀번호 숨기기" : "새 비밀번호 보기"} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600">
+                    {passwordVisibility.newPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block font-bold text-[14px] text-[#404040] mb-0.5">새 비밀번호 확인</label>
-                <input
-                  type="password"
-                  className={FIELD_CLASS}
-                  value={form.newPasswordConfirm}
-                  onChange={handleChange("newPasswordConfirm")}
-                  placeholder="********"
-                />
+                <div className="relative">
+                  <input type={passwordVisibility.newPasswordConfirm ? "text" : "password"} className={`${FIELD_CLASS} pr-11`} value={form.newPasswordConfirm} onChange={handleChange("newPasswordConfirm")} placeholder="새 비밀번호를 다시 입력해주세요" />
+                  <button type="button" onClick={() => setPasswordVisibility((previous) => ({ ...previous, newPasswordConfirm: !previous.newPasswordConfirm }))} aria-label={passwordVisibility.newPasswordConfirm ? "새 비밀번호 확인 숨기기" : "새 비밀번호 확인 보기"} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600">
+                    {passwordVisibility.newPasswordConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
               <div className="flex justify-end">
-                <button
-                  type="button"
+                <ActionButton
                   onClick={handleChangePassword}
                   disabled={isChangingPassword}
-                  className="btn btn-outline btn-sm"
+                  size="sm"
+                  tone="outline"
                 >
                   {isChangingPassword ? "변경 중..." : "비밀번호 변경"}
-                </button>
+                </ActionButton>
               </div>
             </>
           ) : (
@@ -435,13 +443,13 @@ export default function MyPageProfileEdit({ user }) {
                 readOnly
                 value={form.address}
               />
-              <button
-                type="button"
+              <ActionButton
                 onClick={() => setAddressSearchOpen(true)}
-                className="btn btn-dark btn-sm"
+                size="sm"
+                tone="neutral"
               >
                 주소검색
-              </button>
+              </ActionButton>
             </div>
             {form.zip && <p className="mt-1 text-[12px] text-[#969696]">우편번호 {form.zip}</p>}
           </div>
@@ -475,25 +483,31 @@ export default function MyPageProfileEdit({ user }) {
                   value={form.accountNo}
                   onChange={handleChange("accountNo")}
                 />
-                <button
-                  type="button"
+                <ActionButton
                   onClick={handleDeleteAccount}
                   disabled={!form.bankName && !form.accountNo}
-                  className="btn btn-danger btn-sm"
+                  size="sm"
+                  tone="danger"
                 >
                   삭제
-                </button>
+                </ActionButton>
               </div>
             </div>
           </div>
 
-          <div className="flex justify-end pt-2">
+          <div className="flex justify-between items-center pt-2">
             <button
+              type="button"
+              onClick={() => setWithdrawModalOpen(true)}
+              className="text-[13px] text-[#969696] underline hover:text-[#a32d2d]"
+            >
+              회원 탈퇴
+            </button>
+            <ActionButton
               type="submit"
-              className="btn btn-primary"
             >
               저장
-            </button>
+            </ActionButton>
           </div>
         </form>
       </MyPagePanel>
@@ -513,16 +527,16 @@ export default function MyPageProfileEdit({ user }) {
                 return (
                   <div key={social.key} className="flex flex-col items-center gap-2">
                     <p className="text-[13px] text-black font-medium">{social.label}</p>
-                    <button
-                      type="button"
+                    <ActionButton
                       onClick={() =>
                         linked ? handleUnlink(social.key, social.label) : handleLink(social.key)
                       }
                       disabled={oauthLinksQuery.isLoading || unlinkMutation.isPending}
-                      className={linked ? "btn btn-ghost btn-sm" : "btn btn-outline btn-sm"}
+                      size="sm"
+                      tone={linked ? "neutral" : "outline"}
                     >
                       {linked ? "연동됨" : "연동하기"}
-                    </button>
+                    </ActionButton>
                   </div>
                 );
               })}
@@ -642,13 +656,13 @@ export default function MyPageProfileEdit({ user }) {
           <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-[#f0f0f0] px-5 py-3">
               <p className="font-bold text-[15px] text-[#404040]">주소 검색</p>
-              <button
-                type="button"
+              <ActionButton
                 onClick={() => setAddressSearchOpen(false)}
-                className="btn btn-ghost btn-sm"
+                size="sm"
+                tone="neutral"
               >
                 닫기
-              </button>
+              </ActionButton>
             </div>
             <DaumPostcode autoClose={false} onComplete={handleAddressComplete} />
           </div>
@@ -669,6 +683,11 @@ export default function MyPageProfileEdit({ user }) {
         open={photoUploadAlertOpen}
         message={"사진이 업로드되었습니다.\n저장을 눌러야 반영됩니다."}
         onClose={() => setPhotoUploadAlertOpen(false)}
+      />
+      <WithdrawConfirmModal
+        open={withdrawModalOpen}
+        onClose={() => setWithdrawModalOpen(false)}
+        passwordChangeable={passwordChangeable}
       />
     </>
   );

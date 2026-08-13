@@ -26,6 +26,10 @@ export const withdrawQuote = (quoteId) =>
 export const getMyQuotes = (params) =>
   api.get('/quotes/me', { params, skipServerErrorRedirect: true }).then((res) => res.data);
 
+/** 담당자 7 연결 · F-SVC-005~008: 제공자 본인 견적 상세 조회 */
+export const getMyQuote = (quoteId) =>
+  api.get(`/quotes/me/${quoteId}`, { skipServerErrorRedirect: true }).then((res) => res.data);
+
 /** 제공자 대시보드용 활성 견적 수 조회 */
 export const getMyQuoteSummary = () =>
   api.get('/quotes/me/summary', { skipServerErrorRedirect: true }).then((res) => res.data);

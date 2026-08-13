@@ -9,6 +9,7 @@
 import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import arrowDark from "@assets/img/arrowDark.png";
+import { ActionButton } from "@components/common/ui";
 import { assets } from "./assets";
 import AuctionCard from "./AuctionCard";
 
@@ -38,7 +39,7 @@ export default function MobileLandingSections({
   const isAuctionLoading = activeTab === "new" ? newAuctionLoading : closingAuctionLoading;
 
   return (
-    <div className="flex flex-col gap-8 lg:hidden">
+    <div className="flex flex-col gap-8 pb-10 lg:hidden">
       {/* ── 히어로: 배경 이미지 + 타이틀 + 태그 + 검색 + 슬라이드 배너 ── */}
       <section className="relative overflow-hidden">
         {/* 배경 이미지 + 오버레이 */}
@@ -74,13 +75,14 @@ export default function MobileLandingSections({
                     처음이어도 흐름만 알면 어렵지<br />않아요.
                   </p>
                   <p className="text-[12px] text-black mt-1">경매와 서비스 요청, 시작부터 완료까지 한눈에 확인하세요.</p>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); navigate("/customersupport/guide"); }}
-                    className="mt-3 bg-[#0064ff] text-white font-bold text-[13px] px-4 py-2 rounded-[10px] cursor-pointer border-none"
+                  <ActionButton
+                    className="mt-3"
+                    onClick={(event) => event.stopPropagation()}
+                    size="sm"
+                    to="/customersupport/guide"
                   >
                     이용가이드 보기
-                  </button>
+                  </ActionButton>
                 </div>
               </div>
               {/* 인디케이터 */}
@@ -183,15 +185,16 @@ export default function MobileLandingSections({
           {!isAuctionLoading && !isAuctionError && auctionItems.length === 0 && <p className="w-full px-4 py-14 text-center text-[16px] text-[#666]">표시할 경매가 없습니다.</p>}
         </div>
         <div className="mt-2 flex justify-center">
-          <button
-            type="button"
-            onClick={() => navigate(activeTab === "new"
+          <ActionButton
+            to={activeTab === "new"
               ? "/auction?sort=latest"
-              : "/auction?sort=deadline&endingSoonOnly=true")}
-            className="rounded-full border border-[#ebebeb] bg-[#f3f5fa] px-5 py-2 text-[13px] text-[#4e4e4e]"
+              : "/auction?sort=deadline&endingSoonOnly=true"}
+            tone="neutral"
+            size="sm"
+            className="rounded-full px-5"
           >
             더보기 ›
-          </button>
+          </ActionButton>
         </div>
       </section>
 

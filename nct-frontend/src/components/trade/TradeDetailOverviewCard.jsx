@@ -1,6 +1,16 @@
 import { toImageUrl } from '@api/fileApi';
+import { ActionButton, DomainStatus } from '@components/common/ui';
 import TradeProductCard from '@components/trade/TradeProductCard';
 import TradeTrustSummary from '@components/trade/TradeTrustSummary';
+import { Link, useLocation } from 'react-router-dom';
+
+const TRADE_STATUS_TONES = {
+  'trade-status--progress': 'info',
+  'trade-status--pending': 'warning',
+  'trade-status--complete': 'success',
+  'trade-status--problem': 'danger',
+  'trade-status--canceled': 'neutral',
+};
 
 /**
  * 배송·직거래 상세에서 공통으로 사용하는 1영역이다.
@@ -14,15 +24,19 @@ export default function TradeDetailOverviewCard({
   statusMessages,
   counterpartTitle,
   auctionId,
+  onReport,
 }) {
+  const location = useLocation();
+  const returnTo = `${location.pathname}${location.search}${location.hash}`;
+
   return (
     <section className="trade-detail-card">
       <div className="trade-detail-card__block">
         <div className="mb-3 flex items-center justify-between gap-3">
           <h3 style={{ margin: 0 }}>거래 진행 안내</h3>
-          <span className={`trade-status ${statusClassName}`}>
+          <DomainStatus tone={TRADE_STATUS_TONES[statusClassName] ?? 'neutral'}>
             {statusLabel}
-          </span>
+          </DomainStatus>
         </div>
         {statusMessages.map((message, index) => (
           <p key={`${message}-${index}`}>{message}</p>
@@ -41,7 +55,14 @@ export default function TradeDetailOverviewCard({
       />
 
       <div className="trade-detail-card__block">
-        <h3>{counterpartTitle}</h3>
+        <div className="trade-counterpart__heading">
+          <h3>{counterpartTitle}</h3>
+          {onReport && (
+            <ActionButton onClick={onReport} size="sm" tone="danger-outline">
+              신고하기
+            </ActionButton>
+          )}
+        </div>
         <div className="trade-counterpart">
           <div className="trade-counterpart__profile">
             <div className="trade-counterpart__avatar">
@@ -50,7 +71,24 @@ export default function TradeDetailOverviewCard({
                 : (trade.counterpart?.slice(0, 1) ?? '?')}
             </div>
             <div>
-              <p>{trade.counterpart}</p>
+              <p>
+                {trade.counterpartUserId
+                  ? (
+                    <Link
+                      className="text-inherit underline-offset-4 hover:text-primary hover:underline"
+                      state={{
+                        tradeProfileReturn: {
+                          label: '거래 상세로 돌아가기',
+                          to: returnTo,
+                        },
+                      }}
+                      to={`/users/${trade.counterpartUserId}`}
+                    >
+                      {trade.counterpart}
+                    </Link>
+                  )
+                  : trade.counterpart}
+              </p>
               {trade.counterpartJoinedLabel !== '-' && (
                 <>
                   <p className="trade-detail-card__muted">{trade.counterpartJoinedLabel}</p>

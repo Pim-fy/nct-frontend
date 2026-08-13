@@ -3,7 +3,7 @@
 // 화면 경로: /user/mypage/services/requests (API /service-requests/me와 구분)
 // 상품 판매 내역(MyProductList.jsx)과 동일한 마이페이지 공통 목록 컴포넌트를 사용한다.
 import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { ClipboardList, MessageSquareText } from 'lucide-react';
 import { deleteServiceRequest } from '@api/serviceRequestApi';
 import { toImageUrl } from '@api/fileApi';
@@ -18,7 +18,12 @@ import MyPageListSkeleton from '@components/skeleton/MyPageListSkeleton';
 import Pagination from '@components/common/Pagination';
 import Toast from '@components/common/Toast';
 import ConfirmModal from '@components/common/ConfirmModal';
+import { ActionButton } from '@components/common/ui';
 import MyPageMobileCard from '@components/mypage/MyPageMobileCard';
+import {
+  getServiceRequestDetailPath,
+  SERVICE_REQUEST_CREATE_PATH,
+} from '@/routes/serviceRequestRoutes';
 
 const FILTERS = [
   { label: '전체',     value: null },
@@ -43,14 +48,13 @@ const STATUS_BADGE = {
 };
 
 function fmtBudget(amt) {
-  if (amt == null) return '미정';
+  if (amt == null) return '협의 후 결정';
   return Number(amt).toLocaleString('ko-KR') + 'P';
 }
 
 const PAGE_SIZE = 10;
 
 export default function MyServiceRequestListPage({ embedded = false }) {
-  const navigate = useNavigate();
   // 전역 브레드크럼 (BJN, 260805): 상세로 이동할 때 접근 경로(state.from)를 전달하기 위해 사용
   const location = useLocation();
   const [filter, setFilter] = useState(null);
@@ -102,7 +106,7 @@ export default function MyServiceRequestListPage({ embedded = false }) {
   return (
     <div className={embedded ? '' : 'container seller-page'}>
       <MyPageListSectionLayout
-        title="견적 요청"
+        title="견적 요청 내역"
         summaryItems={[
           { label: '공개 중',   value: openSummary?.total ?? 0 },
           { label: '매칭완료', value: matchedSummary?.total ?? 0 },
@@ -132,9 +136,9 @@ export default function MyServiceRequestListPage({ embedded = false }) {
         <MyPageListEmpty
           message="해당 조건의 서비스 요청이 없습니다."
           action={filter === null ? (
-            <button type="button" onClick={() => navigate('/service-requests/new', { state: { from: location.pathname + location.search } })} className="btn btn-primary">
+            <ActionButton to={SERVICE_REQUEST_CREATE_PATH} state={{ from: location.pathname + location.search }}>
               견적 요청서 작성하기
-            </button>
+            </ActionButton>
           ) : null}
         />
       ) : (
@@ -168,29 +172,29 @@ export default function MyServiceRequestListPage({ embedded = false }) {
                     // 작성재개·삭제 폭을 그리드로 묶어서 더 넓은 쪽에 맞춰 자동으로 통일한다
                     // (임의 px 대신 브라우저가 실제 렌더 너비로 계산하게 함).
                     <div className="grid justify-items-stretch gap-2">
-                      <button
-                        type="button"
-                        onClick={() => navigate('/service-requests/new', { state: { svcReqSn: item.svcReqSn, from: location.pathname + location.search } })}
-                        className="btn btn-sm btn-primary"
+                      <ActionButton
+                        size="sm"
+                        state={{ svcReqSn: item.svcReqSn, from: location.pathname + location.search }}
+                        to={SERVICE_REQUEST_CREATE_PATH}
                       >
                         작성재개
-                      </button>
-                      <button
-                        type="button"
+                      </ActionButton>
+                      <ActionButton
                         onClick={() => setDeleteTarget({ svcReqSn: item.svcReqSn })}
-                        className="btn btn-sm btn-danger"
+                        size="sm"
+                        tone="danger"
                       >
                         삭제
-                      </button>
+                      </ActionButton>
                     </div>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/service-requests/${item.svcReqSn}`, { state: { from: location.pathname + location.search } })}
-                      className="btn btn-sm btn-primary"
+                    <ActionButton
+                      size="sm"
+                      state={{ from: location.pathname + location.search }}
+                      to={getServiceRequestDetailPath(item.svcReqSn)}
                     >
                       상세보기
-                    </button>
+                    </ActionButton>
                   )}
                 />
               );
@@ -203,11 +207,11 @@ export default function MyServiceRequestListPage({ embedded = false }) {
               const isDraft = item.svcReqStatusCd === 'SVCC0001';
               const actionButton = isDraft ? (
                 <>
-                  <button type="button" onClick={() => navigate('/service-requests/new', { state: { svcReqSn: item.svcReqSn, from: location.pathname + location.search } })} className="btn btn-sm btn-primary">작성재개</button>
-                  <button type="button" onClick={() => setDeleteTarget({ svcReqSn: item.svcReqSn })} className="btn btn-sm btn-danger">삭제</button>
+                  <ActionButton size="sm" state={{ svcReqSn: item.svcReqSn, from: location.pathname + location.search }} to={SERVICE_REQUEST_CREATE_PATH}>작성재개</ActionButton>
+                  <ActionButton size="sm" tone="danger" onClick={() => setDeleteTarget({ svcReqSn: item.svcReqSn })}>삭제</ActionButton>
                 </>
               ) : (
-                <button type="button" onClick={() => navigate(`/service-requests/${item.svcReqSn}`, { state: { from: location.pathname + location.search } })} className="btn btn-sm btn-primary">상세보기</button>
+                <ActionButton size="sm" state={{ from: location.pathname + location.search }} to={getServiceRequestDetailPath(item.svcReqSn)}>상세보기</ActionButton>
               );
 
               return (

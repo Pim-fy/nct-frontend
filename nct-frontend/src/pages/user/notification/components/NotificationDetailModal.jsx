@@ -1,5 +1,7 @@
 // src/pages/user/notification/components/NotificationDetailModal.jsx
 import { Link, useLocation } from 'react-router-dom';
+import { getServiceTradeDetailPath } from '@/routes/myPageRoutes';
+import { getServiceRequestDetailPath } from '@/routes/serviceRequestRoutes';
 
 // 참조유형공통코드(REFG01) → 이동할 화면 경로. 페이지가 없는 참조 유형(입찰·견적·거래문제 등)은
 // null을 돌려주고, 이 경우 모달에 "이동" 버튼 없이 내용만 보여준다 (사용자 결정, 2026-07-28).
@@ -9,11 +11,11 @@ const resolveLink = (item) => {
     case 'REFC0003': // 경매
       return `/auction/${item.refSn}`;
     case 'REFC0005': // 거래 — 서비스 도메인은 역할과 무관하게 서비스 거래 상세로 보낸다
-      if (item.domainCd === 'NTFC0012') return `/service-trades/${item.refSn}`;
+      if (item.domainCd === 'NTFC0012') return getServiceTradeDetailPath(item.refSn);
       // 물건 거래 제공자 대상 알림(audienceCd=NTFC0016)은 판매자 화면으로 보낸다.
       return item.audienceCd === 'NTFC0016' ? `/trades/${item.refSn}/seller` : `/trades/${item.refSn}`;
     case 'REFC0007': // 서비스 요청
-      return `/service-requests/${item.refSn}`;
+      return getServiceRequestDetailPath(item.refSn);
     case 'REFC0011': // 공지사항
       return `/customersupport/notice/${item.refSn}`;
     default:
@@ -28,7 +30,7 @@ const resolveLink = (item) => {
  * item이 null이면 렌더링하지 않는다 (선택된 알림 없음 = 닫힌 상태).
  */
 const NotificationDetailModal = ({ item, onClose }) => {
-  // 전역 브레드크럼 (BJN, 260805): 알림함에서 이동했음을 상세 화면 브레드크럼에 반영하기 위해 현재 경로를 전달
+  // 담당자 7: 현재 경로는 대상 화면의 뒤로가기 문맥으로만 전달하며 브레드크럼에는 반영하지 않는다.
   const location = useLocation();
   if (!item) return null;
 

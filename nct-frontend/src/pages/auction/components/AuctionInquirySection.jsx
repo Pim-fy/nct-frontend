@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Clock3, Pencil, RotateCcw, Send, X } from 'lucide-react';
 import { fetchActiveManualAbuseReportReferences } from '@api/abuseReportApi';
 import {
+  fetchBannedKeywords,
   fetchProductInquiries,
   postProductInquiry,
   updateProductInquiry,
@@ -10,6 +11,8 @@ import {
 import Pagination from '@components/common/Pagination';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import useCountdown from '@hooks/useCountdown';
+import { confirm as confirmAction } from '@utils/common';
+import { ActionButton } from '@components/common/ui';
 
 const INQUIRY_TYPE_CODE = 'PRDC0006';
 const ANSWER_TYPE_CODE = 'PRDC0007';
@@ -17,6 +20,19 @@ const PRODUCT_COMMENT_REFERENCE_TYPE = 'REFC0012';
 const MAX_INQUIRY_LENGTH = 500;
 const INQUIRIES_PER_PAGE = 4;
 const INQUIRY_COOLDOWN_MS = 6 * 60 * 60 * 1000;
+
+const findBannedKeyword = (value, keywords) => {
+  const normalizedValue = String(value || '').toLowerCase();
+
+  return (Array.isArray(keywords) ? keywords : []).find((keyword) => {
+    const normalizedKeyword = String(keyword || '').trim().toLowerCase();
+    return normalizedKeyword && normalizedValue.includes(normalizedKeyword);
+  });
+};
+
+const formatBannedKeywordError = (keyword) => (
+  keyword ? `'${keyword}'은(는) 등록할 수 없는 문의 내용입니다.` : ''
+);
 
 const formatRegisteredAt = (value) => {
   if (!value) return '';
@@ -86,6 +102,15 @@ const AuctionInquirySection = ({
       return response?.data ?? [];
     },
     enabled: Boolean(enabled && productId),
+  });
+
+  const bannedKeywordQuery = useQuery({
+    queryKey: ['productBannedKeywords'],
+    queryFn: async () => {
+      const response = await fetchBannedKeywords();
+      return Array.isArray(response?.data) ? response.data : [];
+    },
+    staleTime: 10 * 60 * 1000,
   });
 
   const inquiryMutation = useMutation({
@@ -190,18 +215,27 @@ const AuctionInquirySection = ({
   const isInquiryAvailabilityLoading = isAuthenticated
     && (!enabled || inquiryQuery.isLoading);
   const trimmedContent = content.trim();
+  const bannedKeywords = bannedKeywordQuery.data ?? [];
+  const contentBannedKeyword = findBannedKeyword(trimmedContent, bannedKeywords);
+  const contentBannedKeywordError = formatBannedKeywordError(contentBannedKeyword);
+  const isInquiryInputDisabled = !isAuthenticated
+    || isOwnAuction
+    || !isInquiryAvailable
+    || isInquiryAvailabilityLoading
+    || isInquiryCooldown
+    || inquiryMutation.isPending;
   const isSubmitDisabled = isOwnAuction
     || !isInquiryAvailable
     || isInquiryAvailabilityLoading
     || isInquiryCooldown
     || inquiryMutation.isPending
-    || (isAuthenticated && !trimmedContent);
+    || (isAuthenticated && (!trimmedContent || Boolean(contentBannedKeyword)));
   const isReportStatusWaiting = inquiryQuery.isSuccess
     && inquiryReferenceSns.length > 0
     && activeReportStatusQuery.isPending;
   const isWaiting = !enabled || inquiryQuery.isLoading || isReportStatusWaiting;
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (!isAuthenticated) {
@@ -220,6 +254,21 @@ const AuctionInquirySection = ({
       onToast('문의 내용을 입력해 주세요');
       return;
     }
+    if (contentBannedKeywordError) {
+      onToast(contentBannedKeywordError);
+      return;
+    }
+
+    const confirmed = await confirmAction({
+      title: '문의 내용을 확인해 주세요',
+      html: '상품 문의 등록 후 6시간이 지나야 다시 문의할 수 있으며,<br>판매자가 답변을 등록하면 해당 문의는 더 이상 수정할 수 없습니다.',
+      icon: 'info',
+      confirmButtonText: '문의 등록',
+      cancelButtonText: '취소',
+      scrollbarPadding: false,
+      reverseButtons: false,
+    });
+    if (!confirmed) return;
 
     inquiryMutation.mutate(trimmedContent);
   };
@@ -244,6 +293,11 @@ const AuctionInquirySection = ({
       setEditingError('문의 내용을 입력해 주세요');
       return;
     }
+    const bannedKeyword = findBannedKeyword(normalizedContent, bannedKeywords);
+    if (bannedKeyword) {
+      setEditingError(formatBannedKeywordError(bannedKeyword));
+      return;
+    }
     if (normalizedContent === (inquiry.prdCmtCn || '').trim()) {
       setEditingError('변경된 문의 내용이 없습니다');
       return;
@@ -266,40 +320,53 @@ const AuctionInquirySection = ({
           <h2 className="m-0 text-h2 font-bold text-[#1d1d1f]" id="auction-inquiry-title">
             상품 문의
           </h2>
-          <p className="mt-[7px] mb-0 text-body-sm text-[#666] md:text-body-md">
-            상품과 거래 조건에 대해 판매자에게 문의할 수 있습니다.
-          </p>
         </div>
         <strong className="text-body-md whitespace-nowrap text-primary-dark">{inquiries.length}건</strong>
       </div>
 
       <form className="rounded-lg border border-[#e8e8e8] bg-[#f7f8fa] p-[18px] max-sm:p-3.5" onSubmit={handleSubmit}>
         <label className="mb-2.5 block text-body-md font-bold text-[#1d1d1f]" htmlFor="auction-inquiry-content">
-          {isOwnAuction
-            ? '구매자 문의는 판매자 상품 관리에서 답변할 수 있습니다.'
-            : (!isInquiryAvailable
-              ? '종료된 경매에는 문의를 등록할 수 없습니다.'
-              : (isInquiryAvailabilityLoading
-                ? '문의 가능 여부를 확인하고 있습니다.'
-                : (isInquiryCooldown ? '다음 문의를 기다려 주세요.' : '판매자에게 문의하기')))}
+          {!isAuthenticated
+            ? '로그인 후 판매자에게 문의할 수 있습니다.'
+            : (isOwnAuction
+              ? '구매자 문의는 판매자 상품 관리에서 답변할 수 있습니다.'
+              : (!isInquiryAvailable
+                ? '종료된 경매에는 문의를 등록할 수 없습니다.'
+                : (isInquiryAvailabilityLoading
+                  ? '문의 가능 여부를 확인하고 있습니다.'
+                  : (isInquiryCooldown ? '다음 문의를 기다려 주세요.' : '판매자에게 문의하기'))))}
         </label>
         <textarea
-          className="min-h-28 w-full resize-y rounded-lg border border-[#dadada] bg-white px-3.5 py-[13px] text-body-sm text-[#1d1d1f] outline-none transition-shadow focus:border-primary focus:shadow-[0_0_0_3px_#e5efff] disabled:cursor-not-allowed disabled:bg-[#eeeeef] disabled:text-[#8a8a8a] md:text-body-md"
+          className={`min-h-28 w-full resize-y rounded-lg border bg-white px-3.5 py-[13px] text-body-sm text-[#1d1d1f] outline-none transition-shadow focus:shadow-[0_0_0_3px_#e5efff] disabled:cursor-not-allowed disabled:bg-[#eeeeef] disabled:text-[#8a8a8a] md:text-body-md ${
+            contentBannedKeyword ? 'border-[#c5221f] focus:border-[#c5221f]' : 'border-[#dadada] focus:border-primary'
+          }`}
           id="auction-inquiry-content"
+          aria-describedby={contentBannedKeywordError ? 'auction-inquiry-banned-keyword-error' : undefined}
+          aria-invalid={Boolean(contentBannedKeyword)}
           value={content}
           maxLength={MAX_INQUIRY_LENGTH}
-          disabled={isOwnAuction || !isInquiryAvailable || isInquiryAvailabilityLoading || isInquiryCooldown || inquiryMutation.isPending}
-          placeholder={isOwnAuction
-            ? '본인 상품에는 문의를 등록할 수 없습니다.'
-            : (!isInquiryAvailable
-              ? '경매가 종료되어 새 문의를 등록할 수 없습니다.'
-              : (isInquiryAvailabilityLoading
-                ? '문의 가능 여부를 확인하고 있습니다.'
-                : (isInquiryCooldown ? '같은 상품에는 6시간마다 문의할 수 있습니다.' : '문의 내용을 입력해 주세요.')))}
+          disabled={isInquiryInputDisabled}
+          placeholder={!isAuthenticated
+            ? '로그인 후 문의 내용을 입력할 수 있습니다.'
+            : (isOwnAuction
+              ? '본인 상품에는 문의를 등록할 수 없습니다.'
+              : (!isInquiryAvailable
+                ? '경매가 종료되어 새 문의를 등록할 수 없습니다.'
+                : (isInquiryAvailabilityLoading
+                  ? '문의 가능 여부를 확인하고 있습니다.'
+                  : (isInquiryCooldown ? '같은 상품에는 6시간마다 문의할 수 있습니다.' : '문의 내용을 입력해 주세요.'))))}
           onChange={(event) => setContent(event.target.value)}
         />
         <div className="mt-2.5 flex min-h-10 items-center justify-end gap-4 max-sm:flex-col max-sm:items-stretch max-sm:gap-2">
-          {isInquiryCooldown ? (
+          {contentBannedKeywordError ? (
+            <p
+              className="mr-auto mb-0 text-[13px] leading-[1.5] font-bold text-[#c5221f]"
+              id="auction-inquiry-banned-keyword-error"
+              role="alert"
+            >
+              {contentBannedKeywordError}
+            </p>
+          ) : isInquiryCooldown ? (
             <p className="mr-auto mb-0 inline-flex items-center gap-1.5 text-[13px] leading-[1.5] font-bold text-[#8a5a00]" role="status">
               <Clock3 aria-hidden="true" size={15} />
               {cooldownMessage}
@@ -307,10 +374,11 @@ const AuctionInquirySection = ({
           ) : (
             <span className="text-[13px] leading-[1.5] tabular-nums text-[#666] max-sm:text-right">{content.length}/{MAX_INQUIRY_LENGTH}</span>
           )}
-          <button
-            className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-[7px] rounded-lg border border-primary bg-primary px-4 text-body-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-55 max-sm:w-full"
+          <ActionButton
+            className="max-sm:w-full"
             type="submit"
             disabled={isSubmitDisabled}
+            loading={inquiryMutation.isPending}
             aria-busy={inquiryMutation.isPending}
           >
             <Send size={16} aria-hidden="true" />
@@ -323,7 +391,7 @@ const AuctionInquirySection = ({
                   : (isInquiryCooldown
                     ? '문의 대기 중'
                     : (isAuthenticated ? '문의 등록' : '로그인 후 문의하기'))))}
-          </button>
+          </ActionButton>
         </div>
       </form>
 
@@ -339,14 +407,14 @@ const AuctionInquirySection = ({
         {inquiryQuery.isError && (
           <div className="grid min-h-24 place-items-center content-center gap-2.5 border-y border-[#e8e8e8] text-center text-body-sm text-[#666]">
             <p className="m-0">문의 목록을 불러오지 못했습니다.</p>
-            <button
-              className="inline-flex min-h-9 cursor-pointer items-center justify-center gap-[7px] rounded-lg border border-primary bg-white px-4 text-body-sm font-bold text-primary-dark"
-              type="button"
+            <ActionButton
               onClick={() => inquiryQuery.refetch()}
+              size="sm"
+              tone="outline"
             >
               <RotateCcw size={15} aria-hidden="true" />
               다시 불러오기
-            </button>
+            </ActionButton>
           </div>
         )}
 
@@ -365,8 +433,14 @@ const AuctionInquirySection = ({
           const isEditing = canEdit
             && String(editingInquirySn) === String(inquiry.prdCmtSn);
           const normalizedEditingContent = editingContent.trim();
+          const editingBannedKeyword = isEditing
+            ? findBannedKeyword(normalizedEditingContent, bannedKeywords)
+            : null;
+          const displayedEditingError = formatBannedKeywordError(editingBannedKeyword)
+            || editingError;
           const isEditSubmitDisabled = updateInquiryMutation.isPending
             || !normalizedEditingContent
+            || Boolean(editingBannedKeyword)
             || normalizedEditingContent === (inquiry.prdCmtCn || '').trim();
 
           return (
@@ -386,15 +460,15 @@ const AuctionInquirySection = ({
                   {formatRegisteredAt(inquiry.prdCmtRegDt)}
                 </time>
                 {canEdit && !isEditing && (
-                  <button
-                    className="inline-flex min-h-8 cursor-pointer items-center justify-center gap-1 rounded-md border border-[#d8d8d8] bg-white px-2.5 text-caption font-bold text-[#555] transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-55"
+                  <ActionButton
                     disabled={updateInquiryMutation.isPending}
                     onClick={() => startEditing(inquiry)}
-                    type="button"
+                    size="sm"
+                    tone="neutral"
                   >
                     <Pencil aria-hidden="true" size={14} />
                     수정
-                  </button>
+                  </ActionButton>
                 )}
               </div>
             </div>
@@ -403,6 +477,7 @@ const AuctionInquirySection = ({
               <form className="mt-3 grid gap-2.5" onSubmit={(event) => handleEditSubmit(event, inquiry)}>
                 <textarea
                   aria-label="문의 내용 수정"
+                  aria-invalid={Boolean(displayedEditingError)}
                   autoFocus
                   className="min-h-24 w-full resize-y rounded-lg border border-primary bg-white px-3.5 py-3 text-body-sm text-[#353535] outline-none shadow-[0_0_0_3px_#e5efff] md:text-body-md"
                   disabled={updateInquiryMutation.isPending}
@@ -416,26 +491,27 @@ const AuctionInquirySection = ({
                 <div className="flex min-h-9 items-center justify-between gap-3 max-sm:flex-col max-sm:items-stretch">
                   <div>
                     <span className="text-caption tabular-nums text-[#666]">{editingContent.length}/{MAX_INQUIRY_LENGTH}</span>
-                    {editingError && <p className="mt-1 mb-0 text-caption text-[#c5221f]" role="alert">{editingError}</p>}
+                    {displayedEditingError && <p className="mt-1 mb-0 text-caption text-[#c5221f]" role="alert">{displayedEditingError}</p>}
                   </div>
                   <div className="flex items-center justify-end gap-2">
-                    <button
-                      className="inline-flex min-h-9 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#d8d8d8] bg-white px-3.5 text-body-sm font-bold text-[#555] disabled:cursor-not-allowed disabled:opacity-55"
+                    <ActionButton
                       disabled={updateInquiryMutation.isPending}
                       onClick={cancelEditing}
-                      type="button"
+                      size="sm"
+                      tone="neutral"
                     >
                       <X aria-hidden="true" size={15} />
                       취소
-                    </button>
-                    <button
-                      className="inline-flex min-h-9 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-primary bg-primary px-3.5 text-body-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-55"
+                    </ActionButton>
+                    <ActionButton
                       disabled={isEditSubmitDisabled}
+                      loading={updateInquiryMutation.isPending}
+                      size="sm"
                       type="submit"
                     >
                       <Check aria-hidden="true" size={15} />
                       {updateInquiryMutation.isPending ? '저장 중' : '저장'}
-                    </button>
+                    </ActionButton>
                   </div>
                 </div>
               </form>

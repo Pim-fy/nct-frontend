@@ -1,26 +1,43 @@
 // src/pages/service/QuoteDetailPage.jsx
-// 받은 견적 상세 — 요청자가 도착한 견적 하나를 자세히 보고 신고·선택할 수 있는 화면
-// 라우트: /service-requests/:svcReqSn/quotes/:quoteId
+// 담당자 7 연결 · F-SVC-005~010: 요청자는 신고·선택, 제공자는 본인 견적 조회·수정을 하는 공용 상세 화면
+// 라우트: /services/requests/:svcReqSn/quotes/:quoteId
 //
 // 목록에서 클릭할 때 넘겨준 견적 데이터를 우선 쓰고(location.state.quote), 새로고침 등으로
-// state가 없으면 받은 견적 목록을 다시 불러와 quoteId로 찾아 복구한다.
+// state가 없으면 역할별 단건·목록 조회 계약으로 quoteId를 복구한다.
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
-import { getReceivedQuotes, getQuoteHistory, selectQuoteAndCreateTrade } from '@api/quoteApi';
+import { getMyQuote, getReceivedQuotes, getQuoteHistory, selectQuoteAndCreateTrade } from '@api/quoteApi';
 import { getServiceRequest } from '@api/serviceRequestApi';
 import { usePublicProviderProfile } from '@hooks/useProviderProfile';
+import { useAuth } from '@hooks/useAuth';
 import { toImageUrl } from '@api/fileApi';
 import ReportModal from '@components/common/ReportModal';
+import {
+  ActionButton,
+  CategoryTag,
+  DomainStatus,
+} from '@components/common/ui';
 import ErrorMessage from '@components/common/ErrorMessage';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
 import Toast from '@components/common/Toast';
 import { formatBudget } from '@utils/common';
+import { getServiceTradeDetailPath } from '@/routes/myPageRoutes';
+import {
+  getServiceRequestDetailPath,
+  getServiceRequestQuoteEditPath,
+} from '@/routes/serviceRequestRoutes';
 
 const QUOTE_STATUS_LABEL = {
   QUTC0001: '제출됨',
   QUTC0002: '수정됨',
   QUTC0004: '선택됨',
   QUTC0005: '철회됨',
+};
+const QUOTE_STATUS_TONE = {
+  QUTC0001: 'info',
+  QUTC0002: 'info',
+  QUTC0004: 'success',
+  QUTC0005: 'neutral',
 };
 
 const REQUEST_STATUS_LABEL = {
@@ -30,12 +47,14 @@ const REQUEST_STATUS_LABEL = {
   SVCC0004: '취소',
 };
 
-const REQUEST_STATUS_BADGE_CLASS = {
-  SVCC0001: 'bg-[#f0f0ee] text-[#5f5e5a]',
-  SVCC0002: 'bg-[#e5efff] text-[#0048bf]',
-  SVCC0003: 'bg-[#e8f0fe] text-[#1a56a4]',
-  SVCC0004: 'bg-[#f0f0ee] text-[#5f5e5a]',
+const REQUEST_STATUS_TONE = {
+  SVCC0001: 'neutral',
+  SVCC0002: 'info',
+  SVCC0003: 'success',
+  SVCC0004: 'danger',
 };
+
+const REQUEST_ITEM_PREVIEW_LIMIT = 8;
 
 function fmtDate(dt) {
   if (!dt) return '';
@@ -64,6 +83,7 @@ export default function QuoteDetailPage() {
   const { svcReqSn, quoteId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, isProvider, loading: authLoading } = useAuth();
 
   const [quote, setQuote] = useState(location.state?.quote ?? null);
   const [loading, setLoading] = useState(!location.state?.quote);
@@ -71,15 +91,32 @@ export default function QuoteDetailPage() {
 
   const [request, setRequest] = useState(location.state?.requestSummary ?? null);
 
-  const [quoteHistory, setQuoteHistory] = useState([]);
-  const [quoteHistoryLoading, setQuoteHistoryLoading] = useState(false);
+  const [quoteHistoryResult, setQuoteHistoryResult] = useState({ quoteId: null, items: [] });
   const [reportTarget, setReportTarget] = useState(null);
   const [selecting, setSelecting] = useState(false);
   const [toast, setToast] = useState('');
   const [contentExpanded, setContentExpanded] = useState(false);
 
-  const providerQuery = usePublicProviderProfile(quote?.providerUsrSn);
+  const currentUserSn = Number(user?.id ?? user?.userId ?? user?.userSn ?? user?.usrSn);
+  const providerUserSn = Number(quote?.providerUsrSn ?? (isProvider ? currentUserSn : NaN));
+  const providerQuery = usePublicProviderProfile(providerUserSn);
   const provider = providerQuery.data;
+  const providerName = quote?.providerNm
+    ?? provider?.displayName
+    ?? (isProvider ? user?.nickname : null)
+    ?? '제공자';
+  const returnPath = typeof location.state?.from === 'string' ? location.state.from : null;
+  const canEditOwnQuote = isProvider
+    && ['QUTC0001', 'QUTC0002'].includes(quote?.statusCode)
+    && Number(quote?.reviseCnt ?? 0) < 3;
+  const quoteHistoryTargetId = Number(quote?.qutSn);
+  const hasQuoteHistory = Number(quote?.reviseCnt ?? 0) > 0;
+  const quoteHistory = quoteHistoryResult.quoteId === quoteHistoryTargetId
+    ? quoteHistoryResult.items
+    : [];
+  const quoteHistoryLoading = hasQuoteHistory
+    && quoteHistoryResult.quoteId !== quoteHistoryTargetId;
+  const groupedRequestItems = groupRequestItems(request?.items);
 
   // 이 견적이 속한 요청서 요약 — 영역에 비해 견적 내용만으로는 휑해서 참고용으로 같이 보여준다.
   // 목록에서 넘어올 때 이미 요청서 상세를 불러온 상태라 그걸 그대로 받아쓰고, 새로고침 등으로
@@ -94,16 +131,21 @@ export default function QuoteDetailPage() {
       })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [svcReqSn]);
+  }, [request, svcReqSn]);
 
-  // state로 못 받은 경우(새로고침 등) 목록을 다시 불러와 복구
+  // state로 못 받은 경우(새로고침 등) 역할에 맞는 조회 계약으로 상세를 복구한다.
   useEffect(() => {
-    if (quote) return;
+    if (quote || authLoading) return;
     let cancelled = false;
-    getReceivedQuotes(svcReqSn)
-      .then(res => {
+    const detailRequest = isProvider
+      ? getMyQuote(quoteId).then(res => res.data ?? null)
+      : getReceivedQuotes(svcReqSn).then(res => (
+        (res.data ?? []).find(item => String(item.qutSn) === String(quoteId)) ?? null
+      ));
+
+    detailRequest
+      .then(found => {
         if (cancelled) return;
-        const found = (res.data ?? []).find(q => String(q.qutSn) === String(quoteId));
         if (!found) {
           setError('견적 정보를 찾을 수 없습니다.');
         } else {
@@ -119,34 +161,29 @@ export default function QuoteDetailPage() {
         setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [quote, svcReqSn, quoteId]);
+  }, [authLoading, isProvider, quote, quoteId, svcReqSn]);
 
   useEffect(() => {
-    if (!quote || !(quote.reviseCnt > 0)) return;
+    if (!hasQuoteHistory || !Number.isSafeInteger(quoteHistoryTargetId)) return;
     let cancelled = false;
-    setQuoteHistoryLoading(true);
-    getQuoteHistory(quote.qutSn)
+    getQuoteHistory(quoteHistoryTargetId)
       .then(res => {
         if (cancelled) return;
-        setQuoteHistory(res.data ?? []);
+        setQuoteHistoryResult({ quoteId: quoteHistoryTargetId, items: res.data ?? [] });
       })
       .catch(() => {
         if (cancelled) return;
-        setQuoteHistory([]);
-      })
-      .finally(() => {
-        if (cancelled) return;
-        setQuoteHistoryLoading(false);
+        setQuoteHistoryResult({ quoteId: quoteHistoryTargetId, items: [] });
       });
     return () => { cancelled = true; };
-  }, [quote]);
+  }, [hasQuoteHistory, quoteHistoryTargetId]);
 
   // F-SVC-009/010: 조우진(7)이 통합한 선택+거래생성 계약 — 성공하면 서비스 거래 상세로 이동
   const handleSelectQuote = async () => {
     setSelecting(true);
     try {
       const result = await selectQuoteAndCreateTrade(svcReqSn, quote.qutSn);
-      navigate(`/service-trades/${result.data.tradeId}`);
+      navigate(getServiceTradeDetailPath(result.data.tradeId));
     } catch (err) {
       setToast(err.response?.data?.message || '견적 선택에 실패했습니다.');
     } finally {
@@ -154,7 +191,16 @@ export default function QuoteDetailPage() {
     }
   };
 
-  if (loading) return <ViewSkeleton />;
+  const handleEditOwnQuote = () => {
+    navigate(getServiceRequestQuoteEditPath(svcReqSn, quote.qutSn), {
+      state: {
+        from: returnPath || '/user/mypage/services/quotes',
+        quoteTitle: quote.qutTtl || '',
+      },
+    });
+  };
+
+  if (authLoading || loading) return <ViewSkeleton />;
   if (error || !quote) {
     return (
       <div className="container py-10">
@@ -167,44 +213,42 @@ export default function QuoteDetailPage() {
     <div className="bg-white pb-14 text-sm leading-[1.6] text-[#1d1d1f]">
       <div className="container max-w-5xl">
 
-        <div className="flex justify-end pt-9 pb-4">
-          <button
-            type="button"
-            className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[#e2e1dc] bg-white px-4 py-2.5 text-lg font-medium text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary"
-            onClick={() => navigate(-1)}
-          >
-            ← 요청서 상세로
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_300px]">
+        <div className="grid grid-cols-1 items-start gap-6 pt-9 lg:grid-cols-[1fr_300px]">
 
         <article className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white p-6 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3">
               <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#e5efff] text-xl font-bold text-primary">
                 {provider?.profileImageUrl
-                  ? <img src={toImageUrl(provider.profileImageUrl)} alt={quote.providerNm} className="h-full w-full object-cover" />
-                  : (quote.providerNm?.trim()?.[0] ?? '?')}
+                  ? <img src={toImageUrl(provider.profileImageUrl)} alt={providerName} className="h-full w-full object-cover" />
+                  : (providerName.trim()?.[0] ?? '?')}
               </div>
               <div>
-                <Link
-                  to={`/providers/${quote.providerUsrSn}`}
-                  className="text-xl font-bold text-[#1d1d1f] hover:text-primary hover:underline"
-                >
-                  {quote.providerNm}
-                </Link>
-                {provider && (
-                  <p className="mt-0.5 text-sm text-[#5f5e5a]">
-                    ★{Number(provider.reviewAverageScore ?? 0).toFixed(1)} · 리뷰 {provider.reviewCount ?? 0}개
-                    {provider.availableArea && ` · ${provider.availableArea}`}
-                  </p>
+                {Number.isSafeInteger(providerUserSn) && providerUserSn > 0 ? (
+                  <Link
+                    to={`/providers/${providerUserSn}`}
+                    className="text-xl font-bold text-[#1d1d1f] hover:text-primary hover:underline"
+                  >
+                    {providerName}
+                  </Link>
+                ) : (
+                  <span className="text-xl font-bold text-[#1d1d1f]">{providerName}</span>
                 )}
+                <p className="mt-0.5 text-sm text-[#5f5e5a]">
+                  ★{Number(provider?.reviewAverageScore ?? 0).toFixed(1)} · 리뷰 {provider?.reviewCount ?? 0}개
+                  {` · ${provider?.availableArea || '활동 지역 미등록'}`}
+                </p>
               </div>
             </div>
-            <span className="shrink-0 rounded-lg bg-[#f0f0ee] px-3 py-1 text-sm font-medium text-[#5f5e5a]">
-              {QUOTE_STATUS_LABEL[quote.statusCode] ?? quote.statusCode}
-            </span>
+            {['QUTC0004', 'QUTC0005'].includes(quote.statusCode) && (
+              <DomainStatus
+                className="shrink-0"
+                tone={QUOTE_STATUS_TONE[quote.statusCode] ?? 'neutral'}
+                variant="soft"
+              >
+                {QUOTE_STATUS_LABEL[quote.statusCode] ?? quote.statusCode}
+              </DomainStatus>
+            )}
           </div>
 
           <div className="mt-5 grid grid-cols-2 gap-3">
@@ -216,7 +260,7 @@ export default function QuoteDetailPage() {
               <span className="text-xs font-semibold text-[#9a9ba5]">제출일</span>
               <p className="mt-0.5 text-2xl font-bold text-[#1d1d1f]">{fmtDate(quote.registeredAt)}</p>
               {quote.reviseCnt > 0 && (
-                <p className="mt-0.5 text-xs text-[#9a9ba5]">{quote.reviseCnt}회 수정됨</p>
+                <p className="mt-0.5 text-xs text-[#9a9ba5]">{quote.reviseCnt}회 수정됨 · 최종 수정 {fmtDate(quote.updatedAt)}</p>
               )}
             </div>
           </div>
@@ -287,52 +331,79 @@ export default function QuoteDetailPage() {
             </div>
           )}
 
-          {/* 신고: 황성경(3) 공용 ReportModal 연동. 선택하기: 조우진(7)의 선택+거래생성 계약 연동(F-SVC-009/010). */}
-          <div className="mt-6 flex items-center justify-end gap-2 border-t border-[#e8e8e8] pt-5">
-            <button
-              type="button"
-              onClick={() => setReportTarget({
-                qutSn: quote.qutSn,
-                providerUsrSn: quote.providerUsrSn,
-                providerNm: quote.providerNm,
-                svcReqSn,
-              })}
-              className="rounded-lg border border-[#e2e1dc] px-4 py-2 text-sm font-semibold text-[#a32d2d] transition-colors hover:bg-[#fcebeb]"
-            >
-              신고
-            </button>
-            {quote.statusCode !== 'QUTC0004' && quote.statusCode !== 'QUTC0005' && (
-              <button
-                type="button"
-                onClick={handleSelectQuote}
-                disabled={selecting}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0048bf] disabled:opacity-50"
-              >
-                {selecting ? '처리 중...' : '이 견적 선택하기'}
-              </button>
-            )}
-          </div>
+          {/* 요청자는 신고·선택, 제공자 본인은 수정 가능한 상태에서만 수정 액션을 사용한다. */}
+          {(!isProvider || canEditOwnQuote) && (
+            <div className="mt-6 flex items-center justify-end gap-2 border-t border-[#e8e8e8] pt-5">
+              {isProvider ? (
+                <ActionButton
+                  onClick={handleEditOwnQuote}
+                  size="sm"
+                >
+                  견적 수정하기
+                </ActionButton>
+              ) : (
+                <>
+                  <ActionButton
+                    onClick={() => setReportTarget({
+                      qutSn: quote.qutSn,
+                      providerUsrSn: quote.providerUsrSn,
+                      providerNm: providerName,
+                      svcReqSn,
+                    })}
+                    size="sm"
+                    tone="danger-outline"
+                  >
+                    신고
+                  </ActionButton>
+                  {quote.statusCode !== 'QUTC0004' && quote.statusCode !== 'QUTC0005' && (
+                    <ActionButton
+                      onClick={handleSelectQuote}
+                      disabled={selecting}
+                      size="sm"
+                    >
+                      {selecting ? '처리 중...' : '이 견적 선택하기'}
+                    </ActionButton>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </article>
 
-        <aside className="sticky top-6 rounded-2xl border border-[#e8e8e8] bg-[#f9fafb] p-5">
-          <span className="text-xs font-semibold text-[#9a9ba5]">이 요청서 요약</span>
-          <div className="mt-1">
+        <aside className="sticky top-6 rounded-2xl border border-[#e8e8e8] bg-[#f9fafb] p-4">
+          <div className="flex items-center justify-between gap-2">
+            {request && (
+              <DomainStatus tone={REQUEST_STATUS_TONE[request.svcReqStatusCd] ?? 'neutral'} variant="soft">
+                {REQUEST_STATUS_LABEL[request.svcReqStatusCd] ?? request.svcReqStatusCd}
+              </DomainStatus>
+            )}
+            {groupedRequestItems.length > REQUEST_ITEM_PREVIEW_LIMIT && (
+              <ActionButton
+                to={getServiceRequestDetailPath(svcReqSn)}
+                aria-label={`요청 항목 ${groupedRequestItems.length}개 보기`}
+                className="shrink-0"
+                size="sm"
+              >
+                항목 보기
+              </ActionButton>
+            )}
+          </div>
+          <div className="mt-2">
             <Link
-              to={`/service-requests/${svcReqSn}`}
-              className="text-lg font-bold text-[#1d1d1f] hover:text-primary hover:underline"
+              to={getServiceRequestDetailPath(svcReqSn)}
+              className="line-clamp-2 text-lg font-bold leading-7 text-[#1d1d1f] hover:text-primary hover:underline"
             >
               {request?.svcReqTtl ?? '요청서 상세로'}
             </Link>
           </div>
           {request && (
             <>
-              <span className={`mt-2 inline-block rounded-lg px-2.5 py-1 text-xs font-medium ${REQUEST_STATUS_BADGE_CLASS[request.svcReqStatusCd] ?? 'bg-[#f0f0ee] text-[#5f5e5a]'}`}>
-                {REQUEST_STATUS_LABEL[request.svcReqStatusCd] ?? request.svcReqStatusCd}
-              </span>
-              <dl className="mt-3 space-y-2 border-t border-[#e2e1dc] pt-3 text-sm">
+              <dl className="mt-2 space-y-1.5 border-t border-[#e2e1dc] pt-2 text-sm">
                 <div className="flex justify-between gap-2">
                   <dt className="text-[#9a9ba5]">카테고리</dt>
-                  <dd className="font-semibold text-[#1d1d1f]">{request.catNm}</dd>
+                  <dd>
+                    <CategoryTag tone="info" variant="soft">{request.catNm || '-'}</CategoryTag>
+                  </dd>
                 </div>
                 <div className="flex justify-between gap-2">
                   <dt className="text-[#9a9ba5]">요청 예산</dt>
@@ -340,24 +411,21 @@ export default function QuoteDetailPage() {
                 </div>
               </dl>
               {request.items?.length > 0 && (
-                <div className="mt-3 border-t border-[#e2e1dc] pt-3">
-                  <span className="text-xs font-semibold text-[#9a9ba5]">요청 항목</span>
-                  <ul className="mt-1.5 space-y-2.5">
-                    {groupRequestItems(request.items).slice(0, 10).map((entry, i) => (
-                      <li key={i} className="text-sm">
-                        <p className="text-xs text-[#9a9ba5]">{entry.title}</p>
-                        {entry.value && <p className="mt-0.5 font-medium text-[#1d1d1f]">{entry.value}</p>}
+                <div className="mt-2 border-t border-[#e2e1dc] pt-2">
+                  <ul className="space-y-1.5">
+                    {groupedRequestItems.slice(0, REQUEST_ITEM_PREVIEW_LIMIT).map((entry, i) => (
+                      <li key={i} className="min-w-0 text-sm">
+                        <p className="truncate text-xs leading-4 text-[#9a9ba5]" title={entry.title}>
+                          {entry.title}
+                        </p>
+                        {entry.value && (
+                          <p className="truncate font-medium leading-5 text-[#1d1d1f]" title={entry.value}>
+                            {entry.value}
+                          </p>
+                        )}
                       </li>
                     ))}
                   </ul>
-                  {groupRequestItems(request.items).length > 10 && (
-                    <Link
-                      to={`/service-requests/${svcReqSn}`}
-                      className="mt-2 inline-block text-sm font-medium text-primary hover:underline"
-                    >
-                      항목 {groupRequestItems(request.items).length}개 전체 보기 →
-                    </Link>
-                  )}
                 </div>
               )}
             </>
@@ -368,7 +436,7 @@ export default function QuoteDetailPage() {
 
       </div>
 
-      {reportTarget && (
+      {!isProvider && reportTarget && (
         <ReportModal
           open={!!reportTarget}
           onClose={() => setReportTarget(null)}

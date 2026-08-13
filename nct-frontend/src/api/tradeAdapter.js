@@ -74,6 +74,7 @@ export const toTradeHistoryItem = (trade) => {
 
   return {
     id: trade.tradeId ?? trade.id,
+    auctionId: trade.auctionId ?? trade.aucSn ?? null,
     type: trade.userRole ?? trade.role ?? trade.type,
     productName: trade.productName ?? trade.itemName ?? '-',
     productImageUrl: trade.productImageUrl ?? trade.imageUrl ?? trade.thumbnailUrl ?? '',
@@ -96,6 +97,11 @@ export const toTradeHistoryItem = (trade) => {
     pendingMeetingAddress: trade.pendingMeetingAddress ?? null,
     canRespondToScheduleProposal: Boolean(trade.canRespondToScheduleProposal),
     canWithdrawScheduleProposal: Boolean(trade.canWithdrawScheduleProposal),
+    myScheduleProposalCount: Number(trade.myScheduleProposalCount ?? 0),
+    remainingScheduleProposalCount: Number(trade.remainingScheduleProposalCount ?? 3),
+    myOfflineCompletionRequestCount: Number(trade.myOfflineCompletionRequestCount ?? 0),
+    remainingOfflineCompletionRequestCount: Number(trade.remainingOfflineCompletionRequestCount ?? 2),
+    canRespondToOfflineCompletionRequest: Boolean(trade.canRespondToOfflineCompletionRequest),
   };
 };
 
@@ -118,6 +124,7 @@ export const getTradeChatButtonLabel = (trade) => {
 
   if (chatRoomStatus === 'ACTIVE') return '거래 채팅 열기';
   if (chatRoomStatus === 'CLOSED') return '거래 채팅 기록 보기';
+  if (trade?.chatAvailable === true) return '거래 채팅 열기';
   if (CLOSED_TRADE_STATUSES.has(trade?.status)) return '거래 채팅 기록 없음';
   return '거래 채팅 시작';
 };
@@ -127,14 +134,17 @@ export const getTradeChatDescription = (trade) => {
 
   if (chatRoomStatus === 'ACTIVE') return '거래 채팅에서 협의한 내용을 확인해 주세요.';
   if (chatRoomStatus === 'CLOSED') return '거래가 종료되어 채팅 기록만 확인할 수 있습니다.';
+  if (trade?.chatAvailable === true) return '거래 채팅에서 협의한 내용을 확인해 주세요.';
   if (CLOSED_TRADE_STATUSES.has(trade?.status)) return '생성된 거래 채팅 기록이 없습니다.';
   return '채팅에서 거래 시간과 장소를 협의해 주세요.';
 };
 
-export const canUseTradeChat = (trade) => (
-  normalizeTradeChatRoomStatus(trade?.chatRoomStatus) !== 'NOT_STARTED'
-  || !CLOSED_TRADE_STATUSES.has(trade?.status)
-);
+export const canUseTradeChat = (trade) => {
+  if (typeof trade?.chatAvailable === 'boolean') return trade.chatAvailable;
+
+  return normalizeTradeChatRoomStatus(trade?.chatRoomStatus) !== 'NOT_STARTED'
+    || !CLOSED_TRADE_STATUSES.has(trade?.status);
+};
 
 /**
  * 서버 거래 DTO를 구매자·판매자 상세 화면에서 공통으로 사용할 데이터로 변환한다.
@@ -155,6 +165,7 @@ export const toTradeDetail = (response) => {
     method: trade.tradeMethod ?? trade.method ?? null,
     status: normalizeTradeStatus(trade.tradeStatus ?? trade.status),
     chatRoomStatus: normalizeTradeChatRoomStatus(trade.chatRoomStatus),
+    chatAvailable: typeof trade.chatAvailable === 'boolean' ? trade.chatAvailable : undefined,
     // 확인 대기 상태에서 첫 완료 확인을 누른 역할을 받아 상대방에게만 두 번째 확인 버튼을 노출한다.
     completionRequestedBy: trade.completionRequestedBy ?? null,
     counterpart: trade.counterpartNickname ?? trade.counterpart ?? '-',
@@ -188,5 +199,10 @@ export const toTradeDetail = (response) => {
     pendingMeetingAddress: trade.pendingMeetingAddress ?? null,
     canRespondToScheduleProposal: Boolean(trade.canRespondToScheduleProposal),
     canWithdrawScheduleProposal: Boolean(trade.canWithdrawScheduleProposal),
+    myScheduleProposalCount: Number(trade.myScheduleProposalCount ?? 0),
+    remainingScheduleProposalCount: Number(trade.remainingScheduleProposalCount ?? 3),
+    myOfflineCompletionRequestCount: Number(trade.myOfflineCompletionRequestCount ?? 0),
+    remainingOfflineCompletionRequestCount: Number(trade.remainingOfflineCompletionRequestCount ?? 2),
+    canRespondToOfflineCompletionRequest: Boolean(trade.canRespondToOfflineCompletionRequest),
   };
 };

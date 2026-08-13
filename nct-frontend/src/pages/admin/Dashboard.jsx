@@ -20,6 +20,12 @@ import { fetchAdminAuctions } from '@api/adminAuctionApi';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import PageMeta from '@components/admin/PageMeta';
 import { useAdminDashboardSummary } from '@hooks/useAdminDashboard';
+import {
+  ADMIN_OPERATIONS_RECORDS_PATH,
+  ADMIN_PROVIDER_APPLICATIONS_PATH,
+  ADMIN_SERVICE_REQUESTS_PATH,
+  ADMIN_SETTINGS_PATH,
+} from '@/routes/adminRoutes';
 import './Dashboard.css';
 
 const SUMMARY_ITEMS = [
@@ -63,16 +69,16 @@ const SUMMARY_ITEMS = [
 
 const SHORTCUTS = [
   { label: '회원 관리', to: '/admin/members', icon: Users },
-  { label: '제공자 심사', to: '/admin/provider-applications', icon: ClipboardCheck },
+  { label: '제공자 심사', to: ADMIN_PROVIDER_APPLICATIONS_PATH, icon: ClipboardCheck },
   { label: '경매 관리', to: '/admin/auctions', icon: Gavel },
-  { label: '견적 요청 관리', to: '/admin/services', icon: BriefcaseBusiness },
+  { label: '견적 요청 관리', to: ADMIN_SERVICE_REQUESTS_PATH, icon: BriefcaseBusiness },
   { label: '카테고리 관리', to: '/admin/categories', icon: Grid2X2 },
   { label: '정산 관리', to: '/admin/settlements', icon: WalletCards },
   { label: '환전 관리', to: '/admin/exchanges', icon: WalletCards },
   { label: '공지 관리', to: '/admin/notices', icon: Megaphone },
   { label: '신고 관리', to: '/admin/reports', icon: Siren },
-  { label: '운영 기록', to: '/admin/operations-records?tab=risk', icon: ShieldAlert },
-  { label: '시스템 설정', to: '/admin/system-settings', icon: Settings },
+  { label: '운영 기록', to: `${ADMIN_OPERATIONS_RECORDS_PATH}?tab=risk`, icon: ShieldAlert },
+  { label: '시스템 설정', to: ADMIN_SETTINGS_PATH, icon: Settings },
   { label: '운영 알림', to: '/admin/notifications', icon: Bell },
 ];
 
@@ -112,7 +118,7 @@ const Dashboard = () => {
           : `심사 대기 ${formatCount(summary.pendingProviderApplicationCount)}건`,
       icon: ClipboardCheck,
       tone: 'blue',
-      to: '/admin/provider-applications',
+      to: ADMIN_PROVIDER_APPLICATIONS_PATH,
     },
     {
       key: 'report',
@@ -160,7 +166,7 @@ const Dashboard = () => {
           : `운영 확인 필요 ${formatCount(summary.unprocessedRiskEventCount)}건`,
       icon: ShieldAlert,
       tone: 'red',
-      to: '/admin/operations-records?tab=risk',
+      to: `${ADMIN_OPERATIONS_RECORDS_PATH}?tab=risk`,
     },
   ];
   const isRefreshing = summaryQuery.isFetching

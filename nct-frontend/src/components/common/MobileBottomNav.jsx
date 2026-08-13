@@ -8,6 +8,10 @@ import cursorIcon from '@assets/img/cursorIcon.png';
 import commentIcon from '@assets/img/commentIcon.png';
 import userIcon from '@assets/img/userIcon.png';
 import { useAuth } from '@hooks/useAuth';
+import {
+  SERVICE_REQUEST_CREATE_PATH,
+  SERVICE_REQUESTS_PATH,
+} from '@/routes/serviceRequestRoutes';
 
 // black PNG → #0064ff
 const BLUE_FILTER =
@@ -27,7 +31,7 @@ export default function MobileBottomNav() {
   const serviceItem = {
     key: 'service',
     label: isProvider ? '견적 목록' : '견적 요청',
-    to: isProvider ? '/service' : '/service-requests/new',
+    to: isProvider ? SERVICE_REQUESTS_PATH : SERVICE_REQUEST_CREATE_PATH,
     type: 'img',
     src: commentIcon,
   };

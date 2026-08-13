@@ -20,7 +20,7 @@ function ReadOnlyReviewContent({ rating, content, photos }) {
   return (
     <div className="mt-2">
       <StarRatingDisplay rating={rating} size={20} />
-      <p className="mt-3 whitespace-pre-wrap text-[#333]">{content}</p>
+      <p className="trade-review-content mt-3 text-[#333]">{content}</p>
       {photoUrls.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
           {photoUrls.map((url, index) => (
@@ -75,7 +75,7 @@ const UNAVAILABLE_TEXT = {
   deleted: '삭제한 리뷰는 다시 작성하거나 수정할 수 없습니다.',
 };
 
-export default function TradeReviewSection({ tradeId, isTradeCompleted }) {
+export default function TradeReviewSection({ tradeId, isTradeCompleted, guidanceText }) {
   const reviewQuery = useMyTradeReview(tradeId);
   const review = reviewQuery.data;
   const counterpartReviewQuery = useCounterpartTradeReview(tradeId);
@@ -140,6 +140,7 @@ export default function TradeReviewSection({ tradeId, isTradeCompleted }) {
             key={`unavailable-${isTradeCompleted}`}
             tradeId={tradeId}
             disabledText={isTradeCompleted ? UNAVAILABLE_TEXT.deleted : UNAVAILABLE_TEXT.incomplete}
+            guidanceText={guidanceText}
           />
         )}
 
@@ -150,6 +151,7 @@ export default function TradeReviewSection({ tradeId, isTradeCompleted }) {
             key={review.reviewId ?? 'new'}
             tradeId={tradeId}
             review={review.status === 'WRITTEN' ? review : undefined}
+            guidanceText={guidanceText}
           />
         )}
       </div>

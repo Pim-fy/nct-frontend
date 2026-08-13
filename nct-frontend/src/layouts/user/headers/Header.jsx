@@ -30,6 +30,10 @@ import NotificationDetailModal from '@pages/user/notification/components/Notific
 import PointChargeWidgetModal from '@pages/user/point/components/PointChargeWidgetModal';
 import PointAmountModal from '@pages/user/point/components/PointAmountModal';
 import { submitPointAmount } from '@pages/user/point/components/pointSubmitActions';
+import {
+  SERVICE_REQUEST_CREATE_PATH,
+  SERVICE_REQUESTS_PATH,
+} from '@/routes/serviceRequestRoutes';
 import logoImg from '@assets/img/logo.png';
 import bellIcon from '@assets/img/bellIcon.png';
 import walletIcon from '@assets/img/walletIcon.png';
@@ -40,7 +44,7 @@ const NOTICE_ROTATE_MS = 3500;
 const NOTICE_SCROLL_THRESHOLD = 48; // NoticeStrip 높이 정도 스크롤하면 전환
 
 const AUCTION_CATEGORIES = [
-  '전자기기', '생활·가구', '패션·의류', '도서·음반', '취미',
+  '전자기기', '생활·가구', '패션·의류', '도서·음반', '악기·굿즈',
   '스포츠·레저', '유아·아동', '뷰티·미용', '식품', '기타',
 ];
 
@@ -65,6 +69,13 @@ const NOTI_DOMAIN_ICONS = {
   NTFC0012: Wrench, // 서비스
   NTFC0013: Wallet, // 운영·환전
   NTFC0014: MessageCircle, // 채팅
+};
+
+// 일반/제공자 구분 배지 — NotificationPage.jsx의 AUDIENCE_TO_CODE와 같은 코드값(NTFG04) 기준.
+// 헤더 미리보기에는 전체 알림함 같은 일반/제공자 필터가 없어서, 항목 자체에 배지로 구분해둔다 (2026-08-10).
+const NOTI_AUDIENCE_BADGE = {
+  NTFC0015: { label: '일반', className: 'bg-gray-100 text-gray-500' },
+  NTFC0016: { label: '제공자', className: 'bg-amber-50 text-amber-700' },
 };
 
 const Header = () => {
@@ -121,7 +132,7 @@ const Header = () => {
 
   const [serviceHovered, setServiceHovered] = useState(false);
   const serviceMenuOpen = isProvider && serviceHovered;
-  const serviceMenuPath = isProvider ? '/service' : '/service-requests/new';
+  const serviceMenuPath = isProvider ? SERVICE_REQUESTS_PATH : SERVICE_REQUEST_CREATE_PATH;
 
   const [customerHovered, setCustomerHovered] = useState(false);
   const customerOpen = customerHovered;
@@ -140,7 +151,8 @@ const Header = () => {
   const isAuctionSearchRoute = pathname === '/auction'
     || /^\/auction\/[^/]+$/.test(pathname);
   const isServiceSearchRoute = isProvider && (
-    pathname === '/service' || /^\/service-requests\/\d+$/.test(pathname)
+    pathname === SERVICE_REQUESTS_PATH
+    || /^\/services\/requests\/\d+$/.test(pathname)
   );
   const hasHeaderSearch = isAuctionSearchRoute || isServiceSearchRoute;
   // 현재 보고 있는 화면이 헤더의 어느 메뉴에 속하는지 — 호버와 무관하게 항상 활성 색상을 보여준다.
@@ -149,7 +161,8 @@ const Header = () => {
   // 리뷰 작성 화면을 보고 있을 때도 "경매" 메뉴가 계속 활성 색상으로 켜지는 문제가 있었다.
   // isAuctionSearchRoute와 동일 기준(정확히 /auction 또는 /auction/:id까지만)으로 맞춘다.
   const isAuctionMenuActive = pathname === '/auction' || /^\/auction\/[^/]+$/.test(pathname);
-  const isServiceMenuActive = pathname.startsWith('/service');
+  const isServiceMenuActive = pathname === SERVICE_REQUESTS_PATH
+    || pathname.startsWith(`${SERVICE_REQUESTS_PATH}/`);
   const isCustomerMenuActive = pathname.startsWith('/customersupport');
   let headerCreateActionType = null;
   const canShowCreateAction = !authLoading && (!user || user.role === 'ROLE_USER');
@@ -320,7 +333,7 @@ const Header = () => {
             검색이 있는 페이지는 768~1280px 구간에서 검색창이 이 사이에 끼어들도록
             order를 매겨둔다(순서만 바꾸고 실제 DOM 위치는 그대로, 2026-08-10) */}
         <div className={`flex items-center gap-10 ${hasHeaderSearch ? 'md:order-1 xl:order-none' : ''}`}>
-          <Link to="/" className="flex shrink-0 items-center">
+          <Link to="/" className="flex shrink-0 items-center" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             <img src={logoImg} alt="에누리컷" className="h-[58px] w-auto" />
           </Link>
 
@@ -393,7 +406,7 @@ const Header = () => {
                 <div className="absolute left-0 top-full w-[161px] pt-[14px] z-50">
                   <div className="rounded-[5px] border border-[#4e4e4e] bg-white py-1 shadow-[0px_4px_10px_2px_rgba(0,0,0,0.15)]">
                     <Link
-                      to="/service"
+                      to={SERVICE_REQUESTS_PATH}
                       className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
                       onClick={() => setServiceHovered(false)}
                     >
@@ -402,7 +415,7 @@ const Header = () => {
                     {SERVICE_CATEGORIES.map((label) => (
                       <Link
                         key={label}
-                        to={`/service?category=${encodeURIComponent(label)}`}
+                        to={`${SERVICE_REQUESTS_PATH}?category=${encodeURIComponent(label)}`}
                         className="flex items-center justify-between px-4 py-[7px] text-[16px] font-medium text-black hover:bg-[#f9fafb] hover:text-primary"
                         onClick={() => setServiceHovered(false)}
                       >
@@ -524,6 +537,12 @@ const Header = () => {
                           </span>
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-[13px] text-[#333]">
+                              {/* 일반/제공자 구분 배지 — NotificationItem.jsx(알림함 전체 목록)와 같은 기준 (2026-08-10) */}
+                              {NOTI_AUDIENCE_BADGE[item.audienceCd] && (
+                                <span className={`mr-1 inline-block shrink-0 rounded-lg px-1.5 py-0.5 text-[10px] align-middle ${NOTI_AUDIENCE_BADGE[item.audienceCd].className}`}>
+                                  {NOTI_AUDIENCE_BADGE[item.audienceCd].label}
+                                </span>
+                              )}
                               {item.title}
                               {item.content && <span className="text-[#969696]"> · {item.content}</span>}
                             </p>
@@ -933,13 +952,13 @@ const Header = () => {
                 </button>
                 {mobileServiceOpen && (
                   <div className="flex flex-col gap-1 pb-3 pl-2">
-                    <Link to="/service" className="py-2 text-[16px] font-bold text-primary" onClick={closeMobileMenu}>
+                    <Link to={SERVICE_REQUESTS_PATH} className="py-2 text-[16px] font-bold text-primary" onClick={closeMobileMenu}>
                       전체보기
                     </Link>
                     {SERVICE_CATEGORIES.map((label) => (
                       <Link
                         key={label}
-                        to={`/service?category=${encodeURIComponent(label)}`}
+                        to={`${SERVICE_REQUESTS_PATH}?category=${encodeURIComponent(label)}`}
                         className="py-2 text-[15px] text-[#4e4e4e]"
                         onClick={closeMobileMenu}
                       >
@@ -952,7 +971,7 @@ const Header = () => {
             ) : (
               <div className="border-b border-[#f0f0f0]">
                 <Link
-                  to="/service-requests/new"
+                  to={SERVICE_REQUEST_CREATE_PATH}
                   className="flex w-full items-center justify-between py-4 text-[20px] font-bold text-[#333333]"
                   onClick={closeMobileMenu}
                 >

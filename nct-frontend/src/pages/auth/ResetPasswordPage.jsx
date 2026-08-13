@@ -4,9 +4,13 @@
 //   - token 있음: 이메일 링크 클릭 후 도착 -> 새 비밀번호 입력 -> 확정
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import { requestPasswordReset, confirmPasswordReset } from '@api/authApi';
 import AuthPageContainer from '@components/auth/AuthPageContainer';
 import AuthCard from '@components/auth/AuthCard';
+import { ActionButton } from '@components/common/ui';
+import { isValidNewPassword, PASSWORD_POLICY_GUIDE } from '@utils/passwordPolicy';
+import { notify } from '@utils/common';
 
 // @ai_generated: 목업(38_password_reset.html)의 이메일 마스킹 규칙을 그대로 재사용한다.
 const maskEmail = (email) =>
@@ -28,7 +32,7 @@ function RequestForm() {
 
   const handleSubmit = async () => {
     if (!loginId.trim() || !email.trim()) {
-      alert('아이디와 이메일을 입력해주세요.');
+      await notify({ icon: 'warning', title: '아이디와 이메일을 입력해주세요.', size: 'sm' });
       return;
     }
 
@@ -39,9 +43,12 @@ function RequestForm() {
       setSent(true);
     } catch (error) {
       if (error.response?.status === 429) {
-        alert(error.response.data?.message ?? '잠시 후 다시 시도해주세요.');
+        await notify({
+          icon: 'warning',
+          title: error.response.data?.message ?? '잠시 후 다시 시도해주세요.',
+        });
       } else {
-        alert('요청 처리 중 오류가 발생했습니다.');
+        await notify({ icon: 'error', title: '요청 처리 중 오류가 발생했습니다.' });
       }
     } finally {
       setLoading(false);
@@ -77,7 +84,7 @@ function RequestForm() {
               <label className="text-sm font-medium text-gray-700">이메일 주소</label>
               <input
                 type="email"
-                placeholder="example@email.com"
+                placeholder="가입한 이메일을 입력해주세요"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -85,14 +92,15 @@ function RequestForm() {
               />
             </div>
 
-            <button
-              type="button"
+            <ActionButton
               onClick={handleSubmit}
-              disabled={loading}
-              className="mt-1 w-full h-12 rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-base font-bold transition-all duration-150 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              fullWidth
+              loading={loading}
+              size="lg"
+              className="mt-1"
             >
               {loading ? '발송 중...' : '재설정 링크 발송'}
-            </button>
+            </ActionButton>
           </div>
         ) : (
           <div className="flex flex-col gap-5 text-center">
@@ -105,6 +113,9 @@ function RequestForm() {
                 <strong className="text-gray-700">{maskEmail(email)}</strong>으로<br />
                 비밀번호 재설정 링크를 발송했습니다.
               </p>
+              <p className="mt-2 text-xs text-gray-500">
+                소셜 가입 회원은 가입한 소셜 계정으로 로그인해주세요.
+              </p>
             </div>
             <ul className="text-xs text-gray-500 text-left bg-gray-50 rounded-lg px-4 py-3 space-y-1.5">
               <li>링크는 발송 후 <strong className="text-gray-700">1시간</strong> 동안 유효합니다.</li>
@@ -112,21 +123,19 @@ function RequestForm() {
               <li>메일이 오지 않으면 스팸함을 확인해주세요.</li>
             </ul>
             <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
+              <ActionButton
                 onClick={() => setSent(false)}
-                className="h-11 rounded-lg border border-gray-300 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition"
+                tone="neutral"
               >
                 다시 입력하기
-              </button>
-              <button
-                type="button"
+              </ActionButton>
+              <ActionButton
                 onClick={handleResend}
-                disabled={loading}
-                className="h-11 rounded-lg border border-blue-600 text-blue-600 text-sm font-semibold hover:bg-blue-50 transition disabled:opacity-60"
+                loading={loading}
+                tone="outline"
               >
                 재발송 요청
-              </button>
+              </ActionButton>
             </div>
           </div>
         )}
@@ -145,21 +154,22 @@ function RequestForm() {
 function ConfirmForm({ token }) {
   const [newPassword,        setNewPassword]        = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm]  = useState('');
+  const [passwordVisibility, setPasswordVisibility] = useState({ newPassword: false, newPasswordConfirm: false });
   const [loading,            setLoading]             = useState(false);
   const [done,                setDone]                = useState(false);
   const [invalid,             setInvalid]             = useState(false);
 
   const handleSubmit = async () => {
     if (!newPassword.trim() || !newPasswordConfirm.trim()) {
-      alert('새 비밀번호를 입력해주세요.');
+      await notify({ icon: 'warning', title: '새 비밀번호를 입력해주세요.', size: 'sm' });
       return;
     }
-    if (newPassword.length < 8 || newPassword.length > 20) {
-      alert('비밀번호는 8~20자여야 합니다.');
+    if (!isValidNewPassword(newPassword)) {
+      await notify({ icon: 'warning', title: PASSWORD_POLICY_GUIDE, size: 'sm' });
       return;
     }
     if (newPassword !== newPasswordConfirm) {
-      alert('비밀번호가 일치하지 않습니다.');
+      await notify({ icon: 'warning', title: '비밀번호가 일치하지 않습니다.', size: 'sm' });
       return;
     }
 
@@ -173,9 +183,9 @@ function ConfirmForm({ token }) {
       if (status === 404 || status === 409) {
         setInvalid(true);
       } else if (error.response?.data?.message) {
-        alert(error.response.data.message);
+        await notify({ icon: 'error', title: error.response.data.message });
       } else {
-        alert('비밀번호 재설정 중 오류가 발생했습니다.');
+        await notify({ icon: 'error', title: '비밀번호 재설정 중 오류가 발생했습니다.' });
       }
     } finally {
       setLoading(false);
@@ -232,35 +242,33 @@ function ConfirmForm({ token }) {
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-gray-700">새 비밀번호</label>
-            <input
-              type="password"
-              placeholder="8~20자"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full h-12 px-4 rounded-lg border border-gray-300 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
+            <div className="relative">
+              <input type={passwordVisibility.newPassword ? 'text' : 'password'} placeholder="8~64자, 영문·숫자·특수문자 중 2종 이상" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full h-12 px-4 pr-11 rounded-lg border border-gray-300 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+              <button type="button" onClick={() => setPasswordVisibility((previous) => ({ ...previous, newPassword: !previous.newPassword }))} aria-label={passwordVisibility.newPassword ? '새 비밀번호 숨기기' : '새 비밀번호 보기'} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600">
+                {passwordVisibility.newPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-gray-700">새 비밀번호 확인</label>
-            <input
-              type="password"
-              placeholder="새 비밀번호 확인"
-              value={newPasswordConfirm}
-              onChange={(e) => setNewPasswordConfirm(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
-              className="w-full h-12 px-4 rounded-lg border border-gray-300 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
+            <div className="relative">
+              <input type={passwordVisibility.newPasswordConfirm ? 'text' : 'password'} placeholder="새 비밀번호를 다시 입력해주세요" value={newPasswordConfirm} onChange={(e) => setNewPasswordConfirm(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }} className="w-full h-12 px-4 pr-11 rounded-lg border border-gray-300 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+              <button type="button" onClick={() => setPasswordVisibility((previous) => ({ ...previous, newPasswordConfirm: !previous.newPasswordConfirm }))} aria-label={passwordVisibility.newPasswordConfirm ? '새 비밀번호 확인 숨기기' : '새 비밀번호 확인 보기'} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600">
+                {passwordVisibility.newPasswordConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
-          <button
-            type="button"
+          <ActionButton
             onClick={handleSubmit}
-            disabled={loading}
-            className="mt-1 w-full h-12 rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-base font-bold transition-all duration-150 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            fullWidth
+            loading={loading}
+            size="lg"
+            className="mt-1"
           >
             {loading ? '변경 중...' : '비밀번호 변경'}
-          </button>
+          </ActionButton>
         </div>
       </AuthCard>
     </AuthPageContainer>

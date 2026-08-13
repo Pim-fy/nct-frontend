@@ -1,7 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowDown, ArrowUp, GripVertical, PencilLine, Plus, Save } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  GripVertical,
+  ListOrdered,
+  PencilLine,
+  Plus,
+  Save,
+  X,
+} from 'lucide-react';
 import AdminModal from '@components/admin/AdminModal';
+import AdminHistoryTimeline from '@components/admin/AdminHistoryTimeline';
 import AdminPagination from '@components/admin/AdminPagination';
 import AdminTable from '@components/admin/AdminTable';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
@@ -10,7 +20,6 @@ import PageMeta from '@components/admin/PageMeta';
 import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
 import {
   useAdminCategories,
-  useMoveAdminCategory,
   useReorderAdminCategories,
   useSaveAdminCategory,
 } from '@hooks/useAdminCategories';
@@ -54,22 +63,24 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saveFeedback, setSaveFeedback] = useState('');
   const [moveFeedback, setMoveFeedback] = useState('');
+  const [orderEditing, setOrderEditing] = useState(false);
+  const [orderedCategories, setOrderedCategories] = useState([]);
   const [draggedCategorySn, setDraggedCategorySn] = useState(null);
   const [dragTarget, setDragTarget] = useState(null);
   const categoriesQuery = useAdminCategories(domainCode);
   const saveMutation = useSaveAdminCategory();
-  const moveMutation = useMoveAdminCategory();
   const reorderMutation = useReorderAdminCategories();
   const categories = categoriesQuery.data ?? [];
+  const managementCategories = [...categories].reverse();
   const isServiceDomain = domainCode === SERVICE_DOMAIN;
-  const orderPending = moveMutation.isPending || reorderMutation.isPending;
+  const orderPending = reorderMutation.isPending;
   const {
     page,
     pagedItems: pagedCategories,
     setPage,
     totalItems,
     totalPages,
-  } = useClientPagination(categories, PAGE_SIZE);
+  } = useClientPagination(managementCategories, PAGE_SIZE);
 
   const closeDialog = () => {
     if (saveMutation.isPending) return;
@@ -120,6 +131,7 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
           active: editingId ? form.active : (isServiceDomain ? false : form.active),
         },
       });
+      if (!editingId) setPage(1);
       setDialogOpen(false);
       setEditingId(null);
       setForm(EMPTY_FORM);
@@ -136,17 +148,46 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
     }
   };
 
-  const move = async (category, direction) => {
+  const startOrderEditing = () => {
+    setMoveFeedback('');
+    setOrderedCategories([...categories]);
+    setOrderEditing(true);
+  };
+
+  const cancelOrderEditing = () => {
+    if (orderPending) return;
+    setOrderEditing(false);
+    setOrderedCategories([]);
+    setMoveFeedback('');
+    setDraggedCategorySn(null);
+    setDragTarget(null);
+  };
+
+  const move = (category, direction) => {
+    if (!orderEditing || orderPending) return;
+    setOrderedCategories((current) => {
+      const index = current.findIndex((item) => item.categorySn === category.categorySn);
+      const targetIndex = direction === 'UP' ? index - 1 : index + 1;
+      if (index < 0 || targetIndex < 0 || targetIndex >= current.length) return current;
+      const next = [...current];
+      [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+      return next;
+    });
+  };
+
+  const saveOrder = async () => {
+    if (!orderEditing || orderPending) return;
     setMoveFeedback('');
     try {
-      await moveMutation.mutateAsync({
+      await reorderMutation.mutateAsync({
         domainCode,
-        categorySn: category.categorySn,
-        direction,
+        categorySnOrder: orderedCategories.map((category) => category.categorySn),
       });
-      toast({ icon: 'success', title: '노출 순서를 변경했습니다.', timer: 1500 });
+      setOrderEditing(false);
+      setOrderedCategories([]);
+      toast({ icon: 'success', title: '노출 순서를 저장했습니다.', timer: 1500 });
     } catch (error) {
-      setMoveFeedback(error.response?.data?.message || '노출 순서를 변경하지 못했습니다.');
+      setMoveFeedback(error.response?.data?.message || '노출 순서를 저장하지 못했습니다.');
     }
   };
 
@@ -162,7 +203,7 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
   };
 
   const dragOver = (event, category) => {
-    if (!draggedCategorySn || orderPending) return;
+    if (!orderEditing || !draggedCategorySn || orderPending) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
     const bounds = event.currentTarget.getBoundingClientRect();
@@ -175,7 +216,7 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
     setDragTarget(null);
   };
 
-  const drop = async (event, targetCategory) => {
+  const drop = (event, targetCategory) => {
     event.preventDefault();
     const sourceCategorySn = draggedCategorySn
       ?? Number(event.dataTransfer.getData('text/plain'));
@@ -184,7 +225,7 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
     finishDrag();
     if (!sourceCategorySn || sourceCategorySn === targetCategory.categorySn || orderPending) return;
 
-    const currentIds = categories.map((category) => category.categorySn);
+    const currentIds = orderedCategories.map((category) => category.categorySn);
     const reorderedIds = [...currentIds];
     const sourceIndex = reorderedIds.indexOf(sourceCategorySn);
     if (sourceIndex < 0) return;
@@ -195,21 +236,19 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
     reorderedIds.splice(insertionIndex, 0, movedCategorySn);
     if (reorderedIds.every((categorySn, index) => categorySn === currentIds[index])) return;
 
-    setMoveFeedback('');
-    try {
-      await reorderMutation.mutateAsync({ domainCode, categorySnOrder: reorderedIds });
-      toast({ icon: 'success', title: '노출 순서를 변경했습니다.', timer: 1500 });
-    } catch (error) {
-      setMoveFeedback(error.response?.data?.message || '노출 순서를 변경하지 못했습니다.');
-    }
+    const byId = new Map(orderedCategories.map((category) => [category.categorySn, category]));
+    setOrderedCategories(reorderedIds.map((categorySn) => byId.get(categorySn)));
   };
+
+  const orderItems = orderEditing ? orderedCategories : categories;
+  const visibleCategories = orderEditing ? orderedCategories : pagedCategories;
 
   const columns = [
     {
       key: 'order',
       label: '노출 순서',
       render: (_, row) => {
-        const orderIndex = categories.findIndex(
+        const orderIndex = orderItems.findIndex(
           (category) => category.categorySn === row.categorySn,
         );
         const dropPosition = dragTarget?.categorySn === row.categorySn
@@ -219,47 +258,57 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
         return (
           <div
             className={`admin-category-order${draggedCategorySn === row.categorySn ? ' is-dragging' : ''}${dropPosition ? ` is-drop-${dropPosition}` : ''}`}
+            onKeyDown={(event) => {
+              if (!event.altKey || !['ArrowUp', 'ArrowDown'].includes(event.key)) return;
+              event.preventDefault();
+              move(row, event.key === 'ArrowUp' ? 'UP' : 'DOWN');
+            }}
             onDragOver={(event) => dragOver(event, row)}
             onDrop={(event) => drop(event, row)}
+            tabIndex={orderEditing ? 0 : undefined}
           >
-            <button
-              aria-label={`${row.name} 순서 끌어서 이동`}
-              className="admin-category-drag-handle"
-              disabled={orderPending}
-              draggable={!orderPending}
-              onDragEnd={finishDrag}
-              onDragStart={(event) => startDrag(event, row)}
-              title="잡고 끌어서 순서 변경"
-              type="button"
-            >
-              <GripVertical />
-            </button>
+            {orderEditing && (
+              <button
+                aria-label={`${row.name} 순서 끌어서 이동`}
+                className="admin-category-drag-handle"
+                disabled={orderPending}
+                draggable={!orderPending}
+                onDragEnd={finishDrag}
+                onDragStart={(event) => startDrag(event, row)}
+                title="잡고 끌어서 순서 변경"
+                type="button"
+              >
+                <GripVertical />
+              </button>
+            )}
             <strong>{orderIndex + 1}</strong>
-            <div>
-              <button
-                aria-label={`${row.name} 위로 이동`}
-                disabled={orderIndex <= 0 || orderPending}
-                onClick={() => move(row, 'UP')}
-                title="위로 이동"
-                type="button"
-              >
-                <ArrowUp />
-              </button>
-              <button
-                aria-label={`${row.name} 아래로 이동`}
-                disabled={orderIndex < 0 || orderIndex >= categories.length - 1 || orderPending}
-                onClick={() => move(row, 'DOWN')}
-                title="아래로 이동"
-                type="button"
-              >
-                <ArrowDown />
-              </button>
-            </div>
+            {orderEditing && (
+              <div>
+                <button
+                  aria-label={`${row.name} 위로 이동`}
+                  disabled={orderIndex <= 0 || orderPending}
+                  onClick={() => move(row, 'UP')}
+                  title="위로 이동 (Alt+↑)"
+                  type="button"
+                >
+                  <ArrowUp />
+                </button>
+                <button
+                  aria-label={`${row.name} 아래로 이동`}
+                  disabled={orderIndex < 0 || orderIndex >= orderItems.length - 1 || orderPending}
+                  onClick={() => move(row, 'DOWN')}
+                  title="아래로 이동 (Alt+↓)"
+                  type="button"
+                >
+                  <ArrowDown />
+                </button>
+              </div>
+            )}
           </div>
         );
       },
     },
-    { key: 'name', label: '이름', render: (value) => <strong>{value}</strong> },
+    { key: 'name', label: '이름', className: 'admin-table__compact-text', render: (value) => <strong>{value}</strong> },
     {
       key: 'active',
       label: '상태',
@@ -272,7 +321,7 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
     ...(isServiceDomain ? [{
       key: 'formStatus',
       label: '요청 폼',
-      render: (_, row) => (
+      render: (_, row) => orderEditing ? '-' : (
         <FormVersionStatus
           activeVersion={row.activeFormVersion}
           draftVersion={row.draftFormVersion}
@@ -311,17 +360,58 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
       <div className="admin-category-panel__header">
         <div>
           <h2 id={`category-panel-${domainCode}`}>{label}</h2>
-          <p>총 <strong>{totalItems}</strong>개</p>
+          <p>
+            총 <strong>{totalItems}</strong>개
+            {orderEditing ? ' · 실제 노출 순서대로 편집' : ' · 노출 순서 역순으로 표시'}
+          </p>
         </div>
-        <button
-          className="btn btn-primary admin-category-summary-action"
-          disabled={categoriesQuery.isLoading || categoriesQuery.isError}
-          onClick={openCreateDialog}
-          type="button"
-        >
-          <Plus /> {label} 추가
-        </button>
+        <div className="admin-category-panel__actions">
+          {orderEditing ? (
+            <>
+              <button
+                className="btn btn-outline"
+                disabled={orderPending}
+                onClick={cancelOrderEditing}
+                type="button"
+              >
+                <X /> 취소
+              </button>
+              <button
+                className="btn btn-primary"
+                disabled={orderPending}
+                onClick={saveOrder}
+                type="button"
+              >
+                <Save /> {orderPending ? '저장 중' : '순서 저장'}
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className="btn btn-outline"
+                disabled={categoriesQuery.isLoading || categoriesQuery.isError || categories.length < 2}
+                onClick={startOrderEditing}
+                type="button"
+              >
+                <ListOrdered /> 순서 편집
+              </button>
+              <button
+                className="btn btn-primary admin-category-summary-action"
+                disabled={categoriesQuery.isLoading || categoriesQuery.isError}
+                onClick={openCreateDialog}
+                type="button"
+              >
+                <Plus /> {label} 추가
+              </button>
+            </>
+          )}
+        </div>
       </div>
+      {orderEditing && (
+        <p className="admin-category-order-guide">
+          전체 카테고리를 끌어 놓거나 화살표로 이동한 뒤 저장하세요. 키보드는 항목에서 Alt+↑·Alt+↓를 사용할 수 있습니다.
+        </p>
+      )}
       {moveFeedback && <p className="admin-category-feedback" role="alert">{moveFeedback}</p>}
       {categoriesQuery.isError && (
         <div className="admin-content-state is-error" role="alert">
@@ -341,19 +431,21 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
           <div className="admin-table-scroll">
             <AdminTable
               columns={columns}
-              data={pagedCategories}
+              data={visibleCategories}
               emptyMessage="등록된 카테고리가 없습니다."
               loading={categoriesQuery.isLoading}
               rowKey={(category) => category.categorySn}
             />
           </div>
-          <AdminPagination
-            ariaLabel={`${label} 목록 페이지 이동`}
-            disabled={categoriesQuery.isFetching || orderPending}
-            onPageChange={setPage}
-            page={page}
-            totalPages={totalPages}
-          />
+          {!orderEditing && (
+            <AdminPagination
+              ariaLabel={`${label} 목록 페이지 이동`}
+              disabled={categoriesQuery.isFetching}
+              onPageChange={setPage}
+              page={page}
+              totalPages={totalPages}
+            />
+          )}
         </>
       )}
 
@@ -413,6 +505,9 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
               </button>
             </div>
           </form>
+          {editingId && (
+            <AdminHistoryTimeline referenceSn={editingId} referenceType="CATEGORY" />
+          )}
         </AdminModal>
       )}
     </section>

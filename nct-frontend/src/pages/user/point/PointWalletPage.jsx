@@ -1,8 +1,7 @@
 // src/pages/user/point/PointWalletPage.jsx
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import Swal from 'sweetalert2';
 
 import PointSummaryCards from './components/PointSummaryCards';
 import PointLedgerTable from './components/PointLedgerTable';
@@ -14,6 +13,8 @@ import PointChargeWidgetModal from './components/PointChargeWidgetModal';
 import PointHistoryDetailModal from './components/PointHistoryDetailModal';
 import { errorMessage, submitPointAmount } from './components/pointSubmitActions';
 import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
+import { ActionButton } from '@components/common/ui';
+import { notify } from '@utils/common';
 import { usePointBalance, usePointLedger, usePointChargeOrders, usePointExchangeOrders } from '../../../hooks/usePoint';
 import { confirmPointCharge } from '../../../api/pointApi';
 import { useAuth } from '@hooks/useAuth';
@@ -78,13 +79,13 @@ const PointWalletPage = ({ embedded = false } = {}) => {
   // 포인트지갑으로 튕겨 나가버리는 문제가 있었다. PointChargeWidgetModal이 결제 시작 직전
   // sessionStorage에 남겨둔 원래 경로로 돌아간다 — 값이 없으면(지갑 화면에서 직접 충전한 경우
   // 등) 그대로 지갑 화면에 머문다.
-  const returnToOriginalPage = () => {
+  const returnToOriginalPage = useCallback(() => {
     const returnTo = sessionStorage.getItem('pointChargeReturnTo');
     sessionStorage.removeItem('pointChargeReturnTo');
     if (returnTo && returnTo !== window.location.pathname + window.location.search) {
       navigate(returnTo, { replace: true });
     }
-  };
+  }, [navigate]);
 
   // 오버레이의 나가기 버튼 — 승인 응답이 비정상적으로 안 오는 등 예외 상황에서도 사용자가
   // 화면에 갇히지 않도록 하는 탈출구다. 승인 요청 자체는 취소하지 않고(서버는 계속 처리),
@@ -126,21 +127,19 @@ const PointWalletPage = ({ embedded = false } = {}) => {
           // 이미 나가기 버튼으로 빠져나갔으면 이제 와서 팝업을 띄우지 않는다 — 다음에 지갑을
           // 열었을 때 반영된 내역으로 충분히 알 수 있다
           if (leftManually.current) return null;
-          return Swal.fire({
+          return notify({
             icon: 'success',
             title: '충전 완료',
             text: '포인트 충전이 완료되었습니다.',
-            confirmButtonColor: '#0064ff',
           });
         })
         .catch((err) => {
           queryClient.invalidateQueries({ queryKey: ['point'] });
           if (leftManually.current) return null;
-          return Swal.fire({
+          return notify({
             icon: 'error',
             title: '충전 승인 실패',
             text: errorMessage(err),
-            confirmButtonColor: '#0064ff',
           });
         })
         .finally(() => {
@@ -153,18 +152,17 @@ const PointWalletPage = ({ embedded = false } = {}) => {
         });
     } else {
       // 실패 리다이렉트 — 토스가 붙여 준 실패 메시지를 그대로 안내 (주문은 대기 상태로 남는다)
-      Swal.fire({
+      notify({
         icon: 'error',
         title: '결제 실패',
         text: searchParams.get('message') ?? '결제가 완료되지 않았습니다.',
-        confirmButtonColor: '#0064ff',
       }).then(() => {
         if (leftManually.current) return;
         clearParams();
         returnToOriginalPage();
       });
     }
-  }, [searchParams, setSearchParams, queryClient]);
+  }, [searchParams, setSearchParams, queryClient, returnToOriginalPage]);
 
   /**
    * 환전/전환 공통 제출 처리 — 검증·API 호출·캐시 갱신·안내 흐름은 헤더 POINT 드롭다운과
@@ -218,27 +216,29 @@ const PointWalletPage = ({ embedded = false } = {}) => {
         title="포인트 지갑"
         actions={(
           <>
-            <button
-              type="button"
-              className="whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium rounded-lg px-3 py-2 sm:px-5 sm:py-2.5 transition-colors"
+            <ActionButton
+              className="whitespace-nowrap"
               onClick={() => setOpenModal('charge')}
+              size="sm"
             >
               충전
-            </button>
-            <button
-              type="button"
-              className="whitespace-nowrap border border-blue-600 text-blue-600 hover:bg-blue-50 text-xs sm:text-sm font-medium rounded-lg px-3 py-2 sm:px-5 sm:py-2.5 transition-colors"
+            </ActionButton>
+            <ActionButton
+              className="whitespace-nowrap"
               onClick={() => setOpenModal('convert')}
+              size="sm"
+              tone="outline"
             >
               전환
-            </button>
-            <button
-              type="button"
-              className="whitespace-nowrap border border-blue-600 text-blue-600 hover:bg-blue-50 text-xs sm:text-sm font-medium rounded-lg px-3 py-2 sm:px-5 sm:py-2.5 transition-colors"
+            </ActionButton>
+            <ActionButton
+              className="whitespace-nowrap"
               onClick={() => setOpenModal('exchange')}
+              size="sm"
+              tone="outline"
             >
               환전
-            </button>
+            </ActionButton>
           </>
         )}
       />

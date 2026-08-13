@@ -1,8 +1,9 @@
 // src/pages/service/ServiceRequestDetailPage.jsx
 // 서비스 요청서 상세 — 일반회원 본인 관리 / 제공자 공개 요청 조회·견적 제출
-// 라우트: /service-requests/:svcReqSn
+// 라우트: /services/requests/:svcReqSn
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Flag } from 'lucide-react';
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
 import {
@@ -10,22 +11,36 @@ import {
   getServiceRequest,
   addServiceRequestComment,
   getServiceRequestComments,
+  reregisterServiceRequest,
 } from '@api/serviceRequestApi';
 import { getReceivedQuotes } from '@api/quoteApi';
 import { fetchMyProviderQuoteAccess } from '@api/providerProfileApi';
 import { useMyActiveQuote } from '@hooks/useQuote';
 import { toImageUrl } from '@api/fileApi';
-import { formatBudget } from '@utils/common';
+import { formatBudget, formatPoint, formatPointUnitText } from '@utils/common';
 import ImageLightbox from '@components/common/ImageLightbox';
 import ErrorMessage from '@components/common/ErrorMessage';
 import ViewSkeleton from '@components/skeleton/ViewSkeleton';
 import Toast from '@components/common/Toast';
 import ConfirmModal from '@components/common/ConfirmModal';
+import ReportModal from '@components/common/ReportModal';
+import {
+  ActionButton,
+  CategoryTag,
+  DomainStatus,
+} from '@components/common/ui';
 import Pagination from '@components/common/Pagination';
 import HeaderSearchPortal, {
   SimpleHeaderSearch,
 } from '@components/common/HeaderSearchPortal';
-import { CATEGORY_META } from './serviceRequestWizardSteps';
+import {
+  getServiceRequestDetailPath,
+  getServiceRequestQuoteCreatePath,
+  getServiceRequestQuoteDetailPath,
+  getServiceRequestQuoteEditPath,
+  SERVICE_REQUEST_CREATE_PATH,
+  SERVICE_REQUESTS_PATH,
+} from '@/routes/serviceRequestRoutes';
 
 const STATUS_LABEL = {
   SVCC0001: '임시저장',
@@ -34,11 +49,11 @@ const STATUS_LABEL = {
   SVCC0004: '취소',
 };
 
-const STATUS_BADGE_CLASS = {
-  SVCC0001: 'bg-[#f0f0ee] text-[#5f5e5a]',
-  SVCC0002: 'bg-[#e5efff] text-[#0048bf]',
-  SVCC0003: 'bg-[#e8f0fe] text-[#1a56a4]',
-  SVCC0004: 'bg-[#f0f0ee] text-[#5f5e5a]',
+const STATUS_TONE = {
+  SVCC0001: 'neutral',
+  SVCC0002: 'info',
+  SVCC0003: 'success',
+  SVCC0004: 'danger',
 };
 
 const QUOTE_STATUS_LABEL = {
@@ -47,8 +62,23 @@ const QUOTE_STATUS_LABEL = {
   QUTC0004: '선택됨',
   QUTC0005: '철회됨',
 };
+const QUOTE_STATUS_TONE = {
+  QUTC0001: 'info',
+  QUTC0002: 'info',
+  QUTC0004: 'success',
+  QUTC0005: 'neutral',
+};
 
 const QUOTES_PAGE_SIZE = 5;
+const MONEY_ANSWER_LABEL = /예산|금액|가격|비용|단가/;
+
+const formatServiceAnswerValue = (title, label, value) => {
+  const contextLabel = label || title || '';
+  if (!MONEY_ANSWER_LABEL.test(contextLabel)) return value;
+  const text = String(value ?? '').trim();
+  if (/^[\d,]+$/.test(text)) return formatPoint(Number(text.replaceAll(',', '')));
+  return formatPointUnitText(value);
+};
 
 function parseItem(raw) {
   const idx = raw.indexOf(': ');
@@ -127,12 +157,12 @@ function renderThLabel(entry) {
 
 // 옮길 가전/추가 옵션처럼 라벨 없이 선택값만 여러 개 나열되는 다중선택 항목 — 선택 개수만큼
 // 열을 나누면 개수가 늘어날수록 칸이 좁아져 텍스트가 줄바꿈되므로, 칩으로 만들어 줄바꿈되게 둔다
-function renderMultiSelectValue(fields) {
+function renderMultiSelectValue(fields, title) {
   return (
     <div className="flex flex-wrap gap-2">
       {fields.map((f, i) => (
         <span key={i} className="rounded-lg bg-[#f5f5f3] px-3 py-1.5 font-semibold text-[#1d1d1f]">
-          {f.value}
+          {formatServiceAnswerValue(title, f.label, f.value)}
         </span>
       ))}
     </div>
@@ -143,7 +173,7 @@ function renderMultiSelectValue(fields) {
 // (양쪽 다 같은 간격을 갖도록 첫 칸엔 오른쪽 여백, 이후 칸엔 왼쪽 여백+구분선을 준다 — 폭이 한쪽으로 치우쳐 보이는 것 방지)
 function renderEntryValue(entry) {
   if (entry.fields.length > 1 && entry.fields.every(f => !f.label)) {
-    return renderMultiSelectValue(entry.fields);
+    return renderMultiSelectValue(entry.fields, entry.title);
   }
   const subGroups = groupByLabelPrefix(entry.fields);
   return (
@@ -161,7 +191,7 @@ function renderEntryValue(entry) {
               {item.label && (
                 <span className="mb-0.5 block text-sm text-[#888780]">{item.label}</span>
               )}
-              <strong className="block whitespace-pre-line font-semibold text-[#1d1d1f]">{item.value}</strong>
+              <strong className="block whitespace-pre-line font-semibold text-[#1d1d1f]">{formatServiceAnswerValue(entry.title, item.label, item.value)}</strong>
             </div>
           ))}
         </div>
@@ -170,9 +200,9 @@ function renderEntryValue(entry) {
   );
 }
 
-// 특이사항 메모 단계 제목 — SVC_REQ_ITEM이 아니라 SERVICE_REQUEST.SVC_REQ_CN에 별도 저장되므로
-// 표에는 상세 조회 시점에 마지막 항목으로 합쳐서 보여준다
-const MEMO_TITLE = '특이사항 메모';
+// 특이사항 메모 단계의 필드 라벨 — 동적 폼 답변으로 SVC_REQ_ITEM에 자동 저장되어
+// request.items에 자연스럽게 포함되므로 별도로 추가 조립하지 않는다
+const MEMO_TITLE = '메모';
 
 // 짝을 지어도 되는데도 항상 한 행 전체를 써야 하는 항목 — 선택 항목이 많아질 수 있어 공간이 필요함
 const ALWAYS_FULL_WIDTH_TITLES = ['추가 옵션 (복수 선택)', MEMO_TITLE];
@@ -228,7 +258,9 @@ export default function ServiceRequestDetailPage() {
   const [error, setError] = useState('');
   const [closing, setClosing] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
+  const [reregistering, setReregistering] = useState(false);
   const [toast, setToast] = useState('');
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const [quotes, setQuotes] = useState([]);
   const [quotesLoadedRequestSn, setQuotesLoadedRequestSn] = useState(null);
   // 페이지 번호를 URL 쿼리스트링(?quotePage=)에 반영 — 견적 상세 페이지 갔다가 뒤로가기로
@@ -247,6 +279,7 @@ export default function ServiceRequestDetailPage() {
   const [cmtTtl, setCmtTtl] = useState('');
   const [cmtCn, setCmtCn] = useState('');
   const [cmtSubmitting, setCmtSubmitting] = useState(false);
+  const [commentConfirmOpen, setCommentConfirmOpen] = useState(false);
   const quoteAccessQuery = useQuery({
     queryKey: ['provider', 'quote-access', request?.catSn],
     queryFn: () => fetchMyProviderQuoteAccess(request.catSn),
@@ -269,7 +302,7 @@ export default function ServiceRequestDetailPage() {
   const headerSearch = isProvider ? (
     <HeaderSearchPortal>
       <SimpleHeaderSearch
-        onSearch={(keyword) => navigate(`/service?keyword=${encodeURIComponent(keyword)}`)}
+        onSearch={(keyword) => navigate(`${SERVICE_REQUESTS_PATH}?keyword=${encodeURIComponent(keyword)}`)}
         placeholder="필요한 서비스 요청을 검색하세요"
       />
     </HeaderSearchPortal>
@@ -337,11 +370,17 @@ export default function ServiceRequestDetailPage() {
     };
   }, [request, svcReqSn]);
 
-  const handleCommentSubmit = async () => {
+  // 상품 변경사항 추가(ProductDetailSellerPage)와 동일하게, 등록 전 "등록 후 수정 불가" 확인을 한 번 거친다
+  const requestCommentSubmit = () => {
     if (!cmtTtl.trim()) {
       setToast('제목을 입력해 주세요.');
       return;
     }
+    setCommentConfirmOpen(true);
+  };
+
+  const handleCommentSubmit = async () => {
+    setCommentConfirmOpen(false);
     setCmtSubmitting(true);
     try {
       await addServiceRequestComment(svcReqSn, { ttl: cmtTtl.trim(), cn: cmtCn.trim() || null });
@@ -371,13 +410,24 @@ export default function ServiceRequestDetailPage() {
     }
   };
 
+  const handleReregister = async () => {
+    setReregistering(true);
+    try {
+      const newRequest = await reregisterServiceRequest(svcReqSn);
+      navigate(getServiceRequestDetailPath(newRequest.svcReqSn));
+    } catch (err) {
+      setToast(err.response?.data?.message || '재등록에 실패했습니다.');
+      setReregistering(false);
+    }
+  };
+
   const handleQuoteClick = () => {
     if (!isAuthenticated) {
       navigate('/login', { state: { from: location } });
       return;
     }
     if (quoteAccessQuery.data !== true) return;
-    navigate(`/service-requests/${svcReqSn}/quotes/new`, {
+    navigate(getServiceRequestQuoteCreatePath(svcReqSn), {
       state: {
         svcReqSn,
         svcReqTitle: request.svcReqTtl,
@@ -389,7 +439,7 @@ export default function ServiceRequestDetailPage() {
 
   const handleQuoteEdit = () => {
     if (!myActiveQuote?.qutSn) return;
-    navigate(`/service-requests/${svcReqSn}/quotes/${myActiveQuote.qutSn}/edit`, {
+    navigate(getServiceRequestQuoteEditPath(svcReqSn, myActiveQuote.qutSn), {
       state: {
         quoteId: myActiveQuote.qutSn,
         svcReqSn,
@@ -430,8 +480,9 @@ export default function ServiceRequestDetailPage() {
   // 견적 제출 영역이 안 뜨게 하려면 모드와 무관하게 "진짜 작성자인지"를 따로 알아야 한다
   const isActualCreator = authenticatedUserId != null
     && String(authenticatedUserId) === String(request.usrSn);
-  const isDraft = request.svcReqStatusCd === 'SVCC0001';
-  const isOpen  = request.svcReqStatusCd === 'SVCC0002';
+  const isDraft  = request.svcReqStatusCd === 'SVCC0001';
+  const isOpen   = request.svcReqStatusCd === 'SVCC0002';
+  const isClosed = request.svcReqStatusCd === 'SVCC0004';
   const canAddComment = isOwner && isOpen && comments.length < 3;
   const quoteTotalPages = Math.max(1, Math.ceil(quotes.length / QUOTES_PAGE_SIZE));
   const pagedQuotes = quotes.slice((quotePage - 1) * QUOTES_PAGE_SIZE, quotePage * QUOTES_PAGE_SIZE);
@@ -450,11 +501,8 @@ export default function ServiceRequestDetailPage() {
       parsedItems.push(parsed);
     }
   });
-  parsedItems.push({ title: MEMO_TITLE, fields: [{ label: null, value: request.svcReqCn ?? '' }] });
 
-  const statusBadgeClass = STATUS_BADGE_CLASS[request.svcReqStatusCd] ?? 'bg-[#f0f0ee] text-[#5f5e5a]';
   const statusLabel      = STATUS_LABEL[request.svcReqStatusCd] ?? request.svcReqStatusCd;
-  const categoryColor    = CATEGORY_META[request.catNm]?.color ?? '#4a36b0';
 
   return (
     <>
@@ -462,19 +510,8 @@ export default function ServiceRequestDetailPage() {
       <div className="bg-white pb-14 text-sm leading-[1.6] text-[#1d1d1f]">
         <div className="container">
 
-        {/* 뒤로가기 */}
-        <div className="flex justify-end pt-9 pb-4">
-          <button
-            type="button"
-            className="inline-flex items-center gap-1 rounded-lg border border-[#e2e1dc] bg-white px-4 py-2.5 text-lg font-medium text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary"
-            onClick={() => navigate(isProvider ? '/service' : '/user/mypage/services/requests')}
-          >
-            ← 목록으로
-          </button>
-        </div>
-
         {/* 2열 레이아웃 */}
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_minmax(340px,420px)]">
+        <div className="grid grid-cols-1 items-start gap-6 pt-9 lg:grid-cols-[1fr_minmax(340px,420px)]">
 
           {/* ── 왼쪽: 요청 정보 카드 ── */}
           <article className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm">
@@ -484,36 +521,58 @@ export default function ServiceRequestDetailPage() {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex flex-wrap items-center gap-3">
                   {request.catNm && (
-                    <span
-                      className="rounded-lg px-4 py-1.5 text-lg font-bold"
-                      style={{ backgroundColor: `${categoryColor}1a`, color: categoryColor }}
-                    >
+                    <CategoryTag tone="info" variant="soft">
                       {request.catNm}
-                    </span>
+                    </CategoryTag>
                   )}
-                  <span className={`rounded-lg px-4 py-1.5 text-lg font-bold ${statusBadgeClass}`}>
+                  <DomainStatus tone={STATUS_TONE[request.svcReqStatusCd] ?? 'neutral'} variant="soft">
                     {statusLabel}
-                  </span>
+                  </DomainStatus>
                 </div>
 
                 {/* 요청자 본인 액션 */}
                 {isOwner && isDraft && (
-                  <button
-                    type="button"
-                    className="shrink-0 rounded-lg border border-[#e2e1dc] bg-white px-4 py-2.5 text-lg font-medium text-[#5f5e5a] transition-colors hover:border-primary hover:text-primary"
-                    onClick={() => navigate('/service-requests/new', { state: { svcReqSn: Number(svcReqSn) } })}
+                  <ActionButton
+                    className="shrink-0"
+                    size="lg"
+                    state={{ svcReqSn: Number(svcReqSn) }}
+                    to={SERVICE_REQUEST_CREATE_PATH}
+                    tone="neutral"
                   >
                     작성재개
-                  </button>
+                  </ActionButton>
+                )}
+                {isOwner && isClosed && (
+                  <ActionButton
+                    className="shrink-0"
+                    onClick={handleReregister}
+                    disabled={reregistering}
+                    size="lg"
+                  >
+                    {reregistering ? '재등록 중...' : '재등록'}
+                  </ActionButton>
                 )}
                 {isOwner && isOpen && (
-                  <button
-                    type="button"
-                    className="shrink-0 rounded-lg border border-[#a32d2d] bg-white px-4 py-2.5 text-lg font-semibold text-[#a32d2d] transition-colors hover:bg-[#fcebeb] disabled:opacity-50"
+                  <ActionButton
+                    className="shrink-0"
                     onClick={() => setCloseConfirmOpen(true)}
                     disabled={closing}
+                    size="lg"
+                    tone="danger-outline"
                   >
                     {closing ? '마감 중...' : '요청 마감'}
+                  </ActionButton>
+                )}
+                {/* 담당자 7 · F-COM-018: 제공자는 요청서 작성자를 공통 회원 신고로 접수합니다. */}
+                {isProvider && isAuthenticated && !isActualCreator && request.usrSn && (
+                  <button
+                    aria-label="서비스 요청 작성자 신고하기"
+                    className="inline-flex min-h-6 shrink-0 cursor-pointer items-center gap-1 rounded-full border border-[#dadada] bg-white px-3 py-0.5 text-[13px] leading-[1.4] font-bold text-[#666] transition-colors hover:border-[#999] hover:text-[#1d1d1f]"
+                    onClick={() => setIsReportOpen(true)}
+                    type="button"
+                  >
+                    <Flag size={14} aria-hidden="true" />
+                    신고
                   </button>
                 )}
               </div>
@@ -642,16 +701,15 @@ export default function ServiceRequestDetailPage() {
                       className="mt-2 w-full resize-none rounded-lg border border-[#e2e1dc] px-3 py-2 text-sm outline-none focus:border-primary"
                     />
                     <p className={`mt-1 text-right text-xs ${cmtCn.length >= 100 ? 'text-[#c0392b]' : 'text-[#9a9ba5]'}`}>{cmtCn.length}/100</p>
-                    <p className="mt-1 text-xs text-[#9a9ba5]">변경사항은 최대 3개까지 등록할 수 있습니다.</p>
+                    <p className="mt-1 text-sm text-[#9a9ba5]">변경사항은 최대 3개까지 등록할 수 있습니다.</p>
                     <div className="mt-2 flex justify-end">
-                      <button
-                        type="button"
-                        className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0048bf] disabled:opacity-50"
-                        onClick={handleCommentSubmit}
+                      <ActionButton
+                        onClick={requestCommentSubmit}
                         disabled={cmtSubmitting}
+                        size="sm"
                       >
                         {cmtSubmitting ? '등록 중...' : '등록'}
-                      </button>
+                      </ActionButton>
                     </div>
                   </div>
                 ) : (
@@ -694,7 +752,6 @@ export default function ServiceRequestDetailPage() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-2xl font-bold">도착한 견적</h2>
-                  <p className="mt-1 text-lg text-[#5f5e5a]">견적을 선택하면 상세 내용과 제공자 리뷰를 확인할 수 있습니다.</p>
                 </div>
               </div>
             </div>
@@ -709,13 +766,14 @@ export default function ServiceRequestDetailPage() {
                     ) : myActiveQuote ? (
                       <div className="rounded-2xl border-2 border-primary bg-[#e5efff] px-6 py-6 text-center">
                         <p className="mb-4 text-lg font-medium text-[#0048bf]">이 요청에 제출한 견적이 있습니다.</p>
-                        <button
-                          type="button"
-                          className="w-full rounded-lg bg-primary py-3.5 text-lg font-bold text-white transition-colors hover:bg-[#0048bf]"
+                        <ActionButton
+                          className="min-h-14 rounded-lg px-4 text-[16px] font-bold"
+                          fullWidth
                           onClick={handleQuoteEdit}
+                          preserveSize
                         >
                           내 견적 수정
-                        </button>
+                        </ActionButton>
                       </div>
                     ) : quoteAccessPending ? (
                       <p className="text-center text-lg text-[#888780]">견적 제출 권한을 확인하는 중입니다.</p>
@@ -724,13 +782,14 @@ export default function ServiceRequestDetailPage() {
                       <p className="mb-4 text-lg font-medium text-[#0048bf]">
                         이 요청에 아직 견적을 제출하지 않았습니다
                       </p>
-                      <button
-                        type="button"
-                        className="w-full rounded-lg bg-primary py-3.5 text-lg font-bold text-white transition-colors hover:bg-[#0048bf]"
+                      <ActionButton
+                        className="min-h-14 rounded-lg px-4 text-[16px] font-bold"
+                        fullWidth
                         onClick={handleQuoteClick}
+                        preserveSize
                       >
                         견적 제출하기
-                      </button>
+                      </ActionButton>
                     </div>
                     ) : (
                       <p className="text-center text-lg text-[#888780]">이 서비스 분야의 제공자 승인 후 견적을 제출할 수 있습니다.</p>
@@ -743,13 +802,15 @@ export default function ServiceRequestDetailPage() {
                     <p className="mb-4 text-lg font-medium text-[#0048bf]">
                       견적을 제출하려면 로그인이 필요합니다
                     </p>
-                    <button
-                      type="button"
-                      className="w-full rounded-lg bg-primary py-3.5 text-lg font-bold text-white transition-colors hover:bg-[#0048bf]"
-                      onClick={() => navigate('/login', { state: { from: location } })}
+                    <ActionButton
+                      className="min-h-14 rounded-lg px-4 text-[16px] font-bold"
+                      fullWidth
+                      preserveSize
+                      state={{ from: location }}
+                      to="/login"
                     >
                       로그인하기
-                    </button>
+                    </ActionButton>
                   </div>
                 )}
               </div>
@@ -770,7 +831,7 @@ export default function ServiceRequestDetailPage() {
                       <li
                         key={q.qutSn}
                         className="cursor-pointer px-5 py-4 transition-colors hover:bg-[#f9fafb]"
-                        onClick={() => navigate(`/service-requests/${svcReqSn}/quotes/${q.qutSn}`, {
+                        onClick={() => navigate(getServiceRequestQuoteDetailPath(svcReqSn, q.qutSn), {
                           state: {
                             quote: q,
                             requestSummary: {
@@ -785,9 +846,13 @@ export default function ServiceRequestDetailPage() {
                       >
                         <div className="flex items-start justify-between gap-3">
                           <span className="font-semibold text-[#1d1d1f]">{q.providerNm}</span>
-                          <span className="shrink-0 rounded-lg bg-[#f0f0ee] px-3 py-1 text-sm font-medium text-[#5f5e5a]">
+                          <DomainStatus
+                            className="shrink-0"
+                            tone={QUOTE_STATUS_TONE[q.statusCode] ?? 'neutral'}
+                            variant="soft"
+                          >
                             {QUOTE_STATUS_LABEL[q.statusCode] ?? q.statusCode}
-                          </span>
+                          </DomainStatus>
                         </div>
                         <p className="mt-1 text-xl font-bold text-primary">{formatBudget(q.amount)}</p>
                         {q.content && (
@@ -820,11 +885,31 @@ export default function ServiceRequestDetailPage() {
         onCancel={() => setCloseConfirmOpen(false)}
       />
 
+      <ConfirmModal
+        open={commentConfirmOpen}
+        message="등록 후에는 수정할 수 없습니다."
+        subMessage="이대로 등록하시겠습니까?"
+        confirmLabel="등록"
+        confirmTone="primary"
+        onConfirm={handleCommentSubmit}
+        onCancel={() => setCommentConfirmOpen(false)}
+      />
+
       <ImageLightbox
         images={(request.imageList ?? []).map(img => toImageUrl(img.url))}
         initialIndex={lightboxIndex ?? 0}
         open={lightboxIndex !== null}
         onClose={() => setLightboxIndex(null)}
+      />
+      <ReportModal
+        open={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        targetName="서비스 요청 작성자"
+        targetLabel="신고 대상 회원"
+        targetType="direct"
+        reportedUserSn={request.usrSn}
+        contextLabel={`서비스 요청: ${request.svcReqTtl}`}
+        redirectAfterSubmit={false}
       />
       </div>
     </>

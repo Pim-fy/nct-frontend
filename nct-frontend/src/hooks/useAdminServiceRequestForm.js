@@ -23,6 +23,7 @@ export const useSaveAdminServiceRequestFormDraft = (categorySn) => {
     onSuccess: (data) => {
       queryClient.setQueryData(keys.detail(categorySn), data);
       queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] });
     },
   });
 };
@@ -34,6 +35,7 @@ export const useDiscardAdminServiceRequestFormDraft = (categorySn) => {
     onSuccess: (data) => {
       queryClient.setQueryData(keys.detail(categorySn), data);
       queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] });
     },
   });
 };
@@ -45,6 +47,7 @@ export const usePublishAdminServiceRequestForm = (categorySn) => {
     onSuccess: (data) => {
       queryClient.setQueryData(keys.detail(categorySn), data);
       queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] });
     },
   });
 };

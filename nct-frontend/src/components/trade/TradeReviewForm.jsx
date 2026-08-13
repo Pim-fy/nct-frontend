@@ -6,10 +6,12 @@ import { reviewQueryKeys } from '@hooks/useReview';
 import { toImageUrl } from '@api/fileApi';
 import StarRating from '@components/review/StarRating';
 import PhotoLightbox from '@components/common/PhotoLightbox';
+import { ActionButton, StatusBadge } from '@components/common/ui';
 import { confirm, toast } from '@utils/common';
 
 const MAX_PHOTOS = 5;
 const MAX_CONTENT_LENGTH = 500;
+const DEFAULT_GUIDANCE_TEXT = '상품 상태와 설명이 일치했는지, 응대와 소통은 어땠는지, 배송·직거래 과정에서 좋았거나 아쉬웠던 점을 구체적으로 남겨주세요.';
 
 /**
  * 거래 리뷰 등록/수정 폼. ReviewWritePage/ReviewEditPage(별도 페이지)에 있던 기능을
@@ -17,7 +19,7 @@ const MAX_CONTENT_LENGTH = 500;
  * (드래그앤드롭·대표사진 지정·개별 삭제), 내용 작성, 등록/수정 API 호출까지 동일하다.
  * 다만 카드 폭이 좁아 사진은 2단 그리드 대신 발송 인증 등록과 같은 가로 스크롤 썸네일 목록
  * 패턴(.trade-proof-*)을 재사용하고, 이미 같은 페이지 다른 카드에 상품/상대방 정보가 보이므로
- * 아이템 요약과 신뢰지표는 다시 그리지 않는다.
+ * 아이템 요약과 리뷰 평균 별점은 다시 그리지 않는다.
  *
  * @ai_generated (담당자1, 2026-08-09): 작성/수정이 "가능한" 상태(review가 WRITABLE이든
  * WRITTEN이든)에서는 폼을 잠글 이유가 없다 - 처음부터 바로 입력 가능하게 열어두고, 등록/
@@ -26,7 +28,13 @@ const MAX_CONTENT_LENGTH = 500;
  * 반투명 오버레이로 안내 문구를 가운데 보여준다(빈 텍스트 한 줄보다, 실제로 채워질 폼의
  * 모양을 흐릿하게라도 보여주는 쪽이 낫다는 판단, 사용자 확인).
  */
-export default function TradeReviewForm({ tradeId, review, disabledText, onDone }) {
+export default function TradeReviewForm({
+  tradeId,
+  review,
+  disabledText,
+  guidanceText = DEFAULT_GUIDANCE_TEXT,
+  onDone,
+}) {
   const queryClient = useQueryClient();
   const isDisabled = Boolean(disabledText);
   const isEdit = Boolean(review?.reviewId);
@@ -142,13 +150,13 @@ export default function TradeReviewForm({ tradeId, review, disabledText, onDone 
         {!isDisabled && (
           <div className="flex items-center gap-2">
             {isEdit && (
-              <button type="button" className="btn btn-danger btn-sm" onClick={handleDelete} disabled={submitting}>
+              <ActionButton disabled={submitting} onClick={handleDelete} size="sm" tone="danger">
                 삭제
-              </button>
+              </ActionButton>
             )}
-            <button type="button" className="btn btn-primary btn-sm" onClick={handleSubmit} disabled={submitting}>
+            <ActionButton loading={submitting} onClick={handleSubmit} size="sm">
               {submitting ? (isEdit ? '수정 중...' : '등록 중...') : (isEdit ? '수정' : '리뷰 등록')}
-            </button>
+            </ActionButton>
           </div>
         )}
       </div>
@@ -218,7 +226,15 @@ export default function TradeReviewForm({ tradeId, review, disabledText, onDone 
                           outline: index === 0 ? '2px solid #155eef' : 'none',
                         }}
                       />
-                      {index === 0 && <span className="badge badge-blue trade-review-form__representative-badge">대표</span>}
+                      {index === 0 && (
+                        <StatusBadge
+                          className="trade-review-form__representative-badge"
+                          tone="info"
+                          variant="soft"
+                        >
+                          대표
+                        </StatusBadge>
+                      )}
                       <button
                         type="button"
                         onClick={() => handleRemovePhoto(index)}
@@ -246,10 +262,10 @@ export default function TradeReviewForm({ tradeId, review, disabledText, onDone 
             )}
           </div>
 
-          <div className="mt-6 rounded border border-[#ebebeb] bg-[#f8f9fd] p-4 text-[15px] text-[#4e4e4e]">
-            <p className="mb-1 font-bold text-black">이런 내용을 적으면 다른 사용자에게 도움이 돼요</p>
-            <p>상품 상태와 설명이 일치했는지, 응대와 소통은 어땠는지, 배송·직거래 과정에서 좋았거나 아쉬웠던 점을 구체적으로 남겨주세요.</p>
-          </div>
+            <div className="mt-6 rounded border border-[#ebebeb] bg-[#f8f9fd] p-4 text-[15px] text-[#4e4e4e]">
+              <p className="mb-1 font-bold text-black">이런 내용을 적으면 다른 사용자에게 도움이 돼요</p>
+              <p>{guidanceText}</p>
+            </div>
 
           <PhotoLightbox
             title="리뷰 사진"

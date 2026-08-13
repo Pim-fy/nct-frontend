@@ -13,6 +13,7 @@ import {
   updateDeliveryAddress,
 } from '@api/memberApi';
 import DeliveryAddressFormModal from '@components/member/DeliveryAddressFormModal';
+import { ActionButton, StatusBadge } from '@components/common/ui';
 import {
   DELIVERY_ADDRESSES_QUERY_KEY,
   useDeliveryAddresses,
@@ -128,11 +129,11 @@ const ProfileDeliveryAddressManager = () => {
   };
 
   const handleDelete = async (address) => {
+    if (address.defaultAddress) return;
+
     const confirmed = await confirm({
       title: '배송지를 삭제하시겠습니까?',
-      text: address.defaultAddress
-        ? '삭제하면 남은 배송지 중 하나가 기본 배송지로 자동 지정됩니다.'
-        : `${address.name} 배송지는 삭제 후 복구할 수 없습니다.`,
+      text: `${address.name} 배송지는 삭제 후 복구할 수 없습니다.`,
       confirmButtonText: '삭제',
       cancelButtonText: '취소',
     });
@@ -158,18 +159,19 @@ const ProfileDeliveryAddressManager = () => {
               {addresses.length}/{MAX_ADDRESS_COUNT}
             </span>
           )}
-          <button
-            className="inline-flex min-h-8 shrink-0 items-center gap-1 rounded-[5px] border border-[#cfcfcf] bg-white px-2.5 text-[13px] font-bold text-[#404040] hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+          <ActionButton
+            className="shrink-0"
             disabled={addresses.length >= MAX_ADDRESS_COUNT || isLoading || isError}
             onClick={openCreate}
+            size="sm"
             title={addresses.length >= MAX_ADDRESS_COUNT
               ? '배송지는 최대 10개까지 등록할 수 있습니다.'
               : '배송지 추가'}
-            type="button"
+            tone="neutral"
           >
             <Plus aria-hidden="true" size={14} />
             추가
-          </button>
+          </ActionButton>
         </div>
       </div>
 
@@ -212,9 +214,9 @@ const ProfileDeliveryAddressManager = () => {
                   <span className="flex flex-wrap items-center gap-1.5">
                     <strong className="text-[14px] text-[#333]">{address.name}</strong>
                     {address.defaultAddress && (
-                      <span className="rounded-full bg-[#e8f1ff] px-1.5 py-0.5 text-[11px] font-bold text-primary-dark">
+                      <StatusBadge tone="info" variant="soft">
                         기본
-                      </span>
+                      </StatusBadge>
                     )}
                   </span>
                   <span className="mt-0.5 block break-words text-[13px] leading-5 text-[#666]">
@@ -236,9 +238,11 @@ const ProfileDeliveryAddressManager = () => {
                 <button
                   aria-label={`${address.name} 배송지 삭제`}
                   className="grid size-8 place-items-center rounded-[5px] text-[#777] hover:bg-[#fff1f0] hover:text-[#b3261e] disabled:cursor-not-allowed disabled:opacity-45"
-                  disabled={isChanging}
+                  disabled={isChanging || address.defaultAddress}
                   onClick={() => handleDelete(address)}
-                  title="삭제"
+                  title={address.defaultAddress
+                    ? '기본 배송지는 삭제할 수 없습니다.'
+                    : '삭제'}
                   type="button"
                 >
                   <Trash2 aria-hidden="true" size={15} />
@@ -251,14 +255,14 @@ const ProfileDeliveryAddressManager = () => {
 
       {!isLoading && !isError && sortedAddresses.length > 0 && (
         <div className="mt-3 flex justify-end">
-          <button
-            className="min-h-9 rounded-[5px] border border-primary bg-white px-3 text-[13px] font-bold text-primary hover:bg-[#f4f8ff] disabled:cursor-not-allowed disabled:border-[#d7d7d7] disabled:bg-[#f6f6f6] disabled:text-[#999]"
+          <ActionButton
             disabled={!hasDefaultChange || isChanging}
             onClick={() => defaultMutation.mutate(selectedDefaultId)}
-            type="button"
+            size="sm"
+            tone="outline"
           >
             {defaultMutation.isPending ? '저장 중...' : '기본 배송지로 저장'}
-          </button>
+          </ActionButton>
         </div>
       )}
 

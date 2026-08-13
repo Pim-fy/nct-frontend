@@ -1,434 +1,285 @@
 // src/pages/provider/MyQuoteListPage.jsx
-// F-SVC-005/006/008 + F-PROV-010: 제공자 내 견적 목록 (담당자3 황성경 소유)
-// - 버튼/배지: PROJECT/ui-preview.html 클래스 시스템 사용 (btn, badge)
-import React, { useState, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { confirm, toast } from "@utils/common";
-import { useMyQuotes, useWithdrawQuote } from "@hooks/useQuote";
-import { getMyActiveQuote } from "@api/quoteApi";
-import { toImageUrl } from "@api/fileApi";
-import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
+// 담당자 7 연결 · F-SVC-005/006/008: 제공자 견적 제출 내역을 마이페이지 공통 목록으로 표시합니다.
+import { useMemo, useState } from 'react';
+import { CalendarDays, FileText, Tags } from 'lucide-react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import Pagination from '@components/common/Pagination';
+import { ActionButton } from '@components/common/ui';
+import MyPageListSectionLayout from '@components/mypage/MyPageListSectionLayout';
+import MyPageListItem from '@components/mypage/MyPageListItem';
+import MyPageListPriceActions from '@components/mypage/MyPageListPriceActions';
+import MyPageListEmpty from '@components/mypage/MyPageListEmpty';
+import MyPageListError from '@components/mypage/MyPageListError';
+import MyPageMobileCard from '@components/mypage/MyPageMobileCard';
+import MyPageStatusBadge from '@components/mypage/MyPageStatusBadge';
+import MyPageListSkeleton from '@components/skeleton/MyPageListSkeleton';
+import { useMyQuotes, useWithdrawQuote } from '@hooks/useQuote';
+import { confirm, toast } from '@utils/common';
+import {
+  getServiceRequestQuoteDetailPath,
+  getServiceRequestQuoteEditPath,
+} from '@/routes/serviceRequestRoutes';
 
-// ─── 상태 매핑 ────────────────────────────────────────────────────────────────
+const PAGE_SIZE = 10;
 
-const STATUS_MAP = {
-  QUTC0001: "대기중",  // 제출
-  QUTC0002: "대기중",  // 수정
-  QUTC0003: "종료",    // 만료
-  QUTC0004: "진행중",  // 선택됨
-  QUTC0005: "종료",    // 철회
+const STATUS_CONFIG = {
+  QUTC0001: { group: 'waiting', label: '제출됨', badgeClass: 'badge-blue' },
+  QUTC0002: { group: 'waiting', label: '수정됨', badgeClass: 'badge-blue' },
+  QUTC0003: { group: 'ended', label: '만료됨', badgeClass: 'badge-gray' },
+  QUTC0004: { group: 'in-progress', label: '선택됨', badgeClass: 'badge-teal' },
+  QUTC0005: { group: 'ended', label: '철회됨', badgeClass: 'badge-gray' },
 };
 
-const TABS = ["전체", "대기중", "진행중", "종료"];
-const TAB_BY_QUERY = {
-  all: "전체",
-  waiting: "대기중",
-  "in-progress": "진행중",
-  ended: "종료",
-};
-const QUERY_BY_TAB = {
-  "전체": "all",
-  "대기중": "waiting",
-  "진행중": "in-progress",
-  "종료": "ended",
+const FILTER_LABELS = {
+  all: '전체',
+  waiting: '대기 중',
+  'in-progress': '진행 중',
+  ended: '종료',
 };
 
-// ─── 서브 컴포넌트 ────────────────────────────────────────────────────────────
+const VALID_FILTERS = new Set(Object.keys(FILTER_LABELS));
 
-function QuoteCard({ quote, onEdit, onCancel, onDetail }) {
-  const navigate = useNavigate();
-  const isDone   = quote.status === "종료";
-  const isActive = quote.status === "진행중";
-  const canEdit   = !isDone && !isActive && quote.editCount < 3;
-  const canCancel = !isDone && !isActive;
-  const maxEdited = quote.editCount >= 3;
+const formatAmount = (amount) => (
+  Number.isFinite(Number(amount)) ? `${Number(amount).toLocaleString()}P` : '-'
+);
 
-  const fmt = (n) => Number(n).toLocaleString();
+const formatDate = (value) => {
+  if (!value) return '-';
+  return String(value).slice(0, 10).replaceAll('-', '.');
+};
 
+function QuoteStatusBadge({ quote }) {
   return (
-    <div className="border border-[rgba(0,0,0,0.08)] rounded-[10px] bg-white p-5 flex flex-col gap-3"
-         style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05)" }}>
-
-      {/* 상단: 타이틀 + 액션 버튼 */}
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          {quote.catNm && (
-            <span className="badge badge-blue" style={{ fontSize: 12, borderRadius: 5, flexShrink: 0 }}>{quote.catNm}</span>
-          )}
-          <p
-            className="flex-1 min-w-0 font-bold text-[20px] text-[#333333] leading-none truncate cursor-pointer hover:text-[#0064ff] hover:underline transition-colors"
-            onClick={() => navigate(`/service-requests/${quote.svcReqSn}`)}
-          >
-            {quote.title}
-          </p>
-        </div>
-        {/* 액션 버튼 */}
-
-        {isDone ? (
-          <div className="flex gap-1.5 shrink-0">
-            <button type="button" onClick={() => onDetail(quote)} className="btn btn-outline btn-sm h-[33px] text-[16px] font-medium">
-              상세보기
-            </button>
-            <span className="badge badge-gray shrink-0" style={{ borderRadius: "5px", height: "40px" }}>종료</span>
-          </div>
-        ) : isActive ? (
-          <div className="flex gap-1.5 shrink-0">
-            <button type="button" onClick={() => onDetail(quote)} className="btn btn-outline btn-sm h-[33px] text-[16px] font-medium">
-              상세보기
-            </button>
-            <span className="badge shrink-0" style={{ borderRadius: "5px", height: "40px", background: "#55C9C8", color: "#fff", border: "none" }}>진행중</span>
-          </div>
-        ) : (
-          <div className="flex gap-1.5 shrink-0">
-            <button type="button" onClick={() => onDetail(quote)} className="btn btn-outline btn-sm h-[33px] text-[16px] font-medium">
-              상세보기
-            </button>
-            <button
-              type="button"
-              onClick={() => onEdit(quote)}
-              disabled={!canEdit}
-              className="btn btn-outline btn-sm disabled:cursor-not-allowed h-[33px] text-[16px] font-medium"
-              style={{ gap: 0, ...(maxEdited ? { background: '#e0e0e0', color: '#999', borderColor: '#e0e0e0' } : {}) }}
-            >
-              수정{quote.editCount > 0 && (
-                <span className="text-[13px] opacity-70">({quote.editCount}/3)</span>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => onCancel(quote)}
-              disabled={!canCancel}
-              className="btn btn-ghost btn-sm h-[33px] text-[16px] font-medium"
-              style={{ borderColor: "#4E4E4E", color: "#4E4E4E" }}
-            >
-              취소
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* 구분선 */}
-      <div className="h-px bg-[#f0f0f0]" />
-
-      {/* 하단 메타 정보 */}
-      <div className="flex items-start justify-between gap-2">
-        {/* 좌: 의뢰 예산 + 희망일 */}
-        <div className="flex flex-col gap-2" style={{ padding: '8px 0' }}>
-          {quote.svcReqBdgtAmt != null && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#969696" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', flexShrink: 0, position: 'relative', top: -2 }}>
-                <line x1="12" y1="1" x2="12" y2="23"/>
-                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-              </svg>
-              <span style={{ fontSize: 15, color: '#555', lineHeight: 1 }}>의뢰 예산 {fmt(quote.svcReqBdgtAmt)}원</span>
-            </div>
-          )}
-          {quote.svcReqHopeDt && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#969696" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', flexShrink: 0, position: 'relative', top: -2 }}>
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/>
-                <line x1="8" y1="2" x2="8" y2="6"/>
-                <line x1="3" y1="10" x2="21" y2="10"/>
-              </svg>
-              <span style={{ fontSize: 15, color: '#555', lineHeight: 1 }}>희망일 {quote.svcReqHopeDt}</span>
-            </div>
-          )}
-        </div>
-        {/* 우: 내 견적금액 + 제출일 */}
-        <div className="flex flex-col gap-2 items-end" style={{ background: '#f0f6ff', borderRadius: 10, padding: '8px 14px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a7fd4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', flexShrink: 0, position: 'relative', top: -2 }}>
-              <line x1="12" y1="1" x2="12" y2="23"/>
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-            </svg>
-            <span style={{ fontSize: 15, color: '#1a4fa0', fontWeight: 600, lineHeight: 1 }}>내 견적금액 {fmt(quote.amount)}원</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a7fd4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', flexShrink: 0, position: 'relative', top: -2 }}>
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-              <line x1="16" y1="2" x2="16" y2="6"/>
-              <line x1="8" y1="2" x2="8" y2="6"/>
-              <line x1="3" y1="10" x2="21" y2="10"/>
-            </svg>
-            <span style={{ fontSize: 15, color: '#4a7fd4', lineHeight: 1 }}>내 견적 제출일 {quote.submittedAt}</span>
-          </div>
-        </div>
-      </div>
-    </div>
+    <MyPageStatusBadge className={quote.badgeClass}>
+      {quote.statusLabel}
+    </MyPageStatusBadge>
   );
 }
 
-// ─── 메인 ────────────────────────────────────────────────────────────────────
+function QuoteActionButtons({ quote, onDetail, onEdit, onWithdraw }) {
+  const isEditableStatus = ['QUTC0001', 'QUTC0002'].includes(quote.statusCode);
+  const canEdit = isEditableStatus && quote.editCount < 3;
+  const canWithdraw = isEditableStatus;
+
+  return (
+    <>
+      <ActionButton size="sm" onClick={() => onDetail(quote)}>
+        상세보기
+      </ActionButton>
+      {isEditableStatus && (
+        <ActionButton
+          disabled={!canEdit}
+          onClick={() => onEdit(quote)}
+          size="sm"
+          title={canEdit ? undefined : '견적 수정 가능 횟수 3회를 모두 사용했습니다.'}
+          tone="outline"
+        >
+          {canEdit ? `수정${quote.editCount > 0 ? ` ${quote.editCount}/3` : ''}` : '수정 3/3'}
+        </ActionButton>
+      )}
+      {canWithdraw && (
+        <ActionButton size="sm" tone="danger" onClick={() => onWithdraw(quote)}>
+          철회
+        </ActionButton>
+      )}
+    </>
+  );
+}
 
 export default function MyQuoteListPage({ embedded = false } = {}) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  // 담당자 7 · F-PROV-009: 대시보드에서 전달한 탭을 URL에 유지해 직접 진입과 새로고침 결과를 같게 합니다.
-  const activeTab = TAB_BY_QUERY[searchParams.get("tab")] ?? "대기중";
-  const [detailModal, setDetailModal] = useState(null);
-  const [detailAttachments, setDetailAttachments] = useState([]);
-  const [detailLoading, setDetailLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const activeFilter = VALID_FILTERS.has(searchParams.get('tab'))
+    ? searchParams.get('tab')
+    : 'waiting';
 
-  const { data: pageData, isLoading, isError } = useMyQuotes({ page: 1, size: 50 });
+  const {
+    data: pageData,
+    isLoading,
+    isError,
+    refetch,
+  } = useMyQuotes({ page: 1, size: 50 });
   const withdrawMutation = useWithdrawQuote();
 
-  const quotes = useMemo(() => {
-    if (!pageData?.content) return [];
-    return pageData.content.map((q) => ({
-      qutSn:      q.qutSn,
-      svcReqSn:   q.svcReqSn,
-      title:      q.svcReqTitle,
-      quoteTitle: q.qutTtl || q.title || '',
-      amount:     q.amount,
-      content:    q.content,
-      reviseCnt:  q.reviseCnt,
-      submittedAt: q.registeredAt
-        ? String(q.registeredAt).slice(0, 10).replace(/-/g, ".")
-        : "-",
-      status:    STATUS_MAP[q.statusCode] || "종료",
-      editCount:     q.reviseCnt,
-      catNm:         q.catNm || '',
-      svcReqBdgtAmt: q.svcReqBdgtAmt || null,
-      svcReqHopeDt:  q.svcReqRegDt ? String(q.svcReqRegDt).slice(0, 10).replace(/-/g, '.') : null,
-    }));
-  }, [pageData]);
+  const quotes = useMemo(() => (pageData?.content ?? []).map((quote) => {
+    const status = STATUS_CONFIG[quote.statusCode] ?? {
+      group: 'ended',
+      label: quote.statusCode || '알 수 없음',
+      badgeClass: 'badge-gray',
+    };
 
-  const filtered = useMemo(
-    () => activeTab === "전체" ? quotes : quotes.filter((q) => q.status === activeTab),
-    [activeTab, quotes],
+    return {
+      ...quote,
+      requestTitle: quote.svcReqTitle || '서비스 요청',
+      quoteTitle: quote.qutTtl || '제출 견적',
+      submittedAtLabel: formatDate(quote.registeredAt),
+      editCount: Number(quote.reviseCnt ?? 0),
+      statusGroup: status.group,
+      statusLabel: status.label,
+      badgeClass: status.badgeClass,
+    };
+  }), [pageData]);
+
+  const countByGroup = (group) => quotes.filter((quote) => quote.statusGroup === group).length;
+  const filteredQuotes = useMemo(
+    () => activeFilter === 'all'
+      ? quotes
+      : quotes.filter((quote) => quote.statusGroup === activeFilter),
+    [activeFilter, quotes],
   );
+  const totalPages = Math.max(1, Math.ceil(filteredQuotes.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const visibleQuotes = filteredQuotes.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
+  const returnPath = `${location.pathname}${location.search}${location.hash}`;
 
-  const countOf = (s) => quotes.filter((q) => q.status === s).length;
-  const totalCount = quotes.length;
-  const handleTabChange = (tab) => {
+  const filterItems = Object.entries(FILTER_LABELS).map(([value, label]) => ({
+    value,
+    label,
+    count: value === 'all' ? quotes.length : countByGroup(value),
+  }));
+
+  const handleFilterChange = (nextFilter) => {
     const nextSearchParams = new URLSearchParams(searchParams);
-    nextSearchParams.set("tab", QUERY_BY_TAB[tab]);
+    nextSearchParams.set('tab', nextFilter);
     setSearchParams(nextSearchParams, { replace: true });
+    setPage(1);
   };
-  const pageHeader = embedded
-    ? <MyPageContentHeader title="견적 제출 내역" />
-    : <h2 className="m-0 text-[22px] font-bold text-[#1a1a1a]">견적 제출 내역</h2>;
 
-  const handleDetail = async (quote) => {
-    setDetailModal(quote);
-    setDetailAttachments([]);
-    setDetailLoading(true);
-    try {
-      const res = await getMyActiveQuote(quote.svcReqSn);
-      setDetailAttachments(res.data?.attachments || []);
-    } catch {
-      // 첨부파일 없이 기본 정보만 표시
-    } finally {
-      setDetailLoading(false);
-    }
+  const handleDetail = (quote) => {
+    navigate(getServiceRequestQuoteDetailPath(quote.svcReqSn, quote.qutSn), {
+      state: { quote, from: returnPath },
+    });
   };
 
   const handleEdit = (quote) => {
     if (quote.editCount >= 3) {
-      toast({ icon: "warning", title: "수정 가능 횟수(3회)를 초과했습니다." });
+      toast({ icon: 'warning', title: '수정 가능 횟수(3회)를 초과했습니다.' });
       return;
     }
-    // 요청번호와 견적번호를 경로에 남겨 새로고침·직접 진입에도 연결 관계를 유지한다.
-    navigate(`/service-requests/${quote.svcReqSn}/quotes/${quote.qutSn}/edit`, {
-      state: { from: '/user/mypage/services/quotes', quoteTitle: quote.quoteTitle || '' },
+    navigate(getServiceRequestQuoteEditPath(quote.svcReqSn, quote.qutSn), {
+      state: { from: returnPath, quoteTitle: quote.quoteTitle },
     });
   };
 
-  const handleCancel = async (quote) => {
-    const ok = await confirm({
-      title: "견적을 철회하시겠습니까?",
-      text: "철회한 견적은 복구할 수 없습니다.",
-      icon: "warning",
-      confirmButtonText: "철회",
-      cancelButtonText: "취소",
+  const handleWithdraw = async (quote) => {
+    const confirmed = await confirm({
+      title: '견적을 철회하시겠습니까?',
+      text: '철회한 견적은 복구할 수 없습니다.',
+      icon: 'warning',
+      confirmButtonText: '철회',
+      cancelButtonText: '취소',
     });
-    if (!ok) return;
+    if (!confirmed) return;
+
     try {
       await withdrawMutation.mutateAsync(quote.qutSn);
-      toast({ icon: "success", title: "견적이 철회되었습니다." });
-    } catch (err) {
-      toast({ icon: "error", title: err?.response?.data?.message || "견적 철회에 실패했습니다." });
+      toast({ icon: 'success', title: '견적이 철회되었습니다.' });
+    } catch (error) {
+      toast({
+        icon: 'error',
+        title: error?.response?.data?.message || '견적 철회에 실패했습니다.',
+      });
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col gap-5">
-        {pageHeader}
-        <div className="flex items-center justify-center py-20">
-          <p className="text-[15px] text-[#969696]">불러오는 중...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="flex flex-col gap-5">
-        {pageHeader}
-        <div className="flex items-center justify-center py-20">
-          <p className="text-[15px] text-[#969696]">견적 목록을 불러올 수 없습니다.</p>
-        </div>
-      </div>
-    );
-  }
+  const renderActions = (quote) => (
+    <QuoteActionButtons
+      quote={quote}
+      onDetail={handleDetail}
+      onEdit={handleEdit}
+      onWithdraw={handleWithdraw}
+    />
+  );
 
   return (
-    <>
-    <div className="flex flex-col gap-5">
+    <div className={embedded ? '' : 'container seller-page'}>
+      <MyPageListSectionLayout
+        title="견적 제출 내역"
+        summaryItems={[
+          { label: '전체', value: quotes.length },
+          { label: '대기 중', value: countByGroup('waiting') },
+          { label: '진행 중', value: countByGroup('in-progress') },
+          { label: '종료', value: countByGroup('ended') },
+        ]}
+        filterItems={filterItems}
+        activeFilter={activeFilter}
+        onFilterChange={handleFilterChange}
+        filterAriaLabel="견적 상태"
+        isLoading={isLoading}
+      />
 
-      {/* 헤더 */}
-      {pageHeader}
-
-      {/* 탭 */}
-      <div className="tab-group-1">
-        {TABS.map((tab) => {
-          const count    = tab === "전체" ? totalCount : countOf(tab);
-          const isActive = activeTab === tab;
-          return (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => handleTabChange(tab)}
-              className={`tab-pill${isActive ? " active" : ""}`}
-            >
-              {tab}
-              <span className="tab-count">{count}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* 카드 그리드 */}
-      <div className="mt-4">
-        {filtered.length === 0 ? (
-          <div className="flex items-center justify-center py-20 border border-[rgba(0,0,0,0.08)] rounded-[10px] bg-white">
-            <p className="text-[15px] text-[#969696]">해당 견적이 없습니다.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {filtered.map((quote) => (
-              <QuoteCard
+      {isLoading ? (
+        <MyPageListSkeleton count={4} />
+      ) : isError ? (
+        <MyPageListError message="견적 목록을 불러오지 못했습니다." onRetry={() => refetch()} />
+      ) : filteredQuotes.length === 0 ? (
+        <MyPageListEmpty message="해당 상태의 견적이 없습니다." />
+      ) : (
+        <>
+          <div className="hidden flex-col gap-3 lg:flex">
+            {visibleQuotes.map((quote) => (
+              <MyPageListItem
                 key={quote.qutSn}
-                quote={quote}
-                onEdit={handleEdit}
-                onCancel={handleCancel}
-                onDetail={handleDetail}
+                imageAlt={quote.requestTitle}
+                imageFallback={<FileText size={34} aria-hidden="true" />}
+                badge={<QuoteStatusBadge quote={quote} />}
+                title={quote.requestTitle}
+                actions={(
+                  <MyPageListPriceActions
+                    topLine={`제출일 ${quote.submittedAtLabel}`}
+                    priceItems={[
+                      { label: '내 견적', value: formatAmount(quote.amount), highlight: true },
+                      ...(quote.svcReqBdgtAmt != null
+                        ? [{ label: '요청 예산', value: formatAmount(quote.svcReqBdgtAmt) }]
+                        : []),
+                    ]}
+                  >
+                    {renderActions(quote)}
+                  </MyPageListPriceActions>
+                )}
+              >
+                <p>견적 제목 · {quote.quoteTitle}</p>
+                <p>카테고리 · {quote.catNm || '미분류'}</p>
+              </MyPageListItem>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:hidden">
+            {visibleQuotes.map((quote) => (
+              <MyPageMobileCard
+                key={quote.qutSn}
+                imageFallbackLabel={quote.catNm || '견적'}
+                badge={<QuoteStatusBadge quote={quote} />}
+                title={quote.requestTitle}
+                price={formatAmount(quote.amount)}
+                priceSuffix="내 견적"
+                infoItems={[
+                  { icon: Tags, label: '카테고리', value: quote.catNm || '미분류' },
+                  { icon: CalendarDays, label: '제출일', value: quote.submittedAtLabel },
+                ]}
+                footerLeft={quote.quoteTitle}
+                footerRight={quote.editCount > 0 ? `수정 ${quote.editCount}/3` : undefined}
+                actionButton={renderActions(quote)}
               />
             ))}
           </div>
-        )}
-      </div>
-
-    </div>
-
-      {/* 견적 상세보기 모달 */}
-      {detailModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', borderRadius: 16, maxWidth: 1000, width: '95%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.18)' }}>
-
-            {/* 헤더 */}
-            <div style={{ position: 'relative', background: '#0064ff', padding: '16px 20px', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-              <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#fff' }}>견적 상세보기</p>
-              <button
-                type="button"
-                onClick={() => setDetailModal(null)}
-                style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#fff', display: 'flex', alignItems: 'center' }}
-                aria-label="닫기"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
-            </div>
-
-            {/* 본문 */}
-            <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1 }}>
-
-              <div style={{ marginBottom: 14 }}>
-                <p style={{ margin: '0 0 4px', fontSize: 13, color: '#888' }}>제목</p>
-                <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#111' }}>{detailModal.quoteTitle || '—'}</p>
-              </div>
-
-              <div style={{ marginBottom: 14 }}>
-                <p style={{ margin: '0 0 4px', fontSize: 13, color: '#888' }}>서비스 요청</p>
-                <p style={{ margin: 0, fontSize: 15, color: '#555' }}>{detailModal.title}</p>
-              </div>
-
-              <div style={{ marginBottom: 14 }}>
-                <p style={{ margin: '0 0 4px', fontSize: 13, color: '#888' }}>견적 금액</p>
-                <p style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#0064ff' }}>
-                  {Number(detailModal.amount).toLocaleString()}원
-                </p>
-              </div>
-
-              <div style={{ marginBottom: 14 }}>
-                <p style={{ margin: '0 0 4px', fontSize: 13, color: '#888' }}>내용</p>
-                <p style={{ margin: 0, fontSize: 14, whiteSpace: 'pre-wrap', color: '#333', background: '#f8f8f6', borderRadius: 8, padding: '10px 12px', maxHeight: 200, overflowY: 'auto' }}>
-                  {detailModal.content || '—'}
-                </p>
-              </div>
-
-              <div style={{ marginBottom: 20 }}>
-                <p style={{ margin: '0 0 8px', fontSize: 13, color: '#888' }}>
-                  첨부파일{detailLoading ? '' : ` (${detailAttachments.length}개)`}
-                </p>
-                {detailLoading ? (
-                  <p style={{ margin: 0, fontSize: 14, color: '#aaa' }}>불러오는 중...</p>
-                ) : detailAttachments.length === 0 ? (
-                  <p style={{ margin: 0, fontSize: 14, color: '#aaa' }}>없음</p>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {detailAttachments.map((a, i) => {
-                      const displayName = (a.fileName && !/^\d+$/.test(a.fileName.trim())) ? a.fileName : `첨부파일 ${i + 1}`;
-                      const ext = displayName.split('.').pop().toUpperCase();
-                      const isImg = ['JPG', 'JPEG', 'PNG', 'GIF', 'WEBP'].includes(ext);
-                      return (
-                        <div key={a.flSn} style={{ background: '#f8f8f6', borderRadius: 8, overflow: 'hidden' }}>
-                          {isImg && (
-                            <img src={toImageUrl(a.url)} alt={displayName} style={{ width: '100%', display: 'block', maxHeight: 320, objectFit: 'contain', background: '#eee' }} />
-                          )}
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '8px 12px' }}>
-                            <span style={{ fontSize: 14, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{displayName}</span>
-                            <a
-                              href={toImageUrl(a.url)}
-                              download={displayName}
-                              target="_blank"
-                              rel="noreferrer"
-                              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#0064ff', textDecoration: 'none', flexShrink: 0, fontWeight: 500 }}
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                <polyline points="7 10 12 15 17 10"/>
-                                <line x1="12" y1="15" x2="12" y2="3"/>
-                              </svg>
-                              다운로드
-                            </a>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              <div style={{ display: 'flex', gap: 20, paddingTop: 8, borderTop: '1px solid #f0f0f0' }}>
-                <div>
-                  <p style={{ margin: '0 0 2px', fontSize: 13, color: '#888' }}>내 견적 제출일</p>
-                  <p style={{ margin: 0, fontSize: 14, color: '#333' }}>{detailModal.submittedAt}</p>
-                </div>
-                <div>
-                  <p style={{ margin: '0 0 2px', fontSize: 13, color: '#888' }}>수정 횟수</p>
-                  <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: detailModal.editCount >= 3 ? '#EF4444' : '#0064ff' }}>
-                    {detailModal.editCount}/3 {detailModal.editCount >= 3 ? '(수정 불가)' : `(잔여 ${3 - detailModal.editCount}회)`}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        </>
       )}
-    </>
+
+      {!isLoading && !isError && filteredQuotes.length > 0 && (
+        <Pagination
+          page={currentPage}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          showSinglePage
+          ariaLabel="견적 제출 내역 페이지 이동"
+        />
+      )}
+    </div>
   );
 }

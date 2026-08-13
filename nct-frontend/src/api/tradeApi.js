@@ -169,6 +169,29 @@ export const requestTradeCompletion = async (tradeId, requesterRole) => {
   return response.data;
 };
 
+/** 직거래 완료 요청을 받은 상대방이 동의해 완료하거나 거절해 거래 진행으로 되돌린다. */
+export const respondOfflineTradeCompletionRequest = async (tradeId, requesterRole, approve) => {
+  if (shouldUseTradePreview()) {
+    return updateTradePreviewDetail(tradeId, approve
+      ? {
+        tradeStatus: 'COMPLETED',
+        completionRequestedBy: null,
+      }
+      : {
+        tradeStatus: 'DELIVERING',
+        completionRequestedBy: null,
+      });
+  }
+
+  const response = await api.post(
+    `${TRADE_ENDPOINT}/${tradeId}/offline-completion-requests/respond`,
+    null,
+    { params: { approve, requesterRole } },
+  );
+
+  return response.data;
+};
+
 /** 판매자가 업로드 완료한 배송 인증사진과 메모를 한 번에 거래에 연결한다. */
 export const submitTradeDeliveryProof = async (tradeId, payload) => {
   if (shouldUseTradePreview()) {

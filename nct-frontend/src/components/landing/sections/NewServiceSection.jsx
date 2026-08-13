@@ -1,8 +1,13 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ActionButton } from "@components/common/ui";
 import { assets } from "./assets";
 import ServiceRequestCard from "./ServiceRequestCard";
+import {
+  getServiceRequestDetailPath,
+  SERVICE_REQUESTS_PATH,
+} from "@/routes/serviceRequestRoutes";
 
 const PAGE_SIZE = 6;
 
@@ -62,20 +67,20 @@ export default function NewServiceSection({ isError, isLoading, items }) {
         {!isLoading && !isError && items.length > 0 && (
           <div className="grid grid-cols-3 gap-x-12 gap-y-5">
             {visibleItems.map((item) => (
-              <ServiceRequestCard key={item.id} item={item} onClick={() => navigate(`/service-requests/${item.id}`)} />
+              <ServiceRequestCard key={item.id} item={item} onClick={() => navigate(getServiceRequestDetailPath(item.id))} />
             ))}
           </div>
         )}
 
         {/* 더보기 */}
         <div className="flex justify-center mt-10">
-          <button
-            type="button"
-            onClick={() => navigate("/service")}
-            className="h-[45px] w-[100px] rounded-[40px] bg-transparent border border-white/60 text-[14px] text-white hover:bg-white/10 transition-colors"
+          <ActionButton
+            to={SERVICE_REQUESTS_PATH}
+            tone="outline"
+            className="w-[100px] rounded-[40px] !border-white/60 !bg-transparent !text-white hover:!bg-white/10"
           >
             더보기
-          </button>
+          </ActionButton>
         </div>
       </div>
     </section>

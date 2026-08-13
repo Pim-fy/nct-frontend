@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import { useQueries } from '@tanstack/react-query';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { BriefcaseBusiness } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { BriefcaseBusiness, CalendarDays, MessageSquareText } from 'lucide-react';
 import { getMyServiceTrades } from '@api/serviceTradeApi';
+import { toImageUrl } from '@api/fileApi';
+import { getServiceTradeDetailPath } from '@/routes/myPageRoutes';
 import MyPageListSectionLayout from '@components/mypage/MyPageListSectionLayout';
 import MyPageListItem from '@components/mypage/MyPageListItem';
 import MyPageListEmpty from '@components/mypage/MyPageListEmpty';
 import MyPageListError from '@components/mypage/MyPageListError';
 import MyPageStatusBadge from '@components/mypage/MyPageStatusBadge';
 import MyPageListSkeleton from '@components/skeleton/MyPageListSkeleton';
+import MyPageMobileCard from '@components/mypage/MyPageMobileCard';
 import Pagination from '@components/common/Pagination';
+import { ActionButton } from '@components/common/ui';
 import { getServiceTradeStatus } from './serviceTradeStatus';
 
 const PAGE_SIZE = 10;
@@ -48,7 +52,6 @@ const formatDate = (value) => {
 };
 
 export default function MyServiceTradeListPage({ fixedRole = null }) {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   // 담당자 7 · F-PROV-009: URL 상태는 이 목록에 정의된 필터 코드만 허용해 직접 진입과 새로고침을 유지합니다.
   const requestedFilter = searchParams.get('status') ?? 'ALL';
@@ -149,6 +152,7 @@ export default function MyServiceTradeListPage({ fixedRole = null }) {
         <MyPageListEmpty message="해당 조건의 견적 진행 내역이 없습니다." />
       ) : (
         <>
+          <div className="hidden lg:block">
           <div className="history-list">
             {visibleTrades.map((trade) => {
               const status = getServiceTradeStatus(trade.tradeStatusCode);
@@ -157,6 +161,8 @@ export default function MyServiceTradeListPage({ fixedRole = null }) {
               return (
                 <MyPageListItem
                   key={trade.tradeId}
+                  imageSrc={trade.serviceRequestImageUrl ? toImageUrl(trade.serviceRequestImageUrl) : undefined}
+                  imageAlt={trade.serviceRequestTitle}
                   imageFallback={<BriefcaseBusiness aria-hidden="true" size={34} strokeWidth={1.6} />}
                   badge={(
                     <MyPageStatusBadge className={STATUS_BADGE[status.tone] ?? 'badge-outline-gray'}>
@@ -165,18 +171,49 @@ export default function MyServiceTradeListPage({ fixedRole = null }) {
                   )}
                   title={trade.serviceRequestTitle || '견적 진행 내역'}
                   actions={(
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-primary"
-                      onClick={() => navigate(`/service-trades/${trade.tradeId}`)}
-                    >
+                    <ActionButton size="sm" to={getServiceTradeDetailPath(trade.tradeId)}>
                       거래 상세
-                    </button>
+                    </ActionButton>
                   )}
                 >
                   <p>{counterpartLabel} {trade.counterpartNickname || '-'} · 거래금액 {formatPoint(trade.tradeAmount)}</p>
                   <p>거래 시작 {formatDate(trade.createdAt)} · {trade.quoteSummary || '선택 견적 내용 없음'}</p>
                 </MyPageListItem>
+              );
+            })}
+          </div>
+          </div>
+
+          <div className="grid gap-4 lg:hidden">
+            {visibleTrades.map((trade) => {
+              const status = getServiceTradeStatus(trade.tradeStatusCode);
+              const counterpartLabel = trade.viewerRole === 'REQUESTER' ? '제공자' : '의뢰자';
+
+              return (
+                <MyPageMobileCard
+                  key={trade.tradeId}
+                  imageSrc={trade.serviceRequestImageUrl ? toImageUrl(trade.serviceRequestImageUrl) : undefined}
+                  imageAlt={trade.serviceRequestTitle}
+                  imageFallbackLabel={trade.categoryName || '서비스'}
+                  badge={(
+                    <MyPageStatusBadge className={STATUS_BADGE[status.tone] ?? 'badge-outline-gray'}>
+                      {status.label}
+                    </MyPageStatusBadge>
+                  )}
+                  title={trade.serviceRequestTitle || '견적 진행 내역'}
+                  price={formatPoint(trade.tradeAmount)}
+                  infoItems={[
+                    { icon: MessageSquareText, label: counterpartLabel, value: trade.counterpartNickname || '-' },
+                    { icon: CalendarDays, label: '거래 시작', value: formatDate(trade.createdAt) },
+                  ]}
+                  footerLeft={`카테고리 · ${trade.categoryName || '서비스'}`}
+                  footerRight={trade.quoteSummary ? '선택 견적' : undefined}
+                  actionButton={(
+                    <ActionButton size="sm" to={getServiceTradeDetailPath(trade.tradeId)}>
+                      상세보기
+                    </ActionButton>
+                  )}
+                />
               );
             })}
           </div>

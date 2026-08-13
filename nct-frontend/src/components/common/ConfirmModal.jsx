@@ -1,20 +1,31 @@
-// src/components/common/ConfirmModal.jsx
-// 임시 공통 컴포넌트 — window.confirm() 대체 모달 (추후 디자인 시스템 기준으로 교체)
-const ConfirmModal = ({ open, message, subMessage, onConfirm, onCancel, confirmLabel = '확인' }) => (
-  <div
-    className={`modal ${open ? 'open' : ''}`}
-    onClick={e => { if (e.target === e.currentTarget) onCancel(); }}
-  >
-    <div className="modal-box">
-      <p style={{ marginBottom: subMessage ? 10 : 20, fontSize: 17 }}>{message}</p>
-      {subMessage && (
-        <p style={{ marginBottom: 20, fontSize: 14, color: '#5f5e5a', lineHeight: 1.6 }}>{subMessage}</p>
-      )}
-      <div className="row" style={{ justifyContent: 'flex-end', gap: 8 }}>
-        <button className="btn btn-ghost" onClick={onCancel}>취소</button>
-        <button className="btn btn-danger" onClick={onConfirm}>{confirmLabel}</button>
-      </div>
-    </div>
-  </div>
+import FeedbackDialog from './FeedbackDialog';
+
+// 담당자 7: 기존 호출 계약을 유지하면서 공통 소·중·대 선택 확인창으로 표시합니다.
+const ConfirmModal = ({
+  open,
+  title,
+  message,
+  subMessage,
+  onConfirm,
+  onCancel,
+  confirmLabel = '확인',
+  cancelLabel = '취소',
+  variant = 'warning',
+  confirmTone = 'danger',
+  size = 'auto',
+}) => (
+  <FeedbackDialog
+    cancelLabel={cancelLabel}
+    confirmLabel={confirmLabel}
+    confirmTone={confirmTone}
+    description={title ? (subMessage ?? message) : subMessage}
+    onCancel={onCancel}
+    onConfirm={onConfirm}
+    open={open}
+    showCancelButton
+    size={size}
+    title={title ?? message}
+    variant={variant}
+  />
 );
 export default ConfirmModal;

@@ -14,7 +14,7 @@ export function useMyProducts(page = 1, size = 10, filterType = null) {
   });
 }
 
-/** 내 판매 목록 필터 탭 개수 — data: { total, draft, active, won, trading, closed } */
+/** 내 판매 목록 필터 탭 개수 — data: { total, draft, reserved, active, trading, dispute, closed } */
 export function useMyProductsSummary() {
   return useQuery({
     queryKey: ['products', 'my', 'summary'],

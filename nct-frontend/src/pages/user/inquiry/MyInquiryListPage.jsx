@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { ChevronDown, MessageSquareText, Plus } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { getMyPageInquiryCreatePath } from '@/routes/myPageRoutes';
 import Pagination from '@components/common/Pagination';
+import { ActionButton, StatusBadge } from '@components/common/ui';
 import MyPageListEmpty from '@components/mypage/MyPageListEmpty';
 import MyPageListError from '@components/mypage/MyPageListError';
 import MyPageListSectionLayout from '@components/mypage/MyPageListSectionLayout';
@@ -17,9 +17,9 @@ import './MyInquiryListPage.css';
 
 const PAGE_SIZE = 5;
 const STATUS = {
-  INQC0007: { label: '접수', className: 'is-received' },
-  INQC0008: { label: '처리중', className: 'is-processing' },
-  INQC0009: { label: '답변완료', className: 'is-answered' },
+  INQC0007: { label: '접수', tone: 'warning' },
+  INQC0008: { label: '처리중', tone: 'info' },
+  INQC0009: { label: '답변완료', tone: 'success' },
 };
 const STATUS_TABS = [
   { label: '전체', statusCode: '' },
@@ -31,7 +31,7 @@ const STATUS_TABS = [
 const InquiryCard = ({ inquiry, isOpen, number, onToggle }) => {
   const detailQuery = useMyCustomerInquiry(inquiry.inquirySn, isOpen);
   const detail = detailQuery.data;
-  const status = STATUS[inquiry.statusCode] ?? { label: inquiry.statusCode ?? '-', className: '' };
+  const status = STATUS[inquiry.statusCode] ?? { label: inquiry.statusCode ?? '-', tone: 'neutral' };
 
   return (
     <article className={`my-inquiry-card${isOpen ? ' is-open' : ''}`}>
@@ -42,7 +42,9 @@ const InquiryCard = ({ inquiry, isOpen, number, onToggle }) => {
           <strong>{inquiry.title}</strong>
         </div>
         <time>{formatDateTime(inquiry.registeredAt)}</time>
-        <span className={`my-inquiry-card__status ${status.className}`}>{status.label}</span>
+        <StatusBadge className="my-inquiry-card__status" tone={status.tone} variant="soft">
+          {status.label}
+        </StatusBadge>
         <ChevronDown aria-hidden="true" className="my-inquiry-card__chevron" />
       </button>
 
@@ -55,7 +57,7 @@ const InquiryCard = ({ inquiry, isOpen, number, onToggle }) => {
           {detail && (
             <>
               <div className="my-inquiry-card__meta">
-                <span>문의 번호 <strong>#{detail.inquirySn}</strong></span>
+                <span>문의 번호 <strong>{detail.inquirySn}</strong></span>
                 <span>접수일 {formatDateTime(detail.registeredAt)}</span>
               </div>
               <section>
@@ -86,7 +88,6 @@ const InquiryCard = ({ inquiry, isOpen, number, onToggle }) => {
 
 /** 담당자 7 · 관리자 대상 1:1 문의: 신고 내역과 분리된 본인 문의 목록·상태·답변 아코디언입니다. */
 const MyInquiryListPage = ({ embedded = false }) => {
-  const navigate = useNavigate();
   const { isProvider } = useAuth();
   const inquiryCreatePath = getMyPageInquiryCreatePath(isProvider);
   const [activeTab, setActiveTab] = useState(0);
@@ -130,9 +131,9 @@ const MyInquiryListPage = ({ embedded = false }) => {
           count: counts[index],
         }))}
         headerActions={(
-          <button className="btn btn-primary my-inquiry-create" onClick={() => navigate(inquiryCreatePath)} type="button">
+          <ActionButton className="my-inquiry-create" size="sm" to={inquiryCreatePath}>
             <Plus aria-hidden="true" /> 문의하기
-          </button>
+          </ActionButton>
         )}
         isLoading={inquiriesQuery.isLoading || countsLoading}
         onFilterChange={changeTab}
@@ -150,7 +151,7 @@ const MyInquiryListPage = ({ embedded = false }) => {
         <MyPageListError message="문의 목록을 불러오지 못했습니다." onRetry={() => inquiriesQuery.refetch()} />
       ) : inquiries.length === 0 ? (
         <MyPageListEmpty
-          action={<button className="btn btn-outline" onClick={() => navigate(inquiryCreatePath)} type="button">문의 작성</button>}
+          action={<ActionButton tone="outline" to={inquiryCreatePath}>문의 작성</ActionButton>}
           message="조건에 맞는 문의가 없습니다."
         />
       ) : (

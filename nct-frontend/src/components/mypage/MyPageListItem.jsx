@@ -17,7 +17,7 @@ export default function MyPageListItem({
     <article className="flex flex-col gap-5 rounded-xl border border-[#dce2ed] bg-white p-5 transition-all hover:border-[#c9d9ff] hover:shadow-[0_12px_28px_rgba(20,38,79,0.09)] sm:h-[160px] sm:flex-row sm:items-center">
       <ImageContainer
         {...(onImageClick ? { type: 'button', onClick: onImageClick, 'aria-label': `${imageAlt || title} 상세보기` } : {})}
-        className={`flex h-[104px] w-[104px] shrink-0 items-center justify-center overflow-hidden rounded-[10px] border border-[#dce6ff] bg-[#f2f6ff] p-0 text-xs font-bold text-[#4b6cae] ${onImageClick ? 'cursor-pointer' : ''}`}
+        className={`mx-auto flex h-[104px] w-[104px] shrink-0 items-center justify-center overflow-hidden rounded-[10px] border border-[#dce6ff] bg-[#f2f6ff] p-0 text-xs font-bold text-[#4b6cae] sm:mx-0 ${onImageClick ? 'cursor-pointer' : ''}`}
       >
         {imageSrc ? (
           <img src={imageSrc} alt={imageAlt} className="h-full w-full object-cover" />

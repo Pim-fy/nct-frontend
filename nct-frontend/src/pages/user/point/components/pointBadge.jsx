@@ -7,11 +7,22 @@
 //
 // 사용: const badge = pointBadge(STATUS_BADGE);  →  badge('완료')
 
+import { StatusBadge } from '@components/common/ui';
+
+const resolveBadgeTone = (colorClassName = '') => {
+  if (/(green|teal)/.test(colorClassName)) return 'success';
+  if (/(yellow|amber|orange)/.test(colorClassName)) return 'warning';
+  if (/red/.test(colorClassName)) return 'danger';
+  if (/(blue|indigo|purple|cyan)/.test(colorClassName)) return 'info';
+  return 'neutral';
+};
+
+// 담당자 7 · UI 공통화: 포인트 유형별 기존 팔레트를 공통 상태 배지의 의미색으로 연결합니다.
 const pointBadge = (colorMap) => {
   const badge = (label) => (
-    <span className={`inline-block px-2.5 py-0.5 rounded-lg text-xs font-medium ${colorMap[label] ?? 'bg-gray-100 text-gray-600'}`}>
+    <StatusBadge tone={resolveBadgeTone(colorMap[label])} variant="soft">
       {label}
-    </span>
+    </StatusBadge>
   );
   return badge;
 };

@@ -1,24 +1,17 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
-import { fetchReferenceCodes } from '@api/referenceApi';
 import {
   getServiceTradeDetail,
   decideServiceScheduleCancellation,
   requestServiceScheduleCancellation,
   requestServiceScheduleChange,
 } from '@api/serviceTradeApi';
-import ViewSkeleton from '@components/skeleton/ViewSkeleton';
-import { SERVICE_TRADE_DISPUTE_TYPE_GROUP_CODE } from '@/constants/serviceTrade';
+import { reviewQueryKeys } from '@hooks/useReview';
+import ServiceTradeDetailSkeleton from '@components/skeleton/ServiceTradeDetailSkeleton';
+import { ActionButton } from '@components/common/ui';
 import ServiceTradeDetailPage from './ServiceTradeDetailPage';
 
 const serviceTradeDetailQueryKey = (tradeId) => ['service-trade-detail', tradeId];
-
-const SERVICE_TRADE_DISPUTE_TYPE_LABELS = {
-  TRDC0011: '제공자 미방문·연락 두절',
-  TRDC0013: '작업 내용·품질·일정 문제',
-  TRDC0014: '보관금·환불·정산 문제',
-  TRDC0015: '기타 서비스 거래 문제',
-};
 
 export default function ServiceTradeDetailRoutePage() {
   const { tradeId: tradeIdParam } = useParams();
@@ -31,27 +24,23 @@ export default function ServiceTradeDetailRoutePage() {
     enabled: isValidTradeId,
     retry: false,
   });
-  const disputeTypesQuery = useQuery({
-    queryKey: ['reference-codes', SERVICE_TRADE_DISPUTE_TYPE_GROUP_CODE],
-    queryFn: () => fetchReferenceCodes(SERVICE_TRADE_DISPUTE_TYPE_GROUP_CODE),
-    enabled: isValidTradeId,
-    select: (codes) => codes
-      .filter((code) => code.code && SERVICE_TRADE_DISPUTE_TYPE_LABELS[code.code])
-      .map((code) => ({
-        code: code.code,
-        label: SERVICE_TRADE_DISPUTE_TYPE_LABELS[code.code],
-      })),
-    staleTime: 30 * 60 * 1000,
-    retry: 1,
-  });
-
-  // 담당자 7: 거래 상태 변경 후 상세와 마이페이지 목록/대시보드를 함께 최신화합니다.
+  // 거래 상태 변경 후 상세·목록과 함께 리뷰 작성 가능 상태도 최신화한다.
+  // 완료 직전 조회한 UNAVAILABLE 캐시가 남으면, 거래가 완료되어도 리뷰 폼이 잠긴 채 보일 수 있다.
   const refreshTradeData = () => Promise.all([
     queryClient.invalidateQueries({
       queryKey: serviceTradeDetailQueryKey(tradeId),
     }),
     queryClient.invalidateQueries({
       queryKey: ['my-service-trades'],
+    }),
+    queryClient.invalidateQueries({
+      queryKey: reviewQueryKeys.trade(tradeId),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: reviewQueryKeys.counterpartTrade(tradeId),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: reviewQueryKeys.writable,
     }),
   ]);
 
@@ -70,7 +59,7 @@ export default function ServiceTradeDetailRoutePage() {
     return (
       <main className="service-trade-detail-page">
         <section className="container">
-          <ViewSkeleton />
+          <ServiceTradeDetailSkeleton />
         </section>
       </main>
     );
@@ -89,9 +78,9 @@ export default function ServiceTradeDetailRoutePage() {
         <section className="container service-trade-detail-page__empty">
           <h1>서비스 거래 상세</h1>
           <p>{message}</p>
-          <button className="btn btn-primary" type="button" onClick={() => detailQuery.refetch()}>
+          <ActionButton onClick={() => detailQuery.refetch()}>
             다시 시도
-          </button>
+          </ActionButton>
         </section>
       </main>
     );
@@ -99,10 +88,6 @@ export default function ServiceTradeDetailRoutePage() {
 
   return (
     <ServiceTradeDetailPage
-      disputeTypes={disputeTypesQuery.data ?? []}
-      disputeTypesError={disputeTypesQuery.isError}
-      disputeTypesLoading={disputeTypesQuery.isLoading}
-      onRetryDisputeTypes={() => disputeTypesQuery.refetch()}
       onActionCompleted={refreshTradeData}
       onRequestScheduleChange={requestServiceScheduleChange}
       onRequestScheduleCancellation={requestServiceScheduleCancellation}

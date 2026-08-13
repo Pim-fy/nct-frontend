@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import {
   ChevronDown,
@@ -24,6 +24,7 @@ import HeaderSearchPortal from '@components/common/HeaderSearchPortal';
 import HeaderSearchWithHistory from '@components/common/HeaderSearchWithHistory';
 import useBodyScrollLock from '@hooks/useBodyScrollLock';
 import AuctionCard from './components/AuctionCard';
+import { ActionButton } from '@components/common/ui';
 
 const getSelectedValues = (searchParams, key) => searchParams.getAll(key);
 const DEFAULT_PAGE_SIZE = 12;
@@ -37,8 +38,8 @@ const AUCTION_STATUS_FILTERS = [
   { code: 'AUCC0003', label: '종료' },
 ];
 const TRADE_METHOD_FILTERS = [
-  { value: 'delivery', sourceCodes: ['TRDC0009', 'TRDC0020'], label: '배송' },
-  { value: 'direct', sourceCodes: ['TRDC0010', 'TRDC0020'], label: '직거래' },
+  { value: 'delivery', sourceCodes: ['TRDC0009', 'TRDC0015'], label: '배송' },
+  { value: 'direct', sourceCodes: ['TRDC0010', 'TRDC0015'], label: '직거래' },
 ];
 const FILTER_GROUP_CLASS = 'm-0 grid gap-2 border-0 p-0 disabled:opacity-60';
 const FILTER_OPTION_CLASS = 'flex cursor-pointer items-center gap-2 text-body-sm text-[#5f5e5a] md:text-body-md';
@@ -76,7 +77,7 @@ const createDraftFromSearchParams = (searchParams) => ({
   categories: getSelectedValues(searchParams, 'category'),
   statuses: getSelectedValues(searchParams, 'status'),
   tradeMethod: normalizeTradeMethod(searchParams.get('tradeMethod')),
-  sort: searchParams.get('sort') || 'deadline',
+  sort: searchParams.get('sort') || 'latest',
   minPrice: searchParams.get('minPrice') || '',
   maxPrice: searchParams.get('maxPrice') || '',
   instantBuyOnly: searchParams.get('instantBuyOnly') === 'true',
@@ -96,7 +97,7 @@ const AuctionListPage = () => {
   const [tradeMethodDraft, setTradeMethodDraft] = useState(
     normalizeTradeMethod(searchParams.get('tradeMethod')),
   );
-  const [sortDraft, setSortDraft] = useState(searchParams.get('sort') || 'deadline');
+  const [sortDraft, setSortDraft] = useState(searchParams.get('sort') || 'latest');
   const [minPriceDraft, setMinPriceDraft] = useState(searchParams.get('minPrice') || '');
   const [maxPriceDraft, setMaxPriceDraft] = useState(searchParams.get('maxPrice') || '');
   const [instantBuyOnlyDraft, setInstantBuyOnlyDraft] = useState(
@@ -183,7 +184,7 @@ const AuctionListPage = () => {
   const selectedCategories = getSelectedValues(searchParams, 'category');
   const selectedStatuses = getSelectedValues(searchParams, 'status');
   const tradeMethod = normalizeTradeMethod(searchParams.get('tradeMethod'));
-  const sort = searchParams.get('sort') || 'deadline';
+  const sort = searchParams.get('sort') || 'latest';
   const minPrice = searchParams.get('minPrice') || '';
   const maxPrice = searchParams.get('maxPrice') || '';
   const instantBuyOnly = searchParams.get('instantBuyOnly') === 'true';
@@ -311,7 +312,7 @@ const AuctionListPage = () => {
     if (instantBuyOnlyDraft) next.set('instantBuyOnly', 'true');
     if (endingSoonOnlyDraft) next.set('endingSoonOnly', 'true');
     if (tradeMethodDraft && tradeMethodDraft !== 'all') next.set('tradeMethod', tradeMethodDraft);
-    if (sortDraft && sortDraft !== 'deadline') next.set('sort', sortDraft);
+    if (sortDraft && sortDraft !== 'latest') next.set('sort', sortDraft);
 
     return next;
   };
@@ -344,7 +345,7 @@ const AuctionListPage = () => {
     setCategoryDraft([]);
     setStatusDraft([]);
     setTradeMethodDraft('all');
-    setSortDraft('deadline');
+    setSortDraft('latest');
     setMinPriceDraft('');
     setMaxPriceDraft('');
     setInstantBuyOnlyDraft(false);
@@ -598,30 +599,32 @@ const AuctionListPage = () => {
             </div>
 
             <div className="shrink-0 border-t border-[#f0efec] bg-white p-5 pt-3">
-              <button
-                className="inline-flex min-h-[46px] w-full cursor-pointer items-center justify-center rounded-lg border border-primary bg-primary px-3 text-body-md font-bold text-white transition-colors hover:border-primary-dark hover:bg-primary-dark"
-                type="button"
+              <ActionButton
+                fullWidth
+                size="lg"
                 onClick={handleFilterSearch}
                 aria-busy={filterPreviewQuery.data?.totalElements === undefined}
               >
                 {filterPreviewQuery.data?.totalElements === undefined
                   ? '상품 조회 중...'
                   : `상품 ${filterPreviewQuery.data.totalElements.toLocaleString('ko-KR')}개 보기`}
-              </button>
+              </ActionButton>
             </div>
           </aside>
 
           {/* aside(필터 패널)와 flex 형제로 items-start라 테두리 자체는 이미 같은 높이에서 시작 — 추가 여백 없음 */}
           <section className="min-w-0 flex-1">
-            <Link
-              className="mb-3 hidden min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-primary bg-primary px-4 font-bold text-white no-underline transition-colors hover:border-primary-dark hover:bg-primary-dark max-md:inline-flex"
-              state={{ from: '/auction' }} /* 전역 브레드크럼 (BJN, 260805): 경매 목록 경유 표시용 */
-              to="/product/register"
-            >
-              <Gavel aria-hidden="true" size={18} strokeWidth={2.2} />
-              경매 등록
-            </Link>
-            <div className="max-md:relative max-md:-mx-4 max-md:mb-3 max-md:h-[58px]">
+            <div className="mb-3 hidden max-md:block">
+              <ActionButton
+                fullWidth
+                state={{ from: '/auction' }} /* 상품 등록 취소·완료 후 돌아올 목록 경로 */
+                to="/product/register"
+              >
+                <Gavel aria-hidden="true" size={18} strokeWidth={2.2} />
+                경매 등록
+              </ActionButton>
+            </div>
+            <div className="hidden max-md:relative max-md:-mx-4 max-md:mb-3 max-md:block max-md:h-[58px]">
               <span
                 ref={filterBarAnchorRef}
                 aria-hidden="true"
@@ -632,16 +635,16 @@ const AuctionListPage = () => {
                   ? 'max-md:fixed max-md:inset-x-0 max-md:top-[154px] max-md:shadow-[0_5px_14px_rgba(0,0,0,0.14)]'
                   : 'max-md:absolute max-md:inset-0'
               }`}>
-                <button
-                  className="hidden min-h-[42px] w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-primary bg-white font-bold text-primary max-md:inline-flex"
-                  type="button"
+                <ActionButton
+                  fullWidth
+                  tone="outline"
                   aria-haspopup="dialog"
                   aria-expanded={filterOpen}
                   onClick={() => setFilterOpen(true)}
                 >
                   <SlidersHorizontal size={18} />
                   필터
-                </button>
+                </ActionButton>
               </div>
             </div>
 
@@ -662,13 +665,11 @@ const AuctionListPage = () => {
               <div className="grid min-h-[340px] place-content-center justify-items-center gap-2.5 rounded-lg border border-[#f0efec] bg-[#f8f8f6] p-7 text-center">
                 <strong className="text-h3">등록된 경매 상품이 없습니다.</strong>
                 <p className="m-0 text-[#5f5e5a]">새 경매가 올라오면 이곳에 표시됩니다.</p>
-                <button
-                  className="min-h-10 cursor-pointer rounded-lg border border-primary bg-primary px-3.5 text-body-md font-semibold text-white"
-                  type="button"
+                <ActionButton
                   onClick={clearFilters}
                 >
                   필터 초기화
-                </button>
+                </ActionButton>
               </div>
             )}
 

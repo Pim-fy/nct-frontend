@@ -9,7 +9,7 @@ const MULTIPART_CONFIG = { headers: { 'Content-Type': 'multipart/form-data' } };
 export const getWritableReviews = () =>
   api.get('/reviews/writable').then(res => res.data);
 
-/** 거래 상세의 상대방 신뢰지표를 조회한다. totalScore가 null이면 작성된 리뷰가 없는 상태다. */
+/** 호환 경로에서 전체·물품·서비스별 리뷰 평균과 건수를 조회하며 화면이 맥락에 맞는 값을 선택한다. */
 export const getUserReviewTrust = (userId) => (
   api.get(`/reviews/trust/${userId}`).then(res => res.data)
 );

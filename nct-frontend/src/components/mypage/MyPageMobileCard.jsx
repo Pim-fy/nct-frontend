@@ -28,7 +28,7 @@ const MyPageMobileCard = ({
       )}
     </div>
 
-    <div className="mt-3 flex items-start justify-between gap-3">
+    <div className="mt-3 mb-3 flex items-start justify-between gap-3">
       <strong className="min-w-0 overflow-hidden text-base font-bold text-[#1a1a18] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
         {title}
       </strong>
@@ -60,12 +60,12 @@ const MyPageMobileCard = ({
 
     {(footerLeft || footerRight) && (
       <div className="mt-auto flex items-center justify-between gap-3 border-t border-[#f0efec] pt-3.5">
-        {footerLeft && <span className="truncate text-xs font-semibold text-[#5f5e5a]">{footerLeft}</span>}
+        {footerLeft && <span className="truncate text-[14px] font-semibold text-[#5f5e5a]">{footerLeft}</span>}
         {footerRight && <span className="shrink-0 text-xs font-semibold text-[#5f5e5a]">{footerRight}</span>}
       </div>
     )}
 
-    {actionButton && <div className="mt-4 grid gap-2 [&_.btn]:w-full">{actionButton}</div>}
+    {actionButton && <div className="mt-4 grid gap-2 [&_.btn]:w-full [&_.ui-action-button]:w-full">{actionButton}</div>}
   </article>
 );
 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { EyeOff, Save, Trash2 } from 'lucide-react';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
+import AdminHistoryTimeline from '@components/admin/AdminHistoryTimeline';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
 import FormSkeleton from '@components/skeleton/FormSkeleton';
@@ -13,7 +14,7 @@ import {
   useHideAdminNotice,
   useUpdateAdminNotice,
 } from '@hooks/useAdminNotices';
-import { formatDateTime, toast } from '@utils/common';
+import { confirm, formatDateTime, toast } from '@utils/common';
 import { formatAdminMemberIdentity } from '@utils/adminMemberIdentity';
 import './adminContentPages.css';
 
@@ -134,7 +135,12 @@ const AdminNoticeFormPage = () => {
   };
 
   const hideNotice = async () => {
-    if (!window.confirm('이 공지를 사용자 화면에서 숨길까요?')) return;
+    const confirmed = await confirm({
+      title: '공지를 숨길까요?',
+      text: '공지 내용과 게시 기간은 유지됩니다.',
+      confirmButtonText: '숨기기',
+    });
+    if (!confirmed) return;
     try {
       await hideMutation.mutateAsync({ noticeId });
       setDeletePanelOpen(false);
@@ -152,7 +158,13 @@ const AdminNoticeFormPage = () => {
       setFeedback('삭제 사유를 입력해 주세요.');
       return;
     }
-    if (!window.confirm('이 공지를 관리 목록에서도 삭제할까요? 삭제 후에는 사용자와 관리자 목록에서 보이지 않습니다.')) return;
+    const confirmed = await confirm({
+      title: '공지를 삭제할까요?',
+      text: '삭제 후에는 사용자와 관리자 목록에서 모두 보이지 않습니다.',
+      confirmButtonText: '삭제',
+      size: 'md',
+    });
+    if (!confirmed) return;
     try {
       await deleteMutation.mutateAsync({ noticeId, changeReason: reason });
       toast({ icon: 'success', title: '공지가 삭제되었습니다.', timer: 1800 });
@@ -182,7 +194,7 @@ const AdminNoticeFormPage = () => {
       <AdminPageHeader
         action={!isNew && (
           <AdminStatusBadge tone={notice?.visibleNow ? 'success' : 'neutral'}>
-            {notice?.visibleNow ? '사용자 화면 노출 중' : '현재 미노출'}
+            {notice?.visibleNow ? '사용자 화면 공개' : '현재 비공개'}
           </AdminStatusBadge>
         )}
         title={isNew ? '공지 작성' : '공지 상세'}
@@ -320,6 +332,7 @@ const AdminNoticeFormPage = () => {
               <span>삭제 사유</span>
               <textarea
                 autoFocus
+                className="admin-reason-textarea"
                 disabled={isPending}
                 maxLength={500}
                 onChange={(event) => {
@@ -424,6 +437,9 @@ const AdminNoticeFormPage = () => {
           )}
         </div>
       </form>
+      {!isNew && (
+        <AdminHistoryTimeline referenceSn={noticeId} referenceType="NOTICE" />
+      )}
     </div>
   );
 };

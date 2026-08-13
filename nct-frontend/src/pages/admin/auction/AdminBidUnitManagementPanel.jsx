@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowDown, ArrowUp, GripVertical, Pencil, Plus, Power, RotateCcw } from 'lucide-react';
+import { Pencil, Plus, Power, RotateCcw } from 'lucide-react';
 import {
   changeAdminBidUnitStatus,
   fetchAdminBidUnits,
-  reorderAdminBidUnits,
   saveAdminBidUnit,
 } from '@api/adminAuctionApi';
 import AdminModal from '@components/admin/AdminModal';
+import AdminHistoryTimeline from '@components/admin/AdminHistoryTimeline';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
@@ -29,9 +29,6 @@ const AdminBidUnitManagementPanel = () => {
   const [form, setForm] = useState(EMPTY_FORM);
   const [statusReason, setStatusReason] = useState('');
   const [feedback, setFeedback] = useState('');
-  const [orderFeedback, setOrderFeedback] = useState('');
-  const [draggedBidUnitSn, setDraggedBidUnitSn] = useState(null);
-  const [dragTarget, setDragTarget] = useState(null);
 
   const bidUnitsQuery = useQuery({
     queryKey: ['admin-auction-bid-units'],
@@ -42,12 +39,7 @@ const AdminBidUnitManagementPanel = () => {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['admin-auction-bid-units'] });
       await queryClient.invalidateQueries({ queryKey: ['reference-codes', 'AUCG02'] });
-    },
-  });
-  const reorderMutation = useMutation({
-    mutationFn: reorderAdminBidUnits,
-    onSuccess: (ordered) => {
-      queryClient.setQueryData(['admin-auction-bid-units'], ordered);
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] });
     },
   });
   const statusMutation = useMutation({
@@ -55,6 +47,7 @@ const AdminBidUnitManagementPanel = () => {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['admin-auction-bid-units'] });
       await queryClient.invalidateQueries({ queryKey: ['reference-codes', 'AUCG02'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] });
     },
   });
 
@@ -100,7 +93,9 @@ const AdminBidUnitManagementPanel = () => {
       return '입찰 단위는 1P 이상의 정수로 입력해 주세요.';
     }
     if (!form.changeReason.trim()) {
-      return '변경 사유를 입력해 주세요.';
+      return editing?.isNew
+        ? '추가 사유를 입력해 주세요.'
+        : '변경 사유를 입력해 주세요.';
     }
     const duplicate = bidUnits.some((item) => (
       item.bidUnitSn !== editing?.bidUnitSn && Number(item.amount) === amount
@@ -157,124 +152,7 @@ const AdminBidUnitManagementPanel = () => {
     }
   };
 
-  const saveOrder = async (orderedIds) => {
-    setOrderFeedback('');
-    try {
-      await reorderMutation.mutateAsync(orderedIds);
-      toast({ icon: 'success', title: '입찰 단위 순서를 변경했습니다.', timer: 1500 });
-    } catch (error) {
-      setOrderFeedback(error.response?.data?.message || '입찰 단위 순서를 변경하지 못했습니다.');
-    }
-  };
-
-  const move = (item, direction) => {
-    if (reorderMutation.isPending) return;
-    const currentIds = bidUnits.map((bidUnit) => bidUnit.bidUnitSn);
-    const index = currentIds.indexOf(item.bidUnitSn);
-    const targetIndex = direction === 'UP' ? index - 1 : index + 1;
-    if (index < 0 || targetIndex < 0 || targetIndex >= currentIds.length) return;
-    [currentIds[index], currentIds[targetIndex]] = [currentIds[targetIndex], currentIds[index]];
-    void saveOrder(currentIds);
-  };
-
-  const startDrag = (event, item) => {
-    if (reorderMutation.isPending) {
-      event.preventDefault();
-      return;
-    }
-    event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.setData('text/plain', String(item.bidUnitSn));
-    setDraggedBidUnitSn(item.bidUnitSn);
-    setDragTarget(null);
-  };
-
-  const dragOver = (event, item) => {
-    if (!draggedBidUnitSn || reorderMutation.isPending) return;
-    event.preventDefault();
-    const bounds = event.currentTarget.getBoundingClientRect();
-    setDragTarget({
-      bidUnitSn: item.bidUnitSn,
-      position: event.clientY < bounds.top + bounds.height / 2 ? 'before' : 'after',
-    });
-  };
-
-  const finishDrag = () => {
-    setDraggedBidUnitSn(null);
-    setDragTarget(null);
-  };
-
-  const drop = (event, targetItem) => {
-    event.preventDefault();
-    const sourceId = draggedBidUnitSn ?? Number(event.dataTransfer.getData('text/plain'));
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const position = event.clientY < bounds.top + bounds.height / 2 ? 'before' : 'after';
-    finishDrag();
-    if (!sourceId || sourceId === targetItem.bidUnitSn || reorderMutation.isPending) return;
-
-    const currentIds = bidUnits.map((item) => item.bidUnitSn);
-    const orderedIds = [...currentIds];
-    const sourceIndex = orderedIds.indexOf(sourceId);
-    if (sourceIndex < 0) return;
-    const [movedId] = orderedIds.splice(sourceIndex, 1);
-    const targetIndex = orderedIds.indexOf(targetItem.bidUnitSn);
-    if (targetIndex < 0) return;
-    orderedIds.splice(position === 'after' ? targetIndex + 1 : targetIndex, 0, movedId);
-    if (orderedIds.every((id, index) => id === currentIds[index])) return;
-    void saveOrder(orderedIds);
-  };
-
   const columns = [
-    {
-      key: 'order',
-      label: '순번',
-      render: (_, item) => {
-        const orderIndex = bidUnits.findIndex((bidUnit) => bidUnit.bidUnitSn === item.bidUnitSn);
-        const dropPosition = dragTarget?.bidUnitSn === item.bidUnitSn
-          && draggedBidUnitSn !== item.bidUnitSn
-          ? dragTarget.position
-          : null;
-        return (
-          <div
-            className={`admin-bid-unit-order${draggedBidUnitSn === item.bidUnitSn ? ' is-dragging' : ''}${dropPosition ? ` is-drop-${dropPosition}` : ''}`}
-            onDragOver={(event) => dragOver(event, item)}
-            onDrop={(event) => drop(event, item)}
-          >
-            <button
-              aria-label={`${formatAmount(item.amount)} 순서 끌어서 이동`}
-              disabled={reorderMutation.isPending}
-              draggable={!reorderMutation.isPending}
-              onDragEnd={finishDrag}
-              onDragStart={(event) => startDrag(event, item)}
-              title="잡고 끌어서 순서 변경"
-              type="button"
-            >
-              <GripVertical aria-hidden="true" />
-            </button>
-            <strong>{orderIndex + 1}</strong>
-            <div>
-              <button
-                aria-label={`${formatAmount(item.amount)} 위로 이동`}
-                disabled={orderIndex <= 0 || reorderMutation.isPending}
-                onClick={() => move(item, 'UP')}
-                title="위로 이동"
-                type="button"
-              >
-                <ArrowUp aria-hidden="true" />
-              </button>
-              <button
-                aria-label={`${formatAmount(item.amount)} 아래로 이동`}
-                disabled={orderIndex < 0 || orderIndex >= bidUnits.length - 1 || reorderMutation.isPending}
-                onClick={() => move(item, 'DOWN')}
-                title="아래로 이동"
-                type="button"
-              >
-                <ArrowDown aria-hidden="true" />
-              </button>
-            </div>
-          </div>
-        );
-      },
-    },
     { key: 'amount', label: '입찰 단위', render: formatAmount },
     {
       key: 'active',
@@ -327,7 +205,6 @@ const AdminBidUnitManagementPanel = () => {
       )}
       {!bidUnitsQuery.isError && (
         <>
-          {orderFeedback && <p className="admin-bid-unit-panel__feedback" role="alert">{orderFeedback}</p>}
           <AdminSectionCard
             action={(
               <div className="admin-bid-unit-panel__summary">
@@ -338,6 +215,7 @@ const AdminBidUnitManagementPanel = () => {
                 </button>
               </div>
             )}
+            description="입찰 단위는 금액이 작은 순서대로 자동 정렬됩니다."
             title="입찰 단위 목록"
           >
             <div className="admin-bjn-table-scroll">
@@ -370,9 +248,23 @@ const AdminBidUnitManagementPanel = () => {
               />
             </label>
             <label>
-              <span>변경 사유</span>
-              <textarea maxLength="500" name="changeReason" onChange={change} value={form.changeReason} />
+              <span>{editing.isNew ? '추가 사유' : '변경 사유'}</span>
+              <textarea
+                className="admin-reason-textarea"
+                maxLength="500"
+                name="changeReason"
+                onChange={change}
+                value={form.changeReason}
+              />
             </label>
+            {!editing.isNew && (
+              <AdminHistoryTimeline
+                limit={30}
+                referenceSn={editing.bidUnitSn}
+                referenceType="COMMON_CODE"
+                title="입찰 단위 변경 이력"
+              />
+            )}
             {feedback && <p className="admin-bid-unit-form__feedback" role="alert">{feedback}</p>}
             <div className="admin-bid-unit-form__actions">
               <button className="btn btn-outline" disabled={saveMutation.isPending} onClick={closeDialogs} type="button">취소</button>
@@ -398,11 +290,18 @@ const AdminBidUnitManagementPanel = () => {
               <span>변경 사유</span>
               <textarea
                 autoFocus
+                className="admin-reason-textarea"
                 maxLength="500"
                 onChange={(event) => setStatusReason(event.target.value)}
                 value={statusReason}
               />
             </label>
+            <AdminHistoryTimeline
+              limit={30}
+              referenceSn={statusChanging.item.bidUnitSn}
+              referenceType="COMMON_CODE"
+              title="입찰 단위 변경 이력"
+            />
             {feedback && <p className="admin-bid-unit-form__feedback" role="alert">{feedback}</p>}
             <div className="admin-bid-unit-form__actions">
               <button className="btn btn-outline" disabled={statusMutation.isPending} onClick={closeDialogs} type="button">취소</button>

@@ -34,10 +34,7 @@
 .my-inquiry-card__title strong { overflow: hidden; font-size: 17px; text-overflow: ellipsis; white-space: nowrap; }
 .my-inquiry-card__summary time { color: #8b95a7; font-size: 13px; }
 
-.my-inquiry-card__status { min-width: 70px; border-radius: 999px; padding: 6px 10px; text-align: center; font-size: 12px; font-weight: 800; }
-.my-inquiry-card__status.is-received { background: #fff5d6; color: #9a6700; }
-.my-inquiry-card__status.is-processing { background: #e8f6ff; color: #056a9b; }
-.my-inquiry-card__status.is-answered { background: #eaf8ef; color: #18794e; }
+.my-inquiry-card__status { min-width: 70px; }
 .my-inquiry-card__chevron { width: 19px; color: #98a2b3; transition: transform .2s ease; }
 .my-inquiry-card.is-open .my-inquiry-card__chevron { transform: rotate(180deg); color: #155eef; }
 

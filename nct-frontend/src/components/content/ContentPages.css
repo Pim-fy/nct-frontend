@@ -912,8 +912,8 @@
 
 .notice-filters button,
 .content-pagination button,
-.content-state button,
-.content-state a {
+.content-state button:not(.ui-action-button),
+.content-state a:not(.ui-action-button) {
   border: 1px solid #e2e1dc;
   border-radius: 8px;
   padding: 9px 13px;

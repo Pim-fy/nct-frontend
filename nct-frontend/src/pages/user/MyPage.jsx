@@ -7,16 +7,14 @@
 // - 절대좌표(ScaledStage) 방식 → 반응형 Flex 레이아웃으로 전환.
 //   사이드바: 데스크톱(lg+) 좌측 고정 컬럼 / 모바일 상단 가로 스크롤 탭.
 //   콘텐츠: 우측 flex-1 영역.
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMyPageInquiryPath, getMyPagePath } from "@/routes/myPageRoutes";
 import MyPageSidebar from "@components/mypage/MyPageSidebar";
 import MyPageDashboard from "@components/mypage/MyPageDashboard";
 import MyPageProfileEdit from "@components/mypage/MyPageProfileEdit";
 import MyPageProviderDashboard from "@components/mypage/MyPageProviderDashboard";
-import ProviderEmbeddedSection from "@components/mypage/ProviderEmbeddedSection";
 import ProviderReceivedReviewSection from "@components/mypage/ProviderReceivedReviewSection";
-import MyPageTradeChatList from "@components/mypage/MyPageTradeChatList";
 import ProviderProfilePage from "@pages/provider/ProviderProfilePage";
 import TradeChat from "@pages/trade/TradeChat";
 import AuctionFavoritesPage from "@pages/auction/AuctionFavoritesPage";
@@ -24,7 +22,6 @@ import TradeHistory from "@pages/trade/TradeHistory";
 import MyProductList from "@components/product/MyProductList";
 import PointWalletPage from "@pages/user/point/PointWalletPage";
 import MyReportListPage from "@pages/user/report/MyReportListPage";
-import ReportFormPage from "@pages/user/report/ReportFormPage";
 import MyInquiryListPage from "@pages/user/inquiry/MyInquiryListPage";
 import MyQuoteListPage from "@pages/provider/MyQuoteListPage";
 import MyServiceRequestListPage from "@pages/service/MyServiceRequestListPage";
@@ -48,7 +45,6 @@ const MYPAGE_SECTIONS = new Set([
   "service-trade",
   "received-review",
   "report-list",
-  "report-form",
   "inquiry-list",
 ]);
 
@@ -68,8 +64,6 @@ export default function MyPage({
   previewTrades = false,
 }) {
   // isProvider: 현재 로그인 역할이 제공자(ROLE_SERVICE)인지 — 서버가 내려준 실제 역할 기준.
-  // 예전에는 localStorage 가짜 플래그(providerMode.js)로 화면만 바꿨는데,
-  // 백엔드 모드전환 API(F-PROV-008)와 실연동하면서 역할값 하나로 판단하도록 교체(2026-07-24).
   const { user, isProvider, switchMode, logout } = useAuth();
   const { data: myProviderApps = [] } = useMyProviderApplications({
     enabled: !!user && !isProvider,
@@ -102,12 +96,15 @@ export default function MyPage({
   // 임시저장·외부 링크 등으로 이 페이지에 진입할 때 이전 페이지의 스크롤 위치가 남지 않도록 최상단으로 이동한다.
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
-  // 마이페이지 안에서 embedded로 직접 렌더링하는 대신, TradeHistory의 비-embedded 모드와 같은
-  // /trades/{id} 경로로 이동한다 - LegacyTradeRedirect를 거쳐 실제 상세 페이지인
-  // /auction/{auctionId}/trade(AuctionTradeDetailPage)로 연결된다. 그래야 카드 병합·스테퍼·
-  // 리뷰 섹션 등 그 페이지의 구조가 마이페이지에서도 동일하게 보인다.
-  const handleOpenPurchaseTradeDetail = (tradeId) => {
-    navigate(`/trades/${tradeId}`, {
+  // @ai_generated (담당자1, 2026-08-13): 목록 응답에 auctionId가 있으면 호환 리다이렉트와
+  // 중복 상세 조회를 거치지 않고 정식 거래 상세 경로로 바로 이동한다.
+  const handleOpenPurchaseTradeDetail = (tradeId, auctionId) => {
+    const detailPath = previewTrades
+      ? `/trades/preview/${tradeId}`
+      : auctionId
+        ? `/auction/${auctionId}/trade`
+        : `/trades/${tradeId}`;
+    navigate(detailPath, {
       state: { from: getMyPagePath("auction-bids") },
     });
   };
@@ -152,7 +149,6 @@ export default function MyPage({
     navigate(getMyPagePath("home"));
   };
 
-  // @ai_generated: 공통 container를 사용해 헤더와 마이페이지의 좌우 시작선을 일치시킨다.
   return (
     <div className="container py-6 lg:py-10">
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 lg:items-start ">
@@ -197,7 +193,6 @@ export default function MyPage({
           {activeSection === "quote" && isProvider && <MyQuoteListPage embedded />}
           {!isProvider && activeSection === "review" && <ReviewListPage />}
           {activeSection === "report-list" && <MyReportListPage embedded />}
-          {activeSection === "report-form" && <ReportFormPage embedded />}
           {activeSection === "inquiry-list" && <MyInquiryListPage embedded />}
           {activeSection === "service-trade" && (
             <MyServiceTradeListPage fixedRole={isProvider ? "PROVIDER" : "REQUESTER"} />

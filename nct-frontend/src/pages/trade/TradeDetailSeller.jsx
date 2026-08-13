@@ -15,6 +15,7 @@ import Toast from '@components/common/Toast';
 import {
   getTradeDetail,
   requestTradeCompletion,
+  respondOfflineTradeCompletionRequest,
   submitTradeDeliveryProof,
 } from '@api/tradeApi';
 import { startTradeChat } from '@api/tradeChatApi';
@@ -37,8 +38,11 @@ import TradeProgressSteps from '@components/trade/TradeProgressSteps';
 import { getOfflineTradeProgressConfig } from '@components/trade/tradeProgressConfig';
 import TradeDetailOverviewCard from '@components/trade/TradeDetailOverviewCard';
 import OfflineScheduleProposalPanel from '@components/trade/OfflineScheduleProposalPanel';
+import { ActionButton } from '@components/common/ui';
 import TradeDetailErrorState from '@components/trade/TradeDetailErrorState';
 import PhotoLightbox from '@components/common/PhotoLightbox';
+import AlertModal from '@components/common/AlertModal';
+import ReportModal from '@components/common/ReportModal';
 import '@assets/css/trade-detail.css';
 
 const MAX_SHIPPING_PROOF_FILE_SIZE = 10 * 1024 * 1024;
@@ -69,6 +73,7 @@ const TradeDetailSeller = ({
   reviewSlot,
   onBack,
   onOpenChat,
+  onReport,
 }) => {
   const { tradeId: routeTradeId } = useParams();
   const tradeId = selectedTradeId ?? routeTradeId;
@@ -102,8 +107,18 @@ const TradeDetailSeller = ({
   const [isCompletionSubmitting, setIsCompletionSubmitting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notice, setNotice] = useState('');
+  const [completionRefreshAlertMessage, setCompletionRefreshAlertMessage] = useState('');
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const [timeRefreshSignal, setTimeRefreshSignal] = useState(0);
   const shippingProofFilesRef = useRef(shippingProofFiles);
+  const handleOpenReport = () => {
+    if (onReport) {
+      onReport();
+      return;
+    }
+
+    setIsReportOpen(true);
+  };
 
   const hasMeetingSchedule = Boolean(
     trade?.meetingDate && trade.meetingDate !== '-'
@@ -266,13 +281,13 @@ const TradeDetailSeller = ({
           && trade?.completionRequestedBy === 'BUYER'
         )
         : (
-          ['IN_PROGRESS', 'DELIVERING'].includes(trade?.status)
-          || (
-            ['CONFIRM_PENDING', 'WAITING_CONFIRMATION'].includes(trade?.status)
-            && trade?.completionRequestedBy === 'BUYER'
-          )
+            ['IN_PROGRESS', 'DELIVERING'].includes(trade?.status)
         )
     );
+  const isOfflineCompletionResponsePending = (
+    trade?.method === 'OFFLINE'
+    && trade?.canRespondToOfflineCompletionRequest
+  );
   const chatPath = isPreview
     ? `/trades/preview/${tradeId}/chat?from=seller`
     : `/trades/${tradeId}/chat?from=seller`;
@@ -288,7 +303,7 @@ const TradeDetailSeller = ({
       if (trade.chatRoomStatus === 'NOT_STARTED') {
         await startTradeChat(tradeId);
         setTrade((currentTrade) => currentTrade
-          ? { ...currentTrade, chatRoomStatus: 'ACTIVE' }
+          ? { ...currentTrade, chatRoomStatus: 'ACTIVE', chatAvailable: true }
           : currentTrade);
       }
       if (onOpenChat) onOpenChat(tradeId);
@@ -489,6 +504,16 @@ const TradeDetailSeller = ({
           : '거래 완료 확인을 보냈습니다. 구매자의 확인을 기다려 주세요.',
       );
     } catch (completionError) {
+      if (
+        trade?.method === 'OFFLINE'
+        && completionError.response?.status === 409
+        && completionError.response?.data?.message === '상대방의 거래 완료 요청에 동의하거나 거절해 주세요.'
+      ) {
+        setCompletionRefreshAlertMessage(
+          '상대방이 먼저 거래 완료 확인을 요청했습니다.\n확인을 누르면 최신 거래 상태를 불러옵니다.',
+        );
+        return;
+      }
       setNotice(
         completionError.response?.data?.message
           ?? '거래 완료 확인에 실패했습니다. 다시 시도해 주세요.',
@@ -496,6 +521,32 @@ const TradeDetailSeller = ({
     } finally {
       setIsCompletionSubmitting(false);
     }
+  };
+
+  const handleOfflineCompletionDecision = async (approve) => {
+    if (!isOfflineCompletionResponsePending) return;
+
+    setIsCompletionSubmitting(true);
+    try {
+      const response = await respondOfflineTradeCompletionRequest(tradeId, 'SELLER', approve);
+      const updatedTrade = toTradeDetail(response);
+      setTrade(updatedTrade);
+      invalidateAuctionTradeCaches();
+      setCompletionAgreed(false);
+      setNotice(approve
+        ? '거래 완료에 동의해 거래가 완료되었습니다.'
+        : '거래 완료 요청을 거절했습니다. 거래를 계속 진행하거나 일정 변경을 제안할 수 있습니다.');
+    } catch (completionError) {
+      setNotice(completionError.response?.data?.message ?? '거래 완료 요청 응답에 실패했습니다.');
+    } finally {
+      setIsCompletionSubmitting(false);
+    }
+  };
+
+  const handleCompletionRefreshConfirm = async () => {
+    setCompletionRefreshAlertMessage('');
+    await loadTrade();
+    invalidateAuctionTradeCaches();
   };
 
   // 오늘 화면을 오래 열어 둔 경우에도 과거 시간대가 남지 않게 목록을 분 단위로 갱신한다.
@@ -560,6 +611,7 @@ const TradeDetailSeller = ({
               statusMessages={overviewStatusMessages}
               counterpartTitle="구매자 정보"
               auctionId={auctionId}
+              onReport={handleOpenReport}
             />
 
             {/* 가운데: 직거래 일정 협의와 거래 확인을 카드 하나로 합친다. */}
@@ -568,14 +620,13 @@ const TradeDetailSeller = ({
                 <h3>거래 채팅</h3>
                 <p>{chatDescription}</p>
                 <div className="trade-detail-actions trade-detail-actions--end">
-                  <button
-                    className="btn btn-outline"
-                    type="button"
+                  <ActionButton
                     onClick={openTradeChat}
                     disabled={!canUseTradeChat(trade)}
+                    tone="outline"
                   >
                     {chatButtonLabel}
-                  </button>
+                  </ActionButton>
                 </div>
               </div>
               <OfflineScheduleProposalPanel
@@ -585,6 +636,7 @@ const TradeDetailSeller = ({
                 onUpdated={handleOfflineScheduleUpdated}
                 onNotice={setNotice}
                 onError={setNotice}
+                onRefresh={loadTrade}
               />
               {hasMeetingSchedule && (
                   <div className="trade-detail-card__block">
@@ -596,6 +648,9 @@ const TradeDetailSeller = ({
                         ? `${trade.autoCompleteAt}까지 ${trade.completionRequestedBy === 'BUYER' ? '판매자' : '구매자'} 확인이 없으면 자동으로 거래가 완료됩니다.`
                         : '거래가 완료되었다면 구매자와 서로 완료 확인을 진행해 주세요.',
                     ).map((sentence) => <p key={sentence}>{sentence}</p>)}
+                    <p className="trade-detail-card__muted">
+                      내 거래 완료 확인 요청 {trade.myOfflineCompletionRequestCount}/2회 · 남은 요청 {trade.remainingOfflineCompletionRequestCount}회
+                    </p>
                     {trade.status !== 'COMPLETED' && canRequestSellerCompletion && (
                       <>
                         <label className="trade-complete-card__check">
@@ -611,16 +666,32 @@ const TradeDetailSeller = ({
                           확인 요청 이후에는 구매자의 확인이나 이의제기 없이 일정 기간이 지나야 합니다.
                         </p>
                         <div className="trade-detail-actions trade-detail-actions--end">
-                          <button
-                            className="btn btn-primary"
-                            type="button"
+                          <ActionButton
                             disabled={!completionAgreed || isCompletionSubmitting}
+                            loading={isCompletionSubmitting}
                             onClick={requestSellerCompletion}
                           >
-                            {isCompletionSubmitting ? '확인 중...' : '거래 완료 확인'}
-                          </button>
+                            {isCompletionSubmitting ? '확인 중...' : '거래 완료 확인 요청'}
+                          </ActionButton>
                         </div>
                       </>
+                    )}
+                    {trade.status !== 'COMPLETED' && isOfflineCompletionResponsePending && (
+                      <div className="trade-detail-actions trade-detail-actions--end">
+                        <ActionButton
+                          disabled={isCompletionSubmitting}
+                          onClick={() => handleOfflineCompletionDecision(false)}
+                          tone="danger"
+                        >
+                          거절
+                        </ActionButton>
+                        <ActionButton
+                          disabled={isCompletionSubmitting}
+                          onClick={() => handleOfflineCompletionDecision(true)}
+                        >
+                          동의하고 거래 완료
+                        </ActionButton>
+                      </div>
                     )}
                   </div>
 
@@ -633,6 +704,12 @@ const TradeDetailSeller = ({
 
         </div>
         {notice && <Toast message={notice} onClose={() => setNotice('')} />}
+        <AlertModal
+          confirmLabel="확인"
+          message={completionRefreshAlertMessage}
+          onClose={handleCompletionRefreshConfirm}
+          open={Boolean(completionRefreshAlertMessage)}
+        />
       </div>
     );
   }
@@ -644,14 +721,13 @@ const TradeDetailSeller = ({
         <main className={`${contentClassName} trade-detail-page__state`}>
           <section className="trade-detail-card">
             <h1>거래 방식 확인</h1>
-            <p>거래 방식과 상세 API 계약이 확정된 뒤 화면을 연결합니다.</p>
-            <button
-              className="btn btn-ghost"
-              type="button"
+            <p>현재 이 거래의 상세 정보를 표시할 수 없습니다. 거래 목록에서 다시 확인해 주세요.</p>
+            <ActionButton
               onClick={handleBackToList}
+              tone="neutral"
             >
               ← 목록으로
-            </button>
+            </ActionButton>
           </section>
         </main>
       </div>
@@ -688,6 +764,7 @@ const TradeDetailSeller = ({
             statusMessages={overviewStatusMessages}
             counterpartTitle="구매자 정보"
             auctionId={auctionId}
+            onReport={handleOpenReport}
           />
 
           {/* 가운데: 구매자 배송지 + (발송 인증 등록 또는 거래 완료 확인)을 카드 하나로 합친다. */}
@@ -776,14 +853,13 @@ const TradeDetailSeller = ({
                       확인 요청 이후에는 구매자의 확인이나 이의제기 없이 일정 기간이 지나야 합니다.
                     </p>
                     <div className="trade-detail-actions trade-detail-actions--end">
-                      <button
-                        className="btn btn-primary"
-                        type="button"
+                      <ActionButton
                         disabled={!completionAgreed || isCompletionSubmitting}
+                        loading={isCompletionSubmitting}
                         onClick={requestSellerCompletion}
                       >
                         {isCompletionSubmitting ? '확인 중...' : '거래 완료 확인'}
-                      </button>
+                      </ActionButton>
                     </div>
                   </>
                 )}
@@ -857,14 +933,13 @@ const TradeDetailSeller = ({
                 )}
 
                 <div className="trade-proof-submit-actions">
-                  <button
-                    className="btn btn-primary"
-                    type="button"
+                  <ActionButton
                     onClick={submitDeliveryProof}
-                    disabled={isUploadingProof || isSubmitting}
+                    disabled={isUploadingProof}
+                    loading={isSubmitting}
                   >
                     {isSubmitting ? '발송 인증 등록 중...' : '발송 인증 등록하기'}
-                  </button>
+                  </ActionButton>
                 </div>
               </div>
             )}
@@ -884,6 +959,22 @@ const TradeDetailSeller = ({
       />
 
       {notice && <Toast message={notice} onClose={() => setNotice('')} />}
+      <AlertModal
+        confirmLabel="확인"
+        message={completionRefreshAlertMessage}
+        onClose={handleCompletionRefreshConfirm}
+        open={Boolean(completionRefreshAlertMessage)}
+      />
+      {!embedded && <ReportModal
+        open={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        targetName={trade.counterpart}
+        targetType="trade"
+        referenceSn={trade.id}
+        reportedUserSn={trade.counterpartUserId}
+        contextLabel={`거래 상대: ${trade.counterpart}`}
+        redirectAfterSubmit={false}
+      />}
     </div>
   );
 };

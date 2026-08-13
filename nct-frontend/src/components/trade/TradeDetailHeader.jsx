@@ -6,6 +6,8 @@
 // onBack이 없으면(embedded 경로 - AuctionTradeDetailPage가 공용 타이틀 행에서 뒤로가기를
 // 대신 그린다) 버튼을 렌더링하지 않는다. 독립 라우트(/trades/:tradeId, 미리보기 등)에서는
 // 그런 공용 타이틀 행이 없어서 onBack을 그대로 넘겨받아 버튼을 계속 보여준다.
+import { ActionButton } from '@components/common/ui';
+
 export default function TradeDetailHeader({ title, onBack }) {
   return (
     <header className="trade-detail-page__header">
@@ -13,13 +15,12 @@ export default function TradeDetailHeader({ title, onBack }) {
         <h1>{title}</h1>
       </div>
       {onBack && (
-        <button
-          className="btn btn-ghost"
-          type="button"
+        <ActionButton
           onClick={onBack}
+          tone="neutral"
         >
           ← 목록으로
-        </button>
+        </ActionButton>
       )}
     </header>
   );

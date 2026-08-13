@@ -1,6 +1,7 @@
 // src/layouts/user/footers/Footer.jsx
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ActionButton } from '@components/common/ui';
 import { SIGNUP_TERMS } from '@pages/auth/signupTerms';
 import { useConfig } from '@hooks/useConfig';
 
@@ -27,9 +28,9 @@ const TermsModal = ({ code, onClose }) => {
           ))}
         </div>
         <div className="mt-6 flex justify-end">
-          <button type="button" className="btn btn-primary" onClick={onClose}>
+          <ActionButton onClick={onClose}>
             닫기
-          </button>
+          </ActionButton>
         </div>
       </div>
     </div>
@@ -47,7 +48,7 @@ const Footer = () => {
   return (
     <>
       <footer className="bg-[#293341] text-[rgba(255,255,255,0.8)] mt-auto md:pb-0">
-        <div className="container py-9">
+        <div className="container">
           <div className="flex flex-wrap items-start justify-between gap-8 pt-7 pb-7">
             {/* 좌측: 로고 + 링크 */}
             <div className="flex flex-col gap-4">
@@ -83,9 +84,12 @@ const Footer = () => {
 
             {/* 우측: 고객센터 */}
             <div className="flex flex-col items-start md:items-end gap-3 shrink-0">
-              <a href="tel:070-1234-5678" className="text-[28px] md:text-[40px] font-bold tracking-[-2px] text-white hover:text-primary-light transition-colors">
+              <a href="tel:070-1234-5678" className="md:hidden text-[28px] font-bold tracking-[-2px] text-white">
                 070.1234.5678
               </a>
+              <span className="hidden md:block text-[40px] font-bold tracking-[-2px] text-white">
+                070.1234.5678
+              </span>
               <p className="text-[15px] tracking-[-0.75px] text-white/50 text-left md:text-right">
                 평일 10:00 - 18:00
                 <br />

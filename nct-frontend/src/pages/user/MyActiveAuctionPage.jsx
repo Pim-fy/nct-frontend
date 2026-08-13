@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Gavel, RefreshCw } from 'lucide-react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { toImageUrl } from '@api/fileApi';
 import Pagination from '@components/common/Pagination';
+import { ActionButton } from '@components/common/ui';
 import MyPageListSectionLayout from '@components/mypage/MyPageListSectionLayout';
 import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
 import MyPageListEmpty from '@components/mypage/MyPageListEmpty';
@@ -123,7 +124,6 @@ const toAuctionCardItem = (item) => ({
 });
 
 export default function MyActiveAuctionPage() {
-  const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [keyword, setKeyword] = useState('');
@@ -252,13 +252,13 @@ export default function MyActiveAuctionPage() {
                   ]}
                   tradeMethodLabel={item.tradeMethodName || '정보 없음'}
                   actionButton={(
-                    <button
-                      className="btn btn-sm btn-primary"
-                      type="button"
-                      onClick={() => navigate(`/auction/${item.aucSn}`, { state: { from: location.pathname + location.search } })}
+                    <ActionButton
+                      size="sm"
+                      state={{ from: location.pathname + location.search }}
+                      to={`/auction/${item.aucSn}`}
                     >
                       경매 상세
-                    </button>
+                    </ActionButton>
                   )}
                 />
               );
