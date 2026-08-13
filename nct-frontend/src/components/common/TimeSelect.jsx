@@ -26,7 +26,7 @@ const formatSelectedTime = (parts) => {
   return `${period} ${parts.hour % 12 || 12}:${pad(parts.minute)}`;
 };
 
-/** 담당자 7 | 일정 입력 화면에서 공통으로 사용하는 10분 단위 버튼 시간 선택기입니다. */
+/** 담당자 7 | 일정 입력 화면에서 공통으로 사용하는 10분 단위 시간 선택기입니다. */
 export default function TimeSelect({
   value,
   onChange,
@@ -77,8 +77,9 @@ export default function TimeSelect({
     };
     const focusFrame = window.requestAnimationFrame(() => {
       const selectedButton = panelRef.current?.querySelector('[aria-pressed="true"]');
+      const firstEnabledSelect = panelRef.current?.querySelector('select:not(:disabled)');
       const firstEnabledButton = panelRef.current?.querySelector('button:not(:disabled)');
-      (selectedButton ?? firstEnabledButton)?.focus();
+      (selectedButton ?? firstEnabledSelect ?? firstEnabledButton)?.focus();
     });
 
     document.addEventListener('pointerdown', handlePointerDown);
@@ -119,6 +120,8 @@ export default function TimeSelect({
     setIsOpen(false);
     window.requestAnimationFrame(() => triggerRef.current?.focus());
   };
+
+  // @ai_generated (담당자4 정민재, 2026-08-13): 콤보박스에서도 기존 최소 가능 시각 정책을 option 단위의 비활성화로 동일하게 유지한다.
 
   return (
     <div className={rootClassName} ref={rootRef} role="group" aria-label={ariaLabel}>
@@ -184,41 +187,45 @@ export default function TimeSelect({
 
           <div className="common-time-select__section" role="group" aria-label={`${ariaLabel} 시`}>
             <span className="common-time-select__label">시</span>
-            <div className="common-time-select__options common-time-select__options--hour">
+            <select
+              aria-label={`${ariaLabel} 시 선택`}
+              className="common-time-select__select"
+              onChange={(event) => emit(period, Number(event.target.value), selectedMinute)}
+              value={hour12}
+            >
               {HOUR_OPTIONS.map((nextHour12) => (
-                <button
-                  aria-pressed={Boolean(selectedParts && hour12 === nextHour12)}
-                  className="common-time-select__option"
+                <option
                   disabled={isHourDisabled(period, nextHour12)}
                   key={nextHour12}
-                  onClick={() => emit(period, nextHour12, selectedMinute)}
-                  type="button"
+                  value={nextHour12}
                 >
-                  {nextHour12}
-                </button>
+                  {nextHour12}시
+                </option>
               ))}
-            </div>
+            </select>
           </div>
 
           <div className="common-time-select__section" role="group" aria-label={`${ariaLabel} 분`}>
             <span className="common-time-select__label">분</span>
-            <div className="common-time-select__options common-time-select__options--minute">
+            <select
+              aria-label={`${ariaLabel} 분 선택`}
+              className="common-time-select__select"
+              onChange={(event) => {
+                emit(period, hour12, Number(event.target.value));
+                closeAfterSelection();
+              }}
+              value={selectedMinute}
+            >
               {MINUTE_OPTIONS.map((minute) => (
-                <button
-                  aria-pressed={Boolean(selectedParts && selectedMinute === minute)}
-                  className="common-time-select__option"
+                <option
                   disabled={isMinuteDisabled(period, hour12, minute)}
                   key={minute}
-                  onClick={() => {
-                    emit(period, hour12, minute);
-                    closeAfterSelection();
-                  }}
-                  type="button"
+                  value={minute}
                 >
-                  {pad(minute)}
-                </button>
+                  {pad(minute)}분
+                </option>
               ))}
-            </div>
+            </select>
           </div>
         </div>
       )}
