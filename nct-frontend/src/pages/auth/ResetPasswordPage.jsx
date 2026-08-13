@@ -109,6 +109,9 @@ function RequestForm() {
                 <strong className="text-gray-700">{maskEmail(email)}</strong>으로<br />
                 비밀번호 재설정 링크를 발송했습니다.
               </p>
+              <p className="mt-2 text-xs text-gray-500">
+                소셜 가입 회원은 가입한 소셜 계정으로 로그인해주세요.
+              </p>
             </div>
             <ul className="text-xs text-gray-500 text-left bg-gray-50 rounded-lg px-4 py-3 space-y-1.5">
               <li>링크는 발송 후 <strong className="text-gray-700">1시간</strong> 동안 유효합니다.</li>
