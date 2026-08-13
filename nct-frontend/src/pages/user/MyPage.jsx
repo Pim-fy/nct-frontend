@@ -96,12 +96,15 @@ export default function MyPage({
   // 임시저장·외부 링크 등으로 이 페이지에 진입할 때 이전 페이지의 스크롤 위치가 남지 않도록 최상단으로 이동한다.
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
-  // 마이페이지 안에서 embedded로 직접 렌더링하는 대신, TradeHistory의 비-embedded 모드와 같은
-  // /trades/{id} 경로로 이동한다 - LegacyTradeRedirect를 거쳐 실제 상세 페이지인
-  // /auction/{auctionId}/trade(AuctionTradeDetailPage)로 연결된다. 그래야 카드 병합·스테퍼·
-  // 리뷰 섹션 등 그 페이지의 구조가 마이페이지에서도 동일하게 보인다.
-  const handleOpenPurchaseTradeDetail = (tradeId) => {
-    navigate(`/trades/${tradeId}`, {
+  // @ai_generated (담당자1, 2026-08-13): 목록 응답에 auctionId가 있으면 호환 리다이렉트와
+  // 중복 상세 조회를 거치지 않고 정식 거래 상세 경로로 바로 이동한다.
+  const handleOpenPurchaseTradeDetail = (tradeId, auctionId) => {
+    const detailPath = previewTrades
+      ? `/trades/preview/${tradeId}`
+      : auctionId
+        ? `/auction/${auctionId}/trade`
+        : `/trades/${tradeId}`;
+    navigate(detailPath, {
       state: { from: getMyPagePath("auction-bids") },
     });
   };

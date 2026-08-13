@@ -41,7 +41,7 @@ export default function AuctionTradeDetailPage() {
   const [isReportOpen, setIsReportOpen] = useState(false);
 
   if (tradeQuery.isLoading) {
-    return <TradeDetailSkeleton />;
+    return <TradeDetailSkeleton layout="auction" />;
   }
 
   if (tradeQuery.isError) {

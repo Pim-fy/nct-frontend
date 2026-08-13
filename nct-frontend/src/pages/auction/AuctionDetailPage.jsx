@@ -361,10 +361,9 @@ export const AuctionDetailPageContent = ({ auctionId, embedded = false }) => {
     onSuccess: (updatedAuction) => {
       handleMutationSuccess(updatedAuction);
       setIsBuyNowOpen(false);
-      const tradeId = Number(updatedAuction?.tradeId);
       navigate(
-        Number.isSafeInteger(tradeId) && tradeId > 0
-          ? `/trades/${tradeId}`
+        updatedAuction?.tradeId
+          ? `/auction/${auctionId}/trade`
           : getMyPagePath('auction-bids'),
         { replace: true },
       );
@@ -1118,7 +1117,7 @@ export const AuctionDetailPageContent = ({ auctionId, embedded = false }) => {
               onFavoriteToggle={handleFavoriteToggle}
               onReportOpen={handleReportOpen}
               onChargeClick={() => setIsChargeModalOpen(true)}
-              onTradeDetailOpen={() => navigate(`/trades/${auction.tradeId}`)}
+              onTradeDetailOpen={() => navigate(`/auction/${auctionId}/trade`)}
             />
           </section>
         </div>

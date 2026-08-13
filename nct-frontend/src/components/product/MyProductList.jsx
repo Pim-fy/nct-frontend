@@ -271,7 +271,9 @@ export default function MyProductList() {
                     {p.tradeSn && (
                       <button
                         type="button"
-                        onClick={() => navigate(`/trades/${p.tradeSn}/seller`, { state: returnState })}
+                        onClick={() => navigate(p.aucSn
+                          ? `/auction/${p.aucSn}/trade`
+                          : `/trades/${p.tradeSn}/seller`, { state: returnState })}
                         className="btn btn-sm btn-primary"
                       >
                         거래 관리
@@ -330,7 +332,7 @@ export default function MyProductList() {
                   actionButton={(
                     <>
                       {p.tradeSn && (
-                        <button type="button" onClick={() => navigate(`/trades/${p.tradeSn}/seller`, { state: returnState })} className="btn btn-sm btn-primary">거래 관리</button>
+                        <button type="button" onClick={() => navigate(p.aucSn ? `/auction/${p.aucSn}/trade` : `/trades/${p.tradeSn}/seller`, { state: returnState })} className="btn btn-sm btn-primary">거래 관리</button>
                       )}
                       {!p.tradeSn && isActive && (
                         <button type="button" onClick={() => navigate(`/product/${p.prdSn}/seller`, { state: returnState })} className={`btn btn-sm ${p.aucStatusCd === 'AUCC0005' ? 'btn-ghost' : 'btn-primary'}`}>
