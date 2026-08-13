@@ -117,7 +117,10 @@ function BidHistoryTab() {
   const handleFilterChange = (value) => { setStatusFilter(value); setPage(1); };
   // 전역 브레드크럼 (BJN, 260805): 어디서 진입했는지(state.from)를 상세에 전달해 브레드크럼 경로에 반영
   const handleGoToAuction  = (aucSn) => navigate(`/auction/${aucSn}`, { state: { from: location.pathname + location.search } });
-  const handleGoToTrade = (tradeId) => navigate(`/trades/${tradeId}`, { state: { from: location.pathname + location.search } });
+  const handleGoToTrade = (tradeId, aucSn) => navigate(
+    aucSn ? `/auction/${aucSn}/trade` : `/trades/${tradeId}`,
+    { state: { from: location.pathname + location.search } },
+  );
 
   if (isLoading) return <CardGridSkeleton cardHeight={100} columns={1} count={4} />;
   if (isError) {
@@ -188,7 +191,7 @@ function BidHistoryTab() {
                     {isWon && (
                       item.tradeId ? (
                         <ActionButton
-                          onClick={() => handleGoToTrade(item.tradeId)}
+                          onClick={() => handleGoToTrade(item.tradeId, item.aucSn)}
                           size="sm"
                         >
                           거래 상세

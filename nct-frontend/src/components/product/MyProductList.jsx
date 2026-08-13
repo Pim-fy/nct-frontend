@@ -271,7 +271,9 @@ export default function MyProductList() {
                       <ActionButton
                         size="sm"
                         state={returnState}
-                        to={`/trades/${p.tradeSn}/seller`}
+                        to={p.aucSn
+                          ? `/auction/${p.aucSn}/trade`
+                          : `/trades/${p.tradeSn}/seller`}
                       >
                         거래 관리
                       </ActionButton>
@@ -329,7 +331,13 @@ export default function MyProductList() {
                   actionButton={(
                     <>
                       {p.tradeSn && (
-                        <ActionButton size="sm" state={returnState} to={`/trades/${p.tradeSn}/seller`}>거래 관리</ActionButton>
+                        <ActionButton
+                          size="sm"
+                          state={returnState}
+                          to={p.aucSn ? `/auction/${p.aucSn}/trade` : `/trades/${p.tradeSn}/seller`}
+                        >
+                          거래 관리
+                        </ActionButton>
                       )}
                       {!p.tradeSn && isActive && (
                         <ActionButton
