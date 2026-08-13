@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircleQuestion, ShieldCheck } from 'lucide-react';
 import { ContentPageShell } from '@components/content/ContentUi';
+import { ActionButton } from '@components/common/ui';
 import { getMyPageInquiryPath } from '@/routes/myPageRoutes';
 import {
   useCreateCustomerInquiry,
@@ -166,10 +167,14 @@ const CustomerInquiryFormPage = () => {
         {errors.server && <p className="customer-inquiry-form__error" role="alert">{errors.server}</p>}
 
         <div className="customer-inquiry-form__actions">
-          <button className="btn btn-outline" disabled={createMutation.isPending} onClick={() => navigate(-1)} type="button">취소</button>
-          <button className="btn btn-primary" disabled={createMutation.isPending || typesQuery.isError} type="submit">
+          <ActionButton disabled={createMutation.isPending} onClick={() => navigate(-1)} tone="outline">취소</ActionButton>
+          <ActionButton
+            disabled={createMutation.isPending || typesQuery.isError}
+            loading={createMutation.isPending}
+            type="submit"
+          >
             {createMutation.isPending ? '접수 중…' : '문의 접수'}
-          </button>
+          </ActionButton>
         </div>
       </form>
     </ContentPageShell>

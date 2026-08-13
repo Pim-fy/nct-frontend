@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import { toImageUrl } from '@api/fileApi';
 import AuctionOriginalModal from '@components/trade/AuctionOriginalModal';
+import { ActionButton } from '@components/common/ui';
 
 // bare: 상품·정보·상대방 정보를 하나의 trade-detail-card로 합칠 때, 이 컴포넌트 자체의
 // 카드 테두리(section.trade-detail-card) 없이 내부 구획(div.trade-detail-card__block)만 그린다.
@@ -52,13 +53,11 @@ export default function TradeProductCard({
       </div>
       {auctionId && (
         <div className="trade-detail-actions trade-detail-actions--end">
-          <button
-            className="btn btn-primary"
+          <ActionButton
             onClick={() => setIsAuctionOriginalOpen(true)}
-            type="button"
           >
             원본 경매 보기
-          </button>
+          </ActionButton>
         </div>
       )}
       <AuctionOriginalModal

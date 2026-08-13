@@ -7,8 +7,8 @@ import { toImageUrl } from '@api/fileApi';
 import { getUserReviews, getUserReviewTrust } from '@api/reviewApi';
 import { getTradeProfile } from '@api/tradeProfileApi';
 import ReportModal from '@components/common/ReportModal';
-import CommonTabs from '@components/common/CommonTabs';
 import Pagination from '@components/common/Pagination';
+import { ActionButton } from '@components/common/ui';
 import { ContentPageShell, ContentState } from '@components/content/ContentUi';
 import ProfileSkeleton from '@components/skeleton/ProfileSkeleton';
 import { useAuth } from '@hooks/useAuth';
@@ -193,15 +193,17 @@ const PublicTradeProfilePage = () => {
       <div className="trade-profile-layout">
         <aside className="trade-profile-card" aria-labelledby="trade-profile-name">
           {!isOwnProfile && (
-            <button
+            <ActionButton
               aria-label={`${displayName} 회원 신고하기`}
               className="trade-profile-report-button"
               onClick={() => setReportOpen(true)}
-              type="button"
+              preserveSize
+              size="sm"
+              tone="danger-outline"
             >
               <Flag aria-hidden="true" />
               신고
-            </button>
+            </ActionButton>
           )}
 
           <div className="trade-profile-avatar" aria-label={`${displayName} 프로필 사진`}>
@@ -215,9 +217,6 @@ const PublicTradeProfilePage = () => {
             )}
           </div>
           <h1 id="trade-profile-name">{displayName}</h1>
-          <p className="trade-profile-description">
-            거래 후 받은 물품 리뷰를 확인할 수 있는 회원 프로필입니다.
-          </p>
 
           <section className="trade-profile-trust" aria-labelledby="trade-profile-trust-title">
             <h2 id="trade-profile-trust-title">거래 평점</h2>
@@ -267,19 +266,32 @@ const PublicTradeProfilePage = () => {
         <section className="trade-profile-reviews" aria-labelledby="trade-profile-review-title">
           <h2 className="sr-only" id="trade-profile-review-title">받은 물품 리뷰</h2>
           <div className="trade-profile-reviews__header">
-            <CommonTabs
-              activeValue={reviewRole}
-              ariaLabel="받은 물품 리뷰 유형"
+            <div
+              aria-label="받은 물품 리뷰 유형"
               className="trade-profile-review-tabs"
-              items={REVIEW_ROLE_TABS.map((tab, tabIndex) => ({
-                ...tab,
-                ariaControls: 'trade-profile-review-panel',
-                id: `trade-profile-review-tab-${tab.value ?? 'all'}`,
-                onKeyDown: (event) => handleReviewTabKeyDown(event, tabIndex),
-                tabIndex: tab.value === reviewRole ? 0 : -1,
-              }))}
-              onChange={handleReviewRoleChange}
-            />
+              role="tablist"
+            >
+              {REVIEW_ROLE_TABS.map((tab, tabIndex) => {
+                const selected = tab.value === reviewRole;
+                return (
+                  <button
+                    aria-controls="trade-profile-review-panel"
+                    aria-label={tab.ariaLabel ?? tab.label}
+                    aria-selected={selected}
+                    className={selected ? 'is-active' : ''}
+                    id={`trade-profile-review-tab-${tab.value ?? 'all'}`}
+                    key={tab.value ?? 'all'}
+                    onClick={() => handleReviewRoleChange(tab.value)}
+                    onKeyDown={(event) => handleReviewTabKeyDown(event, tabIndex)}
+                    role="tab"
+                    tabIndex={selected ? 0 : -1}
+                    type="button"
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
             {!reviewsQuery.isLoading && !reviewsQuery.isError && (
               <strong>{totalCount.toLocaleString('ko-KR')}건</strong>
             )}

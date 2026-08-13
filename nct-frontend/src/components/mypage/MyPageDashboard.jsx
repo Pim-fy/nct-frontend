@@ -6,7 +6,6 @@ import { ChevronRight } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getMyPagePath, getServiceTradeDetailPath } from "@/routes/myPageRoutes";
 import { useQuery } from "@tanstack/react-query";
-import { fetchMyFavoriteAuctions } from "@api/auctionApi";
 import { getMyBidHistory } from "@api/bidApi";
 import { getMyServiceRequests } from "@api/serviceRequestApi";
 import { getMyServiceTrades } from "@api/serviceTradeApi";
@@ -20,8 +19,9 @@ import { usePointBalance } from "@hooks/usePoint";
 import { useMemberProfile } from "@hooks/useMemberProfile";
 import { reviewQueryKeys } from "@hooks/useReview";
 import { toast } from "@utils/common";
+import { ActionButton } from "@components/common/ui";
+import MyPageStatusBadge from "@components/mypage/MyPageStatusBadge";
 import { assets } from "@components/mypage/assets";
-import CommonTabs from "@components/common/CommonTabs";
 import MyPageContentHeader from "@components/mypage/MyPageContentHeader";
 import MyPagePanel from "@components/mypage/MyPagePanel";
 import {
@@ -56,16 +56,23 @@ function ListPanel({ title, items, tabs, onTabClick, onMore, onItemMore }) {
       </div>
 
       {/* 탭 */}
-      <CommonTabs
-        activeValue={activeIdx}
-        ariaLabel={`${title} 유형`}
-        className="common-tabs--panel"
-        items={tabs.map((tab, index) => ({ value: index, label: tab.label }))}
-        onChange={(index) => {
-          setActiveIdx(index);
-          onTabClick?.(tabs[index]?.section);
-        }}
-      />
+      <div className="flex gap-5 border-b border-[#e5e5e5] mb-4">
+        {tabs.map((tab, i) => (
+          <button
+            key={tab.label}
+            type="button"
+            onClick={() => { setActiveIdx(i); onTabClick?.(tab.section); }}
+            style={{ marginBottom: -1 }}
+            className={`pb-2.5 text-[15px] font-medium bg-transparent border-none cursor-pointer transition-colors ${
+              i === activeIdx
+                ? "text-[#0064ff] border-b-2 border-[#0064ff]"
+                : "text-[#969696]"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
       {/* 카드 그리드 */}
       {items.length === 0 ? (
@@ -81,9 +88,9 @@ function ListPanel({ title, items, tabs, onTabClick, onMore, onItemMore }) {
             >
               <div className="flex flex-wrap gap-1 mb-2">
                 {item.badges.map((badge) => (
-                  <span key={badge.label} className={`badge ${badge.cls}`}>
+                  <MyPageStatusBadge key={badge.label} className={badge.cls}>
                     {badge.label}
-                  </span>
+                  </MyPageStatusBadge>
                 ))}
               </div>
               <p className="font-bold text-[16px] text-[#1a1a1a] leading-snug mb-1.5" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
@@ -100,29 +107,72 @@ function ListPanel({ title, items, tabs, onTabClick, onMore, onItemMore }) {
 
 const REVIEW_PANEL_TABS = [
   { key: "all",     label: "전체" },
-  { key: "goods",   label: "상품구매" },
-  { key: "service", label: "견적거래" },
+  { key: "goods",   label: "경매" },
+  { key: "service", label: "견적" },
 ];
 
 const CHAT_PANEL_TABS = [
   { key: "all",     label: "전체" },
-  { key: "goods",   label: "상품구매" },
-  { key: "service", label: "견적거래" },
+  { key: "goods",   label: "경매" },
+  { key: "service", label: "견적" },
 ];
 
-function PanelTabs({ tabs, counts, activeKey, onChange, header = false }) {
+function TabBadge({ count, active }) {
   return (
-    <CommonTabs
-      activeValue={activeKey}
-      ariaLabel="대시보드 목록 유형"
-      className={header ? "common-tabs--panel-header" : "common-tabs--panel"}
-      items={tabs.map((tab) => ({
-        value: tab.key,
-        label: tab.label,
-        count: counts[tab.key],
-      }))}
-      onChange={onChange}
-    />
+    <span
+      className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[11px] font-bold"
+      style={{ background: active ? "#0064ff" : "#e5e5e5", color: active ? "#fff" : "#969696" }}
+    >
+      {count ?? 0}
+    </span>
+  );
+}
+
+function PanelTabs({ tabs, counts, activeKey, onChange, header = false }) {
+  if (header) {
+    return (
+      <div className="flex items-stretch self-stretch gap-4">
+        {tabs.map((tab) => {
+          const active = activeKey === tab.key;
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => onChange(tab.key)}
+              style={{ borderBottom: active ? "2px solid #0064ff" : "2px solid transparent", marginBottom: -1 }}
+              className={`flex items-center gap-1.5 text-[14px] font-medium bg-transparent border-none cursor-pointer transition-colors px-0 ${
+                active ? "text-[#0064ff]" : "text-[#969696]"
+              }`}
+            >
+              {tab.label}
+              <TabBadge count={counts[tab.key]} active={active} />
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex gap-5 border-b border-[#e5e5e5] mb-4">
+      {tabs.map((tab) => {
+        const active = activeKey === tab.key;
+        return (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => onChange(tab.key)}
+            style={{ marginBottom: -1 }}
+            className={`pb-2.5 text-[15px] font-medium bg-transparent border-none cursor-pointer transition-colors flex items-center gap-1.5 ${
+              active ? "text-[#0064ff] border-b-2 border-[#0064ff]" : "text-[#969696]"
+            }`}
+          >
+            {tab.label}
+            <TabBadge count={counts[tab.key]} active={active} />
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -141,8 +191,8 @@ function ReviewablePanel({ items, onView, onMore }) {
 
   const emptyMsg = {
     all: "작성할 리뷰가 없습니다.",
-    goods: "작성할 상품구매 리뷰가 없습니다.",
-    service: "작성할 견적거래 리뷰가 없습니다.",
+    goods: "작성할 경매 리뷰가 없습니다.",
+    service: "작성할 견적 리뷰가 없습니다.",
   };
 
   return (
@@ -176,13 +226,13 @@ function ReviewablePanel({ items, onView, onMore }) {
                     {item.partyLabel} {item.partyName} · {fmtDate(item.completedDate)}
                   </p>
                 </div>
-                <button
-                  type="button"
+                <ActionButton
                   onClick={() => onView(item)}
-                  className="btn btn-sm btn-primary shrink-0"
+                  className="shrink-0"
+                  size="sm"
                 >
                   상세보기
-                </button>
+                </ActionButton>
               </div>
             ))}
           </div>
@@ -206,8 +256,8 @@ function ActiveChatPanel({ rooms, onOpenChat, onMore }) {
 
   const emptyMsg = {
     all: "진행중인 채팅이 없습니다.",
-    goods: "진행중인 상품구매 채팅이 없습니다.",
-    service: "진행중인 견적거래 채팅이 없습니다.",
+    goods: "진행중인 경매 채팅이 없습니다.",
+    service: "진행중인 견적 채팅이 없습니다.",
   };
 
   return (
@@ -274,24 +324,6 @@ export default function MyPageDashboard({
   const nickname = user?.nickname || "고객";
   const email = user?.email || "";
   const profileQuery = useMemberProfile();
-
-  // 관심상품 실데이터 — 최대 3건만 미리보기
-  const wishQuery = useQuery({
-    queryKey: ["auctionFavorites", 1, 3],
-    queryFn: () => fetchMyFavoriteAuctions({ page: 1, size: 3 }),
-    enabled: !!user,
-  });
-  const wishItems = (wishQuery.data?.items ?? []).map((item) => ({
-    badges: [
-      { label: item.auctionStatusName || "경매중", cls: "badge-blue" },
-      ...(item.bidCount > 0 ? [{ label: `입찰 ${item.bidCount}회`, cls: "badge-teal" }] : []),
-    ],
-    title: item.title || `경매 #${item.auctionId}`,
-    meta: item.currentPrice
-      ? `현재가 ${Number(item.currentPrice).toLocaleString()}P`
-      : "현재가 -",
-    section: "wishlist",
-  }));
 
   const nav = (section) => (event) => {
     event?.stopPropagation();

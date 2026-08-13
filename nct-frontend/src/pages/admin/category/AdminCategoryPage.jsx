@@ -71,6 +71,7 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
   const saveMutation = useSaveAdminCategory();
   const reorderMutation = useReorderAdminCategories();
   const categories = categoriesQuery.data ?? [];
+  const managementCategories = [...categories].reverse();
   const isServiceDomain = domainCode === SERVICE_DOMAIN;
   const orderPending = reorderMutation.isPending;
   const {
@@ -79,7 +80,7 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
     setPage,
     totalItems,
     totalPages,
-  } = useClientPagination(categories, PAGE_SIZE);
+  } = useClientPagination(managementCategories, PAGE_SIZE);
 
   const closeDialog = () => {
     if (saveMutation.isPending) return;
@@ -130,6 +131,7 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
           active: editingId ? form.active : (isServiceDomain ? false : form.active),
         },
       });
+      if (!editingId) setPage(1);
       setDialogOpen(false);
       setEditingId(null);
       setForm(EMPTY_FORM);
@@ -358,7 +360,10 @@ const AdminCategoryPanel = ({ domainCode, label }) => {
       <div className="admin-category-panel__header">
         <div>
           <h2 id={`category-panel-${domainCode}`}>{label}</h2>
-          <p>총 <strong>{totalItems}</strong>개</p>
+          <p>
+            총 <strong>{totalItems}</strong>개
+            {orderEditing ? ' · 실제 노출 순서대로 편집' : ' · 노출 순서 역순으로 표시'}
+          </p>
         </div>
         <div className="admin-category-panel__actions">
           {orderEditing ? (

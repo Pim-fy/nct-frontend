@@ -10,6 +10,7 @@ import {
 import { Link, useLocation } from 'react-router-dom';
 import { SERVICE_REQUEST_SORT_OPTIONS } from '@/constants/serviceDiscovery';
 import { getServiceRequestDetailPath } from '@/routes/serviceRequestRoutes';
+import { ActionButton, CategoryTag } from '@components/common/ui';
 
 const FILTER_GROUP_CLASS = 'm-0 grid gap-2 border-0 p-0 disabled:opacity-60';
 const FILTER_INPUT_CLASS = 'min-h-10 w-full rounded-lg border border-[#e2e1dc] bg-white px-3 text-body-sm text-[#1a1a18] outline-none transition-colors focus:border-primary md:text-body-md';
@@ -160,9 +161,15 @@ export const ServiceFilterPanel = ({
           {fields}
         </div>
         <div className="shrink-0 border-t border-[#f0efec] bg-white p-5 pt-3">
-          <button className="inline-flex min-h-[46px] w-full cursor-pointer items-center justify-center rounded-lg border border-primary bg-primary px-3 text-body-md font-bold text-white transition-colors hover:border-primary-dark hover:bg-primary-dark" onClick={onClose} type="button">
+          <ActionButton
+            className="min-h-[46px] rounded-lg px-3 text-body-md font-bold"
+            fullWidth
+            onClick={onClose}
+            preserveSize
+            tone="primary"
+          >
             {resultLoading ? '서비스 조회 중...' : `서비스 ${(resultCount ?? 0).toLocaleString('ko-KR')}개 보기`}
-          </button>
+          </ActionButton>
         </div>
       </aside>
     </>
@@ -196,7 +203,7 @@ const ServiceRequestCard = ({ request }) => {
     </div>
     <div className="mt-3 flex items-start justify-between gap-3 max-sm:flex-col max-sm:gap-1.5">
       <h3 className="m-0 min-w-0 overflow-hidden text-body-md font-bold text-[#1a1a18] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] group-hover:text-primary md:text-body-lg">{request.title}</h3>
-      <span className="shrink-0 rounded-lg bg-[#f0f0ee] px-2.5 py-0.5 text-[13px] leading-[1.5] font-semibold whitespace-nowrap text-[#5f5e5a]">{request.categoryName || '서비스'}</span>
+      <CategoryTag className="shrink-0" tone="neutral">{request.categoryName || '서비스'}</CategoryTag>
     </div>
     <strong className="mt-2 whitespace-nowrap text-h3 font-extrabold text-primary-dark">{formatAmount(request.budgetAmount)}</strong>
     {request.description && <p className="mt-2 mb-3.5 line-clamp-2 text-body-md leading-[1.65] text-[#62625f]">{request.description}</p>}

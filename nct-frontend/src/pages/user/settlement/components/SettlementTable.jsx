@@ -1,12 +1,13 @@
 // src/pages/user/settlement/components/SettlementTable.jsx
 import { Link } from 'react-router-dom';
+import { StatusBadge } from '@components/common/ui';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 
-const STATUS_BADGE = {
-  대기: 'bg-amber-100 text-amber-800',
-  보류: 'bg-red-100 text-red-800',
-  완료: 'bg-blue-100 text-blue-800',
-  환불종결: 'bg-gray-100 text-gray-700',
+const STATUS_BADGE_TONE = {
+  대기: 'warning',
+  보류: 'danger',
+  완료: 'info',
+  환불종결: 'neutral',
 };
 
 const STATUS_FILTERS = ['전체', '대기', '보류', '완료', '환불종결'];
@@ -80,9 +81,9 @@ const SettlementTable = ({ rows, filter, onFilterChange, loading = false, loadin
                   {row.amount.toLocaleString()}P
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
-                  <span className={`inline-block px-2.5 py-0.5 rounded-lg text-xs font-medium ${STATUS_BADGE[row.statusName] ?? 'bg-gray-100 text-gray-600'}`}>
+                  <StatusBadge tone={STATUS_BADGE_TONE[row.statusName] ?? 'neutral'} variant="soft">
                     {row.statusName}
-                  </span>
+                  </StatusBadge>
                 </td>
               </tr>
             ))}

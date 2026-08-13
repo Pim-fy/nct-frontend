@@ -1,5 +1,6 @@
 // @ai_generated
 import { useLocation, useNavigate } from 'react-router-dom';
+import { ActionButton } from '@components/common/ui';
 
 const ERROR_MESSAGES = {
   401: '로그인이 만료되었거나 로그인이 필요합니다.',
@@ -19,21 +20,19 @@ export default function AsyncRouteError({ error, onRetry, compact = false }) {
       <p className="text-[#c62828]">{message}</p>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
         {status === 401 && (
-          <button
-            type="button"
-            className="btn btn-primary"
+          <ActionButton
             // @ai_generated (담당자1, 2026-08-07): LoginPage는 from을 location 객체로 읽는다
             // (Header.jsx, ServiceRequestDetailPage.jsx와 동일 계약). 문자열을 넘기면
             // returnLocation?.pathname이 없어 로그인 후 항상 홈으로 튕겼다.
             onClick={() => navigate('/login', { state: { from: location } })}
           >
             로그인
-          </button>
+          </ActionButton>
         )}
         {onRetry && (
-          <button type="button" className="btn btn-outline" onClick={onRetry}>
+          <ActionButton onClick={onRetry} tone="outline">
             다시 시도
-          </button>
+          </ActionButton>
         )}
       </div>
     </div>

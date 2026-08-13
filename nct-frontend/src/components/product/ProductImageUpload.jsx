@@ -10,6 +10,7 @@ import { useRef, useState } from 'react';
 import { toImageUrl } from '@api/fileApi';
 import iconImage from '@assets/img/icon_image.png';
 import iconCamera from '@assets/img/icon_camera.png';
+import { ActionButton, StatusBadge } from '@components/common/ui';
 
 export default function ProductImageUpload({ images, onChange, maxImages = 5 }) {
   const [pickMode, setPickMode] = useState(false); // 대표이미지 지정 모드 — 활성화 중 사진 클릭 시 대표로 변경
@@ -77,16 +78,14 @@ export default function ProductImageUpload({ images, onChange, maxImages = 5 }) 
             <img src={iconImage} alt="" style={{ width: 13, height: 13 }} />
             대표이미지로 지정
           </button>
-          <button
-            type="button"
+          <ActionButton
             onClick={() => fileInputRef.current?.click()}
             disabled={images.length >= maxImages}
-            className="btn btn-ghost"
-            style={{ gap: 6 }}
+            tone="neutral"
           >
             <img src={iconCamera} alt="" style={{ width: 13, height: 13 }} />
             사진등록
-          </button>
+          </ActionButton>
         </div>
         <input
           ref={fileInputRef}
@@ -114,7 +113,9 @@ export default function ProductImageUpload({ images, onChange, maxImages = 5 }) 
               style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8, border: i === 0 ? '2px solid #0064ff' : pickMode ? '2px dashed #0064ff' : '1px solid #eee', WebkitUserDrag: 'none', userSelect: 'none' }}
             />
             {i === 0 && (
-              <span className="badge badge-blue" style={{ position: 'absolute', top: 4, left: 4 }}>대표</span>
+              <StatusBadge tone="info" variant="soft" style={{ position: 'absolute', top: 4, left: 4 }}>
+                대표
+              </StatusBadge>
             )}
             <button
               type="button"

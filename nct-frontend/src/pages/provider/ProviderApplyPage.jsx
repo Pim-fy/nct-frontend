@@ -7,6 +7,7 @@ import { uploadImage } from '@api/fileApi';
 import { getProfile, updateProfile } from '@api/memberApi';
 import PageMeta from '@components/admin/PageMeta';
 import { ContentPageShell } from '@components/content/ContentUi';
+import { ActionButton } from '@components/common/ui';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import { MEMBER_PROFILE_QUERY_KEY, useMemberProfile } from '@hooks/useMemberProfile';
 import { useMyProviderApplications, useSubmitProviderApplication } from '@hooks/useProviderApplications';
@@ -467,24 +468,24 @@ const ProviderApplyPage = () => {
                     )}
                     <div className="provider-apply-account__actions">
                       {hasSettlementAccount && (
-                        <button
-                          className="btn btn-outline"
+                        <ActionButton
+                          className="min-w-28 max-[760px]:w-full max-[760px]:min-w-0"
                           disabled={accountMutation.isPending}
                           onClick={cancelSettlementAccountEdit}
-                          type="button"
+                          tone="neutral"
                         >
                           <X aria-hidden="true" size={16} />
                           취소
-                        </button>
+                        </ActionButton>
                       )}
-                      <button
-                        className="btn btn-primary"
+                      <ActionButton
+                        className="min-w-28 max-[760px]:w-full max-[760px]:min-w-0"
                         disabled={accountMutation.isPending}
                         type="submit"
                       >
                         <Save aria-hidden="true" size={16} />
                         {accountMutation.isPending ? '저장 중...' : '계좌 저장'}
-                      </button>
+                      </ActionButton>
                     </div>
                   </form>
                 )}
@@ -492,14 +493,14 @@ const ProviderApplyPage = () => {
                 {!profileQuery.isLoading && !profileQuery.isError
                   && hasSettlementAccount && !isEditingAccount && (
                   <div className="provider-apply-account__actions">
-                    <button
-                      className="btn btn-outline"
+                    <ActionButton
+                      className="min-w-28 max-[760px]:w-full max-[760px]:min-w-0"
                       onClick={editSettlementAccount}
-                      type="button"
+                      tone="outline"
                     >
                       <Pencil aria-hidden="true" size={16} />
                       계좌 수정
-                    </button>
+                    </ActionButton>
                   </div>
                 )}
               </section>
@@ -565,17 +566,17 @@ const ProviderApplyPage = () => {
 
           <footer className={`provider-apply-actions${step === 0 ? ' provider-apply-actions--single' : ''}`}>
             {step > 0 && (
-              <button
-                className="btn btn-outline"
+              <ActionButton
+                className="min-w-[108px] max-[760px]:w-full"
                 disabled={submitMutation.isPending || isPreparingSubmit}
                 onClick={() => setStep(step - 1)}
-                type="button"
+                tone="neutral"
               >
                 이전
-              </button>
+              </ActionButton>
             )}
-            <button
-              className="btn btn-primary"
+            <ActionButton
+              className="min-w-[108px] max-[760px]:w-full"
               disabled={submitMutation.isPending
                 || isPreparingSubmit
                 || accountMutation.isPending
@@ -583,14 +584,13 @@ const ProviderApplyPage = () => {
                 || (step === 0 && (categoriesQuery.isLoading || applicationAvailabilityUnavailable))
                 || (step === 1 && (profileQuery.isLoading || !hasSettlementAccount || isEditingAccount))}
               onClick={next}
-              type="button"
             >
               {step === 2
                 ? isPreparingSubmit || submitMutation.isPending
                   ? '신청 처리 중...'
                   : `${selectedCategories.length}개 카테고리 신청하기`
                 : '다음'}
-            </button>
+            </ActionButton>
           </footer>
         </section>
 

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { CalendarDays, FileText, Tags } from 'lucide-react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import Pagination from '@components/common/Pagination';
+import { ActionButton } from '@components/common/ui';
 import MyPageListSectionLayout from '@components/mypage/MyPageListSectionLayout';
 import MyPageListItem from '@components/mypage/MyPageListItem';
 import MyPageListPriceActions from '@components/mypage/MyPageListPriceActions';
@@ -62,24 +63,24 @@ function QuoteActionButtons({ quote, onDetail, onEdit, onWithdraw }) {
 
   return (
     <>
-      <button type="button" className="btn btn-sm btn-primary" onClick={() => onDetail(quote)}>
+      <ActionButton size="sm" onClick={() => onDetail(quote)}>
         상세보기
-      </button>
+      </ActionButton>
       {isEditableStatus && (
-        <button
-          type="button"
-          className="btn btn-sm btn-outline"
+        <ActionButton
           disabled={!canEdit}
           onClick={() => onEdit(quote)}
+          size="sm"
           title={canEdit ? undefined : '견적 수정 가능 횟수 3회를 모두 사용했습니다.'}
+          tone="outline"
         >
           {canEdit ? `수정${quote.editCount > 0 ? ` ${quote.editCount}/3` : ''}` : '수정 3/3'}
-        </button>
+        </ActionButton>
       )}
       {canWithdraw && (
-        <button type="button" className="btn btn-sm btn-danger" onClick={() => onWithdraw(quote)}>
+        <ActionButton size="sm" tone="danger" onClick={() => onWithdraw(quote)}>
           철회
-        </button>
+        </ActionButton>
       )}
     </>
   );

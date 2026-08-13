@@ -332,6 +332,7 @@ const AdminNoticeFormPage = () => {
               <span>삭제 사유</span>
               <textarea
                 autoFocus
+                className="admin-reason-textarea"
                 disabled={isPending}
                 maxLength={500}
                 onChange={(event) => {

@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import {
   ExternalLink,
   Flag,
@@ -25,6 +25,7 @@ import {
 } from '@api/tradeChatAdapter';
 import { getTradeChatWebSocketUrl } from '@api/tradeChatSocket';
 import ReportModal from '@components/common/ReportModal';
+import { ActionButton, DomainStatus } from '@components/common/ui';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
 import { useAuth } from '@hooks/useAuth';
@@ -544,9 +545,9 @@ const TradeChat = ({
         {!isLoading && error && (
           <section className="trade-chat-card trade-chat-page__state" role="alert">
             <p>{error}</p>
-            <button className="btn btn-outline" type="button" onClick={loadChatRooms}>
+            <ActionButton onClick={loadChatRooms} tone="outline">
               다시 시도
-            </button>
+            </ActionButton>
           </section>
         )}
 
@@ -675,53 +676,57 @@ const TradeChat = ({
                       <p>{activeRoom.productName}</p>
                     </div>
                     <div className="trade-chat-conversation__actions">
-                      <span
-                        className={activeRoom.roomStatus === 'ACTIVE'
-                          ? 'trade-chat-status'
-                          : 'trade-chat-status trade-chat-status--closed'}
+                      <DomainStatus
+                        className="trade-chat-status"
+                        tone={activeRoom.roomStatus === 'ACTIVE' ? 'success' : 'danger'}
+                        variant="soft"
                       >
                         {activeRoom.roomStatus === 'ACTIVE' ? '대화 가능' : '채팅 불가'}
-                      </span>
+                      </DomainStatus>
                       <div className="trade-chat-conversation__action-group">
                         {activeTradeDetailPath && (
-                          <Link
+                          <ActionButton
                             aria-label="거래 상세로 이동"
-                            className="btn trade-chat-conversation__trade-detail"
+                            className="trade-chat-conversation__trade-detail"
+                            preserveSize
                             to={activeTradeDetailPath}
                           >
                             <ExternalLink size={15} aria-hidden="true" />
                             <span>거래 상세</span>
-                          </Link>
+                          </ActionButton>
                         )}
-                        <button
+                        <ActionButton
                           aria-label="채팅 신고하기"
-                          className="btn trade-chat-conversation__report"
-                          type="button"
+                          className="trade-chat-conversation__report"
                           onClick={() => setIsReportOpen(true)}
+                          preserveSize
+                          tone="danger-outline"
                         >
                           <Flag size={15} aria-hidden="true" />
                           <span>신고하기</span>
-                        </button>
+                        </ActionButton>
                         {showRoomList && (
-                          <button
-                            className="btn trade-chat-conversation__close trade-chat-conversation__close--desktop"
-                            type="button"
+                          <ActionButton
+                            className="trade-chat-conversation__close trade-chat-conversation__close--desktop"
                             onClick={clearSelectedChatRoom}
+                            preserveSize
+                            tone="neutral"
                           >
                             <X size={16} aria-hidden="true" />
                             <span>닫기</span>
-                          </button>
+                          </ActionButton>
                         )}
                         {showRoomList && (
-                          <button
-                            className="btn trade-chat-conversation__close trade-chat-conversation__close--mobile"
-                            type="button"
+                          <ActionButton
+                            className="trade-chat-conversation__close trade-chat-conversation__close--mobile"
                             aria-label="채팅 목록으로"
                             onClick={clearSelectedChatRoom}
+                            preserveSize
+                            tone="neutral"
                           >
                             <List size={17} aria-hidden="true" />
                             <span>목록</span>
-                          </button>
+                          </ActionButton>
                         )}
                       </div>
                     </div>
@@ -769,13 +774,15 @@ const TradeChat = ({
                         disabled={isSubmitting || isActiveRoomClosed}
                       />
                       {!isActiveRoomClosed && (
-                        <button
-                          className="btn btn-primary trade-chat-composer__send"
+                        <ActionButton
+                          className="trade-chat-composer__send"
                           type="submit"
                           disabled={isSubmitting || !messageInput.trim()}
+                          loading={isSubmitting}
+                          preserveSize
                         >
                           {isSubmitting ? '전송 중...' : '전송'}
-                        </button>
+                        </ActionButton>
                       )}
                     </div>
                     <div className="trade-chat-composer__footer">

@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import { formatPoint } from '@utils/common';
+import { ActionButton } from '@components/common/ui';
 
 const AuctionBuyNowModal = ({
   isOpen,
@@ -48,22 +49,22 @@ const AuctionBuyNowModal = ({
             </li>
           </ul>
           <div className="grid grid-cols-2 gap-1.5">
-            <button
-              className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-white text-body-md font-bold text-primary"
-              type="button"
+            <ActionButton
               onClick={onClose}
+              size="lg"
+              tone="outline"
             >
               취소
-            </button>
-            <button
-              className="min-h-[46px] cursor-pointer rounded-lg border border-primary bg-primary text-body-md font-bold text-white disabled:cursor-not-allowed disabled:opacity-55"
+            </ActionButton>
+            <ActionButton
               id="buyNowConfirmBtn"
-              type="button"
               disabled={!isBuyNowAvailable || isPending}
+              loading={isPending}
               onClick={onConfirm}
+              size="lg"
             >
               {!isBuyNowAvailable ? '구매 불가' : (isPending ? '처리 중' : '확정')}
-            </button>
+            </ActionButton>
           </div>
         </div>
       </div>

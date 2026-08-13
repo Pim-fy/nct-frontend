@@ -8,6 +8,13 @@ import {
 
 const keys = { all: ['admin-categories'], list: (domain) => ['admin-categories', domain] };
 
+const invalidateCategoryLists = (queryClient) => Promise.all([
+  queryClient.invalidateQueries({ queryKey: keys.all }),
+  queryClient.invalidateQueries({ queryKey: ['auction-filter-categories'] }),
+  queryClient.invalidateQueries({ queryKey: ['service-discovery-categories'] }),
+  queryClient.invalidateQueries({ queryKey: ['provider-service-categories'] }),
+]);
+
 export const useAdminCategories = (domainCode) => useQuery({
   queryKey: keys.list(domainCode),
   queryFn: () => fetchAdminCategories(domainCode),
@@ -17,9 +24,11 @@ export const useSaveAdminCategory = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: saveAdminCategory,
-    onSuccess: (category, { categorySn }) => {
-      queryClient.invalidateQueries({ queryKey: keys.all });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] });
+    onSuccess: async (category, { categorySn }) => {
+      await Promise.all([
+        invalidateCategoryLists(queryClient),
+        queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] }),
+      ]);
       if (!categorySn) return;
       queryClient.setQueryData(
         ['admin-service-request-form', String(categorySn)],
@@ -39,7 +48,7 @@ export const useMoveAdminCategory = () => {
     mutationFn: moveAdminCategory,
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: keys.all }),
+        invalidateCategoryLists(queryClient),
         queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] }),
       ]);
     },
@@ -50,10 +59,12 @@ export const useReorderAdminCategories = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: reorderAdminCategories,
-    onSuccess: (categories, { domainCode }) => {
+    onSuccess: async (categories, { domainCode }) => {
       queryClient.setQueryData(keys.list(domainCode), categories);
-      queryClient.invalidateQueries({ queryKey: keys.all });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] });
+      await Promise.all([
+        invalidateCategoryLists(queryClient),
+        queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] }),
+      ]);
     },
   });
 };

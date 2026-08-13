@@ -2,7 +2,8 @@
 // src/pages/auth/SignupPage.jsx
 // 단일 가입 화면에서 약관·이메일 인증·최종 가입의 서버 상태를 순서대로 연결한다.
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import DaumPostcode from 'react-daum-postcode';
 import {
   checkLoginId,
@@ -12,12 +13,11 @@ import {
   verifySignupEmailVerification,
 } from '@api/authApi';
 import { SIGNUP_TERMS } from './signupTerms';
+import { ActionButton } from '@components/common/ui';
 import { formatPhoneNumber, isValidPhoneNumber, toPhoneDigits } from '@utils/phoneNumber';
+import { isValidNewPassword, PASSWORD_POLICY_GUIDE } from '@utils/passwordPolicy';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-[#e2e1dc] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-primary disabled:cursor-not-allowed disabled:bg-[#f8f8f6]';
-const BUTTON_OUTLINE = 'shrink-0 rounded-lg border border-primary px-4 py-2.5 text-sm font-medium text-primary transition hover:bg-primary-light disabled:cursor-not-allowed disabled:opacity-50';
-const BUTTON_PRIMARY = 'rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50';
-const BUTTON_GHOST = 'rounded-lg border border-[#e2e1dc] px-3 py-2 text-sm text-[#5f5e5a] transition hover:bg-[#f8f8f6]';
 
 const LOGIN_ID_PATTERN = /^[A-Za-z0-9._-]{4,50}$/;
 // @ai_generated: 로그인 ID 안내가 실제 정규식의 최소·최대 길이와 항상 일치하도록 유지한다.
@@ -89,9 +89,9 @@ const AgreementRow = ({ agreement, checked, onChange, onOpen }) => (
         {agreement.required ? '(필수)' : '(선택)'}
       </span>
     </label>
-    <button className={BUTTON_GHOST} onClick={onOpen} type="button">
+    <ActionButton onClick={onOpen} size="sm" tone="neutral">
       보기
-    </button>
+    </ActionButton>
   </div>
 );
 
@@ -117,9 +117,9 @@ const AgreementModal = ({ agreement, onClose }) => {
           </>
         ) : null}
         <div className="mt-6 flex justify-end">
-          <button className={BUTTON_PRIMARY} onClick={onClose} type="button">
+          <ActionButton onClick={onClose} size="sm">
             닫기
-          </button>
+          </ActionButton>
         </div>
       </div>
     </div>
@@ -143,7 +143,7 @@ const validateNickname = (value) => {
 
 const validatePassword = (value) => {
   if (!value) return '비밀번호를 입력해주세요.';
-  if (value.length < 8 || value.length > 20) return '비밀번호는 8~20자로 입력해주세요.';
+  if (!isValidNewPassword(value)) return PASSWORD_POLICY_GUIDE;
   return '';
 };
 
@@ -189,8 +189,8 @@ const formatRemaining = (targetTime, now) => {
 };
 
 const SignupPage = () => {
-  const navigate = useNavigate();
   const [form, setForm] = useState(INITIAL_FORM);
+  const [passwordVisibility, setPasswordVisibility] = useState({ password: false, passwordConfirm: false });
   const [touched, setTouched] = useState({});
   const [serverErrors, setServerErrors] = useState({});
   const [availability, setAvailability] = useState({
@@ -630,9 +630,9 @@ const SignupPage = () => {
           <section className="mx-auto max-w-xl rounded-2xl border border-[#f0efec] bg-white p-8 text-center shadow-[0_1px_2px_rgba(0,0,0,.04),0_2px_8px_rgba(0,0,0,.06)]">
             <p className="m-0 text-lg font-semibold text-primary">회원가입이 완료되었습니다.</p>
             <p className="mt-3 text-sm text-[#5f5e5a]">로그인 아이디와 비밀번호로 로그인해 서비스를 이용해 주세요.</p>
-            <button className={`${BUTTON_PRIMARY} mt-6`} onClick={() => navigate('/login')} type="button">
+            <ActionButton className="mt-6" size="sm" to="/login">
               로그인하러 가기
-            </button>
+            </ActionButton>
           </section>
         ) : (
           <>
@@ -671,17 +671,19 @@ const SignupPage = () => {
                         className={INPUT_CLASS}
                         onBlur={handleFieldBlur('loginId')}
                         onChange={handleFieldChange('loginId')}
-                        placeholder="영문·숫자·. _ - 4~50자"
+                        placeholder="영문, 숫자, 특수문자(._-) 4~50자"
                         value={form.loginId}
                       />
-                      <button
-                        className={BUTTON_OUTLINE}
+                      <ActionButton
+                        className="shrink-0"
                         disabled={currentAvailability('loginId').state === 'checking'}
+                        loading={currentAvailability('loginId').state === 'checking'}
                         onClick={() => handleAvailabilityCheck('loginId')}
-                        type="button"
+                        size="sm"
+                        tone="outline"
                       >
                         중복 확인
-                      </button>
+                      </ActionButton>
                     </div>
                     {renderAvailabilityMessage('loginId')}
                   </Field>
@@ -692,39 +694,53 @@ const SignupPage = () => {
                         className={INPUT_CLASS}
                         onBlur={handleFieldBlur('nickname')}
                         onChange={handleFieldChange('nickname')}
-                        placeholder="초록구매자"
+                        placeholder="사용할 닉네임을 입력해주세요"
                         value={form.nickname}
                       />
-                      <button
-                        className={BUTTON_OUTLINE}
+                      <ActionButton
+                        className="shrink-0"
                         disabled={currentAvailability('nickname').state === 'checking'}
+                        loading={currentAvailability('nickname').state === 'checking'}
                         onClick={() => handleAvailabilityCheck('nickname')}
-                        type="button"
+                        size="sm"
+                        tone="outline"
                       >
                         중복 확인
-                      </button>
+                      </ActionButton>
                     </div>
                     {renderAvailabilityMessage('nickname')}
                   </Field>
 
                   <Field error={fieldError('password')} label="비밀번호" required>
-                    <input
-                      className={INPUT_CLASS}
-                      onBlur={handleFieldBlur('password')}
-                      onChange={handleFieldChange('password')}
-                      type="password"
-                      value={form.password}
-                    />
+                    <div className="relative">
+                      <input
+                        className={`${INPUT_CLASS} pr-11`}
+                        onBlur={handleFieldBlur('password')}
+                        onChange={handleFieldChange('password')}
+                        type={passwordVisibility.password ? 'text' : 'password'}
+                        placeholder="8~64자, 영문·숫자·특수문자 중 2종 이상"
+                        value={form.password}
+                      />
+                      <button type="button" onClick={() => setPasswordVisibility((previous) => ({ ...previous, password: !previous.password }))} aria-label={passwordVisibility.password ? '비밀번호 숨기기' : '비밀번호 보기'} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600">
+                        {passwordVisibility.password ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                   </Field>
 
                   <Field error={form.passwordConfirm ? passwordConfirmError : fieldError('passwordConfirm')} label="비밀번호 확인" required>
-                    <input
-                      className={INPUT_CLASS}
-                      onBlur={handleFieldBlur('passwordConfirm')}
-                      onChange={handleFieldChange('passwordConfirm')}
-                      type="password"
-                      value={form.passwordConfirm}
-                    />
+                    <div className="relative">
+                      <input
+                        className={`${INPUT_CLASS} pr-11`}
+                        onBlur={handleFieldBlur('passwordConfirm')}
+                        onChange={handleFieldChange('passwordConfirm')}
+                        type={passwordVisibility.passwordConfirm ? 'text' : 'password'}
+                        placeholder="비밀번호를 다시 입력해주세요"
+                        value={form.passwordConfirm}
+                      />
+                      <button type="button" onClick={() => setPasswordVisibility((previous) => ({ ...previous, passwordConfirm: !previous.passwordConfirm }))} aria-label={passwordVisibility.passwordConfirm ? '비밀번호 확인 숨기기' : '비밀번호 확인 보기'} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600">
+                        {passwordVisibility.passwordConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                     {form.passwordConfirm && !passwordConfirmError ? (
                       <span className="text-xs text-primary-dark">비밀번호가 일치합니다.</span>
                     ) : null}
@@ -747,18 +763,20 @@ const SignupPage = () => {
                         className={INPUT_CLASS}
                         onBlur={handleFieldBlur('email')}
                         onChange={handleEmailChange}
-                        placeholder="name@example.com"
+                        placeholder="example@email.com"
                         type="email"
                         value={form.email}
                       />
-                      <button
-                        className={BUTTON_OUTLINE}
+                      <ActionButton
+                        className="shrink-0"
                         disabled={sendDisabled}
+                        loading={submission.send}
                         onClick={handleSendVerification}
-                        type="button"
+                        size="sm"
+                        tone="outline"
                       >
                         {submission.send ? '발송 중...' : verificationButtonLabel}
-                      </button>
+                      </ActionButton>
                     </div>
                     <span className="text-xs text-[#888780]">이메일 중복은 인증번호 발송 단계에서 확인합니다.</span>
                   </Field>
@@ -781,14 +799,14 @@ const SignupPage = () => {
                         placeholder="6자리 인증번호"
                         value={verificationCode}
                       />
-                      <button
-                        className={BUTTON_PRIMARY}
+                      <ActionButton
                         disabled={verification.status !== 'sent' || verificationExpired || submission.send || submission.verify}
+                        loading={submission.verify}
                         onClick={handleVerifyCode}
-                        type="button"
+                        size="sm"
                       >
                         {submission.verify ? '확인 중...' : '인증 확인'}
-                      </button>
+                      </ActionButton>
                     </div>
                     <div className="flex items-center justify-between gap-3 text-xs">
                       <span className="font-mono text-[#888780]">
@@ -820,19 +838,17 @@ const SignupPage = () => {
                         className={`${INPUT_CLASS} cursor-pointer`}
                         onClick={() => setAddressSearchOpen(true)}
                         onFocus={(e) => e.target.blur()}
-                        placeholder="주소 검색을 눌러주세요."
                         readOnly
                         value={form.address}
                       />
-                      <button className={BUTTON_OUTLINE} onClick={() => setAddressSearchOpen(true)} type="button">
+                      <ActionButton onClick={() => setAddressSearchOpen(true)} size="sm" tone="outline">
                         주소 검색
-                      </button>
+                      </ActionButton>
                     </div>
                     <input
                       className={`${INPUT_CLASS} cursor-pointer`}
                       onClick={() => setAddressSearchOpen(true)}
                       onFocus={(e) => e.target.blur()}
-                      placeholder="우편번호"
                       readOnly
                       value={form.zip}
                     />
@@ -854,7 +870,7 @@ const SignupPage = () => {
                       className={INPUT_CLASS}
                       onBlur={handleFieldBlur('bankName')}
                       onChange={handleFieldChange('bankName')}
-                      placeholder="은행명을 자유롭게 입력해주세요."
+                      placeholder="은행명을 입력해주세요."
                       value={form.bankName}
                     />
                   </Field>
@@ -872,9 +888,9 @@ const SignupPage = () => {
               </section>
               </div>
                 <div className="mt-6 flex justify-end lg:absolute lg:bottom-0 lg:right-0 lg:mt-0">
-                  <button className={BUTTON_PRIMARY} disabled={submission.signup} onClick={handleSignup} type="button">
+                  <ActionButton loading={submission.signup} onClick={handleSignup} size="sm">
                     {submission.signup ? '가입 처리 중...' : '가입 완료'}
-                  </button>
+                  </ActionButton>
                 </div>
               </div>
             </div>
@@ -887,9 +903,9 @@ const SignupPage = () => {
           <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-[#f0efec] px-5 py-4">
               <h2 className="m-0 text-lg">주소 검색</h2>
-              <button aria-label="주소 검색 닫기" className={BUTTON_GHOST} onClick={() => setAddressSearchOpen(false)} type="button">
+              <ActionButton aria-label="주소 검색 닫기" onClick={() => setAddressSearchOpen(false)} size="sm" tone="neutral">
                 닫기
-              </button>
+              </ActionButton>
             </div>
             <DaumPostcode autoClose={false} onComplete={handleAddressComplete} />
           </div>

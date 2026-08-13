@@ -358,6 +358,7 @@ const AdminPointExchangePage = () => {
                 <label className="admin-operation-detail__reason">
                   반려 사유
                   <textarea
+                    className="admin-reason-textarea"
                     disabled={processMutation.isPending}
                     maxLength={500}
                     onChange={(event) => setReason(event.target.value)}

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import CommonTabs from "@components/common/CommonTabs";
+import { ActionButton } from "@components/common/ui";
 import AuctionCard from "./AuctionCard";
 
 const CARD_GAP = 20;
@@ -59,19 +59,29 @@ export default function AuctionSection({
 
   return (
     <section className="py-12 border-t border-[#e0e0e0]">
-      <div className="mx-auto max-w-[1600px] px-8">
+      <div className="container">
 
         {/* 탭 */}
-        <CommonTabs
-          activeValue={activeTab}
-          ariaLabel="메인 경매 목록"
-          className="common-tabs--centered mb-8"
-          items={[
-            { value: "new", label: "신규 경매" },
-            { value: "closing", label: "마감 임박 경매" },
-          ]}
-          onChange={handleTabChange}
-        />
+        <div className="flex justify-center gap-4 mb-8">
+          <button
+            type="button"
+            onClick={() => handleTabChange("new")}
+            className={`h-[60px] w-[242px] rounded-[40px] font-bold text-[25px] tracking-[-2px] transition-colors cursor-pointer border-none ${
+              activeTab === "new" ? "bg-[#0064ff] text-white" : "bg-[#ebebeb] text-[#969696]"
+            }`}
+          >
+            신규 경매
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTabChange("closing")}
+            className={`h-[60px] w-[242px] rounded-[40px] font-bold text-[25px] tracking-[-2px] transition-colors cursor-pointer border-none ${
+              activeTab === "closing" ? "bg-[#0064ff] text-white" : "bg-[#ebebeb] text-[#969696]"
+            }`}
+          >
+            마감 임박 경매
+          </button>
+        </div>
 
         {/* 캐러셀: 화살표는 카드 영역 밖 */}
         <div className="relative">
@@ -133,13 +143,13 @@ export default function AuctionSection({
 
         {/* 더보기 */}
         <div className="flex justify-center mt-8">
-          <button
-            type="button"
-            onClick={() => navigate(activeTab === "new" ? "/auction?sort=latest" : "/auction?sort=deadline&endingSoonOnly=true")}
-            className="h-[45px] w-[100px] rounded-[40px] bg-[#f3f5fa] border border-[#ebebeb] text-[14px] text-[#4e4e4e] hover:bg-[#e9edf5] transition-colors"
+          <ActionButton
+            to={activeTab === "new" ? "/auction?sort=latest" : "/auction?sort=deadline&endingSoonOnly=true"}
+            tone="neutral"
+            className="w-[100px] rounded-[40px] !border-[#ebebeb] !bg-[#f3f5fa] !text-[#4e4e4e] hover:!bg-[#e9edf5]"
           >
             더보기
-          </button>
+          </ActionButton>
         </div>
 
       </div>

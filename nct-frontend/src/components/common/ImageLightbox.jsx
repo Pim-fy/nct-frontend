@@ -14,15 +14,10 @@
 //   />
 import { useEffect, useState } from 'react';
 
-export default function ImageLightbox({ images, initialIndex = 0, open, onClose }) {
+const ImageLightboxContent = ({ images, initialIndex, onClose }) => {
   const [index, setIndex] = useState(initialIndex);
 
   useEffect(() => {
-    if (open) setIndex(initialIndex);
-  }, [open, initialIndex]);
-
-  useEffect(() => {
-    if (!open) return;
     const handler = (e) => {
       if (e.key === 'Escape') onClose();
       if (e.key === 'ArrowLeft') setIndex(i => (i - 1 + images.length) % images.length);
@@ -30,15 +25,12 @@ export default function ImageLightbox({ images, initialIndex = 0, open, onClose 
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [open, images, onClose]);
+  }, [images.length, onClose]);
 
   useEffect(() => {
-    if (!open) return;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
-  }, [open]);
-
-  if (!open || !images || images.length === 0) return null;
+  }, []);
 
   return (
     <div
@@ -90,5 +82,19 @@ export default function ImageLightbox({ images, initialIndex = 0, open, onClose 
         </div>
       )}
     </div>
+  );
+};
+
+// 담당자 7: 닫힐 때 내부 상태를 함께 제거해 다시 열면 initialIndex에서 시작합니다.
+export default function ImageLightbox({ images, initialIndex = 0, open, onClose }) {
+  if (!open || !images || images.length === 0) return null;
+
+  return (
+    <ImageLightboxContent
+      images={images}
+      initialIndex={initialIndex}
+      key={`${initialIndex}:${images.length}`}
+      onClose={onClose}
+    />
   );
 }

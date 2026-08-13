@@ -6,6 +6,7 @@ import { useAuth } from '@hooks/useAuth';
 import BrandLogo from '@components/common/BrandLogo';
 import AuthPageContainer from '@components/auth/AuthPageContainer';
 import AuthCard from '@components/auth/AuthCard';
+import { ActionButton } from '@components/common/ui';
 import { createSuspendedInquiry } from '@api/customerInquiryApi';
 import { notify } from '@utils/common';
 
@@ -176,7 +177,7 @@ export default function LoginPage() {
             <label className="text-sm font-medium text-gray-700">아이디</label>
             <input
               type="text"
-              placeholder="ksmart01"
+              placeholder="아이디를 입력해주세요"
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -195,7 +196,7 @@ export default function LoginPage() {
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
-                placeholder="비밀번호"
+                placeholder="비밀번호를 입력해주세요"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -232,20 +233,15 @@ export default function LoginPage() {
           </label>
 
           {/* 로그인 버튼 */}
-          <button
-            type="button"
+          <ActionButton
             onClick={handleLogin}
-            disabled={loading}
-            className="
-              mt-1 w-full h-12 rounded-lg
-              bg-blue-600 hover:bg-blue-700 active:scale-[0.98]
-              text-white text-base font-bold
-              transition-all duration-150 cursor-pointer
-              disabled:opacity-60 disabled:cursor-not-allowed
-            "
+            fullWidth
+            loading={loading}
+            size="lg"
+            className="mt-1"
           >
             {loading ? '로그인 중...' : '로그인'}
-          </button>
+          </ActionButton>
         </div>
 
         {/* 회원가입 | 아이디 찾기 | 비밀번호 찾기 */}
@@ -334,13 +330,14 @@ export default function LoginPage() {
                   className="w-full mb-2 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 resize-none"
                 />
                 {inquiryError && <p className="text-xs text-red-600 mb-2">{inquiryError}</p>}
-                <button
+                <ActionButton
                   type="submit"
-                  disabled={inquirySubmitting}
-                  className="w-full h-10 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition"
+                  fullWidth
+                  loading={inquirySubmitting}
+                  size="sm"
                 >
                   {inquirySubmitting ? '접수 중...' : '문의 접수하기'}
-                </button>
+                </ActionButton>
               </form>
             )}
             {inquirySubmitted && (
@@ -349,8 +346,7 @@ export default function LoginPage() {
               </p>
             )}
 
-            <button
-              type="button"
+            <ActionButton
               onClick={() => {
                 setSuspendedLoginId(null);
                 setSuspendedInquiryToken(null);
@@ -358,10 +354,11 @@ export default function LoginPage() {
                 setInquirySubmitted(false);
                 setInquiryError('');
               }}
-              className="w-full h-11 rounded-lg border border-gray-300 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition"
+              fullWidth
+              tone="neutral"
             >
               닫기
-            </button>
+            </ActionButton>
           </div>
         </div>
       )}

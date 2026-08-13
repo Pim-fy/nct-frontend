@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { deleteImage, toImageUrl, uploadImage } from '@api/fileApi';
 import { confirm, toast } from '@utils/common';
 import { assets } from '@components/mypage/assets';
@@ -12,6 +11,7 @@ import {
   useUpdatePortfolio,
 } from '@hooks/useProviderProfile';
 import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
+import { ActionButton } from '@components/common/ui';
 import FormSkeleton from '@components/skeleton/FormSkeleton';
 import './providerProfilePage.css';
 
@@ -19,7 +19,6 @@ const fieldClass = 'w-full rounded-md border border-[#d9d9d9] px-3 py-2 text-sm 
 
 /** 담당자 7 · F-PROV-004: 승인된 제공자가 소개와 가능 지역을 직접 관리하는 화면이다. */
 export default function ProviderProfilePage({ embedded = false } = {}) {
-  const navigate = useNavigate();
   const profileQuery = useMyProviderProfile();
   const statusClass = embedded
     ? 'w-full py-12 text-center'
@@ -36,7 +35,7 @@ export default function ProviderProfilePage({ embedded = false } = {}) {
       {embedded && <MyPageContentHeader title="프로필" />}
       <div className={statusClass}>
         <p className="text-[#d9363e]">제공자 프로필을 불러올 수 없습니다.</p>
-        <button type="button" className="btn btn-outline mt-4" onClick={() => profileQuery.refetch()}>다시 시도</button>
+        <ActionButton className="mt-4" onClick={() => profileQuery.refetch()} tone="outline">다시 시도</ActionButton>
       </div>
     </main>
   );
@@ -51,7 +50,7 @@ export default function ProviderProfilePage({ embedded = false } = {}) {
             <h1 className="text-xl font-bold text-[#252525]">제공자 프로필 관리</h1>
             <p className="mt-1 text-sm text-[#666]">공개 프로필에 표시할 소개와 가능 지역을 관리합니다.</p>
           </div>
-          <button type="button" className="btn btn-outline" onClick={() => navigate('/user/mypage')}>대시보드</button>
+          <ActionButton to="/user/mypage" tone="outline">대시보드</ActionButton>
         </div>
       )}
       <div className={embedded ? 'provider-profile-editor__split' : 'space-y-6'}>
@@ -231,7 +230,7 @@ function PortfolioRegistrationSection() {
           <p className="mt-1 text-sm text-[#666]">첫 번째 작업 이미지가 공개 프로필의 대표 이미지로 표시됩니다.</p>
         </div>
         {editingPortfolio && (
-          <button type="button" className="btn btn-outline btn-sm" onClick={clearEditor}>새 항목 등록</button>
+          <ActionButton onClick={clearEditor} size="sm" tone="outline">새 항목 등록</ActionButton>
         )}
       </div>
 
@@ -303,9 +302,9 @@ function PortfolioRegistrationSection() {
       </div>
 
       <div className="flex justify-end">
-        <button type="button" className="btn btn-primary" disabled={isSubmitting} onClick={submitPortfolio}>
+        <ActionButton disabled={isSubmitting} onClick={submitPortfolio}>
           {isSubmitting ? '저장 중' : editingPortfolio ? '수정 저장' : '포트폴리오 등록'}
-        </button>
+        </ActionButton>
       </div>
 
       <div className="grid gap-4 border-t border-[#ececec] pt-5">
@@ -337,15 +336,15 @@ function PortfolioRegistrationSection() {
                       {portfolio.content || '등록된 설명이 없습니다.'}
                     </p>
                     <div className="mt-4 flex justify-end gap-2">
-                      <button type="button" className="btn btn-outline btn-sm" onClick={() => editPortfolio(portfolio)}>수정</button>
-                      <button
-                        type="button"
-                        className="btn btn-outline btn-sm text-[#d9363e]"
+                      <ActionButton size="sm" tone="outline" onClick={() => editPortfolio(portfolio)}>수정</ActionButton>
+                      <ActionButton
                         disabled={deleteMutation.isPending}
                         onClick={() => removePortfolio(portfolio)}
+                        size="sm"
+                        tone="danger-outline"
                       >
                         삭제
-                      </button>
+                      </ActionButton>
                     </div>
                   </div>
                 </li>
@@ -439,7 +438,7 @@ function ProviderProfileForm({ profile }) {
           onChange={(event) => setForm((current) => ({ ...current, introduction: event.target.value }))}
           placeholder="제공 가능한 서비스와 경력을 소개해 주세요." />
         <p className="mt-1 text-right text-xs text-[#888]">{form.introduction.length}/4000</p>
-        <div className="mt-6 flex justify-end"><button type="submit" className="btn btn-primary" disabled={updateMutation.isPending}>{updateMutation.isPending ? '저장 중' : '저장'}</button></div>
+        <div className="mt-6 flex justify-end"><ActionButton type="submit" disabled={updateMutation.isPending}>{updateMutation.isPending ? '저장 중' : '저장'}</ActionButton></div>
       </form>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { HeartOff, RotateCcw } from 'lucide-react';
 import {
@@ -21,6 +21,7 @@ import MyPageListSkeleton from '@components/skeleton/MyPageListSkeleton';
 import Pagination from '@components/common/Pagination';
 import AuctionCard from './components/AuctionCard';
 import Toast from '@components/common/Toast';
+import { ActionButton } from '@components/common/ui';
 import '@assets/css/my-active-auctions.css';
 
 const PAGE_SIZE = 12;
@@ -72,7 +73,6 @@ const getVisiblePages = (currentPage, totalPages) => {
 
 const AuctionFavoritesPage = ({ embedded = false }) => {
   const location = useLocation();
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [toastMessage, setToastMessage] = useState('');
   const [statusFilter, setStatusFilter] = useState(null);
@@ -195,14 +195,13 @@ const AuctionFavoritesPage = ({ embedded = false }) => {
         <div className={EMPTY_STATE_CLASS}>
           <strong className="text-lg">관심 경매를 불러오지 못했습니다.</strong>
           <p className="m-0 text-[#5f5e5a]">잠시 후 다시 시도해 주세요.</p>
-          <button
-            className="inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-lg border border-primary bg-primary px-3.5 text-sm font-semibold text-white"
-            type="button"
+          <ActionButton
+            size="sm"
             onClick={() => refetch()}
           >
             <RotateCcw size={16} />
             다시 시도
-          </button>
+          </ActionButton>
         </div>
       ) : favoriteItems.length > 0 ? (
         <div className="grid w-full grid-cols-3 gap-[45px] max-xl:grid-cols-2 max-xl:gap-6 max-md:grid-cols-1 max-md:gap-[18px]">
@@ -233,12 +232,12 @@ const AuctionFavoritesPage = ({ embedded = false }) => {
         <div className={EMPTY_STATE_CLASS}>
           <strong className="text-lg">관심 등록한 경매가 없습니다.</strong>
           <p className="m-0 text-[#5f5e5a]">경매를 둘러보고 관심 있는 상품을 저장해 보세요.</p>
-          <Link
-            className="mt-[18px] inline-flex min-h-[42px] items-center justify-center rounded-lg bg-[#1d1d1f] px-[18px] text-sm font-bold text-white no-underline"
+          <ActionButton
+            className="mt-[18px] !border-[#1d1d1f] !bg-[#1d1d1f]"
             to="/auction"
           >
             경매 둘러보기
-          </Link>
+          </ActionButton>
         </div>
       )}
 
@@ -310,7 +309,7 @@ const AuctionFavoritesPage = ({ embedded = false }) => {
             ? '관심 등록한 경매가 없습니다.'
             : '해당 조건의 관심 경매가 없습니다.'}
           action={favoriteItems.length === 0 ? (
-            <Link className="btn btn-primary" to="/auction">경매 둘러보기</Link>
+            <ActionButton to="/auction">경매 둘러보기</ActionButton>
           ) : null}
         />
       ) : (
@@ -345,24 +344,22 @@ const AuctionFavoritesPage = ({ embedded = false }) => {
                 tradeMethodLabel={resolveTradeMethodLabel(item.tradeMethodCode, item.tradeMethodName)}
                 actionButton={(
                   <>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-primary"
-                      onClick={() => navigate(`/auction/${item.auctionId}`, {
-                        state: { from: `${location.pathname}${location.search}${location.hash}` },
-                      })}
+                    <ActionButton
+                      size="sm"
+                      state={{ from: `${location.pathname}${location.search}${location.hash}` }}
+                      to={`/auction/${item.auctionId}`}
                     >
                       경매 상세
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-ghost"
+                    </ActionButton>
+                    <ActionButton
                       aria-busy={favoriteMutation.isPending && favoriteMutation.variables === item.auctionId}
                       disabled={favoriteMutation.isPending && favoriteMutation.variables === item.auctionId}
                       onClick={() => favoriteMutation.mutate(item.auctionId)}
+                      size="sm"
+                      tone="neutral"
                     >
                       관심 해제
-                    </button>
+                    </ActionButton>
                   </>
                 )}
               />

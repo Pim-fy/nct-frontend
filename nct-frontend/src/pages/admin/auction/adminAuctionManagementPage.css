@@ -22,6 +22,11 @@
 .admin-auction-cancellation__sync-status.is-error { background: #fff1f0; color: #b42318; }
 .admin-auction-cancellation__actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
 .admin-auction-cancellation__result { margin: 20px 0 0; padding: 12px; border-radius: 8px; background: #f3f5fa; color: #3d4665; line-height: 1.6; }
+.admin-auction-operation-card { margin-top: 22px; padding: 18px; border: 1px solid #dbe3f3; border-radius: 10px; background: #f8faff; }
+.admin-auction-operation-card h4 { margin: 0 0 8px; color: #243250; }
+.admin-auction-operation-card > p { margin: 0; color: #65718d; font-size: 13px; line-height: 1.55; }
+.admin-auction-operation-card label { display: grid; gap: 8px; margin-top: 16px; color: #37415f; font-weight: 700; }
+.admin-auction-operation-card textarea { min-height: 88px; padding: 10px; border: 1px solid #d8ddeb; border-radius: 8px; font: inherit; resize: vertical; }
 .admin-auction-force-cancel { margin-top: 22px; padding: 18px; border: 1px solid #fecaca; border-radius: 10px; background: #fff8f7; }
 .admin-auction-force-cancel h4 { margin: 0 0 8px; color: #8f1d18; }
 .admin-auction-force-cancel > p { margin: 0; color: #6b4b49; font-size: 13px; line-height: 1.55; }
@@ -36,4 +41,95 @@
 
 .admin-table td.admin-auction-table__product-name > .admin-table__ellipsis-content {
   max-width: 320px;
+}
+
+/* 담당자 7 · F-OPS-003/004: 드로어를 대체한 경매 상세 화면입니다. */
+.admin-auction-detail-page__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(340px, .75fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.admin-auction-detail-page__main,
+.admin-auction-detail-page__operations {
+  display: grid;
+  min-width: 0;
+  gap: 18px;
+}
+
+.admin-auction-detail-page__facts {
+  padding: 22px;
+}
+
+.admin-auction-detail-page__facts dl {
+  grid-template-columns: 120px minmax(0, 1fr) 120px minmax(0, 1fr);
+}
+
+.admin-auction-detail-page__operations > :first-child {
+  margin-top: 0;
+}
+
+.admin-auction-operation-card.is-cancellation {
+  border-color: #fecaca;
+  background: #fffafa;
+}
+
+.admin-auction-detail-page__operation-facts {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  gap: 9px 12px;
+  margin: 14px 0 0;
+}
+
+.admin-auction-detail-page__operation-facts dt,
+.admin-auction-detail-page__operation-facts dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.admin-auction-detail-page__operation-facts dt {
+  color: #64748b;
+  font-weight: 700;
+}
+
+.admin-auction-detail-page__operation-facts dd {
+  color: #26304f;
+  overflow-wrap: anywhere;
+}
+
+.admin-auction-detail-page__busy {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  text-align: center;
+}
+
+.admin-auction-detail-page .admin-page-header__action .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+@media (max-width: 1180px) {
+  .admin-auction-detail-page__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-auction-detail-page__facts dl {
+    grid-template-columns: 120px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 620px) {
+  .admin-auction-detail-page__facts dl,
+  .admin-auction-detail-page__operation-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-auction-detail-page__facts dt,
+  .admin-auction-detail-page__operation-facts dt {
+    margin-top: 8px;
+  }
 }

@@ -1,6 +1,7 @@
 // src/pages/user/point/components/PointHistoryDetailModal.jsx
 // Claude Code 작성 (BJN, 2026-07-29)
 import { useEffect } from 'react';
+import { ActionButton } from '@components/common/ui';
 
 /**
  * 포인트지갑 요약 카드의 "+" 버튼으로 여는 전체 내역 모달 — 포인트/충전/환전 내역 공용 셸.
@@ -32,13 +33,14 @@ const PointHistoryDetailModal = ({ title, onClose, children }) => {
         role="dialog"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          type="button"
-          className="float-right text-sm text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg px-3 py-1.5"
+        <ActionButton
+          className="float-right"
           onClick={onClose}
+          size="sm"
+          tone="neutral"
         >
           닫기
-        </button>
+        </ActionButton>
         {children}
       </div>
     </div>

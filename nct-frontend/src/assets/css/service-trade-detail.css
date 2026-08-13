@@ -291,7 +291,8 @@
   border-top: 1px solid #e9edf4;
 }
 
-.service-trade-detail-actions__group .btn {
+.service-trade-detail-actions__group .btn,
+.service-trade-detail-actions__group .ui-action-button {
   display: inline-flex;
   width: 100%;
   min-height: 46px;
@@ -391,7 +392,8 @@
 
 .service-trade-info__heading h3 { margin: 0; }
 
-.service-trade-info__heading .btn {
+.service-trade-info__heading .btn,
+.service-trade-info__heading .ui-action-button {
   min-height: 40px;
   padding: 0 14px;
   font-size: 14px;
@@ -599,7 +601,8 @@
   gap: 8px;
 }
 
-.service-trade-inline-actions__group .btn {
+.service-trade-inline-actions__group .btn,
+.service-trade-inline-actions__group .ui-action-button {
   width: auto;
   min-height: 44px;
   padding: 0 14px;
@@ -610,7 +613,8 @@
   width: 100%;
 }
 
-.service-trade-inline-actions__group--primary .btn {
+.service-trade-inline-actions__group--primary .btn,
+.service-trade-inline-actions__group--primary .ui-action-button {
   width: 100%;
 }
 
@@ -626,7 +630,8 @@
     gap: 6px;
   }
 
-  .service-trade-inline-actions--summary .service-trade-inline-actions__group .btn {
+  .service-trade-inline-actions--summary .service-trade-inline-actions__group .btn,
+  .service-trade-inline-actions--summary .service-trade-inline-actions__group .ui-action-button {
     width: 100%;
     min-width: 0;
     min-height: 44px;
@@ -635,7 +640,8 @@
     white-space: nowrap;
   }
 
-  .service-trade-inline-actions--summary .service-trade-inline-actions__group .btn svg {
+  .service-trade-inline-actions--summary .service-trade-inline-actions__group .btn svg,
+  .service-trade-inline-actions--summary .service-trade-inline-actions__group .ui-action-button svg {
     width: 16px;
     height: 16px;
   }
@@ -670,7 +676,8 @@
 .service-trade-cancellation-decision p { margin: 4px 0 0; color: #7a3c38; font-size: 12px; }
 .service-trade-cancellation-decision__actions { display: flex; flex: 0 0 auto; gap: 8px; }
 
-.service-trade-cancellation-decision__actions .btn {
+.service-trade-cancellation-decision__actions .btn,
+.service-trade-cancellation-decision__actions .ui-action-button {
   display: inline-flex;
   width: 144px;
   min-height: 44px;
@@ -680,19 +687,22 @@
   font-weight: 800;
 }
 
-.service-trade-cancellation-decision__actions .btn-ghost {
+.service-trade-cancellation-decision__actions .btn-ghost,
+.service-trade-cancellation-decision__actions .ui-action-button--neutral {
   border-color: #cbd5e1;
   background: #fff;
   color: #475467;
 }
 
-.service-trade-cancellation-decision__actions .btn-primary {
+.service-trade-cancellation-decision__actions .btn-primary,
+.service-trade-cancellation-decision__actions .ui-action-button--danger {
   border-color: #d92d20;
   background: #d92d20;
   color: #fff;
 }
 
-.service-trade-cancellation-decision__actions .btn-primary:hover {
+.service-trade-cancellation-decision__actions .btn-primary:hover,
+.service-trade-cancellation-decision__actions .ui-action-button--danger:hover {
   border-color: #b42318;
   background: #b42318;
 }
@@ -704,7 +714,8 @@
   margin: 0 0 14px;
 }
 
-.service-trade-card__dispute-action .btn {
+.service-trade-card__dispute-action .btn,
+.service-trade-card__dispute-action .ui-action-button {
   flex: 0 0 auto;
   min-height: 32px;
   padding: 0 9px;
@@ -729,9 +740,11 @@
   .service-trade-card__escrow { margin-top: 0; min-height: auto; }
   .service-trade-inline-actions { align-items: stretch; flex-direction: column; margin-top: 18px; }
   .service-trade-inline-actions__group { width: 100%; flex-direction: column; }
-  .service-trade-inline-actions__group .btn { width: 100%; }
+  .service-trade-inline-actions__group .btn,
+  .service-trade-inline-actions__group .ui-action-button { width: 100%; }
   .service-trade-card__dispute-action { align-items: flex-start; flex-direction: column; }
-  .service-trade-card__dispute-action .btn { width: 100%; }
+  .service-trade-card__dispute-action .btn,
+  .service-trade-card__dispute-action .ui-action-button { width: 100%; }
   .service-trade-card__dispute-action p { white-space: normal; }
 }
 

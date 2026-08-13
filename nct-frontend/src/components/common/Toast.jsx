@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CircleAlert, CircleCheck, CircleX, Info } from 'lucide-react';
 import { normalizeFeedbackText } from '@utils/common';
+import { useFeedbackExit } from './feedbackMotion';
 
 const ICONS = {
   success: CircleCheck,
@@ -12,8 +13,9 @@ const ICONS = {
 };
 
 const ToastItem = ({ message, duration, onClose, variant }) => {
-  const [visible, setVisible] = useState(true);
+  const [rendered, setRendered] = useState(true);
   const closeRef = useRef(onClose);
+  const { beginExit, handleExitAnimationEnd, isExiting } = useFeedbackExit();
 
   useEffect(() => {
     closeRef.current = onClose;
@@ -21,20 +23,23 @@ const ToastItem = ({ message, duration, onClose, variant }) => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setVisible(false);
-      closeRef.current?.();
+      beginExit(() => {
+        setRendered(false);
+        closeRef.current?.();
+      });
     }, duration);
     return () => clearTimeout(timer);
-  }, [duration, message]);
+  }, [beginExit, duration, message]);
 
-  if (!visible || !message || typeof document === 'undefined') return null;
+  if (!rendered || !message || typeof document === 'undefined') return null;
 
   const Icon = ICONS[variant] ?? ICONS.info;
   const normalizedMessage = normalizeFeedbackText(message);
   return createPortal(
     <div
       aria-live={variant === 'error' ? 'assertive' : 'polite'}
-      className={`feedback-toast feedback-toast--${variant}`}
+      className={`feedback-toast feedback-toast--${variant}${isExiting ? ' feedback-toast--leaving' : ''}`}
+      onAnimationEnd={handleExitAnimationEnd}
       role={variant === 'error' ? 'alert' : 'status'}
     >
       <span className="feedback-toast__icon" aria-hidden="true"><Icon /></span>

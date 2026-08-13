@@ -15,7 +15,6 @@ import {
 } from '@api/tradeAdapter';
 import { formatDate, formatPoint } from '@utils/common';
 import { useMyBidHistory } from '@hooks/useBid';
-import CommonTabs from '@components/common/CommonTabs';
 import Pagination from '@components/common/Pagination';
 import MyPageListSkeleton from '@components/skeleton/MyPageListSkeleton';
 import MyPageListSectionLayout from '@components/mypage/MyPageListSectionLayout';
@@ -25,6 +24,7 @@ import MyPageListError from '@components/mypage/MyPageListError';
 import MyPageAuctionListItem from '@components/mypage/MyPageAuctionListItem';
 import MyPageStatusBadge from '@components/mypage/MyPageStatusBadge';
 import MyPageMobileCard from '@components/mypage/MyPageMobileCard';
+import { ActionButton } from '@components/common/ui';
 import '@assets/css/trade-history.css';
 
 const statusInfo = {
@@ -615,19 +615,22 @@ const TradeHistory = ({
 
         <section className="trade-history-panel" aria-label="거래 내역 필터">
           {!fixedRole && (
-            <CommonTabs
-              activeValue={activeTab}
-              ariaLabel="거래 내역 유형"
-              className="trade-history-tabs"
-              items={tabs.map((tab) => ({
-                ...tab,
-                count: tradeCounts[tab.value],
-              }))}
-              onChange={(value) => {
-                setActiveTab(value);
-                setPage(1);
-              }}
-            />
+            <div className="trade-history-tabs" role="tablist">
+              {tabs.map((tab) => (
+                <button
+                  className={`trade-history-tab ${
+                    activeTab === tab.value ? 'trade-history-tab--active' : ''
+                  }`}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === tab.value}
+                  key={tab.value}
+                  onClick={() => { setActiveTab(tab.value); setPage(1); }}
+                >
+                  {tab.label} <span>{tradeCounts[tab.value]}</span>
+                </button>
+              ))}
+            </div>
           )}
 
           {!fixedRole && <div className="trade-history-filters">
@@ -686,10 +689,17 @@ const TradeHistory = ({
             const canOpenTradeDetail = Boolean(
               onOpenTradeDetail && (!isBidItem || trade.tradeId),
             );
-            const detailPath = isBidItem
-              ? (trade.tradeId
-                ? `${tradeBasePath}/${trade.tradeId}`
-                : `/auction/${trade.aucSn}`)
+            const auctionId = isBidItem ? trade.aucSn : trade.auctionId;
+            const detailPath = isPreview
+              ? isBidItem
+                ? (trade.tradeId ? `${tradeBasePath}/${trade.tradeId}` : `/auction/${trade.aucSn}`)
+                : trade.type === 'SELLER'
+                  ? `${tradeBasePath}/${trade.id}/seller`
+                  : `${tradeBasePath}/${trade.id}`
+              : auctionId
+                ? `/auction/${auctionId}/trade`
+                : isBidItem
+                  ? (trade.tradeId ? `${tradeBasePath}/${trade.tradeId}` : `/auction/${trade.aucSn}`)
               : trade.type === 'SELLER'
                 ? `${tradeBasePath}/${trade.id}/seller`
                 : `${tradeBasePath}/${trade.id}`;
@@ -698,7 +708,7 @@ const TradeHistory = ({
               : undefined;
             const openDetail = () => {
               if (canOpenTradeDetail) {
-                onOpenTradeDetail(isBidItem ? trade.tradeId : trade.id);
+                onOpenTradeDetail(isBidItem ? trade.tradeId : trade.id, auctionId);
                 return;
               }
 
@@ -725,13 +735,12 @@ const TradeHistory = ({
                   ? getPurchaseMethodLabel(trade)
                   : (trade.method === 'DELIVERY' ? '배송' : '직거래')}
                 actionButton={canOpenTradeDetail ? (
-                  <button
-                    className="btn btn-sm btn-primary"
-                    type="button"
+                  <ActionButton
                     onClick={openDetail}
+                    size="sm"
                   >
                     {isBidItem && !trade.tradeId ? '경매 상세' : '거래 상세'}
-                  </button>
+                  </ActionButton>
                 ) : (
                   <span className="btn btn-sm btn-primary">
                     {isBidItem && !trade.tradeId ? '경매 상세' : '거래 상세'}
@@ -752,10 +761,17 @@ const TradeHistory = ({
               const canOpenTradeDetail = Boolean(
                 onOpenTradeDetail && (!isBidItem || trade.tradeId),
               );
-              const detailPath = isBidItem
-                ? (trade.tradeId
-                  ? `${tradeBasePath}/${trade.tradeId}`
-                  : `/auction/${trade.aucSn}`)
+              const auctionId = isBidItem ? trade.aucSn : trade.auctionId;
+              const detailPath = isPreview
+                ? isBidItem
+                  ? (trade.tradeId ? `${tradeBasePath}/${trade.tradeId}` : `/auction/${trade.aucSn}`)
+                  : trade.type === 'SELLER'
+                    ? `${tradeBasePath}/${trade.id}/seller`
+                    : `${tradeBasePath}/${trade.id}`
+                : auctionId
+                  ? `/auction/${auctionId}/trade`
+                  : isBidItem
+                    ? (trade.tradeId ? `${tradeBasePath}/${trade.tradeId}` : `/auction/${trade.aucSn}`)
                 : trade.type === 'SELLER'
                   ? `${tradeBasePath}/${trade.id}/seller`
                   : `${tradeBasePath}/${trade.id}`;
@@ -763,17 +779,16 @@ const TradeHistory = ({
                 ? { from: isPreview ? '/user/mypage/preview/trades' : getMyPagePath(returnSection) }
                 : undefined;
               const actionButton = canOpenTradeDetail ? (
-                <button
-                  className="btn btn-sm btn-primary"
-                  type="button"
-                  onClick={() => onOpenTradeDetail(isBidItem ? trade.tradeId : trade.id)}
+                <ActionButton
+                  onClick={() => onOpenTradeDetail(isBidItem ? trade.tradeId : trade.id, auctionId)}
+                  size="sm"
                 >
                   {isBidItem && !trade.tradeId ? '경매 상세' : '거래 상세'}
-                </button>
+                </ActionButton>
               ) : (
-                <button className="btn btn-sm btn-primary" type="button" onClick={() => navigate(detailPath, { state: detailState })}>
+                <ActionButton size="sm" state={detailState} to={detailPath}>
                   {isBidItem && !trade.tradeId ? '경매 상세' : '거래 상세'}
-                </button>
+                </ActionButton>
               );
 
               return (

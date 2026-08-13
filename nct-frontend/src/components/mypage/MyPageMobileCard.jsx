@@ -65,7 +65,7 @@ const MyPageMobileCard = ({
       </div>
     )}
 
-    {actionButton && <div className="mt-4 grid gap-2 [&_.btn]:w-full">{actionButton}</div>}
+    {actionButton && <div className="mt-4 grid gap-2 [&_.btn]:w-full [&_.ui-action-button]:w-full">{actionButton}</div>}
   </article>
 );
 

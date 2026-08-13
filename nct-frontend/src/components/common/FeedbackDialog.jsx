@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { CircleAlert, CircleCheck, CircleX, Info } from 'lucide-react';
 import { normalizeFeedbackText } from '@utils/common';
 import { resolveFeedbackDialogSize } from './feedbackDialogConfig';
+import { useFeedbackExit } from './feedbackMotion';
 
 const ICONS = {
   success: CircleCheck,
@@ -37,6 +38,7 @@ export default function FeedbackDialog({
   const titleId = useId();
   const descriptionId = useId();
   const confirmButtonRef = useRef(null);
+  const { beginExit, handleExitAnimationEnd, isExiting } = useFeedbackExit();
   // onConfirm/onCancel은 호출부에서 매 렌더링마다 새로 만들어지는 인라인 함수인 경우가 많다.
   // 아래 포커스 관리 effect가 이 값들을 의존성으로 들고 있으면, 모달이 열려 있는 동안 부모가
   // 리렌더링될 때마다 effect가 정리→재실행되면서 포커스가 뒤 화면↔확인 버튼 사이를 왔다갔다
@@ -65,7 +67,7 @@ export default function FeedbackDialog({
     const handleKeyDown = (event) => {
       if (event.key !== 'Escape') return;
       event.preventDefault();
-      (handlersRef.current.onCancel ?? handlersRef.current.onConfirm)?.();
+      beginExit(handlersRef.current.onCancel ?? handlersRef.current.onConfirm);
     };
 
     document.addEventListener('keydown', handleKeyDown);
@@ -77,17 +79,20 @@ export default function FeedbackDialog({
       // (ProductRegisterPage 등 검증+scrollIntoView 패턴 다수 존재) — 포커스만 복원하고 스크롤은 건드리지 않는다.
       previouslyFocused?.focus?.({ preventScroll: true });
     };
-  }, [open]);
+  }, [beginExit, open]);
 
   if (!open || typeof document === 'undefined') return null;
 
   return createPortal(
-    <div className="feedback-dialog__overlay">
+    <div
+      className={`feedback-dialog__overlay${isExiting ? ' feedback-dialog__overlay--leaving' : ''}`}
+      onAnimationEnd={handleExitAnimationEnd}
+    >
       <section
         aria-describedby={normalizedDescription ? descriptionId : undefined}
         aria-labelledby={titleId}
         aria-modal="true"
-        className={`feedback-dialog feedback-dialog--${resolvedSize} feedback-dialog--${variant}`}
+        className={`feedback-dialog feedback-dialog--${resolvedSize} feedback-dialog--${variant}${isExiting ? ' feedback-dialog--leaving' : ''}`}
         role="alertdialog"
       >
         <div className="feedback-dialog__icon" aria-hidden="true">
@@ -99,13 +104,19 @@ export default function FeedbackDialog({
         ) : null}
         <div className="feedback-dialog__actions">
           {showCancelButton ? (
-            <button className="btn btn-ghost feedback-dialog__button" onClick={onCancel} type="button">
+            <button
+              className="btn btn-ghost feedback-dialog__button"
+              disabled={isExiting}
+              onClick={() => beginExit(onCancel)}
+              type="button"
+            >
               {cancelLabel}
             </button>
           ) : null}
           <button
             className={`btn ${confirmButtonClass} feedback-dialog__button`}
-            onClick={onConfirm}
+            disabled={isExiting}
+            onClick={() => beginExit(onConfirm)}
             ref={confirmButtonRef}
             type="button"
           >

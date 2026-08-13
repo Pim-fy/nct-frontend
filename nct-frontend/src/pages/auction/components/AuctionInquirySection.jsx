@@ -12,6 +12,7 @@ import Pagination from '@components/common/Pagination';
 import { Skeleton } from '@components/skeleton/BaseSkeleton';
 import useCountdown from '@hooks/useCountdown';
 import { confirm as confirmAction } from '@utils/common';
+import { ActionButton } from '@components/common/ui';
 
 const INQUIRY_TYPE_CODE = 'PRDC0006';
 const ANSWER_TYPE_CODE = 'PRDC0007';
@@ -109,6 +110,7 @@ const AuctionInquirySection = ({
       const response = await fetchBannedKeywords();
       return Array.isArray(response?.data) ? response.data : [];
     },
+    enabled: Boolean(enabled && isAuthenticated),
     staleTime: 10 * 60 * 1000,
   });
 
@@ -319,9 +321,6 @@ const AuctionInquirySection = ({
           <h2 className="m-0 text-h2 font-bold text-[#1d1d1f]" id="auction-inquiry-title">
             상품 문의
           </h2>
-          <p className="mt-[7px] mb-0 text-body-sm text-[#666] md:text-body-md">
-            상품과 거래 조건에 대해 판매자에게 문의할 수 있습니다.
-          </p>
         </div>
         <strong className="text-body-md whitespace-nowrap text-primary-dark">{inquiries.length}건</strong>
       </div>
@@ -376,10 +375,11 @@ const AuctionInquirySection = ({
           ) : (
             <span className="text-[13px] leading-[1.5] tabular-nums text-[#666] max-sm:text-right">{content.length}/{MAX_INQUIRY_LENGTH}</span>
           )}
-          <button
-            className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-[7px] rounded-lg border border-primary bg-primary px-4 text-body-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-55 max-sm:w-full"
+          <ActionButton
+            className="max-sm:w-full"
             type="submit"
             disabled={isSubmitDisabled}
+            loading={inquiryMutation.isPending}
             aria-busy={inquiryMutation.isPending}
           >
             <Send size={16} aria-hidden="true" />
@@ -392,7 +392,7 @@ const AuctionInquirySection = ({
                   : (isInquiryCooldown
                     ? '문의 대기 중'
                     : (isAuthenticated ? '문의 등록' : '로그인 후 문의하기'))))}
-          </button>
+          </ActionButton>
         </div>
       </form>
 
@@ -408,14 +408,14 @@ const AuctionInquirySection = ({
         {inquiryQuery.isError && (
           <div className="grid min-h-24 place-items-center content-center gap-2.5 border-y border-[#e8e8e8] text-center text-body-sm text-[#666]">
             <p className="m-0">문의 목록을 불러오지 못했습니다.</p>
-            <button
-              className="inline-flex min-h-9 cursor-pointer items-center justify-center gap-[7px] rounded-lg border border-primary bg-white px-4 text-body-sm font-bold text-primary-dark"
-              type="button"
+            <ActionButton
               onClick={() => inquiryQuery.refetch()}
+              size="sm"
+              tone="outline"
             >
               <RotateCcw size={15} aria-hidden="true" />
               다시 불러오기
-            </button>
+            </ActionButton>
           </div>
         )}
 
@@ -461,15 +461,15 @@ const AuctionInquirySection = ({
                   {formatRegisteredAt(inquiry.prdCmtRegDt)}
                 </time>
                 {canEdit && !isEditing && (
-                  <button
-                    className="inline-flex min-h-8 cursor-pointer items-center justify-center gap-1 rounded-md border border-[#d8d8d8] bg-white px-2.5 text-caption font-bold text-[#555] transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-55"
+                  <ActionButton
                     disabled={updateInquiryMutation.isPending}
                     onClick={() => startEditing(inquiry)}
-                    type="button"
+                    size="sm"
+                    tone="neutral"
                   >
                     <Pencil aria-hidden="true" size={14} />
                     수정
-                  </button>
+                  </ActionButton>
                 )}
               </div>
             </div>
@@ -495,23 +495,24 @@ const AuctionInquirySection = ({
                     {displayedEditingError && <p className="mt-1 mb-0 text-caption text-[#c5221f]" role="alert">{displayedEditingError}</p>}
                   </div>
                   <div className="flex items-center justify-end gap-2">
-                    <button
-                      className="inline-flex min-h-9 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#d8d8d8] bg-white px-3.5 text-body-sm font-bold text-[#555] disabled:cursor-not-allowed disabled:opacity-55"
+                    <ActionButton
                       disabled={updateInquiryMutation.isPending}
                       onClick={cancelEditing}
-                      type="button"
+                      size="sm"
+                      tone="neutral"
                     >
                       <X aria-hidden="true" size={15} />
                       취소
-                    </button>
-                    <button
-                      className="inline-flex min-h-9 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-primary bg-primary px-3.5 text-body-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-55"
+                    </ActionButton>
+                    <ActionButton
                       disabled={isEditSubmitDisabled}
+                      loading={updateInquiryMutation.isPending}
+                      size="sm"
                       type="submit"
                     >
                       <Check aria-hidden="true" size={15} />
                       {updateInquiryMutation.isPending ? '저장 중' : '저장'}
-                    </button>
+                    </ActionButton>
                   </div>
                 </div>
               </form>

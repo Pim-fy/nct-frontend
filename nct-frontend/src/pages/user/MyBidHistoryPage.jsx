@@ -4,6 +4,8 @@
 import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Pagination from '@components/common/Pagination';
+import { ActionButton } from '@components/common/ui';
+import MyPageStatusBadge from '@components/mypage/MyPageStatusBadge';
 import { toImageUrl } from '@api/fileApi';
 import { useMyBidHistory } from '@hooks/useBid';
 import CardGridSkeleton from '@components/skeleton/CardGridSkeleton';
@@ -115,14 +117,17 @@ function BidHistoryTab() {
   const handleFilterChange = (value) => { setStatusFilter(value); setPage(1); };
   // 전역 브레드크럼 (BJN, 260805): 어디서 진입했는지(state.from)를 상세에 전달해 브레드크럼 경로에 반영
   const handleGoToAuction  = (aucSn) => navigate(`/auction/${aucSn}`, { state: { from: location.pathname + location.search } });
-  const handleGoToTrade = (tradeId) => navigate(`/trades/${tradeId}`, { state: { from: location.pathname + location.search } });
+  const handleGoToTrade = (tradeId, aucSn) => navigate(
+    aucSn ? `/auction/${aucSn}/trade` : `/trades/${tradeId}`,
+    { state: { from: location.pathname + location.search } },
+  );
 
   if (isLoading) return <CardGridSkeleton cardHeight={100} columns={1} count={4} />;
   if (isError) {
     return (
       <div style={{ textAlign: 'center', padding: '40px 0' }}>
         <p className="mb-2" style={{ color: '#a32d2d' }}>입찰 내역을 불러오지 못했습니다.</p>
-        <button type="button" onClick={() => refetch()} className="btn btn-outline">다시 시도</button>
+        <ActionButton onClick={() => refetch()} tone="outline">다시 시도</ActionButton>
       </div>
     );
   }
@@ -172,9 +177,9 @@ function BidHistoryTab() {
                     <div className="history-row-title">
                       {/* 뱃지 행 */}
                       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                        <span className={`badge ${statusMeta.badge}`}>{statusMeta.label}</span>
-                        {urgent && <span className="badge badge-urgent">마감 임박</span>}
-                        {isWon  && <span className="badge badge-teal">거래진행중</span>}
+                        <MyPageStatusBadge className={statusMeta.badge}>{statusMeta.label}</MyPageStatusBadge>
+                        {urgent && <MyPageStatusBadge className="badge-urgent">마감 임박</MyPageStatusBadge>}
+                        {isWon && <MyPageStatusBadge className="badge-teal">거래진행중</MyPageStatusBadge>}
                       </div>
                       <h4>{item.auctionTitle ?? `경매 #${item.aucSn}`}</h4>
                       <p className="muted" style={{ fontSize: 14 }}>{getBidDescription(item)}</p>
@@ -185,14 +190,12 @@ function BidHistoryTab() {
                   <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                     {isWon && (
                       item.tradeId ? (
-                        <button
-                          type="button"
-                          onClick={() => handleGoToTrade(item.tradeId)}
-                          className="btn btn-sm"
-                          style={{ background: '#10b981', color: '#fff', border: 'none' }}
+                        <ActionButton
+                          onClick={() => handleGoToTrade(item.tradeId, item.aucSn)}
+                          size="sm"
                         >
                           거래 상세
-                        </button>
+                        </ActionButton>
                       ) : (
                         <span
                           className="btn btn-sm btn-ghost"
@@ -203,13 +206,13 @@ function BidHistoryTab() {
                         </span>
                       )
                     )}
-                    <button
-                      type="button"
+                    <ActionButton
                       onClick={() => handleGoToAuction(item.aucSn)}
-                      className={`btn btn-sm ${isWon ? 'btn-ghost' : 'btn-primary'}`}
+                      size="sm"
+                      tone={isWon ? 'neutral' : 'primary'}
                     >
                       경매 상세
-                    </button>
+                    </ActionButton>
                   </div>
                 </div>
               );
@@ -232,7 +235,6 @@ export default function MyBidHistoryPage() {
       <div className="page-title">
         <div>
           <h1>상품 입찰 내역</h1>
-          <p className="muted">참여한 입찰 내역을 확인합니다.</p>
         </div>
       </div>
       <BidHistoryTab />

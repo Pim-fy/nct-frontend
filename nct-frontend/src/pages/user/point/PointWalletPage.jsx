@@ -1,5 +1,5 @@
 // src/pages/user/point/PointWalletPage.jsx
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -12,8 +12,8 @@ import PointAmountModal from './components/PointAmountModal';
 import PointChargeWidgetModal from './components/PointChargeWidgetModal';
 import PointHistoryDetailModal from './components/PointHistoryDetailModal';
 import { errorMessage, submitPointAmount } from './components/pointSubmitActions';
-import CommonTabs from '@components/common/CommonTabs';
 import MyPageContentHeader from '@components/mypage/MyPageContentHeader';
+import { ActionButton } from '@components/common/ui';
 import { notify } from '@utils/common';
 import { usePointBalance, usePointLedger, usePointChargeOrders, usePointExchangeOrders } from '../../../hooks/usePoint';
 import { confirmPointCharge } from '../../../api/pointApi';
@@ -79,13 +79,13 @@ const PointWalletPage = ({ embedded = false } = {}) => {
   // 포인트지갑으로 튕겨 나가버리는 문제가 있었다. PointChargeWidgetModal이 결제 시작 직전
   // sessionStorage에 남겨둔 원래 경로로 돌아간다 — 값이 없으면(지갑 화면에서 직접 충전한 경우
   // 등) 그대로 지갑 화면에 머문다.
-  const returnToOriginalPage = () => {
+  const returnToOriginalPage = useCallback(() => {
     const returnTo = sessionStorage.getItem('pointChargeReturnTo');
     sessionStorage.removeItem('pointChargeReturnTo');
     if (returnTo && returnTo !== window.location.pathname + window.location.search) {
       navigate(returnTo, { replace: true });
     }
-  };
+  }, [navigate]);
 
   // 오버레이의 나가기 버튼 — 승인 응답이 비정상적으로 안 오는 등 예외 상황에서도 사용자가
   // 화면에 갇히지 않도록 하는 탈출구다. 승인 요청 자체는 취소하지 않고(서버는 계속 처리),
@@ -162,7 +162,7 @@ const PointWalletPage = ({ embedded = false } = {}) => {
         returnToOriginalPage();
       });
     }
-  }, [searchParams, setSearchParams, queryClient]);
+  }, [searchParams, setSearchParams, queryClient, returnToOriginalPage]);
 
   /**
    * 환전/전환 공통 제출 처리 — 검증·API 호출·캐시 갱신·안내 흐름은 헤더 POINT 드롭다운과
@@ -216,27 +216,29 @@ const PointWalletPage = ({ embedded = false } = {}) => {
         title="포인트 지갑"
         actions={(
           <>
-            <button
-              type="button"
-              className="whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium rounded-lg px-3 py-2 sm:px-5 sm:py-2.5 transition-colors"
+            <ActionButton
+              className="whitespace-nowrap"
               onClick={() => setOpenModal('charge')}
+              size="sm"
             >
               충전
-            </button>
-            <button
-              type="button"
-              className="whitespace-nowrap border border-blue-600 text-blue-600 hover:bg-blue-50 text-xs sm:text-sm font-medium rounded-lg px-3 py-2 sm:px-5 sm:py-2.5 transition-colors"
+            </ActionButton>
+            <ActionButton
+              className="whitespace-nowrap"
               onClick={() => setOpenModal('convert')}
+              size="sm"
+              tone="outline"
             >
               전환
-            </button>
-            <button
-              type="button"
-              className="whitespace-nowrap border border-blue-600 text-blue-600 hover:bg-blue-50 text-xs sm:text-sm font-medium rounded-lg px-3 py-2 sm:px-5 sm:py-2.5 transition-colors"
+            </ActionButton>
+            <ActionButton
+              className="whitespace-nowrap"
               onClick={() => setOpenModal('exchange')}
+              size="sm"
+              tone="outline"
             >
               환전
-            </button>
+            </ActionButton>
           </>
         )}
       />
@@ -246,16 +248,25 @@ const PointWalletPage = ({ embedded = false } = {}) => {
       {isProvider ? (
         <>
           {/* 제공자모드: 정산 관리 화면 흡수로 포인트/정산 두 탭으로 분리 (2026-08-04) */}
-          <CommonTabs
-            activeValue={activeTab}
-            ariaLabel="포인트 지갑 내역"
-            className="mt-6 mb-1"
-            items={[
-              { value: 'point', label: '포인트 내역' },
-              { value: 'settlement', label: '정산 내역' },
-            ]}
-            onChange={setActiveTab}
-          />
+          <div className="flex gap-6 border-b border-gray-200 mt-6 mb-1">
+            {[
+              { key: 'point', label: '포인트 내역' },
+              { key: 'settlement', label: '정산 내역' },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={`pb-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                  activeTab === tab.key
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
           {activeTab === 'point' && (
             <>

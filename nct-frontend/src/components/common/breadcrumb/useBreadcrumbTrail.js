@@ -17,7 +17,7 @@ import {
   HOME_ITEM,
   buildMyPageTrail,
 } from './breadcrumbRoutes';
-import { useBreadcrumbContext } from './BreadcrumbContext';
+import { useBreadcrumbContext } from './useBreadcrumbContext';
 import { getMyPageSection } from '@/routes/myPageRoutes';
 
 const resolveMyPageEntryTrail = (rawFrom) => {

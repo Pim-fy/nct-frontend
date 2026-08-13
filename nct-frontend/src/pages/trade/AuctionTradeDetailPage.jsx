@@ -9,8 +9,7 @@ import { useAuctionTrade } from '@hooks/useAuctionTrade';
 import AsyncRouteError from '@components/common/AsyncRouteError';
 import TradeDetailSkeleton from '@components/trade/TradeDetailSkeleton';
 import ReportModal from '@components/common/ReportModal';
-import { getMyPagePath } from '@routes/myPageRoutes';
-import { useBreadcrumbOverride } from '@components/common/breadcrumb/BreadcrumbContext';
+import { useBreadcrumbOverride } from '@components/common/breadcrumb/useBreadcrumbOverride';
 import {
   buildMyPageTrail,
   HOME_ITEM,
@@ -41,7 +40,7 @@ export default function AuctionTradeDetailPage() {
   const [isReportOpen, setIsReportOpen] = useState(false);
 
   if (tradeQuery.isLoading) {
-    return <TradeDetailSkeleton />;
+    return <TradeDetailSkeleton layout="auction" />;
   }
 
   if (tradeQuery.isError) {

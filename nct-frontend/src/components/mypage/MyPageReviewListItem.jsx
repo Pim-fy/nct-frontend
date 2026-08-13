@@ -3,6 +3,7 @@ import MyPageListPriceActions from '@components/mypage/MyPageListPriceActions';
 import MyPageMobileCard from '@components/mypage/MyPageMobileCard';
 import MyPageStatusBadge from '@components/mypage/MyPageStatusBadge';
 import StarRatingDisplay from '@components/review/StarRatingDisplay';
+import { ActionButton, StatusBadge } from '@components/common/ui';
 import { formatDate } from '@utils/common';
 
 const REVIEW_TYPE_META = {
@@ -48,19 +49,19 @@ export default function MyPageReviewListItem({
     <>
       <MyPageStatusBadge className={typeMeta.badgeClass}>{typeMeta.label}</MyPageStatusBadge>
       {dday && (
-        <span className={`badge ${dday === 'D-Day' ? 'badge-danger' : 'badge-warning'}`}>
+        <StatusBadge tone={dday === 'D-Day' ? 'danger' : 'warning'} variant="soft">
           리뷰작성기간 {dday}
-        </span>
+        </StatusBadge>
       )}
     </>
   );
 
   const actionButtonEl = expired ? (
-    <span className="badge badge-danger">
+    <StatusBadge tone="danger" variant="soft">
       기간 만료
-    </span>
+    </StatusBadge>
   ) : (
-    <button type="button" onClick={onViewTarget} className="btn btn-primary">상세보기</button>
+    <ActionButton onClick={onViewTarget}>상세보기</ActionButton>
   );
 
   return (

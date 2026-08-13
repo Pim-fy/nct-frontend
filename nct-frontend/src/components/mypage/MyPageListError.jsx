@@ -1,3 +1,5 @@
+import { ActionButton } from '@components/common/ui';
+
 export default function MyPageListError({ message, onRetry, retryIcon }) {
   return (
     <div
@@ -6,14 +8,15 @@ export default function MyPageListError({ message, onRetry, retryIcon }) {
     >
       <strong className="text-[#344054]">{message}</strong>
       {onRetry && (
-        <button
-          type="button"
+        <ActionButton
+          className="mt-2 min-h-[38px] rounded-lg px-3.5 text-[15px]"
           onClick={onRetry}
-          className="mt-2 inline-flex min-h-[38px] cursor-pointer items-center justify-center gap-1 rounded-lg border border-[#155eef] bg-white px-[13px] text-[13px] font-extrabold text-[#155eef] hover:bg-[#eef4ff]"
+          preserveSize
+          tone="outline"
         >
           {retryIcon}
           다시 시도
-        </button>
+        </ActionButton>
       )}
     </div>
   );
