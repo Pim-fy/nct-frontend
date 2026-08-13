@@ -106,8 +106,7 @@ export default function HeroSection({ hotItems = [], hotItemsError, hotItemsLoad
                 <div className="flex justify-start mt-4">
                   <button
                     type="button"
-                    onClick={() => navigate(SLIDE.btnRoute)}
-                    className="bg-[#0064ff] h-[43px] px-6 rounded-[10px]"
+                    className="bg-[#0064ff] h-[43px] px-6 rounded-[10px] cursor-pointer"
                   >
                     <span className="text-[18px] font-bold text-white tracking-[-0.9px]">{SLIDE.btnLabel}</span>
                   </button>
