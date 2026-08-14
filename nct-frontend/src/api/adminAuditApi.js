@@ -19,14 +19,6 @@ export const getAuditHistory = ({ refType, refSn, limit = 100 }) =>
   })
     .then(res => res.data.data);
 
-/**
- * 민감정보(채팅 메시지) 원문 제한 조회 (F-OPS-014)
- * - 사유·거래 신고 번호 필수 — 서버가 원문 반환 "전에" 감사로그를 남긴다
- * @param {{chMsgSn: number, reportSn: number, reason: string}} body
- */
-export const requestSensitiveView = (body) =>
-  api.post('/admin/audit/sensitive-view', body).then(res => res.data);
-
 /** 담당자 7 · F-OPS-005/014: 거래 신고에 연결된 채팅 내역을 사유와 함께 제한 조회합니다. */
 export const requestReportChatView = (reportSn, body) =>
   api.post(`/admin/audit/reports/${reportSn}/chat-view`, body)
