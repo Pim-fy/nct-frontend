@@ -99,7 +99,7 @@ const AgreementModal = ({ agreement, onClose }) => {
   const terms = SIGNUP_TERMS[agreement.code];
 
   return (
-    <div aria-modal="true" className="fixed inset-0 z-[500] flex items-center justify-center bg-black/35 p-6" role="dialog">
+    <div aria-modal="true" className="fixed inset-0 z-500 flex items-center justify-center bg-black/35 p-6" role="dialog">
       <div className="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-2xl bg-white p-6 shadow-2xl">
         <h2 className="m-0 text-xl">{terms?.title ?? agreement.label}</h2>
         {terms ? (
@@ -899,7 +899,7 @@ const SignupPage = () => {
       </section>
 
       {addressSearchOpen ? (
-        <div aria-modal="true" className="fixed inset-0 z-[200] flex items-center justify-center bg-black/35 p-4" role="dialog">
+        <div aria-modal="true" className="fixed inset-0 z-200 flex items-center justify-center bg-black/35 p-4" role="dialog">
           <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-[#f0efec] px-5 py-4">
               <h2 className="m-0 text-lg">주소 검색</h2>

@@ -187,8 +187,8 @@ export default function ProductDetailSellerPage() {
       setCancelOpen(false);
       setCancelReason('');
       getAuctionStatus(prdSn).then(auc => setAuctionStatus(auc)).catch(() => {});
-    } catch {
-      setToast('취소 요청에 실패했습니다.');
+    } catch (err) {
+      setToast(err.response?.data?.message || '취소 요청에 실패했습니다.');
     } finally {
       setCancelSubmitting(false);
     }
@@ -294,21 +294,29 @@ export default function ProductDetailSellerPage() {
   const isEnded         = auctionStatus?.aucStatusCd === 'AUCC0004'; // 유찰
   const isCancelPending = auctionStatus?.aucStatusCd === 'AUCC0006';
   const isCancelled     = auctionStatus?.aucStatusCd === 'AUCC0005'; // 관리자 승인으로 취소 확정된 경매
+  // 낙찰(AUCC0003) 이후로는 거래 화면이 이 상품의 진행 상황을 담당한다 — 취소 요청도 그쪽에서 처리한다.
+  const isSold          = auctionStatus?.aucStatusCd === 'AUCC0003';
 
   const priceLabel = isActive ? '현재가' : '시작가';
   const priceAmt   = isActive && auctionStatus?.aucCurAmt != null ? auctionStatus.aucCurAmt : product.prdStartAmt;
 
   const hasBids = (auctionStatus?.bidCount ?? 0) > 0;
 
-  const resultText = isCancelPending
+  const resultText = isCancelled
+    ? '관리자 승인으로 취소가 확정된 상품입니다.'
+    : isCancelPending
     ? '취소 요청 검토 중입니다.'
+    : isSold    ? '낙찰되어 거래가 진행 중입니다.'
     : isActive  ? ''
     : isEnded   ? '유효 입찰 없이 경매가 종료되었습니다.'
     : '임시저장 상태입니다. 경매 설정을 완료해 공개할 수 있습니다.';
 
-  const noticeClass = isCancelPending ? 'danger-note' : 'notice';
-  const noticeText  = isCancelPending
+  const noticeClass = (isCancelPending || isCancelled) ? 'danger-note' : 'notice';
+  const noticeText  = isCancelled
+    ? '취소된 상품은 재등록할 수 없습니다.'
+    : isCancelPending
     ? '취소 요청이 접수되었습니다. 관리자 검토 중이며 승인 전까지 입찰·즉시구매가 차단됩니다.'
+    : isSold    ? '거래 취소 요청을 포함한 이후 진행 상황은 거래 페이지에서 확인할 수 있습니다.'
     : isActive  ? (hasBids
         ? '입찰자의 포인트가 보류(홀딩)되어 있어, 취소하려면 관리자 승인이 필요합니다.'
         : '아직 입찰이 없어 취소해도 다른 회원에게 영향이 없습니다.')
@@ -319,19 +327,7 @@ export default function ProductDetailSellerPage() {
 
   return (
     <main className="container">
-      {/* 취소 확정된 상품(AUCC0005)은 아래 내용 전체를 블러 처리하고 안내만 보여준다 */}
       <div style={{ position: 'relative', marginTop: 24 }}>
-      {isCancelled && (
-        <div style={{ position: 'absolute', inset: 0, zIndex: 5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', paddingTop: 230, gap: 10 }}>
-          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#c0392b" strokeWidth="1.7" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="5.5" y1="5.5" x2="18.5" y2="18.5" />
-          </svg>
-          <p style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#1a1a18' }}>해당 상품은 취소된 상품입니다.</p>
-          <p style={{ margin: 0, fontSize: 15, color: '#5f5e5a' }}>본 게시글은 1일 후 자동 삭제됩니다.</p>
-        </div>
-      )}
-      <div style={isCancelled ? { filter: 'blur(6px)', pointerEvents: 'none', userSelect: 'none' } : undefined}>
 
       {/* 2컬럼 레이아웃 — flex-start: 왼쪽 상품설명이 더보기로 늘어나도 오른쪽 카드들은 그대로 둠 */}
       <div className="seller-auction-layout" style={{ alignItems: 'flex-start', marginBottom: 48 }}>
@@ -616,7 +612,7 @@ export default function ProductDetailSellerPage() {
               <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>상태별 관리</h3>
             </div>
             <div style={{ padding: '16px 20px' }}>
-              {isCancelPending && <p className="muted small" style={{ marginBottom: 18, lineHeight: 1.65 }}>취소 요청 검토 중입니다. 승인 시 경매가 취소되며 반려 시 경매가 재개됩니다.</p>}
+              {isCancelPending && <p className="muted small" style={{ marginBottom: 18, lineHeight: 1.65 }}>취소 요청 검토 중입니다. 승인 시 경매가 취소되며, 반려 시 요청 전 상태로 복구됩니다(종료시각이 이미 지났다면 반려 시점 기준 1시간 연장됩니다).</p>}
               {isActive && !isCancelPending && <p className="muted small" style={{ marginBottom: 18, lineHeight: 1.65 }}>입찰이 시작된 상품은 핵심 정보 수정이 제한됩니다.</p>}
               {isDraft && <p className="muted small" style={{ marginBottom: 18, lineHeight: 1.65 }}>경매 설정을 완료해 공개할 수 있습니다.</p>}
               <div className="seller-action-list">
@@ -625,6 +621,7 @@ export default function ProductDetailSellerPage() {
                     ? <ActionButton disabled fullWidth tone="danger">취소 요청 검토 중</ActionButton>
                     : <ActionButton fullWidth onClick={() => setCancelOpen(true)} tone="danger">경매 취소 요청</ActionButton>
                 )}
+                {isSold && <ActionButton disabled={!auctionStatus?.aucSn} fullWidth to={`/auction/${auctionStatus?.aucSn}/trade`}>거래 페이지로 이동</ActionButton>}
                 {isEnded && <ActionButton disabled={!auctionStatus?.aucSn} fullWidth to={`/auction/${auctionStatus?.aucSn}`} tone="outline">종료 화면 보기</ActionButton>}
                 {isEnded && <ActionButton fullWidth state={{ relistFromPrdSn: Number(prdSn) }} to="/product/register">재등록</ActionButton>}
                 {isDraft && <ActionButton fullWidth state={{ prdSn: Number(prdSn) }} to="/product/register">상품 등록 재개</ActionButton>}
@@ -703,8 +700,7 @@ export default function ProductDetailSellerPage() {
         </div>
       </div>
 
-      </div>{/* /blur wrapper */}
-      </div>{/* /취소 안내 오버레이 wrapper */}
+      </div>
 
       {/* 구매자 문의 신고 모달 */}
       <div className={`modal ${reportOpen ? 'open' : ''}`} onClick={e => { if (e.target === e.currentTarget) { setReportOpen(false); setReportTargetSn(null); setReportContent(''); } }}>

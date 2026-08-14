@@ -465,7 +465,7 @@ export default function QuoteFormPage() {
                       return (
                         <div key={`saved-${attachment.flSn}`} className="qf-thumb-item">
                           {isImage ? (
-                            <img src={toImageUrl(attachment.url)} alt={attachment.fileName} className="qf-thumb-img" />
+                            <img src={toImageUrl(attachment.url)} alt="" className="qf-thumb-img" />
                           ) : (
                             <div className="qf-thumb-file">
                               <span className="qf-thumb-ext">{extension}</span>

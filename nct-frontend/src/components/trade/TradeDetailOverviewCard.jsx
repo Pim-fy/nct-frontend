@@ -25,6 +25,7 @@ export default function TradeDetailOverviewCard({
   counterpartTitle,
   auctionId,
   onReport,
+  onCancelRequest,
 }) {
   const location = useLocation();
   const returnTo = `${location.pathname}${location.search}${location.hash}`;
@@ -41,6 +42,13 @@ export default function TradeDetailOverviewCard({
         {statusMessages.map((message, index) => (
           <p key={`${message}-${index}`}>{message}</p>
         ))}
+        {onCancelRequest && (
+          <div className="trade-detail-actions trade-detail-actions--end">
+            <ActionButton onClick={onCancelRequest} size="sm" tone="danger-outline">
+              경매 취소 요청
+            </ActionButton>
+          </div>
+        )}
       </div>
 
       <TradeProductCard

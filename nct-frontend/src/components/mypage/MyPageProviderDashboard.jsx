@@ -97,6 +97,7 @@ export default function MyPageProviderDashboard({ user, onLogout, onSwitchToGene
           profileImageUrl={profile?.profileImageUrl || user?.profileImageUrl}
           nickname={nickname}
           email={user?.email || ''}
+          profilePath={getMyPagePath('profile')}
           actions={[
             {
               key: 'logout',
