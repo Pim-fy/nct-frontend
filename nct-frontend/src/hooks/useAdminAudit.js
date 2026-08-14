@@ -1,9 +1,9 @@
 // Claude Code 작성 (BJN, 2026-07-18)
 // src/hooks/useAdminAudit.js
 // 감사로그 관리자 훅 (TanStack Query, 담당자6 BJN, F-OPS-014/016)
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 
-import { getAuditHistory, getAuditLogs, requestSensitiveView } from '../api/adminAuditApi';
+import { getAuditHistory, getAuditLogs } from '../api/adminAuditApi';
 
 /**
  * 감사로그 조건별 조회 — filters가 바뀌면 queryKey가 바뀌어 자동 재조회된다
@@ -23,17 +23,5 @@ export function useAdminHistory(refType, refSn, limit = 100) {
     queryKey: ['admin', 'audit', 'history', refType, refSn, limit],
     queryFn: () => getAuditHistory({ refType, refSn, limit }),
     enabled: Boolean(refType && Number(refSn) > 0),
-  });
-}
-
-/**
- * 민감정보 원문 제한 조회 — mutate({ chMsgSn, reportSn, reason })
- * 성공하면 감사로그가 방금 한 건 늘었으므로 목록을 다시 가져온다
- */
-export function useSensitiveView() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: requestSensitiveView,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'audit', 'logs'] }),
   });
 }
