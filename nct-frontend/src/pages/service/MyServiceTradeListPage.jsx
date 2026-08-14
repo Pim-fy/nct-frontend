@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { BriefcaseBusiness, CalendarDays, MessageSquareText } from 'lucide-react';
+import { CalendarDays, MessageSquareText } from 'lucide-react';
 import { getMyServiceTrades } from '@api/serviceTradeApi';
 import { toImageUrl } from '@api/fileApi';
 import { getServiceTradeDetailPath } from '@/routes/myPageRoutes';
+import MyPageAuctionListItem from '@components/mypage/MyPageAuctionListItem';
 import MyPageListSectionLayout from '@components/mypage/MyPageListSectionLayout';
-import MyPageListItem from '@components/mypage/MyPageListItem';
 import MyPageListEmpty from '@components/mypage/MyPageListEmpty';
 import MyPageListError from '@components/mypage/MyPageListError';
 import MyPageStatusBadge from '@components/mypage/MyPageStatusBadge';
@@ -153,35 +153,39 @@ export default function MyServiceTradeListPage({ fixedRole = null }) {
       ) : (
         <>
           <div className="hidden lg:block">
-          <div className="history-list">
-            {visibleTrades.map((trade) => {
-              const status = getServiceTradeStatus(trade.tradeStatusCode);
-              const counterpartLabel = trade.viewerRole === 'REQUESTER' ? '제공자' : '의뢰자';
+            <div className="history-list">
+              {visibleTrades.map((trade) => {
+                const status = getServiceTradeStatus(trade.tradeStatusCode);
+                const counterpartLabel = trade.viewerRole === 'REQUESTER' ? '제공자' : '의뢰자';
 
-              return (
-                <MyPageListItem
-                  key={trade.tradeId}
-                  imageSrc={trade.serviceRequestImageUrl ? toImageUrl(trade.serviceRequestImageUrl) : undefined}
-                  imageAlt={trade.serviceRequestTitle}
-                  imageFallback={<BriefcaseBusiness aria-hidden="true" size={34} strokeWidth={1.6} />}
-                  badge={(
-                    <MyPageStatusBadge className={STATUS_BADGE[status.tone] ?? 'badge-outline-gray'}>
-                      {status.label}
-                    </MyPageStatusBadge>
-                  )}
-                  title={trade.serviceRequestTitle || '견적 진행 내역'}
-                  actions={(
-                    <ActionButton size="sm" to={getServiceTradeDetailPath(trade.tradeId)}>
-                      거래 상세
-                    </ActionButton>
-                  )}
-                >
-                  <p>{counterpartLabel} {trade.counterpartNickname || '-'} · 거래금액 {formatPoint(trade.tradeAmount)}</p>
-                  <p>거래 시작 {formatDate(trade.createdAt)} · {trade.quoteSummary || '선택 견적 내용 없음'}</p>
-                </MyPageListItem>
-              );
-            })}
-          </div>
+                return (
+                  <MyPageAuctionListItem
+                    key={trade.tradeId}
+                    imageSrc={trade.serviceRequestImageUrl ? toImageUrl(trade.serviceRequestImageUrl) : undefined}
+                    imageAlt={trade.serviceRequestTitle}
+                    imageFallback={trade.categoryName || '서비스'}
+                    badge={(
+                      <MyPageStatusBadge className={STATUS_BADGE[status.tone] ?? 'badge-outline-gray'}>
+                        {status.label}
+                      </MyPageStatusBadge>
+                    )}
+                    title={trade.serviceRequestTitle || '견적 진행 내역'}
+                    topLine={`거래 시작 ${formatDate(trade.createdAt)}`}
+                    priceItems={[
+                      { label: '거래 금액', value: formatPoint(trade.tradeAmount), highlight: true },
+                    ]}
+                    detailItems={[
+                      { label: counterpartLabel, value: trade.counterpartNickname || '-' },
+                    ]}
+                    actionButton={(
+                      <ActionButton size="sm" to={getServiceTradeDetailPath(trade.tradeId)}>
+                        거래 상세
+                      </ActionButton>
+                    )}
+                  />
+                );
+              })}
+            </div>
           </div>
 
           <div className="grid gap-4 lg:hidden">
@@ -207,7 +211,6 @@ export default function MyServiceTradeListPage({ fixedRole = null }) {
                     { icon: CalendarDays, label: '거래 시작', value: formatDate(trade.createdAt) },
                   ]}
                   footerLeft={`카테고리 · ${trade.categoryName || '서비스'}`}
-                  footerRight={trade.quoteSummary ? '선택 견적' : undefined}
                   actionButton={(
                     <ActionButton size="sm" to={getServiceTradeDetailPath(trade.tradeId)}>
                       상세보기

@@ -2,7 +2,6 @@
 export const MYPAGE_SECTION_PATHS = Object.freeze({
   home: '/user/mypage',
   profile: '/user/mypage/profile',
-  'provider-profile': '/user/mypage/provider/profile',
   'auction-bids': '/user/mypage/auctions/purchases',
   'auction-sales': '/user/mypage/auctions/sales',
   wishlist: '/user/mypage/auctions/favorites',
@@ -16,6 +15,15 @@ export const MYPAGE_SECTION_PATHS = Object.freeze({
   'report-list': '/user/mypage/reports',
   'inquiry-list': '/user/mypage/inquiries',
 });
+
+// 담당자 7 · F-PROV-004/005: 제공자 프로필 관리를 단일 메뉴의 하위 탭 경로로 통합합니다.
+export const MYPAGE_PROFILE_TAB_PATHS = Object.freeze({
+  account: MYPAGE_SECTION_PATHS.profile,
+  provider: `${MYPAGE_SECTION_PATHS.profile}/provider`,
+  portfolio: `${MYPAGE_SECTION_PATHS.profile}/portfolio`,
+});
+
+export const LEGACY_PROVIDER_PROFILE_PATH = '/user/mypage/provider/profile';
 
 export const MYPAGE_INQUIRY_PATHS = Object.freeze({
   general: '/user/mypage/inquiries',
@@ -45,6 +53,11 @@ export const getServiceTradeChatPath = (tradeId) => (
 );
 
 export const getMyPageSection = (pathname) => {
+  if (Object.values(MYPAGE_PROFILE_TAB_PATHS).includes(pathname)
+    || pathname === LEGACY_PROVIDER_PROFILE_PATH) {
+    return 'profile';
+  }
+
   if (pathname === MYPAGE_INQUIRY_PATHS.provider
     || pathname.startsWith(`${MYPAGE_INQUIRY_PATHS.provider}/`)) {
     return 'inquiry-list';

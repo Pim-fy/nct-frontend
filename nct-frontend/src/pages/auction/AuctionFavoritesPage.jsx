@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { HeartOff, RotateCcw } from 'lucide-react';
@@ -75,10 +75,14 @@ const AuctionFavoritesPage = ({ embedded = false }) => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [toastMessage, setToastMessage] = useState('');
-  const [statusFilter, setStatusFilter] = useState(null);
   const [keyword, setKeyword] = useState('');
   const queryClient = useQueryClient();
   const page = getPageNumber(searchParams);
+  // @ai_generated 관심 경매 상태 탭은 기존 page 쿼리와 함께 URL에서 복원한다.
+  const requestedStatusFilter = searchParams.get('tab');
+  const statusFilter = FAVORITE_STATUS_FILTERS.some(({ value }) => value === requestedStatusFilter)
+    ? requestedStatusFilter
+    : null;
 
   const {
     data: favoritePage,
@@ -123,6 +127,14 @@ const AuctionFavoritesPage = ({ embedded = false }) => {
     else next.set('page', String(nextPage));
     setSearchParams(next);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleStatusFilterChange = (nextFilter) => {
+    const nextSearchParams = new URLSearchParams(searchParams);
+    if (nextFilter) nextSearchParams.set('tab', nextFilter);
+    else nextSearchParams.delete('tab');
+    nextSearchParams.delete('page');
+    setSearchParams(nextSearchParams, { replace: true });
   };
 
   const favoriteMutation = useMutation({
@@ -170,13 +182,6 @@ const AuctionFavoritesPage = ({ embedded = false }) => {
       queryClient.invalidateQueries({ queryKey: ['landing-curation', 'auctions', 'popular'] });
     },
   });
-
-  useEffect(() => {
-    if (!toastMessage) return undefined;
-
-    const timer = window.setTimeout(() => setToastMessage(''), 2500);
-    return () => window.clearTimeout(timer);
-  }, [toastMessage]);
 
   const content = (
     <section className="my-active-auctions">
@@ -291,7 +296,7 @@ const AuctionFavoritesPage = ({ embedded = false }) => {
           count: filter.value === null ? favoriteItems.length : favoriteStatusCounts[filter.value],
         }))}
         activeFilter={statusFilter}
-        onFilterChange={setStatusFilter}
+        onFilterChange={handleStatusFilterChange}
         filterAriaLabel="관심 경매 상태"
         onSearch={setKeyword}
         searchAriaLabel="관심 경매 검색"
@@ -403,7 +408,11 @@ const AuctionFavoritesPage = ({ embedded = false }) => {
           {content}
         </main>
       )}
-      <Toast message={toastMessage} variant="info" />
+      <Toast
+        message={toastMessage}
+        onClose={() => setToastMessage('')}
+        variant="info"
+      />
     </div>
   );
 };

@@ -350,9 +350,9 @@ export const AuctionDetailPageContent = ({ auctionId, embedded = false }) => {
       setTradeMethodErrorAuctionId(null);
       const changedDeliveryAddressOnly = payload.tradeMethod === DELIVERY_TRADE_METHOD_CODE
         && auction?.myBidTradeMethodCode === DELIVERY_TRADE_METHOD_CODE;
-      showToast(changedDeliveryAddressOnly
-        ? '배송지가 변경되었습니다'
-        : `${payload.tradeMethod === DELIVERY_TRADE_METHOD_CODE ? '배송' : '직거래'}로 변경되었습니다`);
+      if (!changedDeliveryAddressOnly) {
+        showToast(`${payload.tradeMethod === DELIVERY_TRADE_METHOD_CODE ? '배송' : '직거래'}로 변경되었습니다`);
+      }
     },
     onError: handleAuctionMutationError,
   });
@@ -473,12 +473,6 @@ export const AuctionDetailPageContent = ({ auctionId, embedded = false }) => {
       applyFavoriteStatus(favoriteStatusQuery.data);
     }
   }, [applyFavoriteStatus, favoriteStatusQuery.data]);
-
-  useEffect(() => {
-    if (!toastMessage) return undefined;
-    const timerId = window.setTimeout(() => setToastMessage(''), 2800);
-    return () => window.clearTimeout(timerId);
-  }, [toastMessage]);
 
   useEffect(() => {
     if (embedded || !auction?.productId) return undefined;
@@ -1058,7 +1052,9 @@ export const AuctionDetailPageContent = ({ auctionId, embedded = false }) => {
               <AuctionPreviewRail
                 imageItems={imageItems}
                 activeImageIndex={activeImageIndex}
+                failedImageUrls={failedImageUrls}
                 onPreviewClick={handlePreviewClick}
+                onImageError={handleImageError}
               />
             </div>
             <AuctionBidPanel
@@ -1180,8 +1176,8 @@ export const AuctionDetailPageContent = ({ auctionId, embedded = false }) => {
             auction={auction}
             selectedTradeName={selectedTradeName}
             sectionId={DETAIL_SECTION_ITEMS[3].id}
-            sellerRating={sellerRatingQuery.data?.goodsScore ?? auction.sellerRating}
-            sellerReviewCount={sellerRatingQuery.data?.goodsCount ?? auction.sellerReviewCount}
+            sellerRating={sellerRatingQuery.data?.totalScore ?? auction.sellerRating}
+            sellerReviewCount={sellerRatingQuery.data?.totalCount ?? auction.sellerReviewCount}
             isSellerRatingLoading={!supplementalQueriesEnabled || sellerRatingQuery.isLoading}
             onSellerReviewsOpen={handleSellerReviewsOpen}
           >
@@ -1250,7 +1246,11 @@ export const AuctionDetailPageContent = ({ auctionId, embedded = false }) => {
         open={lightboxImageIndex !== null}
         onClose={() => setLightboxImageIndex(null)}
       />
-      <Toast message={toastMessage} variant="info" />
+      <Toast
+        message={toastMessage}
+        onClose={() => setToastMessage('')}
+        variant="info"
+      />
       {isChargeModalOpen && (
         <PointChargeWidgetModal
           infoRow={{ label: '사용 가능 포인트', value: `${(hasAvailablePoint ? availablePoint : 0).toLocaleString()} P` }}

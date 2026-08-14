@@ -18,19 +18,19 @@ const badge = pointBadge(TYPE_BADGE);
 // 뒤쪽까지는 못 맞춘다 (2026-08-04, PointTable.jsx 참고). 이 표엔 항상 정산가능 카테고리만
 // 남아서 잔액이 한 트랙으로만 이어진다.
 const COLUMNS = [
-  { key: 'date', header: '일시', widthClass: 'w-[18%]', cellClass: 'truncate text-gray-700', render: (r) => <span title={r.date}>{r.date}</span> },
-  { key: 'type', header: '유형', widthClass: 'w-[12%]', cellClass: 'whitespace-nowrap', render: (r) => badge(r.type) },
+  { key: 'date', header: '일시', widthClass: 'w-[170px]', cellClass: 'truncate text-gray-700', render: (r) => <span title={r.date}>{r.date}</span> },
+  { key: 'type', header: '유형', widthClass: 'w-[80px]', cellClass: 'whitespace-nowrap', render: (r) => badge(r.type) },
   {
-    key: 'amount', header: '변동금액', align: 'right', widthClass: 'w-[14%]',
+    key: 'amount', header: '변동금액', align: 'right', widthClass: 'w-auto',
     cellClass: (r) => `truncate font-medium ${r.amount > 0 ? 'text-blue-700' : 'text-red-700'}`,
     render: (r) => `${r.amount > 0 ? '+' : ''}${r.amount.toLocaleString()}P`,
   },
   {
-    key: 'balanceAfter', header: '정산가능 잔액', align: 'right', widthClass: 'w-[16%]', cellClass: 'truncate text-gray-700',
+    key: 'balanceAfter', header: '정산가능 잔액', align: 'right', widthClass: 'w-auto', cellClass: 'truncate text-gray-700',
     render: (r) => <span title={`${r.balanceAfter.toLocaleString()}P`}>{r.balanceAfter.toLocaleString()}P</span>,
   },
   {
-    key: 'reason', header: '사유', widthClass: 'w-[40%]', cellClass: 'truncate text-gray-500',
+    key: 'reason', header: '사유', align: 'left', widthClass: 'w-[250px]', cellClass: 'truncate text-gray-500',
     render: (r) => <span title={formatPointLedgerReason(r.reason)}>{reasonSummary(r.reason)}</span>,
   },
 ];
@@ -68,7 +68,7 @@ const renderCard = (r) => (
  */
 // limit을 주면(마이페이지 요약 카드) 최근 N건만 보여주고 "+"로 전체보기 모달을 띄운다.
 // limit 없이 부르면(전체보기 모달 안) 전부 보여준다 (2026-07-29 다른 내역 표와 동일한 방식).
-const PointConvertHistoryTable = ({ rows, limit, onExpand, loading }) => {
+const PointConvertHistoryTable = ({ rows, limit, onExpand, loading, centerAlign = false }) => {
   const settleableRows = rows.filter((r) => r.category === '정산가능');
   const visibleRows = limit ? settleableRows.slice(0, limit) : settleableRows;
 
@@ -82,6 +82,7 @@ const PointConvertHistoryTable = ({ rows, limit, onExpand, loading }) => {
       pageSize={limit ? undefined : 10}
       loading={loading}
       renderCard={renderCard}
+      centerAlign={centerAlign}
     />
   );
 };

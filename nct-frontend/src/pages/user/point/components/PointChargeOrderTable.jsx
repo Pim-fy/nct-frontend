@@ -18,15 +18,15 @@ const badge = pointBadge(STATUS_BADGE);
 // widthClass 퍼센트는 원장·환전 내역 표와 같은 열 순서(일시/배지/금액/짧은텍스트/긴텍스트)
 // 기준으로 맞춘 값 — 임의로 바꾸면 세 표의 세로 구분선이 어긋난다 (2026-08-04, PointTable.jsx 참고)
 const COLUMNS = [
-  { key: 'date', header: '일시', widthClass: 'w-[18%]', cellClass: 'truncate text-gray-700', render: (r) => <span title={r.date}>{r.date}</span> },
-  { key: 'status', header: '상태', widthClass: 'w-[12%]', cellClass: 'whitespace-nowrap', render: (r) => badge(r.status) },
+  { key: 'date', header: '일시', widthClass: 'w-[170px]', cellClass: 'truncate text-gray-700', render: (r) => <span title={r.date}>{r.date}</span> },
+  { key: 'status', header: '상태', widthClass: 'w-[80px]', cellClass: 'whitespace-nowrap', render: (r) => badge(r.status) },
   {
-    key: 'amount', header: '충전금액', align: 'right', widthClass: 'w-[14%]', cellClass: 'whitespace-nowrap font-medium text-gray-900',
+    key: 'amount', header: '충전금액', align: 'right', widthClass: 'w-auto', cellClass: 'whitespace-nowrap font-medium text-gray-900',
     render: (r) => `${r.amount.toLocaleString()}P`,
   },
-  { key: 'payMethod', header: '결제수단', widthClass: 'w-[20%]', cellClass: 'truncate text-gray-500', render: (r) => r.payMethod ?? '-' },
+  { key: 'payMethod', header: '결제수단', align: 'left', widthClass: 'w-auto', cellClass: 'truncate text-gray-500', render: (r) => r.payMethod ?? '-' },
   {
-    key: 'failReason', header: '비고', widthClass: 'w-[36%]', cellClass: 'truncate text-gray-500',
+    key: 'failReason', header: '비고', align: 'left', widthClass: 'w-[250px]', cellClass: 'truncate text-gray-500',
     render: (r) => <span title={r.failReason}>{r.failReason ?? '-'}</span>,
   },
 ];
@@ -58,7 +58,7 @@ const VISIBLE_STATUS_CODES = new Set(['PCOC0002', 'PCOC0003']);
  * limit을 주면(마이페이지 요약 카드) 필터링 이후 기준으로 최근 N건만 보여주고 "+"로 전체보기
  * 모달을 띄운다 — limit 없이 부르면(전체보기 모달 안) 전부 보여준다 (2026-07-29).
  */
-const PointChargeOrderTable = ({ rows, limit, onExpand, loading }) => {
+const PointChargeOrderTable = ({ rows, limit, onExpand, loading, centerAlign = false }) => {
   const visible = rows.filter((r) => VISIBLE_STATUS_CODES.has(r.statusCd));
   return (
     <PointTable
@@ -70,6 +70,7 @@ const PointChargeOrderTable = ({ rows, limit, onExpand, loading }) => {
       pageSize={limit ? undefined : 10}
       loading={loading}
       renderCard={renderCard}
+      centerAlign={centerAlign}
     />
   );
 };

@@ -2,7 +2,7 @@
 // 내 판매 목록 순수 목록 컴포넌트 — MyProductListPage · MyPage 아코디언에서 재사용
 // 마이페이지 공통 목록 컴포넌트를 사용하며 가격·날짜 표시 형식을 유지한다.
 import { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { CalendarCheck, CalendarDays } from 'lucide-react';
 import { toImageUrl } from '@api/fileApi';
@@ -53,6 +53,8 @@ const AUC_STATUS_BADGE = {
   AUCC0004: 'badge-outline-gray',
   AUCC0005: 'badge-danger',
   AUCC0006: 'badge-danger', // 취소요청도 취소(AUCC0005)와 같은 색으로 — 둘 다 위험/주의 상태
+  AUCC0013: 'badge-warning',
+  AUCC9001: 'badge-warning',
 };
 
 const TRADE_BADGE = {
@@ -130,15 +132,56 @@ const getProductStatusDisplay = (p) => ({
   isEnded: p.prdStatusCd === 'PRDC0003',
 });
 
+// @ai_generated 거래 전에는 경매 가격, 거래 생성 후에는 확정 금액을 표시해 가격 의미를 섞지 않는다.
+const getSalePriceItems = (product) => {
+  if (product.tradeSn) {
+    return [{ label: '확정 금액', value: formatPoint(product.tradeAmount) }];
+  }
+
+  if (product.aucStatusCd === 'AUCC0003') {
+    return [{ label: '거래 정보 확인 필요', value: '-' }];
+  }
+
+  if (product.aucStatusCd === 'AUCC0004') {
+    return [{ label: '시작가', value: formatPoint(product.prdStartAmt) }];
+  }
+
+  if (product.aucStatusCd === 'AUCC0005') {
+    return Number(product.bidCount) > 0
+      ? [{ label: '취소 시점 최고가', value: formatPoint(product.currentPrice) }]
+      : [{ label: '시작가', value: formatPoint(product.prdStartAmt) }];
+  }
+
+  const hasBid = Number(product.bidCount) > 0;
+  const primaryPrice = hasBid
+    ? { label: '현재 최고가', value: formatPoint(product.currentPrice) }
+    : { label: '시작가', value: formatPoint(product.prdStartAmt) };
+  const priceItems = [primaryPrice];
+
+  if (product.prdIbyAmt != null) {
+    priceItems.push({ label: '즉시구매가', value: formatPoint(product.prdIbyAmt) });
+  }
+
+  return priceItems;
+};
+
 // ─── 컴포넌트 ─────────────────────────────────────────────────────────────────
 
 export default function MyProductList() {
   const queryClient = useQueryClient();
   // 담당자 7: 상세·등록 화면에서 목록으로 돌아올 수 있도록 현재 경로를 전달한다.
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const returnState = { from: location.pathname + location.search };
-  const [filter, setFilter]       = useState(null);
-  const [subFilter, setSubFilter] = useState('');
+  // @ai_generated 판매 목록 탭과 종료 하위 필터를 URL에서 복원하되 정의된 값만 허용한다.
+  const requestedFilter = searchParams.get('tab');
+  const filter = FILTERS.some(({ value }) => value === requestedFilter)
+    ? requestedFilter
+    : null;
+  const requestedSubFilter = searchParams.get('sub') ?? '';
+  const subFilter = CLOSED_SUB_FILTERS.some(({ value }) => value === requestedSubFilter)
+    ? requestedSubFilter
+    : '';
   const [searchKeyword, setSearchKeyword] = useState('');
   const [page, setPage]           = useState(1);
   const [toast, setToast]         = useState('');
@@ -157,12 +200,21 @@ export default function MyProductList() {
     ? list.filter((product) => String(product.prdNm ?? '').toLowerCase().includes(normalizedSearchKeyword))
     : list;
   const handleFilterChange = (value) => {
-    setFilter(value);
-    setSubFilter('');
+    const nextSearchParams = new URLSearchParams(searchParams);
+    if (value) nextSearchParams.set('tab', value);
+    else nextSearchParams.delete('tab');
+    nextSearchParams.delete('sub');
+    setSearchParams(nextSearchParams, { replace: true });
     setPage(1);
   };
 
-  const handleSubFilterChange = (value) => { setSubFilter(value); setPage(1); };
+  const handleSubFilterChange = (value) => {
+    const nextSearchParams = new URLSearchParams(searchParams);
+    if (value) nextSearchParams.set('sub', value);
+    else nextSearchParams.delete('sub');
+    setSearchParams(nextSearchParams, { replace: true });
+    setPage(1);
+  };
 
   const handlePageChange = (nextPage) => {
     setPage(nextPage);
@@ -251,6 +303,7 @@ export default function MyProductList() {
           <div className="history-list">
             {visibleList.map((p) => {
               const { badgeLabel, badgeClass, isActive, isDraft, isEnded } = getProductStatusDisplay(p);
+              const priceItems = getSalePriceItems(p);
 
               return (
                 <MyPageAuctionListItem
@@ -261,9 +314,7 @@ export default function MyProductList() {
                   badge={<MyPageStatusBadge className={badgeClass}>{badgeLabel}</MyPageStatusBadge>}
                   title={p.prdNm}
                   topLine={`확정날짜 ${formatDate(p.tradeCreatedAt ?? p.prdRegDt)} / 완료날짜 ${formatDate(p.tradeCompletedAt)}`}
-                  priceItems={[
-                    { label: '확정 가격', value: formatPoint(p.tradeAmount ?? p.prdStartAmt) },
-                  ]}
+                  priceItems={priceItems}
                   tradeMethodLabel={TRADE_LABEL[p.prdTrdMethodCd] ?? p.prdTrdMethodCd}
                   actionButton={(
                     <>
@@ -313,6 +364,7 @@ export default function MyProductList() {
           <div className="grid gap-4 lg:hidden">
             {visibleList.map((p) => {
               const { badgeLabel, badgeClass, isActive, isDraft, isEnded } = getProductStatusDisplay(p);
+              const priceItems = getSalePriceItems(p);
 
               return (
                 <MyPageMobileCard
@@ -322,7 +374,7 @@ export default function MyProductList() {
                   imageFallbackLabel="상품 이미지"
                   badge={<MyPageStatusBadge className={badgeClass}>{badgeLabel}</MyPageStatusBadge>}
                   title={p.prdNm}
-                  price={formatPoint(p.tradeAmount ?? p.prdStartAmt)}
+                  priceItems={priceItems}
                   infoItems={[
                     { icon: CalendarDays, label: '확정날짜', value: formatDate(p.tradeCreatedAt ?? p.prdRegDt) },
                     { icon: CalendarCheck, label: '완료날짜', value: formatDate(p.tradeCompletedAt) },

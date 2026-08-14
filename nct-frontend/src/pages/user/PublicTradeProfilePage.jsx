@@ -162,8 +162,8 @@ const PublicTradeProfilePage = () => {
   const profile = profileQuery.data;
   const displayName = profile?.displayName?.trim() || '회원';
   const profileImageUrl = toImageUrl(profile?.profileImageUrl);
-  const goodsCount = toCount(trustQuery.data?.goodsCount);
-  const goodsScore = toScore(trustQuery.data?.goodsScore);
+  const trustCount = toCount(trustQuery.data?.totalCount);
+  const trustScore = toScore(trustQuery.data?.totalScore);
   const reviews = reviewsQuery.data?.content ?? [];
   const totalCount = toCount(reviewsQuery.data?.totalCount) ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
@@ -232,33 +232,33 @@ const PublicTradeProfilePage = () => {
                 <button onClick={() => trustQuery.refetch()} type="button">다시 불러오기</button>
               </div>
             )}
-            {!trustQuery.isLoading && !trustQuery.isError && goodsCount === 0 && (
+            {!trustQuery.isLoading && !trustQuery.isError && trustCount === 0 && (
               <p className="trade-profile-rating is-empty">
                 <Star aria-hidden="true" />
-                아직 받은 물품 리뷰가 없습니다.
+                아직 받은 리뷰가 없습니다.
               </p>
             )}
-            {!trustQuery.isLoading && !trustQuery.isError && goodsCount == null && (
+            {!trustQuery.isLoading && !trustQuery.isError && trustCount == null && (
               <p className="trade-profile-rating is-empty">평점 정보를 확인할 수 없습니다.</p>
             )}
-            {!trustQuery.isLoading && !trustQuery.isError && goodsCount > 0 && goodsScore == null && (
+            {!trustQuery.isLoading && !trustQuery.isError && trustCount > 0 && trustScore == null && (
               <p className="trade-profile-rating is-empty">
-                물품 리뷰 {goodsCount.toLocaleString('ko-KR')}개
+                리뷰 {trustCount.toLocaleString('ko-KR')}개
               </p>
             )}
-            {!trustQuery.isLoading && !trustQuery.isError && goodsCount > 0 && goodsScore != null && (
+            {!trustQuery.isLoading && !trustQuery.isError && trustCount > 0 && trustScore != null && (
               <p
-                aria-label={`거래 평점 5점 만점에 ${formatScore(goodsScore)}점, 물품 리뷰 ${goodsCount}개`}
+                aria-label={`통합 평점 5점 만점에 ${formatScore(trustScore)}점, 전체 리뷰 ${trustCount}개`}
                 className="trade-profile-rating"
               >
                 <Star aria-hidden="true" fill="currentColor" />
-                <strong>{formatScore(goodsScore)}</strong>
-                <span>리뷰 {goodsCount.toLocaleString('ko-KR')}개</span>
+                <strong>{formatScore(trustScore)}</strong>
+                <span>리뷰 {trustCount.toLocaleString('ko-KR')}개</span>
               </p>
             )}
 
             <p className="trade-profile-trust__note">
-              받은 물품 리뷰의 5점 평균과 리뷰 수를 기준으로 표시합니다.
+              받은 전체 리뷰의 5점 평균과 리뷰 수를 기준으로 표시합니다.
             </p>
           </section>
         </aside>

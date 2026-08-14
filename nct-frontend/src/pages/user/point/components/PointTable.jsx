@@ -28,7 +28,7 @@ import PrevNextPagination from './PrevNextPagination';
  * 것과 같은 분리. 안 주면 기존처럼 표만 항상 보여준다(하위 호환).
  */
 const PointTable = ({
-  title, columns, rows, emptyText, onExpand, pageSize, loading = false, loadingRows = 5, renderCard,
+  title, columns, rows, emptyText, onExpand, pageSize, loading = false, loadingRows = 5, renderCard, centerAlign = false,
 }) => {
   const [page, setPage] = useState(1);
   const pageCount = pageSize ? Math.max(1, Math.ceil(rows.length / pageSize)) : 1;
@@ -39,6 +39,7 @@ const PointTable = ({
 
   return (
     <section className="mt-6">
+      {!centerAlign && (
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-lg font-bold text-gray-900 m-0">{title}</h3>
         {/* 목록 화면에서는 최근 5건만 보여주고, 전체 내역은 이 버튼으로 모달에서 확인한다 (2026-07-29) */}
@@ -53,6 +54,7 @@ const PointTable = ({
           </button>
         )}
       </div>
+      )}
 
       {renderCard && (
         <div className="sm:hidden space-y-1.5">
@@ -85,7 +87,8 @@ const PointTable = ({
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`${col.align === 'right' ? 'text-right' : 'text-left'} font-bold px-4 py-3 ${col.widthClass ?? ''}`}
+                  style={centerAlign ? { textAlign: 'center' } : undefined}
+                  className={`${centerAlign ? '' : (col.align === 'right' ? 'text-right' : 'text-left')} font-bold px-4 py-3 ${col.widthClass ?? ''}`}
                 >
                   {col.header}
                 </th>
@@ -113,7 +116,8 @@ const PointTable = ({
                   return (
                     <td
                       key={col.key}
-                      className={`px-4 py-3 ${col.align === 'right' ? 'text-right' : ''} ${cellClass}`}
+                      style={centerAlign ? { textAlign: col.align === 'left' ? 'left' : 'center' } : undefined}
+                      className={`px-4 py-3 ${centerAlign ? '' : (col.align === 'right' ? 'text-right' : '')} ${cellClass}`}
                     >
                       {col.render(row)}
                     </td>

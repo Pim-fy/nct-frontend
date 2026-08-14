@@ -266,7 +266,6 @@ const AuctionInquirySection = ({
       icon: 'info',
       confirmButtonText: '문의 등록',
       cancelButtonText: '취소',
-      scrollbarPadding: false,
       reverseButtons: false,
     });
     if (!confirmed) return;

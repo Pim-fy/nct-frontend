@@ -47,6 +47,7 @@ const STATUS_LABEL = {
   SVCC0002: '공개',
   SVCC0003: '매칭완료',
   SVCC0004: '취소',
+  SVCC0005: '운영 보류',
 };
 
 const STATUS_TONE = {
@@ -54,6 +55,7 @@ const STATUS_TONE = {
   SVCC0002: 'info',
   SVCC0003: 'success',
   SVCC0004: 'danger',
+  SVCC0005: 'warning',
 };
 
 const QUOTE_STATUS_LABEL = {
@@ -200,8 +202,7 @@ function renderEntryValue(entry) {
   );
 }
 
-// 특이사항 메모 단계의 필드 라벨 — 동적 폼 답변으로 SVC_REQ_ITEM에 자동 저장되어
-// request.items에 자연스럽게 포함되므로 별도로 추가 조립하지 않는다
+// 특이사항 메모 단계의 필드 라벨 — 미입력 시 request.items에 빠지므로 아래에서 빈 상태로 보강한다
 const MEMO_TITLE = '메모';
 
 // 짝을 지어도 되는데도 항상 한 행 전체를 써야 하는 항목 — 선택 항목이 많아질 수 있어 공간이 필요함
@@ -501,6 +502,11 @@ export default function ServiceRequestDetailPage() {
       parsedItems.push(parsed);
     }
   });
+  // 메모는 선택 입력이라 미입력 시 SVC_REQ_ITEM 행 자체가 생성되지 않는다 — 모든 폼 템플릿에
+  // 공통으로 존재하는 필드라, 응답에 없으면 빈 상태로라도 항목을 보여준다.
+  if (!parsedItems.some(item => item.title === MEMO_TITLE)) {
+    parsedItems.push({ title: MEMO_TITLE, fields: [{ label: null, value: '(입력 없음)' }] });
+  }
 
   const statusLabel      = STATUS_LABEL[request.svcReqStatusCd] ?? request.svcReqStatusCd;
 
@@ -521,11 +527,19 @@ export default function ServiceRequestDetailPage() {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex flex-wrap items-center gap-3">
                   {request.catNm && (
-                    <CategoryTag tone="info" variant="soft">
+                    <CategoryTag
+                      className="!h-7 !gap-1.5 !px-3 !text-[14px]"
+                      tone="info"
+                      variant="soft"
+                    >
                       {request.catNm}
                     </CategoryTag>
                   )}
-                  <DomainStatus tone={STATUS_TONE[request.svcReqStatusCd] ?? 'neutral'} variant="soft">
+                  <DomainStatus
+                    className="!h-7 !gap-1.5 !px-3 !text-[14px]"
+                    tone={STATUS_TONE[request.svcReqStatusCd] ?? 'neutral'}
+                    variant="soft"
+                  >
                     {statusLabel}
                   </DomainStatus>
                 </div>

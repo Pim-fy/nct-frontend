@@ -18,6 +18,7 @@ import {
   respondOfflineTradeCompletionRequest,
   submitTradeDeliveryProof,
 } from '@api/tradeApi';
+import { requestAuctionCancel } from '@api/auctionApi';
 import { startTradeChat } from '@api/tradeChatApi';
 import {
   deleteImage,
@@ -44,6 +45,9 @@ import PhotoLightbox from '@components/common/PhotoLightbox';
 import AlertModal from '@components/common/AlertModal';
 import ReportModal from '@components/common/ReportModal';
 import '@assets/css/trade-detail.css';
+
+const CANCEL_REASONS = ['상품 상태 변경', '상품 정보 오류', '판매 진행 불가', '기타'];
+const CANCELABLE_TRADE_STATUSES = ['IN_PROGRESS', 'DELIVERING', 'WAITING_CONFIRMATION'];
 
 const MAX_SHIPPING_PROOF_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_SHIPPING_PROOF_FILES = 5;
@@ -78,7 +82,6 @@ const TradeDetailSeller = ({
   const { tradeId: routeTradeId } = useParams();
   const tradeId = selectedTradeId ?? routeTradeId;
   const location = useLocation();
-  const { pathname } = location;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   // @ai_generated (담당자1, 2026-08-07): 발송 인증/완료 확인/일정 저장 성공 시 공통으로 호출한다.
@@ -110,6 +113,9 @@ const TradeDetailSeller = ({
   const [completionRefreshAlertMessage, setCompletionRefreshAlertMessage] = useState('');
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [timeRefreshSignal, setTimeRefreshSignal] = useState(0);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelSubmitting, setCancelSubmitting] = useState(false);
   const shippingProofFilesRef = useRef(shippingProofFiles);
   const handleOpenReport = () => {
     if (onReport) {
@@ -118,6 +124,24 @@ const TradeDetailSeller = ({
     }
 
     setIsReportOpen(true);
+  };
+
+  // 낙찰 이후 거래로 넘어온 경매도 배송·직거래 진행중~완료확인대기 구간에서는
+  // 판매자가 여전히 취소를 요청할 수 있다 (TradeService.isCancellableTradeStatus와 동일 기준).
+  const closeCancel = () => { setCancelOpen(false); setCancelReason(''); };
+  const handleCancelSubmit = async () => {
+    if (!cancelReason) { setNotice('취소 사유를 선택해 주세요.'); return; }
+    if (!auctionId) { setNotice('경매 정보를 불러오지 못했습니다.'); return; }
+    setCancelSubmitting(true);
+    try {
+      await requestAuctionCancel(auctionId, { reason: cancelReason });
+      setNotice('취소 요청이 완료되었습니다.');
+      closeCancel();
+    } catch (err) {
+      setNotice(err.response?.data?.message || '취소 요청에 실패했습니다.');
+    } finally {
+      setCancelSubmitting(false);
+    }
   };
 
   const hasMeetingSchedule = Boolean(
@@ -185,7 +209,6 @@ const TradeDetailSeller = ({
     };
   }, [hasSubmittedProofFiles, trade?.deliveryId, trade?.deliveryProofFiles]);
 
-  const isPreview = pathname.startsWith('/trades/preview');
   const contentClassName = embedded ? 'trade-detail-page__content' : 'container';
   // 판매자 상세도 구매자 상세와 같은 상태 카드 기준을 사용한다.
   const sellerTradeStatusInfo = (() => {
@@ -288,9 +311,7 @@ const TradeDetailSeller = ({
     trade?.method === 'OFFLINE'
     && trade?.canRespondToOfflineCompletionRequest
   );
-  const chatPath = isPreview
-    ? `/trades/preview/${tradeId}/chat?from=seller`
-    : `/trades/${tradeId}/chat?from=seller`;
+  const chatPath = `/trades/${tradeId}/chat?from=seller`;
 
   // 상세에서 채팅을 시작할 때만 직거래 채팅방을 만들고, 생성 후 기존 진입 경로를 연다.
   const openTradeChat = async () => {
@@ -331,9 +352,7 @@ const TradeDetailSeller = ({
       return;
     }
 
-    navigate(isPreview
-      ? '/user/mypage/preview/trades'
-      : '/user/mypage/auctions/sales');
+    navigate('/user/mypage/auctions/sales');
   };
 
   // URL의 거래 번호로 서버 상세를 조회해 새로고침해도 같은 거래를 표시한다.
@@ -492,7 +511,7 @@ const TradeDetailSeller = ({
     setIsCompletionSubmitting(true);
 
     try {
-      const response = await requestTradeCompletion(tradeId, 'SELLER');
+      const response = await requestTradeCompletion(tradeId);
       const updatedTrade = toTradeDetail(response);
 
       setTrade(updatedTrade);
@@ -612,6 +631,11 @@ const TradeDetailSeller = ({
               counterpartTitle="구매자 정보"
               auctionId={auctionId}
               onReport={handleOpenReport}
+              onCancelRequest={
+                auctionId && CANCELABLE_TRADE_STATUSES.includes(trade.status)
+                  ? () => setCancelOpen(true)
+                  : undefined
+              }
             />
 
             {/* 가운데: 직거래 일정 협의와 거래 확인을 카드 하나로 합친다. */}
@@ -710,6 +734,27 @@ const TradeDetailSeller = ({
           onClose={handleCompletionRefreshConfirm}
           open={Boolean(completionRefreshAlertMessage)}
         />
+        <div className={`modal ${cancelOpen ? 'open' : ''}`} onClick={e => { if (e.target === e.currentTarget) closeCancel(); }}>
+          <div className="modal-box">
+            <h3 style={{ margin: '0 0 16px', fontSize: 18 }}>경매 취소 요청</h3>
+            <div className="field">
+              <label>취소 사유 선택</label>
+              <select value={cancelReason} onChange={e => setCancelReason(e.target.value)}>
+                <option value="">사유를 선택해 주세요</option>
+                {CANCEL_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
+            <p className="muted small" style={{ marginBottom: 16 }}>
+              취소 요청은 관리자 승인 후 처리됩니다. 승인 전까지 구매자의 포인트 보관금은 유지됩니다.
+            </p>
+            <div className="row" style={{ justifyContent: 'flex-end', gap: 8 }}>
+              <ActionButton onClick={closeCancel} tone="neutral">닫기</ActionButton>
+              <ActionButton loading={cancelSubmitting} onClick={handleCancelSubmit} tone="danger">
+                {cancelSubmitting ? '요청 중...' : '취소 요청 제출'}
+              </ActionButton>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -765,6 +810,11 @@ const TradeDetailSeller = ({
             counterpartTitle="구매자 정보"
             auctionId={auctionId}
             onReport={handleOpenReport}
+            onCancelRequest={
+              auctionId && CANCELABLE_TRADE_STATUSES.includes(trade.status)
+                ? () => setCancelOpen(true)
+                : undefined
+            }
           />
 
           {/* 가운데: 구매자 배송지 + (발송 인증 등록 또는 거래 완료 확인)을 카드 하나로 합친다. */}
@@ -975,6 +1025,27 @@ const TradeDetailSeller = ({
         contextLabel={`거래 상대: ${trade.counterpart}`}
         redirectAfterSubmit={false}
       />}
+      <div className={`modal ${cancelOpen ? 'open' : ''}`} onClick={e => { if (e.target === e.currentTarget) closeCancel(); }}>
+        <div className="modal-box">
+          <h3 style={{ margin: '0 0 16px', fontSize: 18 }}>경매 취소 요청</h3>
+          <div className="field">
+            <label>취소 사유 선택</label>
+            <select value={cancelReason} onChange={e => setCancelReason(e.target.value)}>
+              <option value="">사유를 선택해 주세요</option>
+              {CANCEL_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+          <p className="muted small" style={{ marginBottom: 16 }}>
+            취소 요청은 관리자 승인 후 처리됩니다. 승인 전까지 구매자의 포인트 보관금은 유지됩니다.
+          </p>
+          <div className="row" style={{ justifyContent: 'flex-end', gap: 8 }}>
+            <ActionButton onClick={closeCancel} tone="neutral">닫기</ActionButton>
+            <ActionButton loading={cancelSubmitting} onClick={handleCancelSubmit} tone="danger">
+              {cancelSubmitting ? '요청 중...' : '취소 요청 제출'}
+            </ActionButton>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

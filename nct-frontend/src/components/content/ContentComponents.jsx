@@ -276,6 +276,44 @@ const AuctionDetailPreview = () => (
   </GuidePreviewWindow>
 );
 
+const AuctionResultPreview = () => (
+  <GuidePreviewWindow label="낙찰 결과">
+    <div className="guide-preview-page-title guide-preview-page-title--trade-detail">
+      <div>
+        <strong>낙찰 결과</strong>
+        <small>마이페이지 · 상품 구매 내역</small>
+      </div>
+      <span className="guide-preview-status">낙찰</span>
+    </div>
+    <section className="guide-preview-trade-summary">
+      <div className="guide-preview-trade-image">상품 이미지</div>
+      <div>
+        <small>낙찰 상품</small>
+        <h4>빈티지 오디오 앰프</h4>
+        <p>판매자 예시 · 배송 거래</p>
+      </div>
+      <strong>62,000P</strong>
+    </section>
+    <ol className="guide-preview-trade-progress">
+      <li className="is-complete">경매 종료</li>
+      <li className="is-current">거래 시작</li>
+      <li>배송·직거래</li>
+      <li>거래 완료</li>
+    </ol>
+    <section className="guide-preview-trade-details">
+      <div><span>낙찰가</span><strong>62,000P</strong></div>
+      <div><span>거래 방식</span><strong>배송 거래</strong></div>
+      <div><span>구매자</span><strong>구매자 예시</strong></div>
+      <div><span>판매자</span><strong>판매자 예시</strong></div>
+      <div><span>낙찰 일시</span><strong>2026.08.13 14:30</strong></div>
+      <div><span>다음 단계</span><strong>배송 준비</strong></div>
+    </section>
+    <div className="guide-preview-actions guide-preview-actions--wide">
+      <strong>거래 상세 확인</strong>
+    </div>
+  </GuidePreviewWindow>
+);
+
 const TradeDetailPreview = () => (
   <GuidePreviewWindow label="거래 상세">
     <div className="guide-preview-page-title guide-preview-page-title--trade-detail">
@@ -382,6 +420,35 @@ const ServiceRequestPreview = () => (
   </GuidePreviewWindow>
 );
 
+const QuoteSubmitPreview = () => (
+  <GuidePreviewWindow label="견적 제출">
+    <div className="guide-preview-page-title">
+      <strong>견적 제출</strong>
+      <span className="guide-preview-status">제출 전</span>
+    </div>
+    <section className="guide-preview-panel guide-preview-panel--wide">
+      <header>요청 요약</header>
+      <div className="guide-preview-form-grid">
+        <GuidePreviewField label="카테고리" value="이사" />
+        <GuidePreviewField label="요청 예산" value="200,000P" />
+      </div>
+    </section>
+    <div className="guide-preview-form-grid">
+      <GuidePreviewField label="견적 금액" value="180,000P" />
+      <GuidePreviewField label="작업 일정" value="협의 후 확정" />
+    </div>
+    <section className="guide-preview-panel guide-preview-panel--wide">
+      <header>견적 내용</header>
+      <div>
+        <p className="guide-preview-selection-note">
+          포장과 운반을 포함하며 요청자와 채팅으로 세부 일정을 조율합니다.
+        </p>
+      </div>
+    </section>
+    <div className="guide-preview-actions"><span>임시저장</span><strong>견적 제출하기</strong></div>
+  </GuidePreviewWindow>
+);
+
 const QuoteSelectionPreview = () => (
   <GuidePreviewWindow label="견적 비교·선택">
     <div className="guide-preview-page-title guide-preview-page-title--compact">
@@ -422,13 +489,90 @@ const QuoteSelectionPreview = () => (
   </GuidePreviewWindow>
 );
 
+const ServiceProgressPreview = () => (
+  <GuidePreviewWindow label="서비스 진행">
+    <div className="guide-preview-page-title guide-preview-page-title--trade-detail">
+      <div>
+        <strong>서비스 거래 상세</strong>
+        <small>거래번호 SV-20260813-0042</small>
+      </div>
+      <span className="guide-preview-status">진행 중</span>
+    </div>
+    <section className="guide-preview-trade-summary">
+      <div className="guide-preview-trade-image">이사</div>
+      <div>
+        <small>서비스 요청</small>
+        <h4>성수동 원룸 이사 운반</h4>
+        <p>정성 이사 · 포장이사</p>
+      </div>
+      <strong>180,000P</strong>
+    </section>
+    <ol className="guide-preview-trade-progress">
+      <li className="is-complete">견적 선택</li>
+      <li className="is-complete">일정 협의</li>
+      <li className="is-current">서비스 진행</li>
+      <li>완료 확인</li>
+    </ol>
+    <section className="guide-preview-trade-details">
+      <div><span>작업 일정</span><strong>2026.08.16 오전</strong></div>
+      <div><span>채팅</span><strong>새 메시지 2건</strong></div>
+      <div><span>완료 요청</span><strong>요청 전</strong></div>
+      <div><span>보관 포인트</span><strong>180,000P</strong></div>
+    </section>
+    <div className="guide-preview-actions guide-preview-actions--wide">
+      <span>채팅 열기</span><strong>진행 상태 확인</strong>
+    </div>
+  </GuidePreviewWindow>
+);
+
+const ReviewPreview = () => (
+  <GuidePreviewWindow label="리뷰 작성">
+    <div className="guide-preview-page-title guide-preview-page-title--trade-detail">
+      <div>
+        <strong>리뷰 작성</strong>
+        <small>완료된 거래에 대한 후기를 남겨 주세요.</small>
+      </div>
+      <span className="guide-preview-status">거래 완료</span>
+    </div>
+    <section className="guide-preview-trade-summary">
+      <div className="guide-preview-trade-image">완료</div>
+      <div>
+        <small>거래 상대방</small>
+        <h4>거래 상대방 예시</h4>
+        <p>완료된 거래 · 리뷰 작성 가능</p>
+      </div>
+      <strong>완료</strong>
+    </section>
+    <section className="guide-preview-panel guide-preview-panel--wide">
+      <header>만족도</header>
+      <div>
+        <div className="guide-preview-review-stars" aria-label="별점 5점">★ ★ ★ ★ ★</div>
+        <p className="guide-preview-selection-note">거래 과정에서 만족한 정도를 선택합니다.</p>
+      </div>
+    </section>
+    <section className="guide-preview-panel guide-preview-panel--wide">
+      <header>후기</header>
+      <div>
+        <p className="guide-preview-selection-note">상대방에게 도움이 될 수 있도록 거래 경험을 작성합니다.</p>
+      </div>
+    </section>
+    <div className="guide-preview-actions guide-preview-actions--wide">
+      <span>거래 내역</span><strong>리뷰 등록</strong>
+    </div>
+  </GuidePreviewWindow>
+);
+
 const GuideScreenPreview = ({ type }) => {
   if (type === 'product-register') return <ProductRegisterPreview />;
   if (type === 'auction-detail') return <AuctionDetailPreview />;
+  if (type === 'auction-result') return <AuctionResultPreview />;
   if (type === 'trade-detail') return <TradeDetailPreview />;
   if (type === 'point-wallet') return <PointWalletPreview />;
   if (type === 'service-request') return <ServiceRequestPreview />;
+  if (type === 'quote-submit') return <QuoteSubmitPreview />;
   if (type === 'quote-selection') return <QuoteSelectionPreview />;
+  if (type === 'service-progress') return <ServiceProgressPreview />;
+  if (type === 'review') return <ReviewPreview />;
   return null;
 };
 
@@ -476,7 +620,7 @@ export const GuideJourneyOverview = ({
             <span aria-hidden="true">{journey.id === 'auction' ? '01' : '02'}</span>
             <div>
               <strong>{journey.id === 'auction' ? '경매 거래' : '서비스 요청'}</strong>
-              <small>{journey.id === 'auction' ? '등록부터 거래 완료까지' : '작성부터 거래 완료까지'}</small>
+              <small>{journey.id === 'auction' ? '탐색부터 거래 완료까지' : '요청부터 완료까지'}</small>
             </div>
           </button>
         ))}

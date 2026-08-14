@@ -14,7 +14,9 @@ import ProtectedRoute from './ProtectedRoute';
 import {
   getServiceTradeChatPath,
   getServiceTradeDetailPath,
+  LEGACY_PROVIDER_PROFILE_PATH,
   MYPAGE_INQUIRY_PATHS,
+  MYPAGE_PROFILE_TAB_PATHS,
   MYPAGE_SECTION_PATHS,
 } from './myPageRoutes';
 import {
@@ -134,11 +136,6 @@ import AdminServiceTradeDetailRoutePage from '@pages/admin/operation/AdminServic
 import AdminPointExchangePage from '@pages/admin/operation/AdminPointExchangePage';
 import AdminSettlementManagementPage from '@pages/admin/operation/AdminSettlementManagementPage';
 
-// 개발 환경에서는 별도 env 설정 없이 로그인 없는 거래 화면을 검토할 수 있다.
-// 운영 빌드에서는 false가 되어 개발용 더미 경로가 노출되지 않는다.
-const isTradePreviewEnabled = import.meta.env.DEV
-  || import.meta.env.VITE_USE_TRADE_PREVIEW === 'true';
-
 const AppRoutes = () => {
   const location = useLocation();
   return (
@@ -204,28 +201,6 @@ const AppRoutes = () => {
         </Route>
       </Route>
 
-      {/* 실제 거래 경로의 인증 정책과 분리된 개발용 화면 확인 경로 */}
-      {isTradePreviewEnabled && (
-        <>
-          <Route path="/trades/preview/:tradeId/chat" element={<TradeChat preview />} />
-          <Route
-            path="/trades/preview/:tradeId"
-            element={<TradeDetailBuyer />}
-          />
-          <Route
-            path="/trades/preview/:tradeId/seller"
-            element={<TradeDetailSeller />}
-          />
-          {/* 개발 중에는 로그인 없이 마이페이지 내부 거래 목록 배치를 검토한다. */}
-          <Route element={<UserLayout />}>
-            <Route
-              path="/user/mypage/preview/trades"
-              element={<MyPage initialSection="auction-bids" previewTrades />}
-            />
-          </Route>
-        </>
-      )}
-
       {/* @ai_generated: 두 현재 역할이 함께 쓰는 마이페이지 셸 경로. */}
       <Route
         element={(
@@ -249,6 +224,20 @@ const AppRoutes = () => {
             .map(([section, path]) => (
               <Route key={section} path={path} element={<MyPage initialSection={section} />} />
             ))}
+          <Route element={<ProtectedRoute allowedRoles={['ROLE_SERVICE']} />}>
+            <Route
+              path={MYPAGE_PROFILE_TAB_PATHS.provider}
+              element={<MyPage initialSection="profile" initialProfileTab="provider" />}
+            />
+            <Route
+              path={MYPAGE_PROFILE_TAB_PATHS.portfolio}
+              element={<MyPage initialSection="profile" initialProfileTab="portfolio" />}
+            />
+            <Route
+              path={LEGACY_PROVIDER_PROFILE_PATH}
+              element={<Navigate replace to={MYPAGE_PROFILE_TAB_PATHS.provider} />}
+            />
+          </Route>
           {/* 담당자 7 · 문의 작성은 진입한 마이페이지 경로의 하위 화면으로 유지합니다. */}
           <Route path={`${MYPAGE_INQUIRY_PATHS.general}/new`} element={<CustomerInquiryFormPage />} />
           <Route element={<ProtectedRoute allowedRoles={['ROLE_SERVICE']} />}>

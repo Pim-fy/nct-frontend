@@ -18,35 +18,30 @@ const SERVICE_DOMAIN_CD = 'CATC0002';
 const STATUS_VIEW = {
   approved: {
     label: '견적 제출 가능',
-    description: '승인이 완료되어 이 분야의 요청에 견적을 제출할 수 있습니다.',
     icon: CheckCircle2,
     iconClass: 'bg-[#eaf8ef] text-[#18864b]',
     tone: 'success',
   },
   pending: {
     label: '심사 중',
-    description: '제출한 정보와 증빙 서류를 관리자가 검토하고 있습니다.',
     icon: Clock3,
     iconClass: 'bg-[#fff7e6] text-[#b26a00]',
     tone: 'warning',
   },
   rejected: {
     label: '재신청 가능',
-    description: '반려 사유를 확인한 뒤 내용을 보완해 다시 신청할 수 있습니다.',
     icon: AlertCircle,
     iconClass: 'bg-[#fff0f0] text-[#c33b3b]',
     tone: 'danger',
   },
   unrequested: {
     label: '미신청',
-    description: '이 분야에서 견적을 제출하려면 카테고리 심사를 신청해 주세요.',
     icon: CircleDashed,
     iconClass: 'bg-[#f2f4f7] text-[#667085]',
     tone: 'neutral',
   },
   verification: {
     label: '권한 확인 필요',
-    description: '승인 이력과 현재 활성 권한이 일치하지 않습니다. 신청 현황을 확인해 주세요.',
     icon: AlertCircle,
     iconClass: 'bg-[#fff0f0] text-[#c33b3b]',
     tone: 'danger',
@@ -137,7 +132,7 @@ export default function ProviderApprovedCategorySection() {
       {isLoading && (
         <div className="mt-5 grid gap-3 sm:grid-cols-2" aria-label="제공자 권한을 불러오는 중">
           {[1, 2, 3, 4, 5].map((item) => (
-            <div key={item} className="h-24 animate-pulse rounded-xl bg-[#f3f6fa]" />
+            <div key={item} className="h-[68px] animate-pulse rounded-xl bg-[#f3f6fa]" />
           ))}
         </div>
       )}
@@ -170,27 +165,21 @@ export default function ProviderApprovedCategorySection() {
           {categories.map((category) => {
             const status = STATUS_VIEW[category.status];
             const StatusIcon = status.icon;
-            const detail = category.status === 'rejected' && category.application?.rejectReason
-              ? `반려 사유: ${category.application.rejectReason}`
-              : status.description;
 
             return (
               <li
                 key={category.catSn}
-                className="flex min-h-24 items-start gap-3 rounded-xl border border-[#dce7f8] bg-[#fbfdff] px-4 py-4"
+                className="flex min-h-[68px] items-center gap-3 rounded-xl border border-[#dce7f8] bg-[#fbfdff] px-4 py-3"
               >
                 <span className={`flex size-9 shrink-0 items-center justify-center rounded-full ${status.iconClass}`}>
                   <StatusIcon aria-hidden="true" className="size-5" />
                 </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <strong className="text-[16px] text-[#27364b]">{category.catNm}</strong>
-                    <StatusBadge tone={status.tone} variant="soft">
-                      {status.label}
-                    </StatusBadge>
-                  </div>
-                  <p className="mt-2 break-words text-sm leading-6 text-[#6b7788]">{detail}</p>
-                </div>
+                <strong className="min-w-0 flex-1 truncate text-[16px] text-[#27364b]">
+                  {category.catNm}
+                </strong>
+                <StatusBadge tone={status.tone} variant="soft">
+                  {status.label}
+                </StatusBadge>
               </li>
             );
           })}

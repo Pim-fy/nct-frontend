@@ -18,7 +18,7 @@ import AdminPageHeader from '@components/admin/AdminPageHeader';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
-import { ADMIN_AUCTIONS_PATH } from '@/routes/adminRoutes';
+import { ADMIN_AUCTIONS_PATH, ADMIN_REPORTS_PATH } from '@/routes/adminRoutes';
 import { formatAdminMemberIdentity } from '@utils/adminMemberIdentity';
 import { formatDateTime, toast } from '@utils/common';
 import '../audit/adminAuditPage.css';
@@ -64,6 +64,13 @@ const AdminAuctionDetailPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const initialSummary = location.state?.auctionSummary;
+  const requestedBackPath = location.state?.from;
+  const backPath = typeof requestedBackPath === 'string'
+    && (requestedBackPath.startsWith(ADMIN_AUCTIONS_PATH)
+      || requestedBackPath.startsWith(ADMIN_REPORTS_PATH))
+    ? requestedBackPath
+    : ADMIN_AUCTIONS_PATH;
+  const backLabel = backPath.startsWith(ADMIN_REPORTS_PATH) ? '신고 상세' : '경매 관리';
 
   const [reviewReason, setReviewReason] = useState('');
   const [forceCancelReason, setForceCancelReason] = useState('');
@@ -155,6 +162,7 @@ const AdminAuctionDetailPage = () => {
   const cancellation = cancellationQuery.data;
   const cancellationPending = hasPendingCancellation || cancellation?.cancelRequestSn != null;
   const productId = product?.prdSn ?? summary?.productId;
+  const productName = product?.prdNm ?? auction?.title ?? summary?.productName ?? '상품 정보 없음';
   const productVisible = (product?.prdUseYn ?? summary?.productUseYn) !== 'N';
   const auctionStatusCode = auction?.auctionStatusCode ?? summary?.auctionStatusCode;
   const auctionStatusLabel = auction?.auctionStatusName
@@ -223,8 +231,8 @@ const AdminAuctionDetailPage = () => {
       <PageMeta title="경매 상세" />
       <AdminPageHeader
         action={(
-          <button className="btn btn-outline" onClick={() => navigate(ADMIN_AUCTIONS_PATH)} type="button">
-            <ArrowLeft aria-hidden="true" size={17} /> 경매 관리
+          <button className="btn btn-outline" onClick={() => navigate(backPath)} type="button">
+            <ArrowLeft aria-hidden="true" size={17} /> {backLabel}
           </button>
         )}
         title="경매 상세"
@@ -251,12 +259,13 @@ const AdminAuctionDetailPage = () => {
                   {auctionStatusLabel}
                 </AdminStatusBadge>
               )}
-              title={product?.prdNm ?? auction?.title ?? summary?.productName ?? `경매 #${auctionId}`}
+              title={productName}
             >
               <section className="admin-auction-cancellation admin-auction-detail-page__facts">
                 <dl>
                   <dt>경매 번호</dt><dd>#{auctionId}</dd>
-                  <dt>상품 번호</dt><dd>{productId == null ? '-' : `#${productId}`}</dd>
+                  <dt>상품</dt>
+                  <dd>{productId == null ? productName : `${productName} · 상품 #${productId}`}</dd>
                   <dt>상품 노출</dt>
                   <dd>
                     <AdminStatusBadge tone={productVisible ? 'success' : 'warning'}>
@@ -269,7 +278,8 @@ const AdminAuctionDetailPage = () => {
                   <dt>시작가</dt><dd>{formatAmount(auction?.startPrice ?? product?.prdStartAmt)}</dd>
                   <dt>경매 시작</dt><dd>{formatDateTime(auction?.startDateTime)}</dd>
                   <dt>경매 종료</dt><dd>{formatDateTime(auction?.endDateTime)}</dd>
-                  <dt>거래 번호</dt><dd>{tradeId == null ? '-' : `#${tradeId}`}</dd>
+                  <dt>거래</dt>
+                  <dd>{tradeId == null ? '-' : `${productName} 거래 · 거래 #${tradeId}`}</dd>
                   <dt>거래 상태</dt>
                   <dd>
                     {tradeStatusLabel

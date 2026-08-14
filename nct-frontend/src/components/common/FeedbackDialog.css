@@ -151,6 +151,16 @@
 .feedback-toast__message { min-width: 0; font-size: 18px; font-weight: 700; line-height: 1.5; word-break: keep-all; }
 
 /* SweetAlert2도 React 공통 모달과 같은 소·중·대 규격을 사용합니다. */
+/* html의 stable scrollbar gutter가 페이지 폭을 이미 보존하므로 SweetAlert2의
+   padding 보정을 중복 적용하지 않는다. 오버레이 바깥의 예약 gutter도 같은 색으로 채운다. */
+html:has(body.swal2-shown .feedback-swal) {
+  background-color: var(--swal2-backdrop, rgb(0 0 0 / 40%));
+}
+
+body.swal2-shown:has(.feedback-swal) {
+  padding-right: 0 !important;
+}
+
 .swal2-popup.feedback-swal {
   width: min(calc(100% - 32px), 400px) !important;
   border: 1px solid var(--ui-color-border-soft, #f0efec);
