@@ -60,7 +60,6 @@ const isAllowedSection = (section, isProvider) => (
 export default function MyPage({
   initialSection = "home",
   initialProfileTab = "account",
-  previewTrades = false,
 }) {
   // isProvider: 현재 로그인 역할이 제공자(ROLE_SERVICE)인지 — 서버가 내려준 실제 역할 기준.
   const { user, isProvider, switchMode, logout } = useAuth();
@@ -102,13 +101,11 @@ export default function MyPage({
     const hasAuctionId = Number.isSafeInteger(Number(auctionId)) && Number(auctionId) > 0;
     const detailPath = !hasTradeId && hasAuctionId
       ? `/auction/${auctionId}`
-      : previewTrades && hasTradeId
-        ? `/trades/preview/${tradeId}`
-        : hasTradeId && hasAuctionId
-          ? `/auction/${auctionId}/trade`
-          : hasTradeId
-            ? `/trades/${tradeId}`
-            : getMyPagePath('auction-bids');
+      : hasTradeId && hasAuctionId
+        ? `/auction/${auctionId}/trade`
+        : hasTradeId
+          ? `/trades/${tradeId}`
+          : getMyPagePath('auction-bids');
     navigate(detailPath, {
       state: { from: returnPath ?? getMyPagePath("auction-bids") },
     });
@@ -189,7 +186,6 @@ export default function MyPage({
             <TradeHistory
               embedded
               fixedRole="BUYER"
-              preview={previewTrades}
               onOpenTradeDetail={handleOpenPurchaseTradeDetail}
             />
           )}
@@ -205,11 +201,9 @@ export default function MyPage({
             <MyServiceTradeListPage fixedRole={isProvider ? "PROVIDER" : "REQUESTER"} />
           )}
           {isProvider && activeSection === "received-review" && <ProviderReceivedReviewSection />}
-          {/* 개발 환경에서는 거래내역과 동일한 미리보기 채팅 데이터를 사용한다. */}
           {activeSection === "chat" && (
             <TradeChat
               embedded
-              preview={previewTrades}
               showRoomList
             />
           )}
