@@ -3,7 +3,7 @@
 // 화면 경로: /user/mypage/services/requests (API /service-requests/me와 구분)
 // 상품 판매 내역(MyProductList.jsx)과 동일한 마이페이지 공통 목록 컴포넌트를 사용한다.
 import { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { ClipboardList, MessageSquareText } from 'lucide-react';
 import { deleteServiceRequest } from '@api/serviceRequestApi';
 import { toImageUrl } from '@api/fileApi';
@@ -38,6 +38,7 @@ const STATUS_LABEL = {
   SVCC0002: '공개',
   SVCC0003: '매칭완료',
   SVCC0004: '취소',
+  SVCC0005: '운영 보류',
 };
 
 const STATUS_BADGE = {
@@ -45,6 +46,7 @@ const STATUS_BADGE = {
   SVCC0002: 'badge-outline-orange',
   SVCC0003: 'badge-primary',
   SVCC0004: 'badge-outline-gray',
+  SVCC0005: 'badge-warning',
 };
 
 function fmtBudget(amt) {
@@ -57,7 +59,12 @@ const PAGE_SIZE = 10;
 export default function MyServiceRequestListPage({ embedded = false }) {
   // 전역 브레드크럼 (BJN, 260805): 상세로 이동할 때 접근 경로(state.from)를 전달하기 위해 사용
   const location = useLocation();
-  const [filter, setFilter] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  // @ai_generated 견적 요청 상태 탭은 상세·작성 화면 복귀 시 URL에서 복원한다.
+  const requestedFilter = searchParams.get('status');
+  const filter = FILTERS.some(({ value }) => value === requestedFilter)
+    ? requestedFilter
+    : null;
   const [searchKeyword, setSearchKeyword] = useState('');
   const [page, setPage] = useState(1);
   const [toast, setToast] = useState('');
@@ -79,7 +86,10 @@ export default function MyServiceRequestListPage({ embedded = false }) {
   const isSummaryLoading = isAllLoading || isDraftLoading || isOpenLoading || isMatchedLoading || isClosedLoading;
 
   const handleFilterChange = (value) => {
-    setFilter(value);
+    const nextSearchParams = new URLSearchParams(searchParams);
+    if (value) nextSearchParams.set('status', value);
+    else nextSearchParams.delete('status');
+    setSearchParams(nextSearchParams, { replace: true });
     setPage(1);
   };
 

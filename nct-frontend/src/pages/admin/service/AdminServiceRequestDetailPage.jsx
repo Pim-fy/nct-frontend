@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
@@ -14,7 +14,7 @@ import AdminModal from '@components/admin/AdminModal';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
-import { ADMIN_SERVICE_REQUESTS_PATH } from '@/routes/adminRoutes';
+import { ADMIN_REPORTS_PATH, ADMIN_SERVICE_REQUESTS_PATH } from '@/routes/adminRoutes';
 import { formatAdminMemberIdentity } from '@utils/adminMemberIdentity';
 import { formatDateTime, toast } from '@utils/common';
 import './adminServiceRequestPage.css';
@@ -56,8 +56,16 @@ const AdminServiceRequestDetailPage = () => {
   const { serviceRequestId: serviceRequestIdParam } = useParams();
   const serviceRequestId = Number(serviceRequestIdParam);
   const validServiceRequestId = Number.isInteger(serviceRequestId) && serviceRequestId > 0;
+  const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const requestedBackPath = location.state?.from;
+  const backPath = typeof requestedBackPath === 'string'
+    && (requestedBackPath.startsWith(ADMIN_SERVICE_REQUESTS_PATH)
+      || requestedBackPath.startsWith(ADMIN_REPORTS_PATH))
+    ? requestedBackPath
+    : ADMIN_SERVICE_REQUESTS_PATH;
+  const backLabel = backPath.startsWith(ADMIN_REPORTS_PATH) ? '신고 상세' : '견적 요청 관리';
   const [operation, setOperation] = useState(null);
   const [operationReason, setOperationReason] = useState('');
   const [operationFeedback, setOperationFeedback] = useState('');
@@ -147,10 +155,10 @@ const AdminServiceRequestDetailPage = () => {
         action={(
           <button
             className="btn btn-outline"
-            onClick={() => navigate(ADMIN_SERVICE_REQUESTS_PATH)}
+            onClick={() => navigate(backPath)}
             type="button"
           >
-            <ArrowLeft aria-hidden="true" size={17} /> 견적 요청 관리
+            <ArrowLeft aria-hidden="true" size={17} /> {backLabel}
           </button>
         )}
         title="견적 요청 상세"

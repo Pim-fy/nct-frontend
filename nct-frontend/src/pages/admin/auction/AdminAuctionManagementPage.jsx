@@ -6,6 +6,7 @@ import { fetchAdminAuctions } from '@api/adminAuctionApi';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import AdminPagination from '@components/admin/AdminPagination';
+import AdminReferenceLink from '@components/admin/AdminReferenceLink';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
@@ -88,12 +89,22 @@ const AdminAuctionManagementPage = () => {
 
   const rows = auctionsQuery.data?.items ?? [];
   const columns = useMemo(() => [
-    { key: 'auctionId', label: '경매 번호', render: (value) => `#${value}` },
     {
-      key: 'productName',
-      label: '상품명',
-      className: 'admin-table__long-text admin-auction-table__product-name',
-      render: (value) => <strong title={value}>{value}</strong>,
+      key: 'auctionReference',
+      label: '경매',
+      className: 'admin-table__long-text admin-auction-table__product-name admin-reference-cell',
+      render: (_, row) => (
+        <AdminReferenceLink
+          centered
+          meta={`경매 · #${row.auctionId}`}
+          state={{
+            auctionSummary: row,
+            from: `${location.pathname}${location.search}`,
+          }}
+          title={row.productName || `경매 #${row.auctionId}`}
+          to={getAdminAuctionDetailPath(row.auctionId)}
+        />
+      ),
     },
     {
       key: 'sellerUserSn',

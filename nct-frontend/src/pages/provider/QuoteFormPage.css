@@ -137,6 +137,8 @@
   object-fit: cover;
   border-radius: 8px;
   border: 1px solid #e2e1dc;
+  overflow: hidden;
+  min-height: 0;
 }
 
 /* 이미지가 아닌 파일 (PDF 등) */

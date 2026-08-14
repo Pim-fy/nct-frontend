@@ -18,7 +18,7 @@ import AdminPageHeader from '@components/admin/AdminPageHeader';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
-import { ADMIN_AUCTIONS_PATH } from '@/routes/adminRoutes';
+import { ADMIN_AUCTIONS_PATH, ADMIN_REPORTS_PATH } from '@/routes/adminRoutes';
 import { formatAdminMemberIdentity } from '@utils/adminMemberIdentity';
 import { formatDateTime, toast } from '@utils/common';
 import '../audit/adminAuditPage.css';
@@ -64,6 +64,13 @@ const AdminAuctionDetailPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const initialSummary = location.state?.auctionSummary;
+  const requestedBackPath = location.state?.from;
+  const backPath = typeof requestedBackPath === 'string'
+    && (requestedBackPath.startsWith(ADMIN_AUCTIONS_PATH)
+      || requestedBackPath.startsWith(ADMIN_REPORTS_PATH))
+    ? requestedBackPath
+    : ADMIN_AUCTIONS_PATH;
+  const backLabel = backPath.startsWith(ADMIN_REPORTS_PATH) ? '신고 상세' : '경매 관리';
 
   const [reviewReason, setReviewReason] = useState('');
   const [forceCancelReason, setForceCancelReason] = useState('');
@@ -223,8 +230,8 @@ const AdminAuctionDetailPage = () => {
       <PageMeta title="경매 상세" />
       <AdminPageHeader
         action={(
-          <button className="btn btn-outline" onClick={() => navigate(ADMIN_AUCTIONS_PATH)} type="button">
-            <ArrowLeft aria-hidden="true" size={17} /> 경매 관리
+          <button className="btn btn-outline" onClick={() => navigate(backPath)} type="button">
+            <ArrowLeft aria-hidden="true" size={17} /> {backLabel}
           </button>
         )}
         title="경매 상세"

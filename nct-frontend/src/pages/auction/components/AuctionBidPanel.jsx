@@ -22,6 +22,8 @@ const AUCTION_STATUS_TONE = {
   AUCC0004: 'neutral',
   AUCC0005: 'danger',
   AUCC0006: 'warning',
+  AUCC0013: 'warning',
+  AUCC9001: 'warning',
 };
 
 const resolveClosedAuctionContent = (statusCode, isCurrentHighestBidder) => {
@@ -52,6 +54,12 @@ const resolveClosedAuctionContent = (statusCode, isCurrentHighestBidder) => {
     return {
       title: '취소 요청 처리 중입니다',
       description: '관리자 검토가 완료될 때까지 입찰할 수 없습니다.',
+    };
+  }
+  if (statusCode === 'AUCC0013' || statusCode === 'AUCC9001') {
+    return {
+      title: '경매가 일시정지되었습니다',
+      description: '운영 확인이 끝나면 기존 진행 상태와 남은 시간을 기준으로 다시 시작됩니다.',
     };
   }
   return {
@@ -172,13 +180,18 @@ const AuctionBidPanel = ({
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <DomainStatus
+            className="!h-7 !gap-1.5 !px-3 !text-[14px]"
             tone={AUCTION_STATUS_TONE[auction.auctionStatusCode] ?? 'neutral'}
             variant="soft"
           >
             {auction.auctionStatusName || '진행중'}
           </DomainStatus>
           {auction.tradeMethodName && (
-            <CategoryTag tone="info" variant="outline">
+            <CategoryTag
+              className="!h-7 !gap-1.5 !px-3 !text-[14px]"
+              tone="info"
+              variant="outline"
+            >
               {resolveTradeMethodLabel(auction.tradeMethodCode, auction.tradeMethodName)}
             </CategoryTag>
           )}
@@ -438,15 +451,15 @@ const AuctionBidPanel = ({
                 <p className="m-0 text-body-sm leading-6 text-[#666] md:text-body-md">
                   {closedAuctionContent.description}
                 </p>
-                {isEndedAuction && isCurrentHighestBidder && (
-                  Number(auction.tradeId) > 0 ? (
-                    <ActionButton
-                      className="mt-2"
-                      onClick={onTradeDetailOpen}
-                    >
-                      거래 상세 보기
-                    </ActionButton>
-                  ) : (
+                {Number(auction.tradeId) > 0 && (isOwnAuction || isCurrentHighestBidder) ? (
+                  <ActionButton
+                    className="mt-2"
+                    onClick={onTradeDetailOpen}
+                  >
+                    거래 상세 보기
+                  </ActionButton>
+                ) : (
+                  isEndedAuction && isCurrentHighestBidder && (
                     <span className="mt-1 text-caption font-bold text-[#666]">거래 생성 중</span>
                   )
                 )}

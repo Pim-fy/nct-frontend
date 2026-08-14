@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ChevronDown, MessageSquareText, Plus } from 'lucide-react';
 import { getMyPageInquiryCreatePath } from '@/routes/myPageRoutes';
 import Pagination from '@components/common/Pagination';
@@ -90,7 +91,13 @@ const InquiryCard = ({ inquiry, isOpen, number, onToggle }) => {
 const MyInquiryListPage = ({ embedded = false }) => {
   const { isProvider } = useAuth();
   const inquiryCreatePath = getMyPageInquiryCreatePath(isProvider);
-  const [activeTab, setActiveTab] = useState(0);
+  const [searchParams, setSearchParams] = useSearchParams();
+  // @ai_generated 문의 상태 탭은 공통코드 쿼리를 검증해 복원한다.
+  const requestedStatus = searchParams.get('status') ?? '';
+  const activeTab = Math.max(
+    0,
+    STATUS_TABS.findIndex(({ statusCode: tabStatus }) => tabStatus === requestedStatus),
+  );
   const [page, setPage] = useState(1);
   const [openInquirySn, setOpenInquirySn] = useState(null);
   const statusCode = STATUS_TABS[activeTab].statusCode;
@@ -115,7 +122,11 @@ const MyInquiryListPage = ({ embedded = false }) => {
     .some((query) => query.isLoading);
 
   const changeTab = (nextTab) => {
-    setActiveTab(nextTab);
+    const nextStatus = STATUS_TABS[nextTab]?.statusCode ?? '';
+    const nextSearchParams = new URLSearchParams(searchParams);
+    if (nextStatus) nextSearchParams.set('status', nextStatus);
+    else nextSearchParams.delete('status');
+    setSearchParams(nextSearchParams, { replace: true });
     setPage(1);
     setOpenInquirySn(null);
   };

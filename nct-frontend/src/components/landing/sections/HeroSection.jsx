@@ -94,10 +94,10 @@ export default function HeroSection({ hotItems = [], hotItemsError, hotItemsLoad
               <img
                 src={assets.heroSectionImg}
                 alt=""
-                className="h-[180px] object-contain shrink-0 pointer-events-none"
+                className="h-45 object-contain shrink-0 pointer-events-none"
               />
               <div className="flex-1 min-w-0 text-left">
-                <p className="text-[14px] font-bold text-[#0064ff] tracking-[3px] mb-3 leading-normal">
+                <p className="text-[14px] font-bold text-primary tracking-[3px] mb-3 leading-normal">
                   {SLIDE.eyebrow}
                 </p>
                 <p className="text-[45px] font-bold text-black leading-[1.2] tracking-[-2.25px]">
@@ -116,7 +116,7 @@ export default function HeroSection({ hotItems = [], hotItemsError, hotItemsLoad
               </div>
             </div>
             {/* 슬라이드 인디케이터 */}
-            <div className="flex justify-center gap-[6px] items-center bg-white/90" style={{ height: HOT_INDICATOR_H }}>
+            <div className="flex justify-center gap-1.5 items-center bg-white/90" style={{ height: HOT_INDICATOR_H }}>
               <div className="rounded-full" style={{ width: 16, height: 8, backgroundColor: "#0064ff", boxShadow: "0 0 6px rgba(0,100,255,0.6)" }} />
             </div>
           </div>
@@ -127,7 +127,7 @@ export default function HeroSection({ hotItems = [], hotItemsError, hotItemsLoad
             style={{ width: HOT_W }}
           >
             <div
-              className="bg-[#0064ff] rounded-tl-[20px] rounded-tr-[20px] flex items-center justify-between px-6"
+              className="bg-primary rounded-tl-[20px] rounded-tr-[20px] flex items-center justify-between px-6"
               style={{ height: HOT_HEADER_H }}
             >
               <span className="text-[25px] font-black text-white tracking-[5px]">HOT ITEM</span>
@@ -161,14 +161,14 @@ export default function HeroSection({ hotItems = [], hotItemsError, hotItemsLoad
                       onMouseLeave={() => setHoveredRow(null)}
                     >
                       <div
-                        className="flex shrink-0 size-[29px] items-center justify-center rounded-full transition-colors duration-200"
+                        className="flex shrink-0 size-7.25 items-center justify-center rounded-full transition-colors duration-200"
                         style={{ backgroundColor: isHovered ? "#0064ff" : "#E6F0FF" }}
                       >
                         <span className="font-bold text-[13px] tracking-[-0.65px] transition-colors duration-200" style={{ color: isHovered ? "#fff" : "#0064ff" }}>
                           {item.rank}
                         </span>
                       </div>
-                      <span className="flex-1 min-w-0 truncate text-[16px] text-black tracking-[-0.8px] ml-[10px]">{item.name}</span>
+                      <span className="flex-1 min-w-0 truncate text-[16px] text-black tracking-[-0.8px] ml-2.5">{item.name}</span>
                       <span className="shrink-0 font-bold text-[16px] text-black tracking-[-0.8px]">{item.price}</span>
                     </Link>
                   );
@@ -178,7 +178,7 @@ export default function HeroSection({ hotItems = [], hotItemsError, hotItemsLoad
 
             {pageCount > 1 ? (
               <div
-                className="flex justify-center gap-[6px] items-center bg-white rounded-bl-[20px] rounded-br-[20px]"
+                className="flex justify-center gap-1.5 items-center bg-white rounded-bl-[20px] rounded-br-[20px]"
                 style={{ height: HOT_INDICATOR_H }}
               >
                 {Array.from({ length: pageCount }).map((_, i) => (

@@ -4,8 +4,7 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { getMyPagePath } from '@/routes/myPageRoutes';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { CalendarCheck, CalendarDays } from 'lucide-react';
 import { toImageUrl } from '@api/fileApi';
 import { getTradeHistory } from '@api/tradeApi';
@@ -205,6 +204,38 @@ const toPurchaseItems = (tradeItems = [], bidHistory = []) => {
   return [...normalizedTrades, ...normalizedBids];
 };
 
+const getTradeHistoryDetailPath = ({ trade, isBidItem, isPreview, tradeBasePath }) => {
+  if (isPreview) {
+    if (isBidItem) {
+      return trade.tradeId
+        ? `${tradeBasePath}/${trade.tradeId}`
+        : `/auction/${trade.aucSn}`;
+    }
+
+    return trade.type === 'SELLER'
+      ? `${tradeBasePath}/${trade.id}/seller`
+      : `${tradeBasePath}/${trade.id}`;
+  }
+
+  if (isBidItem) {
+    if (trade.aucSn) {
+      return trade.tradeId
+        ? `/auction/${trade.aucSn}/trade`
+        : `/auction/${trade.aucSn}`;
+    }
+
+    return trade.tradeId ? `${tradeBasePath}/${trade.tradeId}` : tradeBasePath;
+  }
+
+  if (trade.auctionId) {
+    return `/auction/${trade.auctionId}/trade`;
+  }
+
+  return trade.type === 'SELLER'
+    ? `${tradeBasePath}/${trade.id}/seller`
+    : `${tradeBasePath}/${trade.id}`;
+};
+
 // 사용자가 입력한 공백 차이로 동일한 상품을 놓치지 않도록 검색용 문자열을 통일한다.
 const normalizeSearchText = (value) => String(value ?? '')
   .toLowerCase()
@@ -311,21 +342,32 @@ const TradeHistory = ({
   embedded = false,
   fixedRole = null,
   preview = false,
-  returnSection = 'trade-history',
   onOpenTradeDetail = null,
 }) => {
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname } = location;
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isBuyerPurchaseList = fixedRole === 'BUYER';
   const [allTradeItems, setAllTradeItems] = useState([]);
   const [filteredTradeItems, setFilteredTradeItems] = useState([]);
   const [activeTab, setActiveTab] = useState(fixedRole ?? 'ALL');
   const [keyword, setKeyword] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
-  const [closedSubFilter, setClosedSubFilter] = useState('');
+  const [tradeStatusFilter, setTradeStatusFilter] = useState('ALL');
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [page, setPage] = useState(1);
+  // @ai_generated 구매 목록은 상세 복귀·새로고침에도 탭이 유지되도록 허용된 URL 값만 사용한다.
+  const requestedPurchaseFilter = searchParams.get('tab');
+  const purchaseFilter = purchaseFilters.some(({ value }) => value === requestedPurchaseFilter)
+    ? requestedPurchaseFilter
+    : 'ALL';
+  const requestedPurchaseSubFilter = searchParams.get('sub') ?? '';
+  const purchaseSubFilter = purchaseClosedSubFilters.some(({ value }) => value === requestedPurchaseSubFilter)
+    ? requestedPurchaseSubFilter
+    : '';
+  const statusFilter = isBuyerPurchaseList ? purchaseFilter : tradeStatusFilter;
+  const closedSubFilter = isBuyerPurchaseList ? purchaseSubFilter : '';
 
   const {
     data: bidHistory = [],
@@ -544,8 +586,19 @@ const TradeHistory = ({
   };
 
   const handleBuyerFilterChange = (nextFilter) => {
-    setStatusFilter(nextFilter);
-    setClosedSubFilter('');
+    const nextSearchParams = new URLSearchParams(searchParams);
+    if (nextFilter === 'ALL') nextSearchParams.delete('tab');
+    else nextSearchParams.set('tab', nextFilter);
+    nextSearchParams.delete('sub');
+    setSearchParams(nextSearchParams, { replace: true });
+    setPage(1);
+  };
+
+  const handleBuyerSubFilterChange = (nextSubFilter) => {
+    const nextSearchParams = new URLSearchParams(searchParams);
+    if (nextSubFilter) nextSearchParams.set('sub', nextSubFilter);
+    else nextSearchParams.delete('sub');
+    setSearchParams(nextSearchParams, { replace: true });
     setPage(1);
   };
 
@@ -587,7 +640,7 @@ const TradeHistory = ({
               <select
                 className="h-9 shrink-0 cursor-pointer rounded-lg border border-[#dce2ed] bg-white px-3 text-sm outline-none focus:border-[#1466f5]"
                 value={closedSubFilter}
-                onChange={(event) => { setClosedSubFilter(event.target.value); setPage(1); }}
+                onChange={(event) => handleBuyerSubFilterChange(event.target.value)}
                 aria-label="종료 상태"
               >
                 {purchaseClosedSubFilters.map((filter) => (
@@ -649,7 +702,7 @@ const TradeHistory = ({
                 <select
                   className="input"
                   value={statusFilter}
-                  onChange={(event) => { setStatusFilter(event.target.value); setPage(1); }}
+                  onChange={(event) => { setTradeStatusFilter(event.target.value); setPage(1); }}
                 >
                   <option value="ALL">전체 상태</option>
                   <option value="DELIVERING">배송중</option>
@@ -690,25 +743,18 @@ const TradeHistory = ({
               onOpenTradeDetail && (!isBidItem || trade.tradeId),
             );
             const auctionId = isBidItem ? trade.aucSn : trade.auctionId;
-            const detailPath = isPreview
-              ? isBidItem
-                ? (trade.tradeId ? `${tradeBasePath}/${trade.tradeId}` : `/auction/${trade.aucSn}`)
-                : trade.type === 'SELLER'
-                  ? `${tradeBasePath}/${trade.id}/seller`
-                  : `${tradeBasePath}/${trade.id}`
-              : auctionId
-                ? `/auction/${auctionId}/trade`
-                : isBidItem
-                  ? (trade.tradeId ? `${tradeBasePath}/${trade.tradeId}` : `/auction/${trade.aucSn}`)
-              : trade.type === 'SELLER'
-                ? `${tradeBasePath}/${trade.id}/seller`
-                : `${tradeBasePath}/${trade.id}`;
+            const detailPath = getTradeHistoryDetailPath({
+              trade,
+              isBidItem,
+              isPreview,
+              tradeBasePath,
+            });
             const detailState = embedded
-              ? { from: isPreview ? '/user/mypage/preview/trades' : getMyPagePath(returnSection) }
+              ? { from: isPreview ? '/user/mypage/preview/trades' : `${location.pathname}${location.search}` }
               : undefined;
             const openDetail = () => {
               if (canOpenTradeDetail) {
-                onOpenTradeDetail(isBidItem ? trade.tradeId : trade.id, auctionId);
+                onOpenTradeDetail(isBidItem ? trade.tradeId : trade.id, auctionId, detailState?.from);
                 return;
               }
 
@@ -758,29 +804,26 @@ const TradeHistory = ({
                 ? getPurchaseStatusInfo(trade)
                 : getStatusInfo(trade);
               const isBidItem = isBuyerPurchaseList && trade.kind === 'BID';
+              // @ai_generated 모바일도 데스크톱과 같은 구매 상태별 가격 항목을 사용한다.
+              const purchasePriceItems = isBuyerPurchaseList
+                ? getPurchasePriceItems(trade)
+                : [];
               const canOpenTradeDetail = Boolean(
                 onOpenTradeDetail && (!isBidItem || trade.tradeId),
               );
               const auctionId = isBidItem ? trade.aucSn : trade.auctionId;
-              const detailPath = isPreview
-                ? isBidItem
-                  ? (trade.tradeId ? `${tradeBasePath}/${trade.tradeId}` : `/auction/${trade.aucSn}`)
-                  : trade.type === 'SELLER'
-                    ? `${tradeBasePath}/${trade.id}/seller`
-                    : `${tradeBasePath}/${trade.id}`
-                : auctionId
-                  ? `/auction/${auctionId}/trade`
-                  : isBidItem
-                    ? (trade.tradeId ? `${tradeBasePath}/${trade.tradeId}` : `/auction/${trade.aucSn}`)
-                : trade.type === 'SELLER'
-                  ? `${tradeBasePath}/${trade.id}/seller`
-                  : `${tradeBasePath}/${trade.id}`;
+              const detailPath = getTradeHistoryDetailPath({
+                trade,
+                isBidItem,
+                isPreview,
+                tradeBasePath,
+              });
               const detailState = embedded
-                ? { from: isPreview ? '/user/mypage/preview/trades' : getMyPagePath(returnSection) }
+                ? { from: isPreview ? '/user/mypage/preview/trades' : `${location.pathname}${location.search}` }
                 : undefined;
               const actionButton = canOpenTradeDetail ? (
                 <ActionButton
-                  onClick={() => onOpenTradeDetail(isBidItem ? trade.tradeId : trade.id, auctionId)}
+                  onClick={() => onOpenTradeDetail(isBidItem ? trade.tradeId : trade.id, auctionId, detailState?.from)}
                   size="sm"
                 >
                   {isBidItem && !trade.tradeId ? '경매 상세' : '거래 상세'}
@@ -799,9 +842,8 @@ const TradeHistory = ({
                   imageFallbackLabel="상품 이미지"
                   badge={<MyPageStatusBadge className={status.badgeClass}>{status.label}</MyPageStatusBadge>}
                   title={trade.productName}
-                  price={isBuyerPurchaseList
-                    ? (isBidItem ? formatPoint(trade.bidAmount) : trade.amount)
-                    : trade.amount}
+                  price={isBuyerPurchaseList ? undefined : trade.amount}
+                  priceItems={purchasePriceItems}
                   infoItems={[
                     {
                       icon: CalendarDays,

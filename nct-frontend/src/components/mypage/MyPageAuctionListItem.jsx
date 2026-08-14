@@ -16,6 +16,7 @@ export default function MyPageAuctionListItem({
   actionButton,
   tradeMethodLabel,
   categoryLabel,
+  detailItems = [],
   to,
   state,
 }) {
@@ -36,6 +37,10 @@ export default function MyPageAuctionListItem({
     >
       {tradeMethodLabel && <p>거래 방식 · {tradeMethodLabel}</p>}
       {categoryLabel && <p>카테고리 · {categoryLabel}</p>}
+      {/* 담당자 7 · 제공자 견적/거래 내역도 일반회원 목록 틀을 유지하면서 필요한 정보만 덧붙입니다. */}
+      {detailItems.map(({ label, value }) => (
+        value ? <p key={label}>{label} · {value}</p> : null
+      ))}
     </MyPageListItem>
   );
 }

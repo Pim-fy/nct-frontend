@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ImageOff } from 'lucide-react';
 
 const TRACK_CYCLE_COUNT = 21;
 const TRACK_CENTER_CYCLE = Math.floor(TRACK_CYCLE_COUNT / 2);
@@ -150,7 +150,9 @@ const AuctionImageGallery = ({
 export const AuctionPreviewRail = ({
   imageItems,
   activeImageIndex,
+  failedImageUrls,
   onPreviewClick,
+  onImageError,
 }) => (
   <section
     className="m-0 min-h-[84px] overflow-hidden rounded-lg border border-[#e8e8e8] bg-white p-[7px]"
@@ -171,7 +173,16 @@ export const AuctionPreviewRail = ({
             aria-current={activeImageIndex === index ? 'true' : undefined}
             onClick={() => onPreviewClick(index)}
           >
-            <img className="size-full bg-[#f6f6f6] object-cover" src={item.url} alt={item.alt} />
+            {item.url && !failedImageUrls.has(item.url) ? (
+              <img
+                className="size-full bg-[#f6f6f6] object-cover"
+                src={item.url}
+                alt={item.alt}
+                onError={() => onImageError(item.url)}
+              />
+            ) : (
+              <ImageOff size={20} aria-hidden="true" />
+            )}
           </button>
         ))}
       </div>

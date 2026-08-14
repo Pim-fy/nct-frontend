@@ -1271,7 +1271,6 @@ export default function ServiceRequestFormPage() {
                   <h3 className="text-base font-semibold text-[#5f5e5a]">사진 첨부</h3>
                   <span className="text-xs text-[#888780]">(선택)</span>
                 </div>
-                <p className="mb-3 text-sm text-[#888780]">사진을 첨부하면 더 정확한 견적을 받을 수 있어요.</p>
                 <ServiceRequestImageUpload images={images} onChange={setImages} maxImages={MAX_IMAGES} />
               </div>
 

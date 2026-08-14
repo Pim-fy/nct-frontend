@@ -6,6 +6,7 @@ import { fetchAdminServiceRequests } from '@api/adminServiceRequestApi';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import AdminPagination from '@components/admin/AdminPagination';
+import AdminReferenceLink from '@components/admin/AdminReferenceLink';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
@@ -92,12 +93,19 @@ const AdminServiceRequestPage = () => {
   const rows = requestsQuery.data?.items ?? [];
   const categories = categoriesQuery.data ?? [];
   const columns = useMemo(() => [
-    { key: 'serviceRequestId', label: '요청번호', render: (value) => `#${value}` },
     {
-      key: 'title',
-      label: '요청명',
-      className: 'admin-service-list__title admin-table__long-text',
-      render: (value) => <strong title={value}>{value}</strong>,
+      key: 'serviceRequestReference',
+      label: '견적 요청',
+      className: 'admin-service-list__title admin-table__long-text admin-reference-cell',
+      render: (_, row) => (
+        <AdminReferenceLink
+          centered
+          meta={`견적 요청 · #${row.serviceRequestId}`}
+          state={{ from: `${location.pathname}${location.search}` }}
+          title={row.title || `견적 요청 #${row.serviceRequestId}`}
+          to={getAdminServiceRequestDetailPath(row.serviceRequestId)}
+        />
+      ),
     },
     { key: 'categoryName', label: '카테고리', className: 'admin-table__compact-text' },
     {

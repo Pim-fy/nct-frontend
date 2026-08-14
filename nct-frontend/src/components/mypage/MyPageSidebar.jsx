@@ -41,15 +41,7 @@ const GENERAL_MENU_ITEMS = [
 // (백종남·옥동민 협의, 2026-08-04 — PointWalletPage.jsx 참고)
 const PROVIDER_MENU_ITEMS = [
   { key: "home",              label: "MY 홈",        type: "section" },
-  {
-    key: "provider-profile-menu",
-    label: "프로필",
-    type: "accordion",
-    children: [
-      { key: "provider-profile", label: "제공자 프로필 관리", type: "section" },
-      { key: "profile",          label: "프로필 설정",         type: "section" },
-    ],
-  },
+  { key: "profile",           label: "프로필",       type: "section" },
   {
     key: "provider-service-menu",
     label: "견적",
@@ -66,19 +58,12 @@ const PROVIDER_MENU_ITEMS = [
   { key: "inquiry-list",      label: "1:1 문의",   type: "section" },
 ];
 
-// 아코디언 key → 포함되는 child key 목록
-const ACCORDION_CHILDREN = {
-  "auction-history":  ["auction-bids", "auction-sales", "wishlist"],
-  "service-history": ["service-requests", "service-trade"],
-  "provider-profile-menu": ["provider-profile", "profile"],
-  "provider-service-menu": ["quote", "service-trade"],
-};
-
-function getParentAccordion(sectionKey) {
-  for (const [parent, children] of Object.entries(ACCORDION_CHILDREN)) {
-    if (children.includes(sectionKey)) return parent;
-  }
-  return null;
+// 담당자 7: 일반·제공자 메뉴에 같은 하위 key가 있어도 현재 화면의 메뉴에서 부모를 찾습니다.
+function getParentAccordion(sectionKey, menuItems) {
+  return menuItems.find((item) => (
+    item.type === "accordion"
+    && (item.children ?? []).some((child) => child.key === sectionKey)
+  ))?.key ?? null;
 }
 
 export default function MyPageSidebar({
@@ -95,20 +80,20 @@ export default function MyPageSidebar({
     ?? (mode === "provider" ? PROVIDER_MENU_ITEMS : GENERAL_MENU_ITEMS);
   const sidebarTitle = title ?? "마이페이지";
 
-  const [openAccordion, setOpenAccordion] = useState(() => getParentAccordion(activeSection));
+  const [openAccordion, setOpenAccordion] = useState(() => getParentAccordion(activeSection, menuItems));
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
 
   // activeSection이 accordion child로 변경되면 해당 accordion 자동으로 열기
   useEffect(() => {
-    const parent = getParentAccordion(activeSection);
+    const parent = getParentAccordion(activeSection, menuItems);
     if (!parent) return undefined;
 
     const animationFrameId = window.requestAnimationFrame(() => {
       setOpenAccordion(parent);
     });
     return () => window.cancelAnimationFrame(animationFrameId);
-  }, [activeSection]);
+  }, [activeSection, menuItems]);
 
   const handleClick = (item) => {
     if (item.type === "accordion") {
@@ -116,7 +101,7 @@ export default function MyPageSidebar({
       return;
     }
     // 아코디언 자식이 아닌 항목 클릭 시 아코디언 닫기
-    if (!getParentAccordion(item.key)) setOpenAccordion(null);
+    if (!getParentAccordion(item.key, menuItems)) setOpenAccordion(null);
 
     if (item.type === "section") { onSelect?.(item.key); return; }
     if (item.type === "route")   { navigate(item.to); return; }

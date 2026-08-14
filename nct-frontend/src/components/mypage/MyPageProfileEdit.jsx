@@ -44,7 +44,7 @@ const SOCIAL_PROVIDERS = [
 
 const MYPAGE_LINK_RETURN_KEY = "mypageLinkReturn";
 
-export default function MyPageProfileEdit({ user }) {
+export default function MyPageProfileEdit({ user, showHeader = true }) {
   const queryClient = useQueryClient();
   const { localLogout } = useAuth();
   const [form, setForm] = useState({
@@ -308,7 +308,7 @@ export default function MyPageProfileEdit({ user }) {
 
   return (
     <>
-      <MyPageContentHeader title="프로필" />
+      {showHeader && <MyPageContentHeader title="프로필" />}
       <div className="flex flex-col xl:flex-row gap-4 items-start">
       {/* ── 메인 정보수정 카드 ── */}
       <MyPagePanel
@@ -321,7 +321,7 @@ export default function MyPageProfileEdit({ user }) {
         <form onSubmit={handleSave} className="p-6 space-y-5">
           {/* 프로필 사진 */}
           <div className="flex items-center gap-4">
-            <div className="size-[80px] rounded-full overflow-hidden bg-[#e6f0ff] shrink-0">
+            <div className="size-20 rounded-full overflow-hidden bg-[#e6f0ff] shrink-0">
               <img
                 src={previewImageUrl || toImageUrl(profileQuery.data?.profileImageUrl) || assets.profile}
                 alt=""
@@ -341,7 +341,7 @@ export default function MyPageProfileEdit({ user }) {
               disabled={isUploadingPhoto}
               className="btn btn-ghost btn-sm"
             >
-              <img src={assets.iconPhoto} alt="" className="size-[13px]" />
+              <img src={assets.iconPhoto} alt="" className="size-3.25" />
               {isUploadingPhoto ? "업로드 중..." : "프로필 사진 변경"}
             </button>
           </div>
@@ -513,13 +513,13 @@ export default function MyPageProfileEdit({ user }) {
       </MyPagePanel>
 
       {/* ── 우측: 소셜 로그인 + 알림설정 ── */}
-      <div className="w-full xl:w-[300px] shrink-0 flex flex-col gap-4">
+      <div className="w-full xl:w-75 shrink-0 flex flex-col gap-4">
         {/* 소셜 로그인 연동 */}
         <MyPagePanel title="소셜 로그인 연동" bodyClassName="p-5" variant="profile" titleClassName="text-black">
             <img
               src={assets.loginIcon}
               alt="구글/네이버/카카오"
-              className="w-full h-[60px] object-contain mb-5"
+              className="w-full h-15 object-contain mb-5"
             />
             <div className="flex justify-around">
               {SOCIAL_PROVIDERS.map((social) => {
@@ -562,10 +562,10 @@ export default function MyPageProfileEdit({ user }) {
           bodyClassName="px-5 pb-4"
         >
             {/* 컬럼 헤더 */}
-            <div className="flex items-center h-[36px] text-[14px] font-medium text-[#969696] border-b border-[#f0f0f0]">
+            <div className="flex items-center h-9 text-[14px] font-medium text-[#969696] border-b border-[#f0f0f0]">
               <span className="flex-1 pl-5">카테고리</span>
-              <span className="w-[44px] text-center shrink-0">인앱</span>
-              <span className="w-[44px] text-center shrink-0">이메일</span>
+              <span className="w-11 text-center shrink-0">인앱</span>
+              <span className="w-11 text-center shrink-0">이메일</span>
             </div>
             {DOMAIN_LABELS.map(({ key: domainKey, label: domainLabel }) => {
               const domainEvents = notifyEvents.filter((e) => e.domain === domainKey);
@@ -579,35 +579,35 @@ export default function MyPageProfileEdit({ user }) {
               return (
                 <div key={domainKey} className="border-b border-[#f0f0f0] last:border-b-0">
                   {/* 아코디언 헤더 행 */}
-                  <div className="flex items-center h-[42px]">
+                  <div className="flex items-center h-10.5">
                     <button
                       type="button"
                       onClick={toggleOpen}
                       className="flex-1 flex items-center gap-1.5 h-full text-left min-w-0"
                     >
                       {isOpen
-                        ? <ChevronUp   size={14} className="text-[#0064ff] shrink-0" />
-                        : <ChevronDown size={14} className="text-[#0064ff] shrink-0" />
+                        ? <ChevronUp   size={14} className="text-primary shrink-0" />
+                        : <ChevronDown size={14} className="text-primary shrink-0" />
                       }
                       <span>
                         <span className="text-[15px] font-semibold text-[#1a1a1a]">{domainLabel}</span>
-                        <span className="text-[12px] text-[#aaa] ml-[2px]">({domainEvents.length})</span>
+                        <span className="text-[12px] text-[#aaa] ml-0.5">({domainEvents.length})</span>
                       </span>
                     </button>
                     {/* 도메인 전체 선택 체크박스 */}
-                    <div className="w-[44px] flex justify-center shrink-0">
+                    <div className="w-11 flex justify-center shrink-0">
                       <input
                         type="checkbox"
-                        className="w-[14px] h-[14px] accent-[#0064ff] cursor-pointer"
+                        className="size-3.5 accent-primary cursor-pointer"
                         checked={isDomainAllChecked(domainKey, "inapp")}
                         onChange={() => toggleDomain(domainKey, "inapp")}
                         aria-label={`${domainLabel} 인앱 전체`}
                       />
                     </div>
-                    <div className="w-[44px] flex justify-center shrink-0">
+                    <div className="w-11 flex justify-center shrink-0">
                       <input
                         type="checkbox"
-                        className="w-[14px] h-[14px] accent-[#0064ff] cursor-pointer"
+                        className="size-3.5 accent-primary cursor-pointer"
                         checked={isDomainAllChecked(domainKey, "email")}
                         onChange={() => toggleDomain(domainKey, "email")}
                         aria-label={`${domainLabel} 이메일 전체`}
@@ -620,22 +620,22 @@ export default function MyPageProfileEdit({ user }) {
                       {domainEvents.map((e) => (
                         <div
                           key={e.eventCode}
-                          className="flex items-center h-[38px] border-b border-[#f0f0f0] last:border-b-0"
+                          className="flex items-center h-9.5 border-b border-[#f0f0f0] last:border-b-0"
                         >
                           <span className="flex-1 min-w-0 text-[14px] text-[#404040] pl-6">{e.label}</span>
-                          <div className="w-[44px] flex justify-center shrink-0">
+                          <div className="w-11 flex justify-center shrink-0">
                             <input
                               type="checkbox"
-                              className="w-[14px] h-[14px] accent-[#0064ff] cursor-pointer"
+                              className="size-3.5 accent-primary cursor-pointer"
                               checked={e.inapp}
                               onChange={() => toggleNotify(e.eventCode, "inapp")}
                               aria-label={`${e.label} 인앱 알림`}
                             />
                           </div>
-                          <div className="w-[44px] flex justify-center shrink-0">
+                          <div className="w-11 flex justify-center shrink-0">
                             <input
                               type="checkbox"
-                              className="w-[14px] h-[14px] accent-[#0064ff] cursor-pointer"
+                              className="size-3.5 accent-primary cursor-pointer"
                               checked={e.email}
                               onChange={() => toggleNotify(e.eventCode, "email")}
                               aria-label={`${e.label} 이메일 알림`}
@@ -652,7 +652,7 @@ export default function MyPageProfileEdit({ user }) {
       </div>
 
       {addressSearchOpen ? (
-        <div aria-modal="true" className="fixed inset-0 z-[200] flex items-center justify-center bg-black/35 p-4" role="dialog">
+        <div aria-modal="true" className="fixed inset-0 z-200 flex items-center justify-center bg-black/35 p-4" role="dialog">
           <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-[#f0f0f0] px-5 py-3">
               <p className="font-bold text-[15px] text-[#404040]">주소 검색</p>

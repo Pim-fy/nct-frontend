@@ -47,6 +47,7 @@ const STATUS_LABEL = {
   SVCC0002: '공개',
   SVCC0003: '매칭완료',
   SVCC0004: '취소',
+  SVCC0005: '운영 보류',
 };
 
 const STATUS_TONE = {
@@ -54,6 +55,7 @@ const STATUS_TONE = {
   SVCC0002: 'info',
   SVCC0003: 'success',
   SVCC0004: 'danger',
+  SVCC0005: 'warning',
 };
 
 const QUOTE_STATUS_LABEL = {
@@ -525,11 +527,19 @@ export default function ServiceRequestDetailPage() {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex flex-wrap items-center gap-3">
                   {request.catNm && (
-                    <CategoryTag tone="info" variant="soft">
+                    <CategoryTag
+                      className="!h-7 !gap-1.5 !px-3 !text-[14px]"
+                      tone="info"
+                      variant="soft"
+                    >
                       {request.catNm}
                     </CategoryTag>
                   )}
-                  <DomainStatus tone={STATUS_TONE[request.svcReqStatusCd] ?? 'neutral'} variant="soft">
+                  <DomainStatus
+                    className="!h-7 !gap-1.5 !px-3 !text-[14px]"
+                    tone={STATUS_TONE[request.svcReqStatusCd] ?? 'neutral'}
+                    variant="soft"
+                  >
                     {statusLabel}
                   </DomainStatus>
                 </div>

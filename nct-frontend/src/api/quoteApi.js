@@ -49,3 +49,11 @@ export const getReceivedQuotes = (svcReqSn) =>
 /** F-SVC-010: 요청자 견적 선택과 서비스 거래·보관금 생성을 한 번에 처리한다. */
 export const selectQuoteAndCreateTrade = (svcReqSn, quoteId) =>
   api.post(`/service-requests/${svcReqSn}/quotes/${quoteId}/select`).then((res) => res.data);
+
+/**
+ * F-SVC-006: 견적 첨부파일을 인증 쿠키 포함 요청으로 Blob 수신.
+ * 보호된 엔드포인트(/api/quotes/{id}/attachments/{flSn})는 <img src> 직접 사용 시
+ * 브라우저가 쿠키를 포함하지 않아 401이 발생하므로 axios로 받아 Object URL로 변환한다.
+ */
+export const getQuoteAttachmentBlob = (quoteId, flSn) =>
+  api.get(`/quotes/${quoteId}/attachments/${flSn}`, { responseType: 'blob' });

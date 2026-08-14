@@ -15,7 +15,7 @@ import MyPageDashboard from "@components/mypage/MyPageDashboard";
 import MyPageProfileEdit from "@components/mypage/MyPageProfileEdit";
 import MyPageProviderDashboard from "@components/mypage/MyPageProviderDashboard";
 import ProviderReceivedReviewSection from "@components/mypage/ProviderReceivedReviewSection";
-import ProviderProfilePage from "@pages/provider/ProviderProfilePage";
+import MyPageProfileManagement from "@components/mypage/MyPageProfileManagement";
 import TradeChat from "@pages/trade/TradeChat";
 import AuctionFavoritesPage from "@pages/auction/AuctionFavoritesPage";
 import TradeHistory from "@pages/trade/TradeHistory";
@@ -39,7 +39,6 @@ const MYPAGE_SECTIONS = new Set([
   "chat",
   "wallet",
   "profile",
-  "provider-profile",
   "quote",
   "review",
   "service-trade",
@@ -49,7 +48,6 @@ const MYPAGE_SECTIONS = new Set([
 ]);
 
 const PROVIDER_ONLY_SECTIONS = new Set([
-  "provider-profile",
   "quote",
   "received-review",
 ]);
@@ -61,6 +59,7 @@ const isAllowedSection = (section, isProvider) => (
 
 export default function MyPage({
   initialSection = "home",
+  initialProfileTab = "account",
   previewTrades = false,
 }) {
   // isProvider: 현재 로그인 역할이 제공자(ROLE_SERVICE)인지 — 서버가 내려준 실제 역할 기준.
@@ -98,14 +97,20 @@ export default function MyPage({
 
   // @ai_generated (담당자1, 2026-08-13): 목록 응답에 auctionId가 있으면 호환 리다이렉트와
   // 중복 상세 조회를 거치지 않고 정식 거래 상세 경로로 바로 이동한다.
-  const handleOpenPurchaseTradeDetail = (tradeId, auctionId) => {
-    const detailPath = previewTrades
-      ? `/trades/preview/${tradeId}`
-      : auctionId
-        ? `/auction/${auctionId}/trade`
-        : `/trades/${tradeId}`;
+  const handleOpenPurchaseTradeDetail = (tradeId, auctionId, returnPath) => {
+    const hasTradeId = Number.isSafeInteger(Number(tradeId)) && Number(tradeId) > 0;
+    const hasAuctionId = Number.isSafeInteger(Number(auctionId)) && Number(auctionId) > 0;
+    const detailPath = !hasTradeId && hasAuctionId
+      ? `/auction/${auctionId}`
+      : previewTrades && hasTradeId
+        ? `/trades/preview/${tradeId}`
+        : hasTradeId && hasAuctionId
+          ? `/auction/${auctionId}/trade`
+          : hasTradeId
+            ? `/trades/${tradeId}`
+            : getMyPagePath('auction-bids');
     navigate(detailPath, {
-      state: { from: getMyPagePath("auction-bids") },
+      state: { from: returnPath ?? getMyPagePath("auction-bids") },
     });
   };
 
@@ -175,14 +180,16 @@ export default function MyPage({
               onOpenSection={handleSelectSection}
             />
           )}
-          {activeSection === "profile" && <MyPageProfileEdit user={user} />}
-          {isProvider && activeSection === "provider-profile" && <ProviderProfilePage embedded />}
+          {activeSection === "profile" && (
+            isProvider
+              ? <MyPageProfileManagement user={user} initialTab={initialProfileTab} />
+              : <MyPageProfileEdit user={user} />
+          )}
           {activeSection === "auction-bids" && (
             <TradeHistory
               embedded
               fixedRole="BUYER"
               preview={previewTrades}
-              returnSection="auction-bids"
               onOpenTradeDetail={handleOpenPurchaseTradeDetail}
             />
           )}
