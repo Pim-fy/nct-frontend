@@ -43,7 +43,7 @@ function AttachmentPreview({ file, getPreviewUrl, index, representativeEnabled }
   const isImage = file.type?.startsWith('image/') || Boolean(explicitUrl);
 
   return (
-    <div className="relative aspect-square overflow-hidden rounded-[8px] border border-[#e2e1dc] bg-[#fafaf8]">
+    <div className="relative aspect-square overflow-hidden rounded-lg border border-[#e2e1dc] bg-[#fafaf8]">
       {explicitUrl ? (
         <img
           alt={name}
@@ -57,7 +57,7 @@ function AttachmentPreview({ file, getPreviewUrl, index, representativeEnabled }
         <RawImagePreview file={file} key={`${file.name}-${file.size}-${file.lastModified}`} name={name} />
       ) : (
         <div className="flex h-full flex-col items-center justify-center gap-2 px-2 text-center">
-          <FileText aria-hidden="true" className="text-[#0064ff]" size={28} />
+          <FileText aria-hidden="true" className="text-primary" size={28} />
           <span className="line-clamp-2 max-w-full break-all text-[12px] text-[#5f5e5a]">{name}</span>
         </div>
       )}
@@ -144,7 +144,7 @@ export default function AttachmentPicker({
 
   return (
     <section
-      className={`rounded-[8px] border border-dashed border-[#e2e1dc] bg-white ${compact ? 'p-4' : 'p-5'}`}
+      className={`rounded-lg border border-dashed border-[#e2e1dc] bg-white ${compact ? 'p-4' : 'p-5'}`}
       onDragOver={(event) => {
         if (hasFilePayload(event.dataTransfer)) event.preventDefault();
       }}
@@ -212,7 +212,7 @@ export default function AttachmentPicker({
           >
             <div
               className={representativeMode && index > 0
-                ? 'cursor-pointer rounded-[8px] ring-2 ring-[#0064ff] ring-offset-2'
+                ? 'cursor-pointer rounded-lg ring-2 ring-primary ring-offset-2'
                 : ''}
               onClick={() => selectRepresentative(index)}
               onKeyDown={(event) => {
@@ -246,7 +246,7 @@ export default function AttachmentPicker({
         {Array.from({ length: Math.max(0, maxFiles - files.length) }, (_, index) => (
           <button
             aria-label={`${files.length + index + 1}번째 첨부파일 추가`}
-            className="flex aspect-square w-full items-center justify-center rounded-[8px] border border-dashed border-[#d8d6cf] bg-[#fafaf8] text-2xl text-[#bbb] transition-colors hover:border-[#0064ff] hover:text-[#0064ff] disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex aspect-square w-full items-center justify-center rounded-lg border border-dashed border-[#d8d6cf] bg-[#fafaf8] text-2xl text-[#bbb] transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
             key={`empty-${index}`}
             onClick={() => inputRef.current?.click()}
             type="button"
