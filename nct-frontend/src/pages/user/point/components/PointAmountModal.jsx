@@ -22,13 +22,11 @@ const PointAmountModal = ({ title, submitLabel, infoRow, maxAmount, onSubmit, on
   return (
     <div
       className="user-modal-overlay flex items-center justify-center bg-black/40 p-6"
-      onClick={onClose}
     >
       <div
         className="w-full max-w-[560px] max-h-[85vh] overflow-y-auto overscroll-contain bg-white rounded-2xl p-6 shadow-[0_20px_80px_rgba(0,0,0,0.25)]"
         aria-labelledby="point-amount-modal-title"
         aria-modal="true"
-        onClick={(e) => e.stopPropagation()}
         role="dialog"
       >
         <div className="flex items-center justify-between mb-4">

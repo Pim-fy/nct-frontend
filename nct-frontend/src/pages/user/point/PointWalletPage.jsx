@@ -322,12 +322,12 @@ const PointWalletPage = ({ embedded = false } = {}) => {
 
       {detailModal === 'ledger' && (
         <PointHistoryDetailModal title="포인트 내역" onClose={() => setDetailModal(null)}>
-          <PointLedgerTable rows={ledger} />
+          <PointLedgerTable rows={ledger} centerAlign />
         </PointHistoryDetailModal>
       )}
       {detailModal === 'charge' && (
         <PointHistoryDetailModal title="충전 내역" onClose={() => setDetailModal(null)}>
-          <PointChargeOrderTable rows={chargeOrders} />
+          <PointChargeOrderTable rows={chargeOrders} centerAlign />
         </PointHistoryDetailModal>
       )}
       {detailModal === 'settlement' && (
@@ -343,12 +343,12 @@ const PointWalletPage = ({ embedded = false } = {}) => {
       )}
       {detailModal === 'convert' && (
         <PointHistoryDetailModal title="정산포인트 내역" onClose={() => setDetailModal(null)}>
-          <PointConvertHistoryTable rows={ledger} />
+          <PointConvertHistoryTable rows={ledger} centerAlign />
         </PointHistoryDetailModal>
       )}
       {detailModal === 'exchange' && (
         <PointHistoryDetailModal title="환전 내역" onClose={() => setDetailModal(null)}>
-          <PointExchangeOrderTable rows={exchangeOrders} />
+          <PointExchangeOrderTable rows={exchangeOrders} centerAlign />
         </PointHistoryDetailModal>
       )}
 
