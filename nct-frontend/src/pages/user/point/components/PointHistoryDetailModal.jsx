@@ -1,7 +1,7 @@
 // src/pages/user/point/components/PointHistoryDetailModal.jsx
 // Claude Code 작성 (BJN, 2026-07-29)
 import { useEffect } from 'react';
-import { ActionButton } from '@components/common/ui';
+import { X } from 'lucide-react';
 
 /**
  * 포인트지갑 요약 카드의 "+" 버튼으로 여는 전체 내역 모달 — 포인트/충전/환전 내역 공용 셸.
@@ -24,24 +24,27 @@ const PointHistoryDetailModal = ({ title, onClose, children }) => {
   return (
     <div
       className="user-modal-overlay flex items-center justify-center bg-black/40 p-6"
-      onClick={onClose}
     >
       <div
-        className="w-full max-w-[900px] max-h-[85vh] overflow-y-auto overscroll-contain bg-white rounded-2xl p-6 shadow-[0_20px_80px_rgba(0,0,0,0.25)]"
+        className="w-full max-w-[1200px] max-h-[85vh] flex flex-col overflow-hidden bg-white rounded-2xl shadow-[0_20px_80px_rgba(0,0,0,0.25)]"
         aria-label={title}
         aria-modal="true"
         role="dialog"
-        onClick={(e) => e.stopPropagation()}
       >
-        <ActionButton
-          className="float-right"
-          onClick={onClose}
-          size="sm"
-          tone="neutral"
-        >
-          닫기
-        </ActionButton>
-        {children}
+        <header className="flex shrink-0 items-center justify-between bg-[#0064ff] px-6 py-4">
+          <h2 className="m-0 text-[20px] font-bold text-white">{title}</h2>
+          <button
+            type="button"
+            aria-label="닫기"
+            className="inline-flex size-8 items-center justify-center rounded text-white hover:bg-white/15"
+            onClick={onClose}
+          >
+            <X size={20} aria-hidden="true" />
+          </button>
+        </header>
+        <div className="flex-1 overflow-y-auto overscroll-contain p-6">
+          {children}
+        </div>
       </div>
     </div>
   );

@@ -67,24 +67,24 @@ const withProductName = (row, bidByBidSn) => {
 // 컬럼이 하나 더 있어 컬럼 수가 달라서, 뒤쪽(잔액/관련/사유)까지 세 표를 전부 맞추진 못한다
 // (2026-08-04, PointTable.jsx 참고).
 const buildColumns = (bidByBidSn) => [
-  { key: 'date', header: '일시', widthClass: 'w-[18%]', cellClass: 'truncate text-gray-700', render: (r) => <span title={r.date}>{r.date}</span> },
+  { key: 'date', header: '일시', widthClass: 'w-[170px]', cellClass: 'truncate text-gray-700', render: (r) => <span title={r.date}>{r.date}</span> },
   {
-    key: 'type', header: '유형', widthClass: 'w-[12%]', cellClass: 'whitespace-nowrap',
+    key: 'type', header: '유형', widthClass: 'w-[80px]', cellClass: 'whitespace-nowrap',
     render: (r) => badge(r.type),
   },
   {
-    key: 'amount', header: '변동금액', align: 'right', widthClass: 'w-[14%]',
+    key: 'amount', header: '변동금액', align: 'right', widthClass: 'w-auto',
     cellClass: (r) => `whitespace-nowrap font-medium ${r.amount > 0 ? 'text-blue-700' : 'text-red-700'}`,
     render: (r) => `${r.amount > 0 ? '+' : ''}${r.amount.toLocaleString()}P`,
   },
   {
     // 정산가능·홀딩 카테고리 행은 아래에서 다 걸러내서, 이 표엔 항상 사용가능 카테고리만
     // 남는다 — 잔액이 한 트랙으로만 이어져서 카테고리 라벨을 따로 붙일 필요가 없다 (2026-08-04).
-    key: 'balanceAfter', header: '잔액', align: 'right', widthClass: 'w-[14%]', cellClass: 'truncate text-gray-700',
+    key: 'balanceAfter', header: '잔액', align: 'right', widthClass: 'w-auto', cellClass: 'truncate text-gray-700',
     render: (r) => <span title={`${r.balanceAfter.toLocaleString()}P`}>{r.balanceAfter.toLocaleString()}P</span>,
   },
   {
-    key: 'ref', header: '관련', widthClass: 'w-[16%]', cellClass: 'truncate text-gray-500',
+    key: 'ref', header: '관련', align: 'left', widthClass: 'w-[25%]', cellClass: 'truncate text-gray-500',
     render: (r) => {
       if (!r.ref) return '-';
       const label = withProductName(r, bidByBidSn);
@@ -95,7 +95,7 @@ const buildColumns = (bidByBidSn) => [
     },
   },
   {
-    key: 'reason', header: '사유', widthClass: 'w-[26%]', cellClass: 'truncate text-gray-500',
+    key: 'reason', header: '사유', align: 'left', widthClass: 'w-[25%]', cellClass: 'truncate text-gray-500',
     render: (r) => <span title={formatPointLedgerReason(r.reason)}>{reasonSummary(r.reason)}</span>,
   },
 ];
@@ -140,7 +140,7 @@ const buildRenderCard = (bidByBidSn) => (r) => {
 // - 정산가능(정산 적립·전환 출금 등): 정산가능 포인트와 관련된 흐름은 전부 정산포인트 내역 표
 //   (PointConvertHistoryTable)로 옮겼다 — 여기서 빼도 정보 손실이 없고, 이 표에 남는 행이 전부
 //   사용가능 카테고리라 잔액이 한 트랙으로만 이어진다.
-const PointLedgerTable = ({ rows, limit, onExpand, loading }) => {
+const PointLedgerTable = ({ rows, limit, onExpand, loading, centerAlign = false }) => {
   const { data: myBids } = useMyBidHistory();
   const bidByBidSn = useMemo(
     () => new Map((myBids ?? []).map((b) => [b.bidSn, b])),
@@ -161,6 +161,7 @@ const PointLedgerTable = ({ rows, limit, onExpand, loading }) => {
       pageSize={limit ? undefined : 10}
       loading={loading}
       renderCard={renderCard}
+      centerAlign={centerAlign}
     />
   );
 };
