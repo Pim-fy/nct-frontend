@@ -11,6 +11,7 @@ import AdminDetailDrawer from '@components/admin/AdminDetailDrawer';
 import AdminHistoryTimeline from '@components/admin/AdminHistoryTimeline';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import AdminPagination from '@components/admin/AdminPagination';
+import AdminReferenceLink from '@components/admin/AdminReferenceLink';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
@@ -125,8 +126,28 @@ const AdminSettlementManagementPage = () => {
   };
 
   const columns = [
-    { key: 'settlementId', label: '정산 번호', render: (value) => `#${value}` },
-    { key: 'tradeId', label: '거래 번호', render: (value) => `#${value}` },
+    {
+      key: 'settlementId',
+      label: '정산',
+      className: 'admin-reference-cell',
+      render: (value, row) => (
+        <AdminReferenceLink
+          meta={`정산 · #${value}`}
+          title={formatAdminMemberIdentity({ nickname: row.userName }, row.userId)}
+        />
+      ),
+    },
+    {
+      key: 'tradeId',
+      label: '연결 거래',
+      className: 'admin-reference-cell',
+      render: (value, row) => (
+        <AdminReferenceLink
+          meta={`거래 · #${value}`}
+          title={`${formatAdminMemberIdentity({ nickname: row.userName }, row.userId)} 거래`}
+        />
+      ),
+    },
     {
       key: 'userName',
       label: '정산 대상',
@@ -269,7 +290,9 @@ const AdminSettlementManagementPage = () => {
             </button>
           )}
           onClose={closeDetail}
-          title={`정산 #${selectedId}`}
+          title={detail
+            ? `${formatAdminMemberIdentity({ nickname: detail.userName }, detail.userId)} 정산`
+            : '정산 상세'}
         >
           <section className="admin-operation-detail">
             {detailQuery.isLoading && <div className="admin-bjn-state">상세 정보를 불러오는 중입니다.</div>}
@@ -279,7 +302,16 @@ const AdminSettlementManagementPage = () => {
             {detail && (
               <>
                 <dl>
-                  <dt>거래 번호</dt><dd>#{detail.tradeId}</dd>
+                  <dt>거래</dt>
+                  <dd>
+                    <AdminReferenceLink
+                      meta={`거래 · #${detail.tradeId}`}
+                      title={`${formatAdminMemberIdentity(
+                        { nickname: detail.userName },
+                        detail.userId,
+                      )} 거래`}
+                    />
+                  </dd>
                   <dt>정산 대상</dt>
                   <dd>{formatAdminMemberIdentity(
                     { nickname: detail.userName },

@@ -116,7 +116,6 @@ const TradeDetailBuyer = ({
   const { tradeId: routeTradeId } = useParams();
   const tradeId = selectedTradeId ?? routeTradeId;
   const location = useLocation();
-  const { pathname } = location;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [trade, setTrade] = useState(() => (initialTrade ? toTradeDetail(initialTrade) : null));
@@ -135,11 +134,8 @@ const TradeDetailBuyer = ({
   const visibleDeliveryProofUrls = hasDeliveryProofFiles ? deliveryProofUrls : [];
   const [isCompletionResultOpen, setIsCompletionResultOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => Date.now());
-  const isPreview = pathname.startsWith('/trades/preview');
   const contentClassName = embedded ? 'trade-detail-page__content' : 'container';
-  const chatPath = isPreview
-    ? `/trades/preview/${tradeId}/chat?from=buyer`
-    : `/trades/${tradeId}/chat?from=buyer`;
+  const chatPath = `/trades/${tradeId}/chat?from=buyer`;
   const handleOpenReport = () => {
     if (onReport) {
       onReport();
@@ -191,9 +187,7 @@ const TradeDetailBuyer = ({
       return;
     }
 
-    navigate(isPreview
-      ? '/user/mypage/preview/trades'
-      : '/user/mypage/auctions/purchases');
+    navigate('/user/mypage/auctions/purchases');
   };
 
   // URL의 거래 번호로 서버 상세를 조회해 직접 URL 접근에도 같은 데이터를 표시한다.
@@ -399,7 +393,7 @@ const TradeDetailBuyer = ({
     setIsSubmitting(true);
 
     try {
-      const response = await requestTradeCompletion(tradeId, 'BUYER');
+      const response = await requestTradeCompletion(tradeId);
       const updatedTrade = toTradeDetail(response);
 
       // 서버가 계산한 자동완료 시각까지 다시 반영해 브라우저 시간과 어긋나지 않게 한다.

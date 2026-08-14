@@ -12,6 +12,7 @@ import {
 import AdminHistoryTimeline from '@components/admin/AdminHistoryTimeline';
 import AdminModal from '@components/admin/AdminModal';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
+import AdminReferenceLink from '@components/admin/AdminReferenceLink';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import PageMeta from '@components/admin/PageMeta';
 import { ADMIN_REPORTS_PATH, ADMIN_SERVICE_REQUESTS_PATH } from '@/routes/adminRoutes';
@@ -243,7 +244,13 @@ const AdminServiceRequestDetailPage = () => {
                           key={quote.quoteId}
                         >
                           <div className="admin-service-detail__quote-header">
-                            <strong>견적 #{quote.quoteId}</strong>
+                            <AdminReferenceLink
+                              meta={`견적 · #${quote.quoteId}`}
+                              title={formatAdminMemberIdentity(
+                                quote.providerMember,
+                                quote.providerUserId,
+                              )}
+                            />
                             <AdminStatusBadge tone={quoteStatus.tone}>
                               {quoteStatus.label}
                             </AdminStatusBadge>
@@ -307,7 +314,16 @@ const AdminServiceRequestDetailPage = () => {
                 <section className="admin-service-detail__section is-selected-quote">
                   <h4>선택 견적</h4>
                   <dl>
-                    <dt>견적</dt><dd>#{detail.selectedQuoteId}</dd>
+                    <dt>견적</dt>
+                    <dd>
+                      <AdminReferenceLink
+                        meta={`견적 · #${detail.selectedQuoteId}`}
+                        title={formatAdminMemberIdentity(
+                          detail.selectedProviderMember,
+                          detail.selectedProviderUserId,
+                        )}
+                      />
+                    </dd>
                     <dt>제공자</dt><dd>{formatAdminMemberIdentity(
                       detail.selectedProviderMember,
                       detail.selectedProviderUserId,
@@ -322,8 +338,23 @@ const AdminServiceRequestDetailPage = () => {
                 <section className="admin-service-detail__section is-trade-flow">
                   <h4>거래 · 정산 흐름</h4>
                   <dl>
-                    <dt>거래</dt><dd>#{detail.tradeId}</dd>
-                    <dt>연결 견적</dt><dd>#{detail.tradeQuoteId}</dd>
+                    <dt>거래</dt>
+                    <dd>
+                      <AdminReferenceLink
+                        meta={`거래 · #${detail.tradeId}`}
+                        title={`${detail.title} 서비스 거래`}
+                      />
+                    </dd>
+                    <dt>연결 견적</dt>
+                    <dd>
+                      <AdminReferenceLink
+                        meta={`견적 · #${detail.tradeQuoteId}`}
+                        title={formatAdminMemberIdentity(
+                          detail.selectedProviderMember,
+                          detail.selectedProviderUserId,
+                        )}
+                      />
+                    </dd>
                     <dt>거래 상태</dt><dd>{detail.tradeStatusName ?? detail.tradeStatusCode}</dd>
                     <dt>보관금</dt>
                     <dd>
@@ -335,7 +366,7 @@ const AdminServiceRequestDetailPage = () => {
                     <dd>
                       {detail.settlementId == null
                         ? '정산 건 없음'
-                        : `#${detail.settlementId} · ${detail.settlementStatusName ?? detail.settlementStatusCode}`}
+                        : `${detail.title} 정산 · 정산 #${detail.settlementId} · ${detail.settlementStatusName ?? detail.settlementStatusCode}`}
                     </dd>
                     {detail.settledPointAmount > 0 && (
                       <><dt>지급 원장</dt><dd>{formatAmount(detail.settledPointAmount)}</dd></>
@@ -347,7 +378,7 @@ const AdminServiceRequestDetailPage = () => {
                     <dd>
                       {detail.activeDisputeId == null
                         ? '없음'
-                        : `#${detail.activeDisputeId} · ${detail.activeDisputeStatusName ?? detail.activeDisputeStatusCode}`}
+                        : `${detail.title} 신고 사건 · 신고 #${detail.activeDisputeId} · ${detail.activeDisputeStatusName ?? detail.activeDisputeStatusCode}`}
                     </dd>
                   </dl>
                 </section>

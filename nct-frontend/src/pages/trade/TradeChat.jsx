@@ -59,21 +59,18 @@ const saveHiddenRoomIds = (roomIds) => {
 };
 
 // 채팅방이 참조하는 거래 유형에 따라 상세 route를 분기한다.
-const getTradeDetailPath = (room, preview) => {
+const getTradeDetailPath = (room) => {
   if (!room?.tradeId) return null;
 
   if (room.tradeTypeCode === 'TRDC0002') {
-    return preview ? null : getServiceTradeDetailPath(room.tradeId);
+    return getServiceTradeDetailPath(room.tradeId);
   }
 
-  return preview
-    ? `/trades/preview/${room.tradeId}`
-    : `/trades/${room.tradeId}`;
+  return `/trades/${room.tradeId}`;
 };
 
 const TradeChat = ({
   embedded = false,
-  preview = false,
   tradeId: selectedTradeId,
   showRoomList = !embedded,
 }) => {
@@ -111,7 +108,7 @@ const TradeChat = ({
   ).length;
   const completedRoomCount = rooms.length - activeRoomCount;
   const isActiveRoomClosed = activeRoom?.roomStatus === 'CLOSED';
-  const activeTradeDetailPath = getTradeDetailPath(activeRoom, preview);
+  const activeTradeDetailPath = getTradeDetailPath(activeRoom);
   const subscribedRoomIds = useMemo(
     () => rooms
       .filter((room) => room.roomStatus === 'ACTIVE')
@@ -139,7 +136,7 @@ const TradeChat = ({
     try {
       // 마이페이지의 넓은 화면에서는 목록과 대화를 함께 보여 주기 위해 전체 방을 조회한다.
       const roomParams = showRoomList ? {} : { tradeId };
-      const roomResponse = await getTradeChatRooms(roomParams, { preview });
+      const roomResponse = await getTradeChatRooms(roomParams);
       const hiddenRoomIds = getHiddenRoomIds();
       const loadedRooms = filterTradeChatRoomsForCurrentRole(
         toTradeChatRooms(roomResponse).filter(
@@ -161,7 +158,6 @@ const TradeChat = ({
 
       const messageResponse = await getTradeChatMessages(
         initialRoom.roomId,
-        { preview },
       );
       const initialMessages = toTradeChatMessages(messageResponse);
 
@@ -184,12 +180,12 @@ const TradeChat = ({
     } finally {
       setIsLoading(false);
     }
-  }, [isProvider, preview, showRoomList, tradeId]);
+  }, [isProvider, showRoomList, tradeId]);
 
   // 방을 선택하면 서버가 상대방 메시지를 읽음 처리한 최신 목록을 다시 받아 온다.
   const selectChatRoom = useCallback(async (roomId) => {
     try {
-      const messageResponse = await getTradeChatMessages(roomId, { preview });
+      const messageResponse = await getTradeChatMessages(roomId);
       const loadedMessages = toTradeChatMessages(messageResponse);
 
       setActiveRoomId(roomId);
@@ -210,7 +206,7 @@ const TradeChat = ({
         '채팅 메시지를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.',
       );
     }
-  }, [preview]);
+  }, []);
 
   // 필터 변경은 목록만 바꾸며, 사용자가 누르기 전까지 다른 방을 자동 선택하지 않는다.
   const changeRoomFilter = (nextFilter) => {
@@ -283,9 +279,8 @@ const TradeChat = ({
   }, [loadChatRooms]);
 
   // 목록에 있는 모든 진행 중 방을 함께 구독해, 열지 않은 방의 미확인 수도 즉시 갱신한다.
-  // 미리보기는 서버 연결 없이 목업 데이터를 쓰므로 기존 화면 동작만 유지한다.
   useEffect(() => {
-    if (preview || subscribedRoomIdsKey === '') {
+    if (subscribedRoomIdsKey === '') {
       const idleStatusTimer = window.setTimeout(() => {
         setRealtimeStatus('IDLE');
       }, 0);
@@ -387,12 +382,11 @@ const TradeChat = ({
         socketRef.current = null;
       }
     };
-  }, [activeRoomId, preview, reconnectSignal, subscribedRoomIdsKey]);
+  }, [activeRoomId, reconnectSignal, subscribedRoomIdsKey]);
 
   // WebSocket 연결이 끊긴 경우에만 기존 REST 조회로 임시 수신을 보완한다.
   useEffect(() => {
     if (activeRoomId === ''
-      || preview
       || isActiveRoomClosed
       || realtimeStatus !== 'DISCONNECTED') {
       return undefined;
@@ -400,7 +394,7 @@ const TradeChat = ({
 
     const refreshTimer = window.setInterval(async () => {
       try {
-        const response = await getTradeChatMessages(activeRoomId, { preview });
+        const response = await getTradeChatMessages(activeRoomId);
         const refreshedMessages = toTradeChatMessages(response);
 
         setMessages((currentMessages) => {
@@ -418,7 +412,7 @@ const TradeChat = ({
     }, MESSAGE_REFRESH_INTERVAL);
 
     return () => window.clearInterval(refreshTimer);
-  }, [activeRoomId, isActiveRoomClosed, preview, realtimeStatus]);
+  }, [activeRoomId, isActiveRoomClosed, realtimeStatus]);
 
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({
@@ -456,7 +450,7 @@ const TradeChat = ({
     };
     const socket = socketRef.current;
 
-    if (!preview && socket?.readyState === WebSocket.OPEN) {
+    if (socket?.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify({
         type: 'SEND_MESSAGE',
         roomId: activeRoom.roomId,
@@ -472,7 +466,6 @@ const TradeChat = ({
       const response = await sendTradeChatMessage(
         activeRoom.roomId,
         payload,
-        { preview },
       );
       const newMessage = toTradeChatMessage(response);
 

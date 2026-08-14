@@ -19,13 +19,31 @@ function RawImagePreview({ file, name }) {
   );
 }
 
+const getSourceFile = (item) => (
+  item instanceof File
+    ? item
+    : item?.file instanceof File
+      ? item.file
+      : null
+);
+
+const getFileFingerprint = (item) => {
+  const file = getSourceFile(item);
+  if (!file) return null;
+  return [file.name, file.size, file.type, file.lastModified].join('\u0000');
+};
+
+const hasFilePayload = (dataTransfer) => (
+  Array.from(dataTransfer?.types ?? []).includes('Files')
+);
+
 function AttachmentPreview({ file, getPreviewUrl, index, representativeEnabled }) {
   const name = file.name ?? `첨부파일 ${index + 1}`;
   const explicitUrl = getPreviewUrl?.(file);
   const isImage = file.type?.startsWith('image/') || Boolean(explicitUrl);
 
   return (
-    <div className="relative aspect-square overflow-hidden rounded-[8px] border border-[#e2e1dc] bg-[#fafaf8]">
+    <div className="relative aspect-square overflow-hidden rounded-lg border border-[#e2e1dc] bg-[#fafaf8]">
       {explicitUrl ? (
         <img
           alt={name}
@@ -39,7 +57,7 @@ function AttachmentPreview({ file, getPreviewUrl, index, representativeEnabled }
         <RawImagePreview file={file} key={`${file.name}-${file.size}-${file.lastModified}`} name={name} />
       ) : (
         <div className="flex h-full flex-col items-center justify-center gap-2 px-2 text-center">
-          <FileText aria-hidden="true" className="text-[#0064ff]" size={28} />
+          <FileText aria-hidden="true" className="text-primary" size={28} />
           <span className="line-clamp-2 max-w-full break-all text-[12px] text-[#5f5e5a]">{name}</span>
         </div>
       )}
@@ -80,8 +98,21 @@ export default function AttachmentPicker({
   const representativeEnabled = typeof onSetRepresentative === 'function';
 
   const addFiles = (fileList) => {
-    const candidates = Array.from(fileList ?? []);
+    const candidates = Array.from(fileList ?? []).filter((file) => file instanceof File);
     if (candidates.length === 0) return;
+    const knownFingerprints = new Set(files.map(getFileFingerprint).filter(Boolean));
+    const incomingFingerprints = new Set();
+    const hasDuplicate = candidates.some((file) => {
+      const fingerprint = getFileFingerprint(file);
+      if (!fingerprint) return false;
+      if (knownFingerprints.has(fingerprint) || incomingFingerprints.has(fingerprint)) return true;
+      incomingFingerprints.add(fingerprint);
+      return false;
+    });
+    if (hasDuplicate) {
+      onError?.('이미 첨부된 파일은 다시 추가할 수 없습니다.');
+      return;
+    }
     if (files.length + candidates.length > maxFiles) {
       onError?.(`첨부파일은 최대 ${maxFiles}개까지 선택할 수 있습니다.`);
       return;
@@ -113,9 +144,12 @@ export default function AttachmentPicker({
 
   return (
     <section
-      className={`rounded-[8px] border border-dashed border-[#e2e1dc] bg-white ${compact ? 'p-4' : 'p-5'}`}
-      onDragOver={(event) => event.preventDefault()}
+      className={`rounded-lg border border-dashed border-[#e2e1dc] bg-white ${compact ? 'p-4' : 'p-5'}`}
+      onDragOver={(event) => {
+        if (hasFilePayload(event.dataTransfer)) event.preventDefault();
+      }}
       onDrop={(event) => {
+        if (!hasFilePayload(event.dataTransfer)) return;
         event.preventDefault();
         addFiles(event.dataTransfer.files);
       }}
@@ -178,7 +212,7 @@ export default function AttachmentPicker({
           >
             <div
               className={representativeMode && index > 0
-                ? 'cursor-pointer rounded-[8px] ring-2 ring-[#0064ff] ring-offset-2'
+                ? 'cursor-pointer rounded-lg ring-2 ring-primary ring-offset-2'
                 : ''}
               onClick={() => selectRepresentative(index)}
               onKeyDown={(event) => {
@@ -212,7 +246,7 @@ export default function AttachmentPicker({
         {Array.from({ length: Math.max(0, maxFiles - files.length) }, (_, index) => (
           <button
             aria-label={`${files.length + index + 1}번째 첨부파일 추가`}
-            className="flex aspect-square w-full items-center justify-center rounded-[8px] border border-dashed border-[#d8d6cf] bg-[#fafaf8] text-2xl text-[#bbb] transition-colors hover:border-[#0064ff] hover:text-[#0064ff] disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex aspect-square w-full items-center justify-center rounded-lg border border-dashed border-[#d8d6cf] bg-[#fafaf8] text-2xl text-[#bbb] transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
             key={`empty-${index}`}
             onClick={() => inputRef.current?.click()}
             type="button"
