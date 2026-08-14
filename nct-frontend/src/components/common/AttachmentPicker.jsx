@@ -7,7 +7,16 @@ function RawImagePreview({ file, name }) {
 
   useEffect(() => () => URL.revokeObjectURL(previewUrl), [previewUrl]);
 
-  return <img alt={name} className="h-full w-full object-cover" src={previewUrl} />;
+  return (
+    <img
+      alt={name}
+      className="h-full w-full object-cover"
+      draggable={false}
+      onDragStart={(event) => event.preventDefault()}
+      src={previewUrl}
+      style={{ WebkitUserDrag: 'none', userSelect: 'none' }}
+    />
+  );
 }
 
 function AttachmentPreview({ file, getPreviewUrl, index, representativeEnabled }) {
@@ -18,7 +27,14 @@ function AttachmentPreview({ file, getPreviewUrl, index, representativeEnabled }
   return (
     <div className="relative aspect-square overflow-hidden rounded-[8px] border border-[#e2e1dc] bg-[#fafaf8]">
       {explicitUrl ? (
-        <img alt={name} className="h-full w-full object-cover" src={explicitUrl} />
+        <img
+          alt={name}
+          className="h-full w-full object-cover"
+          draggable={false}
+          onDragStart={(event) => event.preventDefault()}
+          src={explicitUrl}
+          style={{ WebkitUserDrag: 'none', userSelect: 'none' }}
+        />
       ) : isImage && file instanceof File ? (
         <RawImagePreview file={file} key={`${file.name}-${file.size}-${file.lastModified}`} name={name} />
       ) : (
@@ -158,6 +174,7 @@ export default function AttachmentPicker({
           <div
             className="relative"
             key={file.id ?? `${file.name}-${file.size}-${index}`}
+            onDragStart={(event) => event.preventDefault()}
           >
             <div
               className={representativeMode && index > 0

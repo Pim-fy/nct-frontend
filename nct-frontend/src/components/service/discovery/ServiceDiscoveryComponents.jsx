@@ -201,20 +201,21 @@ const ServiceRequestCard = ({ request }) => {
         />
       )}
     </div>
-    <div className="mt-3 flex items-start justify-between gap-3 max-sm:flex-col max-sm:gap-1.5">
-      <h3 className="m-0 min-w-0 overflow-hidden text-body-md font-bold text-[#1a1a18] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] group-hover:text-primary md:text-body-lg">{request.title}</h3>
+    <div className="mt-3 flex min-h-12 items-start justify-between gap-3">
+      <h3
+        className="m-0 h-12 min-w-0 overflow-hidden text-body-md leading-6 font-bold text-[#1a1a18] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] group-hover:text-primary md:text-body-lg"
+        title={request.title}
+      >
+        {request.title}
+      </h3>
       <CategoryTag className="shrink-0" tone="neutral">{request.categoryName || '서비스'}</CategoryTag>
     </div>
     <strong className="mt-2 whitespace-nowrap text-h3 font-extrabold text-primary-dark">{formatAmount(request.budgetAmount)}</strong>
-    {request.description && <p className="mt-2 mb-3.5 line-clamp-2 text-body-md leading-[1.65] text-[#62625f]">{request.description}</p>}
-    <div className="mt-auto flex items-center justify-between gap-3 border-t border-[#f0efec] pt-3.5 max-sm:flex-col max-sm:items-stretch">
-      <span className="text-caption font-semibold text-[#5f5e5a]">{request.statusName || '공개 요청'}</span>
-      {request.registeredAt && (
-        <strong className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-[#c9ddff] bg-primary-light px-3 text-center text-caption font-bold whitespace-nowrap text-primary-dark tabular-nums max-sm:w-full">
-          <Clock3 aria-hidden="true" size={15} />
-          {formatDate(request.registeredAt)}
-        </strong>
-      )}
+    <div className="mt-auto flex min-h-[51px] items-end justify-end border-t border-[#f0efec] pt-3.5">
+      <span className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-[#c9ddff] bg-primary-light px-3 text-center text-caption font-bold whitespace-nowrap text-primary-dark tabular-nums">
+        <Clock3 aria-hidden="true" size={15} />
+        요청 등록일 {formatDate(request.registeredAt) || '미확인'}
+      </span>
     </div>
   </Link>
   );
