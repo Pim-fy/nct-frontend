@@ -10,6 +10,14 @@
   text-decoration: none;
 }
 
+button.admin-reference-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
 .admin-reference-link--interactive {
   transition: background-color 160ms ease, box-shadow 160ms ease;
 }

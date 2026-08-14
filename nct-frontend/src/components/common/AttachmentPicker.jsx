@@ -7,8 +7,26 @@ function RawImagePreview({ file, name }) {
 
   useEffect(() => () => URL.revokeObjectURL(previewUrl), [previewUrl]);
 
-  return <img alt={name} className="h-full w-full object-cover" src={previewUrl} />;
+  return <img alt={name} className="h-full w-full object-cover" draggable={false} src={previewUrl} />;
 }
+
+const getSourceFile = (item) => (
+  item instanceof File
+    ? item
+    : item?.file instanceof File
+      ? item.file
+      : null
+);
+
+const getFileFingerprint = (item) => {
+  const file = getSourceFile(item);
+  if (!file) return null;
+  return [file.name, file.size, file.type, file.lastModified].join('\u0000');
+};
+
+const hasFilePayload = (dataTransfer) => (
+  Array.from(dataTransfer?.types ?? []).includes('Files')
+);
 
 function AttachmentPreview({ file, getPreviewUrl, index, representativeEnabled }) {
   const name = file.name ?? `첨부파일 ${index + 1}`;
@@ -18,7 +36,7 @@ function AttachmentPreview({ file, getPreviewUrl, index, representativeEnabled }
   return (
     <div className="relative aspect-square overflow-hidden rounded-[8px] border border-[#e2e1dc] bg-[#fafaf8]">
       {explicitUrl ? (
-        <img alt={name} className="h-full w-full object-cover" src={explicitUrl} />
+        <img alt={name} className="h-full w-full object-cover" draggable={false} src={explicitUrl} />
       ) : isImage && file instanceof File ? (
         <RawImagePreview file={file} key={`${file.name}-${file.size}-${file.lastModified}`} name={name} />
       ) : (
@@ -64,8 +82,21 @@ export default function AttachmentPicker({
   const representativeEnabled = typeof onSetRepresentative === 'function';
 
   const addFiles = (fileList) => {
-    const candidates = Array.from(fileList ?? []);
+    const candidates = Array.from(fileList ?? []).filter((file) => file instanceof File);
     if (candidates.length === 0) return;
+    const knownFingerprints = new Set(files.map(getFileFingerprint).filter(Boolean));
+    const incomingFingerprints = new Set();
+    const hasDuplicate = candidates.some((file) => {
+      const fingerprint = getFileFingerprint(file);
+      if (!fingerprint) return false;
+      if (knownFingerprints.has(fingerprint) || incomingFingerprints.has(fingerprint)) return true;
+      incomingFingerprints.add(fingerprint);
+      return false;
+    });
+    if (hasDuplicate) {
+      onError?.('이미 첨부된 파일은 다시 추가할 수 없습니다.');
+      return;
+    }
     if (files.length + candidates.length > maxFiles) {
       onError?.(`첨부파일은 최대 ${maxFiles}개까지 선택할 수 있습니다.`);
       return;
@@ -98,8 +129,11 @@ export default function AttachmentPicker({
   return (
     <section
       className={`rounded-[8px] border border-dashed border-[#e2e1dc] bg-white ${compact ? 'p-4' : 'p-5'}`}
-      onDragOver={(event) => event.preventDefault()}
+      onDragOver={(event) => {
+        if (hasFilePayload(event.dataTransfer)) event.preventDefault();
+      }}
       onDrop={(event) => {
+        if (!hasFilePayload(event.dataTransfer)) return;
         event.preventDefault();
         addFiles(event.dataTransfer.files);
       }}
@@ -158,6 +192,7 @@ export default function AttachmentPicker({
           <div
             className="relative"
             key={file.id ?? `${file.name}-${file.size}-${index}`}
+            onDragStart={(event) => event.preventDefault()}
           >
             <div
               className={representativeMode && index > 0
