@@ -26,62 +26,40 @@ function addDays(dateStr, days) {
 function parseTime(value, defaultHour = 9) {
   const hour24 = value ? Number(value.split(':')[0]) : defaultHour;
   const minute = value ? Number(value.split(':')[1]) : 0;
-  return {
-    isPm: hour24 >= 12,
-    hour12: hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24,
-    minute,
-  };
+  return { hour24, minute };
 }
 
-function toHour24String(period, hour12, minute) {
-  const hour24 = period === 'am'
-    ? (hour12 === 12 ? 0 : hour12)
-    : (hour12 === 12 ? 12 : hour12 + 12);
+function toTimeString(hour24, minute) {
   return `${String(hour24).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 }
 
-/** 담당자 7 | 상품 등록 달력에서 쓰는 기존 10분 단위 선택 상자입니다. */
+/** 담당자 7 | 상품 등록 달력에서 쓰는 24시간제 10분 단위 선택 상자입니다. */
 function TimeRow({ value, onChange, minTime, disabled = false }) {
-  const { isPm, hour12, minute } = parseTime(value);
-  const period = isPm ? 'pm' : 'am';
+  const { hour24, minute } = parseTime(value);
   const minimumHour = minTime ? Number(minTime.split(':')[0]) : null;
   const minimumMinute = minTime ? Number(minTime.split(':')[1]) : null;
-  const toHour24 = (nextPeriod, nextHour12) => (
-    nextPeriod === 'am'
-      ? (nextHour12 === 12 ? 0 : nextHour12)
-      : (nextHour12 === 12 ? 12 : nextHour12 + 12)
-  );
-  const isHourDisabled = (nextPeriod, nextHour12) => (
-    disabled || (minimumHour != null && toHour24(nextPeriod, nextHour12) < minimumHour)
-  );
-  const isPeriodDisabled = (nextPeriod) => (
-    disabled || Array.from({ length: 12 }, (_, index) => index + 1)
-      .every((nextHour12) => isHourDisabled(nextPeriod, nextHour12))
+  const isHourDisabled = (nextHour24) => (
+    disabled || (minimumHour != null && nextHour24 < minimumHour)
   );
   const isMinuteDisabled = (nextMinute) => {
     if (disabled) return true;
     if (minimumHour == null) return false;
-    const hour24 = toHour24(period, hour12);
     return hour24 < minimumHour || (hour24 === minimumHour && nextMinute < minimumMinute);
   };
-  const emit = (nextPeriod, nextHour12, nextMinute) => {
+  const emit = (nextHour24, nextMinute) => {
     if (!onChange || disabled) return;
-    const nextValue = toHour24String(nextPeriod, nextHour12, nextMinute);
+    const nextValue = toTimeString(nextHour24, nextMinute);
     onChange(minTime && nextValue < minTime ? minTime : nextValue);
   };
 
   return (
     <div style={{ display: 'flex', gap: 6 }}>
-      <select className="input" disabled={disabled} value={period} onChange={(event) => emit(event.target.value, hour12, minute)} style={{ padding: '5px 8px', fontSize: 15 }} aria-label="오전 또는 오후">
-        <option value="am" disabled={isPeriodDisabled('am')}>오전</option>
-        <option value="pm" disabled={isPeriodDisabled('pm')}>오후</option>
-      </select>
-      <select className="input" disabled={disabled} value={hour12} onChange={(event) => emit(period, Number(event.target.value), minute)} style={{ padding: '5px 8px', fontSize: 15 }} aria-label="시">
-        {Array.from({ length: 12 }, (_, index) => index + 1).map((nextHour12) => (
-          <option key={nextHour12} value={nextHour12} disabled={isHourDisabled(period, nextHour12)}>{nextHour12}시</option>
+      <select className="input" disabled={disabled} value={hour24} onChange={(event) => emit(Number(event.target.value), minute)} style={{ padding: '5px 8px', fontSize: 15 }} aria-label="시">
+        {Array.from({ length: 24 }, (_, index) => index).map((nextHour24) => (
+          <option key={nextHour24} value={nextHour24} disabled={isHourDisabled(nextHour24)}>{String(nextHour24).padStart(2, '0')}시</option>
         ))}
       </select>
-      <select className="input" disabled={disabled} value={minute} onChange={(event) => emit(period, hour12, Number(event.target.value))} style={{ padding: '5px 8px', fontSize: 15 }} aria-label="분">
+      <select className="input" disabled={disabled} value={minute} onChange={(event) => emit(hour24, Number(event.target.value))} style={{ padding: '5px 8px', fontSize: 15 }} aria-label="분">
         {MINS.map((nextMinute) => (
           <option key={nextMinute} value={nextMinute} disabled={isMinuteDisabled(nextMinute)}>{String(nextMinute).padStart(2, '0')}분</option>
         ))}
