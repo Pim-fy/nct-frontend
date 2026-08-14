@@ -95,14 +95,18 @@ export default function ServiceRequestImageUpload({ images, onChange, maxImages 
             key={img.id}
             className="relative"
             onClick={() => pickMode && setAsRepresentative(img.id)}
+            onDragStart={e => e.preventDefault()}
             style={{ cursor: pickMode && i !== 0 ? 'pointer' : 'default' }}
           >
             <img
               src={toImageUrl(img.url)}
               alt={`요청 사진 ${i + 1}`}
+              draggable={false}
+              onDragStart={e => e.preventDefault()}
               className={`aspect-square w-full rounded-lg object-cover ${
                 i === 0 ? 'border-2 border-primary' : pickMode ? 'border-2 border-dashed border-primary' : 'border border-[#e2e1dc]'
               }`}
+              style={{ WebkitUserDrag: 'none', userSelect: 'none' }}
             />
             {i === 0 && (
               <span className="absolute left-1 top-1 rounded bg-primary px-1.5 py-0.5 text-[11px] font-semibold text-white">대표</span>
