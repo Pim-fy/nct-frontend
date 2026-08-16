@@ -24,13 +24,13 @@ import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
 import AdminTable from '@components/admin/AdminTable';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
+import AuctionOriginalModal from '@components/trade/AuctionOriginalModal';
 import PageMeta from '@components/admin/PageMeta';
 import CommonTabs from '@components/common/CommonTabs';
 import { ADMIN_PAGE_SIZE } from '@/constants/adminPagination';
 import {
   ADMIN_REPORTS_PATH,
   ADMIN_SETTINGS_PATH,
-  getAdminAuctionDetailPath,
   getAdminReportDetailPath,
   getAdminServiceRequestDetailPath,
   getAdminServiceTradeDetailPath,
@@ -120,9 +120,6 @@ const reportTypeName = (code, serverName) => (
 const reportStatus = (code) => REPORT_STATUS[code] ?? { label: code ?? '-', tone: 'neutral' };
 const isActionableStatus = (code) => code === 'ABSC0001' || code === 'ABSC0002';
 const getReferenceDetailPath = (detailType, detailSn) => {
-  if (detailType === 'AUCTION' && detailSn != null) {
-    return getAdminAuctionDetailPath(detailSn);
-  }
   if (detailType === 'SERVICE_REQUEST' && detailSn != null) {
     return getAdminServiceRequestDetailPath(detailSn);
   }
@@ -161,9 +158,12 @@ const getReportReferencePresentation = ({
     || referenceTitle?.trim()
     || targetName?.trim()
     || fallbackTitle?.trim()
-    || (referenceSn == null ? referenceName : `${referenceName} #${referenceSn}`);
+    || `${referenceName} 정보를 확인할 수 없습니다`;
 
   return {
+    auctionPreviewId: referenceDetailType === 'AUCTION' && referenceDetailSn != null
+      ? referenceDetailSn
+      : null,
     detailPath: getReferenceDetailPath(referenceDetailType, referenceDetailSn),
     displayName,
     metaText: referenceSn == null ? referenceName : `${referenceName} · #${referenceSn}`,
@@ -175,6 +175,7 @@ const renderReportReference = ({
   detailState,
   fallbackTitle,
   isList = false,
+  onAuctionPreview,
   referenceDetailSn,
   referenceDetailType,
   referenceTypeCode,
@@ -186,7 +187,12 @@ const renderReportReference = ({
     return <span className="admin-operation-reference__empty">관련 항목 없음</span>;
   }
 
-  const { detailPath, displayName, metaText } = getReportReferencePresentation({
+  const {
+    auctionPreviewId,
+    detailPath,
+    displayName,
+    metaText,
+  } = getReportReferencePresentation({
     fallbackTitle,
     referenceDetailSn,
     referenceDetailType,
@@ -199,6 +205,9 @@ const renderReportReference = ({
     <AdminReferenceLink
       centered={isList}
       meta={metaText}
+      onClick={auctionPreviewId != null && onAuctionPreview
+        ? () => onAuctionPreview(auctionPreviewId)
+        : undefined}
       state={detailState}
       title={displayName}
       to={detailPath}
@@ -259,6 +268,7 @@ const AdminReportManagementPage = () => {
   const [chatReason, setChatReason] = useState('');
   const [chatResult, setChatResult] = useState(null);
   const [chatModalOpen, setChatModalOpen] = useState(false);
+  const [previewAuctionId, setPreviewAuctionId] = useState(null);
   const chatRequestVersionRef = useRef(0);
 
   const reportsQuery = useQuery({
@@ -399,7 +409,8 @@ const AdminReportManagementPage = () => {
   };
 
   const closeReport = () => {
-    if (chatModalOpen || decisionMutation.isPending || releaseMutation.isPending) return;
+    if (chatModalOpen || previewAuctionId != null
+      || decisionMutation.isPending || releaseMutation.isPending) return;
     chatRequestVersionRef.current += 1;
     setReason('');
     setTradeDecision('COMPLETE');
@@ -451,6 +462,7 @@ const AdminReportManagementPage = () => {
         referenceDetailType: row.referenceDetailType,
         referenceDetailSn: row.referenceDetailSn,
         detailState: { from: `${location.pathname}${location.search}` },
+        onAuctionPreview: setPreviewAuctionId,
         targetName: row.targetName,
         fallbackTitle: value === 'REFC0001'
           ? formatAdminMemberIdentity(row.reportedMember, row.reportedUserSn)
@@ -610,7 +622,9 @@ const AdminReportManagementPage = () => {
 
   return (
     <div className="admin-bjn-page admin-operation-page">
-      <PageMeta title={selectedReportSn ? `신고 #${selectedReportSn}` : '신고 관리'} />
+      <PageMeta title={detail
+        ? `${detail.title?.trim() || reportTypeName(detail.reportTypeCode, detail.reportTypeName)} · 신고 #${detail.reportSn}`
+        : selectedReportSn ? `신고 상세 · #${selectedReportSn}` : '신고 관리'} />
       <AdminPageHeader
         action={selectedReportSn ? (
           <button
@@ -743,12 +757,14 @@ const AdminReportManagementPage = () => {
                     referenceDetailType: detail.referenceDetailType,
                     referenceDetailSn: detail.referenceDetailSn,
                     detailState: { from: `${location.pathname}${location.search}` },
+                    onAuctionPreview: setPreviewAuctionId,
                     targetName: detail.targetName,
                     fallbackTitle: detail.referenceTypeCode === 'REFC0001'
                       ? formatAdminMemberIdentity(detail.reportedMember, detail.reportedUserSn)
                       : null,
                   })}</dd>
-                  <dt>위험 이벤트</dt><dd>{detail.riskEventSn == null ? '-' : `#${detail.riskEventSn}`}</dd>
+                  <dt>위험 이벤트</dt>
+                  <dd>{detail.riskEventSn == null ? '-' : `연결된 위험 이벤트 · #${detail.riskEventSn}`}</dd>
                   <dt>상태</dt>
                   <dd><AdminStatusBadge tone={detailStatus.tone}>{detailStatus.label}</AdminStatusBadge></dd>
                   <dt>접수일</dt><dd>{formatDate(detail.registeredAt)}</dd>
@@ -1080,8 +1096,17 @@ const AdminReportManagementPage = () => {
             title="채팅 내역"
           >
             <div className="admin-operation-chat-modal__summary">
-              <div><span>신고</span><strong>#{selectedReportSn}</strong></div>
-              <div><span>거래</span><strong>#{detail?.tradeSn ?? '-'}</strong></div>
+              <div>
+                <span>신고</span>
+                <strong>{detail?.title?.trim()
+                  || reportTypeName(detail?.reportTypeCode, detail?.reportTypeName)} · 신고 #{selectedReportSn}</strong>
+              </div>
+              <div>
+                <span>거래</span>
+                <strong>{detail?.tradeSn == null
+                  ? '연결된 거래 없음'
+                  : `${detailReference?.displayName || '연결 거래'} · 거래 #${detail.tradeSn}`}</strong>
+              </div>
             </div>
             <p className="admin-operation-chat-modal__notice">
               이 신고에 연결된 거래 채팅만 표시되며 모든 열람 기록은 감사로그에 남습니다.
@@ -1152,6 +1177,12 @@ const AdminReportManagementPage = () => {
           </AdminModal>
         </div>
       )}
+
+      <AuctionOriginalModal
+        auctionId={previewAuctionId}
+        onClose={() => setPreviewAuctionId(null)}
+        open={previewAuctionId != null}
+      />
 
     </div>
   );

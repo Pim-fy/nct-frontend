@@ -8,15 +8,17 @@ const AdminReferenceLink = ({
   centered = false,
   className = '',
   meta,
+  onClick,
   state,
   title,
   to,
 }) => {
   const normalizedTitle = title?.trim() || meta || '관련 항목';
+  const interactive = Boolean(to || onClick);
   const classes = [
     'admin-reference-link',
     centered ? 'admin-reference-link--centered' : '',
-    to ? 'admin-reference-link--interactive' : '',
+    interactive ? 'admin-reference-link--interactive' : '',
     className,
   ].filter(Boolean).join(' ');
   const content = (
@@ -27,6 +29,19 @@ const AdminReferenceLink = ({
       </span>
     </>
   );
+
+  if (onClick) {
+    return (
+      <button
+        aria-label={ariaLabel || `${normalizedTitle} 상세 보기`}
+        className={classes}
+        onClick={onClick}
+        type="button"
+      >
+        {content}
+      </button>
+    );
+  }
 
   return to ? (
     <Link

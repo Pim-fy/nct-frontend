@@ -82,7 +82,6 @@ const TradeDetailSeller = ({
   const { tradeId: routeTradeId } = useParams();
   const tradeId = selectedTradeId ?? routeTradeId;
   const location = useLocation();
-  const { pathname } = location;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   // @ai_generated (담당자1, 2026-08-07): 발송 인증/완료 확인/일정 저장 성공 시 공통으로 호출한다.
@@ -210,7 +209,6 @@ const TradeDetailSeller = ({
     };
   }, [hasSubmittedProofFiles, trade?.deliveryId, trade?.deliveryProofFiles]);
 
-  const isPreview = pathname.startsWith('/trades/preview');
   const contentClassName = embedded ? 'trade-detail-page__content' : 'container';
   // 판매자 상세도 구매자 상세와 같은 상태 카드 기준을 사용한다.
   const sellerTradeStatusInfo = (() => {
@@ -313,9 +311,7 @@ const TradeDetailSeller = ({
     trade?.method === 'OFFLINE'
     && trade?.canRespondToOfflineCompletionRequest
   );
-  const chatPath = isPreview
-    ? `/trades/preview/${tradeId}/chat?from=seller`
-    : `/trades/${tradeId}/chat?from=seller`;
+  const chatPath = `/trades/${tradeId}/chat?from=seller`;
 
   // 상세에서 채팅을 시작할 때만 직거래 채팅방을 만들고, 생성 후 기존 진입 경로를 연다.
   const openTradeChat = async () => {
@@ -356,9 +352,7 @@ const TradeDetailSeller = ({
       return;
     }
 
-    navigate(isPreview
-      ? '/user/mypage/preview/trades'
-      : '/user/mypage/auctions/sales');
+    navigate('/user/mypage/auctions/sales');
   };
 
   // URL의 거래 번호로 서버 상세를 조회해 새로고침해도 같은 거래를 표시한다.
@@ -517,7 +511,7 @@ const TradeDetailSeller = ({
     setIsCompletionSubmitting(true);
 
     try {
-      const response = await requestTradeCompletion(tradeId, 'SELLER');
+      const response = await requestTradeCompletion(tradeId);
       const updatedTrade = toTradeDetail(response);
 
       setTrade(updatedTrade);
