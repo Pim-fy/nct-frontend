@@ -1,6 +1,6 @@
 .admin-service-filter {
   display: grid;
-  grid-template-columns: repeat(2, minmax(130px, .75fr)) repeat(2, minmax(150px, .85fr)) minmax(220px, 1.5fr) auto;
+  grid-template-columns: repeat(2, minmax(130px, .75fr)) minmax(300px, 1.4fr) minmax(220px, 1.5fr) auto;
   align-items: end;
   gap: 14px;
   margin-bottom: 18px;
@@ -464,6 +464,10 @@
 
   .admin-service-filter .btn {
     justify-content: center;
+  }
+
+  .admin-service-filter .admin-date-range-filter {
+    min-width: 0;
   }
 
   .admin-service-detail__facts {

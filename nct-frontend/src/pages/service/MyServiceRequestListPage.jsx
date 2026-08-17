@@ -30,15 +30,17 @@ const FILTERS = [
   { label: '임시저장', value: 'DRAFT' },
   { label: '공개',     value: 'OPEN' },
   { label: '매칭완료', value: 'MATCHED' },
-  { label: '취소',     value: 'CLOSED' },
+  { label: '종료',     value: 'CLOSED' },
+  { label: '취소',     value: 'CANCELED' },
 ];
 
 const STATUS_LABEL = {
   SVCC0001: '임시저장',
   SVCC0002: '공개',
   SVCC0003: '매칭완료',
-  SVCC0004: '취소',
+  SVCC0004: '종료',
   SVCC0005: '운영 보류',
+  SVCC0006: '취소',
 };
 
 const STATUS_BADGE = {
@@ -47,6 +49,7 @@ const STATUS_BADGE = {
   SVCC0003: 'badge-primary',
   SVCC0004: 'badge-outline-gray',
   SVCC0005: 'badge-warning',
+  SVCC0006: 'badge-danger',
 };
 
 function fmtBudget(amt) {
@@ -76,6 +79,7 @@ export default function MyServiceRequestListPage({ embedded = false }) {
   const { data: openSummary,    isLoading: isOpenLoading }    = useMyServiceRequests(1, 1, 'OPEN');
   const { data: matchedSummary, isLoading: isMatchedLoading } = useMyServiceRequests(1, 1, 'MATCHED');
   const { data: closedSummary,  isLoading: isClosedLoading }  = useMyServiceRequests(1, 1, 'CLOSED');
+  const { data: canceledSummary, isLoading: isCanceledLoading } = useMyServiceRequests(1, 1, 'CANCELED');
 
   const list = data?.list ?? [];
   const totalPages = data?.totalPages ?? 1;
@@ -83,7 +87,8 @@ export default function MyServiceRequestListPage({ embedded = false }) {
   const visibleList = normalizedKeyword
     ? list.filter(item => String(item.svcReqTtl ?? '').toLowerCase().includes(normalizedKeyword))
     : list;
-  const isSummaryLoading = isAllLoading || isDraftLoading || isOpenLoading || isMatchedLoading || isClosedLoading;
+  const isSummaryLoading = isAllLoading || isDraftLoading || isOpenLoading
+    || isMatchedLoading || isClosedLoading || isCanceledLoading;
 
   const handleFilterChange = (value) => {
     const nextSearchParams = new URLSearchParams(searchParams);
@@ -120,7 +125,8 @@ export default function MyServiceRequestListPage({ embedded = false }) {
         summaryItems={[
           { label: '공개 중',   value: openSummary?.total ?? 0 },
           { label: '매칭완료', value: matchedSummary?.total ?? 0 },
-          { label: '취소',     value: closedSummary?.total ?? 0 },
+          { label: '종료',     value: closedSummary?.total ?? 0 },
+          { label: '취소',     value: canceledSummary?.total ?? 0 },
         ]}
         filterItems={FILTERS.map(item => ({
           ...item,
@@ -129,6 +135,7 @@ export default function MyServiceRequestListPage({ embedded = false }) {
             OPEN: openSummary?.total,
             MATCHED: matchedSummary?.total,
             CLOSED: closedSummary?.total,
+            CANCELED: canceledSummary?.total,
           }[item.value] ?? (item.value === null ? allSummary?.total : 0),
         }))}
         activeFilter={filter}

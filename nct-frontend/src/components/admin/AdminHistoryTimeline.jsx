@@ -12,12 +12,15 @@ const SUMMARY_FIELD_LABELS = {
   code: '코드',
   decision: '거래 판정',
   formVersion: '양식 버전',
+  heldSettlements: '보류 정산',
+  memberStatus: '회원 상태',
   name: '이름',
   published: '게시 여부',
   released: '제재 해제',
   report: '신고 번호',
   reportSn: '신고 번호',
   reportStatus: '신고 상태',
+  restrictedTrades: '제한 처리된 거래',
   sanction: '제재 번호',
   sort: '표시 순서',
   status: '처리 상태',
@@ -37,6 +40,8 @@ const SUMMARY_VALUE_LABELS = {
   TRDC0006: '완료',
   TRDC0007: '보류',
   TRDC0008: '취소',
+  USRC0001: '활성',
+  USRC0002: '정지',
   COMPLETE: '처리 완료',
   REFUND: '전액 환불',
   HOLD: '보류',
@@ -49,6 +54,8 @@ const SUMMARY_VALUE_LABELS = {
   true: '예',
   false: '아니요',
 };
+
+const SUMMARY_COUNT_FIELDS = new Set(['heldSettlements', 'restrictedTrades']);
 
 const legacyFields = (item) => {
   if (item.before != null || item.after != null || item.requestId != null) {
@@ -74,6 +81,9 @@ const summaryValue = (key, value) => {
   const normalized = String(value ?? '').trim();
   if (!normalized) return '-';
   if (SUMMARY_VALUE_LABELS[normalized]) return SUMMARY_VALUE_LABELS[normalized];
+  if (SUMMARY_COUNT_FIELDS.has(key) && /^\d+$/.test(normalized)) {
+    return `${normalized}건`;
+  }
   if (/Sn$/.test(key) || ['report', 'sanction'].includes(key)) {
     return /^\d+$/.test(normalized) ? `#${normalized}` : normalized;
   }

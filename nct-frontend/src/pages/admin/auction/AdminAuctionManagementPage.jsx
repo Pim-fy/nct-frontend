@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 
 import { fetchAdminAuctions } from '@api/adminAuctionApi';
+import AdminDateRangeFilter from '@components/admin/AdminDateRangeFilter';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import AdminPagination from '@components/admin/AdminPagination';
@@ -262,22 +263,12 @@ const AdminAuctionManagementPage = () => {
                 <option value="NONE">처리 대기 없음</option>
               </select>
             </label>
-            <label>
-              등록 시작일
-              <input
-                onChange={(event) => setFilterForm({ ...filterForm, registeredFrom: event.target.value })}
-                type="date"
-                value={filterForm.registeredFrom}
-              />
-            </label>
-            <label>
-              등록 종료일
-              <input
-                onChange={(event) => setFilterForm({ ...filterForm, registeredTo: event.target.value })}
-                type="date"
-                value={filterForm.registeredTo}
-              />
-            </label>
+            <AdminDateRangeFilter
+              fromValue={filterForm.registeredFrom}
+              onFromChange={(value) => setFilterForm({ ...filterForm, registeredFrom: value })}
+              onToChange={(value) => setFilterForm({ ...filterForm, registeredTo: value })}
+              toValue={filterForm.registeredTo}
+            />
             <label className="admin-auction-filters__search">
               검색
               <input

@@ -46,16 +46,18 @@ const STATUS_LABEL = {
   SVCC0001: '임시저장',
   SVCC0002: '공개',
   SVCC0003: '매칭완료',
-  SVCC0004: '취소',
+  SVCC0004: '종료',
   SVCC0005: '운영 보류',
+  SVCC0006: '취소',
 };
 
 const STATUS_TONE = {
   SVCC0001: 'neutral',
   SVCC0002: 'info',
   SVCC0003: 'success',
-  SVCC0004: 'danger',
+  SVCC0004: 'neutral',
   SVCC0005: 'warning',
+  SVCC0006: 'danger',
 };
 
 const QUOTE_STATUS_LABEL = {
@@ -483,7 +485,7 @@ export default function ServiceRequestDetailPage() {
     && String(authenticatedUserId) === String(request.usrSn);
   const isDraft  = request.svcReqStatusCd === 'SVCC0001';
   const isOpen   = request.svcReqStatusCd === 'SVCC0002';
-  const isClosed = request.svcReqStatusCd === 'SVCC0004';
+  const isClosed = ['SVCC0004', 'SVCC0006'].includes(request.svcReqStatusCd);
   const canAddComment = isOwner && isOpen && comments.length < 3;
   const quoteTotalPages = Math.max(1, Math.ceil(quotes.length / QUOTES_PAGE_SIZE));
   const pagedQuotes = quotes.slice((quotePage - 1) * QUOTES_PAGE_SIZE, quotePage * QUOTES_PAGE_SIZE);

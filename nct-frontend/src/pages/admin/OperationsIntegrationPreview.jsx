@@ -24,6 +24,29 @@ const EMPTY_FILTERS = {
   dateTo: '',
 };
 
+// 담당자 7 · ISSUE-T7-013: 관리자 화면에는 다형성 참조 코드를 도메인명으로 표시합니다.
+const REFERENCE_TYPE_LABELS = {
+  REFC0001: '회원',
+  REFC0002: '상품',
+  REFC0003: '경매',
+  REFC0004: '입찰',
+  REFC0005: '거래',
+  REFC0007: '서비스 요청',
+  REFC0008: '견적',
+  REFC0009: '포인트 원장',
+  REFC0010: '시스템 설정',
+  REFC0011: '공지',
+  REFC0012: '상품 문의',
+  REFC0013: '1:1 문의',
+  REFC0014: '카테고리',
+  REFC0015: '제공자 신청',
+  REFC0016: '환전 신청',
+  REFC0017: '정산',
+  REFC0018: '신고',
+  REFC0019: '제재',
+  REFC0020: '공통 코드',
+};
+
 /** 담당자 7 · F-OPS-011/013: 운영 위험 이벤트를 읽기 전용으로 확인하는 화면입니다. */
 const OperationsIntegrationPreview = () => {
   const [filterForm, setFilterForm] = useState(EMPTY_FILTERS);
@@ -76,7 +99,9 @@ const OperationsIntegrationPreview = () => {
       key: 'referenceTypeCode',
       label: '관련 대상',
       render: (value, row) => (
-        value && row.referenceSn != null ? `${value} #${row.referenceSn}` : '전체 범위'
+        value && row.referenceSn != null
+          ? `${REFERENCE_TYPE_LABELS[value] ?? '관련 대상'} #${row.referenceSn}`
+          : '전체 범위'
       ),
     },
     {

@@ -91,7 +91,7 @@ const CustomerInquiryFormPage = () => {
 
   return (
     <ContentPageShell className="customer-inquiry-form-page">
-      <Helmet><title>1:1 문의 | 에누리컷</title></Helmet>
+      <Helmet><title>에누리컷</title></Helmet>
 
       <header className="customer-support-page-header customer-support-page-header--plain">
         <h1>관리자에게 문의하기</h1>

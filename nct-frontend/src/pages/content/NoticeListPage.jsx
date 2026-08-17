@@ -88,7 +88,7 @@ const NoticeListPage = () => {
 
   return (
     <ContentPageShell className="public-notice-page">
-      <Helmet><title>공지사항 | 에누리컷</title></Helmet>
+      <Helmet><title>에누리컷</title></Helmet>
       <header className="customer-support-page-header customer-support-page-header--plain">
         <h1>공지사항</h1>
       </header>

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 
 import { fetchAdminServiceRequests } from '@api/adminServiceRequestApi';
+import AdminDateRangeFilter from '@components/admin/AdminDateRangeFilter';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import AdminPagination from '@components/admin/AdminPagination';
@@ -32,13 +33,16 @@ const STATUS_OPTIONS = [
   { value: 'SVCC0002', label: '공개' },
   { value: 'SVCC0001', label: '임시저장' },
   { value: 'SVCC0003', label: '매칭완료' },
-  { value: 'SVCC0004', label: '취소' },
+  { value: 'SVCC0004', label: '종료' },
+  { value: 'SVCC0005', label: '운영보류' },
+  { value: 'SVCC0006', label: '취소' },
 ];
 
 const statusTone = (statusCode) => {
   if (statusCode === 'SVCC0002') return 'info';
   if (statusCode === 'SVCC0003') return 'success';
-  if (statusCode === 'SVCC0004') return 'danger';
+  if (statusCode === 'SVCC0005') return 'warning';
+  if (statusCode === 'SVCC0006') return 'danger';
   return 'neutral';
 };
 
@@ -239,14 +243,18 @@ const AdminServiceRequestPage = () => {
             ))}
           </select>
         </label>
-        <label>
-          등록 시작일
-          <input name="registeredFrom" onChange={change} type="date" value={filterForm.registeredFrom} />
-        </label>
-        <label>
-          등록 종료일
-          <input name="registeredTo" onChange={change} type="date" value={filterForm.registeredTo} />
-        </label>
+        <AdminDateRangeFilter
+          fromValue={filterForm.registeredFrom}
+          onFromChange={(value) => setFilterForm((current) => ({
+            ...current,
+            registeredFrom: value,
+          }))}
+          onToChange={(value) => setFilterForm((current) => ({
+            ...current,
+            registeredTo: value,
+          }))}
+          toValue={filterForm.registeredTo}
+        />
         <label className="admin-service-filter__search">
           검색
           <input

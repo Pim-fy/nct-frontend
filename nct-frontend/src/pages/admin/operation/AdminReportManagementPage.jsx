@@ -236,6 +236,10 @@ const caseTypeFromSearch = (searchParams) => {
   return REPORT_CASE_TABS.some((tab) => tab.value === value) ? value : 'ALL';
 };
 
+// 담당자 7 · F-OPS-007/F-AUTH-013: 위험 이벤트 자동 신고는 거래 분쟁 판정을 보내지 않습니다.
+const isTradeIssueReport = (report) => report?.riskEventSn == null
+  && (report?.caseType === 'TRADE_ISSUE' || report?.tradeSn != null);
+
 const pageFromSearch = (searchParams) => {
   const value = Number(searchParams.get('page') ?? 1);
   return Number.isInteger(value) && value > 0 ? value : 1;
@@ -505,11 +509,11 @@ const AdminReportManagementPage = () => {
     const normalizedReason = reason.trim();
     const selectedAction = decision === 'PROCESSED' ? enforcementAction : 'NONE';
     const currentDetail = reportDetailQuery.data;
-    const tradeReport = currentDetail?.caseType === 'TRADE_ISSUE' || currentDetail?.tradeSn != null;
+    const tradeReport = isTradeIssueReport(currentDetail);
     const resolvedTradeDecision = !tradeReport
       ? null
       : decision === 'PROCESSING'
-        ? 'HOLD'
+        ? null
         : decision === 'REJECTED'
           ? 'REJECT'
           : tradeDecision;
@@ -595,7 +599,7 @@ const AdminReportManagementPage = () => {
   const canStart = detail?.statusCode === 'ABSC0001';
   const canFinalize = detail?.statusCode === 'ABSC0002';
   const isActionable = canStart || canFinalize;
-  const isTradeReport = detail?.caseType === 'TRADE_ISSUE' || detail?.tradeSn != null;
+  const isTradeReport = isTradeIssueReport(detail);
   const selectedTradeDecision = TRADE_DECISION_OPTIONS.find(
     (option) => option.value === tradeDecision,
   );
