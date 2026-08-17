@@ -119,6 +119,15 @@ export default function ProviderApprovedCategorySection() {
               승인 {approvedCount} / 전체 {categories.length}
             </span>
           )}
+          {/* 신청 가능한 카테고리가 남아있으면 주 버튼이 "새 분야 심사 신청"으로 바뀌면서
+              반려 사유를 보는 화면(신청 이력)으로 가는 길이 사라졌다. 반려된 카테고리가
+              있는 상태에서도 항상 갈 수 있도록 보조 버튼을 추가한다
+              (QA 발견, 백종남/Claude, 2026-08-16) */}
+          {hasApplicableCategory && (
+            <ActionButton className="shrink-0" to="/provider/applications/status" tone="outline">
+              신청 이력 확인
+            </ActionButton>
+          )}
           <ActionButton
             className="shrink-0"
             to={hasApplicableCategory ? '/provider/apply' : '/provider/applications/status'}

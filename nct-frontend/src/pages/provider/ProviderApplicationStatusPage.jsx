@@ -101,7 +101,18 @@ const ProviderApplicationStatusPage = () => {
             {data.map((item) => (
               <div key={item.applicationSn}>
                 <dt>{item.categoryName}</dt>
-                <dd>{statusLabel(item)}</dd>
+                <dd>
+                  {statusLabel(item)}
+                  {/* 위쪽 요약 카드는 가장 최근 신청 1건만 보여줘서, 그보다 예전에 반려된
+                      다른 카테고리는 사유·재신청 경로가 아예 없었다. 반려된 건마다 각각
+                      사유와 재신청 버튼을 노출한다 (QA 발견, 백종남/Claude, 2026-08-16) */}
+                  {item.statusCode === 'PRVC0004' && (
+                    <div className="provider-status-reject-detail">
+                      <p>반려 사유: {item.rejectReason || '관리자 보완 요청을 확인해 주세요.'}</p>
+                      <ActionButton to="/provider/apply" size="sm">보완 후 다시 신청</ActionButton>
+                    </div>
+                  )}
+                </dd>
               </div>
             ))}
           </dl>
