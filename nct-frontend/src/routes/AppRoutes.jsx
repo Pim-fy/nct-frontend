@@ -175,8 +175,6 @@ const AppRoutes = () => {
         <Route path="/auction" element={<AuctionListPage />} />
         <Route path="/auction/:auctionId" element={<AuctionDetailPage />} />
 
-        {/* 담당자 7의 F-COM-015 공개 제공자 프로필 화면 */}
-        <Route path="/providers/:providerId" element={<PublicProviderProfilePage />} />
         <Route element={<CustomerSupportLayout />}>
           <Route path="/customersupport/guide" element={<GuidePage />} />
           <Route path="/customersupport/notice" element={<NoticeListPage />} />
@@ -210,6 +208,8 @@ const AppRoutes = () => {
         <Route element={<UserLayout />}>
           {/* 담당자 7 · 공개 거래 프로필: 일반·서비스 모드에서 같은 회원 프로필을 조회합니다. */}
           <Route path="/users/:userSn" element={<PublicTradeProfilePage />} />
+          {/* 담당자 7 · F-PROV-016: 제공자 프로필·포트폴리오는 로그인 회원만 조회합니다. */}
+          <Route path="/providers/:providerId" element={<PublicProviderProfilePage />} />
           <Route path="/user/mypage" element={<MyPage />} />
           <Route
             path="/user/mypage/auctions/active"
