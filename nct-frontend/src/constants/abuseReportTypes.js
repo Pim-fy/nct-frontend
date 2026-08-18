@@ -9,10 +9,22 @@ export const CUSTOMER_REPORT_TYPE_CODES = Object.freeze([
   'ABRC0007',
 ]);
 
+export const TRADE_REPORT_TYPE_CODES = Object.freeze([
+  'ABRC0008',
+  'ABRC0009',
+  'ABRC0010',
+  'ABRC0011',
+]);
+
 const CUSTOMER_REPORT_TYPE_CODE_SET = new Set(CUSTOMER_REPORT_TYPE_CODES);
+const TRADE_REPORT_TYPE_CODE_SET = new Set(TRADE_REPORT_TYPE_CODES);
 
 export const isCustomerReportTypeCode = (code) => (
   CUSTOMER_REPORT_TYPE_CODE_SET.has(String(code ?? '').trim().toUpperCase())
+);
+
+export const isTradeReportTypeCode = (code) => (
+  TRADE_REPORT_TYPE_CODE_SET.has(String(code ?? '').trim().toUpperCase())
 );
 
 // 공통코드명이 응답에 없을 때 사용하는 표시명입니다.
