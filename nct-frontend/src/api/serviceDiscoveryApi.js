@@ -3,6 +3,7 @@ import {
   fetchPublicPortfolios as fetchProviderPortfolios,
   fetchPublicProviderProfile as fetchProviderProfile,
 } from '@api/providerProfileApi';
+import { getUserReviews } from '@api/reviewApi';
 
 const firstDefined = (...values) => values.find((value) => value !== undefined && value !== null);
 
@@ -93,10 +94,16 @@ export const fetchServiceDiscovery = async ({
 };
 
 export const fetchPublicProviderProfile = async (providerId) => {
-  const [profile, portfolios] = await Promise.all([
+  const [profile, portfolios, reviewResponse] = await Promise.all([
     fetchProviderProfile(Number(providerId)),
     fetchProviderPortfolios(Number(providerId)),
+    getUserReviews(Number(providerId), {
+      dealType: 'service',
+      page: 0,
+      size: 10,
+    }).catch(() => null),
   ]);
+  const serviceReviews = reviewResponse?.data?.content ?? [];
 
   return {
     id: profile.userSn,
@@ -110,7 +117,13 @@ export const fetchPublicProviderProfile = async (providerId) => {
     categories: profile.categories ?? [],
     regions: profile.availableArea ? [profile.availableArea] : [],
     intro: profile.introduction || '등록된 소개가 없습니다.',
-    reviews: [],
+    reviews: serviceReviews.map((review) => ({
+      id: review.reviewId,
+      score: Number(review.rating ?? 0),
+      content: review.content || '작성된 리뷰 내용이 없습니다.',
+      author: review.reviewerName || '회원',
+      date: review.createdDate || '작성일 미정',
+    })),
     portfolios: (portfolios ?? []).map((portfolio) => {
       const representative = portfolio.files?.find((file) => file.representative)
         ?? portfolio.files?.[0];
