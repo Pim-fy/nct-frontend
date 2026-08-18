@@ -30,12 +30,14 @@ import {
 const QUOTE_STATUS_LABEL = {
   QUTC0001: '제출됨',
   QUTC0002: '수정됨',
+  QUTC0003: '만료됨',
   QUTC0004: '선택됨',
   QUTC0005: '철회됨',
 };
 const QUOTE_STATUS_TONE = {
   QUTC0001: 'info',
   QUTC0002: 'info',
+  QUTC0003: 'neutral',
   QUTC0004: 'success',
   QUTC0005: 'neutral',
 };
@@ -44,16 +46,18 @@ const REQUEST_STATUS_LABEL = {
   SVCC0001: '임시저장',
   SVCC0002: '공개',
   SVCC0003: '매칭완료',
-  SVCC0004: '취소',
+  SVCC0004: '종료',
   SVCC0005: '운영 보류',
+  SVCC0006: '취소',
 };
 
 const REQUEST_STATUS_TONE = {
   SVCC0001: 'neutral',
   SVCC0002: 'info',
   SVCC0003: 'success',
-  SVCC0004: 'danger',
+  SVCC0004: 'neutral',
   SVCC0005: 'warning',
+  SVCC0006: 'danger',
 };
 
 const REQUEST_ITEM_PREVIEW_LIMIT = 8;
@@ -111,6 +115,9 @@ export default function QuoteDetailPage() {
   const canEditOwnQuote = isProvider
     && ['QUTC0001', 'QUTC0002'].includes(quote?.statusCode)
     && Number(quote?.reviseCnt ?? 0) < 3;
+  const canSelectQuote = !isProvider
+    && ['QUTC0001', 'QUTC0002'].includes(quote?.statusCode)
+    && request?.svcReqStatusCd === 'SVCC0002';
   const quoteHistoryTargetId = Number(quote?.qutSn);
   const hasQuoteHistory = Number(quote?.reviseCnt ?? 0) > 0;
   const quoteHistory = quoteHistoryResult.quoteId === quoteHistoryTargetId
@@ -357,7 +364,7 @@ export default function QuoteDetailPage() {
                   >
                     신고
                   </ActionButton>
-                  {quote.statusCode !== 'QUTC0004' && quote.statusCode !== 'QUTC0005' && (
+                  {canSelectQuote && (
                     <ActionButton
                       onClick={handleSelectQuote}
                       disabled={selecting}

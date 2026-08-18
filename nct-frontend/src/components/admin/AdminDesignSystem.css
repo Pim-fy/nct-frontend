@@ -126,6 +126,36 @@
   line-height: 1.4;
 }
 
+/* 담당자 7 · 관리자 목록 공통: 날짜 시작·종료 입력을 하나의 등록일 범위로 묶습니다. */
+.admin-layout .admin-date-range-filter {
+  min-width: 300px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.admin-layout .admin-date-range-filter legend {
+  margin-bottom: 7px;
+  padding: 0;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.admin-layout .admin-date-range-filter__controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-layout .admin-date-range-filter__controls > span {
+  color: var(--admin-text-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .admin-layout :is(
   .admin-notice-filters,
   .admin-provider-filter,

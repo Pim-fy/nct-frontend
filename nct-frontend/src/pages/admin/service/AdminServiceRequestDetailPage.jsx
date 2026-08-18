@@ -31,7 +31,8 @@ const QUOTE_STATUS_META = {
 const statusTone = (statusCode) => {
   if (statusCode === 'SVCC0002') return 'info';
   if (statusCode === 'SVCC0003') return 'success';
-  if (statusCode === 'SVCC0004') return 'danger';
+  if (statusCode === 'SVCC0005') return 'warning';
+  if (statusCode === 'SVCC0006') return 'danger';
   return 'neutral';
 };
 

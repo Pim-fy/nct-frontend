@@ -63,7 +63,7 @@ const FaqPage = () => {
 
   return (
     <ContentPageShell className="public-faq-page">
-      <Helmet><title>자주 묻는 질문 | 에누리컷</title></Helmet>
+      <Helmet><title>에누리컷</title></Helmet>
       <header className="customer-support-page-header customer-support-page-header--plain">
         <h1>자주 묻는 질문</h1>
       </header>

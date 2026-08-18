@@ -45,6 +45,20 @@ const SUMMARY_ITEMS = [
     tone: 'indigo',
   },
   {
+    key: 'activeDisputeCount',
+    label: '활성 분쟁',
+    description: '접수·처리 중인 거래 분쟁',
+    icon: Siren,
+    tone: 'red',
+  },
+  {
+    key: 'incompleteSettlementCount',
+    label: '미완료 정산',
+    description: '대기·보류 상태의 정산',
+    icon: ClipboardCheck,
+    tone: 'orange',
+  },
+  {
     key: 'pendingAuctionCancellationCount',
     label: '판매자 취소 심사 대기',
     description: '관리자 취소 판정 필요',

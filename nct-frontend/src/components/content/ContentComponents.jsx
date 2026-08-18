@@ -352,14 +352,15 @@ const TradeDetailPreview = () => (
   </GuidePreviewWindow>
 );
 
-const PointWalletPreview = () => (
+/** 담당자 7 · F-COM-014: 포인트 지갑 화면을 환전 단계에 맞춰 상태별로 재사용합니다. */
+const PointWalletPreview = ({ stage = 'balance' }) => (
   <GuidePreviewWindow label="포인트 지갑">
     <div className="guide-preview-page-title guide-preview-page-title--wallet">
       <strong>포인트 지갑</strong>
       <div className="guide-preview-wallet-actions">
-        <span className="is-active">포인트 충전</span>
+        <span className={stage === 'balance' ? 'is-active' : undefined}>포인트 충전</span>
         <span>포인트 전환</span>
-        <span>환전 신청</span>
+        <span className={stage !== 'balance' ? 'is-active' : undefined}>환전 신청</span>
       </div>
     </div>
     <div className="guide-preview-wallet-cards">
@@ -368,26 +369,76 @@ const PointWalletPreview = () => (
       <div><span>홀딩 포인트</span><strong>62,000 P</strong></div>
       <div><span>환전 가능</span><strong>20,000 P</strong></div>
     </div>
-    <div className="guide-preview-ledger">
-      <strong>포인트 내역</strong>
-      <div><span>일시</span><span>유형</span><span>변동금액</span><span>잔액</span></div>
-      <div><span>07.29</span><b>홀딩</b><em>-62,000P</em><strong>82,000P</strong></div>
-      <div><span>07.25</span><b>충전</b><em>+50,000P</em><strong>144,000P</strong></div>
-      <div><span>07.20</span><b>반환</b><em>+20,000P</em><strong>94,000P</strong></div>
-      <div><span>07.18</span><b>사용</b><em>-35,000P</em><strong>74,000P</strong></div>
-    </div>
-    <div className="guide-preview-wallet-exchange">
-      <div><span>환전 신청 가능</span><strong>20,000 P</strong></div>
-      <div><span>등록 계좌</span><strong>신한은행 ***1234</strong></div>
-    </div>
-    <div className="guide-preview-wallet-status">
-      <strong>포인트 상태 안내</strong>
-      <div>
-        <span>사용 가능 · 즉시 사용</span>
-        <span>홀딩 · 거래 완료까지 보관</span>
-        <span>환전 가능 · 신청 가능</span>
-      </div>
-    </div>
+    {stage === 'balance' && (
+      <>
+        <div className="guide-preview-ledger">
+          <strong>포인트 내역</strong>
+          <div><span>일시</span><span>유형</span><span>변동금액</span><span>잔액</span></div>
+          <div><span>07.29</span><b>홀딩</b><em>-62,000P</em><strong>82,000P</strong></div>
+          <div><span>07.25</span><b>충전</b><em>+50,000P</em><strong>144,000P</strong></div>
+          <div><span>07.20</span><b>반환</b><em>+20,000P</em><strong>94,000P</strong></div>
+          <div><span>07.18</span><b>사용</b><em>-35,000P</em><strong>74,000P</strong></div>
+        </div>
+        <div className="guide-preview-wallet-exchange">
+          <div><span>환전 신청 가능</span><strong>20,000 P</strong></div>
+          <div><span>등록 계좌</span><strong>신한은행 ***1234</strong></div>
+        </div>
+      </>
+    )}
+    {stage === 'account' && (
+      <>
+        <div className="guide-preview-wallet-exchange">
+          <div><span>등록 은행</span><strong>신한은행</strong></div>
+          <div><span>계좌번호</span><strong>***-***-1234</strong></div>
+        </div>
+        <div className="guide-preview-wallet-status">
+          <strong>환전 계좌 확인</strong>
+          <div>
+            <span>예금주 · 회원 본인</span>
+            <span>환전 가능 · 20,000 P</span>
+            <span>계좌 변경 · 프로필 관리</span>
+          </div>
+        </div>
+      </>
+    )}
+    {stage === 'request' && (
+      <>
+        <div className="guide-preview-wallet-exchange">
+          <div><span>신청 금액</span><strong>20,000 P</strong></div>
+          <div><span>지급 계좌</span><strong>신한은행 ***1234</strong></div>
+        </div>
+        <div className="guide-preview-wallet-status">
+          <strong>환전 신청 안내</strong>
+          <div>
+            <span>신청 즉시 환전 가능 포인트에서 차감</span>
+            <span>관리자 확인 후 등록 계좌로 지급</span>
+            <span>반려 시 차감 포인트 자동 복원</span>
+          </div>
+        </div>
+        <div className="guide-preview-actions guide-preview-actions--wide">
+          <span>취소</span><strong>환전 신청</strong>
+        </div>
+      </>
+    )}
+    {stage === 'result' && (
+      <>
+        <div className="guide-preview-ledger">
+          <strong>환전 신청 내역</strong>
+          <div><span>신청일</span><span>금액</span><span>상태</span><span>처리 결과</span></div>
+          <div><span>08.17</span><b>20,000P</b><em>처리 중</em><strong>대기</strong></div>
+          <div><span>08.10</span><b>30,000P</b><em>완료</em><strong>지급 완료</strong></div>
+          <div><span>08.03</span><b>10,000P</b><em>반려</em><strong>포인트 복원</strong></div>
+        </div>
+        <div className="guide-preview-wallet-status">
+          <strong>처리 상태 안내</strong>
+          <div>
+            <span>대기 · 관리자 확인 전</span>
+            <span>완료 · 계좌 지급 완료</span>
+            <span>반려 · 사유 확인 및 포인트 복원</span>
+          </div>
+        </div>
+      </>
+    )}
   </GuidePreviewWindow>
 );
 
@@ -567,7 +618,10 @@ const GuideScreenPreview = ({ type }) => {
   if (type === 'auction-detail') return <AuctionDetailPreview />;
   if (type === 'auction-result') return <AuctionResultPreview />;
   if (type === 'trade-detail') return <TradeDetailPreview />;
-  if (type === 'point-wallet') return <PointWalletPreview />;
+  if (type === 'point-wallet-balance') return <PointWalletPreview stage="balance" />;
+  if (type === 'point-wallet-account') return <PointWalletPreview stage="account" />;
+  if (type === 'point-wallet-request') return <PointWalletPreview stage="request" />;
+  if (type === 'point-wallet-result') return <PointWalletPreview stage="result" />;
   if (type === 'service-request') return <ServiceRequestPreview />;
   if (type === 'quote-submit') return <QuoteSubmitPreview />;
   if (type === 'quote-selection') return <QuoteSelectionPreview />;
@@ -605,7 +659,7 @@ export const GuideJourneyOverview = ({
   return (
     <section className="guide-experience" aria-label="서비스 이용 흐름">
       <div className="guide-mode-tabs" role="tablist" aria-label="가이드 종류 선택">
-        {journeys.map((journey) => (
+        {journeys.map((journey, index) => (
           <button
             aria-selected={activeJourney.id === journey.id}
             className={activeJourney.id === journey.id ? 'is-active' : undefined}
@@ -617,10 +671,10 @@ export const GuideJourneyOverview = ({
             role="tab"
             type="button"
           >
-            <span aria-hidden="true">{journey.id === 'auction' ? '01' : '02'}</span>
+            <span aria-hidden="true">{journey.tabNumber ?? String(index + 1).padStart(2, '0')}</span>
             <div>
-              <strong>{journey.id === 'auction' ? '경매 거래' : '서비스 요청'}</strong>
-              <small>{journey.id === 'auction' ? '탐색부터 거래 완료까지' : '요청부터 완료까지'}</small>
+              <strong>{journey.tabLabel ?? journey.title}</strong>
+              <small>{journey.tabSummary ?? journey.description}</small>
             </div>
           </button>
         ))}
@@ -632,7 +686,7 @@ export const GuideJourneyOverview = ({
       >
         <div className="guide-feature__copy">
           <header className="guide-feature__heading">
-            <span>{activeJourney.id === 'auction' ? '01' : '02'}</span>
+            <span>{activeJourney.tabNumber ?? '01'}</span>
             <div>
               <h2>{activeJourney.title}</h2>
               <p>{activeJourney.description}</p>
