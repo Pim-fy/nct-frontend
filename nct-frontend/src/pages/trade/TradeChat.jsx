@@ -813,6 +813,10 @@ const TradeChat = ({
           referenceSn={activeRoom.tradeId}
           reportedUserSn={activeRoom.counterpartUserId}
           contextLabel={`채팅 상대: ${activeRoom.counterpartNickname}`}
+          tradeReportTypeCodes={activeRoom.tradeTypeCode === 'TRDC0002'
+            ? ['ABRC0008', 'ABRC0010', 'ABRC0011']
+            : ['ABRC0008', 'ABRC0011']}
+          redirectAfterSubmit={false}
         />
       )}
     </div>
