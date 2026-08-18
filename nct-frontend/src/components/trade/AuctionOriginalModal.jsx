@@ -4,7 +4,8 @@ import { X } from 'lucide-react';
 import useBodyScrollLock from '@hooks/useBodyScrollLock';
 import { AuctionDetailPageContent } from '@pages/auction/AuctionDetailPage';
 
-export default function AuctionOriginalModal({ auctionId, open, onClose }) {
+/** 담당자 7 · 관리자 호출에서는 원본 경매를 읽기 전용으로 재사용합니다. */
+export default function AuctionOriginalModal({ auctionId, open, onClose, readOnly = false }) {
   useBodyScrollLock(open);
 
   useEffect(() => {
@@ -45,7 +46,7 @@ export default function AuctionOriginalModal({ auctionId, open, onClose }) {
           </button>
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#f7f8fa]">
-          <AuctionDetailPageContent auctionId={auctionId} embedded onClose={onClose} />
+          <AuctionDetailPageContent auctionId={auctionId} embedded readOnly={readOnly} />
         </div>
       </section>
     </div>,

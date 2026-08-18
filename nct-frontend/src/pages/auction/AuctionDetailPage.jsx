@@ -75,7 +75,7 @@ const DETAIL_SECTION_ITEMS = [
   { id: 'auction-seller-information', label: '판매자 정보' },
 ];
 
-export const AuctionDetailPageContent = ({ auctionId, embedded = false }) => {
+export const AuctionDetailPageContent = ({ auctionId, embedded = false, readOnly = false }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -194,25 +194,31 @@ export const AuctionDetailPageContent = ({ auctionId, embedded = false }) => {
     && String(authenticatedUserId) === String(auction.sellerId);
   const isAuctionActiveStatus = auction?.auctionStatusCode === 'AUCC0002';
   const pointBalanceQuery = usePointBalance({
-    enabled: Boolean(isAuthenticated && auction && !isOwnAuction && isAuctionActiveStatus),
+    enabled: Boolean(!readOnly && isAuthenticated && auction && !isOwnAuction && isAuctionActiveStatus),
     retry: 3,
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
   });
-  const deliveryAddressesQuery = useDeliveryAddresses({ enabled: Boolean(isAuthenticated) });
+  const deliveryAddressesQuery = useDeliveryAddresses({
+    enabled: Boolean(!readOnly && isAuthenticated),
+  });
   const favoriteStatusQuery = useQuery({
     queryKey: ['auctionFavoriteStatus', auctionId],
     queryFn: () => fetchAuctionFavoriteStatus(auctionId),
     enabled: Boolean(
       auctionId
       && auction
+      && !readOnly
       && isAuthenticated
       && !isOwnAuction
       && typeof auction.favorite !== 'boolean'
     ),
   });
   useAuctionStream(auctionId);
-  useAuctionViewTracking(auctionId, isCurrentAuctionDetail ? auction?.productId : null);
+  useAuctionViewTracking(
+    auctionId,
+    !readOnly && isCurrentAuctionDetail ? auction?.productId : null,
+  );
   const now = useCountdown(Boolean(
     (auction?.auctionStatusCode === 'AUCC0001' && auction?.startDateTime)
     || (auction?.auctionStatusCode === 'AUCC0002' && auction?.endDateTime),
@@ -1059,6 +1065,7 @@ export const AuctionDetailPageContent = ({ auctionId, embedded = false }) => {
             </div>
             <AuctionBidPanel
               auction={auction}
+              readOnly={readOnly}
               currentPrice={currentPrice}
               bidUnitPrice={bidUnitPrice}
               remainingTime={remainingTime}
@@ -1170,6 +1177,7 @@ export const AuctionDetailPageContent = ({ auctionId, embedded = false }) => {
             enabled={supplementalQueriesEnabled}
             onLoginRequired={handleInquiryLoginRequired}
             onToast={showToast}
+            readOnly={readOnly}
           />
 
           <AuctionSellerInformationSection
@@ -1193,15 +1201,17 @@ export const AuctionDetailPageContent = ({ auctionId, embedded = false }) => {
         </div>
       </main>
 
-      <AuctionBuyNowModal
-        isOpen={isBuyNowOpen}
-        auction={auction}
-        selectedTradeName={selectedTradeName}
-        isPending={buyNowMutation.isPending}
-        isBuyNowAvailable={isBuyNowAvailable}
-        onClose={() => setIsBuyNowOpen(false)}
-        onConfirm={handleBuyNowConfirm}
-      />
+      {!readOnly && (
+        <AuctionBuyNowModal
+          isOpen={isBuyNowOpen}
+          auction={auction}
+          selectedTradeName={selectedTradeName}
+          isPending={buyNowMutation.isPending}
+          isBuyNowAvailable={isBuyNowAvailable}
+          onClose={() => setIsBuyNowOpen(false)}
+          onConfirm={handleBuyNowConfirm}
+        />
+      )}
       {isSellerReviewDialogOpen && (
         <AuctionSellerReviewDialog
           isOpen
@@ -1212,7 +1222,7 @@ export const AuctionDetailPageContent = ({ auctionId, embedded = false }) => {
           onToast={showToast}
         />
       )}
-      {isDeliveryAddressModalOpen && (
+      {!readOnly && isDeliveryAddressModalOpen && (
         <AuctionDeliveryAddressModal
           addresses={deliveryAddresses}
           selectedAddressId={selectedDeliveryAddressId}
@@ -1229,17 +1239,19 @@ export const AuctionDetailPageContent = ({ auctionId, embedded = false }) => {
           onSave={(address) => deliveryAddressMutation.mutateAsync(address)}
         />
       )}
-      <ReportModal
-        open={isReportModalOpen}
-        onClose={() => setIsReportModalOpen(false)}
-        targetName={auction.title}
-        targetLabel="경매 상품"
-        targetLocked
-        hideTitle
-        targetType="auction"
-        referenceSn={Number(auction.auctionId ?? auctionId)}
-        reportedUserSn={Number(auction.sellerId)}
-      />
+      {!readOnly && (
+        <ReportModal
+          open={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          targetName={auction.title}
+          targetLabel="경매 상품"
+          targetLocked
+          hideTitle
+          targetType="auction"
+          referenceSn={Number(auction.auctionId ?? auctionId)}
+          reportedUserSn={Number(auction.sellerId)}
+        />
+      )}
       <ImageLightbox
         images={imageItems.map((image) => image.url)}
         initialIndex={lightboxImageIndex ?? activeImageIndex}
@@ -1251,7 +1263,7 @@ export const AuctionDetailPageContent = ({ auctionId, embedded = false }) => {
         onClose={() => setToastMessage('')}
         variant="info"
       />
-      {isChargeModalOpen && (
+      {!readOnly && isChargeModalOpen && (
         <PointChargeWidgetModal
           infoRow={{ label: '사용 가능 포인트', value: `${(hasAvailablePoint ? availablePoint : 0).toLocaleString()} P` }}
           onClose={() => setIsChargeModalOpen(false)}

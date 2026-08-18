@@ -91,20 +91,10 @@ const PRD_STATUS_BADGE = {
 
 // ─── 헬퍼 ────────────────────────────────────────────────────────────────────
 
-const isReservedProduct = (product) => {
-  const draftStartNowYn = product?.prdDraftStartNowYn ?? product?.draftStartNowYn;
-  const draftStartDt = product?.prdDraftStartDt ?? product?.draftStartDt;
-  const draftStartTime = new Date(draftStartDt).getTime();
-
-  return product?.prdStatusCd === 'PRDC0001'
-    && draftStartNowYn === 'N'
-    && Number.isFinite(draftStartTime)
-    && draftStartTime > Date.now();
-};
-
+// 임시저장(PRDC0001)은 예약 시작시각을 입력해뒀어도 아직 AUCTION이 생성되지 않은 초안일 뿐이라
+// '예약'이라고 표시하지 않는다 — 실제로 서버에 경매가 잡혀 자동 시작되는 건 AUCC0001(READY)뿐이다.
 const getProductStatusLabel = (product) => {
   if (product.tradeSn) return getTradeStatusLabel(product);
-  if (isReservedProduct(product)) return '예약';
   if (product.aucStatusCd === 'AUCC0002') return '경매중';
   if (product.aucStatusCd === 'AUCC0003') return '거래중';
   if (product.aucStatusCd) return AUC_STATUS_LABEL[product.aucStatusCd] ?? product.aucStatusCd;
@@ -114,7 +104,6 @@ const getProductStatusLabel = (product) => {
 
 const getProductStatusBadgeClass = (product) => {
   if (product.tradeSn) return TRADE_BADGE[product.tradeStatusCd] ?? 'badge-outline-gray';
-  if (isReservedProduct(product)) return 'badge-outline-orange';
   if (product.aucStatusCd === 'AUCC0002') return 'badge-outline-orange';
   if (product.aucStatusCd === 'AUCC0003') return 'badge-teal';
   if (product.aucStatusCd) return AUC_STATUS_BADGE[product.aucStatusCd] ?? 'badge-outline-gray';

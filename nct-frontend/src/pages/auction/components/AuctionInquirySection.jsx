@@ -86,6 +86,7 @@ const AuctionInquirySection = ({
   enabled = true,
   onLoginRequired,
   onToast,
+  readOnly = false,
 }) => {
   const queryClient = useQueryClient();
   const [content, setContent] = useState('');
@@ -324,7 +325,8 @@ const AuctionInquirySection = ({
         <strong className="text-body-md whitespace-nowrap text-primary-dark">{inquiries.length}건</strong>
       </div>
 
-      <form className="rounded-lg border border-[#e8e8e8] bg-[#f7f8fa] p-[18px] max-sm:p-3.5" onSubmit={handleSubmit}>
+      {!readOnly && (
+        <form className="rounded-lg border border-[#e8e8e8] bg-[#f7f8fa] p-[18px] max-sm:p-3.5" onSubmit={handleSubmit}>
         <label className="mb-2.5 block text-body-md font-bold text-[#1d1d1f]" htmlFor="auction-inquiry-content">
           {!isAuthenticated
             ? '로그인 후 판매자에게 문의할 수 있습니다.'
@@ -393,7 +395,8 @@ const AuctionInquirySection = ({
                     : (isAuthenticated ? '문의 등록' : '로그인 후 문의하기'))))}
           </ActionButton>
         </div>
-      </form>
+        </form>
+      )}
 
       <div className="mt-6 grid gap-3" aria-live="polite">
         {isWaiting && (
@@ -429,7 +432,7 @@ const AuctionInquirySection = ({
           const isAuthor = currentUserId != null
             && inquiry.usrSn != null
             && String(currentUserId) === String(inquiry.usrSn);
-          const canEdit = isAuthenticated && isAuthor && !inquiry.answer;
+          const canEdit = !readOnly && isAuthenticated && isAuthor && !inquiry.answer;
           const isEditing = canEdit
             && String(editingInquirySn) === String(inquiry.prdCmtSn);
           const normalizedEditingContent = editingContent.trim();

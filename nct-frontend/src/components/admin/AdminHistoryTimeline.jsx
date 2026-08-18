@@ -95,7 +95,7 @@ const summaryFields = (summary) => {
   if (!text) return [];
 
   const fields = text
-    .split(/,(?=[A-Za-z][A-Za-z0-9]*=)/)
+    .split(/,\s*(?=[A-Za-z][A-Za-z0-9]*=)/)
     .map((part) => {
       const separator = part.indexOf('=');
       if (separator < 1) return null;

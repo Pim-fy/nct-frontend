@@ -17,6 +17,7 @@ import AdminHistoryTimeline from '@components/admin/AdminHistoryTimeline';
 import AdminPageHeader from '@components/admin/AdminPageHeader';
 import AdminSectionCard from '@components/admin/AdminSectionCard';
 import AdminStatusBadge from '@components/admin/AdminStatusBadge';
+import AuctionOriginalModal from '@components/trade/AuctionOriginalModal';
 import PageMeta from '@components/admin/PageMeta';
 import { ADMIN_AUCTIONS_PATH, ADMIN_REPORTS_PATH } from '@/routes/adminRoutes';
 import { formatAdminMemberIdentity } from '@utils/adminMemberIdentity';
@@ -76,6 +77,7 @@ const AdminAuctionDetailPage = () => {
   const [forceCancelReason, setForceCancelReason] = useState('');
   const [visibilityReason, setVisibilityReason] = useState('');
   const [pauseReason, setPauseReason] = useState('');
+  const [isOriginalAuctionOpen, setIsOriginalAuctionOpen] = useState(false);
 
   const overviewQuery = useQuery({
     queryKey: ['admin-auction-overview', auctionId],
@@ -259,13 +261,26 @@ const AdminAuctionDetailPage = () => {
                   {auctionStatusLabel}
                 </AdminStatusBadge>
               )}
-              title={productName}
+              title={(
+                <button
+                  aria-label={`${productName} 원본 경매 상세 보기`}
+                  className="admin-auction-detail-page__reference-button"
+                  onClick={() => setIsOriginalAuctionOpen(true)}
+                  title="원본 경매 상세 보기"
+                  type="button"
+                >
+                  {productName}
+                </button>
+              )}
             >
               <section className="admin-auction-cancellation admin-auction-detail-page__facts">
                 <dl>
                   <dt>경매 번호</dt><dd>#{auctionId}</dd>
-                  <dt>상품</dt>
-                  <dd>{productId == null ? productName : `${productName} · 상품 #${productId}`}</dd>
+                  {productId != null && (
+                    <>
+                      <dt>상품 번호</dt><dd>#{productId}</dd>
+                    </>
+                  )}
                   <dt>상품 노출</dt>
                   <dd>
                     <AdminStatusBadge tone={productVisible ? 'success' : 'warning'}>
@@ -496,6 +511,13 @@ const AdminAuctionDetailPage = () => {
           </aside>
         </div>
       )}
+
+      <AuctionOriginalModal
+        auctionId={auctionId}
+        onClose={() => setIsOriginalAuctionOpen(false)}
+        open={isOriginalAuctionOpen}
+        readOnly
+      />
     </div>
   );
 };

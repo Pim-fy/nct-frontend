@@ -104,12 +104,20 @@ const AdminNoticeFormPage = () => {
     setFeedback('');
   };
 
-  const payload = () => {
+  // 담당자 7 | F-OPS-023: 네이티브 날짜 선택기의 최종 화면 값을 제출 시점에 다시 읽습니다.
+  // 날짜 선택 직후 저장해도 React 상태 갱신 전 값이나 영구 게시 기본값이 전송되지 않게 합니다.
+  const payload = (formElement) => {
     const { permanentPosting, ...noticeForm } = form;
+    const postingStartInput = formElement?.elements.namedItem('postingStartAt');
+    const postingEndInput = formElement?.elements.namedItem('postingEndAt');
+    const permanentPostingInput = formElement?.elements.namedItem('permanentPosting');
+    const submittedStartAt = postingStartInput?.value ?? form.postingStartAt;
+    const submittedEndAt = postingEndInput?.value ?? form.postingEndAt;
+    const submittedPermanentPosting = permanentPostingInput?.checked ?? permanentPosting;
     return {
       ...noticeForm,
-      postingStartAt: form.postingStartAt || null,
-      postingEndAt: permanentPosting ? null : form.postingEndAt || null,
+      postingStartAt: submittedStartAt || null,
+      postingEndAt: submittedPermanentPosting ? null : submittedEndAt || null,
     };
   };
 
@@ -117,14 +125,15 @@ const AdminNoticeFormPage = () => {
   const submit = async (event) => {
     event.preventDefault();
     setFeedback('');
+    const submittedPayload = payload(event.currentTarget);
     try {
       if (isNew) {
-        await createMutation.mutateAsync(payload());
+        await createMutation.mutateAsync(submittedPayload);
         setDraft(null);
         toast({ icon: 'success', title: '공지가 등록되었습니다.', timer: 1800 });
         navigate('/admin/notices', { replace: true });
       } else {
-        await updateMutation.mutateAsync({ noticeId, payload: payload() });
+        await updateMutation.mutateAsync({ noticeId, payload: submittedPayload });
         setIsEditing(false);
         setDraft(null);
         toast({ icon: 'success', title: '공지가 수정되었습니다.', timer: 1800 });
