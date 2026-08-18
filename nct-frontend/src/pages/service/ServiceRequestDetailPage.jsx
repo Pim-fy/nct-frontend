@@ -635,9 +635,15 @@ export default function ServiceRequestDetailPage() {
                         const borderCls = isLast ? '' : 'border-b border-[#d8d6cf]';
                         const thCls = `break-keep px-4 py-4 text-left font-semibold border-r border-[#d8d6cf] ${borderCls}`;
                         const tdCls = `px-4 py-4 text-[#1d1d1f] ${borderCls}`;
-                        // th 배경색·글자색은 전역 CSS(th { background:#fafaf8; color:#5f5e5a })가
-                        // Tailwind 유틸리티보다 우선순위가 높아서 인라인 스타일로 덮어써야 실제로 반영된다
-                        const thStyle = { verticalAlign: 'middle', backgroundColor: '#eef2fb', color: '#5f5e5a' };
+                        // th 배경색·글자색·줄바꿈은 전역 CSS(th { ...; white-space: nowrap })가
+                        // Tailwind 유틸리티보다 우선순위가 높아서 인라인 스타일로 덮어써야 실제로 반영된다.
+                        // white-space를 안 덮어쓰면 긴 라벨이 줄바꿈 못 하고 좁은 칸 밖으로 겹쳐 나온다.
+                        const thStyle = {
+                          verticalAlign: 'middle',
+                          backgroundColor: '#eef2fb',
+                          color: '#5f5e5a',
+                          whiteSpace: 'normal',
+                        };
                         if (group.length === 2) {
                           const second = group[1];
                           return (
