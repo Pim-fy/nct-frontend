@@ -1,8 +1,5 @@
 import api from './axios';
 
-export const createManualAbuseReport = (data) =>
-  api.post('/abuse-reports', data).then((response) => response.data);
-
 export const fetchActiveManualAbuseReportReferences = (
   referenceTypeCode,
   referenceSns,
