@@ -9,7 +9,7 @@ import api from './axios';
 export const registerServiceRequest = (data) =>
   api.post('/service-requests', data).then(res => res.data);
 
-/** 내 요청서 목록 — filterType: DRAFT | OPEN | MATCHED | CLOSED | null(전체) */
+/** 내 요청서 목록 — filterType: DRAFT | OPEN | MATCHED | CLOSED | CANCELED | null(전체) */
 export const getMyServiceRequests = (page = 1, size = 10, filterType = null) =>
   api.get('/service-requests/me', { params: { page, size, ...(filterType ? { filterType } : {}) } }).then(res => res.data);
 

@@ -46,16 +46,18 @@ const STATUS_LABEL = {
   SVCC0001: '임시저장',
   SVCC0002: '공개',
   SVCC0003: '매칭완료',
-  SVCC0004: '취소',
+  SVCC0004: '종료',
   SVCC0005: '운영 보류',
+  SVCC0006: '취소',
 };
 
 const STATUS_TONE = {
   SVCC0001: 'neutral',
   SVCC0002: 'info',
   SVCC0003: 'success',
-  SVCC0004: 'danger',
+  SVCC0004: 'neutral',
   SVCC0005: 'warning',
+  SVCC0006: 'danger',
 };
 
 const QUOTE_STATUS_LABEL = {
@@ -483,7 +485,7 @@ export default function ServiceRequestDetailPage() {
     && String(authenticatedUserId) === String(request.usrSn);
   const isDraft  = request.svcReqStatusCd === 'SVCC0001';
   const isOpen   = request.svcReqStatusCd === 'SVCC0002';
-  const isClosed = request.svcReqStatusCd === 'SVCC0004';
+  const isClosed = ['SVCC0004', 'SVCC0006'].includes(request.svcReqStatusCd);
   const canAddComment = isOwner && isOpen && comments.length < 3;
   const quoteTotalPages = Math.max(1, Math.ceil(quotes.length / QUOTES_PAGE_SIZE));
   const pagedQuotes = quotes.slice((quotePage - 1) * QUOTES_PAGE_SIZE, quotePage * QUOTES_PAGE_SIZE);
@@ -633,9 +635,15 @@ export default function ServiceRequestDetailPage() {
                         const borderCls = isLast ? '' : 'border-b border-[#d8d6cf]';
                         const thCls = `break-keep px-4 py-4 text-left font-semibold border-r border-[#d8d6cf] ${borderCls}`;
                         const tdCls = `px-4 py-4 text-[#1d1d1f] ${borderCls}`;
-                        // th 배경색·글자색은 전역 CSS(th { background:#fafaf8; color:#5f5e5a })가
-                        // Tailwind 유틸리티보다 우선순위가 높아서 인라인 스타일로 덮어써야 실제로 반영된다
-                        const thStyle = { verticalAlign: 'middle', backgroundColor: '#eef2fb', color: '#5f5e5a' };
+                        // th 배경색·글자색·줄바꿈은 전역 CSS(th { ...; white-space: nowrap })가
+                        // Tailwind 유틸리티보다 우선순위가 높아서 인라인 스타일로 덮어써야 실제로 반영된다.
+                        // white-space를 안 덮어쓰면 긴 라벨이 줄바꿈 못 하고 좁은 칸 밖으로 겹쳐 나온다.
+                        const thStyle = {
+                          verticalAlign: 'middle',
+                          backgroundColor: '#eef2fb',
+                          color: '#5f5e5a',
+                          whiteSpace: 'normal',
+                        };
                         if (group.length === 2) {
                           const second = group[1];
                           return (

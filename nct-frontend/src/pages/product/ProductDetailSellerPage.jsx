@@ -71,11 +71,15 @@ export default function ProductDetailSellerPage() {
   const [imgIdx, setImgIdx]             = useState(0); // 상품 이미지 슬라이드 현재 인덱스
   const [lightboxOpen, setLightboxOpen] = useState(false); // 상품 이미지 확대뷰
 
-  const now = useCountdown(!!auctionStatus?.aucEndDt);
+  // 예약(AUCC0001, 시작 전)은 "시작까지" 남은 시간을, 그 외(경매중 등)는 "종료까지" 남은 시간을
+  // 카운트다운한다 — 둘 다 "종료까지"로만 보여주면 시작 전 경매도 곧 끝나는 것처럼 오해할 수 있다.
+  const isReadyAuction = auctionStatus?.aucStatusCd === 'AUCC0001';
+  const countdownTargetDt = isReadyAuction ? auctionStatus?.aucStartDt : auctionStatus?.aucEndDt;
+  const now = useCountdown(!!countdownTargetDt);
   const remainTime = (() => {
-    if (!auctionStatus?.aucEndDt) return '';
-    const diff = new Date(auctionStatus.aucEndDt) - now;
-    if (diff <= 0) return '종료';
+    if (!countdownTargetDt) return '';
+    const diff = new Date(countdownTargetDt) - now;
+    if (diff <= 0) return isReadyAuction ? '시작' : '종료';
     const d = Math.floor(diff / 86400000);
     const h = Math.floor((diff % 86400000) / 3600000);
     const m = Math.floor((diff % 3600000) / 60000);
@@ -410,12 +414,12 @@ export default function ProductDetailSellerPage() {
                 </div>
                 <p style={{ margin: 0 }}>등록일자 : {product.prdRegDt ? new Date(product.prdRegDt).toLocaleDateString('ko-KR') : '-'}</p>
                 <div style={{ marginTop: 4 }}>
-                  <span style={{ display: 'block', color: '#5f5e5a', fontSize: 13 }}>남은시간</span>
+                  <span style={{ display: 'block', color: '#5f5e5a', fontSize: 13 }}>{isReadyAuction ? '시작까지' : '남은시간'}</span>
                   <strong style={{ display: 'block', fontSize: 17, marginTop: 2 }}>{remainTime || '—'}</strong>
-                  {auctionStatus?.aucEndDt && (
+                  {countdownTargetDt && (
                     <small className="muted" style={{ display: 'block', fontSize: 12, marginTop: 2 }}>
-                      {new Date(auctionStatus.aucEndDt).toLocaleString('ko-KR')} 종료
-                      {auctionStatus.aucExtCnt > 0 && ` · 자동연장 ${auctionStatus.aucExtCnt}회`}
+                      {new Date(countdownTargetDt).toLocaleString('ko-KR')} {isReadyAuction ? '시작' : '종료'}
+                      {!isReadyAuction && auctionStatus.aucExtCnt > 0 && ` · 자동연장 ${auctionStatus.aucExtCnt}회`}
                     </small>
                   )}
                 </div>

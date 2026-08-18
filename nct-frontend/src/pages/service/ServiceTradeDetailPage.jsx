@@ -378,7 +378,7 @@ export default function ServiceTradeDetailPage({
                     {counterpartJoinedLabel !== '-' && <p className="trade-detail-card__muted">{counterpartJoinedLabel}</p>}
                     <p className="trade-detail-card__muted">완료한 거래 {trade.counterpartCompletedTradeCount ?? 0}건</p>
                   </div>
-                  <TradeTrustSummary counterpartUserId={trade.counterpartUserId} />
+                  <TradeTrustSummary counterpartUserId={trade.counterpartUserId} dealType="service" />
                 </div>
               </div>
               <p className="service-trade-next-step">다음 단계: <strong>{nextStepLabel}</strong></p>
@@ -733,6 +733,7 @@ export default function ServiceTradeDetailPage({
         referenceSn={trade.tradeId}
         reportedUserSn={trade.counterpartUserId}
         contextLabel={`거래 상대: ${counterpartName}`}
+        tradeReportTypeCodes={['ABRC0008', 'ABRC0010', 'ABRC0011']}
         redirectAfterSubmit={false}
       />
       <ServiceTradeOriginalModal

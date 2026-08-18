@@ -140,10 +140,12 @@ export const getTradeChatDescription = (trade) => {
 };
 
 export const canUseTradeChat = (trade) => {
+  const chatRoomStatus = normalizeTradeChatRoomStatus(trade?.chatRoomStatus);
+
+  if (chatRoomStatus !== 'NOT_STARTED') return true;
   if (typeof trade?.chatAvailable === 'boolean') return trade.chatAvailable;
 
-  return normalizeTradeChatRoomStatus(trade?.chatRoomStatus) !== 'NOT_STARTED'
-    || !CLOSED_TRADE_STATUSES.has(trade?.status);
+  return !CLOSED_TRADE_STATUSES.has(trade?.status);
 };
 
 /**

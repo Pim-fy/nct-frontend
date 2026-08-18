@@ -740,6 +740,31 @@
   font-size: 14px;
 }
 
+.admin-report-sanction__impact-reference {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #202945;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-report-sanction__impact-reference:hover {
+  color: #0064ff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.admin-report-sanction__impact-reference:focus-visible {
+  border-radius: 3px;
+  outline: 2px solid #0064ff;
+  outline-offset: 3px;
+}
+
 .admin-report-sanction__impacts span,
 .admin-report-sanction__impacts p {
   color: #667085;

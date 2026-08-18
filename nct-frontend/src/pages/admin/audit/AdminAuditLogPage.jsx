@@ -28,6 +28,24 @@ const TYPE_OPTIONS = [
 const PAGE_SIZE = ADMIN_PAGE_SIZE;
 const EMPTY_FILTER_FORM = { usrSn: '', typeCd: '', from: '', to: '' };
 
+const hasInvalidUsrSn = (value) => {
+  const normalized = value.trim();
+  if (!normalized) return false;
+  return !/^[1-9]\d*$/.test(normalized);
+};
+
+const hasReversedDateRange = ({ from, to }) => Boolean(from && to && from > to);
+
+const validateFilterForm = (form) => {
+  if (hasInvalidUsrSn(form.usrSn)) {
+    return '행위자 회원번호는 1 이상의 정수로 입력해 주세요.';
+  }
+  if (hasReversedDateRange(form)) {
+    return '시작일은 종료일보다 늦을 수 없습니다.';
+  }
+  return '';
+};
+
 const auditDetails = (value) => {
   const raw = value?.trim() || '-';
   const match = raw.match(/^reason=(.*?); before=(.*?); after=(.*?); requestId=(.*)$/s);
@@ -57,6 +75,7 @@ const AdminAuditLogPage = () => {
   // 입력 중 값과 "조회 버튼을 누른 시점의 값"을 분리 — 타이핑할 때마다 서버를 찌르지 않기 위해
   const [form, setForm] = useState(EMPTY_FILTER_FORM);
   const [filters, setFilters] = useState({});
+  const [filterError, setFilterError] = useState('');
   const [selectedLog, setSelectedLog] = useState(null);
   const logsQuery = useAuditLogs(filters);
   const logs = logsQuery.data ?? [];
@@ -68,8 +87,19 @@ const AdminAuditLogPage = () => {
     totalPages,
   } = useClientPagination(logs, PAGE_SIZE);
 
+  /** 담당자 7 · F-OPS-015/016: 입력 직후 잘못된 회원번호와 역전 날짜를 안내합니다. */
+  const updateFilter = (name, value) => {
+    const nextForm = { ...form, [name]: value };
+    setForm(nextForm);
+    setFilterError(validateFilterForm(nextForm));
+  };
+
   const submitSearch = (event) => {
     event.preventDefault();
+    const nextError = validateFilterForm(form);
+    setFilterError(nextError);
+    if (nextError) return;
+
     const next = {};
     if (form.usrSn.trim()) next.usrSn = form.usrSn.trim();
     if (form.typeCd) next.typeCd = form.typeCd;
@@ -82,6 +112,7 @@ const AdminAuditLogPage = () => {
   const resetFilters = () => {
     setForm(EMPTY_FILTER_FORM);
     setFilters({});
+    setFilterError('');
     resetPage();
   };
 
@@ -127,9 +158,12 @@ const AdminAuditLogPage = () => {
           <input
             name="usrSn"
             type="number"
+            min="1"
             placeholder="예: 183"
+            step="1"
             value={form.usrSn}
-            onChange={(e) => setForm({ ...form, usrSn: e.target.value })}
+            aria-invalid={hasInvalidUsrSn(form.usrSn)}
+            onChange={(e) => updateFilter('usrSn', e.target.value)}
           />
         </label>
         <label>
@@ -137,21 +171,36 @@ const AdminAuditLogPage = () => {
           <select
             name="typeCd"
             value={form.typeCd}
-            onChange={(e) => setForm({ ...form, typeCd: e.target.value })}
+            onChange={(e) => updateFilter('typeCd', e.target.value)}
           >
             {TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </label>
         <label>
           시작일
-          <input name="from" type="date" value={form.from} onChange={(e) => setForm({ ...form, from: e.target.value })} />
+          <input
+            name="from"
+            type="date"
+            value={form.from}
+            aria-invalid={hasReversedDateRange(form)}
+            onChange={(e) => updateFilter('from', e.target.value)}
+          />
         </label>
         <label>
           종료일
-          <input name="to" type="date" value={form.to} onChange={(e) => setForm({ ...form, to: e.target.value })} />
+          <input
+            name="to"
+            type="date"
+            value={form.to}
+            aria-invalid={hasReversedDateRange(form)}
+            onChange={(e) => updateFilter('to', e.target.value)}
+          />
         </label>
         <AdminFilterActions disabled={logsQuery.isFetching} onReset={resetFilters} />
       </form>
+      {filterError && (
+        <p className="admin-bjn-filter-error" role="alert">{filterError}</p>
+      )}
 
       {/* 감사로그 표 */}
       {logsQuery.isError && <div className="admin-bjn-state is-error">감사로그 조회에 실패했습니다. 잠시 후 다시 시도해 주세요.</div>}

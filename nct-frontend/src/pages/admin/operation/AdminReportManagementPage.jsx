@@ -1,5 +1,10 @@
 import { useRef, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { ArrowLeft, Paperclip, ShieldAlert, UnlockKeyhole } from 'lucide-react';
 import {
   useLocation,
@@ -15,6 +20,7 @@ import {
   getAdminReports,
   releaseAdminReportSanction,
 } from '@api/adminReportApi';
+import { fetchAdminAuctionOverview } from '@api/adminAuctionApi';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminHistoryTimeline from '@components/admin/AdminHistoryTimeline';
 import AdminModal from '@components/admin/AdminModal';
@@ -113,6 +119,76 @@ const IMPACT_STATUS_NAMES = {
   RESOLVED: '처리 완료',
   RESTORED: '복구 완료',
   SKIPPED: '자동 복구 제외',
+};
+
+/** 담당자 7 · F-OPS-007: 제재 영향 경매의 상품명과 추적 번호를 함께 표시합니다. */
+const SanctionImpactList = ({ impacts, onAuctionPreview }) => {
+  const auctionIds = [...new Set(
+    impacts
+      .filter((impact) => impact.referenceTypeCode === 'REFC0003')
+      .map((impact) => Number(impact.referenceSn))
+      .filter((auctionId) => Number.isInteger(auctionId) && auctionId > 0),
+  )];
+  const auctionQueries = useQueries({
+    queries: auctionIds.map((auctionId) => ({
+      queryKey: ['admin-auction-overview', auctionId],
+      queryFn: () => fetchAdminAuctionOverview(auctionId),
+      retry: false,
+      staleTime: 60_000,
+    })),
+  });
+  const auctionNames = new Map(
+    auctionIds.map((auctionId, index) => [
+      auctionId,
+      auctionQueries[index]?.data?.product?.prdNm?.trim()
+        || auctionQueries[index]?.data?.auction?.title?.trim()
+        || null,
+    ]),
+  );
+
+  return (
+    <ul className="admin-report-sanction__impacts">
+      {impacts.map((impact, index) => {
+        const referenceName = REPORT_REFERENCE_NAMES[impact.referenceTypeCode]
+          ?? impact.referenceTypeCode;
+        const auctionId = impact.referenceTypeCode === 'REFC0003'
+          ? Number(impact.referenceSn)
+          : null;
+        const auctionName = auctionNames.get(auctionId);
+        const referenceLabel = auctionName
+          ? `${auctionName} · ${referenceName} #${impact.referenceSn}`
+          : `${referenceName} #${impact.referenceSn}`;
+        const canPreviewAuction = Number.isInteger(auctionId)
+          && auctionId > 0
+          && typeof onAuctionPreview === 'function';
+
+        return (
+          <li key={`${impact.referenceTypeCode}-${impact.referenceSn}-${index}`}>
+            <div>
+              {canPreviewAuction ? (
+                <button
+                  className="admin-report-sanction__impact-reference"
+                  onClick={() => onAuctionPreview(auctionId)}
+                  title={`${referenceLabel} 상세 보기`}
+                  type="button"
+                >
+                  {referenceLabel}
+                </button>
+              ) : (
+                <strong>{referenceLabel}</strong>
+              )}
+              <span>
+                {IMPACT_ACTION_NAMES[impact.actionCode] ?? impact.actionCode}
+                {' · '}
+                {IMPACT_STATUS_NAMES[impact.statusCode] ?? impact.statusCode}
+              </span>
+            </div>
+            <p>{impact.result}</p>
+          </li>
+        );
+      })}
+    </ul>
+  );
 };
 const reportTypeName = (code, serverName) => (
   serverName?.trim() || REPORT_TYPE_FALLBACK_NAMES[code] || code || '-'
@@ -235,6 +311,10 @@ const caseTypeFromSearch = (searchParams) => {
   const value = searchParams.get('caseType') ?? 'ALL';
   return REPORT_CASE_TABS.some((tab) => tab.value === value) ? value : 'ALL';
 };
+
+// 담당자 7 · F-OPS-007/F-AUTH-013: 위험 이벤트 자동 신고는 거래 분쟁 판정을 보내지 않습니다.
+const isTradeIssueReport = (report) => report?.riskEventSn == null
+  && (report?.caseType === 'TRADE_ISSUE' || report?.tradeSn != null);
 
 const pageFromSearch = (searchParams) => {
   const value = Number(searchParams.get('page') ?? 1);
@@ -505,11 +585,11 @@ const AdminReportManagementPage = () => {
     const normalizedReason = reason.trim();
     const selectedAction = decision === 'PROCESSED' ? enforcementAction : 'NONE';
     const currentDetail = reportDetailQuery.data;
-    const tradeReport = currentDetail?.caseType === 'TRADE_ISSUE' || currentDetail?.tradeSn != null;
+    const tradeReport = isTradeIssueReport(currentDetail);
     const resolvedTradeDecision = !tradeReport
       ? null
       : decision === 'PROCESSING'
-        ? 'HOLD'
+        ? null
         : decision === 'REJECTED'
           ? 'REJECT'
           : tradeDecision;
@@ -595,7 +675,7 @@ const AdminReportManagementPage = () => {
   const canStart = detail?.statusCode === 'ABSC0001';
   const canFinalize = detail?.statusCode === 'ABSC0002';
   const isActionable = canStart || canFinalize;
-  const isTradeReport = detail?.caseType === 'TRADE_ISSUE' || detail?.tradeSn != null;
+  const isTradeReport = isTradeIssueReport(detail);
   const selectedTradeDecision = TRADE_DECISION_OPTIONS.find(
     (option) => option.value === tradeDecision,
   );
@@ -804,24 +884,10 @@ const AdminReportManagementPage = () => {
                       <dd>{detail.sanctionEndedAt ? formatDate(detail.sanctionEndedAt) : '기한 없음'}</dd>
                     </dl>
                     {detail.sanctionImpacts?.length > 0 && (
-                      <ul className="admin-report-sanction__impacts">
-                        {detail.sanctionImpacts.map((impact, index) => (
-                          <li key={`${impact.referenceTypeCode}-${impact.referenceSn}-${index}`}>
-                            <div>
-                              <strong>
-                                {REPORT_REFERENCE_NAMES[impact.referenceTypeCode]
-                                  ?? impact.referenceTypeCode} #{impact.referenceSn}
-                              </strong>
-                              <span>
-                                {IMPACT_ACTION_NAMES[impact.actionCode] ?? impact.actionCode}
-                                {' · '}
-                                {IMPACT_STATUS_NAMES[impact.statusCode] ?? impact.statusCode}
-                              </span>
-                            </div>
-                            <p>{impact.result}</p>
-                          </li>
-                        ))}
-                      </ul>
+                      <SanctionImpactList
+                        impacts={detail.sanctionImpacts}
+                        onAuctionPreview={setPreviewAuctionId}
+                      />
                     )}
                     {canReleaseSanction && (
                       <div className="admin-report-sanction__release">
@@ -1182,6 +1248,7 @@ const AdminReportManagementPage = () => {
         auctionId={previewAuctionId}
         onClose={() => setPreviewAuctionId(null)}
         open={previewAuctionId != null}
+        readOnly
       />
 
     </div>
