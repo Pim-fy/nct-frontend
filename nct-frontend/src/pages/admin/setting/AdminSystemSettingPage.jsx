@@ -39,6 +39,14 @@ const AdminSystemSettingPage = () => {
       maxChrgAmt: Number(view.maxChrgAmt),
       svcFeeRate: Number(view.svcFeeRate),
       qutExpDays: Number(view.qutExpDays),
+      // 담당자 7 · REQ-OPS-011: 자동 위험 이벤트 생성 기준
+      riskTradeReportCount: Number(view.riskTradeReportCount),
+      riskTradeReportWindowMinutes: Number(view.riskTradeReportWindowMinutes),
+      riskSettlementHoldDays: Number(view.riskSettlementHoldDays),
+      riskRepeatReportCount: Number(view.riskRepeatReportCount),
+      riskRepeatReportWindowDays: Number(view.riskRepeatReportWindowDays),
+      riskAdminLoginFailCount: Number(view.riskAdminLoginFailCount),
+      riskAdminLoginFailWindowMinutes: Number(view.riskAdminLoginFailWindowMinutes),
       // 점검 모드를 끄면 기간은 보내지 않는다 (서버는 Y일 때만 기간을 요구한다)
       mntncBgngDt: view.mntncYn === 'Y' ? view.mntncBgngDt || null : null,
       mntncEndDt: view.mntncYn === 'Y' ? view.mntncEndDt || null : null,
@@ -51,7 +59,7 @@ const AdminSystemSettingPage = () => {
   };
 
   if (settingQuery.isLoading) {
-    return <div className="admin-bjn-page"><FormSkeleton fields={11} /></div>;
+    return <div className="admin-bjn-page"><FormSkeleton fields={18} /></div>;
   }
   if (settingQuery.isError || !setting) {
     return <div className="admin-bjn-page"><div className="admin-bjn-state is-error">설정 조회에 실패했습니다. 잠시 후 다시 시도해 주세요.</div></div>;
@@ -119,6 +127,40 @@ const AdminSystemSettingPage = () => {
             <label>
               서비스 수수료율 (0~1, 예: 0.03 = 3%)
               <input type="number" min="0" max="1" step="0.0001" value={view.svcFeeRate ?? ''} onChange={(e) => change('svcFeeRate', e.target.value)} />
+            </label>
+          </div>
+        </section>
+
+        <section className="admin-bjn-setting-section">
+          <h3>리스크 판정 설정</h3>
+          <div className="admin-bjn-setting-grid">
+            <label>
+              거래 신고 급증 기준 (건)
+              <input type="number" min="1" value={view.riskTradeReportCount ?? ''} onChange={(e) => change('riskTradeReportCount', e.target.value)} />
+            </label>
+            <label>
+              거래 신고 집계 구간 (분)
+              <input type="number" min="1" value={view.riskTradeReportWindowMinutes ?? ''} onChange={(e) => change('riskTradeReportWindowMinutes', e.target.value)} />
+            </label>
+            <label>
+              정산 장기보류 기준 (일)
+              <input type="number" min="1" value={view.riskSettlementHoldDays ?? ''} onChange={(e) => change('riskSettlementHoldDays', e.target.value)} />
+            </label>
+            <label>
+              반복 신고 기준 신고자 수 (명)
+              <input type="number" min="1" value={view.riskRepeatReportCount ?? ''} onChange={(e) => change('riskRepeatReportCount', e.target.value)} />
+            </label>
+            <label>
+              반복 신고 집계 구간 (일)
+              <input type="number" min="1" value={view.riskRepeatReportWindowDays ?? ''} onChange={(e) => change('riskRepeatReportWindowDays', e.target.value)} />
+            </label>
+            <label>
+              관리자 로그인 실패 기준 (회)
+              <input type="number" min="1" value={view.riskAdminLoginFailCount ?? ''} onChange={(e) => change('riskAdminLoginFailCount', e.target.value)} />
+            </label>
+            <label>
+              관리자 로그인 실패 집계 구간 (분)
+              <input type="number" min="1" value={view.riskAdminLoginFailWindowMinutes ?? ''} onChange={(e) => change('riskAdminLoginFailWindowMinutes', e.target.value)} />
             </label>
           </div>
         </section>

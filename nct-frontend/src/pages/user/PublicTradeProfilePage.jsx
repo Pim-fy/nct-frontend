@@ -104,8 +104,8 @@ const PublicTradeProfilePage = () => {
     enabled: validUserSn,
   });
   const trustQuery = useQuery({
-    queryKey: ['reviews', 'trust', String(userSn)],
-    queryFn: () => getUserReviewTrust(userSn),
+    queryKey: ['reviews', 'trust', 'goods', String(userSn)],
+    queryFn: () => getUserReviewTrust(userSn, 'goods'),
     enabled: validUserSn && profileQuery.isSuccess,
     select: unwrapData,
   });
@@ -248,7 +248,7 @@ const PublicTradeProfilePage = () => {
             )}
             {!trustQuery.isLoading && !trustQuery.isError && trustCount > 0 && trustScore != null && (
               <p
-                aria-label={`통합 평점 5점 만점에 ${formatScore(trustScore)}점, 전체 리뷰 ${trustCount}개`}
+                aria-label={`물품 거래 평점 5점 만점에 ${formatScore(trustScore)}점, 물품 리뷰 ${trustCount}개`}
                 className="trade-profile-rating"
               >
                 <Star aria-hidden="true" fill="currentColor" />
@@ -258,7 +258,7 @@ const PublicTradeProfilePage = () => {
             )}
 
             <p className="trade-profile-trust__note">
-              받은 전체 리뷰의 5점 평균과 리뷰 수를 기준으로 표시합니다.
+              받은 물품 거래 리뷰의 5점 평균과 리뷰 수를 기준으로 표시합니다.
             </p>
           </section>
         </aside>
