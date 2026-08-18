@@ -4,7 +4,12 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import { getMyReportDetail, getMyReports, submitCustomerReport } from '../api/abuseReportApi';
+import {
+  getMyReportDetail,
+  getMyReports,
+  submitCustomerReport,
+  submitTradeReport,
+} from '../api/abuseReportApi';
 import { deleteImage, uploadAbuseReportFile } from '../api/fileApi';
 import { fetchReferenceCodes } from '../api/referenceApi';
 
@@ -43,6 +48,38 @@ export function useSubmitCustomerReport() {
           uploadedFileSns.push(uploadedFile.flSn);
         }
         const response = await submitCustomerReport({
+          ...report,
+          fileSns: uploadedFileSns,
+        });
+        reportCreated = true;
+        return response;
+      } catch (error) {
+        if (!reportCreated && uploadedFileSns.length > 0) {
+          await Promise.allSettled(uploadedFileSns.map((fileSn) => deleteImage(fileSn)));
+        }
+        throw error;
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['abuse-reports', 'my'] }),
+  });
+}
+
+export function useSubmitTradeReport() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ tradeId, files = [], ...report }) => {
+      const uploadedFileSns = [];
+      let reportCreated = false;
+      try {
+        for (const file of files) {
+          const uploadResponse = await uploadAbuseReportFile(file);
+          const uploadedFile = uploadResponse.data ?? uploadResponse;
+          if (!uploadedFile.flSn) {
+            throw new Error('업로드한 신고 첨부 파일 번호를 확인하지 못했습니다.');
+          }
+          uploadedFileSns.push(uploadedFile.flSn);
+        }
+        const response = await submitTradeReport(tradeId, {
           ...report,
           fileSns: uploadedFileSns,
         });
