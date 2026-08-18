@@ -733,6 +733,7 @@ export default function ServiceTradeDetailPage({
         referenceSn={trade.tradeId}
         reportedUserSn={trade.counterpartUserId}
         contextLabel={`거래 상대: ${counterpartName}`}
+        tradeReportTypeCodes={['ABRC0008', 'ABRC0010', 'ABRC0011']}
         redirectAfterSubmit={false}
       />
       <ServiceTradeOriginalModal

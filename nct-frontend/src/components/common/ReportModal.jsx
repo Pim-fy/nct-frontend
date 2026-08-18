@@ -4,8 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import AlertModal from '@components/common/AlertModal';
 import ReportAttachmentPicker from '@components/common/ReportAttachmentPicker';
 import { ActionButton } from '@components/common/ui';
-import { isCustomerReportTypeCode } from '@/constants/abuseReportTypes';
-import { useAbuseReportTypes, useSubmitCustomerReport } from '@hooks/useAbuseReport';
+import { isCustomerReportTypeCode, isTradeReportTypeCode } from '@/constants/abuseReportTypes';
+import {
+  useAbuseReportTypes,
+  useSubmitCustomerReport,
+  useSubmitTradeReport,
+} from '@hooks/useAbuseReport';
 import { getMyPagePath } from '@routes/myPageRoutes';
 import { toast } from '@utils/common';
 
@@ -35,11 +39,16 @@ function ReportModalContent({
   reportTypeLabel = '',
   contextLabel = '',
   redirectAfterSubmit = true,
+  tradeReportTypeCodes = null,
 }) {
   const formId = useId();
   const navigate = useNavigate();
   const reportTypesQuery = useAbuseReportTypes();
-  const submitMutation = useSubmitCustomerReport();
+  const customerReportMutation = useSubmitCustomerReport();
+  const tradeReportMutation = useSubmitTradeReport();
+  const isTradeReport = targetType === 'trade';
+  const submitMutation = isTradeReport ? tradeReportMutation : customerReportMutation;
+  const shouldHideTitle = hideTitle || isTradeReport;
   const hasFixedTarget = reportedUserSn != null || referenceSn != null;
   const isTargetLocked = targetLocked || hasFixedTarget;
   const [form, setForm] = useState({
@@ -51,9 +60,14 @@ function ReportModalContent({
   const [files, setFiles] = useState([]);
   const [errors, setErrors] = useState({});
   const [serverAlertMessage, setServerAlertMessage] = useState('');
-  const reportTypes = (reportTypesQuery.data ?? []).filter((item) => (
-    item.code && item.name && isCustomerReportTypeCode(item.code)
-  ));
+  const reportTypes = (reportTypesQuery.data ?? []).filter((item) => {
+    if (!item.code || !item.name) return false;
+    if (isTradeReport) {
+      return isTradeReportTypeCode(item.code)
+        && (!Array.isArray(tradeReportTypeCodes) || tradeReportTypeCodes.includes(item.code));
+    }
+    return isCustomerReportTypeCode(item.code);
+  });
   const hasAvailableReportTypes = reportTypes.length > 0;
   const prefilledTypeCode = reportTypeLabel
     ? reportTypes.find((item) => item.name === reportTypeLabel)?.code ?? ''
@@ -84,7 +98,7 @@ function ReportModalContent({
     const nextErrors = {};
     if (!selectedReportTypeCode) nextErrors.reportTypeCode = '신고 유형을 선택해 주세요.';
     if (!hasFixedTarget && !form.targetName.trim()) nextErrors.targetName = '신고 대상을 입력해 주세요.';
-    if (!hideTitle && !form.title.trim()) nextErrors.title = '제목을 입력해 주세요.';
+    if (!shouldHideTitle && !form.title.trim()) nextErrors.title = '제목을 입력해 주세요.';
     if (!form.content.trim()) nextErrors.content = '신고 내용을 입력해 주세요.';
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
@@ -95,17 +109,29 @@ function ReportModalContent({
     const resolvedReferenceSn = targetType === 'direct' ? reportedUserSn : referenceSn;
     const automaticTitle = `[${selectedType?.name ?? '신고'}] ${form.targetName.trim() || contextLabel || '지정 대상'}`;
     try {
-      await submitMutation.mutateAsync({
-        reportTypeCode: selectedReportTypeCode,
-        reportedUserSn: reportedUserSn ?? null,
-        referenceTypeCode,
-        referenceSn: referenceTypeCode ? resolvedReferenceSn ?? null : null,
-        targetName: form.targetName.trim() || contextLabel || null,
-        title: hideTitle ? automaticTitle.slice(0, 100) : form.title.trim(),
-        content: form.content.trim(),
-        files,
+      if (isTradeReport) {
+        await submitMutation.mutateAsync({
+          tradeId: Number(referenceSn),
+          reportTypeCode: selectedReportTypeCode,
+          content: form.content.trim(),
+          files,
+        });
+      } else {
+        await submitMutation.mutateAsync({
+          reportTypeCode: selectedReportTypeCode,
+          reportedUserSn: reportedUserSn ?? null,
+          referenceTypeCode,
+          referenceSn: referenceTypeCode ? resolvedReferenceSn ?? null : null,
+          targetName: form.targetName.trim() || contextLabel || null,
+          title: shouldHideTitle ? automaticTitle.slice(0, 100) : form.title.trim(),
+          content: form.content.trim(),
+          files,
+        });
+      }
+      toast({
+        icon: 'success',
+        title: isTradeReport ? '거래 문제가 접수되었습니다.' : '신고가 접수되었습니다.',
       });
-      toast({ icon: 'success', title: '신고가 접수되었습니다.' });
       onClose();
       if (redirectAfterSubmit) {
         navigate(getMyPagePath('report-list'));
@@ -190,7 +216,7 @@ function ReportModalContent({
             {errors.targetName && <p className="mt-1 text-[13px] text-red-500">{errors.targetName}</p>}
           </div>
 
-          {!hideTitle && (
+          {!shouldHideTitle && (
             <div>
               <label className="mb-2 block text-[15px] font-bold text-[#1a1a18]" htmlFor={`${formId}-title`}>제목 <span className="text-red-500">*</span></label>
               <input

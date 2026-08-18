@@ -1023,6 +1023,9 @@ const TradeDetailSeller = ({
         referenceSn={trade.id}
         reportedUserSn={trade.counterpartUserId}
         contextLabel={`거래 상대: ${trade.counterpart}`}
+        tradeReportTypeCodes={trade.method === 'DELIVERY'
+          ? ['ABRC0009', 'ABRC0011']
+          : ['ABRC0008', 'ABRC0011']}
         redirectAfterSubmit={false}
       />}
       <div className={`modal ${cancelOpen ? 'open' : ''}`} onClick={e => { if (e.target === e.currentTarget) closeCancel(); }}>

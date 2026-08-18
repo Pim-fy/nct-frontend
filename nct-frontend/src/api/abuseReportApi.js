@@ -17,6 +17,9 @@ export const fetchActiveManualAbuseReportReferences = (
 export const submitCustomerReport = (data) =>
   api.post('/abuse-reports/customer', data).then((res) => res.data);
 
+export const submitTradeReport = (tradeId, data) =>
+  api.post(`/trades/${tradeId}/reports`, data).then((res) => res.data);
+
 /** 구매자 문의 신고 — targetType: 'INQUIRY', targetSn: prdCmtSn, reportContent */
 export const submitInquiryReport = (data) =>
   api.post('/customer-support/reports', data).then((res) => res.data);
