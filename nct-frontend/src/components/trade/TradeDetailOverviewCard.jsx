@@ -105,7 +105,7 @@ export default function TradeDetailOverviewCard({
               )}
             </div>
           </div>
-          <TradeTrustSummary counterpartUserId={trade.counterpartUserId} />
+          <TradeTrustSummary counterpartUserId={trade.counterpartUserId} dealType="goods" />
         </div>
       </div>
     </section>

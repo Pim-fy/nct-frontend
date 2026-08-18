@@ -9,9 +9,9 @@ const MULTIPART_CONFIG = { headers: { 'Content-Type': 'multipart/form-data' } };
 export const getWritableReviews = () =>
   api.get('/reviews/writable').then(res => res.data);
 
-/** 호환 경로에서 전체·물품·서비스별 리뷰 평균과 건수를 조회하며 화면이 맥락에 맞는 값을 선택한다. */
-export const getUserReviewTrust = (userId) => (
-  api.get(`/reviews/trust/${userId}`).then(res => res.data)
+/** 담당자 7 · F-COM-009: 물품 또는 서비스 한 도메인의 리뷰 평균과 건수만 조회한다. */
+export const getUserReviewTrust = (userId, dealType) => (
+  api.get(`/reviews/trust/${userId}`, { params: { dealType } }).then(res => res.data)
 );
 
 /** 물건·서비스 거래 유형을 구분한 상대방의 받은 리뷰 목록을 페이지 단위로 조회한다. */

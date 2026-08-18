@@ -184,7 +184,7 @@ export const AuctionDetailPageContent = ({ auctionId, embedded = false, readOnly
   const sellerRatingQuery = useQuery({
     queryKey: ['reviews', 'rating', 'goods', auction?.sellerId],
     queryFn: async () => {
-      const response = await getUserReviewTrust(auction.sellerId);
+      const response = await getUserReviewTrust(auction.sellerId, 'goods');
       return response?.data ?? response ?? null;
     },
     enabled: Boolean(supplementalQueriesEnabled && auction?.sellerId),
