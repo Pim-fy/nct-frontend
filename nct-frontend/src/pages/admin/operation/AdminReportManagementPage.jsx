@@ -1,5 +1,10 @@
 import { useRef, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { ArrowLeft, Paperclip, ShieldAlert, UnlockKeyhole } from 'lucide-react';
 import {
   useLocation,
@@ -15,6 +20,7 @@ import {
   getAdminReports,
   releaseAdminReportSanction,
 } from '@api/adminReportApi';
+import { fetchAdminAuctionOverview } from '@api/adminAuctionApi';
 import AdminFilterActions from '@components/admin/AdminFilterActions';
 import AdminHistoryTimeline from '@components/admin/AdminHistoryTimeline';
 import AdminModal from '@components/admin/AdminModal';
@@ -113,6 +119,76 @@ const IMPACT_STATUS_NAMES = {
   RESOLVED: '처리 완료',
   RESTORED: '복구 완료',
   SKIPPED: '자동 복구 제외',
+};
+
+/** 담당자 7 · F-OPS-007: 제재 영향 경매의 상품명과 추적 번호를 함께 표시합니다. */
+const SanctionImpactList = ({ impacts, onAuctionPreview }) => {
+  const auctionIds = [...new Set(
+    impacts
+      .filter((impact) => impact.referenceTypeCode === 'REFC0003')
+      .map((impact) => Number(impact.referenceSn))
+      .filter((auctionId) => Number.isInteger(auctionId) && auctionId > 0),
+  )];
+  const auctionQueries = useQueries({
+    queries: auctionIds.map((auctionId) => ({
+      queryKey: ['admin-auction-overview', auctionId],
+      queryFn: () => fetchAdminAuctionOverview(auctionId),
+      retry: false,
+      staleTime: 60_000,
+    })),
+  });
+  const auctionNames = new Map(
+    auctionIds.map((auctionId, index) => [
+      auctionId,
+      auctionQueries[index]?.data?.product?.prdNm?.trim()
+        || auctionQueries[index]?.data?.auction?.title?.trim()
+        || null,
+    ]),
+  );
+
+  return (
+    <ul className="admin-report-sanction__impacts">
+      {impacts.map((impact, index) => {
+        const referenceName = REPORT_REFERENCE_NAMES[impact.referenceTypeCode]
+          ?? impact.referenceTypeCode;
+        const auctionId = impact.referenceTypeCode === 'REFC0003'
+          ? Number(impact.referenceSn)
+          : null;
+        const auctionName = auctionNames.get(auctionId);
+        const referenceLabel = auctionName
+          ? `${auctionName} · ${referenceName} #${impact.referenceSn}`
+          : `${referenceName} #${impact.referenceSn}`;
+        const canPreviewAuction = Number.isInteger(auctionId)
+          && auctionId > 0
+          && typeof onAuctionPreview === 'function';
+
+        return (
+          <li key={`${impact.referenceTypeCode}-${impact.referenceSn}-${index}`}>
+            <div>
+              {canPreviewAuction ? (
+                <button
+                  className="admin-report-sanction__impact-reference"
+                  onClick={() => onAuctionPreview(auctionId)}
+                  title={`${referenceLabel} 상세 보기`}
+                  type="button"
+                >
+                  {referenceLabel}
+                </button>
+              ) : (
+                <strong>{referenceLabel}</strong>
+              )}
+              <span>
+                {IMPACT_ACTION_NAMES[impact.actionCode] ?? impact.actionCode}
+                {' · '}
+                {IMPACT_STATUS_NAMES[impact.statusCode] ?? impact.statusCode}
+              </span>
+            </div>
+            <p>{impact.result}</p>
+          </li>
+        );
+      })}
+    </ul>
+  );
 };
 const reportTypeName = (code, serverName) => (
   serverName?.trim() || REPORT_TYPE_FALLBACK_NAMES[code] || code || '-'
@@ -808,24 +884,10 @@ const AdminReportManagementPage = () => {
                       <dd>{detail.sanctionEndedAt ? formatDate(detail.sanctionEndedAt) : '기한 없음'}</dd>
                     </dl>
                     {detail.sanctionImpacts?.length > 0 && (
-                      <ul className="admin-report-sanction__impacts">
-                        {detail.sanctionImpacts.map((impact, index) => (
-                          <li key={`${impact.referenceTypeCode}-${impact.referenceSn}-${index}`}>
-                            <div>
-                              <strong>
-                                {REPORT_REFERENCE_NAMES[impact.referenceTypeCode]
-                                  ?? impact.referenceTypeCode} #{impact.referenceSn}
-                              </strong>
-                              <span>
-                                {IMPACT_ACTION_NAMES[impact.actionCode] ?? impact.actionCode}
-                                {' · '}
-                                {IMPACT_STATUS_NAMES[impact.statusCode] ?? impact.statusCode}
-                              </span>
-                            </div>
-                            <p>{impact.result}</p>
-                          </li>
-                        ))}
-                      </ul>
+                      <SanctionImpactList
+                        impacts={detail.sanctionImpacts}
+                        onAuctionPreview={setPreviewAuctionId}
+                      />
                     )}
                     {canReleaseSanction && (
                       <div className="admin-report-sanction__release">
@@ -1186,6 +1248,7 @@ const AdminReportManagementPage = () => {
         auctionId={previewAuctionId}
         onClose={() => setPreviewAuctionId(null)}
         open={previewAuctionId != null}
+        readOnly
       />
 
     </div>

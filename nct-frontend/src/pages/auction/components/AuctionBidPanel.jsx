@@ -119,6 +119,7 @@ const AuctionBidPanel = ({
   onReportOpen,
   onChargeClick,
   onTradeDetailOpen,
+  readOnly = false,
 }) => {
   const isBidPointInsufficient = hasAvailablePoint && !isBidPointSufficient;
   const isBuyNowPointInsufficient = hasAvailablePoint && !isBuyNowPointSufficient;
@@ -207,7 +208,8 @@ const AuctionBidPanel = ({
             {isEndedAuction ? '낙찰자' : '최고입찰자'}
           </StatusBadge>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        {!readOnly && (
+          <div className="flex shrink-0 items-center gap-2">
           <button
             className={`inline-flex min-h-6 shrink-0 items-center gap-1 rounded-full border px-3 py-0.5 text-[13px] leading-[1.4] font-bold transition-[border-color,background-color,color,transform] duration-300 ease-out ${favoriteButtonStateClass} ${
               auction.favorite
@@ -254,7 +256,8 @@ const AuctionBidPanel = ({
             <Flag size={14} aria-hidden="true" />
             신고
           </button>
-        </div>
+          </div>
+        )}
       </div>
 
       <h1 className="m-0 break-words text-h2 font-bold text-[#1d1d1f] [overflow-wrap:anywhere] md:text-h1">
@@ -316,7 +319,14 @@ const AuctionBidPanel = ({
           </div>
 
           <div className="grid grid-rows-[40px_auto] content-start rounded-lg border border-[#e8e8e8] bg-[#fafafa] px-4 py-3">
-            {isMixedTradeMethod ? (
+            {readOnly ? (
+              <div className="flex min-h-10 items-center justify-between gap-4">
+                <span className="text-caption font-bold text-[#666]">거래 방식</span>
+                <strong className="min-w-0 max-w-[72%] truncate text-body-sm text-[#1d1d1f]">
+                  {selectedTradeName}
+                </strong>
+              </div>
+            ) : isMixedTradeMethod ? (
               <div className={`flex min-h-10 items-center justify-between gap-3 rounded-md transition-colors ${
                 showTradeMethodError
                   ? 'bg-[#fff4f3] outline outline-1 outline-[#f0aaa4] outline-offset-2'
@@ -428,7 +438,14 @@ const AuctionBidPanel = ({
         </section>
 
         <section className="flex min-w-0 flex-col rounded-lg border border-[#e8e8e8] bg-white px-5 py-3 xl:h-full" aria-label="입찰 및 즉시구매">
-          {isAuctionReady ? (
+          {readOnly ? (
+            <div className="grid min-h-36 flex-1 place-items-center content-center gap-2 px-4 text-center" role="status">
+              <strong className="text-h3 font-bold text-[#1d1d1f]">관리자 읽기 전용</strong>
+              <span className="text-body-sm leading-6 text-[#666] md:text-body-md">
+                이 화면에서는 입찰 및 구매 기능을 사용할 수 없습니다.
+              </span>
+            </div>
+          ) : isAuctionReady ? (
             <div className="grid min-h-36 flex-1 place-items-center content-center gap-2 text-center text-[#1d1d1f]" role="status">
               <strong className="text-h3 font-bold">경매 시작 전입니다</strong>
               <span className="text-body-sm text-[#666] md:text-body-md">입찰과 즉시구매는 경매가 시작되면 이용할 수 있습니다.</span>

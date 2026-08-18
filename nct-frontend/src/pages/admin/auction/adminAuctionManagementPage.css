@@ -66,6 +66,35 @@
   grid-template-columns: 120px minmax(0, 1fr) 120px minmax(0, 1fr);
 }
 
+/* 담당자 7 · 경매번호와 상품명으로 원본 읽기 전용 상세를 엽니다. */
+.admin-auction-detail-page__reference-button {
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: #b8c8ed;
+  text-underline-offset: 3px;
+}
+
+.admin-auction-detail-page__reference-button:hover,
+.admin-auction-detail-page__reference-button:focus-visible {
+  color: #0064ff;
+  text-decoration-color: currentColor;
+}
+
+.admin-auction-detail-page__reference-button:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid #8eb8ff;
+  outline-offset: 3px;
+}
+
 .admin-auction-detail-page__operations > :first-child {
   margin-top: 0;
 }

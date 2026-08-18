@@ -179,7 +179,6 @@ const AdminAuditLogPage = () => {
         <label>
           시작일
           <input
-            max={form.to || undefined}
             name="from"
             type="date"
             value={form.from}
@@ -190,7 +189,6 @@ const AdminAuditLogPage = () => {
         <label>
           종료일
           <input
-            min={form.from || undefined}
             name="to"
             type="date"
             value={form.to}
