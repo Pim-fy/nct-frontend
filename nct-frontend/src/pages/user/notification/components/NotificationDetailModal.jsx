@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { getServiceTradeDetailPath } from '@/routes/myPageRoutes';
 import { getServiceRequestDetailPath } from '@/routes/serviceRequestRoutes';
 import { getProductSnByInquirySn } from '@/api/productApi';
+import { getAuctionStatus } from '@/api/auctionApi';
 
 // 참조유형공통코드(REFG01) → 이동할 화면 경로. 페이지가 없는 참조 유형(입찰·견적·거래문제 등)은
 // null을 돌려주고, 이 경우 모달에 "이동" 버튼 없이 내용만 보여준다 (사용자 결정, 2026-07-28).
@@ -48,9 +49,14 @@ const NotificationDetailModal = ({ item, onClose }) => {
     let cancelled = false;
     getProductSnByInquirySn(item.refSn)
       .then((res) => {
-        if (!cancelled && res.data != null) {
-          setResolvedInquiry({ refSn: item.refSn, link: `/auction/${res.data}` });
-        }
+        if (cancelled || res.data == null) return undefined;
+        // /auction/:auctionId는 AUCTION 고유 PK(aucSn)를 기대하므로, prdSn을 그대로 넘기지 않고
+        // getAuctionStatus로 한 번 더 변환한다 (PRODUCT.PRD_SN과 AUCTION.AUC_SN은 다른 값).
+        return getAuctionStatus(res.data).then((auc) => {
+          if (!cancelled && auc?.aucSn != null) {
+            setResolvedInquiry({ refSn: item.refSn, link: `/auction/${auc.aucSn}` });
+          }
+        });
       })
       .catch(() => {}); // 상품이 이미 삭제된 경우 등 — 이동 버튼 없이 내용만 보여준다
 
