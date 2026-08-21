@@ -1,5 +1,5 @@
 // src/layouts/user/footers/Footer.jsx
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ActionButton } from '@components/common/ui';
 import { SIGNUP_TERMS } from '@pages/auth/signupTerms';
@@ -44,6 +44,9 @@ const TermsModal = ({ code, onClose }) => {
 const Footer = () => {
   const [activeModal, setActiveModal] = useState(null);
   const { getConfig } = useConfig();
+  const phone = getConfig('footer.phone');
+  const phoneDisplay = phone.replaceAll('-', '.');
+  const businessHours = getConfig('footer.businessHours');
 
   return (
     <>
@@ -84,16 +87,19 @@ const Footer = () => {
 
             {/* 우측: 고객센터 */}
             <div className="flex flex-col items-start md:items-end gap-3 shrink-0">
-              <a href="tel:070-1234-5678" className="md:hidden text-[28px] font-bold tracking-[-2px] text-white">
-                070.1234.5678
+              <a href={`tel:${phone}`} className="md:hidden text-[28px] font-bold tracking-[-2px] text-white">
+                {phoneDisplay}
               </a>
               <span className="hidden md:block text-[40px] font-bold tracking-[-2px] text-white">
-                070.1234.5678
+                {phoneDisplay}
               </span>
               <p className="text-[15px] tracking-[-0.75px] text-white/50 text-left md:text-right">
-                평일 10:00 - 18:00
-                <br />
-                (점심시간 12:00 - 13:00 제외 · 주말/공휴일 제외)
+                {businessHours.split('\n').map((line, index) => (
+                  <Fragment key={line}>
+                    {index > 0 ? <br /> : null}
+                    {line}
+                  </Fragment>
+                ))}
               </p>
             </div>
           </div>
