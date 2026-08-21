@@ -81,7 +81,11 @@ const writeStoredVerification = (verification) => {
 };
 
 const clearStoredVerification = () => {
-  window.sessionStorage.removeItem(SIGNUP_VERIFICATION_STORAGE_KEY);
+  try {
+    window.sessionStorage.removeItem(SIGNUP_VERIFICATION_STORAGE_KEY);
+  } catch {
+    // 삭제 실패는 무시 - 다음 세션에서 만료 체크로 걸러지므로 현재 흐름을 막을 이유가 없다.
+  }
 };
 
 const AGREEMENT_ITEMS = [
