@@ -95,6 +95,14 @@ api.interceptors.response.use(
         icon: 'warning',
         title: error.response.data.message,
       });
+      // @ai_generated: isLogin 플래그만 지우면 HttpOnly 액세스/리프레시 쿠키가 브라우저에 남아
+      // 다음 요청도 같은 오류를 반복시킨다(팝업 무한 반복). 쿠키는 JS로 지울 수 없으므로
+      // 서버 로그아웃을 호출해 쿠키를 만료시킨다 - 실패해도 안내·리다이렉트는 그대로 진행한다.
+      try {
+        await api.post('/auth/logout', {}, { skipAuthStateRedirect: true, skipAuthRefresh: true });
+      } catch {
+        // 로그아웃 요청 자체의 실패는 무시 - 아래 리다이렉트 흐름을 막지 않는다.
+      }
       localStorage.removeItem('isLogin');
       redirectToLogin();
       return Promise.reject(error);
