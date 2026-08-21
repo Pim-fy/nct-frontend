@@ -99,7 +99,11 @@ api.interceptors.response.use(
       // 다음 요청도 같은 오류를 반복시킨다(팝업 무한 반복). 쿠키는 JS로 지울 수 없으므로
       // 서버 로그아웃을 호출해 쿠키를 만료시킨다 - 실패해도 안내·리다이렉트는 그대로 진행한다.
       try {
-        await api.post('/auth/logout', {}, { skipAuthStateRedirect: true, skipAuthRefresh: true });
+        await api.post('/auth/logout', {}, {
+          skipAuthStateRedirect: true,
+          skipAuthRefresh: true,
+          skipServerErrorRedirect: true,
+        });
       } catch {
         // 로그아웃 요청 자체의 실패는 무시 - 아래 리다이렉트 흐름을 막지 않는다.
       }
