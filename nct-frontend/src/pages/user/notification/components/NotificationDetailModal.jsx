@@ -5,6 +5,7 @@ import { getServiceTradeDetailPath } from '@/routes/myPageRoutes';
 import { getServiceRequestDetailPath } from '@/routes/serviceRequestRoutes';
 import { getProductSnByInquirySn } from '@/api/productApi';
 import { fetchAuctionStatusByProduct } from '@/api/auctionApi';
+import { getAuctionStatus } from '@/api/auctionApi';
 
 // 참조유형공통코드(REFG01) → 이동할 화면 경로. 페이지가 없는 참조 유형(입찰·견적·거래문제 등)은
 // null을 돌려주고, 이 경우 모달에 "이동" 버튼 없이 내용만 보여준다 (사용자 결정, 2026-07-28).

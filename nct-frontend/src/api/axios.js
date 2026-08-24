@@ -95,6 +95,10 @@ api.interceptors.response.use(
         icon: 'warning',
         title: error.response.data.message,
       });
+      // @ai_generated: HttpOnly 액세스/리프레시 쿠키는 JS로 지울 수 없고, 정지/탈퇴 계정은
+      // 서버가 모든 요청(로그아웃 포함)을 필터 단에서 차단해 /auth/logout을 호출해도 쿠키가
+      // 지워지지 않는다 - 백엔드 JwtAuthenticationFilter가 이 오류를 판정하는 시점에 쿠키를
+      // 직접 삭제하도록 수정했으므로, 프론트는 다음 요청부터 쿠키가 없는 상태를 그대로 받는다.
       localStorage.removeItem('isLogin');
       redirectToLogin();
       return Promise.reject(error);
