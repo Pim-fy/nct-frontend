@@ -22,6 +22,12 @@ export const fetchAuctionDetail = async (auctionId, params = {}) => {
   return response.data.data;
 };
 
+/** 상품번호 → 경매 상태 (aucSn 포함) — 문의 답변 알림 클릭 이동 등 prdSn만 아는 곳에서 aucSn 조회용 */
+export const fetchAuctionStatusByProduct = async (prdSn) => {
+  const response = await api.get(`/auctions/product/${prdSn}`);
+  return response.data.data;
+};
+
 export const fetchSellerAuctionHistory = async (sellerId, params = {}) => (
   fetchAuctions({
     ...params,
