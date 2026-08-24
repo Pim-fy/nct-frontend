@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { getServiceTradeDetailPath } from '@/routes/myPageRoutes';
 import { getServiceRequestDetailPath } from '@/routes/serviceRequestRoutes';
 import { getProductSnByInquirySn } from '@/api/productApi';
+import { fetchAuctionStatusByProduct } from '@/api/auctionApi';
 import { getAuctionStatus } from '@/api/auctionApi';
 
 // 참조유형공통코드(REFG01) → 이동할 화면 경로. 페이지가 없는 참조 유형(입찰·견적·거래문제 등)은
@@ -48,15 +49,24 @@ const NotificationDetailModal = ({ item, onClose }) => {
 
     let cancelled = false;
     getProductSnByInquirySn(item.refSn)
-      .then((res) => {
-        if (cancelled || res.data == null) return undefined;
-        // /auction/:auctionId는 AUCTION 고유 PK(aucSn)를 기대하므로, prdSn을 그대로 넘기지 않고
-        // getAuctionStatus로 한 번 더 변환한다 (PRODUCT.PRD_SN과 AUCTION.AUC_SN은 다른 값).
-        return getAuctionStatus(res.data).then((auc) => {
-          if (!cancelled && auc?.aucSn != null) {
-            setResolvedInquiry({ refSn: item.refSn, link: `/auction/${auc.aucSn}` });
+      .then(async (res) => {
+        if (cancelled || res.data == null) return;
+        const prdSn = res.data;
+
+        // 새 구매자 문의(NTFC0030, 판매자 수신) — 답변은 판매자 상품 관리 화면에서만 등록 가능
+        // (AuctionInquirySection도 "판매자 상품 관리에서 답변할 수 있습니다"로 안내한다).
+        if (item.evtCd === 'NTFC0030') {
+          if (!cancelled) setResolvedInquiry({ refSn: item.refSn, link: `/product/${prdSn}/seller` });
+          return;
+        }
+        // 문의 답변 등록(NTFC0031, 구매자 수신) — 답변 확인은 공개 경매 상세 화면에서.
+        // /auction/:auctionId는 aucSn을 쓰므로 prdSn을 한 번 더 변환해야 한다(담당자2 확인, 2026-08-18).
+        if (item.evtCd === 'NTFC0031') {
+          const status = await fetchAuctionStatusByProduct(prdSn);
+          if (!cancelled && status?.aucSn != null) {
+            setResolvedInquiry({ refSn: item.refSn, link: `/auction/${status.aucSn}` });
           }
-        });
+        }
       })
       .catch(() => {}); // 상품이 이미 삭제된 경우 등 — 이동 버튼 없이 내용만 보여준다
 

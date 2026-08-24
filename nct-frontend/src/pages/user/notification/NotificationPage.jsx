@@ -55,6 +55,7 @@ const toViewItem = (n) => ({
   ref: n.refSn != null ? '관련 링크' : null,             // 목록의 작은 배지 표시용
   refTypeCd: n.refTypeCd,                                // 상세 팝업의 "이동" 버튼 경로 계산용
   refSn: n.refSn,
+  evtCd: n.evtCd,                                        // REFC0002 등 같은 참조유형을 공유하는 이벤트 구분용 (담당자2 확인, 2026-08-18)
   read: n.read,
 });
 
