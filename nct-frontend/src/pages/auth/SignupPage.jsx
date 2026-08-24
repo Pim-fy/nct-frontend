@@ -55,6 +55,39 @@ const INITIAL_VERIFICATION = {
 
 const INITIAL_NOTICE = { type: 'idle', message: '' };
 
+// @ai_generated: 새로고침에도 "인증 완료" 상태만 보존한다 - 인증번호(sent) 자체는 3분짜리라
+// 재발송을 유도하는 게 자연스럽고, 입력 폼 값까지 보존하는 건 범위 밖(문서 260818_2130 항목5).
+const SIGNUP_VERIFICATION_STORAGE_KEY = 'nct_signup_verification';
+
+const readStoredVerification = () => {
+  try {
+    const raw = window.sessionStorage.getItem(SIGNUP_VERIFICATION_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed?.status !== 'verified' || !parsed.expiresAt) return null;
+    if (Date.parse(parsed.expiresAt) <= Date.now()) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+const writeStoredVerification = (verification) => {
+  try {
+    window.sessionStorage.setItem(SIGNUP_VERIFICATION_STORAGE_KEY, JSON.stringify(verification));
+  } catch {
+    // 저장 실패(프라이빗 모드 등)는 무시 - 새로고침 복원만 안 될 뿐 현재 세션 동작엔 영향 없다.
+  }
+};
+
+const clearStoredVerification = () => {
+  try {
+    window.sessionStorage.removeItem(SIGNUP_VERIFICATION_STORAGE_KEY);
+  } catch {
+    // 삭제 실패는 무시 - 다음 세션에서 만료 체크로 걸러지므로 현재 흐름을 막을 이유가 없다.
+  }
+};
+
 const AGREEMENT_ITEMS = [
   { key: 'terms', code: 'AGRC0001', label: '서비스이용약관', required: true },
   { key: 'privacy', code: 'AGRC0002', label: '개인정보처리방침', required: true },
@@ -189,7 +222,12 @@ const formatRemaining = (targetTime, now) => {
 };
 
 const SignupPage = () => {
-  const [form, setForm] = useState(INITIAL_FORM);
+  // @ai_generated: 복원된 인증 상태와 입력창의 이메일이 서로 다르면 verifiedForCurrentEmail
+  // 게이트가 항상 실패해 복원이 무의미해진다 - 인증된 이메일만 폼에 함께 채워 넣는다.
+  const restoredVerification = readStoredVerification();
+  const [form, setForm] = useState(() => (
+    restoredVerification ? { ...INITIAL_FORM, email: restoredVerification.email } : INITIAL_FORM
+  ));
   const [passwordVisibility, setPasswordVisibility] = useState({ password: false, passwordConfirm: false });
   const [touched, setTouched] = useState({});
   const [serverErrors, setServerErrors] = useState({});
@@ -200,7 +238,7 @@ const SignupPage = () => {
   const [agreements, setAgreements] = useState({ terms: false, privacy: false, marketing: false });
   const [openAgreement, setOpenAgreement] = useState(null);
   const [agreementMessage, setAgreementMessage] = useState('');
-  const [verification, setVerification] = useState(INITIAL_VERIFICATION);
+  const [verification, setVerification] = useState(() => restoredVerification ?? INITIAL_VERIFICATION);
   const [verificationCode, setVerificationCode] = useState('');
   const [verificationNotice, setVerificationNotice] = useState(INITIAL_NOTICE);
   const [signupMessage, setSignupMessage] = useState('');
@@ -213,7 +251,7 @@ const SignupPage = () => {
   const verificationRequestRef = useRef(0);
   // @ai_generated: 발송·확인을 직렬화하고, 늦은 응답이 다른 인증 ID 상태를 바꾸지 못하게 한다.
   const verificationOperationRef = useRef('idle');
-  const activeVerificationIdRef = useRef(null);
+  const activeVerificationIdRef = useRef(verification.verificationId ?? null);
 
   const validators = {
     loginId: validateLoginId,
@@ -303,6 +341,7 @@ const SignupPage = () => {
     verificationOperationRef.current = 'idle';
     activeVerificationIdRef.current = null;
     setVerification(INITIAL_VERIFICATION);
+    clearStoredVerification();
     setVerificationCode('');
     setVerificationNotice(INITIAL_NOTICE);
     // @ai_generated: 무효화된 이전 요청의 finally는 세대 보호로 정리를 건너뛰므로 여기서 즉시 해제한다.
@@ -476,10 +515,15 @@ const SignupPage = () => {
     setVerificationNotice({ type: 'idle', message: '' });
 
     try {
-      await verifySignupEmailVerification(verificationId, { code: verificationCode });
+      const response = await verifySignupEmailVerification(verificationId, { code: verificationCode });
       if (verificationRequestRef.current !== requestId || activeVerificationIdRef.current !== verificationId) return;
 
-      setVerification((previous) => ({ ...previous, status: 'verified' }));
+      // @ai_generated: 서버가 인증 성공 시 만료시각을 60분 유예로 연장해 응답에 실어준다 - 발송
+      // 시점의 3분짜리 expiresAt을 그대로 쓰면 새로고침 복원이 몇 분 안에 거부돼 버린다.
+      const graceExpiresAt = response?.data?.expiresAt ?? verification.expiresAt;
+      const nextVerification = { ...verification, status: 'verified', expiresAt: graceExpiresAt };
+      setVerification(nextVerification);
+      writeStoredVerification(nextVerification);
       setVerificationCode('');
       setVerificationNotice({ type: 'success', message: '이메일 인증이 완료되었습니다.' });
     } catch (error) {
@@ -570,6 +614,7 @@ const SignupPage = () => {
         })),
         verificationId: verification.verificationId,
       });
+      clearStoredVerification();
       setSignupSucceeded(true);
     } catch (error) {
       mapSignupError(error);

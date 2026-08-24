@@ -65,3 +65,7 @@ export const postInquiryReply = (prdSn, inquirySn, data) =>
 /** 판매자 답변 수정 — 등록 후 10분 이내만 가능 (F-AUC-012) */
 export const updateInquiryReply = (prdSn, inquirySn, data) =>
   api.patch(`/products/${prdSn}/inquiries/${inquirySn}/reply`, data).then(res => res.data);
+
+/** 문의(prdCmtSn) → 상품(prdSn) 변환 — 문의 등록/답변 알림 클릭 이동용 */
+export const getProductSnByInquirySn = (prdCmtSn) =>
+  api.get(`/products/inquiries/${prdCmtSn}`).then(res => res.data);

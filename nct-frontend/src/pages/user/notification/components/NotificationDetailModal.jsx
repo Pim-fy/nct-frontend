@@ -1,10 +1,15 @@
 // src/pages/user/notification/components/NotificationDetailModal.jsx
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { getServiceTradeDetailPath } from '@/routes/myPageRoutes';
 import { getServiceRequestDetailPath } from '@/routes/serviceRequestRoutes';
+import { getProductSnByInquirySn } from '@/api/productApi';
+import { getAuctionStatus } from '@/api/auctionApi';
 
 // 참조유형공통코드(REFG01) → 이동할 화면 경로. 페이지가 없는 참조 유형(입찰·견적·거래문제 등)은
 // null을 돌려주고, 이 경우 모달에 "이동" 버튼 없이 내용만 보여준다 (사용자 결정, 2026-07-28).
+// REFC0002(구매자 문의 등록/판매자 답변)는 refSn이 상품이 아니라 문의(prdCmtSn)라 여기서 동기로
+// 계산할 수 없다 — prdSn 변환 API가 필요해 컴포넌트 쪽 useEffect에서 별도로 처리한다.
 const resolveLink = (item) => {
   if (!item.refTypeCd || item.refSn == null) return null;
   switch (item.refTypeCd) {
@@ -32,9 +37,37 @@ const resolveLink = (item) => {
 const NotificationDetailModal = ({ item, onClose }) => {
   // 담당자 7: 현재 경로는 대상 화면의 뒤로가기 문맥으로만 전달하며 브레드크럼에는 반영하지 않는다.
   const location = useLocation();
+
+  // 문의 등록/답변 알림(REFC0002)은 prdCmtSn → prdSn 변환 API를 먼저 호출해야 이동 경로가 나온다.
+  // refSn을 결과와 함께 들고 있다가 현재 item과 비교해서, 알림이 바뀌었는데 이전 알림의 변환
+  // 결과가 그대로 남는 것을 막는다(별도의 리셋 setState 없이 렌더링 시점에 자연히 무효화).
+  const [resolvedInquiry, setResolvedInquiry] = useState({ refSn: null, link: null });
+
+  useEffect(() => {
+    if (!item || item.refTypeCd !== 'REFC0002' || item.refSn == null) return undefined;
+
+    let cancelled = false;
+    getProductSnByInquirySn(item.refSn)
+      .then((res) => {
+        if (cancelled || res.data == null) return undefined;
+        // /auction/:auctionId는 AUCTION 고유 PK(aucSn)를 기대하므로, prdSn을 그대로 넘기지 않고
+        // getAuctionStatus로 한 번 더 변환한다 (PRODUCT.PRD_SN과 AUCTION.AUC_SN은 다른 값).
+        return getAuctionStatus(res.data).then((auc) => {
+          if (!cancelled && auc?.aucSn != null) {
+            setResolvedInquiry({ refSn: item.refSn, link: `/auction/${auc.aucSn}` });
+          }
+        });
+      })
+      .catch(() => {}); // 상품이 이미 삭제된 경우 등 — 이동 버튼 없이 내용만 보여준다
+
+    return () => { cancelled = true; };
+  }, [item]);
+
   if (!item) return null;
 
-  const link = resolveLink(item);
+  const link = item.refTypeCd === 'REFC0002'
+    ? (resolvedInquiry.refSn === item.refSn ? resolvedInquiry.link : null)
+    : resolveLink(item);
 
   return (
     <div
