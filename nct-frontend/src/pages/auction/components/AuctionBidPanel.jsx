@@ -93,6 +93,7 @@ const AuctionBidPanel = ({
   isBuyNowAvailable,
   isAuthenticated,
   isAuthLoading,
+  isBidderRole,
   availablePoint,
   hasAvailablePoint,
   isPointBalanceLoading,
@@ -485,6 +486,10 @@ const AuctionBidPanel = ({
           ) : isOwnAuction ? (
             <div className="grid min-h-36 flex-1 place-items-center text-h3 font-bold text-primary-dark" role="status">
               본인 경매 상품
+            </div>
+          ) : isAuthenticated && !isBidderRole ? (
+            <div className="grid min-h-36 flex-1 place-items-center px-3 text-center text-body-md font-bold text-[#666]" role="status">
+              입찰과 즉시구매는 일반회원 모드에서 이용할 수 있습니다.
             </div>
           ) : (
             <>
