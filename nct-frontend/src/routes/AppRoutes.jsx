@@ -97,6 +97,7 @@ import ServiceTradeDetailRoutePage from '@pages/service/ServiceTradeDetailRouteP
 import {
   ADMIN_AUCTION_DETAIL_ROUTE,
   ADMIN_AUCTIONS_ROUTE,
+  ADMIN_FUNDS_ROUTE,
   ADMIN_OPERATIONS_RECORDS_ROUTE,
   ADMIN_PROVIDER_APPLICATIONS_ROUTE,
   ADMIN_REPORT_DETAIL_ROUTE,
@@ -135,6 +136,7 @@ import AdminCustomerInquiryManagementPage from '@pages/admin/operation/AdminCust
 import AdminServiceTradeDetailRoutePage from '@pages/admin/operation/AdminServiceTradeDetailRoutePage';
 import AdminPointExchangePage from '@pages/admin/operation/AdminPointExchangePage';
 import AdminSettlementManagementPage from '@pages/admin/operation/AdminSettlementManagementPage';
+import AdminFundDashboardPage from '@pages/admin/funds/AdminFundDashboardPage';
 
 const AppRoutes = () => {
   const location = useLocation();
@@ -313,6 +315,7 @@ const AppRoutes = () => {
           <Route path={ADMIN_SERVICE_TRADE_DETAIL_ROUTE} element={<AdminServiceTradeDetailRoutePage />} />
           <Route path="exchanges" element={<AdminPointExchangePage />} />
           <Route path="settlements" element={<AdminSettlementManagementPage />} />
+          <Route path={ADMIN_FUNDS_ROUTE} element={<AdminFundDashboardPage />} />
           {/* 담당자 7 · F-OPS-011: 담당자 6의 F-OPS-016 화면을 소비해 운영 기록 탐색만 통합합니다. */}
           <Route path={ADMIN_OPERATIONS_RECORDS_ROUTE} element={<AdminOperationsRecordPage />} />
           <Route path={ADMIN_SETTINGS_ROUTE} element={<AdminSystemSettingPage />} />

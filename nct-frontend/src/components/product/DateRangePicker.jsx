@@ -75,12 +75,14 @@ export default function DateRangePicker({
   timeUnavailable = false, endTimeUnavailable = false,
   timeLabel = '시작 시간', timeHint = '종료 시간은 시작 시간과 동일하게 적용됩니다', minTime,
   hideStatus, footer, gridPadding = '28px 16px 44px', cellAspectRatio = '1',
+  allowPast = false, extendMaxNavForDuration = true, initialViewDate,
 }) {
   const now = new Date();
   const todayStr = toStr(now.getFullYear(), now.getMonth(), now.getDate());
+  const initialView = initialViewDate ? new Date(initialViewDate + 'T00:00:00') : now;
 
-  const [leftYear, setLeftYear] = useState(now.getFullYear());
-  const [leftMonth, setLeftMonth] = useState(now.getMonth());
+  const [leftYear, setLeftYear] = useState(initialView.getFullYear());
+  const [leftMonth, setLeftMonth] = useState(initialView.getMonth());
   const [hovering, setHovering] = useState(null);
   const [phase, setPhase] = useState(fixedStart ? 'end' : 'start');
 
@@ -94,7 +96,8 @@ export default function DateRangePicker({
 
   // 시작일이 달력 마지막 표시일 근처/그 날짜여서 durationLimit이 원래 탐색 상한을 넘어서면
   // 그 시작일 기준 2주 후까지 볼 수 있도록 탐색·선택 상한을 동적으로 확장
-  const effectiveMaxNavDate = durationLimit && (!maxNavDate || durationLimit > maxNavDate)
+  const effectiveMaxNavDate = extendMaxNavForDuration
+    && durationLimit && (!maxNavDate || durationLimit > maxNavDate)
     ? durationLimit
     : maxNavDate;
 
@@ -102,7 +105,8 @@ export default function DateRangePicker({
   let rightYear = leftYear;
   if (rightMonth > 11) { rightMonth = 0; rightYear++; }
 
-  const canGoPrev = !(leftYear === now.getFullYear() && leftMonth === now.getMonth());
+  const canGoPrev = allowPast
+    || !(leftYear === now.getFullYear() && leftMonth === now.getMonth());
   const maxDt = effectiveMaxNavDate ? new Date(effectiveMaxNavDate + 'T00:00:00') : null;
   const canGoNext = maxDt
     ? !(rightYear > maxDt.getFullYear() || (rightYear === maxDt.getFullYear() && rightMonth >= maxDt.getMonth()))
@@ -120,7 +124,7 @@ export default function DateRangePicker({
   }
 
   function handleClick(dateStr) {
-    if (dateStr < todayStr) return;
+    if (!allowPast && dateStr < todayStr) return;
     if (effectiveMaxNavDate && dateStr > effectiveMaxNavDate) return;
     if (fixedStart) {
       if (durationLimit && dateStr > durationLimit) return;
@@ -172,7 +176,7 @@ export default function DateRangePicker({
     }
 
     let spanBg = 'transparent';
-    let color = dateStr < todayStr ? '#d1d5db'
+    let color = !allowPast && dateStr < todayStr ? '#d1d5db'
       : dateStr === todayStr ? '#0064ff'
       : dow === 0 ? '#ef4444'
       : dow === 6 ? '#6366f1'
@@ -214,7 +218,8 @@ export default function DateRangePicker({
             const d = i + 1;
             const dateStr = toStr(year, month, d);
             // 시작일 선택 완료 후(phase 'end')에는 시작일 이전 날짜도 비활성화
-            const isPast = dateStr < todayStr || (!fixedStart && !locked && phase === 'end' && startDate && dateStr < startDate);
+            const isPast = (!allowPast && dateStr < todayStr)
+              || (!fixedStart && !locked && phase === 'end' && startDate && dateStr < startDate);
             // 달력 탐색 절대 상한(예: 오늘+2개월, 시작일 근처면 시작일+2주까지 확장) 이후 날짜는 항상 비활성화
             const isOverNav = effectiveMaxNavDate && dateStr > effectiveMaxNavDate;
             // 시작일이 정해진 뒤(또는 고정 시작)에는 시작일+N일까지만 종료일 선택 가능

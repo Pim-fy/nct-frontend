@@ -81,6 +81,7 @@ export const AuctionDetailPageContent = ({ auctionId, embedded = false, readOnly
   const queryClient = useQueryClient();
   const { user, isAuthenticated, loading: isAuthLoading } = useAuth();
   const authenticatedUserId = user?.id ?? user?.userId ?? user?.userSn ?? user?.usrSn;
+  const isBidderRole = user?.role === 'ROLE_USER';
   const [bidAmount, setBidAmount] = useState('');
   const [holdAgreed, setHoldAgreed] = useState(false);
   const [tradeMethodSelection, setTradeMethodSelection] = useState({
@@ -1089,6 +1090,7 @@ export const AuctionDetailPageContent = ({ auctionId, embedded = false, readOnly
               isBuyNowAvailable={isBuyNowAvailable}
               isAuthenticated={isAuthenticated}
               isAuthLoading={isAuthLoading}
+              isBidderRole={isBidderRole}
               availablePoint={availablePoint}
               hasAvailablePoint={hasAvailablePoint}
               isPointBalanceLoading={isPointBalanceLoading}
