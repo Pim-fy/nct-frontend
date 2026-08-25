@@ -3,12 +3,14 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
 import {
   ADMIN_OPERATIONS_RECORDS_PATH,
+  ADMIN_FUNDS_PATH,
   ADMIN_PROVIDER_APPLICATIONS_PATH,
   ADMIN_SERVICE_REQUESTS_PATH,
   ADMIN_SETTINGS_PATH,
 } from '@/routes/adminRoutes';
 import {
   Bell,
+  CircleDollarSign,
   BriefcaseBusiness,
   ClipboardCheck,
   Gavel,
@@ -42,6 +44,7 @@ const MENU_SECTIONS = [
     { label: '카테고리 관리', icon: Grid2X2, to: '/admin/categories' },
   ],
   [
+    { label: '자금 관리', icon: CircleDollarSign, to: ADMIN_FUNDS_PATH },
     { label: '정산 관리', icon: WalletCards, to: '/admin/settlements' },
     { label: '환전 관리', icon: WalletCards, to: '/admin/exchanges' },
   ],
