@@ -6,11 +6,13 @@
 // - 컨텐츠 컴포넌트: @components/landing 이하에서 가져옴
 
 import NoticeStrip  from '@components/landing/NoticeStrip';
-import { useMemo } from 'react';
-import { Navigate } from 'react-router-dom';
+import { useCallback, useMemo, useState } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAuctions } from '@api/auctionApi';
+import PortfolioEntryModal from '@components/landing/PortfolioEntryModal';
+import { getDemoAccount } from '@/constants/demoAccounts';
 import {
   toLandingAuctionItem,
   toLandingPopularAuction,
@@ -21,7 +23,22 @@ import AuctionSection     from '@components/landing/sections/AuctionSection';
 import MobileLandingSections from '@components/landing/sections/MobileLandingSections';
 
 const LandingPage = () => {
-  const { isProvider } = useAuth();
+  const navigate = useNavigate();
+  // @author 황희준
+  // @intent 인증 초기화가 끝난 비회원에게만 포트폴리오 모달을 표시하고 역할 키만 로그인 화면에 전달한다.
+  const { isAuthenticated, isProvider, loading: authLoading } = useAuth();
+  const [isPortfolioModalDismissed, setPortfolioModalDismissed] = useState(false);
+
+  const closePortfolioModal = useCallback(() => {
+    setPortfolioModalDismissed(true);
+  }, []);
+
+  const handleDemoAccountSelect = useCallback((key) => {
+    const demoAccount = getDemoAccount(key);
+    if (!demoAccount) return;
+
+    navigate(demoAccount.loginPath, { state: { demoAccount: key } });
+  }, [navigate]);
 
   // 훅은 조건과 무관하게 항상 호출 (Rules of Hooks)
   const latestAuctionQuery = useQuery({
@@ -74,8 +91,20 @@ const LandingPage = () => {
     return <Navigate to="/user/mypage" replace />;
   }
 
+  const shouldShowPortfolioModal = (
+    !authLoading
+    && !isAuthenticated
+    && !isPortfolioModalDismissed
+  );
+
   return (
     <>
+      <PortfolioEntryModal
+        onClose={closePortfolioModal}
+        onSelectDemoAccount={handleDemoAccountSelect}
+        open={shouldShowPortfolioModal}
+      />
+
       {/* 1. 상단 공지 띠 */}
       <NoticeStrip
         badge="점검"

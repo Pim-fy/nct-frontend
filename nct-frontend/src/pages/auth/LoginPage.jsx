@@ -9,6 +9,7 @@ import AuthCard from '@components/auth/AuthCard';
 import { ActionButton } from '@components/common/ui';
 import { createSuspendedInquiry } from '@api/customerInquiryApi';
 import { notify } from '@utils/common';
+import { getMemberDemoAccount } from '@/constants/demoAccounts';
 
 // ── 소셜 로그인 버튼 데이터 ──────────────────────────────
 const SOCIAL_PROVIDERS = [
@@ -57,6 +58,9 @@ export default function LoginPage() {
   const navigate  = useNavigate();
   const location  = useLocation();
   const { login } = useAuth();
+  // @author 황희준
+  // @intent 일반·제공자 데모 역할 키만 허용해 기존 로그인 화면의 초기 입력값을 안전하게 채운다.
+  const demoAccount = getMemberDemoAccount(location.state?.demoAccount);
 
   // 담당자 7: 헤더의 로그인 게이트에서 전달한 검색조건·해시까지 로그인 후 복원한다.
   const returnLocation = location.state?.from;
@@ -67,8 +71,8 @@ export default function LoginPage() {
     || sessionStorage.getItem('loginRedirectFrom')
     || '/';
 
-  const [userId,       setUserId]       = useState('');
-  const [password,     setPassword]     = useState('');
+  const [userId,       setUserId]       = useState(demoAccount?.loginId ?? '');
+  const [password,     setPassword]     = useState(demoAccount?.password ?? '');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe,   setRememberMe]   = useState(false);
   const [loading,      setLoading]      = useState(false);

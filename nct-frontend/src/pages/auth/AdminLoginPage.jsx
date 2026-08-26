@@ -4,6 +4,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import AuthCard from '@components/auth/AuthCard';
 import AuthPageContainer from '@components/auth/AuthPageContainer';
 import { useAuth } from '@hooks/useAuth';
+import { getAdminDemoAccount } from '@/constants/demoAccounts';
 
 const ADMIN_HOME = '/admin';
 const ADMIN_LOGIN = '/admin/login';
@@ -36,8 +37,11 @@ export default function AdminLoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { adminLogin, rejectCurrentSession, user, loading: authLoading } = useAuth();
-  const [loginId, setLoginId] = useState('');
-  const [password, setPassword] = useState('');
+  // @author 황희준
+  // @intent 관리자 전용 데모 역할 키만 허용해 기존 관리자 인증 계약을 바꾸지 않고 입력값만 채운다.
+  const demoAccount = getAdminDemoAccount(location.state?.demoAccount);
+  const [loginId, setLoginId] = useState(demoAccount?.loginId ?? '');
+  const [password, setPassword] = useState(demoAccount?.password ?? '');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [submitting, setSubmitting] = useState(false);
