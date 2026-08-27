@@ -5,7 +5,7 @@
 
 에누리컷은 사용자가 중고 물품을 경매로 거래하고, 이사·청소·설치/수리·인테리어·레슨 등의 생활 서비스를 요청해 여러 제공자의 견적을 비교할 수 있는 웹 서비스입니다. 일반 회원, 서비스 제공자, 운영 관리자에게 필요한 화면을 역할별로 제공합니다.
 
-![에누리컷 시스템 구조도](./architecture.png)
+![에누리컷 시스템 구조도](./nct-frontend/architecture.png)
 
 ## 목차
 
@@ -42,7 +42,7 @@
 | External UI | Daum 우편번호, TossPayments SDK |
 | Quality | ESLint |
 
-![에누리컷 인프라 구성도](./infra.png)
+![에누리컷 인프라 구성도](./nct-frontend/infra.png)
 
 ## 화면 구성
 

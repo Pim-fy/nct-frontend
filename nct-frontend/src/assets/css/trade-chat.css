@@ -1,7 +1,7 @@
 .trade-chat-page {
   min-height: 100%;
   padding: 48px 0 80px;
-  background: linear-gradient(180deg, #f4f7ff 0, #f8f9fb 340px, #fff 340px);
+  background: #fff;
 }
 
 /* 담당자 7: 채팅 목록과 메시지의 보조 글자도 최소 13px로 표시해 가독성을 확보한다. */
@@ -378,7 +378,7 @@
   padding: 10px 12px;
   border: 1px solid #dbe7ff;
   border-radius: 10px;
-  background: #f5f8ff;
+  background: #fbfcfe;
   color: #496697;
   font-size: 14px;
   line-height: 1.5;
