@@ -36,7 +36,7 @@
 | Routing | React Router DOM 7 |
 | Server State | TanStack Query 5 |
 | HTTP | Axios |
-| Styling | Tailwind CSS 4, daisyUI 5 |
+| Styling | Tailwind CSS 4 |
 | UI / UX | SweetAlert2, Lucide React, AOS, React Loading Skeleton |
 | Security | DOMPurify |
 | External UI | Daum 우편번호, TossPayments SDK |
